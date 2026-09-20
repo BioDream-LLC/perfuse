@@ -1,0 +1,82 @@
+# build output
+/bin/
+/dist/
+# anchored to the repo root so it does not match the cmd/perfuse package
+/perfuse
+/perfuse.exe
+
+# local state
+*.db
+*.db-wal
+*.db-shm
+/data/
+
+# Never commit clinical data. Real HL7 is protected health information; the only
+# messages in this repository are hand-written synthetic fixtures in testdata.
+*.hl7
+!**/testdata/**/*.hl7
+*.hl7.gz
+*.er7
+corpus/
+/testdata/corpus/
+**/corpus/
+
+# front end
+web/node_modules/
+web/.vite/
+# internal/web/dist is committed on purpose: it lets `go build` work on a
+# checkout with no Node installed. Rebuild it with `make web`.
+
+# The WebAssembly playground, 26 MB, is committed under internal/web/dist and
+# embedded in the binary. Only the staging copy under web/public is ignored.
+#
+# This reversed an earlier decision, and the reversal is recorded because the two
+# halves of it contradicted each other for a while and nothing noticed.
+#
+# The original reasoning was sound on its own terms: the playground exists so that
+# somebody who has NOT installed Perfuse can try it in a browser, anybody who has
+# installed it does not need it, and embedding it takes the binary from 34 MB to
+# 61 MB. So it was ignored here and meant to live on a public website.
+#
+# But the interface ships a Playground tab, and internal/web/embed.go names
+# dist/wasm in its embed directive precisely because omitting it left that tab
+# broken in every build: the browser asked for the module, the SPA fallback
+# answered with index.html, and the script would not execute. Two files therefore
+# documented opposite decisions, and because a go:embed pattern that matches
+# nothing is a compile error, the repository could not be built by anybody who
+# cloned it - `go install` included. That went unnoticed because the only machine
+# that ever built it already had the untracked file sitting there.
+#
+# Resolved in favour of the tab working. If the binary size matters more later,
+# the honest fix is to serve the module gzipped - Go WebAssembly compresses about
+# four to one, so roughly 7 MB - rather than to ship a tab that cannot run.
+web/public/wasm/
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Playwright end-to-end artefacts. The tests are committed; their output is not.
+web/test-results/
+web/e2e-report/
+web/e2e/.auth/
+web/e2e/.state.json
+# The run lock, which names the pid of whichever run holds the suite. Per-machine and per-run, never shared.
+web/e2e/.run.lock
+
+# Local assistant and editor tooling, not part of the product.
+.kiro/
+.vscode/
+.idea/
+
+# Runtime state, created by the server as it runs.
+pid
+perfuse-settings.yaml
+*.db
+*.db-shm
+*.db-wal
+data/
+archive/
+claims/

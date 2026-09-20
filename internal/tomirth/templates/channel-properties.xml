@@ -1,0 +1,23 @@
+<channelProperties version="4.5.2">
+  <clearGlobalChannelMap>true</clearGlobalChannelMap>
+  <messageStorageMode>DEVELOPMENT</messageStorageMode>
+  <encryptData>false</encryptData>
+  <encryptAttachments>false</encryptAttachments>
+  <encryptCustomMetaData>false</encryptCustomMetaData>
+  <removeContentOnCompletion>false</removeContentOnCompletion>
+  <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
+  <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
+  <initialState>STARTED</initialState>
+  <storeAttachments>true</storeAttachments>
+  <metaDataColumns/>
+  <attachmentProperties version="4.5.2">
+    <type>None</type>
+    <properties/>
+  </attachmentProperties>
+  <resourceIds class="linked-hash-map">
+    <entry>
+      <string>Default Resource</string>
+      <string>[Default Resource]</string>
+    </entry>
+  </resourceIds>
+</channelProperties>

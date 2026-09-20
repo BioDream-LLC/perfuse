@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: true
+
+      # gofmt must already be clean. Formatting in CI hides the diff from the
+      # person who caused it.
+      - name: gofmt
+        run: |
+          if [ -n "$(gofmt -l cmd internal)" ]; then
+            echo "these files need gofmt:"
+            gofmt -l cmd internal
+            gofmt -d cmd internal
+            exit 1
+          fi
+
+      # vet and the race detector both run inside check-go, through the Makefile, so
+      # the timeout is defined in exactly one place.
+      #
+      # This step used to duplicate the test command with its own 120s budget while
+      # the Makefile allowed 300s. The suite passed locally and timed out here, and
+      # the failure read "panic: test timed out" beside whichever test happened to be
+      # in flight - which was not where the time was going.
+      #
+      # The race detector is not optional: the MLLP server is concurrent, and a data
+      # race in message handling is a patient-safety defect.
+      - name: test and vet
+        run: make check-go
+
+      - name: build
+        run: go build ./...
+
+  cross:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: true
+
+      # CGO_ENABLED=0 is the point: every target is a single static binary with
+      # no runtime to install. If this ever needs cgo, that property is gone.
+      - name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+        env:
+          CGO_ENABLED: '0'
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -trimpath -ldflags "-s -w" -o /dev/null ./cmd/perfuse

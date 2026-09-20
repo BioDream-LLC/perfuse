@@ -1,0 +1,58 @@
+<com.mirth.connect.connectors.jdbc.DatabaseReceiverProperties version="4.5.2">
+  <pollConnectorProperties version="4.5.2">
+    <pollingType>INTERVAL</pollingType>
+    <pollOnStart>false</pollOnStart>
+    <pollingFrequency>5000</pollingFrequency>
+    <pollingHour>0</pollingHour>
+    <pollingMinute>0</pollingMinute>
+    <cronJobs/>
+    <pollConnectorPropertiesAdvanced>
+      <weekly>true</weekly>
+      <inactiveDays>
+        <boolean>false</boolean>
+        <boolean>false</boolean>
+        <boolean>false</boolean>
+        <boolean>false</boolean>
+        <boolean>false</boolean>
+        <boolean>false</boolean>
+        <boolean>false</boolean>
+        <boolean>false</boolean>
+      </inactiveDays>
+      <dayOfMonth>1</dayOfMonth>
+      <allDay>true</allDay>
+      <startingHour>8</startingHour>
+      <startingMinute>0</startingMinute>
+      <endingHour>17</endingHour>
+      <endingMinute>0</endingMinute>
+    </pollConnectorPropertiesAdvanced>
+  </pollConnectorProperties>
+  <sourceConnectorProperties version="4.5.2">
+    <responseVariable>None</responseVariable>
+    <respondAfterProcessing>true</respondAfterProcessing>
+    <processBatch>false</processBatch>
+    <firstResponse>false</firstResponse>
+    <processingThreads>1</processingThreads>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+    <queueBufferSize>0</queueBufferSize>
+  </sourceConnectorProperties>
+  <driver>Please Select One</driver>
+  <url></url>
+  <username></username>
+  <password></password>
+  <select></select>
+  <update></update>
+  <useScript>false</useScript>
+  <aggregateResults>false</aggregateResults>
+  <cacheResults>true</cacheResults>
+  <keepConnectionOpen>true</keepConnectionOpen>
+  <updateMode>1</updateMode>
+  <retryCount>3</retryCount>
+  <retryInterval>10000</retryInterval>
+  <fetchSize>1000</fetchSize>
+  <encoding>DEFAULT_ENCODING</encoding>
+</com.mirth.connect.connectors.jdbc.DatabaseReceiverProperties>

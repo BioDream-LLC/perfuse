@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 400" width="1180" height="400" role="img"
+     aria-label="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other.">
+  <title>How Perfuse sits between systems</title>
+
+  <defs>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+
+    <!-- Absolute coordinates, because a gradient in objectBoundingBox units collapses on a horizontal line - the
+         bounding box has no height, so the stroke does not paint and only the arrowheads appear. -->
+    <linearGradient id="flowLine" gradientUnits="userSpaceOnUse" x1="180" y1="0" x2="1000" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+
+    <linearGradient id="inbox" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+
+    <linearGradient id="outbox" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0fdfa"/>
+      <stop offset="100%" stop-color="#ccfbf1"/>
+    </linearGradient>
+
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3b82f6"/>
+    </marker>
+
+    <!-- One label size throughout, 15px, matching every other image in this project. The drawing was built with six
+         sizes, the smallest at 10px, which is unreadable once the image is scaled to a text column. Only the engine's
+         own name is larger, because it titles the drawing rather than labelling a part of it. -->
+    <style>
+      .box   { font: 600 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #0f172a; }
+      .under { font: 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #64748b; }
+      .proto { font: 700 15px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #2563eb; }
+      .name  { font: 800 34px system-ui, -apple-system, Segoe UI, sans-serif; fill: #f8fafc; letter-spacing: .28em; }
+      .stage { font: 600 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #e2e8f0; }
+      .inner { font: 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #94a3b8; }
+      .foot  { font: 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #64748b; }
+      .wire  { stroke: url(#flowLine); stroke-width: 2.6; fill: none; marker-end: url(#tip); }
+    </style>
+  </defs>
+
+  <!-- Sources -->
+  <g filter="url(#lift)">
+    <rect x="8"  y="36"  width="196" height="62" rx="12" fill="url(#inbox)" stroke="#cbd5e1"/>
+    <rect x="8"  y="146" width="196" height="62" rx="12" fill="url(#inbox)" stroke="#cbd5e1"/>
+    <rect x="8"  y="256" width="196" height="62" rx="12" fill="url(#inbox)" stroke="#cbd5e1"/>
+  </g>
+  <text class="box"   x="106" y="63"  text-anchor="middle">Lab system</text>
+  <text class="under" x="106" y="85"  text-anchor="middle">results, orders</text>
+  <text class="box"   x="106" y="173" text-anchor="middle">Radiology</text>
+  <text class="under" x="106" y="195" text-anchor="middle">studies, reports</text>
+  <text class="box"   x="106" y="283" text-anchor="middle">Payer</text>
+  <text class="under" x="106" y="305" text-anchor="middle">claims, eligibility</text>
+
+  <!-- Inbound -->
+  <path class="wire" d="M204 67  H322"/>
+  <path class="wire" d="M204 177 H322"/>
+  <path class="wire" d="M204 287 H322"/>
+  <text class="proto" x="263" y="58"  text-anchor="middle">MLLP</text>
+  <text class="proto" x="263" y="168" text-anchor="middle">DICOM</text>
+  <text class="proto" x="263" y="278" text-anchor="middle">X12</text>
+
+  <!-- The engine -->
+  <g filter="url(#lift)">
+    <rect x="326" y="28" width="528" height="300" rx="22" fill="url(#core)"/>
+  </g>
+  <rect x="326" y="28" width="528" height="300" rx="22" fill="none" stroke="url(#flow)" stroke-width="1.8"
+        opacity="0.85" filter="url(#glow)"/>
+
+  <text class="name" x="595" y="86" text-anchor="middle">PERFUSE</text>
+
+  <!-- The pipeline -->
+  <line x1="386" y1="152" x2="800" y2="152" stroke="#1e293b" stroke-width="6" stroke-linecap="round"/>
+  <line x1="386" y1="152" x2="800" y2="152" stroke="url(#flow)" stroke-width="2.6" stroke-linecap="round"
+        filter="url(#glow)" opacity="0.95"/>
+
+  <g fill="#0f172a" stroke="url(#flow)" stroke-width="2.2">
+    <circle cx="386" cy="152" r="7"/>
+    <circle cx="489" cy="152" r="7"/>
+    <circle cx="593" cy="152" r="7"/>
+    <circle cx="696" cy="152" r="7"/>
+    <circle cx="800" cy="152" r="7"/>
+  </g>
+
+  <text class="stage" x="386" y="186" text-anchor="middle">parse</text>
+  <text class="stage" x="489" y="186" text-anchor="middle">filter</text>
+  <text class="stage" x="593" y="186" text-anchor="middle">transform</text>
+  <text class="stage" x="696" y="186" text-anchor="middle">queue</text>
+  <text class="stage" x="800" y="186" text-anchor="middle">deliver</text>
+
+  <g class="inner" text-anchor="middle">
+    <text x="595" y="232">durable on-disk queue · shadow mode · feed contracts</text>
+    <text x="595" y="258">alerts · audit log · metrics · message store</text>
+    <text x="595" y="296" fill="#64748b">31 MB at rest · one static binary · no JVM</text>
+  </g>
+
+  <!-- Outbound -->
+  <path class="wire" d="M854 67  H972"/>
+  <path class="wire" d="M854 177 H972"/>
+  <path class="wire" d="M854 287 H972"/>
+  <text class="proto" x="913" y="58"  text-anchor="middle">FHIR</text>
+  <text class="proto" x="913" y="168" text-anchor="middle">MLLP</text>
+  <text class="proto" x="913" y="278" text-anchor="middle">SFTP</text>
+
+  <!-- Destinations -->
+  <g filter="url(#lift)">
+    <rect x="976" y="36"  width="196" height="62" rx="12" fill="url(#outbox)" stroke="#99f6e4"/>
+    <rect x="976" y="146" width="196" height="62" rx="12" fill="url(#outbox)" stroke="#99f6e4"/>
+    <rect x="976" y="256" width="196" height="62" rx="12" fill="url(#outbox)" stroke="#99f6e4"/>
+  </g>
+  <text class="box"   x="1074" y="63"  text-anchor="middle">EHR / API</text>
+  <text class="under" x="1074" y="85"  text-anchor="middle">R4, R4B, R5</text>
+  <text class="box"   x="1074" y="173" text-anchor="middle">Downstream</text>
+  <text class="under" x="1074" y="195" text-anchor="middle">any v2 receiver</text>
+  <text class="box"   x="1074" y="283" text-anchor="middle">Archive</text>
+  <text class="under" x="1074" y="305" text-anchor="middle">files, S3, database</text>
+
+  <text class="foot" x="590" y="370" text-anchor="middle">
+    Anything that cannot be honoured is refused by name rather than approximated.
+  </text>
+</svg>
