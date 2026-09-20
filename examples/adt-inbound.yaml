@@ -1,0 +1,61 @@
+# An example channel. Copy this and edit it.
+#
+# Everything here is checked when the file loads, not when the first message
+# arrives: the filter is compiled, the addresses are parsed, and an unknown field
+# is an error rather than something silently ignored.
+#
+#   perfuse check examples/adt-inbound.yaml
+#   perfuse run   examples/adt-inbound.yaml
+
+name: adt-inbound
+description: >
+  Receives ADT from the hospital's interface engine, drops the identifier
+  updates we do not use, and forwards everything else to the patient registry
+  while archiving a copy locally.
+
+source:
+  type: mllp
+  listen: ":6661"
+
+  # MLLP has no authentication or encryption. Restrict access at the network
+  # layer; do not put this on an untrusted network.
+
+  # A hospital feed holds one connection open for months and goes quiet
+  # overnight, so there is no idle timeout by default. Set one only if something
+  # in between is reaping connections.
+  # idle_timeout: 0
+
+  ack:
+    # on_delivery means an AA is only sent once every destination has the
+    # message, so the acknowledgement is a promise that is actually kept.
+    # on_receipt is faster and means an acknowledged message can still be lost
+    # if this process dies with work queued.
+    when: on_delivery
+
+    # How this engine identifies itself in MSH-3 and MSH-4. Leave both out to
+    # mirror the original receiver, which is what most senders expect.
+    application: PERFUSE
+    facility: MAIN
+
+# Messages that do not match are acknowledged and go no further. The sender did
+# nothing wrong, so it gets an AA; we are simply not interested.
+filter: MSH-9.1 == "ADT" and MSH-9.2 != "A28"
+
+destinations:
+  - name: registry
+    type: mllp
+    address: registry.internal:6661
+    timeout: 10s
+    retry:
+      attempts: 5
+      backoff: 1s
+      max_backoff: 1m
+
+  - name: archive
+    type: file
+    # Messages are appended MLLP-framed to one file per day and message type, so
+    # an archive replays byte for byte with `perfuse send`.
+    dir: ./archive
+    # A destination filter narrows what this one receives, on top of the channel
+    # filter above.
+    filter: MSH-9.2 in ["A01", "A03", "A04", "A08"]

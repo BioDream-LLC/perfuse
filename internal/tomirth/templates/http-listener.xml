@@ -1,0 +1,35 @@
+<com.mirth.connect.connectors.http.HttpReceiverProperties version="4.5.2">
+  <listenerConnectorProperties version="4.5.2">
+    <host>0.0.0.0</host>
+    <port>80</port>
+  </listenerConnectorProperties>
+  <sourceConnectorProperties version="4.5.2">
+    <responseVariable>None</responseVariable>
+    <respondAfterProcessing>true</respondAfterProcessing>
+    <processBatch>false</processBatch>
+    <firstResponse>false</firstResponse>
+    <processingThreads>1</processingThreads>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+    <queueBufferSize>0</queueBufferSize>
+  </sourceConnectorProperties>
+  <xmlBody>false</xmlBody>
+  <parseMultipart>true</parseMultipart>
+  <includeMetadata>false</includeMetadata>
+  <binaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</binaryMimeTypes>
+  <binaryMimeTypesRegex>true</binaryMimeTypesRegex>
+  <responseContentType>text/plain</responseContentType>
+  <responseDataTypeBinary>false</responseDataTypeBinary>
+  <responseStatusCode></responseStatusCode>
+  <responseHeaders class="linked-hash-map"/>
+  <responseHeadersVariable></responseHeadersVariable>
+  <useResponseHeadersVariable>false</useResponseHeadersVariable>
+  <charset>UTF-8</charset>
+  <contextPath></contextPath>
+  <timeout>30000</timeout>
+  <staticResources/>
+</com.mirth.connect.connectors.http.HttpReceiverProperties>

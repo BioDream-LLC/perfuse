@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Perfuse">
+  <title>Perfuse</title>
+  <desc>A waveform passing through a channel, drawn as three lanes converging into one.</desc>
+
+  <defs>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="55%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="88" height="88" rx="20" fill="#0f172a"/>
+  <rect x="4.75" y="4.75" width="86.5" height="86.5" rx="19.25" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- Three feeds arriving, converging into one delivery: the shape of an integration engine. -->
+  <g fill="none" stroke="url(#flow)" stroke-width="3.5" stroke-linecap="round">
+    <path d="M18 30 H34 Q44 30 46 40 L48 48"/>
+    <path d="M18 48 H46"/>
+    <path d="M18 66 H34 Q44 66 46 56 L48 48"/>
+    <path d="M48 48 H62"/>
+  </g>
+
+  <!-- The pulse. A message is a waveform, and this is the one thing on the mark that moves. -->
+  <path d="M60 48 h5 l3.5 -13 l5 26 l4 -13 H82" fill="none" stroke="#e2e8f0" stroke-width="3.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g fill="url(#flow)">
+    <circle cx="18" cy="30" r="3.5"/>
+    <circle cx="18" cy="48" r="3.5"/>
+    <circle cx="18" cy="66" r="3.5"/>
+  </g>
+</svg>
