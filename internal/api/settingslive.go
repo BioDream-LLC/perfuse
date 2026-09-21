@@ -21,6 +21,7 @@ var liveSettings = map[string]bool{
 	"data.retentionDays": true,
 	"data.storePayloads": true,
 	"data.payloadDays":   true,
+	"data.indexIdentity": true,
 
 	// Read through a function field on the user store, assigned in serve.go, at the moment a session is created
 	// or refreshed. Sessions already issued keep the expiry they were given.

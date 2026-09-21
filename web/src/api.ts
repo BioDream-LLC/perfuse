@@ -613,6 +613,29 @@ export interface GeneratedCorpus {
   note: string
 }
 
+/** One message that matched a patient search, with the reason it matched. */
+export interface IdentityMatch {
+  message: StoredMessage
+  /** Which sort of identifier was hit, so a page of similar messages says why each is here. */
+  matchedKind: string
+  matchedValue: string
+}
+
+export interface IdentitySearchResult {
+  matches: IdentityMatch[]
+  total: number
+  /**
+   * Whether identity indexing is switched on at all.
+   *
+   * Without this an empty result is ambiguous between "no message mentions that patient" and
+   * "nothing was ever indexed here", and those lead to opposite conclusions. The console shows
+   * a different message for each.
+   */
+  indexed: boolean
+  /** The kinds that can be searched, from the server, so the filter cannot drift from it. */
+  kinds: string[]
+}
+
 export interface ContentSearchResult {
   matches: StoredMessage[]
   examined: number
@@ -1012,6 +1035,22 @@ export const api = {
     examine?: number
     limit?: number
   }) => request<ContentSearchResult>('POST', '/api/messages/search', body),
+
+  // Finds a message by an identifier - an MRN, a name, a date of birth, an accession, a claim
+  // number - whatever format the message arrived in. An index lookup rather than a scan, because
+  // the identifiers were extracted when each message was recorded.
+  //
+  // A POST, so the term is not written into every proxy log and browser history between here and
+  // the server. Nobody has decided those may hold patient identifiers.
+  findMessages: (body: {
+    term: string
+    kind?: string
+    channel?: string
+    since?: string
+    until?: string
+    limit?: number
+    offset?: number
+  }) => request<IdentitySearchResult>('POST', '/api/messages/find', body),
 
   // Asks whether the form can represent an existing channel file. A refusal is a 200 carrying the
   // reason, because "no, because of this" is a successful answer to that question.

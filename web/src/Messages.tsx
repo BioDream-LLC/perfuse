@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ContentSearch } from './ContentSearch'
+import { FindPatient } from './FindPatient'
 import { TracePanel } from './TracePanel'
 import { useSelector } from 'react-redux'
 import { api } from './api'
@@ -167,6 +168,19 @@ export function Messages() {
         that one of them can take a moment and can only reach part of the history, and somebody would
         read a partial answer as a complete one.
       */}
+      {/*
+        Finding a patient comes first, because it is the commoner question and the one that needs
+        no knowledge of any format. The panel below it is more powerful and asks more of the
+        reader; somebody arriving with an MRN in their hand should not have to read past an
+        expression language to find the box that takes it.
+      */}
+      <Section
+        title="Find a patient's messages"
+        description="Type an MRN, a name, a date of birth or an accession number. Works across HL7 v2, FHIR, DICOM and X12 without naming a field in any of them."
+      >
+        <FindPatient onOpen={(id) => setSelected(id)} />
+      </Section>
+
       <Section
         title="Search inside the messages"
         description="Ask a question about the content rather than the metadata, in the same language channel filters use."

@@ -93,6 +93,9 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"store message contents as well as their outcomes; turn this off where PHI must not be held at rest")
 	retention := fset.Int("retention-days", 30,
 		"how long to keep recorded messages; 0 keeps them for ever, which will eventually fill the disk")
+	indexIdentity := fset.Bool("index-identity", true,
+		"index patient identifiers from message contents so a message can be found by MRN, name or "+
+			"accession in any format; has no effect when -store-payloads is off")
 
 	// The scrape endpoint was unauthenticated, which is the convention and was fine when Perfuse ran one operator's own
 	// channels. On a shared server a metric label names a channel and a channel name usually names the system at the
@@ -366,6 +369,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		}
 		messages.RetentionDays = *retention
 		messages.StorePayloads = *storePayloads
+		messages.IndexIdentity = *indexIdentity
 
 		// Pointed at the settings store so a change through the interface takes effect without a restart.
 		//
@@ -382,6 +386,9 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 			messages.PayloadDaysFn = func() int {
 				return settingsStore.Int("data.payloadDays")
 			}
+			messages.IndexIdentityFn = func() bool {
+				return settingsStore.Bool("data.indexIdentity")
+			}
 		}
 
 		if *retention <= 0 {
@@ -391,6 +398,17 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		}
 		if !*storePayloads {
 			log.Info("message contents will not be stored; outcomes and counts still are")
+		}
+		switch {
+		case !*storePayloads:
+			log.Info("patient identifiers will not be indexed, because message contents are not stored",
+				"detail", "searching by MRN or name needs the contents it reads them from")
+		case *indexIdentity:
+			log.Info("patient identifiers are indexed so messages can be found by MRN, name or accession",
+				"detail", "extracted from contents already stored here; -index-identity=false turns it off")
+		default:
+			log.Info("patient identifiers are not indexed; searching by MRN or name will find nothing",
+				"detail", "pass -index-identity to turn it on")
 		}
 	}
 

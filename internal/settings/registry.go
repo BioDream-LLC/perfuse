@@ -75,6 +75,29 @@ func Default() []Setting {
 			Sensitive: true,
 		},
 		{
+			Key:      "data.indexIdentity",
+			Group:    GroupData,
+			Subgroup: "What is kept",
+			Label:    "Index patient identifiers",
+			Help: "Lets a message be found by MRN, patient name, date of birth, accession or claim number, " +
+				"whatever format it arrived in, by reading those out of the contents when the message is " +
+				"recorded. Without it, finding a patient's messages means knowing where identity sits in " +
+				"each format. The identifiers are already stored inside the message contents; indexing " +
+				"them makes them quick to search and also makes them enumerable, so this is a decision " +
+				"about exposure and not only about speed. Has no effect when message contents are not kept.",
+			Kind:   KindBool,
+			Widget: WidgetToggle,
+			Effect: EffectLive,
+			// On, because the console already offers a substring search over message contents, so
+			// finding a patient by name is possible without this - just slow and inexact. What this
+			// changes is that the search is an index lookup and that it works across formats. A
+			// site that wants neither turns it off here, and one that keeps no contents at all never
+			// gets it regardless.
+			Default:   true,
+			Flag:      "index-identity",
+			Sensitive: true,
+		},
+		{
 			Key:      "data.retentionDays",
 			Group:    GroupData,
 			Subgroup: "How long it is kept",

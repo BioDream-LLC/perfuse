@@ -364,6 +364,12 @@ func (s *Server) Handler() http.Handler {
 	// no payloads. POST rather than GET because the expression carries quotes and operators and
 	// belongs in a body rather than a proxy log.
 	mux.Handle("POST /api/messages/search", s.require(store.RoleViewer, s.handleSearchMessages))
+
+	// Finding a message by an identifier rather than by a path into its format. A separate
+	// route from the expression search above because it answers a different question with a
+	// different body, and folding them together would mean one handler guessing which was
+	// meant from which fields were filled in.
+	mux.Handle("POST /api/messages/find", s.require(store.RoleViewer, s.handleIdentitySearch))
 	mux.Handle("GET /api/messages/{id}", s.require(store.RoleViewer, s.handleGetMessage))
 	mux.Handle("POST /api/messages/{id}/reprocess", s.require(store.RoleEditor, s.handleReprocessMessage))
 	mux.Handle("GET /api/stats", s.require(store.RoleViewer, s.handleStats))

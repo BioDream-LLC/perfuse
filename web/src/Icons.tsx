@@ -1712,6 +1712,7 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
 
   // Messages and queue.
   'Find a message': IconSearch,
+  "Find a patient's messages": IconPatient,
   'Search inside the messages': IconSearch,
   Messages: IconMessages,
   Destinations: IconSend,
