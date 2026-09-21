@@ -873,22 +873,18 @@ func (c *Channel) HasScripts() bool { return !c.Scripts.Empty() }
 // remember to update. Two guards on this project have already been quietly incomplete - one covered destinations but not
 // sources, and one could not see the failure it was grepping for - so a list that has to be maintained by hand next to
 // the thing it describes is treated as a liability here.
+// Two lists of the same thing had drifted apart. This one was hand-written and had fallen three
+// behind - it omitted cda, tcp and kafka - while allDestinationTypes stayed complete because
+// validation reads it and an omission there fails a channel immediately.
+//
+// The consequence was not cosmetic. engine.TestEveryDestinationTypeIsAccountedFor reads this list
+// to check that every destination is covered by the response-transformer honesty guard, so three
+// destinations were quietly exempt from it. That test's own comment says a guard with a blind spot
+// has bitten this project twice; it had one, for this reason, through this function.
+//
+// Copied rather than returned directly so a caller cannot reorder or truncate the package's list.
 func AllDestinationTypes() []DestinationType {
-	return []DestinationType{
-		DestinationMLLP,
-		DestinationHTTP,
-		DestinationFHIR,
-		DestinationSOAP,
-		DestinationFile,
-		DestinationDocument,
-		DestinationSFTP,
-		DestinationFTP,
-		DestinationS3,
-		DestinationSMTP,
-		DestinationDatabase,
-		DestinationChannel,
-		DestinationDICOM,
-		DestinationJavaScript,
-		DestinationBroker,
-	}
+	out := make([]DestinationType, len(allDestinationTypes))
+	copy(out, allDestinationTypes)
+	return out
 }

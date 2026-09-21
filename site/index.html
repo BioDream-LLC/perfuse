@@ -216,8 +216,9 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
     <tr><td>Memory at rest</td><td>31 MB</td><td>383 MB</td></tr>
     <tr><td>Runtime</td><td>None. One static binary</td><td>OpenJDK 17 plus an install</td></tr>
     <tr><td>Install size</td><td>One file</td><td>254 MB plus the JRE</td></tr>
-    <tr><td>Licence</td><td>Apache 2.0</td><td>Open core, commercial tiers</td></tr>
+    <tr><td>Licence</td><td>Apache 2.0, and staying that way</td><td>Closed source since 4.6 — commercial only</td></tr>
     <tr><td>Existing Mirth JavaScript</td><td>Runs unchanged, including E4X</td><td>Native</td></tr>
+    <tr><td>Kafka</td><td>Source and destination, keyed for per-patient ordering</td><td>No connector</td></tr>
     <tr><td>Config in the browser</td><td>Everything, by policy</td><td>Most things</td></tr>
     <tr><td>Production track record</td><td><b>None yet. v0.1.0</b></td><td>Twenty years, thousands of sites</td></tr>
   </tbody>
@@ -237,7 +238,7 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
 
 <ul>
   <li><b>Formats:</b> HL7 v2, FHIR R4/R4B/R5, DICOM, X12 837/835/270/271/278, C-CDA and CDA, HL7 v3, delimited and raw</li>
-  <li><b>Connections:</b> MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, message brokers, S3 — fourteen source types and seventeen destination types</li>
+  <li><b>Connections:</b> MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, <b>Kafka</b>, message brokers, S3 — sixteen source types and eighteen destination types</li>
   <li><b>A durable on-disk queue</b> that keeps ordering and survives a restart</li>
   <li><b>Shadow mode</b> — change a channel against real traffic while it delivers nothing</li>
   <li><b>Feed contracts</b> that tell you when a sender quietly changes something</li>
@@ -245,6 +246,8 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
   <li><b>Prior authorisation</b> to payer FHIR APIs, for CMS-0057</li>
   <li><b>eCR and ELR</b> public health reporting</li>
   <li><b>SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual TLS</b> for sign-on</li>
+  <li><b>Kafka</b> as a source and a destination, keyed so one patient's events stay in order while different patients go in parallel — Kafka orders records within a partition and nowhere else</li>
+  <li><b>Find a patient's messages by typing what you know</b> — an MRN, a name, a date of birth, an accession or a claim number — across HL7 v2, FHIR, DICOM and X12 at once, without naming a field in any of them</li>
   <li>Metrics, alerting, OTLP tracing, an audit log and a searchable message store</li>
 </ul>
 

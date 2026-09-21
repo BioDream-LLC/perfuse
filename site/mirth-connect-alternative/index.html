@@ -141,8 +141,10 @@
     interface engine touches.</li>
   <li><b>The footprint.</b> A 254 MB install plus OpenJDK, holding 383 MB of memory to do nothing, which is
     awkward on a small VM and absurd at the edge of a network.</li>
-  <li><b>The licence question.</b> Open core means the edition you evaluate and the edition you are quoted
-    for are not always the same one, and the boundary moves.</li>
+  <li><b>The licence.</b> This used to be a concern about open core and a moving boundary. As of
+    version 4.6 the boundary has moved all the way: NextGen no longer publishes open-source
+    releases, and Mirth Connect is commercial only. The free engine a great many hospitals are
+    already running has no upgrade path that stays free.</li>
   <li><b>Startup time.</b> An engine that needs to warm up is an engine you think twice about restarting
     during a working day.</li>
 </ul>
@@ -156,10 +158,12 @@
     <tr><td>Idle CPU</td><td>0.0%</td><td>0.13–0.27%</td></tr>
     <tr><td>Runtime required</td><td>None. One static binary</td><td>OpenJDK 17</td></tr>
     <tr><td>Install</td><td>Copy one file</td><td>254 MB installer plus the JRE</td></tr>
-    <tr><td>Licence</td><td>Apache 2.0, no tiers</td><td>Open core with commercial editions</td></tr>
+    <tr><td>Licence</td><td>Apache 2.0, no tiers</td><td>Commercial only since 4.6</td></tr>
     <tr><td>Existing Mirth JavaScript</td><td>Runs unchanged, including E4X</td><td>Native</td></tr>
     <tr><td>Configuration in the browser</td><td>Everything, as a rule the project holds itself to</td><td>Most things</td></tr>
     <tr><td>HL7 v2, FHIR, DICOM, X12, CDA</td><td>All, in the one binary</td><td>HL7 v2 and FHIR core; others via extensions</td></tr>
+    <tr><td>Kafka</td><td>Source and destination, keyed for per-patient ordering</td><td>No connector</td></tr>
+    <tr><td>Find a patient across formats</td><td>One box — MRN, name, date of birth, accession — across HL7 v2, FHIR, DICOM and X12</td><td>Search by metadata, or by hand per format</td></tr>
     <tr><td>Production track record</td><td><b>None yet. v0.1.0</b></td><td>Twenty years, thousands of sites</td></tr>
   </tbody>
 </table>

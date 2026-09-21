@@ -31,6 +31,9 @@ var respondingSenders = map[config.DestinationType]Sender{
 	config.DestinationDICOM:      (*DICOMSender)(nil),
 	config.DestinationJavaScript: (*JavaScriptSender)(nil),
 	config.DestinationBroker:     (*BrokerSender)(nil),
+	config.DestinationCDA:        (*CDASender)(nil),
+	config.DestinationTCP:        (*TCPSender)(nil),
+	config.DestinationKafka:      (*KafkaSender)(nil),
 }
 
 // TestTheResponseTransformerListMatchesReality is a drift guard.

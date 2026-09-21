@@ -22,8 +22,8 @@ installer, no separate asset directory.
 - **Messages are not lost when a receiver goes down.** A durable queue keeps them
   on disk, in order, and delivers when it comes back. See [The queue](#the-queue).
 - **Connectors that match what hospitals actually run:** MLLP, files, HTTP,
-  databases, SFTP, JavaScript Reader and message brokers, in both directions.
-  See [Databases](#databases) and [SFTP](#sftp).
+  databases, SFTP, JavaScript Reader, Kafka and message brokers, in both
+  directions. See [Databases](#databases) and [SFTP](#sftp).
 - **Alerts tell you, rather than waiting to be found.** See [Alerts](#alerts).
 - **Shadow mode** runs a candidate version of a channel beside the live one on real
   traffic and shows exactly where they differ, without delivering anything. See
@@ -1292,6 +1292,159 @@ from the sending system and it ends up in a path; without that, a message carryi
 because MSH can appear inside a free-text field and an unframed multi-message file
 cannot be split again reliably.
 
+## Kafka
+
+A health system with an event backbone has a Kafka one, and the services built in
+the last decade publish to it rather than to a JMS broker. Perfuse reads clinical
+messages off topics and publishes them onto topics, and deliberately does nothing
+else: windowing, joins, stream processing, schema registries and consumer-group
+tooling all stay in Kafka's ecosystem. The intent is to be the healthcare-aware
+edge of somebody else's event platform, not to compete with one.
+
+The existing STOMP broker connector is a different thing and both are kept. STOMP reaches ActiveMQ, Artemis and RabbitMQ — the brokers a hospital
+already ran, and what Mirth's JMS Reader talked to. Kafka is not a broker in that
+sense, and the differences are the ones that decide whether a clinical feed is safe.
+
+### As a source
+
+```yaml
+name: adt-from-kafka
+source:
+  type: kafka
+  kafka:
+    brokers: [kafka-1.hospital.local:9092, kafka-2.hospital.local:9092]
+    topics: [adt.events]
+    group: perfuse-adt
+destinations:
+  - name: to-the-registry
+    type: mllp
+    address: registry.hospital.local:2575
+```
+
+`brokers` is a list because one bootstrap address is a single point of failure for
+starting up: the cluster survives losing it and a channel pointed only at it would
+not.
+
+`group` is **required and never generated**. It is what remembers how far this
+channel has read. A generated name would start from scratch on every restart and
+leave the previous group behind holding committed offsets nobody reads. Requiring it
+makes somebody name the thing that has to stay the same. Two channels sharing one
+group split the traffic between them, which presents as messages going missing.
+
+`from_beginning` is off by default. A channel pointed at a topic carrying two years
+of history would otherwise replay two years of patient events into a live system on
+the day it was switched on — and the first person to discover that would be doing it
+in production, because production is where the topic with the history lives.
+
+### Ordering, which is the part that matters
+
+Kafka guarantees order **within a partition and nowhere else.** Records that share a
+key always land in the same partition. So keying on the patient identifier keeps one
+patient's events in sequence while letting different patients proceed in parallel:
+
+```yaml
+destinations:
+  - name: to-the-bus
+    type: kafka
+    kafka:
+      brokers: [kafka-1.hospital.local:9092]
+      topic: adt.events
+      key: PID-3.1
+```
+
+Without a key there is no guarantee at all. It is worth being precise about the
+failure, because the obvious description is wrong: measured against a real broker,
+thirty unkeyed records went to **one** partition rather than spreading, because the
+client keeps a batch together and chooses a new partition between batches. So an
+unkeyed feed appears ordered, stays ordered through testing, and then reorders at a
+batch boundary nobody can see. An A03 discharge read before the A01 admission that
+preceded it, intermittently, under load. That is worse than failing consistently,
+and it is why `perfuse check` names the key or says plainly that ordering is not
+guaranteed.
+
+The key accepts a bare HL7 path (`PID-3.1`) or the brace form the other senders use
+(`{PID-3.1}-{MSH-4}`). A message that cannot be parsed is published unkeyed rather
+than refused: a partitioning hint should not become a delivery failure.
+
+### Losing a message versus seeing it twice
+
+Kafka has no per-message acknowledgement. A consumer group records a position per
+partition, and committing that position means "everything up to here is done". So
+Perfuse handles a batch in order and commits after the whole batch.
+
+`commit_after_delivery` defaults to on and should stay on. With it on, a crash
+mid-batch redelivers the messages that had already been handled — duplicates, which
+HL7 receivers are built to absorb. With it off, a crash between the commit and the
+delivery loses the message with nothing anywhere recording that it existed. A
+duplicate A08 is a nuisance; a lab result that silently never arrived is a patient
+safety event.
+
+The setting is a pointer internally with a resolver, so its **absence** means the
+safe value. A plain boolean would have made the zero value the dangerous one, and a
+channel file written without the line would have committed on read.
+
+### Acknowledgement and compression
+
+`acks` defaults to `all`, which waits for every in-sync replica and is the only
+setting that survives a broker failing between the write and the replication.
+`leader` waits for one. `none` does not wait and will lose messages; it exists
+because somebody moving non-clinical telemetry may legitimately want it, and
+refusing it outright would mean they wrote their own producer instead. Choosing
+anything other than `all` also disables idempotent writes, so duplicate suppression
+goes with it — named in the configuration rather than discovered.
+
+`compression` defaults to `snappy`. HL7 is highly compressible text and the wire is
+usually the constraint; snappy is the cheapest in CPU, which matters on the delivery
+path. `gzip`, `lz4`, `zstd` and `none` are accepted.
+
+### Authentication
+
+`sasl` supports `plain`, `scram-sha-256` and `scram-sha-512`. PLAIN sends the
+password readable on the wire and belongs with TLS; SCRAM does not. The password
+accepts `${ENV}` references like every other secret here, so a cluster credential
+need not be written into a channel file.
+
+A cluster that cannot be reached is refused when the channel loads, not at the first
+patient message. Without that, a consumer starts cleanly, logs nothing useful, and
+looks exactly like a topic with no traffic — which gets diagnosed as a quiet feed.
+
+### Why this is a dependency
+
+STOMP, MLLP, DICOM and X12 are implemented here by hand. Kafka is not, and the
+reason is worth stating because the rule in this project is that a dependency has to
+buy capability rather than convenience.
+
+STOMP is a text protocol that fits in a few hundred lines. Kafka is a versioned
+binary protocol across roughly seventy request types, and the part that matters most
+— consumer groups — is a distributed coordination protocol with join, sync, heartbeat
+and offset-commit phases and a rebalance between them. Getting that subtly wrong does
+not produce an obvious failure. It produces a partition nobody is reading, or two
+consumers reading the same one. In a clinical feed those are a missing lab result and
+a duplicated order.
+
+`franz-go` was chosen because it is pure Go with no cgo, so the binary stays a single
+static file that cross-compiles to every target — checked against all six.
+
+### Verified against a real broker
+
+The Kafka tests run against an actual cluster rather than a fake, because the parts
+that can be got wrong are the parts a fake does not have:
+
+```sh
+KAFKA_ADDR=localhost:9092 go test ./internal/kafka/
+```
+
+They skip loudly without that variable, so the suite still passes on a machine with
+no Docker. What they assert: a message published comes back byte for byte, records
+sharing a key land in one partition in the order they were produced, uncommitted
+records are redelivered after rejoining, committed records are not, and an
+unreachable cluster is refused at connect.
+
+The keyed-ordering test creates its topic with a known partition count and fails if
+the fixture has fewer than two. That is not defensive padding. The first version of
+that test ran against a single-partition topic, where every record shares a partition
+whatever its key — so it passed while proving nothing.
+
 ## TLS
 
 ```yaml
@@ -1469,6 +1622,81 @@ matching on prose. The ones that matter most:
 Commented-out code is not reported, and a script using the JVM five times
 produces one finding, not five.
 
+## Finding a message
+
+Three ways, for three different questions.
+
+**By metadata** — channel, message type, trigger event, control ID, sender, outcome,
+a date range. Indexed, and what the message browser filters on.
+
+**By content** — a filter expression in the same language channel filters use, so
+what somebody works out during an incident pastes straight into a channel. This is a
+bounded scan rather than an index lookup, and it says how many messages it examined
+so a search that found nothing after looking at a thousand of forty thousand cannot
+be mistaken for a search that found nothing.
+
+**By who the message is about** — one box that takes an MRN, a patient name, a date
+of birth, an accession number or a claim number, and finds every message about it
+**whatever format it arrived in.**
+
+### Why the third one exists
+
+Identity lives somewhere different in every format. `PID-3` in an HL7 v2 admission,
+`Patient.identifier` in a FHIR resource, `(0010,0020)` in a DICOM instance, `NM109`
+of an `NM1*IL` loop in an 837 claim. Four vocabularies on one server, and during an
+incident the message being hunted might be in any of them. Both of the searches above
+require knowing which — and the expression search parses HL7 v2 only, so everything
+else counted as unreadable.
+
+So Perfuse maps a few concepts onto where each format keeps them: who the message is
+about, which visit, which study, which claim. The concepts are deliberately few,
+because they are what somebody has in their hand when they need to find a message,
+which is a number off a phone call or a name off a complaint.
+
+Values are matched as people type them, not as messages write them. A message holding
+`SAMPLESON^BRAVO` is found by typing `Sampleson, Bravo`; one holding `MRN-0012345` is
+found by typing `mrn0012345`. Leading zeros are kept deliberately, because two MRNs
+differing only by a leading zero are two patients and quietly merging them is worse
+than a search that needs the zero typed.
+
+X12 identity is read only from `NM1` loops whose qualifier means a person — `IL`,
+`QC` or `74`. Reading `NM109` from whichever `NM1` comes first would index a
+submitter ID and a billing provider's NPI as patient identifiers, which is both a
+wrong answer to a patient search and a provider's tax ID written into a patient
+index.
+
+### It is a privacy decision, and it is optional
+
+Identifiers are extracted when a message is recorded and stored in an indexed table,
+which is what makes the search an index lookup rather than a scan of every payload.
+
+Those identifiers were already in the database, inside the message contents. Indexing
+them adds no data — and it does make them **enumerable**, and a store that could only
+be grepped for a number somebody already had can now be asked to list patients. That
+is a change in exposure and it is a decision for the site, not for the software.
+
+`-index-identity` switches it, and so does **Index patient identifiers** under
+Settings → Data, without a restart. It is refused outright when message contents are
+not stored, because turning that off is how a site says it cannot hold clinical
+content at rest, and writing patient names into an index at the same time would
+retain exactly what was refused.
+
+Every search is written to the audit log **with the term**. A log entry recording
+that somebody ran a patient search cannot answer the question an audit asks, which is
+who looked up whom. So the audit trail holds patient identifiers deliberately, by the
+same reasoning that requires the trail at all. Searches that find nothing are
+recorded too: working down a list of names to see which ones a server has heard of is
+exactly what an audit exists to reveal, and recording only the matches would hide it.
+
+### An empty result says which kind of empty it is
+
+"No message mentions this patient" is a statement about the traffic. "Nothing has
+been indexed here" is a statement about a setting. Showing the first when the second
+is true tells somebody a patient was never seen, which is a clinical conclusion drawn
+from a checkbox — and it is the failure that will actually happen, because indexing
+only covers messages recorded after it was switched on. Every response carries
+whether the index exists, and the console says something different for each.
+
 ## Shadow mode
 
 The question that makes interface work frightening is how you know a change is safe.
@@ -1592,13 +1820,23 @@ FHIR resources; never a channel.
 
 **One static binary, and dependencies chosen deliberately.** No JVM, no ODBC layer,
 no native client library to install on a hospital server. Every dependency is pure
-Go, which is what makes that possible: eight direct, three of which are the database
-drivers. That number went up from four when the database connectors landed, and it
-was the right trade — an interface engine that cannot reach the hospital's SQL Server
+Go, which is what makes that possible: 15 direct, three of which are the database
+drivers. That number went up from four when the database connectors landed and again
+when Kafka did, and both were the right trade — an interface engine that cannot reach
+the hospital's SQL Server, or the event backbone the rest of the estate publishes to,
 is not a replacement for one that can. Where a dependency would buy convenience
 rather than capability it is refused: alerting is webhook-only for that reason.
 `lib/pq` was chosen over `pgx` because only `database/sql` is ever used and pgx's
-connection pool would be dead weight.
+connection pool would be dead weight. `franz-go` was chosen over a librdkafka
+wrapper because it is pure Go, and over hand-writing the protocol — which is what
+STOMP, MLLP, DICOM and X12 got here — because Kafka's consumer-group protocol is
+distributed coordination, and getting it subtly wrong yields a partition nobody reads
+or two consumers reading one rather than an obvious failure.
+
+This paragraph said "eight direct" for several months while `go.mod` had thirteen,
+in the passage arguing that dependencies are counted carefully. A test now compares
+the number against `go.mod`, because a claim about discipline that is itself
+out of date argues against itself.
 
 **Two readings of the same thing must be checked against each other.** A C-CDA
 carries its content as narrative and as codes. An acknowledgement says one thing

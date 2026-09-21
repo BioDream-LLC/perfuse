@@ -117,11 +117,12 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"></th><th align="left" valign="middle">14 source types, 16 destination types, in both directions</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"></th><th align="left" valign="middle">16 source types, 18 destination types, in both directions</th></tr></thead>
 <tbody>
-<tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · message broker (STOMP) · JavaScript Reader · serial</td></tr>
-<tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 · database · DICOM · FHIR · CDA · document · JavaScript · message broker (STOMP) · another channel</td></tr>
+<tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · JavaScript Reader · serial</td></tr>
+<tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</td></tr>
 <tr><td colspan="2">Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle and SQLite</b>, with the dialect checked when the channel is saved rather than at three in the morning</td></tr>
+<tr><td colspan="2"><b>Kafka</b>, keyed so one patient's events stay in order while different patients go in parallel — Kafka orders within a partition and nowhere else, and records sharing a key always share one. Offsets commit <b>after</b> a batch is handled, so a crash redelivers rather than loses</td></tr>
 <tr><td colspan="2">A <b>channel destination</b> so one feed can hand off to another without a network round trip</td></tr>
 <tr><td colspan="2">SFTP verified against <b>OpenSSH</b>, databases against <b>real PostgreSQL</b>, mutual TLS against <b>OpenSSL</b> — a client and server from the same library agreeing only proves they agree with each other</td></tr>
 </tbody></table>
@@ -205,6 +206,7 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2"><b>Alerts</b> that tell you rather than waiting to be found. Eleven rule kinds: error rate, no traffic, <b>below rhythm</b> (a feed quieter than its own history, which catches a half-broken sender that a threshold misses), channel down, queue depth, queue age, queue stuck, slow delivery, script errors, rows quarantined, and contract violations</td></tr>
 <tr><td colspan="2"><b>Distributed tracing</b> exported over OTLP</td></tr>
 <tr><td colspan="2">A <b>message store</b> with retention, full search, and search <i>inside</i> message content using the same expression language channels filter with — so anything that works in the search box can be pasted into a channel</td></tr>
+<tr><td colspan="2"><b>Find a patient's messages by typing what you know</b> — an MRN, a name, a date of birth, an accession or a claim number — across <b>HL7 v2, FHIR, DICOM and X12 at once</b>, without naming a field in any of them. Matched however it is written, so a message holding <code>SAMPLESON^BRAVO</code> is found by typing <i>Sampleson, Bravo</i>. An index lookup rather than a scan, switchable off, and every search is written to the audit trail with the term</td></tr>
 <tr><td colspan="2">Replay and reprocessing, because the message is stored <b>as received</b> before anything modifies it</td></tr>
 <tr><td colspan="2"><b>Fleet view</b> across multiple instances, and <b>multi-tenancy</b> with isolation rules</td></tr>
 <tr><td colspan="2">Runs as a <b>systemd unit, a launchd service or a Windows service</b>; <code>perfuse init</code> writes the right one</td></tr>
@@ -514,10 +516,49 @@ Full detail: [Migrating from Mirth](docs/reference.md#migrating-from-mirth) ·
 | **Shadow mode on live traffic** | Yes | No |
 | **Feed contracts / drift detection** | Yes | No |
 | **Export back to the other engine** | Yes — writes Mirth channel files a real Mirth accepts | N/A |
+| **Kafka** | Source and destination, keyed for per-patient ordering | No connector |
 | **Configuration from the web UI** | Everything | Most things |
 
 Perfuse is younger and has a smaller connector catalogue. Where a capability is missing it says so rather
 than approximating it.
+
+---
+
+## Measured against an independent gap analysis
+
+Someone designing a Mirth replacement published a [competitive capability
+analysis](https://github.com/MichaelLeeHobbs/mirthless/blob/main/docs/design/14-beyond-mirth-competitive-gaps.md):
+68 candidate features surveyed against 25 engines — Rhapsody, Cloverleaf, Corepoint, InterSystems
+IRIS for Health, Smile CDR, HAPI FHIR, MuleSoft, Boomi, Kafka, Apache Camel, NiFi, Temporal, Redox
+and others — each verified rather than assumed, producing 35 confirmed gaps ranked by priority.
+
+It is not about Perfuse. That is what makes it useful: it is an outside view of what a modern
+interface engine ought to have, written without reference to this one. Perfuse checked against its
+top ten:
+
+| Their recommendation | Perfuse |
+|---|---|
+| **#1** Silent-interface / SLA / heartbeat alerting — *"deadliest failure mode, cheapest win"* | Has it — eleven rule kinds, evaluated on a 30s schedule over a 5m window |
+| **#2** HA / clustering / failover | Fleet view across instances |
+| **#3** Keyed partitioning / per-patient ordering | **Stricter than proposed** — once anything queues for a destination, everything for it goes behind, and it is not configurable |
+| **#4** End-to-end lineage + tracing | Flow map with a scrubber, and OTLP export |
+| **#5** Interface test framework in CI | `perfuse test` |
+| **#6** Config-as-code / GitOps | Channels **are** YAML files in a directory — native, no plugin |
+| **#7** FHIR validation + bulk `$export` | Both built in |
+| **#8** AI-assisted mapping | A mapping engine with confidence scores — rules-based, no model, no network call |
+| **#9** Aggregator, wire-tap, DLQ | Shadow mode, queue retry, reprocess, replay |
+| **#10** OAuth2 credential vault | Partial — UDAP client-credentials for TEFCA |
+
+Two of those deserve a caveat rather than a tick. The OAuth2 row is genuinely partial: there is no
+general credential vault, only the TEFCA path. And #3 is a different trade rather than a better
+one — the strict rule costs throughput while a queue drains, which was accepted because the faster
+alternative is silently wrong.
+
+**The one clear gap was Kafka**, and this release closes it. The report's own advice for the whole
+streaming category was to ship a Kafka connector rather than build streaming internals, so that an
+engine becomes the healthcare-aware edge of an event platform instead of competing with one. That
+is exactly what the connector is: no windowing, no joins, no schema registry, no stream
+processing. Those stay in Kafka's ecosystem.
 
 ---
 
