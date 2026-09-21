@@ -37,7 +37,7 @@ func cmdInit(args []string, stdout, stderr io.Writer) error {
 		dir     = fs.String("dir", ".", "directory to set up")
 		system  = fs.String("service", "", "service definition to write: systemd, launchd, windows or none")
 		user    = fs.String("user", "perfuse", "account the service runs as (systemd only)")
-		addr    = fs.String("addr", "127.0.0.1:8443", "address the interface listens on")
+		addr    = fs.String("addr", defaultPlainAddr, "address the interface listens on")
 		force   = fs.Bool("force", false, "replace files that already exist")
 		example = fs.Bool("example", true, "write an example channel")
 	)

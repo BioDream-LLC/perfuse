@@ -40,11 +40,23 @@ import (
 	"github.com/biodream-llc/perfuse/internal/webauthn"
 )
 
+// Default addresses for the console.
+//
+// Two of them, because the port has to agree with the scheme. 8443 is an HTTPS port by
+// convention and browsers now act on that convention by trying TLS first, so serving plain
+// HTTP there produces a certificate error rather than a page. 8080 is the plain-HTTP
+// counterpart and carries no such expectation.
+const (
+	defaultPlainAddr = "127.0.0.1:8080"
+	defaultTLSAddr   = "127.0.0.1:8443"
+)
+
 func cmdServe(args []string, stdout, stderr io.Writer) error {
 	fset := flag.NewFlagSet("serve", flag.ContinueOnError)
 	fset.SetOutput(stderr)
 
-	addr := fset.String("addr", "127.0.0.1:8443", "address to serve the interface on")
+	addr := fset.String("addr", "", "address to serve the interface on "+
+		"(default "+defaultPlainAddr+", or "+defaultTLSAddr+" with -tls-cert)")
 	channelsDir := fset.String("channels", "./channels", "directory holding channel files")
 	allowMetadataEgress := fset.Bool("allow-metadata-egress", false,
 		"permit destinations pointed at cloud instance metadata addresses, which hold this machine's credentials")
@@ -232,6 +244,18 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	if (*certFile == "") != (*keyFile == "") {
 		return errors.New("-tls-cert and -tls-key must be given together")
 	}
+
+	// The default port follows the scheme, because a port number is a promise to a browser.
+	//
+	// This defaulted to 8443 whether or not TLS was configured, and 8443 means HTTPS to
+	// every convention and, increasingly, to browsers themselves: Firefox and Chrome both
+	// try HTTPS first now. So a first run printed http://127.0.0.1:8443, the browser
+	// upgraded it, got plain HTTP back, and showed SSL_ERROR_RX_RECORD_TOO_LONG - a
+	// security warning, on first launch, for a correctly working server. Reported by
+	// someone doing nothing but downloading the release and following the printed URL.
+	//
+	// An explicit -addr still wins, so anyone already pointing at 8443 is unaffected.
+	*addr = addressOrDefault(*addr, useTLS)
 
 	// Session cookies over plain HTTP on a routable address means anyone on the
 	// path can take a session. Refusing by default is the only way that decision
@@ -1140,6 +1164,17 @@ oidcDone:
 		}
 		return nil
 	}
+}
+
+// addressOrDefault returns given when set, and otherwise the default for the scheme.
+func addressOrDefault(given string, useTLS bool) string {
+	if given != "" {
+		return given
+	}
+	if useTLS {
+		return defaultTLSAddr
+	}
+	return defaultPlainAddr
 }
 
 func schemeFor(useTLS bool) string {

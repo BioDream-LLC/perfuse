@@ -64,7 +64,8 @@ a non-loopback address unless told to, which is the correct default and should n
 2. Upload everything in `dist/` — the archives, `SHA256SUMS` and `perfuse.cdx.json`.
 3. Check the download table in `README.md` points at the new tag. The links are literal URLs containing
    the version, so they do not follow a tag automatically.
-4. If a container image is published, build and push it; `README.md` mentions `ghcr.io/biodream-llc/perfuse`.
+4. No container image is published. The `Dockerfile` is in the repository and `README.md` tells
+   people to build it themselves, which is honest as long as nothing is pushed to a registry.
 
 ## What the v0.1.0 release could not verify
 

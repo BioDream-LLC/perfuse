@@ -283,8 +283,8 @@ produce its own with `perfuse sbom -json`.
 # Go 1.23 or newer
 go install github.com/biodream-llc/perfuse/cmd/perfuse@latest
 
-# Container — scratch-based, nothing inside but the binary
-docker run -p 8080:8080 ghcr.io/biodream-llc/perfuse:v0.1.0
+# Container — the Dockerfile is scratch-based, nothing inside but the binary
+docker build -t perfuse . && docker run -p 8080:8080 perfuse
 
 # From source
 git clone https://github.com/biodream-llc/perfuse && cd perfuse && make build

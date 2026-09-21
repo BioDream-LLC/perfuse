@@ -20,7 +20,7 @@ export default defineConfig({
     // cookies still work without CORS.
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8443',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: false,
       },
     },
