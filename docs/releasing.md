@@ -84,6 +84,29 @@ everybody assumes was checked.
   ActiveMQ. But no site has run clinical traffic through it. The README says so, and shadow mode exists so
   that nobody has to take its word.
 
+## Known flake: the Alerts widget sweep
+
+`every control on Alerts responds` in `web/e2e/widgets.spec.ts` fails roughly one run in four, with:
+
+```
+checkbox 0: would not click
+checkbox 0: clicked and stayed true
+```
+
+Diagnosed rather than retried. `Alerts.tsx` reloads on a fifteen-second interval and that test takes
+fourteen to thirty seconds, so a reload lands mid-test, React replaces the row, and the checkbox
+Playwright is holding is detached — the click then times out at five seconds and the state has not
+changed, which is exactly the pair of messages above.
+
+It is a harness race rather than a broken control: the same test passes on the next run, and the
+control works by hand. But it is not purely a test artefact either. A user clicking that checkbox at
+the moment the poll lands can have the click go nowhere, which suggests the list is keyed by
+something that changes on reload. Worth fixing at the source rather than by adding a retry.
+
+v0.1.1 was released with this failing, deliberately: 335 of 336 passed, the failure is on a view the
+release did not touch, and the release fixes a first-run defect that every Windows and macOS user
+hits. Written down so that decision is visible rather than assumed.
+
 ## Two conventions worth keeping
 
 **Documentation ships in the commit that changes the behaviour.** Twice in one day this project found
