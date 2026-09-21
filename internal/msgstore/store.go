@@ -128,6 +128,22 @@ type Store struct {
 	// a deployment that cannot hold PHI at rest needs.
 	StorePayloads bool
 
+	// IndexIdentity controls whether identifiers are extracted from payloads into a
+	// searchable index, so a message can be found by MRN or by name whatever format it
+	// arrived in.
+	//
+	// This is a privacy decision and not only a performance one. The identifiers are already
+	// in this database inside the payload column, so indexing them adds no data - but it does
+	// make them enumerable, and a database that could previously only be grepped for a
+	// number somebody already had can now be asked to list patients. That is a decision for
+	// the site.
+	//
+	// Independent of StorePayloads except in one direction, enforced in indexIdentity below:
+	// an installation that keeps no payloads is not given an identity index either, because
+	// there the extraction would be retaining clinical content that the site chose not to
+	// retain.
+	IndexIdentity bool
+
 	// PayloadDays is how long message bodies are kept, when set.
 	//
 	// Zero means half the retention window, which is what this did before the value
@@ -146,6 +162,7 @@ type Store struct {
 	RetentionDaysFn func() int
 	StorePayloadsFn func() bool
 	PayloadDaysFn   func() int
+	IndexIdentityFn func() bool
 }
 
 // payloadDays is how long to keep message bodies.
@@ -167,6 +184,22 @@ func (s *Store) payloadDays() int {
 	}
 
 	return maxInt(1, s.retentionDays()/2)
+}
+
+// indexIdentity reports whether to extract identifiers from payloads.
+//
+// Refused outright when payloads are not stored. Turning StorePayloads off is how a site says
+// it cannot hold clinical content at rest; writing patient names into an index at the same
+// time would defeat that, and it would do so quietly, which is worse. The stronger choice
+// wins.
+func (s *Store) indexIdentity() bool {
+	if !s.storePayloads() {
+		return false
+	}
+	if s.IndexIdentityFn != nil {
+		return s.IndexIdentityFn()
+	}
+	return s.IndexIdentity
 }
 
 // retentionDays is how many days to keep, from the live source if there is one.
@@ -279,6 +312,32 @@ var schema = []string{
 
 	`CREATE INDEX IF NOT EXISTS deliveries_message ON message_deliveries(message_id)`,
 	`CREATE INDEX IF NOT EXISTS deliveries_dest ON message_deliveries(destination, status)`,
+
+	// Identity extracted from the payload, so a message can be found by what somebody knows
+	// about it rather than by a path into whichever format it arrived in.
+	//
+	// A table rather than columns on messages, for two reasons. A patient has several
+	// identifiers at once - an MRN, an enterprise number, a payer member ID - and a message
+	// can concern more than one person, as a merge does. Squashing those into one column
+	// means matching by substring again, which is the thing this replaces.
+	//
+	// tenant_id is carried here rather than reached through the join. A scoped query that
+	// forgets it returns another organisation's patients, and the join is exactly where that
+	// is easy to forget.
+	`CREATE TABLE IF NOT EXISTS message_identity (
+		message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+		tenant_id  TEXT    NOT NULL DEFAULT 'main',
+		kind       TEXT    NOT NULL,
+		value      TEXT    NOT NULL,
+		norm       TEXT    NOT NULL
+	)`,
+
+	// norm leads the lookup index because that is what a search matches on: the value as
+	// typed, reduced the same way the stored one was. An index on value would not be used by
+	// a query on norm, and the point of extracting at record time is that this is an index
+	// hit rather than a scan.
+	`CREATE INDEX IF NOT EXISTS identity_lookup ON message_identity(norm, kind, tenant_id)`,
+	`CREATE INDEX IF NOT EXISTS identity_message ON message_identity(message_id)`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -357,6 +416,14 @@ func (s *Store) Record(ctx context.Context, m *Message) (int64, error) {
 			id, d.Destination, string(d.Status), d.Attempts, d.DurationMS, d.Error); err != nil {
 			return id, err
 		}
+	}
+
+	// Extracted from m.Raw rather than from raw, which is nil when payloads are not stored.
+	// The distinction does not arise in practice because indexIdentity refuses in that case,
+	// and using m.Raw here would silently index content the site asked not to keep if that
+	// rule were ever removed. So the guard is what decides, and it is asked first.
+	if s.indexIdentity() {
+		s.recordIdentity(ctx, id, tenantOrDefault(m.TenantID), m.Raw)
 	}
 
 	return id, nil
@@ -915,6 +982,20 @@ func (s *Store) Prune(ctx context.Context) (payloads, rows int64, err error) {
 	// connection pragma, so they are cleaned explicitly.
 	if _, err := s.db.ExecContext(ctx,
 		`DELETE FROM message_deliveries
+		 WHERE message_id NOT IN (SELECT id FROM messages)`); err != nil {
+		return payloads, rows, err
+	}
+
+	// Identity next, for the same reason and with a sharper edge. A message row deleted by
+	// retention while its extracted identifiers survive leaves a searchable index of patient
+	// names and MRNs belonging to messages the site has already decided not to keep - so the
+	// retention window would be deleting the evidence and keeping the identification.
+	//
+	// The declaration carries ON DELETE CASCADE and that is not what cleans this up. The note
+	// above says exactly why, and this table was written relying on the cascade anyway; a test
+	// asserting the rows were gone is what caught it.
+	if _, err := s.db.ExecContext(ctx,
+		`DELETE FROM message_identity
 		 WHERE message_id NOT IN (SELECT id FROM messages)`); err != nil {
 		return payloads, rows, err
 	}

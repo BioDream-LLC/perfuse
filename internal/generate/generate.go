@@ -21,6 +21,7 @@ package generate
 import (
 	"fmt"
 	"math/rand/v2"
+	"sort"
 	"strings"
 	"time"
 )
@@ -523,4 +524,22 @@ func (g *Generator) orm(p person, at time.Time, awkward string) Message {
 		At:        at,
 		Awkward:   awkward,
 	}
+}
+
+// SyntheticSurnames returns the family names this generator invents.
+//
+// Exported so the fixture check in internal/compliance can read them rather than keeping its
+// own copy. Two lists of the same names drift, and the way that drift presents is a guard
+// rejecting output produced by this repository's own generator - which is what happened: seven
+// of the eight names here were absent from that check, so writing a fixture from generate
+// output, the obvious thing to do, failed the build with a warning about real patient data.
+//
+// Sorted, because a caller printing them should not see a different order each run.
+func SyntheticSurnames() []string {
+	out := make([]string, 0, len(people))
+	for _, p := range people {
+		out = append(out, p.Family)
+	}
+	sort.Strings(out)
+	return out
 }

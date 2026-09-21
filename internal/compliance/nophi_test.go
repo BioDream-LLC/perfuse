@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	"github.com/biodream-llc/perfuse/internal/generate"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -44,6 +45,9 @@ var syntheticSurnames = map[string]bool{
 
 	// Boundary cases for field length and character handling, named after what they test.
 	"SHORT": true, "AVERYMUCHLONGERFAMILYNAMEINDEED": true, "N": true, "EVRARD": true,
+
+	// The rest come from generate.SyntheticSurnames, merged in by init below rather than
+	// copied here, so this check and the generator cannot disagree about what is synthetic.
 
 	// Structural values that appear where a name would, in templates and format strings.
 	"WRAPPED": true, "MULTI": true, "FIRST": true, "SECOND": true, "PREBUILT": true, "WINDOWS": true,
@@ -203,4 +207,17 @@ func TestNoRealTelephoneNumbersInFixtures(t *testing.T) {
 				"  Numbers with a 555 exchange are reserved for fiction; use one of those.", path, m[0])
 		}
 	})
+}
+
+// Every name the generator invents counts as synthetic here, read from the generator itself.
+//
+// Without this the two lists drift, and the drift presents as this check rejecting output
+// produced by this repository's own tooling. Seven of the eight names generate produces were
+// missing from the map above, so building a fixture out of perfuse generate output - the
+// obvious way to get realistic test data - failed the build claiming it might be real patient
+// data.
+func init() {
+	for _, name := range generate.SyntheticSurnames() {
+		syntheticSurnames[strings.ToUpper(name)] = true
+	}
 }
