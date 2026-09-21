@@ -1,0 +1,64 @@
+name: site
+
+# Publishes site/ to GitHub Pages, with docs/assets copied in so the page and the README share
+# one copy of every image rather than drifting apart.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'docs/assets/**'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A queued deploy replaces a pending one rather than stacking up.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp -R site/. _site/
+          mkdir -p _site/assets
+          cp -R docs/assets/. _site/assets/
+
+      - name: Check every local asset the page references actually exists
+        run: |
+          missing=0
+          # A page that silently 404s its own images looks broken to every visitor and fine in CI.
+          for ref in $(grep -oE '(src|href)="assets/[^"]+"' _site/index.html | sed 's/.*="//;s/"//' | sort -u); do
+            if [ ! -f "_site/$ref" ]; then
+              echo "missing: $ref"
+              missing=1
+            fi
+          done
+          [ "$missing" = "0" ] && echo "all referenced assets present"
+          exit $missing
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfuse — Open-source healthcare integration engine | HL7 v2, FHIR, DICOM, X12</title>
+<meta name="description" content="Perfuse is an open-source healthcare integration engine for HL7 v2, FHIR, DICOM, X12 and CDA. A single static binary, Apache 2.0, and an alternative to Mirth Connect that runs your existing Mirth JavaScript unchanged. 31 MB of memory at rest against Mirth's 383 MB.">
+<link rel="canonical" href="https://biodream-llc.github.io/perfuse/">
+<link rel="icon" type="image/svg+xml" href="assets/perfuse-logo.svg">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Perfuse — Open-source healthcare integration engine">
+<meta property="og:description" content="HL7 v2, FHIR, DICOM, X12 and CDA in one static binary. An Apache-2.0 alternative to Mirth Connect. Your Mirth JavaScript runs unchanged.">
+<meta property="og:image" content="https://biodream-llc.github.io/perfuse/assets/social-card.png">
+<meta property="og:url" content="https://biodream-llc.github.io/perfuse/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://biodream-llc.github.io/perfuse/assets/social-card.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Perfuse",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Healthcare integration engine",
+  "operatingSystem": "Linux, macOS, Windows",
+  "softwareVersion": "0.1.0",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "url": "https://github.com/BioDream-LLC/perfuse",
+  "downloadUrl": "https://github.com/BioDream-LLC/perfuse/releases/latest",
+  "author": { "@type": "Organization", "name": "BioDream LLC" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Open-source healthcare integration engine for HL7 v2, FHIR, DICOM, X12 and CDA, shipped as a single static binary."
+}
+</script>
+
+<style>
+  :root {
+    --bg: #ffffff; --ink: #0f172a; --dim: #475569; --faint: #64748b;
+    --line: #e2e8f0; --accent: #0369a1; --panel: #f8fafc;
+    --dark: #0b1220; --dark-ink: #e2e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220; --ink: #e8eef6; --dim: #a8b6c8; --faint: #8595aa;
+      --line: #1e293b; --accent: #7dd3fc; --panel: #0f172a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 22px; }
+  a { color: var(--accent); }
+
+  header { text-align: center; padding: 58px 0 10px; }
+  header img.mark { width: 76px; height: 76px; }
+  header img.word { width: 100%; max-width: 420px; margin: 20px 0 6px; }
+  h1 { margin: 0; font-size: 0; }            /* the wordmark carries the name */
+  .tagline { font-size: 21px; font-weight: 600; margin: 14px 0 8px; }
+  .sub { color: var(--dim); margin: 0 0 6px; }
+
+  .measure {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    margin: 26px 0 30px;
+  }
+  .measure div {
+    border: 1px solid var(--line); border-radius: 12px; padding: 11px 16px;
+    background: var(--panel); min-width: 150px;
+  }
+  .measure b { display: block; font-size: 19px; }
+  .measure span { color: var(--faint); font-size: 14px; }
+
+  .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 4px 0 14px; }
+  .buttons img { display: block; }
+  .note { color: var(--faint); font-size: 15px; text-align: center; }
+
+  h2 {
+    font-size: 25px; margin: 46px 0 14px; padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+  }
+  h3 { font-size: 18px; margin: 30px 0 8px; }
+  p { margin: 0 0 15px; }
+
+  pre {
+    background: var(--dark); color: var(--dark-ink); padding: 16px 18px;
+    border-radius: 11px; overflow-x: auto; font-size: 14px; line-height: 1.6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  pre .c { color: #7f9ab5; }
+  code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 5px;
+    padding: 1px 5px; font-size: 14.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 15.5px; }
+  th, td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); }
+
+  img.diagram { width: 100%; height: auto; margin: 10px 0 6px; }
+  figure { margin: 22px 0; }
+  figcaption { color: var(--faint); font-size: 14.5px; text-align: center; }
+
+  ul { padding-left: 21px; }
+  li { margin-bottom: 7px; }
+
+  .caution {
+    border: 1px solid var(--line); border-left: 4px solid #d97706;
+    background: var(--panel); border-radius: 0 11px 11px 0; padding: 14px 18px; margin: 22px 0;
+  }
+
+  footer {
+    margin-top: 60px; border-top: 1px solid var(--line); padding: 26px 0 50px;
+    color: var(--faint); font-size: 14.5px; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <img class="mark" src="assets/perfuse-logo.svg" alt="">
+  <h1><img class="word" src="assets/wordmark.svg" alt="Perfuse"></h1>
+  <p class="tagline">Open-source healthcare integration engine</p>
+  <p class="sub">HL7 v2 · FHIR · DICOM · X12 · CDA — in one static binary</p>
+  <p class="sub"><b>An Apache-2.0 alternative to Mirth Connect.</b> Your existing Mirth JavaScript runs unchanged.</p>
+
+  <div class="measure">
+    <div><b>31 MB</b><span>memory at rest, against Mirth's 383 MB</span></div>
+    <div><b>One file</b><span>no JVM, no installer, no database</span></div>
+    <div><b>Apache 2.0</b><span>no licence fee, ever</span></div>
+  </div>
+
+  <div class="buttons">
+    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.0/perfuse-linux-amd64.tar.gz"><img src="assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>
+    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.0/perfuse-darwin-arm64.tar.gz"><img src="assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>
+    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.0/perfuse-windows-amd64.zip"><img src="assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
+  </div>
+  <p class="note">
+    <a href="https://github.com/BioDream-LLC/perfuse/releases/latest">Intel Macs, ARM64 Linux, ARM64 Windows and checksums</a> ·
+    <a href="https://github.com/BioDream-LLC/perfuse">Source on GitHub</a>
+  </p>
+</header>
+
+<h2>What it is</h2>
+
+<p>
+  A lab sends results in HL7 v2. An imaging department speaks DICOM. A payer sends X12. The system receiving
+  all of it wants FHIR. Perfuse sits in the middle, parses each of them properly, transforms what needs
+  transforming, and delivers without losing anything.
+</p>
+
+<figure>
+  <img class="diagram" src="assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other.">
+</figure>
+
+<p>
+  It is written in Go, licensed under Apache 2.0, and runs on Linux, macOS and Windows with nothing installed
+  beside it. The web console is compiled into the binary, and <b>everything the configuration files can
+  express can also be done from the browser</b> — a feature reachable only from YAML is treated as a bug.
+</p>
+
+<h2>Try it against your own traffic without asking anyone</h2>
+
+<p>
+  You do not need a contract, a vendor relationship or anyone's approval to find out whether this works on
+  your messages. Add one destination to your existing Mirth channel that forwards a <b>copy</b> to Perfuse,
+  and give the Perfuse channel a directory as its <b>only</b> destination. Nothing reaches a downstream
+  system, because there is nothing else for it to send to.
+</p>
+
+<pre><code><span class="c"># 1. What would stop you, before you commit to anything</span>
+perfuse explain mirth-channel-export.xml
+
+<span class="c"># 2. Convert it</span>
+perfuse translate mirth-channel-export.xml -o channels/
+
+<span class="c"># 3. Run it beside Mirth on real traffic, delivering nothing to anyone</span>
+perfuse run channels/labs.yaml
+
+<span class="c"># 4. Prove the two engines agree, on your own messages</span>
+perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</code></pre>
+
+<p>
+  <code>perfuse compare</code> pairs the two directories by message control id and reports where they
+  disagree, <b>grouped by cause</b> — so three thousand messages differing for one reason are one finding,
+  not three thousand. Message content is withheld by default, because a report is a thing people paste into
+  tickets.
+</p>
+
+<p>
+  <code>perfuse explain</code> is worth running first. It tells you what converts cleanly, what converts with
+  caveats, and what does not convert at all — by name, not as a count. A migration that surprises you in week
+  three is worse than one that refuses on day one.
+</p>
+
+<h2>Against Mirth Connect</h2>
+
+<table>
+  <thead><tr><th></th><th>Perfuse</th><th>Mirth Connect</th></tr></thead>
+  <tbody>
+    <tr><td>Memory at rest</td><td>31 MB</td><td>383 MB</td></tr>
+    <tr><td>Runtime</td><td>None. One static binary</td><td>OpenJDK 17 plus an install</td></tr>
+    <tr><td>Install size</td><td>One file</td><td>254 MB plus the JRE</td></tr>
+    <tr><td>Licence</td><td>Apache 2.0</td><td>Open core, commercial tiers</td></tr>
+    <tr><td>Existing Mirth JavaScript</td><td>Runs unchanged, including E4X</td><td>Native</td></tr>
+    <tr><td>Config in the browser</td><td>Everything, by policy</td><td>Most things</td></tr>
+    <tr><td>Production track record</td><td><b>None yet. v0.1.0</b></td><td>Twenty years, thousands of sites</td></tr>
+  </tbody>
+</table>
+
+<div class="caution">
+  <p style="margin:0">
+    <b>That last row is the honest one.</b> Perfuse v0.1.0 has never processed production clinical traffic,
+    and the Windows and ARM64 Linux binaries have never been executed at all. Everything that
+    <a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/verification.md">was</a> verified is
+    recorded, and so is everything that was not. Evaluate it in parallel, against real messages, with the
+    incumbent still delivering — and decide from your own evidence rather than this page.
+  </p>
+</div>
+
+<h2>What it does</h2>
+
+<ul>
+  <li><b>Formats:</b> HL7 v2, FHIR R4/R4B/R5, DICOM, X12 837/835/270/271/278, C-CDA and CDA, HL7 v3, delimited and raw</li>
+  <li><b>Connections:</b> MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, message brokers, S3 — fourteen source types and seventeen destination types</li>
+  <li><b>A durable on-disk queue</b> that keeps ordering and survives a restart</li>
+  <li><b>Shadow mode</b> — change a channel against real traffic while it delivers nothing</li>
+  <li><b>Feed contracts</b> that tell you when a sender quietly changes something</li>
+  <li><b>TEFCA and UDAP</b> for exchanging records with organisations you have no direct connection to</li>
+  <li><b>Prior authorisation</b> to payer FHIR APIs, for CMS-0057</li>
+  <li><b>eCR and ELR</b> public health reporting</li>
+  <li><b>SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual TLS</b> for sign-on</li>
+  <li>Metrics, alerting, OTLP tracing, an audit log and a searchable message store</li>
+</ul>
+
+<p><a href="https://github.com/BioDream-LLC/perfuse#everything-it-does">The full itemised list is in the README</a>, fifteen areas, with the partial ones marked as partial.</p>
+
+<h2>Verified against real software, not mocks</h2>
+
+<p>
+  Interoperability claims are cheap. Perfuse's SAML was tested against real Keycloak and real Microsoft Entra,
+  its Mirth import against a real Mirth Connect export, its FHIR output against HAPI, and its DICOM against
+  Orthanc. Two of those found defects in the other party.
+</p>
+
+<p><a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/verification.md">What was tested, what it found, and what was never run →</a></p>
+
+<h2>Getting help</h2>
+
+<p>
+  Perfuse is developed and maintained by <b>BioDream LLC</b>. Bug reports are welcome as
+  <a href="https://github.com/BioDream-LLC/perfuse/issues">GitHub issues</a>. Code contributions are not
+  accepted — the source has a single maintainer by design, which is worth knowing before you build on it.
+</p>
+
+<footer>
+  <p>
+    Perfuse™ is developed and maintained by BioDream LLC. Apache License 2.0.<br>
+    Copyright 2026 BioDream LLC. Mirth and Mirth Connect are trademarks of their respective owners and are
+    used here only to describe compatibility.
+  </p>
+  <p><a href="https://github.com/BioDream-LLC/perfuse">GitHub</a> · <a href="https://github.com/BioDream-LLC/perfuse/releases/latest">Downloads</a> · <a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/reference.md">Reference manual</a></p>
+</footer>
+
+</div>
+</body>
+</html>

@@ -445,8 +445,11 @@ perfuse translate mirth-channel-export.xml -o channels/
 # 3. Test it against sample messages
 perfuse test channels/labs.yaml
 
-# 4. Run it beside the original on real traffic, delivering nothing
-perfuse serve   # then switch the channel to shadow mode in the interface
+# 4. Run it beside Mirth on your real traffic, delivering nothing to anyone
+perfuse run channels/labs.yaml
+
+# 5. Prove the two engines agree, on your own messages
+perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/
 ```
 
 `perfuse explain` is the step worth running first. It reads the export and tells you what converts
@@ -455,6 +458,39 @@ migration that surprises you in week three is worse than one that refuses on day
 
 **What does not convert is reported, never silently approximated.** Perfuse will refuse a destination type
 it cannot honour rather than write something close and let you discover the difference in production.
+
+### Running it beside Mirth without touching production
+
+Step 4 needs no change to what Mirth delivers. Add one destination to the existing Mirth channel that
+forwards a copy to Perfuse, and give the Perfuse channel a directory as its **only** destination:
+
+```yaml
+name: parallel-run
+description: Receives a copy of live traffic from Mirth and files the result. Sends nothing onward.
+
+source:
+  type: mllp
+  listen: 127.0.0.1:2576
+
+destinations:
+  # The only destination is a directory, so this channel cannot reach a downstream
+  # system even if it is misconfigured. There is nothing else for it to send to.
+  - name: what-perfuse-produced
+    type: file
+    dir: ./perfuse-out
+```
+
+Then `perfuse compare` pairs the two directories by MSH-10 and reports where they disagree, **grouped by
+cause** — so three thousand messages differing for one reason are one finding, not three thousand. Message
+content is withheld by default, because a report is a thing people paste into tickets. `-strict` exits
+non-zero unless the two are identical, which is what makes it usable in a pipeline.
+
+This is the evidence a migration actually turns on, and it costs you nothing but a directory. Nobody has to
+approve a parallel run that delivers to no one.
+
+**Shadow mode is a different tool, for later.** It compares a *candidate Perfuse channel against a live
+Perfuse channel*, which is how you change a channel safely once you have cut over. It is not how you
+compare Perfuse against Mirth — `perfuse compare` is.
 
 Full detail: [Migrating from Mirth](docs/reference.md#migrating-from-mirth) ·
 [Mirth scripts](docs/reference.md#mirth-scripts)
