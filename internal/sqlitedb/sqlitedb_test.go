@@ -2,10 +2,8 @@ package sqlitedb
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
-	"runtime"
-	"slices"
-	"sync"
 	"testing"
 	"time"
 )
@@ -91,120 +89,71 @@ func TestReadsSeeCommittedWrites(t *testing.T) {
 	}
 }
 
-func TestAReadDoesNotBlockAWrite(t *testing.T) {
-	if testing.Short() {
-		t.Skip("timing test")
-	}
-
+// A write must succeed while a read is in progress, which is the whole reason for two pools.
+//
+// Asserted as an outcome, not a latency. Two earlier versions of this test measured how long a write took
+// while scans ran - first against an absolute 25ms, then as a ratio to an idle write - and both failed on a
+// GitHub runner with nothing wrong. The ratio was the more careful mistake: it assumed a slow disk scales
+// both measurements equally, when the baseline is taken on an idle disk and the loaded figure on a saturated
+// one. A throttled disk with no spare IOPS degrades far more under saturation than a fast one, so CI saw 33x
+// where this machine sees 0.8x. That is real I/O contention and no connection pool can prevent it, so the
+// number was never evidence about Perfuse.
+//
+// What the two pools actually guarantee is that a write is not refused or stalled by a reader holding the
+// database. With a rollback journal or a single shared connection, a write attempted while a read
+// transaction is open waits for the busy timeout and then fails SQLITE_BUSY. With WAL and a separate write
+// pool it simply succeeds. That is a binary outcome and it is the same on any hardware.
+//
+// The settings that produce it are each asserted on their own by TestOpenGivesSeparatePools, TestWALIsEnabled
+// and TestTheReadPoolRefusesWrites. This test is the one that proves the combination delivers the behaviour
+// they exist for.
+func TestAWriteSucceedsWhileAReadIsOpen(t *testing.T) {
 	db := openTemp(t)
 	ctx := context.Background()
 
 	if _, err := db.Write.Exec(`CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)`); err != nil {
 		t.Fatal(err)
 	}
-	// Enough rows that a full scan takes real time.
-	tx, err := db.Write.Begin()
+	for i := range 500 {
+		if _, err := db.Write.ExecContext(ctx, `INSERT INTO t (v) VALUES (?)`, i); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// A read transaction, held open. This is the state a long report or an export puts the database in.
+	rtx, err := db.Read.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
+		t.Fatalf("beginning a read transaction: %v", err)
+	}
+	defer func() { _ = rtx.Rollback() }()
+
+	var n int
+	if err := rtx.QueryRowContext(ctx, `SELECT count(*) FROM t`).Scan(&n); err != nil {
+		t.Fatalf("reading inside the transaction: %v", err)
+	}
+	if n != 500 {
+		t.Fatalf("the read transaction sees %d rows, want 500", n)
+	}
+
+	// The write is on the acknowledgement path, so being refused here would mean refusing a message because
+	// somebody was running a report. A generous timeout: this asserts the write is not blocked at all, and
+	// anything under the busy timeout would still be a pass in SQLite's eyes, so the bound has to be well
+	// below it to mean anything.
+	writeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	if _, err := db.Write.ExecContext(writeCtx, `INSERT INTO t (v) VALUES ('written during a read')`); err != nil {
+		t.Fatalf("a write was refused while a read transaction was open, which is what two pools and WAL "+
+			"exist to prevent: %v", err)
+	}
+
+	// And it is durably there, visible to a new reader.
+	var after int
+	if err := db.Read.QueryRowContext(ctx, `SELECT count(*) FROM t`).Scan(&after); err != nil {
 		t.Fatal(err)
 	}
-	for i := range 20000 {
-		if _, err := tx.Exec(`INSERT INTO t (v) VALUES (?)`,
-			"a moderately long value to make the scan cost something, row"+string(rune('a'+i%26))); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Baseline, measured the same way as the loaded case so the two are comparable.
-	//
-	// A single sample here was one cold write, which came out slower than the warm
-	// writes it was the baseline for - 75us against 58us - so the ratio understated the
-	// difference and the test was less sensitive than it looked. Both sides are now the
-	// median of five warm samples.
-	quietSamples := make([]time.Duration, 0, 5)
-	for range 6 {
-		start := time.Now()
-		if _, err := db.Write.ExecContext(ctx, `INSERT INTO t (v) VALUES ('quiet')`); err != nil {
-			t.Fatal(err)
-		}
-		quietSamples = append(quietSamples, time.Since(start))
-	}
-	// The first is discarded: it pays for whatever the connection has not done yet.
-	quietSamples = quietSamples[1:]
-	slices.Sort(quietSamples)
-	quiet := quietSamples[len(quietSamples)/2]
-
-	// Hammer the read pool with scans and time a write against them.
-	//
-	// The number of scanners is bounded so the writer always has a core. The first
-	// version started four unconditionally and spun them in a tight loop, which on a
-	// two-core CI runner saturated the machine: the write was then slow because there
-	// was no CPU left, not because the pools were competing, and the test could not tell
-	// those apart. It failed on a GitHub runner at 26ms against a 25ms limit with
-	// nothing wrong. A small sleep keeps each scanner off the spin and makes pool
-	// contention the dominant signal again.
-	scanners := runtime.NumCPU() - 1
-	if scanners < 1 {
-		scanners = 1
-	}
-	if scanners > 4 {
-		scanners = 4
-	}
-
-	stop := make(chan struct{})
-	var wg sync.WaitGroup
-	for range scanners {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case <-stop:
-					return
-				default:
-				}
-				var n int
-				_ = db.Read.QueryRowContext(ctx,
-					`SELECT count(*) FROM t WHERE v LIKE '%moderately%'`).Scan(&n)
-				time.Sleep(time.Millisecond)
-			}
-		}()
-	}
-	time.Sleep(30 * time.Millisecond)
-
-	// Median of several, so one scheduling hiccup on a shared runner is not the result.
-	busySamples := make([]time.Duration, 0, 5)
-	for range 5 {
-		start := time.Now()
-		if _, err := db.Write.ExecContext(ctx, `INSERT INTO t (v) VALUES ('busy')`); err != nil {
-			t.Fatal(err)
-		}
-		busySamples = append(busySamples, time.Since(start))
-	}
-	slices.Sort(busySamples)
-	busy := busySamples[len(busySamples)/2]
-
-	close(stop)
-	wg.Wait()
-
-	t.Logf("write with the database idle: %s", quiet.Round(time.Microsecond))
-	t.Logf("write with %d scans running: %s (median of 5)", scanners, busy.Round(time.Microsecond))
-
-	// The write is on the acknowledgement path. It is allowed to be slower under load,
-	// but not by an order of magnitude, which is what a shared single connection
-	// produced.
-	//
-	// Asserted as a ratio against the idle write on the same machine, not as an absolute
-	// duration. Both scale with the hardware, so the ratio does not, and it was an
-	// absolute 25ms that failed on a runner where the idle write itself took 1.1ms.
-	const maxRatio = 12
-	if quiet > 0 && busy > time.Duration(maxRatio)*quiet {
-		t.Errorf("a write took %s against %s idle, %.0fx slower while reports were running: "+
-			"the pools are still competing",
-			busy.Round(time.Microsecond), quiet.Round(time.Microsecond),
-			float64(busy)/float64(quiet))
+	if after != 501 {
+		t.Errorf("after the write a new reader sees %d rows, want 501", after)
 	}
 }
 
