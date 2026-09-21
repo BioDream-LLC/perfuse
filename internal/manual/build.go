@@ -53,6 +53,14 @@ func Build(version string, prose map[string]string, components []Component, pack
 		Title:    "Perfuse Reference Manual",
 		Subtitle: "A healthcare integration engine: channels, formats, delivery and operation",
 		Version:  version,
+
+		// Set here rather than by the caller so the published manual and the copy in every
+		// release archive describe themselves identically. A description assembled per
+		// caller drifts, and the one nobody updates is the one a search engine shows.
+		Description: "Reference manual for Perfuse, an open-source healthcare integration engine for " +
+			"HL7 v2, FHIR, DICOM, X12 and CDA. Channel configuration, sources and destinations, " +
+			"transformation, the durable queue, delivery, security and operation.",
+		Canonical: "https://biodream-llc.github.io/perfuse/manual/",
 	}
 
 	byRole := map[string][]Component{}

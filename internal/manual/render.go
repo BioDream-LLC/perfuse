@@ -11,6 +11,16 @@ type Doc struct {
 	Title    string
 	Subtitle string
 	Version  string
+
+	// Description is the meta description used when this manual is published on the web.
+	// Empty omits the tag rather than emitting a blank one, which is worse than absent.
+	Description string
+
+	// Canonical is the address this manual should be credited to when the same file is
+	// reachable at more than one, which it is: the site publishes it and every release
+	// archive contains a copy.
+	Canonical string
+
 	Chapters []Chapter
 }
 
@@ -136,6 +146,19 @@ func (d *Doc) HTML() string {
 	b.WriteString("<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(d.Title))
+
+	// A description and a canonical, because this file is published on the web as well as
+	// shipped in the release archives. Without the description a search engine invents one
+	// from whatever text it finds first, which here is the table of contents. Without the
+	// canonical the same manual at two addresses - the site and the archive somebody
+	// unpacked into a web root - competes with itself.
+	if d.Description != "" {
+		fmt.Fprintf(&b, "<meta name=\"description\" content=\"%s\">\n", html.EscapeString(d.Description))
+	}
+	if d.Canonical != "" {
+		fmt.Fprintf(&b, "<link rel=\"canonical\" href=\"%s\">\n", html.EscapeString(d.Canonical))
+	}
+
 	b.WriteString("<style>\n")
 	b.WriteString(manualCSS)
 	b.WriteString("</style>\n</head>\n<body>\n")

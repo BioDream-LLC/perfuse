@@ -191,15 +191,35 @@ func TestEveryChapterFileIsUsedAndEveryUsedChapterExists(t *testing.T) {
 // The manual is meant to be mailable and openable from a memory stick with no network. A linked stylesheet or an
 // external font would break that quietly - the page still renders, just as unstyled text, which looks like a broken
 // document rather than a missing file.
+//
+// Checked by the rel of each link rather than by the presence of the string "<link ", which was the earlier test and
+// was broader than this reasoning. A rel="canonical" is metadata that no browser fetches, and the manual needs one
+// because it is published on the web as well as shipped in every release archive: without it the copy somebody
+// unpacks into a web root competes with the published one. Anything that causes a fetch is still refused.
 func TestTheManualIsSelfContained(t *testing.T) {
 	doc, _ := buildForTest(t)
 	html := doc.HTML()
 
-	for _, forbidden := range []string{"<link ", "<script", "src=\"http", "@import", "url(http"} {
+	for _, forbidden := range []string{"<script", "src=\"http", "@import", "url(http"} {
 		if strings.Contains(html, forbidden) {
 			t.Errorf("the manual contains %q, so it depends on something outside the file", forbidden)
 		}
 	}
+
+	// Only rels that are never fetched are allowed. stylesheet, preload, prefetch, icon and the rest all cause a
+	// request, which is the thing this test exists to prevent.
+	allowed := map[string]bool{"canonical": true}
+	for _, tag := range regexp.MustCompile(`<link [^>]*>`).FindAllString(html, -1) {
+		rel := regexp.MustCompile(`rel="([^"]*)"`).FindStringSubmatch(tag)
+		if rel == nil {
+			t.Errorf("a link tag with no rel: %s", tag)
+			continue
+		}
+		if !allowed[rel[1]] {
+			t.Errorf("the manual has a link with rel=%q, which a browser will try to fetch: %s", rel[1], tag)
+		}
+	}
+
 	if !strings.Contains(html, "<style>") {
 		t.Error("the manual has no embedded stylesheet")
 	}

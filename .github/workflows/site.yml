@@ -35,6 +35,12 @@ jobs:
           mkdir -p _site/assets
           cp -R docs/assets/. _site/assets/
 
+          # The reference manual is already generated as self-contained HTML for the release
+          # archives. Publishing the same file gives the site a large page of real content
+          # on its own domain instead of leaving it only inside a tarball and on github.com.
+          mkdir -p _site/manual
+          cp docs/manual/perfuse-manual.html _site/manual/index.html
+
       - name: Check every local asset the page references actually exists
         run: |
           missing=0
@@ -46,6 +52,25 @@ jobs:
             fi
           done
           [ "$missing" = "0" ] && echo "all referenced assets present"
+          exit $missing
+
+      - name: Check the sitemap only lists pages that exist
+        run: |
+          missing=0
+          # A sitemap entry for a 404 is reported as an error and spends crawl budget.
+          for loc in $(grep -oE '<loc>[^<]+</loc>' _site/sitemap.xml | sed -E 's|</?loc>||g'); do
+            path="${loc#https://biodream-llc.github.io/perfuse}"
+            case "$path" in
+              */) candidate="_site${path}index.html" ;;
+              "")  candidate="_site/index.html" ;;
+              *)   candidate="_site${path}" ;;
+            esac
+            if [ ! -f "$candidate" ]; then
+              echo "sitemap lists $loc but $candidate does not exist"
+              missing=1
+            fi
+          done
+          [ "$missing" = "0" ] && echo "every sitemap entry resolves to a file"
           exit $missing
 
       - uses: actions/configure-pages@v5

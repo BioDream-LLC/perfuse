@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mirth Connect Alternative — Perfuse, Apache 2.0, No JVM | HL7 v2, FHIR, DICOM</title>
+<meta name="description" content="Perfuse is an open-source Mirth Connect alternative under Apache 2.0. Your existing Mirth JavaScript runs unchanged, including E4X. 31 MB of memory at rest against Mirth's 383 MB, one static binary, no Java runtime. How to migrate a channel and prove the two engines agree on your own traffic.">
+<link rel="canonical" href="https://biodream-llc.github.io/perfuse/mirth-connect-alternative/">
+<link rel="icon" type="image/svg+xml" href="../assets/perfuse-logo.svg">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mirth Connect Alternative — Perfuse">
+<meta property="og:description" content="Apache 2.0, no JVM, and your existing Mirth JavaScript runs unchanged. How to migrate and prove the two engines agree on your own traffic.">
+<meta property="og:image" content="https://biodream-llc.github.io/perfuse/assets/social-card.png">
+<meta property="og:url" content="https://biodream-llc.github.io/perfuse/mirth-connect-alternative/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://biodream-llc.github.io/perfuse/assets/social-card.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Perfuse a drop-in replacement for Mirth Connect?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No, and nothing honestly is. Perfuse reads a Mirth channel export and converts it, and your existing Mirth JavaScript transformers run unchanged including E4X. What cannot be converted is reported by name before you commit to anything, rather than approximated and discovered in production."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will my Mirth JavaScript transformers still work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Perfuse runs the same JavaScript, including E4X, which is the part most migrations founder on because E4X was removed from modern JavaScript engines."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much memory does Perfuse use compared with Mirth Connect?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "31 MB at rest against Mirth Connect's 383 MB, measured on the same machine with both idle. Perfuse is one static binary with no Java runtime; Mirth is a 254 MB install plus OpenJDK."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Perfuse cost anything?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is Apache 2.0 licensed with no commercial tier, no seat count and no feature held back for a paid edition."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Perfuse ready for production clinical traffic?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not yet proven. Version 0.1.0 has never processed production clinical traffic, and the Windows and ARM64 Linux binaries have never been executed. Evaluate it in parallel with the incumbent still delivering, and decide from your own evidence."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  :root {
+    --bg: #ffffff; --ink: #0f172a; --dim: #475569; --faint: #64748b;
+    --line: #e2e8f0; --accent: #0369a1; --panel: #f8fafc; --dark: #0b1220; --dark-ink: #e2e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220; --ink: #e8eef6; --dim: #a8b6c8; --faint: #8595aa;
+      --line: #1e293b; --accent: #7dd3fc; --panel: #0f172a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 0 22px 60px; }
+  a { color: var(--accent); }
+  nav.top { padding: 20px 0; border-bottom: 1px solid var(--line); margin-bottom: 30px; font-size: 15px; }
+  h1 { font-size: 31px; line-height: 1.25; margin: 22px 0 10px; }
+  .standfirst { font-size: 19px; color: var(--dim); margin: 0 0 26px; }
+  h2 { font-size: 24px; margin: 44px 0 13px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 0 0 15px; }
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 15.5px; }
+  th, td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); }
+  pre {
+    background: var(--dark); color: var(--dark-ink); padding: 15px 17px; border-radius: 10px;
+    overflow-x: auto; font-size: 14px; line-height: 1.6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  pre .c { color: #7f9ab5; }
+  code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 5px;
+    padding: 1px 5px; font-size: 14.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+  ul { padding-left: 21px; } li { margin-bottom: 7px; }
+  .caution {
+    border: 1px solid var(--line); border-left: 4px solid #d97706; background: var(--panel);
+    border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 22px 0;
+  }
+  details { border: 1px solid var(--line); border-radius: 9px; padding: 11px 15px; margin-bottom: 9px; background: var(--panel); }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 11px 0 3px; }
+  footer { margin-top: 50px; border-top: 1px solid var(--line); padding-top: 22px; color: var(--faint); font-size: 14.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="top">
+  <a href="../">Perfuse</a> &rsaquo; Mirth Connect alternative
+</nav>
+
+<h1>A Mirth Connect alternative that runs your existing Mirth JavaScript</h1>
+
+<p class="standfirst">
+  Perfuse is an open-source healthcare integration engine under Apache 2.0. One static binary, no Java
+  runtime, and 31 MB of memory at rest against Mirth Connect's 383 MB.
+</p>
+
+<h2>Why people look for an alternative</h2>
+
+<p>
+  Mirth Connect works, and it has run interfaces at thousands of sites for the better part of twenty years.
+  The reasons teams start looking elsewhere are usually not about whether it functions:
+</p>
+
+<ul>
+  <li><b>The JVM.</b> A Java runtime to install, patch and keep at a supported version, on every server an
+    interface engine touches.</li>
+  <li><b>The footprint.</b> A 254 MB install plus OpenJDK, holding 383 MB of memory to do nothing, which is
+    awkward on a small VM and absurd at the edge of a network.</li>
+  <li><b>The licence question.</b> Open core means the edition you evaluate and the edition you are quoted
+    for are not always the same one, and the boundary moves.</li>
+  <li><b>Startup time.</b> An engine that needs to warm up is an engine you think twice about restarting
+    during a working day.</li>
+</ul>
+
+<h2>Side by side</h2>
+
+<table>
+  <thead><tr><th></th><th>Perfuse</th><th>Mirth Connect</th></tr></thead>
+  <tbody>
+    <tr><td>Memory at rest</td><td><b>31 MB</b></td><td>383 MB</td></tr>
+    <tr><td>Idle CPU</td><td>0.0%</td><td>0.13–0.27%</td></tr>
+    <tr><td>Runtime required</td><td>None. One static binary</td><td>OpenJDK 17</td></tr>
+    <tr><td>Install</td><td>Copy one file</td><td>254 MB installer plus the JRE</td></tr>
+    <tr><td>Licence</td><td>Apache 2.0, no tiers</td><td>Open core with commercial editions</td></tr>
+    <tr><td>Existing Mirth JavaScript</td><td>Runs unchanged, including E4X</td><td>Native</td></tr>
+    <tr><td>Configuration in the browser</td><td>Everything, as a rule the project holds itself to</td><td>Most things</td></tr>
+    <tr><td>HL7 v2, FHIR, DICOM, X12, CDA</td><td>All, in the one binary</td><td>HL7 v2 and FHIR core; others via extensions</td></tr>
+    <tr><td>Production track record</td><td><b>None yet. v0.1.0</b></td><td>Twenty years, thousands of sites</td></tr>
+  </tbody>
+</table>
+
+<div class="caution">
+  <p style="margin:0">
+    <b>That last row is the one that should decide your evaluation, not the first.</b> Perfuse v0.1.0 has
+    never processed production clinical traffic. The Windows and ARM64 Linux binaries have never been
+    executed at all. Everything that was verified is written down, and so is everything that was not —
+    <a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/verification.md">the record is here</a>.
+    Mirth has two decades of operational history and Perfuse has none. Weigh that honestly.
+  </p>
+</div>
+
+<h2>The part that usually blocks a migration: E4X</h2>
+
+<p>
+  Mirth transformers are JavaScript, and a great many of them use <b>E4X</b> — the XML-as-a-language-feature
+  syntax that lets a script write <code>msg['PID']['PID.5']['PID.5.1']</code>. E4X was removed from modern
+  JavaScript engines years ago. Any migration that involves "just move the JavaScript somewhere else"
+  discovers this on the first transformer.
+</p>
+
+<p>
+  <b>Perfuse runs E4X.</b> That is the single reason a Mirth migration is tractable here rather than a rewrite
+  of every transformer you own.
+</p>
+
+<h2>Migrating a channel</h2>
+
+<pre><code><span class="c"># 1. What would stop you, before you commit to anything</span>
+perfuse explain mirth-channel-export.xml
+
+<span class="c"># 2. Convert it</span>
+perfuse translate mirth-channel-export.xml -o channels/
+
+<span class="c"># 3. Test it against sample messages</span>
+perfuse test channels/labs.yaml
+
+<span class="c"># 4. Run it beside Mirth on real traffic, delivering nothing to anyone</span>
+perfuse run channels/labs.yaml
+
+<span class="c"># 5. Prove the two engines agree, on your own messages</span>
+perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</code></pre>
+
+<h3>Step 1 is the one worth running first</h3>
+
+<p>
+  <code>perfuse explain</code> reads the export and tells you what converts cleanly, what converts with
+  caveats, and what does not convert at all — <b>by name, not as a count</b>. A migration that surprises you
+  in week three is worse than one that refuses on day one.
+</p>
+
+<p>
+  What cannot be honoured is refused rather than approximated. Perfuse will decline a destination type it
+  cannot implement properly instead of writing something close and letting you find the difference in
+  production.
+</p>
+
+<h3>Step 4 needs nobody's approval</h3>
+
+<p>
+  Add one destination to your existing Mirth channel that forwards a <b>copy</b> to Perfuse, and give the
+  Perfuse channel a directory as its <b>only</b> destination:
+</p>
+
+<pre><code>name: parallel-run
+description: Receives a copy of live traffic from Mirth and files the result. Sends nothing onward.
+
+source:
+  type: mllp
+  listen: 127.0.0.1:2576
+
+destinations:
+  <span class="c"># The only destination is a directory, so this channel cannot reach a</span>
+  <span class="c"># downstream system even if it is misconfigured.</span>
+  - name: what-perfuse-produced
+    type: file
+    dir: ./perfuse-out</code></pre>
+
+<p>
+  Nothing is delivered, so no patient is affected and no change-control board needs to meet.
+</p>
+
+<h3>Step 5 is the evidence the decision actually turns on</h3>
+
+<p>
+  <code>perfuse compare</code> pairs the two directories by message control id and reports where the engines
+  disagree, <b>grouped by cause</b> — three thousand messages differing for one reason are one finding, not
+  three thousand. A filter disagreement is counted separately from a transformation difference, because one
+  decides whether the receiving system hears about that patient at all and the other changes a value.
+</p>
+
+<p>
+  Message content is withheld by default, because a report is a thing people paste into tickets.
+  <code>-strict</code> exits non-zero unless the two are identical, which makes it usable in a pipeline.
+</p>
+
+<h2>Questions</h2>
+
+<details>
+  <summary>Is it a drop-in replacement?</summary>
+  <p>No, and nothing honestly is. It converts your channel exports, runs your JavaScript including E4X, and
+    tells you by name what it cannot carry across. That is as close as an honest answer gets.</p>
+</details>
+
+<details>
+  <summary>What does it cost?</summary>
+  <p>Nothing. Apache 2.0, no commercial tier, no seat count, no feature held back for a paid edition. If you
+    later want support, that is a separate conversation and not a condition of use.</p>
+</details>
+
+<details>
+  <summary>Can I run it alongside Mirth indefinitely?</summary>
+  <p>Yes. A channel whose only destination is a directory delivers to no one, so it can sit beside the
+    incumbent for as long as you want evidence.</p>
+</details>
+
+<details>
+  <summary>What is not there yet?</summary>
+  <p>The honest list is kept in the repository rather than summarised here, because a summary of gaps is the
+    first thing to go stale.
+    <a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/verification.md">Read what was verified
+    and what was not.</a></p>
+</details>
+
+<details>
+  <summary>Who maintains it?</summary>
+  <p>BioDream LLC. Bug reports are welcome as GitHub issues. Code contributions are not accepted — a single
+    maintainer by design, which is worth knowing before you build on it.</p>
+</details>
+
+<h2>Try it</h2>
+
+<p>
+  <a href="https://github.com/BioDream-LLC/perfuse/releases/latest">Download for Linux, macOS or Windows</a>
+  — one file, nothing to install. Or read
+  <a href="../manual/">the reference manual</a>, or
+  <a href="https://github.com/BioDream-LLC/perfuse">the source on GitHub</a>.
+</p>
+
+<footer>
+  <p>
+    Perfuse™ is developed and maintained by BioDream LLC. Apache License 2.0. Copyright 2026 BioDream LLC.
+    Mirth and Mirth Connect are trademarks of their respective owners, used here only to describe
+    compatibility and for comparison.
+  </p>
+  <p><a href="../">Perfuse home</a> · <a href="../manual/">Reference manual</a> · <a href="https://github.com/BioDream-LLC/perfuse">GitHub</a></p>
+</footer>
+
+</div>
+</body>
+</html>
