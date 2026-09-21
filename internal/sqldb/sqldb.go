@@ -8,6 +8,7 @@ package sqldb
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -37,12 +38,17 @@ var driverNames = map[string]string{
 // envPattern matches a ${VAR} reference in a DSN.
 var envPattern = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
 
-// Open resolves a DSN and opens a pool.
+// Open resolves a DSN and opens a pool. It does not connect.
 //
-// The pool is verified with a ping before it is returned. database/sql opens
-// connections lazily, so without this a channel with a wrong password starts
-// cleanly, reports itself healthy, and fails on the first message hours later when
-// nobody is connecting the two events.
+// database/sql opens connections lazily, so a wrong password or an unreachable host is
+// not detected here. Both callers ping immediately afterwards and refuse the channel at
+// load, because otherwise it would start cleanly, report itself healthy, and fail on
+// the first message hours later when nobody is connecting the two events. The ping
+// belongs to them and not to this function: their errors name the channel and carry a
+// redacted DSN, which is what an operator needs and what this function cannot know.
+//
+// The timeout bounds SQLite's busy_timeout. It is not a connection timeout; drivers
+// take that in the DSN.
 func Open(driver, dsn string, maxOpen int, timeout time.Duration) (*sql.DB, error) {
 	registered, ok := driverNames[driver]
 	if !ok {
@@ -52,6 +58,23 @@ func Open(driver, dsn string, maxOpen int, timeout time.Duration) (*sql.DB, erro
 	resolved, err := ResolveDSN(dsn)
 	if err != nil {
 		return nil, err
+	}
+
+	if timeout <= 0 {
+		timeout = 5 * time.Second
+	}
+
+	// SQLite needs two pragmas that no other driver does, and this package is the third
+	// place in the tree to need them. internal/sqlitedb and internal/store each set
+	// journal_mode(WAL) and a busy_timeout, with a written rationale; this function did
+	// not, so a database channel pointed at a SQLite file got the default rollback
+	// journal and a zero busy timeout. Any concurrent write then returns SQLITE_BUSY
+	// immediately instead of waiting, which is a failure that appears only under load
+	// and looks like a flake. It was found as exactly that: a CI failure in
+	// TestDatabaseSourceMarksRowsSoTheyAreNotResent, where the test read a row while
+	// the channel's own after_query updated it.
+	if registered == "sqlite" {
+		resolved = withSQLitePragmas(resolved, timeout)
 	}
 
 	db, err := sql.Open(registered, resolved)
@@ -68,7 +91,50 @@ func Open(driver, dsn string, maxOpen int, timeout time.Duration) (*sql.DB, erro
 	db.SetConnMaxLifetime(30 * time.Minute)
 	db.SetConnMaxIdleTime(5 * time.Minute)
 
+	// No ping here, deliberately. Both callers - the database source and the database
+	// destination - ping immediately after this returns, and their errors are better
+	// than any this function could produce: they name the channel and include the DSN
+	// redacted, so an operator with two database destinations can tell which one failed.
+	// A ping here pre-empts that with a message carrying neither.
+	//
+	// The doc comment above this function used to claim the ping happened here, which
+	// was a description of what the callers do attached to the function that does not.
+	// Adding one to make the comment true replaced two good errors with one poor one,
+	// and TestDatabaseSenderRefusesAnUnreachableDatabaseAtLoad failed on exactly that.
+
 	return db, nil
+}
+
+// withSQLitePragmas adds WAL and a busy timeout to a SQLite DSN, leaving any the
+// caller already set alone.
+//
+// Appending unconditionally would override a deliberate choice, and modernc's driver
+// applies repeated _pragma values in order, so a duplicate silently wins over the
+// caller's.
+func withSQLitePragmas(dsn string, timeout time.Duration) string {
+	// A bare path is a valid SQLite DSN and is not a URL, so it is turned into one
+	// before query parameters can be attached.
+	if !strings.HasPrefix(dsn, "file:") {
+		dsn = "file:" + dsn
+	}
+
+	base, query, _ := strings.Cut(dsn, "?")
+	existing, err := url.ParseQuery(query)
+	if err != nil {
+		// An unparseable query is the caller's to keep. Silently discarding it would be
+		// worse than not adding the pragmas.
+		return dsn
+	}
+
+	have := strings.Join(existing["_pragma"], " ")
+	if !strings.Contains(have, "journal_mode") {
+		existing.Add("_pragma", "journal_mode(WAL)")
+	}
+	if !strings.Contains(have, "busy_timeout") {
+		existing.Add("_pragma", fmt.Sprintf("busy_timeout(%d)", timeout.Milliseconds()))
+	}
+
+	return base + "?" + existing.Encode()
 }
 
 // ResolveDSN substitutes ${VAR} references from the environment.
