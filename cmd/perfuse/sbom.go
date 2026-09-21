@@ -305,6 +305,31 @@ func directDependencies() map[string]bool {
 		// that was not handed to it, so the sandbox is the default rather than a configuration.
 		"github.com/tetratelabs/wazero": true,
 
+		// A Kafka client, so Perfuse can be the healthcare-aware edge of an event backbone
+		// without trying to be one. Kafka is what the systems built in the last decade
+		// publish to, and the existing STOMP connector reaches JMS brokers rather than this.
+		//
+		// franz-go rather than a librdkafka wrapper for the same reason wazero was chosen
+		// above: pure Go, no cgo, so the binary stays one static file that cross-compiles to
+		// every target. Checked against all six.
+		//
+		// A dependency rather than a hand-written protocol, unlike STOMP and MLLP here,
+		// because Kafka's consumer-group protocol is distributed coordination - join, sync,
+		// heartbeat, commit, rebalance - and getting it subtly wrong does not fail loudly.
+		// It produces a partition nobody reads or two consumers reading one, which in a
+		// clinical feed are a missing lab result and a duplicated order.
+		"github.com/twmb/franz-go": true,
+
+		// The admin half of the same client, used only by the Kafka integration tests to
+		// create topics with a known partition count.
+		//
+		// A test-only import and still a direct dependency, because go.mod counts it as one
+		// and a bill of materials that hid it would be describing something other than what
+		// was built. The partition count matters: on a single-partition topic every record
+		// shares a partition regardless of key, so the test that proves keyed ordering would
+		// pass while proving nothing.
+		"github.com/twmb/franz-go/pkg/kadm": true,
+
 		// SMB2 and SMB3 for Windows file shares. Deliberately not SMB1, which is how several hospital ransomware
 		// outbreaks spread. The maintained fork rather than the original, which has tagged releases but has not been
 		// touched in years.

@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · b388b24</p>
+<p class="version">version 0.1 · a8b5187</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -665,57 +665,66 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s20-8-java-script-source"><span class="num">20.8</span> Java Script Source</a></div>
 <div class="toc-d3"><a href="#s20-8-1-poll-interval"><span class="num">20.8.1</span> poll_interval</a></div>
 <div class="toc-d3"><a href="#s20-8-2-timeout"><span class="num">20.8.2</span> timeout</a></div>
-<div class="toc-d2"><a href="#s20-9-sftp-source"><span class="num">20.9</span> SFTP Source</a></div>
-<div class="toc-d3"><a href="#s20-9-1-host"><span class="num">20.9.1</span> host</a></div>
-<div class="toc-d3"><a href="#s20-9-2-password"><span class="num">20.9.2</span> password</a></div>
-<div class="toc-d3"><a href="#s20-9-3-key-file"><span class="num">20.9.3</span> key_file</a></div>
-<div class="toc-d3"><a href="#s20-9-4-known-hosts-file"><span class="num">20.9.4</span> known_hosts_file</a></div>
-<div class="toc-d3"><a href="#s20-9-5-insecure-skip-host-key-check"><span class="num">20.9.5</span> insecure_skip_host_key_check</a></div>
-<div class="toc-d3"><a href="#s20-9-6-pattern"><span class="num">20.9.6</span> pattern</a></div>
-<div class="toc-d3"><a href="#s20-9-7-move-to"><span class="num">20.9.7</span> move_to</a></div>
-<div class="toc-d3"><a href="#s20-9-8-stable-for"><span class="num">20.9.8</span> stable_for</a></div>
-<div class="toc-d3"><a href="#s20-9-9-framed"><span class="num">20.9.9</span> framed</a></div>
-<div class="toc-d3"><a href="#s20-9-10-max-file-size"><span class="num">20.9.10</span> max_file_size</a></div>
-<div class="toc-d3"><a href="#s20-9-11-timeout"><span class="num">20.9.11</span> timeout</a></div>
-<div class="toc-d2"><a href="#s20-10-smb-source"><span class="num">20.10</span> SMB Source</a></div>
+<div class="toc-d2"><a href="#s20-9-kafka-source"><span class="num">20.9</span> Kafka Source</a></div>
+<div class="toc-d3"><a href="#s20-9-1-brokers"><span class="num">20.9.1</span> brokers</a></div>
+<div class="toc-d3"><a href="#s20-9-2-topics"><span class="num">20.9.2</span> topics</a></div>
+<div class="toc-d3"><a href="#s20-9-3-group"><span class="num">20.9.3</span> group</a></div>
+<div class="toc-d3"><a href="#s20-9-4-from-beginning"><span class="num">20.9.4</span> from_beginning</a></div>
+<div class="toc-d3"><a href="#s20-9-5-commit-after-delivery"><span class="num">20.9.5</span> commit_after_delivery</a></div>
+<div class="toc-d3"><a href="#s20-9-6-max-message-size"><span class="num">20.9.6</span> max_message_size</a></div>
+<div class="toc-d3"><a href="#s20-9-7-session-timeout"><span class="num">20.9.7</span> session_timeout</a></div>
+<div class="toc-d3"><a href="#s20-9-8-timeout"><span class="num">20.9.8</span> timeout</a></div>
+<div class="toc-d2"><a href="#s20-10-sftp-source"><span class="num">20.10</span> SFTP Source</a></div>
 <div class="toc-d3"><a href="#s20-10-1-host"><span class="num">20.10.1</span> host</a></div>
-<div class="toc-d3"><a href="#s20-10-2-share"><span class="num">20.10.2</span> share</a></div>
-<div class="toc-d3"><a href="#s20-10-3-user"><span class="num">20.10.3</span> user</a></div>
-<div class="toc-d3"><a href="#s20-10-4-password"><span class="num">20.10.4</span> password</a></div>
-<div class="toc-d3"><a href="#s20-10-5-domain"><span class="num">20.10.5</span> domain</a></div>
-<div class="toc-d3"><a href="#s20-10-6-timeout"><span class="num">20.10.6</span> timeout</a></div>
-<div class="toc-d2"><a href="#s20-11-soap-source"><span class="num">20.11</span> SOAP Source</a></div>
-<div class="toc-d3"><a href="#s20-11-1-listen"><span class="num">20.11.1</span> listen</a></div>
-<div class="toc-d3"><a href="#s20-11-2-path"><span class="num">20.11.2</span> path</a></div>
-<div class="toc-d3"><a href="#s20-11-3-version"><span class="num">20.11.3</span> version</a></div>
-<div class="toc-d3"><a href="#s20-11-4-element"><span class="num">20.11.4</span> element</a></div>
-<div class="toc-d3"><a href="#s20-11-5-base64"><span class="num">20.11.5</span> base64</a></div>
-<div class="toc-d3"><a href="#s20-11-6-response-element"><span class="num">20.11.6</span> response_element</a></div>
-<div class="toc-d3"><a href="#s20-11-7-wsdl"><span class="num">20.11.7</span> wsdl</a></div>
-<div class="toc-d3"><a href="#s20-11-8-username"><span class="num">20.11.8</span> username</a></div>
-<div class="toc-d3"><a href="#s20-11-9-password"><span class="num">20.11.9</span> password</a></div>
-<div class="toc-d3"><a href="#s20-11-10-max-message-size"><span class="num">20.11.10</span> max_message_size</a></div>
-<div class="toc-d3"><a href="#s20-11-11-fault-on-nak"><span class="num">20.11.11</span> fault_on_nak</a></div>
-<div class="toc-d2"><a href="#s20-12-serial-source"><span class="num">20.12</span> Serial Source</a></div>
-<div class="toc-d3"><a href="#s20-12-1-baud"><span class="num">20.12.1</span> baud</a></div>
-<div class="toc-d3"><a href="#s20-12-2-parity"><span class="num">20.12.2</span> parity</a></div>
-<div class="toc-d3"><a href="#s20-12-3-stop-bits"><span class="num">20.12.3</span> stop_bits</a></div>
-<div class="toc-d3"><a href="#s20-12-4-flow-control"><span class="num">20.12.4</span> flow_control</a></div>
-<div class="toc-d3"><a href="#s20-12-5-quiet-after"><span class="num">20.12.5</span> quiet_after</a></div>
-<div class="toc-d3"><a href="#s20-12-6-reopen-after"><span class="num">20.12.6</span> reopen_after</a></div>
-<div class="toc-d2"><a href="#s20-13-source"><span class="num">20.13</span> Source</a></div>
-<div class="toc-d3"><a href="#s20-13-1-type"><span class="num">20.13.1</span> type</a></div>
-<div class="toc-d3"><a href="#s20-13-2-max-message-size"><span class="num">20.13.2</span> max_message_size</a></div>
-<div class="toc-d3"><a href="#s20-13-3-idle-timeout"><span class="num">20.13.3</span> idle_timeout</a></div>
-<div class="toc-d3"><a href="#s20-13-4-max-connections"><span class="num">20.13.4</span> max_connections</a></div>
-<div class="toc-d2"><a href="#s20-14-tcp-source"><span class="num">20.14</span> TCP Source</a></div>
-<div class="toc-d3"><a href="#s20-14-1-idle-timeout"><span class="num">20.14.1</span> idle_timeout</a></div>
-<div class="toc-d3"><a href="#s20-14-2-max-connections"><span class="num">20.14.2</span> max_connections</a></div>
-<div class="toc-d3"><a href="#s20-14-3-reply"><span class="num">20.14.3</span> reply</a></div>
-<div class="toc-d2"><a href="#s20-15-web-dav-source"><span class="num">20.15</span> Web DAV Source</a></div>
-<div class="toc-d3"><a href="#s20-15-1-user"><span class="num">20.15.1</span> user</a></div>
-<div class="toc-d3"><a href="#s20-15-2-password"><span class="num">20.15.2</span> password</a></div>
-<div class="toc-d3"><a href="#s20-15-3-timeout"><span class="num">20.15.3</span> timeout</a></div>
+<div class="toc-d3"><a href="#s20-10-2-password"><span class="num">20.10.2</span> password</a></div>
+<div class="toc-d3"><a href="#s20-10-3-key-file"><span class="num">20.10.3</span> key_file</a></div>
+<div class="toc-d3"><a href="#s20-10-4-known-hosts-file"><span class="num">20.10.4</span> known_hosts_file</a></div>
+<div class="toc-d3"><a href="#s20-10-5-insecure-skip-host-key-check"><span class="num">20.10.5</span> insecure_skip_host_key_check</a></div>
+<div class="toc-d3"><a href="#s20-10-6-pattern"><span class="num">20.10.6</span> pattern</a></div>
+<div class="toc-d3"><a href="#s20-10-7-move-to"><span class="num">20.10.7</span> move_to</a></div>
+<div class="toc-d3"><a href="#s20-10-8-stable-for"><span class="num">20.10.8</span> stable_for</a></div>
+<div class="toc-d3"><a href="#s20-10-9-framed"><span class="num">20.10.9</span> framed</a></div>
+<div class="toc-d3"><a href="#s20-10-10-max-file-size"><span class="num">20.10.10</span> max_file_size</a></div>
+<div class="toc-d3"><a href="#s20-10-11-timeout"><span class="num">20.10.11</span> timeout</a></div>
+<div class="toc-d2"><a href="#s20-11-smb-source"><span class="num">20.11</span> SMB Source</a></div>
+<div class="toc-d3"><a href="#s20-11-1-host"><span class="num">20.11.1</span> host</a></div>
+<div class="toc-d3"><a href="#s20-11-2-share"><span class="num">20.11.2</span> share</a></div>
+<div class="toc-d3"><a href="#s20-11-3-user"><span class="num">20.11.3</span> user</a></div>
+<div class="toc-d3"><a href="#s20-11-4-password"><span class="num">20.11.4</span> password</a></div>
+<div class="toc-d3"><a href="#s20-11-5-domain"><span class="num">20.11.5</span> domain</a></div>
+<div class="toc-d3"><a href="#s20-11-6-timeout"><span class="num">20.11.6</span> timeout</a></div>
+<div class="toc-d2"><a href="#s20-12-soap-source"><span class="num">20.12</span> SOAP Source</a></div>
+<div class="toc-d3"><a href="#s20-12-1-listen"><span class="num">20.12.1</span> listen</a></div>
+<div class="toc-d3"><a href="#s20-12-2-path"><span class="num">20.12.2</span> path</a></div>
+<div class="toc-d3"><a href="#s20-12-3-version"><span class="num">20.12.3</span> version</a></div>
+<div class="toc-d3"><a href="#s20-12-4-element"><span class="num">20.12.4</span> element</a></div>
+<div class="toc-d3"><a href="#s20-12-5-base64"><span class="num">20.12.5</span> base64</a></div>
+<div class="toc-d3"><a href="#s20-12-6-response-element"><span class="num">20.12.6</span> response_element</a></div>
+<div class="toc-d3"><a href="#s20-12-7-wsdl"><span class="num">20.12.7</span> wsdl</a></div>
+<div class="toc-d3"><a href="#s20-12-8-username"><span class="num">20.12.8</span> username</a></div>
+<div class="toc-d3"><a href="#s20-12-9-password"><span class="num">20.12.9</span> password</a></div>
+<div class="toc-d3"><a href="#s20-12-10-max-message-size"><span class="num">20.12.10</span> max_message_size</a></div>
+<div class="toc-d3"><a href="#s20-12-11-fault-on-nak"><span class="num">20.12.11</span> fault_on_nak</a></div>
+<div class="toc-d2"><a href="#s20-13-serial-source"><span class="num">20.13</span> Serial Source</a></div>
+<div class="toc-d3"><a href="#s20-13-1-baud"><span class="num">20.13.1</span> baud</a></div>
+<div class="toc-d3"><a href="#s20-13-2-parity"><span class="num">20.13.2</span> parity</a></div>
+<div class="toc-d3"><a href="#s20-13-3-stop-bits"><span class="num">20.13.3</span> stop_bits</a></div>
+<div class="toc-d3"><a href="#s20-13-4-flow-control"><span class="num">20.13.4</span> flow_control</a></div>
+<div class="toc-d3"><a href="#s20-13-5-quiet-after"><span class="num">20.13.5</span> quiet_after</a></div>
+<div class="toc-d3"><a href="#s20-13-6-reopen-after"><span class="num">20.13.6</span> reopen_after</a></div>
+<div class="toc-d2"><a href="#s20-14-source"><span class="num">20.14</span> Source</a></div>
+<div class="toc-d3"><a href="#s20-14-1-type"><span class="num">20.14.1</span> type</a></div>
+<div class="toc-d3"><a href="#s20-14-2-max-message-size"><span class="num">20.14.2</span> max_message_size</a></div>
+<div class="toc-d3"><a href="#s20-14-3-idle-timeout"><span class="num">20.14.3</span> idle_timeout</a></div>
+<div class="toc-d3"><a href="#s20-14-4-max-connections"><span class="num">20.14.4</span> max_connections</a></div>
+<div class="toc-d2"><a href="#s20-15-tcp-source"><span class="num">20.15</span> TCP Source</a></div>
+<div class="toc-d3"><a href="#s20-15-1-idle-timeout"><span class="num">20.15.1</span> idle_timeout</a></div>
+<div class="toc-d3"><a href="#s20-15-2-max-connections"><span class="num">20.15.2</span> max_connections</a></div>
+<div class="toc-d3"><a href="#s20-15-3-reply"><span class="num">20.15.3</span> reply</a></div>
+<div class="toc-d2"><a href="#s20-16-web-dav-source"><span class="num">20.16</span> Web DAV Source</a></div>
+<div class="toc-d3"><a href="#s20-16-1-user"><span class="num">20.16.1</span> user</a></div>
+<div class="toc-d3"><a href="#s20-16-2-password"><span class="num">20.16.2</span> password</a></div>
+<div class="toc-d3"><a href="#s20-16-3-timeout"><span class="num">20.16.3</span> timeout</a></div>
 <div class="toc-d1"><a href="#s21-destination-reference"><span class="num">21</span> Destination Reference</a></div>
 <div class="toc-d2"><a href="#s21-1-broker-destination"><span class="num">21.1</span> Broker Destination</a></div>
 <div class="toc-d3"><a href="#s21-1-1-addr"><span class="num">21.1.1</span> addr</a></div>
@@ -787,40 +796,48 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s21-11-1-script"><span class="num">21.11.1</span> script</a></div>
 <div class="toc-d3"><a href="#s21-11-2-timeout"><span class="num">21.11.2</span> timeout</a></div>
 <div class="toc-d3"><a href="#s21-11-3-success-on-undefined"><span class="num">21.11.3</span> success_on_undefined</a></div>
-<div class="toc-d2"><a href="#s21-12-s3-destination"><span class="num">21.12</span> S3 Destination</a></div>
-<div class="toc-d3"><a href="#s21-12-1-key"><span class="num">21.12.1</span> key</a></div>
-<div class="toc-d3"><a href="#s21-12-2-access-key-id"><span class="num">21.12.2</span> access_key_id</a></div>
-<div class="toc-d3"><a href="#s21-12-3-secret-access-key"><span class="num">21.12.3</span> secret_access_key</a></div>
-<div class="toc-d3"><a href="#s21-12-4-path-style"><span class="num">21.12.4</span> path_style</a></div>
-<div class="toc-d3"><a href="#s21-12-5-content-type"><span class="num">21.12.5</span> content_type</a></div>
-<div class="toc-d3"><a href="#s21-12-6-timeout"><span class="num">21.12.6</span> timeout</a></div>
-<div class="toc-d2"><a href="#s21-13-sftp-destination"><span class="num">21.13</span> SFTP Destination</a></div>
-<div class="toc-d3"><a href="#s21-13-1-host"><span class="num">21.13.1</span> host</a></div>
-<div class="toc-d3"><a href="#s21-13-2-password"><span class="num">21.13.2</span> password</a></div>
-<div class="toc-d3"><a href="#s21-13-3-file-name"><span class="num">21.13.3</span> file_name</a></div>
-<div class="toc-d3"><a href="#s21-13-4-temp-suffix"><span class="num">21.13.4</span> temp_suffix</a></div>
-<div class="toc-d3"><a href="#s21-13-5-timeout"><span class="num">21.13.5</span> timeout</a></div>
-<div class="toc-d2"><a href="#s21-14-smtp-destination"><span class="num">21.14</span> SMTP Destination</a></div>
+<div class="toc-d2"><a href="#s21-12-kafka-destination"><span class="num">21.12</span> Kafka Destination</a></div>
+<div class="toc-d3"><a href="#s21-12-1-brokers"><span class="num">21.12.1</span> brokers</a></div>
+<div class="toc-d3"><a href="#s21-12-2-topic"><span class="num">21.12.2</span> topic</a></div>
+<div class="toc-d3"><a href="#s21-12-3-key"><span class="num">21.12.3</span> key</a></div>
+<div class="toc-d3"><a href="#s21-12-4-acks"><span class="num">21.12.4</span> acks</a></div>
+<div class="toc-d3"><a href="#s21-12-5-compression"><span class="num">21.12.5</span> compression</a></div>
+<div class="toc-d3"><a href="#s21-12-6-headers"><span class="num">21.12.6</span> headers</a></div>
+<div class="toc-d3"><a href="#s21-12-7-timeout"><span class="num">21.12.7</span> timeout</a></div>
+<div class="toc-d2"><a href="#s21-13-s3-destination"><span class="num">21.13</span> S3 Destination</a></div>
+<div class="toc-d3"><a href="#s21-13-1-key"><span class="num">21.13.1</span> key</a></div>
+<div class="toc-d3"><a href="#s21-13-2-access-key-id"><span class="num">21.13.2</span> access_key_id</a></div>
+<div class="toc-d3"><a href="#s21-13-3-secret-access-key"><span class="num">21.13.3</span> secret_access_key</a></div>
+<div class="toc-d3"><a href="#s21-13-4-path-style"><span class="num">21.13.4</span> path_style</a></div>
+<div class="toc-d3"><a href="#s21-13-5-content-type"><span class="num">21.13.5</span> content_type</a></div>
+<div class="toc-d3"><a href="#s21-13-6-timeout"><span class="num">21.13.6</span> timeout</a></div>
+<div class="toc-d2"><a href="#s21-14-sftp-destination"><span class="num">21.14</span> SFTP Destination</a></div>
 <div class="toc-d3"><a href="#s21-14-1-host"><span class="num">21.14.1</span> host</a></div>
-<div class="toc-d3"><a href="#s21-14-2-from"><span class="num">21.14.2</span> from</a></div>
-<div class="toc-d3"><a href="#s21-14-3-to"><span class="num">21.14.3</span> to</a></div>
-<div class="toc-d3"><a href="#s21-14-4-cc"><span class="num">21.14.4</span> cc</a></div>
-<div class="toc-d3"><a href="#s21-14-5-bcc"><span class="num">21.14.5</span> bcc</a></div>
-<div class="toc-d3"><a href="#s21-14-6-body"><span class="num">21.14.6</span> body</a></div>
-<div class="toc-d3"><a href="#s21-14-7-attach-name"><span class="num">21.14.7</span> attach_name</a></div>
-<div class="toc-d3"><a href="#s21-14-8-username"><span class="num">21.14.8</span> username</a></div>
-<div class="toc-d3"><a href="#s21-14-9-password"><span class="num">21.14.9</span> password</a></div>
-<div class="toc-d3"><a href="#s21-14-10-starttls"><span class="num">21.14.10</span> starttls</a></div>
-<div class="toc-d3"><a href="#s21-14-11-insecure-skip-verify"><span class="num">21.14.11</span> insecure_skip_verify</a></div>
-<div class="toc-d2"><a href="#s21-15-soap-destination"><span class="num">21.15</span> SOAP Destination</a></div>
-<div class="toc-d3"><a href="#s21-15-1-action"><span class="num">21.15.1</span> action</a></div>
-<div class="toc-d3"><a href="#s21-15-2-body"><span class="num">21.15.2</span> body</a></div>
-<div class="toc-d3"><a href="#s21-15-3-header"><span class="num">21.15.3</span> header</a></div>
-<div class="toc-d3"><a href="#s21-15-4-fault-is-success"><span class="num">21.15.4</span> fault_is_success</a></div>
-<div class="toc-d3"><a href="#s21-15-5-timeout"><span class="num">21.15.5</span> timeout</a></div>
-<div class="toc-d2"><a href="#s21-16-tcp-dest"><span class="num">21.16</span> TCP Dest</a></div>
-<div class="toc-d3"><a href="#s21-16-1-expect-reply"><span class="num">21.16.1</span> expect_reply</a></div>
-<div class="toc-d3"><a href="#s21-16-2-keep-alive"><span class="num">21.16.2</span> keep_alive</a></div>
+<div class="toc-d3"><a href="#s21-14-2-password"><span class="num">21.14.2</span> password</a></div>
+<div class="toc-d3"><a href="#s21-14-3-file-name"><span class="num">21.14.3</span> file_name</a></div>
+<div class="toc-d3"><a href="#s21-14-4-temp-suffix"><span class="num">21.14.4</span> temp_suffix</a></div>
+<div class="toc-d3"><a href="#s21-14-5-timeout"><span class="num">21.14.5</span> timeout</a></div>
+<div class="toc-d2"><a href="#s21-15-smtp-destination"><span class="num">21.15</span> SMTP Destination</a></div>
+<div class="toc-d3"><a href="#s21-15-1-host"><span class="num">21.15.1</span> host</a></div>
+<div class="toc-d3"><a href="#s21-15-2-from"><span class="num">21.15.2</span> from</a></div>
+<div class="toc-d3"><a href="#s21-15-3-to"><span class="num">21.15.3</span> to</a></div>
+<div class="toc-d3"><a href="#s21-15-4-cc"><span class="num">21.15.4</span> cc</a></div>
+<div class="toc-d3"><a href="#s21-15-5-bcc"><span class="num">21.15.5</span> bcc</a></div>
+<div class="toc-d3"><a href="#s21-15-6-body"><span class="num">21.15.6</span> body</a></div>
+<div class="toc-d3"><a href="#s21-15-7-attach-name"><span class="num">21.15.7</span> attach_name</a></div>
+<div class="toc-d3"><a href="#s21-15-8-username"><span class="num">21.15.8</span> username</a></div>
+<div class="toc-d3"><a href="#s21-15-9-password"><span class="num">21.15.9</span> password</a></div>
+<div class="toc-d3"><a href="#s21-15-10-starttls"><span class="num">21.15.10</span> starttls</a></div>
+<div class="toc-d3"><a href="#s21-15-11-insecure-skip-verify"><span class="num">21.15.11</span> insecure_skip_verify</a></div>
+<div class="toc-d2"><a href="#s21-16-soap-destination"><span class="num">21.16</span> SOAP Destination</a></div>
+<div class="toc-d3"><a href="#s21-16-1-action"><span class="num">21.16.1</span> action</a></div>
+<div class="toc-d3"><a href="#s21-16-2-body"><span class="num">21.16.2</span> body</a></div>
+<div class="toc-d3"><a href="#s21-16-3-header"><span class="num">21.16.3</span> header</a></div>
+<div class="toc-d3"><a href="#s21-16-4-fault-is-success"><span class="num">21.16.4</span> fault_is_success</a></div>
+<div class="toc-d3"><a href="#s21-16-5-timeout"><span class="num">21.16.5</span> timeout</a></div>
+<div class="toc-d2"><a href="#s21-17-tcp-dest"><span class="num">21.17</span> TCP Dest</a></div>
+<div class="toc-d3"><a href="#s21-17-1-expect-reply"><span class="num">21.17.1</span> expect_reply</a></div>
+<div class="toc-d3"><a href="#s21-17-2-keep-alive"><span class="num">21.17.2</span> keep_alive</a></div>
 <div class="toc-d1"><a href="#s22-format-reference"><span class="num">22</span> Format Reference</a></div>
 <div class="toc-d2"><a href="#s22-1-attachments"><span class="num">22.1</span> Attachments</a></div>
 <div class="toc-d3"><a href="#s22-1-1-reassemble"><span class="num">22.1.1</span> reassemble</a></div>
@@ -861,37 +878,40 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s23-4-3-raw"><span class="num">23.4.3</span> raw</a></div>
 <div class="toc-d3"><a href="#s23-4-4-batch-size"><span class="num">23.4.4</span> batch_size</a></div>
 <div class="toc-d3"><a href="#s23-4-5-sort-by"><span class="num">23.4.5</span> sort_by</a></div>
-<div class="toc-d2"><a href="#s23-5-ncpdp-options"><span class="num">23.5</span> NCPDP Options</a></div>
-<div class="toc-d3"><a href="#s23-5-1-transformations"><span class="num">23.5.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s23-6-queue-config"><span class="num">23.6</span> Queue Config</a></div>
-<div class="toc-d3"><a href="#s23-6-1-max-attempts"><span class="num">23.6.1</span> max_attempts</a></div>
-<div class="toc-d3"><a href="#s23-6-2-max-backoff"><span class="num">23.6.2</span> max_backoff</a></div>
-<div class="toc-d3"><a href="#s23-6-3-max-depth"><span class="num">23.6.3</span> max_depth</a></div>
-<div class="toc-d3"><a href="#s23-6-4-retain-hours"><span class="num">23.6.4</span> retain_hours</a></div>
-<div class="toc-d2"><a href="#s23-7-retry"><span class="num">23.7</span> Retry</a></div>
-<div class="toc-d3"><a href="#s23-7-1-attempts"><span class="num">23.7.1</span> attempts</a></div>
-<div class="toc-d3"><a href="#s23-7-2-backoff"><span class="num">23.7.2</span> backoff</a></div>
-<div class="toc-d2"><a href="#s23-8-script-options"><span class="num">23.8</span> Script Options</a></div>
-<div class="toc-d3"><a href="#s23-8-1-transformations"><span class="num">23.8.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s23-9-scripts"><span class="num">23.9</span> Scripts</a></div>
-<div class="toc-d3"><a href="#s23-9-1-filter"><span class="num">23.9.1</span> filter</a></div>
-<div class="toc-d3"><a href="#s23-9-2-transformer"><span class="num">23.9.2</span> transformer</a></div>
-<div class="toc-d3"><a href="#s23-9-3-preprocessor"><span class="num">23.9.3</span> preprocessor</a></div>
-<div class="toc-d3"><a href="#s23-9-4-deploy"><span class="num">23.9.4</span> deploy</a></div>
-<div class="toc-d3"><a href="#s23-9-5-undeploy"><span class="num">23.9.5</span> undeploy</a></div>
-<div class="toc-d3"><a href="#s23-9-6-postprocessor"><span class="num">23.9.6</span> postprocessor</a></div>
-<div class="toc-d3"><a href="#s23-9-7-language"><span class="num">23.9.7</span> language</a></div>
-<div class="toc-d3"><a href="#s23-9-8-timeout"><span class="num">23.9.8</span> timeout</a></div>
-<div class="toc-d3"><a href="#s23-9-9-include"><span class="num">23.9.9</span> include</a></div>
-<div class="toc-d3"><a href="#s23-9-10-file-roots"><span class="num">23.9.10</span> file_roots</a></div>
-<div class="toc-d3"><a href="#s23-9-11-allow"><span class="num">23.9.11</span> allow</a></div>
-<div class="toc-d2"><a href="#s23-10-shadow"><span class="num">23.10</span> Shadow</a></div>
-<div class="toc-d3"><a href="#s23-10-1-channel"><span class="num">23.10.1</span> channel</a></div>
-<div class="toc-d3"><a href="#s23-10-2-sample"><span class="num">23.10.2</span> sample</a></div>
-<div class="toc-d3"><a href="#s23-10-3-compare"><span class="num">23.10.3</span> compare</a></div>
-<div class="toc-d3"><a href="#s23-10-4-ignore"><span class="num">23.10.4</span> ignore</a></div>
-<div class="toc-d3"><a href="#s23-10-5-max-differences"><span class="num">23.10.5</span> max_differences</a></div>
-<div class="toc-d3"><a href="#s23-10-6-timeout"><span class="num">23.10.6</span> timeout</a></div>
+<div class="toc-d2"><a href="#s23-5-kafka-sasl"><span class="num">23.5</span> Kafka SASL</a></div>
+<div class="toc-d3"><a href="#s23-5-1-mechanism"><span class="num">23.5.1</span> mechanism</a></div>
+<div class="toc-d3"><a href="#s23-5-2-password"><span class="num">23.5.2</span> password</a></div>
+<div class="toc-d2"><a href="#s23-6-ncpdp-options"><span class="num">23.6</span> NCPDP Options</a></div>
+<div class="toc-d3"><a href="#s23-6-1-transformations"><span class="num">23.6.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s23-7-queue-config"><span class="num">23.7</span> Queue Config</a></div>
+<div class="toc-d3"><a href="#s23-7-1-max-attempts"><span class="num">23.7.1</span> max_attempts</a></div>
+<div class="toc-d3"><a href="#s23-7-2-max-backoff"><span class="num">23.7.2</span> max_backoff</a></div>
+<div class="toc-d3"><a href="#s23-7-3-max-depth"><span class="num">23.7.3</span> max_depth</a></div>
+<div class="toc-d3"><a href="#s23-7-4-retain-hours"><span class="num">23.7.4</span> retain_hours</a></div>
+<div class="toc-d2"><a href="#s23-8-retry"><span class="num">23.8</span> Retry</a></div>
+<div class="toc-d3"><a href="#s23-8-1-attempts"><span class="num">23.8.1</span> attempts</a></div>
+<div class="toc-d3"><a href="#s23-8-2-backoff"><span class="num">23.8.2</span> backoff</a></div>
+<div class="toc-d2"><a href="#s23-9-script-options"><span class="num">23.9</span> Script Options</a></div>
+<div class="toc-d3"><a href="#s23-9-1-transformations"><span class="num">23.9.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s23-10-scripts"><span class="num">23.10</span> Scripts</a></div>
+<div class="toc-d3"><a href="#s23-10-1-filter"><span class="num">23.10.1</span> filter</a></div>
+<div class="toc-d3"><a href="#s23-10-2-transformer"><span class="num">23.10.2</span> transformer</a></div>
+<div class="toc-d3"><a href="#s23-10-3-preprocessor"><span class="num">23.10.3</span> preprocessor</a></div>
+<div class="toc-d3"><a href="#s23-10-4-deploy"><span class="num">23.10.4</span> deploy</a></div>
+<div class="toc-d3"><a href="#s23-10-5-undeploy"><span class="num">23.10.5</span> undeploy</a></div>
+<div class="toc-d3"><a href="#s23-10-6-postprocessor"><span class="num">23.10.6</span> postprocessor</a></div>
+<div class="toc-d3"><a href="#s23-10-7-language"><span class="num">23.10.7</span> language</a></div>
+<div class="toc-d3"><a href="#s23-10-8-timeout"><span class="num">23.10.8</span> timeout</a></div>
+<div class="toc-d3"><a href="#s23-10-9-include"><span class="num">23.10.9</span> include</a></div>
+<div class="toc-d3"><a href="#s23-10-10-file-roots"><span class="num">23.10.10</span> file_roots</a></div>
+<div class="toc-d3"><a href="#s23-10-11-allow"><span class="num">23.10.11</span> allow</a></div>
+<div class="toc-d2"><a href="#s23-11-shadow"><span class="num">23.11</span> Shadow</a></div>
+<div class="toc-d3"><a href="#s23-11-1-channel"><span class="num">23.11.1</span> channel</a></div>
+<div class="toc-d3"><a href="#s23-11-2-sample"><span class="num">23.11.2</span> sample</a></div>
+<div class="toc-d3"><a href="#s23-11-3-compare"><span class="num">23.11.3</span> compare</a></div>
+<div class="toc-d3"><a href="#s23-11-4-ignore"><span class="num">23.11.4</span> ignore</a></div>
+<div class="toc-d3"><a href="#s23-11-5-max-differences"><span class="num">23.11.5</span> max_differences</a></div>
+<div class="toc-d3"><a href="#s23-11-6-timeout"><span class="num">23.11.6</span> timeout</a></div>
 <div class="toc-d1"><a href="#s24-how-each-component-works"><span class="num">24</span> How Each Component Works</a></div>
 <div class="toc-d2"><a href="#s24-1-hl7"><span class="num">24.1</span> hl7</a></div>
 <div class="toc-d2"><a href="#s24-2-admit"><span class="num">24.2</span> admit</a></div>
@@ -927,50 +947,51 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s24-32-hl7v3"><span class="num">24.32</span> hl7v3</a></div>
 <div class="toc-d2"><a href="#s24-33-hl7xml"><span class="num">24.33</span> hl7xml</a></div>
 <div class="toc-d2"><a href="#s24-34-identity"><span class="num">24.34</span> identity</a></div>
-<div class="toc-d2"><a href="#s24-35-ldap"><span class="num">24.35</span> ldap</a></div>
-<div class="toc-d2"><a href="#s24-36-mapper"><span class="num">24.36</span> mapper</a></div>
-<div class="toc-d2"><a href="#s24-37-metrics"><span class="num">24.37</span> metrics</a></div>
-<div class="toc-d2"><a href="#s24-38-mirth"><span class="num">24.38</span> mirth</a></div>
-<div class="toc-d2"><a href="#s24-39-msgstore"><span class="num">24.39</span> msgstore</a></div>
-<div class="toc-d2"><a href="#s24-40-ncpdp"><span class="num">24.40</span> ncpdp</a></div>
-<div class="toc-d2"><a href="#s24-41-oidc"><span class="num">24.41</span> oidc</a></div>
-<div class="toc-d2"><a href="#s24-42-parity"><span class="num">24.42</span> parity</a></div>
-<div class="toc-d2"><a href="#s24-43-pas278"><span class="num">24.43</span> pas278</a></div>
-<div class="toc-d2"><a href="#s24-44-pdf"><span class="num">24.44</span> pdf</a></div>
-<div class="toc-d2"><a href="#s24-45-priorauth"><span class="num">24.45</span> priorauth</a></div>
-<div class="toc-d2"><a href="#s24-46-publichealth"><span class="num">24.46</span> publichealth</a></div>
-<div class="toc-d2"><a href="#s24-47-queue"><span class="num">24.47</span> queue</a></div>
-<div class="toc-d2"><a href="#s24-48-s3put"><span class="num">24.48</span> s3put</a></div>
-<div class="toc-d2"><a href="#s24-49-saml"><span class="num">24.49</span> saml</a></div>
-<div class="toc-d2"><a href="#s24-50-scim"><span class="num">24.50</span> scim</a></div>
-<div class="toc-d2"><a href="#s24-51-script"><span class="num">24.51</span> script</a></div>
-<div class="toc-d2"><a href="#s24-52-settings"><span class="num">24.52</span> settings</a></div>
-<div class="toc-d2"><a href="#s24-53-sftpconn"><span class="num">24.53</span> sftpconn</a></div>
-<div class="toc-d2"><a href="#s24-54-shadow"><span class="num">24.54</span> shadow</a></div>
-<div class="toc-d2"><a href="#s24-55-soap"><span class="num">24.55</span> soap</a></div>
-<div class="toc-d2"><a href="#s24-56-sqldb"><span class="num">24.56</span> sqldb</a></div>
-<div class="toc-d2"><a href="#s24-57-sqlitedb"><span class="num">24.57</span> sqlitedb</a></div>
-<div class="toc-d2"><a href="#s24-58-steps"><span class="num">24.58</span> steps</a></div>
-<div class="toc-d2"><a href="#s24-59-stomp"><span class="num">24.59</span> stomp</a></div>
-<div class="toc-d2"><a href="#s24-60-store"><span class="num">24.60</span> store</a></div>
-<div class="toc-d2"><a href="#s24-61-tefca"><span class="num">24.61</span> tefca</a></div>
-<div class="toc-d2"><a href="#s24-62-tenant"><span class="num">24.62</span> tenant</a></div>
-<div class="toc-d2"><a href="#s24-63-tlsconf"><span class="num">24.63</span> tlsconf</a></div>
-<div class="toc-d2"><a href="#s24-64-tomirth"><span class="num">24.64</span> tomirth</a></div>
-<div class="toc-d2"><a href="#s24-65-trace"><span class="num">24.65</span> trace</a></div>
-<div class="toc-d2"><a href="#s24-66-transform"><span class="num">24.66</span> transform</a></div>
-<div class="toc-d2"><a href="#s24-67-translate"><span class="num">24.67</span> translate</a></div>
-<div class="toc-d2"><a href="#s24-68-udap"><span class="num">24.68</span> udap</a></div>
-<div class="toc-d2"><a href="#s24-69-v2fhir"><span class="num">24.69</span> v2fhir</a></div>
-<div class="toc-d2"><a href="#s24-70-vcs"><span class="num">24.70</span> vcs</a></div>
-<div class="toc-d2"><a href="#s24-71-vfs"><span class="num">24.71</span> vfs</a></div>
-<div class="toc-d2"><a href="#s24-72-web"><span class="num">24.72</span> web</a></div>
-<div class="toc-d2"><a href="#s24-73-webauthn"><span class="num">24.73</span> webauthn</a></div>
-<div class="toc-d2"><a href="#s24-74-winservice"><span class="num">24.74</span> winservice</a></div>
-<div class="toc-d2"><a href="#s24-75-x12"><span class="num">24.75</span> x12</a></div>
-<div class="toc-d2"><a href="#s24-76-x12xml"><span class="num">24.76</span> x12xml</a></div>
-<div class="toc-d2"><a href="#s24-77-xmldsig"><span class="num">24.77</span> xmldsig</a></div>
-<div class="toc-d2"><a href="#s24-78-xtree"><span class="num">24.78</span> xtree</a></div>
+<div class="toc-d2"><a href="#s24-35-kafka"><span class="num">24.35</span> kafka</a></div>
+<div class="toc-d2"><a href="#s24-36-ldap"><span class="num">24.36</span> ldap</a></div>
+<div class="toc-d2"><a href="#s24-37-mapper"><span class="num">24.37</span> mapper</a></div>
+<div class="toc-d2"><a href="#s24-38-metrics"><span class="num">24.38</span> metrics</a></div>
+<div class="toc-d2"><a href="#s24-39-mirth"><span class="num">24.39</span> mirth</a></div>
+<div class="toc-d2"><a href="#s24-40-msgstore"><span class="num">24.40</span> msgstore</a></div>
+<div class="toc-d2"><a href="#s24-41-ncpdp"><span class="num">24.41</span> ncpdp</a></div>
+<div class="toc-d2"><a href="#s24-42-oidc"><span class="num">24.42</span> oidc</a></div>
+<div class="toc-d2"><a href="#s24-43-parity"><span class="num">24.43</span> parity</a></div>
+<div class="toc-d2"><a href="#s24-44-pas278"><span class="num">24.44</span> pas278</a></div>
+<div class="toc-d2"><a href="#s24-45-pdf"><span class="num">24.45</span> pdf</a></div>
+<div class="toc-d2"><a href="#s24-46-priorauth"><span class="num">24.46</span> priorauth</a></div>
+<div class="toc-d2"><a href="#s24-47-publichealth"><span class="num">24.47</span> publichealth</a></div>
+<div class="toc-d2"><a href="#s24-48-queue"><span class="num">24.48</span> queue</a></div>
+<div class="toc-d2"><a href="#s24-49-s3put"><span class="num">24.49</span> s3put</a></div>
+<div class="toc-d2"><a href="#s24-50-saml"><span class="num">24.50</span> saml</a></div>
+<div class="toc-d2"><a href="#s24-51-scim"><span class="num">24.51</span> scim</a></div>
+<div class="toc-d2"><a href="#s24-52-script"><span class="num">24.52</span> script</a></div>
+<div class="toc-d2"><a href="#s24-53-settings"><span class="num">24.53</span> settings</a></div>
+<div class="toc-d2"><a href="#s24-54-sftpconn"><span class="num">24.54</span> sftpconn</a></div>
+<div class="toc-d2"><a href="#s24-55-shadow"><span class="num">24.55</span> shadow</a></div>
+<div class="toc-d2"><a href="#s24-56-soap"><span class="num">24.56</span> soap</a></div>
+<div class="toc-d2"><a href="#s24-57-sqldb"><span class="num">24.57</span> sqldb</a></div>
+<div class="toc-d2"><a href="#s24-58-sqlitedb"><span class="num">24.58</span> sqlitedb</a></div>
+<div class="toc-d2"><a href="#s24-59-steps"><span class="num">24.59</span> steps</a></div>
+<div class="toc-d2"><a href="#s24-60-stomp"><span class="num">24.60</span> stomp</a></div>
+<div class="toc-d2"><a href="#s24-61-store"><span class="num">24.61</span> store</a></div>
+<div class="toc-d2"><a href="#s24-62-tefca"><span class="num">24.62</span> tefca</a></div>
+<div class="toc-d2"><a href="#s24-63-tenant"><span class="num">24.63</span> tenant</a></div>
+<div class="toc-d2"><a href="#s24-64-tlsconf"><span class="num">24.64</span> tlsconf</a></div>
+<div class="toc-d2"><a href="#s24-65-tomirth"><span class="num">24.65</span> tomirth</a></div>
+<div class="toc-d2"><a href="#s24-66-trace"><span class="num">24.66</span> trace</a></div>
+<div class="toc-d2"><a href="#s24-67-transform"><span class="num">24.67</span> transform</a></div>
+<div class="toc-d2"><a href="#s24-68-translate"><span class="num">24.68</span> translate</a></div>
+<div class="toc-d2"><a href="#s24-69-udap"><span class="num">24.69</span> udap</a></div>
+<div class="toc-d2"><a href="#s24-70-v2fhir"><span class="num">24.70</span> v2fhir</a></div>
+<div class="toc-d2"><a href="#s24-71-vcs"><span class="num">24.71</span> vcs</a></div>
+<div class="toc-d2"><a href="#s24-72-vfs"><span class="num">24.72</span> vfs</a></div>
+<div class="toc-d2"><a href="#s24-73-web"><span class="num">24.73</span> web</a></div>
+<div class="toc-d2"><a href="#s24-74-webauthn"><span class="num">24.74</span> webauthn</a></div>
+<div class="toc-d2"><a href="#s24-75-winservice"><span class="num">24.75</span> winservice</a></div>
+<div class="toc-d2"><a href="#s24-76-x12"><span class="num">24.76</span> x12</a></div>
+<div class="toc-d2"><a href="#s24-77-x12xml"><span class="num">24.77</span> x12xml</a></div>
+<div class="toc-d2"><a href="#s24-78-xmldsig"><span class="num">24.78</span> xmldsig</a></div>
+<div class="toc-d2"><a href="#s24-79-xtree"><span class="num">24.79</span> xtree</a></div>
 <div class="toc-d1"><a href="#s25-index-of-configuration-keys"><span class="num">25</span> Index of Configuration Keys</a></div>
 <div class="toc-d2"><a href="#s25-1-all-keys"><span class="num">25.1</span> All keys</a></div>
 </nav>
@@ -2771,7 +2792,51 @@ destinations:
 <h4 id="s20-8-2-timeout"><span class="num">20.8.2</span> timeout</h4>
 <p>Timeout bounds a single script execution.</p>
 <p>Zero means 30 seconds.</p>
-<h3 id="s20-9-sftp-source"><span class="num">20.9</span> SFTP Source</h3>
+<h3 id="s20-9-kafka-source"><span class="num">20.9</span> Kafka Source</h3>
+<p>KafkaSource reads messages from a Kafka topic.</p>
+<p>Defined as <code>KafkaSource</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>brokers</code></td><td>list of text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>topics</code></td><td>list of text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>group</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>from_beginning</code></td><td>true or false</td><td>no</td><td>—</td></tr>
+<tr><td><code>commit_after_delivery</code></td><td>true or false (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>max_message_size</code></td><td>whole number</td><td>no</td><td>the channel&#39;s limit</td></tr>
+<tr><td><code>session_timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>forty-five seconds</td></tr>
+<tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>thirty seconds</td></tr>
+<tr><td><code>sasl</code></td><td>KafkaSASL (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s20-9-1-brokers"><span class="num">20.9.1</span> brokers</h4>
+<p>Brokers is the bootstrap server list.</p>
+<p>Required.</p>
+<p>A list rather than one address, because a single bootstrap broker is a single point of failure for starting up: the cluster survives losing it and this channel would not.</p>
+<h4 id="s20-9-2-topics"><span class="num">20.9.2</span> topics</h4>
+<p>Topics are the topics to read.</p>
+<p>At least one is required.</p>
+<h4 id="s20-9-3-group"><span class="num">20.9.3</span> group</h4>
+<p>Group is the consumer group.</p>
+<p>Required.</p>
+<p>Named rather than generated, and required rather than defaulted, because it is what remembers how far this channel has read. A generated group would start from the beginning - or from the end, losing everything - on every restart, and it would leave the old group behind holding committed offsets nobody reads. Requiring it makes the person name the thing that has to stay the same across restarts.</p>
+<h4 id="s20-9-4-from-beginning"><span class="num">20.9.4</span> from_beginning</h4>
+<p>FromBeginning reads the topic from its start when the group has no committed offset.</p>
+<p>Off by default, so a new channel pointed at a topic with two years of history does not replay two years of patient events into a live system on the day it is switched on. The first person to hit that would be doing it in production, because that is where the topic with the history is.</p>
+<h4 id="s20-9-5-commit-after-delivery"><span class="num">20.9.5</span> commit_after_delivery</h4>
+<p>CommitAfterDelivery commits the offset only once the message has been handled.</p>
+<p>On by default, and the reason is the whole difference between losing a message and seeing it twice. Committing on read means a crash between the commit and the delivery loses the message silently, and nothing anywhere records that it existed. Committing after means a crash in the same window redelivers it, which is visible and which HL7 receivers are built to tolerate - a duplicate A08 is a nuisance and a missing lab result is a patient safety event.</p>
+<h4 id="s20-9-6-max-message-size"><span class="num">20.9.6</span> max_message_size</h4>
+<p>MaxMessageSize bounds one record.</p>
+<p>Defaults to the channel&#39;s limit.</p>
+<h4 id="s20-9-7-session-timeout"><span class="num">20.9.7</span> session_timeout</h4>
+<p>SessionTimeout is how long the group coordinator waits before assuming this consumer is gone and reassigning its partitions.</p>
+<p>Defaults to forty-five seconds.</p>
+<h4 id="s20-9-8-timeout"><span class="num">20.9.8</span> timeout</h4>
+<p>Timeout bounds connecting and metadata requests.</p>
+<p>Defaults to thirty seconds.</p>
+<h3 id="s20-10-sftp-source"><span class="num">20.10</span> SFTP Source</h3>
 <p>SFTPSource collects messages from a directory on an SFTP server.</p>
 <p>Extremely common and rarely spoken about. A laboratory or a radiology system writes a file every few minutes, an SFTP server holds it, and something has to come and get it. Half the feeds described as &#34;we send you HL7&#34; are this.</p>
 <p>The part worth care is not the transfer. It is that a file being written to and a file finished being written to look identical over SFTP, so a poll that is even slightly too eager collects half a message. That produces a truncated but often parseable HL7 message, which is the worst outcome available: it is accepted, acknowledged, stored and delivered, and the missing half is never mentioned again.</p>
@@ -2798,41 +2863,41 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>60s</td></tr>
 </tbody>
 </table>
-<h4 id="s20-9-1-host"><span class="num">20.9.1</span> host</h4>
+<h4 id="s20-10-1-host"><span class="num">20.10.1</span> host</h4>
 <p>Host is the server, with an optional port.</p>
 <p>Defaults to 22.</p>
-<h4 id="s20-9-2-password"><span class="num">20.9.2</span> password</h4>
+<h4 id="s20-10-2-password"><span class="num">20.10.2</span> password</h4>
 <p>Password authenticates with a password.</p>
 <p>Prefer KeyFile.</p>
-<h4 id="s20-9-3-key-file"><span class="num">20.9.3</span> key_file</h4>
+<h4 id="s20-10-3-key-file"><span class="num">20.10.3</span> key_file</h4>
 <p>KeyFile is a private key.</p>
 <p>The better choice, and the one hospital security teams ask for.</p>
-<h4 id="s20-9-4-known-hosts-file"><span class="num">20.9.4</span> known_hosts_file</h4>
+<h4 id="s20-10-4-known-hosts-file"><span class="num">20.10.4</span> known_hosts_file</h4>
 <p>KnownHostsFile verifies the server&#39;s identity.</p>
 <p>Required unless InsecureSkipHostKeyCheck is set. Without it there is nothing to distinguish the real server from anything that answers on that address, and the credentials are handed over before anybody notices.</p>
-<h4 id="s20-9-5-insecure-skip-host-key-check"><span class="num">20.9.5</span> insecure_skip_host_key_check</h4>
+<h4 id="s20-10-5-insecure-skip-host-key-check"><span class="num">20.10.5</span> insecure_skip_host_key_check</h4>
 <p>InsecureSkipHostKeyCheck accepts any host key.</p>
 <p>Exists because refusing outright sends people to a shell script with StrictHostKeyChecking=no, which is worse in every way including auditability. It warns loudly and it is never the default.</p>
-<h4 id="s20-9-6-pattern"><span class="num">20.9.6</span> pattern</h4>
+<h4 id="s20-10-6-pattern"><span class="num">20.10.6</span> pattern</h4>
 <p>Pattern selects files by glob.</p>
 <p>Defaults to everything.</p>
-<h4 id="s20-9-7-move-to"><span class="num">20.9.7</span> move_to</h4>
+<h4 id="s20-10-7-move-to"><span class="num">20.10.7</span> move_to</h4>
 <p>MoveTo is the remote directory files are moved into after reading.</p>
 <p>Required when AfterRead is &#34;move&#34;.</p>
-<h4 id="s20-9-8-stable-for"><span class="num">20.9.8</span> stable_for</h4>
+<h4 id="s20-10-8-stable-for"><span class="num">20.10.8</span> stable_for</h4>
 <p>StableFor is how long a file&#39;s size and modification time must be unchanged before it is read.</p>
 <p>Defaults to 5s.</p>
 <p>This is the setting that stops half a message being collected. Zero means reading whatever is there, which works right up until a file is large enough or a network slow enough that writing takes longer than a poll.</p>
-<h4 id="s20-9-9-framed"><span class="num">20.9.9</span> framed</h4>
+<h4 id="s20-10-9-framed"><span class="num">20.10.9</span> framed</h4>
 <p>Framed says the file contains MLLP-framed messages.</p>
 <p>When false, the file is split on MSH boundaries.</p>
-<h4 id="s20-9-10-max-file-size"><span class="num">20.9.10</span> max_file_size</h4>
+<h4 id="s20-10-10-max-file-size"><span class="num">20.10.10</span> max_file_size</h4>
 <p>MaxFileSize refuses a file larger than this many bytes.</p>
 <p>Defaults to 64MB.</p>
-<h4 id="s20-9-11-timeout"><span class="num">20.9.11</span> timeout</h4>
+<h4 id="s20-10-11-timeout"><span class="num">20.10.11</span> timeout</h4>
 <p>Timeout bounds a single connection.</p>
 <p>Defaults to 60s.</p>
-<h3 id="s20-10-smb-source"><span class="num">20.10</span> SMB Source</h3>
+<h3 id="s20-11-smb-source"><span class="num">20.11</span> SMB Source</h3>
 <p>SMBSource collects files from a Windows file share.</p>
 <p>Defined as <code>SMBSource</code> in <code>internal/config</code>.</p>
 <table>
@@ -2847,28 +2912,28 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>thirty seconds</td></tr>
 </tbody>
 </table>
-<h4 id="s20-10-1-host"><span class="num">20.10.1</span> host</h4>
+<h4 id="s20-11-1-host"><span class="num">20.11.1</span> host</h4>
 <p>Host is the server, with an optional port.</p>
 <p>Port 445 is assumed.</p>
-<h4 id="s20-10-2-share"><span class="num">20.10.2</span> share</h4>
+<h4 id="s20-11-2-share"><span class="num">20.11.2</span> share</h4>
 <p>Share is the share name only: the &#34;data&#34; in \\server\data.</p>
 <p>A path here is refused rather than trimmed.</p>
-<h4 id="s20-10-3-user"><span class="num">20.10.3</span> user</h4>
+<h4 id="s20-11-3-user"><span class="num">20.11.3</span> user</h4>
 <p>User and Password are the Windows account.</p>
 <p>Required in practice.</p>
 <p>A share reachable with no credentials at all is rare enough on a domain that an empty user here is far more likely to be a mistake than a guest share - but it is accepted, because refusing it would block the one arrangement where it is correct. Where the account belongs to a domain, set Domain as well: authenticating a domain account without it fails in a way that reads like a wrong password.</p>
-<h4 id="s20-10-4-password"><span class="num">20.10.4</span> password</h4>
+<h4 id="s20-11-4-password"><span class="num">20.11.4</span> password</h4>
 <p>User and Password are the Windows account.</p>
 <p>Required in practice.</p>
 <p>A share reachable with no credentials at all is rare enough on a domain that an empty user here is far more likely to be a mistake than a guest share - but it is accepted, because refusing it would block the one arrangement where it is correct. Where the account belongs to a domain, set Domain as well: authenticating a domain account without it fails in a way that reads like a wrong password.</p>
-<h4 id="s20-10-5-domain"><span class="num">20.10.5</span> domain</h4>
+<h4 id="s20-11-5-domain"><span class="num">20.11.5</span> domain</h4>
 <p>Domain is the Windows domain or workgroup.</p>
 <p>Empty is usually right for a local account.</p>
-<h4 id="s20-10-6-timeout"><span class="num">20.10.6</span> timeout</h4>
+<h4 id="s20-11-6-timeout"><span class="num">20.11.6</span> timeout</h4>
 <p>Timeout bounds one operation.</p>
 <p>Defaults to thirty seconds.</p>
 <p>Worth raising on a share reached across a site link. An SMB operation against a distant server is slower than the same operation locally by enough that a default tuned for a LAN produces timeouts that look like the share being unavailable.</p>
-<h3 id="s20-11-soap-source"><span class="num">20.11</span> SOAP Source</h3>
+<h3 id="s20-12-soap-source"><span class="num">20.12</span> SOAP Source</h3>
 <p>SOAPSource accepts messages wrapped in a SOAP envelope.</p>
 <p>The counterpart to the SOAP destination, and the rarer direction: most hospital integration has Perfuse calling a service rather than being one. It exists because Mirth&#39;s Web Service Listener does, and a site whose sending system only speaks SOAP cannot migrate without it.</p>
 <p>Deliberately not a general web services framework. It accepts an envelope, takes the message out of it, and answers with an envelope. There is no WS-Security, no MTOM, no WS-Addressing, and no generated bindings - the same omissions as the destination, for the same reason: a half-implementation of WS-Security is worse than none.</p>
@@ -2894,44 +2959,44 @@ destinations:
 <tr><td><code>fault_on_nak</code></td><td>true or false</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s20-11-1-listen"><span class="num">20.11.1</span> listen</h4>
+<h4 id="s20-12-1-listen"><span class="num">20.12.1</span> listen</h4>
 <p>Listen is the address to serve on.</p>
 <p>Required.</p>
-<h4 id="s20-11-2-path"><span class="num">20.11.2</span> path</h4>
+<h4 id="s20-12-2-path"><span class="num">20.12.2</span> path</h4>
 <p>Path is the URL path to accept envelopes on.</p>
 <p>Defaults to &#34;/&#34;.</p>
-<h4 id="s20-11-3-version"><span class="num">20.11.3</span> version</h4>
+<h4 id="s20-12-3-version"><span class="num">20.12.3</span> version</h4>
 <p>Version is the SOAP version to answer in, &#34;1.1&#34; or &#34;1.2&#34;.</p>
 <p>Defaults to 1.1.</p>
 <p>Requests are accepted in either version regardless, because a sender that gets this wrong is common and rejecting it teaches nobody anything. The setting controls the reply, where getting it wrong means the sender cannot read the answer.</p>
-<h4 id="s20-11-4-element"><span class="num">20.11.4</span> element</h4>
+<h4 id="s20-12-4-element"><span class="num">20.12.4</span> element</h4>
 <p>Element names the element inside the SOAP Body holding the message.</p>
 <p>Empty means the whole body text.</p>
 <p>Named rather than guessed because a body may carry several elements - a message alongside a sender identifier and a timestamp - and taking the whole body would hand the engine an XML fragment where it expected HL7.</p>
-<h4 id="s20-11-5-base64"><span class="num">20.11.5</span> base64</h4>
+<h4 id="s20-12-5-base64"><span class="num">20.12.5</span> base64</h4>
 <p>Base64 decodes the element&#39;s content before treating it as a message.</p>
 <p>Common in real services, because HL7 carries carriage returns and callers who did not think about that end up with XML that mangles them. If the content decodes as base64 but was not meant to be, the result is not a message and the engine says so - which is why this is explicit rather than sniffed.</p>
-<h4 id="s20-11-6-response-element"><span class="num">20.11.6</span> response_element</h4>
+<h4 id="s20-12-6-response-element"><span class="num">20.12.6</span> response_element</h4>
 <p>ResponseElement names the element wrapping the acknowledgement in the reply.</p>
 <p>Defaults to &#34;AckResponse&#34;.</p>
-<h4 id="s20-11-7-wsdl"><span class="num">20.11.7</span> wsdl</h4>
+<h4 id="s20-12-7-wsdl"><span class="num">20.12.7</span> wsdl</h4>
 <p>WSDL is a file served at the listen path with ?wsdl.</p>
 <p>Empty means none is served.</p>
 <p>A file rather than something generated. A generated WSDL would describe what this endpoint accepts, which is almost never what the sending system was built against - and a WSDL that is nearly right costs more time than no WSDL at all, because it looks authoritative.</p>
-<h4 id="s20-11-8-username"><span class="num">20.11.8</span> username</h4>
+<h4 id="s20-12-8-username"><span class="num">20.12.8</span> username</h4>
 <p>Username and Password, when set, require HTTP basic authentication.</p>
 <p>Offered alongside a token because SOAP callers overwhelmingly expect basic authentication, and a site whose sending system cannot be changed needs the option it already has.</p>
-<h4 id="s20-11-9-password"><span class="num">20.11.9</span> password</h4>
+<h4 id="s20-12-9-password"><span class="num">20.12.9</span> password</h4>
 <p>Username and Password, when set, require HTTP basic authentication.</p>
 <p>Offered alongside a token because SOAP callers overwhelmingly expect basic authentication, and a site whose sending system cannot be changed needs the option it already has.</p>
-<h4 id="s20-11-10-max-message-size"><span class="num">20.11.10</span> max_message_size</h4>
+<h4 id="s20-12-10-max-message-size"><span class="num">20.12.10</span> max_message_size</h4>
 <p>MaxMessageSize bounds an inbound body.</p>
 <p>Zero applies a default.</p>
-<h4 id="s20-11-11-fault-on-nak"><span class="num">20.11.11</span> fault_on_nak</h4>
+<h4 id="s20-12-11-fault-on-nak"><span class="num">20.12.11</span> fault_on_nak</h4>
 <p>FaultOnNak answers a negative acknowledgement with a SOAP fault instead of a normal response carrying the NAK.</p>
 <p>Off by default, which is the right default and worth explaining. HL7 already has a way to say &#34;I received this and rejected it&#34;, and that is a NAK - a successful exchange reporting a rejected message. Turning the same thing into a transport fault tells the sender its request was malformed, which it was not, and many clients respond by retrying forever.</p>
 <p>It exists because some callers only look at the HTTP status and would otherwise treat a rejection as success.</p>
-<h3 id="s20-12-serial-source"><span class="num">20.12</span> Serial Source</h3>
+<h3 id="s20-13-serial-source"><span class="num">20.13</span> Serial Source</h3>
 <p>SerialSource reads messages from a serial port.</p>
 <p># Why a serial connector in 2026</p>
 <p>Because the equipment is still there. A blood gas analyser bought in 2009 with a working sensor and a 25-pin socket, a bedside monitor, a scale in a dialysis unit, an older anaesthesia machine. None of them will ever get an Ethernet port, several of them cost six figures, and the alternative to reading them is somebody typing results into a form.</p>
@@ -2957,27 +3022,27 @@ destinations:
 <tr><td><code>reopen_after</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s20-12-1-baud"><span class="num">20.12.1</span> baud</h4>
+<h4 id="s20-13-1-baud"><span class="num">20.13.1</span> baud</h4>
 <p>Baud is the speed.</p>
 <p>Required, because guessing produces bytes rather than an error.</p>
 <p>A wrong baud rate does not fail. It delivers plausible-looking rubbish: framing bytes appear at random, occasional runs decode as printable characters, and a lenient parser accepts some of it. There is deliberately no default.</p>
-<h4 id="s20-12-2-parity"><span class="num">20.12.2</span> parity</h4>
+<h4 id="s20-13-2-parity"><span class="num">20.13.2</span> parity</h4>
 <p>Parity is none, odd, even, mark or space.</p>
 <p>Defaults to none.</p>
-<h4 id="s20-12-3-stop-bits"><span class="num">20.12.3</span> stop_bits</h4>
+<h4 id="s20-13-3-stop-bits"><span class="num">20.13.3</span> stop_bits</h4>
 <p>StopBits is 1, 1.5 or 2, written as &#34;1&#34;, &#34;1.5&#34; or &#34;2&#34;.</p>
 <p>Defaults to 1.</p>
-<h4 id="s20-12-4-flow-control"><span class="num">20.12.4</span> flow_control</h4>
+<h4 id="s20-13-4-flow-control"><span class="num">20.13.4</span> flow_control</h4>
 <p>FlowControl is none, hardware or software.</p>
 <p>Defaults to none.</p>
 <p>Worth setting correctly rather than leaving. With hardware flow control expected and not configured, a device stops sending partway through a long message and the result is a truncated message rather than a failure.</p>
-<h4 id="s20-12-5-quiet-after"><span class="num">20.12.5</span> quiet_after</h4>
+<h4 id="s20-13-5-quiet-after"><span class="num">20.13.5</span> quiet_after</h4>
 <p>QuietAfter logs a warning when nothing has been received for this long.</p>
 <p>The only way to notice a dead serial feed. An unplugged cable and a quiet night are the same silence, so somebody has to say how long is too long for this particular device.</p>
-<h4 id="s20-12-6-reopen-after"><span class="num">20.12.6</span> reopen_after</h4>
+<h4 id="s20-13-6-reopen-after"><span class="num">20.13.6</span> reopen_after</h4>
 <p>ReopenAfter is how long to wait before reopening a port that failed.</p>
 <p>A USB serial adapter unplugged and plugged back in comes back as the same device path but a different kernel handle, so the old one returns errors forever. Reopening is the only recovery, and doing it in a tight loop fills the log.</p>
-<h3 id="s20-13-source"><span class="num">20.13</span> Source</h3>
+<h3 id="s20-14-source"><span class="num">20.14</span> Source</h3>
 <p>Source is where a channel receives messages.</p>
 <p>Defined as <code>Source</code> in <code>internal/config</code>.</p>
 <table>
@@ -3000,25 +3065,26 @@ destinations:
 <tr><td><code>serial</code></td><td>SerialSource (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>dicom_query</code></td><td>DICOMQuerySource (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>broker</code></td><td>BrokerSource (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>kafka</code></td><td>KafkaSource (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>database</code></td><td>DatabaseSource (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>sftp</code></td><td>SFTPSource (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>javascript</code></td><td>JavaScriptSource (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>ack</code></td><td>Ack</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s20-13-1-type"><span class="num">20.13.1</span> type</h4>
+<h4 id="s20-14-1-type"><span class="num">20.14.1</span> type</h4>
 <p>Type is the transport.</p>
 <p>Only mllp is implemented.</p>
-<h4 id="s20-13-2-max-message-size"><span class="num">20.13.2</span> max_message_size</h4>
+<h4 id="s20-14-2-max-message-size"><span class="num">20.14.2</span> max_message_size</h4>
 <p>MaxMessageSize bounds one inbound message.</p>
 <p>Zero uses the transport default.</p>
-<h4 id="s20-13-3-idle-timeout"><span class="num">20.13.3</span> idle_timeout</h4>
+<h4 id="s20-14-3-idle-timeout"><span class="num">20.14.3</span> idle_timeout</h4>
 <p>IdleTimeout closes a connection that has been silent this long.</p>
 <p>Zero means never, which is usually right: a hospital feed holds a connection open for months and goes quiet overnight.</p>
-<h4 id="s20-13-4-max-connections"><span class="num">20.13.4</span> max_connections</h4>
+<h4 id="s20-14-4-max-connections"><span class="num">20.14.4</span> max_connections</h4>
 <p>MaxConnections bounds concurrent connections.</p>
 <p>Zero means unlimited.</p>
-<h3 id="s20-14-tcp-source"><span class="num">20.14</span> TCP Source</h3>
+<h3 id="s20-15-tcp-source"><span class="num">20.15</span> TCP Source</h3>
 <p>TCPSource listens on a socket for messages that are not necessarily HL7.</p>
 <p># Why this is separate from an mllp source</p>
 <p>MLLP is one framing and Perfuse has always spoken it. A great deal of equipment does not: a laboratory analyser, a scale, a bedside monitor, an older billing system. Each tends to have its own convention, and Mirth&#39;s TCP connector covers all of them, so a site with a socket feed that was not HL7 could not use Perfuse at all.</p>
@@ -3035,16 +3101,16 @@ destinations:
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s20-14-1-idle-timeout"><span class="num">20.14.1</span> idle_timeout</h4>
+<h4 id="s20-15-1-idle-timeout"><span class="num">20.15.1</span> idle_timeout</h4>
 <p>IdleTimeout closes a connection that has been silent this long.</p>
 <p>Zero means never, which is usually right: a device feed holds a connection open for months and goes quiet overnight.</p>
-<h4 id="s20-14-2-max-connections"><span class="num">20.14.2</span> max_connections</h4>
+<h4 id="s20-15-2-max-connections"><span class="num">20.15.2</span> max_connections</h4>
 <p>MaxConnections bounds concurrent connections.</p>
 <p>Zero means unlimited.</p>
-<h4 id="s20-14-3-reply"><span class="num">20.14.3</span> reply</h4>
+<h4 id="s20-15-3-reply"><span class="num">20.15.3</span> reply</h4>
 <p>Reply is what to send back after each message: nothing, ack, or a fixed string.</p>
 <p>Most raw feeds expect nothing. Some expect a single ACK byte. A device that expects a reply and does not get one usually retries the same message forever, so this is worth being explicit about.</p>
-<h3 id="s20-15-web-dav-source"><span class="num">20.15</span> Web DAV Source</h3>
+<h3 id="s20-16-web-dav-source"><span class="num">20.16</span> Web DAV Source</h3>
 <p>WebDAVSource collects files from a WebDAV collection.</p>
 <p>Where this turns up: document management systems, SharePoint, Nextcloud, and vendor portals that expose a drop folder over HTTPS because it is the only outbound port their customers&#39; firewalls allow.</p>
 <p>Defined as <code>WebDAVSource</code> in <code>internal/config</code>.</p>
@@ -3058,13 +3124,13 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>sixty seconds</td></tr>
 </tbody>
 </table>
-<h4 id="s20-15-1-user"><span class="num">20.15.1</span> user</h4>
+<h4 id="s20-16-1-user"><span class="num">20.16.1</span> user</h4>
 <p>User and Password authenticate with HTTP basic authentication.</p>
 <p>Basic authentication sends the password in a header that is only protected by TLS, so these belong with an https URL. Over http they are readable by anything on the path, and no warning from the server will tell you so.</p>
-<h4 id="s20-15-2-password"><span class="num">20.15.2</span> password</h4>
+<h4 id="s20-16-2-password"><span class="num">20.16.2</span> password</h4>
 <p>User and Password authenticate with HTTP basic authentication.</p>
 <p>Basic authentication sends the password in a header that is only protected by TLS, so these belong with an https URL. Over http they are readable by anything on the path, and no warning from the server will tell you so.</p>
-<h4 id="s20-15-3-timeout"><span class="num">20.15.3</span> timeout</h4>
+<h4 id="s20-16-3-timeout"><span class="num">20.16.3</span> timeout</h4>
 <p>Timeout bounds one request.</p>
 <p>Defaults to sixty seconds.</p>
 <p>Longer than the FTP and SMB defaults deliberately. A WebDAV collection listing is a single PROPFIND that the server may spend a long time assembling for a large directory, and there is no partial result to fall back on.</p>
@@ -3254,6 +3320,7 @@ destinations:
 <tr><td><code>dicom</code></td><td>DICOMDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>javascript</code></td><td>JavaScriptDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>broker</code></td><td>BrokerDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>kafka</code></td><td>KafkaDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>response_transformer</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 <tr><td><code>retry</code></td><td>Retry</td><td>no</td><td>—</td></tr>
@@ -3456,7 +3523,48 @@ destinations:
 <p>SuccessOnUndefined treats a script that returns nothing as success.</p>
 <p>Defaults to true.</p>
 <p>True is the right default and worth explaining. Mirth&#39;s JavaScript Writers overwhelmingly do their work and return nothing, so requiring an explicit return would break every one of them on import. Setting it false is for a site that wants a script to be explicit about whether it worked.</p>
-<h3 id="s21-12-s3-destination"><span class="num">21.12</span> S3 Destination</h3>
+<h3 id="s21-12-kafka-destination"><span class="num">21.12</span> Kafka Destination</h3>
+<p>KafkaDestination publishes messages to a Kafka topic.</p>
+<p>Defined as <code>KafkaDestination</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>brokers</code></td><td>list of text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>topic</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>key</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>acks</code></td><td>text</td><td>no</td><td>all</td></tr>
+<tr><td><code>compression</code></td><td>text</td><td>no</td><td>snappy</td></tr>
+<tr><td><code>headers</code></td><td>mapping of text to text</td><td>no</td><td>—</td></tr>
+<tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>thirty seconds</td></tr>
+<tr><td><code>sasl</code></td><td>KafkaSASL (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s21-12-1-brokers"><span class="num">21.12.1</span> brokers</h4>
+<p>Brokers is the bootstrap server list.</p>
+<p>Required.</p>
+<h4 id="s21-12-2-topic"><span class="num">21.12.2</span> topic</h4>
+<p>Topic is where to publish.</p>
+<p>Required.</p>
+<h4 id="s21-12-3-key"><span class="num">21.12.3</span> key</h4>
+<p>Key is a template for the record key, which decides the partition.</p>
+<p>This is the field that makes Kafka safe for a clinical feed, and it is worth being precise about why. Kafka guarantees order within a partition and nowhere else. Records with the same key always land in the same partition, so keying on the patient identifier keeps that patient&#39;s events in order while letting different patients go in parallel.</p>
+<p>Without a key there is no such guarantee. Measured against a real broker, thirty unkeyed records went to one partition rather than spreading: the client keeps a batch together and picks a new partition between batches. So the ordering holds by accident and breaks at a boundary nobody can see, which is worse than breaking consistently - an A03 discharge read before its A01 admission, intermittently, under load.</p>
+<p>An HL7 path, evaluated against the outgoing message: PID-3.1 keys by patient.</p>
+<h4 id="s21-12-4-acks"><span class="num">21.12.4</span> acks</h4>
+<p>Acks is how many brokers must confirm a write: &#34;all&#34;, &#34;leader&#34; or &#34;none&#34;.</p>
+<p>Defaults to all, which is the only setting that survives a broker failing between the write and the replication. &#34;none&#34; is fire-and-forget and will lose messages; it exists because somebody moving non-clinical telemetry may legitimately want it, and refusing it outright would mean they wrote their own producer instead.</p>
+<h4 id="s21-12-5-compression"><span class="num">21.12.5</span> compression</h4>
+<p>Compression is &#34;none&#34;, &#34;gzip&#34;, &#34;snappy&#34;, &#34;lz4&#34; or &#34;zstd&#34;.</p>
+<p>Defaults to snappy.</p>
+<p>On by default because HL7 is highly compressible text and the wire is usually the constraint. Snappy rather than zstd as the default: it is the cheapest in CPU, and a connector on the delivery path should not be the thing that saturates a core.</p>
+<h4 id="s21-12-6-headers"><span class="num">21.12.6</span> headers</h4>
+<p>Headers are record headers to set.</p>
+<p>Values are templates evaluated per message.</p>
+<h4 id="s21-12-7-timeout"><span class="num">21.12.7</span> timeout</h4>
+<p>Timeout bounds one publish.</p>
+<p>Defaults to thirty seconds.</p>
+<h3 id="s21-13-s3-destination"><span class="num">21.13</span> S3 Destination</h3>
 <p>S3Destination writes each message as an object.</p>
 <p>Defined as <code>S3Destination</code> in <code>internal/config</code>.</p>
 <table>
@@ -3476,26 +3584,26 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>60s</td></tr>
 </tbody>
 </table>
-<h4 id="s21-12-1-key"><span class="num">21.12.1</span> key</h4>
+<h4 id="s21-13-1-key"><span class="num">21.13.1</span> key</h4>
 <p>Key templates the object key, using the same ${date}, ${timestamp}, ${control_id}, ${message_type} and ${channel} placeholders as the file and SFTP destinations.</p>
 <p>Defaults to a date-partitioned path plus the control id.</p>
 <p>Date partitioning by default because the alternative - every object in one flat prefix - makes a bucket that is slow to list and impossible to lifecycle by age, and nobody discovers that until there are four million objects in it.</p>
-<h4 id="s21-12-2-access-key-id"><span class="num">21.12.2</span> access_key_id</h4>
+<h4 id="s21-13-2-access-key-id"><span class="num">21.13.2</span> access_key_id</h4>
 <p>AccessKeyID and SecretAccessKey authenticate.</p>
 <p>Either may name an environment variable instead of holding the value, using the form ${NAME}.</p>
-<h4 id="s21-12-3-secret-access-key"><span class="num">21.12.3</span> secret_access_key</h4>
+<h4 id="s21-13-3-secret-access-key"><span class="num">21.13.3</span> secret_access_key</h4>
 <p>AccessKeyID and SecretAccessKey authenticate.</p>
 <p>Either may name an environment variable instead of holding the value, using the form ${NAME}.</p>
-<h4 id="s21-12-4-path-style"><span class="num">21.12.4</span> path_style</h4>
+<h4 id="s21-13-4-path-style"><span class="num">21.13.4</span> path_style</h4>
 <p>PathStyle addresses the bucket as a path rather than a subdomain.</p>
 <p>Most S3-compatible stores need this.</p>
-<h4 id="s21-12-5-content-type"><span class="num">21.12.5</span> content_type</h4>
+<h4 id="s21-13-5-content-type"><span class="num">21.13.5</span> content_type</h4>
 <p>ContentType labels the object.</p>
 <p>Defaults to application/hl7-v2 for HL7 and text/plain otherwise.</p>
-<h4 id="s21-12-6-timeout"><span class="num">21.12.6</span> timeout</h4>
+<h4 id="s21-13-6-timeout"><span class="num">21.13.6</span> timeout</h4>
 <p>Timeout bounds one upload.</p>
 <p>Defaults to 60s.</p>
-<h3 id="s21-13-sftp-destination"><span class="num">21.13</span> SFTP Destination</h3>
+<h3 id="s21-14-sftp-destination"><span class="num">21.14</span> SFTP Destination</h3>
 <p>SFTPDestination writes each message to a file on an SFTP server.</p>
 <p>Defined as <code>SFTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -3516,23 +3624,23 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>60s</td></tr>
 </tbody>
 </table>
-<h4 id="s21-13-1-host"><span class="num">21.13.1</span> host</h4>
+<h4 id="s21-14-1-host"><span class="num">21.14.1</span> host</h4>
 <p>Host is the server, with an optional port.</p>
 <p>Defaults to 22.</p>
-<h4 id="s21-13-2-password"><span class="num">21.13.2</span> password</h4>
+<h4 id="s21-14-2-password"><span class="num">21.14.2</span> password</h4>
 <p>Password authenticates with a password.</p>
 <p>Prefer KeyFile.</p>
-<h4 id="s21-13-3-file-name"><span class="num">21.13.3</span> file_name</h4>
+<h4 id="s21-14-3-file-name"><span class="num">21.14.3</span> file_name</h4>
 <p>FileName templates the name.</p>
 <p>Defaults to a timestamp plus the control ID.</p>
-<h4 id="s21-13-4-temp-suffix"><span class="num">21.13.4</span> temp_suffix</h4>
+<h4 id="s21-14-4-temp-suffix"><span class="num">21.14.4</span> temp_suffix</h4>
 <p>TempSuffix is appended while a file is being written, and removed by a rename once it is complete.</p>
 <p>Defaults to &#34;.part&#34;.</p>
 <p>The same courtesy this connector needs on the way in. Whoever collects these files has the identical problem, and a rename within a directory is atomic on every server worth using.</p>
-<h4 id="s21-13-5-timeout"><span class="num">21.13.5</span> timeout</h4>
+<h4 id="s21-14-5-timeout"><span class="num">21.14.5</span> timeout</h4>
 <p>Timeout bounds a single connection.</p>
 <p>Defaults to 60s.</p>
-<h3 id="s21-14-smtp-destination"><span class="num">21.14</span> SMTP Destination</h3>
+<h3 id="s21-15-smtp-destination"><span class="num">21.15</span> SMTP Destination</h3>
 <p>SMTPDestination configures delivery by email.</p>
 <p>Defined as <code>SMTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -3554,40 +3662,40 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s21-14-1-host"><span class="num">21.14.1</span> host</h4>
+<h4 id="s21-15-1-host"><span class="num">21.15.1</span> host</h4>
 <p>Host is the mail server, with an optional port.</p>
 <p>Port 587 is assumed, which is submission with STARTTLS - the port a modern server expects a client on. Port 25 is server-to-server and is usually either blocked or unauthenticated.</p>
-<h4 id="s21-14-2-from"><span class="num">21.14.2</span> from</h4>
+<h4 id="s21-15-2-from"><span class="num">21.15.2</span> from</h4>
 <p>From is the envelope sender.</p>
 <p>Required, because a message with no sender is discarded silently by a great deal of mail infrastructure, which makes it the hardest possible failure to diagnose.</p>
-<h4 id="s21-14-3-to"><span class="num">21.14.3</span> to</h4>
+<h4 id="s21-15-3-to"><span class="num">21.15.3</span> to</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s21-14-4-cc"><span class="num">21.14.4</span> cc</h4>
+<h4 id="s21-15-4-cc"><span class="num">21.15.4</span> cc</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s21-14-5-bcc"><span class="num">21.14.5</span> bcc</h4>
+<h4 id="s21-15-5-bcc"><span class="num">21.15.5</span> bcc</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s21-14-6-body"><span class="num">21.14.6</span> body</h4>
+<h4 id="s21-15-6-body"><span class="num">21.15.6</span> body</h4>
 <p>Body is the message text.</p>
 <p>Field references are substituted, as in Subject. When it is empty the message itself is the body.</p>
-<h4 id="s21-14-7-attach-name"><span class="num">21.14.7</span> attach_name</h4>
+<h4 id="s21-15-7-attach-name"><span class="num">21.15.7</span> attach_name</h4>
 <p>AttachName names the attachment.</p>
 <p>Defaults to the control ID with a .hl7 suffix.</p>
-<h4 id="s21-14-8-username"><span class="num">21.14.8</span> username</h4>
+<h4 id="s21-15-8-username"><span class="num">21.15.8</span> username</h4>
 <p>Username and Password authenticate to the server.</p>
 <p>Both or neither.</p>
-<h4 id="s21-14-9-password"><span class="num">21.14.9</span> password</h4>
+<h4 id="s21-15-9-password"><span class="num">21.15.9</span> password</h4>
 <p>Username and Password authenticate to the server.</p>
 <p>Both or neither.</p>
-<h4 id="s21-14-10-starttls"><span class="num">21.14.10</span> starttls</h4>
+<h4 id="s21-15-10-starttls"><span class="num">21.15.10</span> starttls</h4>
 <p>StartTLS upgrades the connection before authenticating.</p>
 <p>It defaults to on, and turning it off with a username set is refused rather than allowed: sending a password over an unencrypted connection is not a trade-off worth offering.</p>
-<h4 id="s21-14-11-insecure-skip-verify"><span class="num">21.14.11</span> insecure_skip_verify</h4>
+<h4 id="s21-15-11-insecure-skip-verify"><span class="num">21.15.11</span> insecure_skip_verify</h4>
 <p>InsecureSkipVerify accepts any certificate.</p>
 <p>Named unambiguously because that is what it does.</p>
-<h3 id="s21-15-soap-destination"><span class="num">21.15</span> SOAP Destination</h3>
+<h3 id="s21-16-soap-destination"><span class="num">21.16</span> SOAP Destination</h3>
 <p>SOAPDestination posts a SOAP request per message.</p>
 <p>Defined as <code>SOAPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -3606,22 +3714,22 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>30s</td></tr>
 </tbody>
 </table>
-<h4 id="s21-15-1-action"><span class="num">21.15.1</span> action</h4>
+<h4 id="s21-16-1-action"><span class="num">21.16.1</span> action</h4>
 <p>Action is the SOAPAction.</p>
 <p>Required by most 1.1 services.</p>
-<h4 id="s21-15-2-body"><span class="num">21.15.2</span> body</h4>
+<h4 id="s21-16-2-body"><span class="num">21.16.2</span> body</h4>
 <p>Body is the XML that goes inside the envelope, with ${PID-5.1} style references to message paths.</p>
 <p>Required. There is no useful default: the element names come from the service&#39;s own schema and no engine can guess them.</p>
-<h4 id="s21-15-3-header"><span class="num">21.15.3</span> header</h4>
+<h4 id="s21-16-3-header"><span class="num">21.16.3</span> header</h4>
 <p>Header is XML for the envelope&#39;s Header element.</p>
 <p>Omitted entirely when empty, because some services reject an empty one.</p>
-<h4 id="s21-15-4-fault-is-success"><span class="num">21.15.4</span> fault_is_success</h4>
+<h4 id="s21-16-4-fault-is-success"><span class="num">21.16.4</span> fault_is_success</h4>
 <p>FaultIsSuccess lists fault codes that count as delivered.</p>
 <p>Needed more often than it should be. A service that answers a resend with &#34;already submitted&#34; is telling you the message arrived, and without this a site has to write a response transformer to say so - or worse, watches a queue retry forever against a receiver that already has the message.</p>
-<h4 id="s21-15-5-timeout"><span class="num">21.15.5</span> timeout</h4>
+<h4 id="s21-16-5-timeout"><span class="num">21.16.5</span> timeout</h4>
 <p>Timeout bounds one call.</p>
 <p>Defaults to 30s.</p>
-<h3 id="s21-16-tcp-dest"><span class="num">21.16</span> TCP Dest</h3>
+<h3 id="s21-17-tcp-dest"><span class="num">21.17</span> TCP Dest</h3>
 <p>TCPDest sends messages to a socket with configurable framing.</p>
 <p>Defined as <code>TCPDest</code> in <code>internal/config</code>.</p>
 <table>
@@ -3635,10 +3743,10 @@ destinations:
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s21-16-1-expect-reply"><span class="num">21.16.1</span> expect_reply</h4>
+<h4 id="s21-17-1-expect-reply"><span class="num">21.17.1</span> expect_reply</h4>
 <p>ExpectReply waits for bytes back before reporting success.</p>
 <p>Off by default, and worth thinking about. With it off, &#34;delivered&#34; means the bytes reached the operating system&#39;s send buffer, which a peer that crashed a moment later never read. With it on, a peer that never replies makes every message time out.</p>
-<h4 id="s21-16-2-keep-alive"><span class="num">21.16.2</span> keep_alive</h4>
+<h4 id="s21-17-2-keep-alive"><span class="num">21.17.2</span> keep_alive</h4>
 <p>KeepAlive holds one connection open across messages rather than dialling per message.</p>
 <p>Most device endpoints expect this; some refuse a second message on the same connection. Off by default because a connection per message is the behaviour that works everywhere, at the cost of a handshake each time.</p>
 </section>
@@ -3884,7 +3992,24 @@ destinations:
 <h4 id="s23-4-5-sort-by"><span class="num">23.4.5</span> sort_by</h4>
 <p>SortBy orders the files within a poll: name, modified or none.</p>
 <p>Defaults to name. Ordering matters more than it looks: an ADT stream where A08 updates arrive before the A01 admission produces patients that do not exist yet. Directory listing order is arbitrary on most filesystems, so leaving it unsorted means the order changes between polls for no visible reason.</p>
-<h3 id="s23-5-ncpdp-options"><span class="num">23.5</span> NCPDP Options</h3>
+<h3 id="s23-5-kafka-sasl"><span class="num">23.5</span> Kafka SASL</h3>
+<p>KafkaSASL authenticates to a Kafka cluster.</p>
+<p>Defined as <code>KafkaSASL</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>mechanism</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>username</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>password</code></td><td>text</td><td>yes</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s23-5-1-mechanism"><span class="num">23.5.1</span> mechanism</h4>
+<p>Mechanism is &#34;plain&#34;, &#34;scram-sha-256&#34; or &#34;scram-sha-512&#34;.</p>
+<p>PLAIN sends the password readable on the wire, so it belongs with TLS. SCRAM does not, which is why it is worth naming the difference here rather than treating the three as interchangeable.</p>
+<h4 id="s23-5-2-password"><span class="num">23.5.2</span> password</h4>
+<p>Password is the SASL password.</p>
+<p>Supports ${ENV} references like every other secret here, so a cluster credential need not be written into the channel file.</p>
+<h3 id="s23-6-ncpdp-options"><span class="num">23.6</span> NCPDP Options</h3>
 <p>NCPDPOptions are the settings that only apply to a pharmacy claim channel.</p>
 <p>Defined as <code>NCPDPOptions</code> in <code>internal/config</code>.</p>
 <table>
@@ -3893,10 +4018,10 @@ destinations:
 <tr><td><code>transformations</code></td><td>list of ncpdp.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s23-5-1-transformations"><span class="num">23.5.1</span> transformations</h4>
+<h4 id="s23-6-1-transformations"><span class="num">23.6.1</span> transformations</h4>
 <p>Transformations are declarative changes applied to each transmission before delivery.</p>
 <p>The same vocabulary as every other format - set, copy, clear, map, replace, trim, case, each with an optional condition - because the step engine in internal/steps is generic. What differs is the notation: a path is written D1 or 07-D7, using the standard&#39;s own two-character field identifiers.</p>
-<h3 id="s23-6-queue-config"><span class="num">23.6</span> Queue Config</h3>
+<h3 id="s23-7-queue-config"><span class="num">23.7</span> Queue Config</h3>
 <p>QueueConfig turns on durable queueing for a destination.</p>
 <p>Without it, a destination that is down for two minutes loses everything sent during those two minutes: retries happen in memory and when they run out the message is recorded as failed and gone. With it, the message is on disk and keeps its place until the receiver comes back.</p>
 <p>It is off by default, which is a deliberate choice rather than caution. A queue changes what an acknowledgement means and it changes ordering behaviour during an outage, and both of those are things an operator should opt into knowingly rather than discover.</p>
@@ -3912,20 +4037,20 @@ destinations:
 <tr><td><code>retain_hours</code></td><td>whole number</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s23-6-1-max-attempts"><span class="num">23.6.1</span> max_attempts</h4>
+<h4 id="s23-7-1-max-attempts"><span class="num">23.7.1</span> max_attempts</h4>
 <p>MaxAttempts is how many times the queue tries before marking a message failed and moving on to the next one.</p>
 <p>Zero means keep trying indefinitely, which is legitimate for a feed that must not lose anything but should be chosen rather than inherited.</p>
-<h4 id="s23-6-2-max-backoff"><span class="num">23.6.2</span> max_backoff</h4>
+<h4 id="s23-7-2-max-backoff"><span class="num">23.7.2</span> max_backoff</h4>
 <p>MaxBackoff caps the growing delay.</p>
 <p>The default is a minute rather than something larger because a receiver that comes back after a brief outage should be found quickly: an hour-long ceiling turns a two-minute blip into an hour of backlog.</p>
-<h4 id="s23-6-3-max-depth"><span class="num">23.6.3</span> max_depth</h4>
+<h4 id="s23-7-3-max-depth"><span class="num">23.7.3</span> max_depth</h4>
 <p>MaxDepth refuses new messages once this many are waiting, so a receiver that has been down for a week cannot fill the disk.</p>
 <p>Zero means no limit.</p>
 <p>When the limit is reached the message is failed rather than queued, and the sender is told so — which is the honest answer, because we are no longer promising to deliver it.</p>
-<h4 id="s23-6-4-retain-hours"><span class="num">23.6.4</span> retain_hours</h4>
+<h4 id="s23-7-4-retain-hours"><span class="num">23.7.4</span> retain_hours</h4>
 <p>RetainHours is how long delivered and abandoned items are kept before being purged.</p>
 <p>They are kept at all so somebody watching a backlog drain can see it happening, and so an abandoned message can be found afterwards.</p>
-<h3 id="s23-7-retry"><span class="num">23.7</span> Retry</h3>
+<h3 id="s23-8-retry"><span class="num">23.8</span> Retry</h3>
 <p>Retry controls redelivery after a failure.</p>
 <p>Defined as <code>Retry</code> in <code>internal/config</code>.</p>
 <table>
@@ -3936,13 +4061,13 @@ destinations:
 <tr><td><code>max_backoff</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s23-7-1-attempts"><span class="num">23.7.1</span> attempts</h4>
+<h4 id="s23-8-1-attempts"><span class="num">23.8.1</span> attempts</h4>
 <p>Attempts is the total number of tries, including the first.</p>
 <p>Zero means the default.</p>
-<h4 id="s23-7-2-backoff"><span class="num">23.7.2</span> backoff</h4>
+<h4 id="s23-8-2-backoff"><span class="num">23.8.2</span> backoff</h4>
 <p>Backoff is the wait before the second attempt.</p>
 <p>It doubles each time, up to MaxBackoff.</p>
-<h3 id="s23-8-script-options"><span class="num">23.8</span> Script Options</h3>
+<h3 id="s23-9-script-options"><span class="num">23.9</span> Script Options</h3>
 <p>ScriptOptions configures an NCPDP SCRIPT channel.</p>
 <p># Why SCRIPT gets a block when its filter is top-level</p>
 <p>The channel filter for every data type is the top-level filter key, because internal/expr is generic over the message type: one key, compiled against whichever tree or claim the channel carries. Steps cannot be arranged that way. A v2 step addresses a segment and a field, an X12 step addresses a fixed-width element, and the types are different, so one yaml key would have to hold whichever the data type implied - which is a field that means different things depending on another field, and the failure mode is a step that silently does nothing.</p>
@@ -3954,11 +4079,11 @@ destinations:
 <tr><td><code>transformations</code></td><td>list of hl7v3.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s23-8-1-transformations"><span class="num">23.8.1</span> transformations</h4>
+<h4 id="s23-9-1-transformations"><span class="num">23.9.1</span> transformations</h4>
 <p>Transformations are the declarative steps, addressing the prescription as an XML tree.</p>
 <p>hl7v3.Step rather than a type of its own, and that is not laziness. A prescription and a v3 document are both XML, the path grammar is the same one, and internal/eprescribe already borrows hl7v3.Path for its filter with a comment saying so - v3 and CDA already use it, and a third copy would be a third set of answers to what //a/b[2]@c means.</p>
 <p>The steps that carry v3-only meaning are refused at load rather than being silently available. nullflavor is the one: it writes the v3 attribute stating why a value is absent, which a prescription has no equivalent of, and a step that wrote it would produce a document the receiver does not understand.</p>
-<h3 id="s23-9-scripts"><span class="num">23.9</span> Scripts</h3>
+<h3 id="s23-10-scripts"><span class="num">23.10</span> Scripts</h3>
 <p>Scripts holds the JavaScript attached to a channel.</p>
 <p>Defined as <code>Scripts</code> in <code>internal/config</code>.</p>
 <table>
@@ -3977,47 +4102,47 @@ destinations:
 <tr><td><code>allow</code></td><td>list of text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s23-9-1-filter"><span class="num">23.9.1</span> filter</h4>
+<h4 id="s23-10-1-filter"><span class="num">23.10.1</span> filter</h4>
 <p>Filter runs after the expression filter, if any, and must return a boolean.</p>
 <p>A Mirth filter script drops in here unchanged.</p>
-<h4 id="s23-9-2-transformer"><span class="num">23.9.2</span> transformer</h4>
+<h4 id="s23-10-2-transformer"><span class="num">23.10.2</span> transformer</h4>
 <p>Transformer runs after the declarative steps and may modify the message.</p>
 <p>A Mirth transformer script drops in here unchanged.</p>
-<h4 id="s23-9-3-preprocessor"><span class="num">23.9.3</span> preprocessor</h4>
+<h4 id="s23-10-3-preprocessor"><span class="num">23.10.3</span> preprocessor</h4>
 <p>Preprocessor runs before the message is parsed, reads the text as &#34;message&#34; and returns the text to parse.</p>
 <p>A Mirth preprocessor drops in here unchanged.</p>
 <p>This is the only place a message that does not parse can be repaired. Sites use it for a stray character from a serial gateway, a segment terminator that arrived as a line feed, or a vendor padding a field with something illegal for its position. Without it, Perfuse rejects traffic that Mirth accepts today.</p>
-<h4 id="s23-9-4-deploy"><span class="num">23.9.4</span> deploy</h4>
+<h4 id="s23-10-4-deploy"><span class="num">23.10.4</span> deploy</h4>
 <p>Deploy runs once when the channel starts, before it accepts anything.</p>
 <p>This is where sites warm a lookup cache or check that something they depend on is reachable. It runs before the source binds, so a deploy script that fails stops the channel from starting rather than letting it accept messages it cannot handle.</p>
-<h4 id="s23-9-5-undeploy"><span class="num">23.9.5</span> undeploy</h4>
+<h4 id="s23-10-5-undeploy"><span class="num">23.10.5</span> undeploy</h4>
 <p>Undeploy runs once when the channel stops.</p>
 <p>After the source has stopped accepting and after in-flight messages have finished, so it sees a channel that is genuinely idle. Its failure cannot stop a stop: a channel that could not be shut down because a cleanup script threw would be worse than one that logged and closed.</p>
-<h4 id="s23-9-6-postprocessor"><span class="num">23.9.6</span> postprocessor</h4>
+<h4 id="s23-10-6-postprocessor"><span class="num">23.10.6</span> postprocessor</h4>
 <p>Postprocessor runs after the message has been handled and cannot change it.</p>
 <p>The message and what happened to it are visible, so it can notify, count or record. It cannot alter what was sent: by the time it runs the sending has happened, and a script that appeared to change a delivered message would be lying about it.</p>
-<h4 id="s23-9-7-language"><span class="num">23.9.7</span> language</h4>
+<h4 id="s23-10-7-language"><span class="num">23.10.7</span> language</h4>
 <p>Language is which scripting language these scripts are written in: javascript or lua.</p>
 <p># Why one setting for the whole block rather than one per script</p>
 <p>A channel&#39;s scripts share the channel map and the connector map, and they are read together by whoever maintains them. A filter in Lua beside a transformer in JavaScript would mean two languages in one review, sharing state through a map whose values would have to mean the same in both. Sites that want that can split the channel.</p>
 <p># Why the default is javascript</p>
 <p>Every script written before this setting existed is JavaScript and says nothing about its language. Making lua the default would silently reinterpret all of them; requiring the field would refuse them. Neither is acceptable for a setting added later.</p>
-<h4 id="s23-9-8-timeout"><span class="num">23.9.8</span> timeout</h4>
+<h4 id="s23-10-8-timeout"><span class="num">23.10.8</span> timeout</h4>
 <p>Timeout bounds each script.</p>
 <p>Zero means five seconds.</p>
 <p>There is deliberately no way to disable it. Mirth allows a transformer to loop forever, which stops the channel, and an interface that stops accepting admissions because of a typo is not something to offer as an option.</p>
-<h4 id="s23-9-9-include"><span class="num">23.9.9</span> include</h4>
+<h4 id="s23-10-9-include"><span class="num">23.10.9</span> include</h4>
 <p>Include names files of shared script source made available to every script on this channel, in whichever language scripts.language names.</p>
 <p>This is Mirth&#39;s code templates. A site with forty channels usually has one library every channel calls, and without it a migration means copying that library into forty files - forty places to fix the next time it changes.</p>
 <p>Paths are relative to the channel file, so a library beside the channels travels with them. It is a list because the alternative is one enormous file, and libraries tend to divide by subject.</p>
 <p>The files have to be in the channel&#39;s language. This was JavaScript-only for a while, and not by refusal: a Lua channel read the files, refused a missing one, and then the runtime installed none of it, so every call into the library failed on the first message with a nil global - the exact error the refusal above exists to avoid. Both languages install it now, and a library that does not parse is refused at load naming the file.</p>
-<h4 id="s23-9-10-file-roots"><span class="num">23.9.10</span> file_roots</h4>
+<h4 id="s23-10-10-file-roots"><span class="num">23.10.10</span> file_roots</h4>
 <p>FileRoots are the directories FileUtil may read and write.</p>
 <p>Required whenever &#34;file&#34; is allowed. Granting file access without naming directories used to mean the whole filesystem: a script could read Perfuse&#39;s own database, which holds password hashes, the LDAP service account password and the OIDC client secret. Creating a channel needs only the editor role, so the escalation completed the moment an administrator started it.</p>
-<h4 id="s23-9-11-allow"><span class="num">23.9.11</span> allow</h4>
+<h4 id="s23-10-11-allow"><span class="num">23.10.11</span> allow</h4>
 <p>Allow grants capabilities a script would otherwise be refused: &#34;file&#34;, &#34;database&#34;, &#34;route&#34;.</p>
 <p>Mirth grants all of these to every script; requiring them to be named means a transformer cannot quietly start reading the filesystem after a copy-paste.</p>
-<h3 id="s23-10-shadow"><span class="num">23.10</span> Shadow</h3>
+<h3 id="s23-11-shadow"><span class="num">23.11</span> Shadow</h3>
 <p>Shadow runs a candidate version of a channel beside the live one and reports where they differ.</p>
 <p>This is the answer to the question that makes interface work frightening: how do you know a change is safe? Not by reading it. A transformation is a program operating on messages whose variety nobody has catalogued, and the case that breaks is always the one nobody thought of - the patient with two identifiers, the result with an empty units field, the A08 that arrives before its A01.</p>
 <p>A channel test proves the cases somebody thought of. Shadow mode proves the cases that actually arrive, against real traffic, before the change carries any of it.</p>
@@ -4037,22 +4162,22 @@ destinations:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>5s</td></tr>
 </tbody>
 </table>
-<h4 id="s23-10-1-channel"><span class="num">23.10.1</span> channel</h4>
+<h4 id="s23-11-1-channel"><span class="num">23.11.1</span> channel</h4>
 <p>Channel is the path to the candidate channel file.</p>
 <p>A separate file rather than an inline block, on purpose: the candidate is meant to become the live channel, so it should be the artefact that gets reviewed, committed and promoted, not a fragment that has to be extracted.</p>
-<h4 id="s23-10-2-sample"><span class="num">23.10.2</span> sample</h4>
+<h4 id="s23-11-2-sample"><span class="num">23.11.2</span> sample</h4>
 <p>Sample is the fraction of messages to shadow, from 0 to 1. Defaults to 1.</p>
 <p>Worth lowering only on a busy feed, and worth understanding before doing so: sampling reduces cost and reduces confidence in exactly the same proportion, and the message that would have shown the difference is the unusual one.</p>
-<h4 id="s23-10-3-compare"><span class="num">23.10.3</span> compare</h4>
+<h4 id="s23-11-3-compare"><span class="num">23.11.3</span> compare</h4>
 <p>Compare limits the comparison to these field paths.</p>
 <p>Empty compares everything.</p>
-<h4 id="s23-10-4-ignore"><span class="num">23.10.4</span> ignore</h4>
+<h4 id="s23-11-4-ignore"><span class="num">23.11.4</span> ignore</h4>
 <p>Ignore excludes field paths from the comparison.</p>
 <p>Needed in practice, because a channel that stamps a timestamp or a sequence number differs on every single message and would report a difference rate of 100% while telling you nothing.</p>
-<h4 id="s23-10-5-max-differences"><span class="num">23.10.5</span> max_differences</h4>
+<h4 id="s23-11-5-max-differences"><span class="num">23.11.5</span> max_differences</h4>
 <p>MaxDifferences bounds how many differing messages are kept for inspection.</p>
 <p>Defaults to 100.</p>
-<h4 id="s23-10-6-timeout"><span class="num">23.10.6</span> timeout</h4>
+<h4 id="s23-11-6-timeout"><span class="num">23.11.6</span> timeout</h4>
 <p>Timeout bounds one shadow run.</p>
 <p>Defaults to 5s.</p>
 <p>Separate from the channel&#39;s own timeout, and shorter. A candidate with a runaway script must not accumulate goroutines behind the live traffic.</p>
@@ -4311,19 +4436,26 @@ destinations:
 <p># This is a privacy escalation, and it is optional</p>
 <p>Patient names and identifiers currently sit inside an opaque payload column. Indexing them makes them queryable, which is the point, and also makes them enumerable, which is a real change in exposure: a database that could only be grepped can now be asked &#34;list every patient&#34;. That is a decision for the site, not for this package, so extraction is switchable and every search through it is recorded in the PHI audit log.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/identity</code></p>
-<h3 id="s24-35-ldap"><span class="num">24.35</span> ldap</h3>
+<h3 id="s24-35-kafka"><span class="num">24.35</span> kafka</h3>
+<p>Kafka, as a client rather than as something to replace.</p>
+<p>A health system that has an event backbone has a Kafka one, and the systems built in the last decade publish to it rather than to a JMS broker. So this connector exists to make Perfuse the healthcare-aware edge of somebody else&#39;s event platform: it reads clinical messages off topics and publishes them onto topics, and it deliberately does not try to be a streaming platform. Windowing, joins, stream processing and schema registries are Kafka&#39;s ecosystem and stay there.</p>
+<p># Why a dependency, when STOMP and MLLP were written by hand</p>
+<p>The stated rule in this repository is that a dependency has to buy capability rather than convenience, and must be pure Go so one static binary still cross-compiles to every target. franz-go is pure Go and carries no cgo, which was checked against all six targets.</p>
+<p>Kafka&#39;s protocol is not STOMP&#39;s. STOMP is a text protocol that fits in a few hundred lines. Kafka is a versioned binary protocol across roughly seventy request types, and the part that matters most here - consumer groups - is a distributed coordination protocol with join, sync, heartbeat and offset-commit phases and a rebalance dance between them. Getting that subtly wrong does not produce an obvious failure: it produces a partition nobody is reading, or two consumers reading the same one. In a clinical feed those are a missing lab result and a duplicated order. That is capability, and it is not worth hand-rolling to save a dependency.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/kafka</code></p>
+<h3 id="s24-36-ldap"><span class="num">24.36</span> ldap</h3>
 <p>Package ldap speaks enough LDAP to authenticate a person and read their groups.</p>
 <p>Hospitals run Active Directory almost universally, and AD speaks LDAP. OpenID Connect is the better answer where it is reachable - see internal/oidc, and the note there about Mirth having no single sign-on at any price - but an integration engine often sits on an isolated VLAN where a browser cannot reach an identity provider at all. That is what this is for.</p>
 <p>Hand-rolled BER rather than a dependency, for the same reason as DICOM and STOMP: the encoding is small, and what arrives on this socket decides whether somebody gets into a system that moves patient data.</p>
 <p>encoding/asn1 in the standard library is not usable here. It targets DER and rejects the context-specific tags and implicit tagging that LDAP uses throughout, so the parts that matter would need hand-rolling anyway.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/ldap</code></p>
-<h3 id="s24-36-mapper"><span class="num">24.36</span> mapper</h3>
+<h3 id="s24-37-mapper"><span class="num">24.37</span> mapper</h3>
 <p>Package mapper suggests field mappings between systems with confidence scores.</p>
 <p>This is a rules-based intelligent mapping engine. No LLM, no network calls, no external dependencies. It runs offline in the same binary and never sends patient data anywhere.</p>
 <p>The engine combines multiple signals - fuzzy string matching on field names, healthcare identifier pattern recognition, code system lookups, and historical acceptance data - into a single confidence score per suggestion. When confidence is below a configurable threshold the mapper abstains rather than guessing wrong, because a wrong mapping in healthcare can route data to the wrong field and that is a patient-safety defect.</p>
 <p>Abstention is the core design decision. A system that always produces an answer trains users to stop checking, and the one time it is wrong nobody notices until a lab result lands in a note field. A system that says &#34;I don&#39;t know&#34; forces a human decision exactly when the human is needed.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/mapper</code></p>
-<h3 id="s24-37-metrics"><span class="num">24.37</span> metrics</h3>
+<h3 id="s24-38-metrics"><span class="num">24.38</span> metrics</h3>
 <p>Package metrics collects what the engine is doing and keeps enough history to draw it.</p>
 <p>An interface engine is watched, not just run. When a ward says results stopped arriving twenty minutes ago, the question is what changed twenty minutes ago, and that cannot be answered by current counters alone. So this keeps series rather than totals, in memory, at a fixed resolution.</p>
 <p>Three decisions shape it.</p>
@@ -4331,7 +4463,7 @@ destinations:
 <p>Series are bounded ring buffers, sized when the collector is made. Nothing here grows without limit, because an interface engine runs for months at a time and a metrics system that needs restarting is worse than none.</p>
 <p>Cardinality is capped. A label value taken from message data - a sending application, say - can take thousands of values if somebody misconfigures a feed, and unbounded labels are the standard way monitoring takes down the thing it monitors. Past the cap, values collapse into an &#34;other&#34; bucket and the cap is itself reported.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/metrics</code></p>
-<h3 id="s24-38-mirth"><span class="num">24.38</span> mirth</h3>
+<h3 id="s24-39-mirth"><span class="num">24.39</span> mirth</h3>
 <p>Java analysis for imported Mirth channels.</p>
 <p># Why this exists</p>
 <p>Mirth runs Rhino on the JVM, so a Mirth script can call any Java on the classpath, including Mirth&#39;s own server classes. Perfuse runs goja and has no Java runtime. It refuses those calls with an error naming the class - but that refusal happens when the script runs, which for a source connector means when the first real message arrives.</p>
@@ -4341,23 +4473,23 @@ destinations:
 <p>&#34;Uses Java&#34; is one bit of information and the wrong one, because the Java a real Mirth channel uses falls into groups with completely different amounts of work attached. Roughly half of what sites actually write is SimpleDateFormat and HashMap, which JavaScript does natively. Some of it is Mirth&#39;s documented script API, which Perfuse already implements under the same names. A little of it wants to start and stop channels, which Perfuse can do over its REST API but does not expose to scripts. And some of it is a vendor jar that is never going to run here.</p>
 <p>Reporting those as one number tells a migrator nothing about whether their afternoon or their quarter is at stake.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/mirth</code></p>
-<h3 id="s24-39-msgstore"><span class="num">24.39</span> msgstore</h3>
+<h3 id="s24-40-msgstore"><span class="num">24.40</span> msgstore</h3>
 <p>Finding a stored message by what somebody knows about it.</p>
 <p>The search a person actually needs is &#34;here is a number off a phone call, show me every message about it&#34;. Before this that meant either a substring match over payloads, which is grep and slow, or a filter expression, which requires knowing that identity lives at PID-3 in HL7 v2 and somewhere else entirely in the other three formats on the same server.</p>
 <p>Identity is extracted once when the message is recorded and indexed, so this is a lookup rather than a scan. The cost is paid on the recording path, once per message, instead of on every search.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/msgstore</code></p>
-<h3 id="s24-40-ncpdp"><span class="num">24.40</span> ncpdp</h3>
+<h3 id="s24-41-ncpdp"><span class="num">24.41</span> ncpdp</h3>
 <p>Writing a field in an NCPDP transmission.</p>
 <p># Why a write refuses an ambiguous path</p>
 <p>Read returns every value a path addresses, because a filter asking whether any DUR conflict is a therapeutic duplication should see all of them. A write cannot work that way. If D7 addresses the product codes of two claims in one transmission, setting D7 has no single meaning: writing both would change a drug nobody asked about, and writing the first would silently leave the second.</p>
 <p>So a write refuses a path that addresses more than one field, and the error names the qualified form that would be unambiguous. This is the same reasoning that gives the transformation steps no remove action: where the honest answer is that the configuration is ambiguous, saying so beats picking one.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/ncpdp</code></p>
-<h3 id="s24-41-oidc"><span class="num">24.41</span> oidc</h3>
+<h3 id="s24-42-oidc"><span class="num">24.42</span> oidc</h3>
 <p>Package oidc verifies OpenID Connect identities.</p>
 <p>Written against the standard library rather than a JWT dependency. Authentication is the one place where an unaudited dependency is least acceptable, signature verification for the algorithms that matter is about a hundred lines of crypto/rsa and crypto/ecdsa, and Perfuse already carries enough that adding more needs a reason rather than a habit.</p>
 <p>The scope is deliberately narrow: verify that an identity provider vouched for a person, and report what it said about them. Everything else - what they may do, how long the session lasts - stays with Perfuse, because an identity provider knows who somebody is and not what they are allowed to do in an interface engine.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/oidc</code></p>
-<h3 id="s24-42-parity"><span class="num">24.42</span> parity</h3>
+<h3 id="s24-43-parity"><span class="num">24.43</span> parity</h3>
 <p>Package parity compares what Perfuse produces against what the engine being replaced produced.</p>
 <p># Why this exists</p>
 <p>Perfuse can import a Mirth channel and can trace what it would do with a message. Neither of those answers the question somebody actually has before moving a live feed, which is: will this produce the same output as the thing that has been running for six years?</p>
@@ -4369,7 +4501,7 @@ destinations:
 <p>A run over fifty thousand messages that reports four thousand differences has told somebody nothing they can act on. The same run reporting that PID-8 differs in every message because the old engine mapped M to Male has told them exactly one thing to decide about.</p>
 <p>So findings are grouped by field, with a count, an example, and the distinct value pairs seen. One decision per finding is the unit somebody can work through.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/parity</code></p>
-<h3 id="s24-43-pas278"><span class="num">24.43</span> pas278</h3>
+<h3 id="s24-44-pas278"><span class="num">24.44</span> pas278</h3>
 <p>Package pas278 maps between Da Vinci prior authorisation and the X12 278 transaction.</p>
 <p># Why this exists</p>
 <p>CMS-0057-F requires payers to expose a FHIR prior authorisation API by 1 January 2027. It does not replace the X12 278, and it was never going to: a payer&#39;s utilisation management system decides authorisations and speaks 278. So a payer meeting the rule is translating FHIR to 278 and back, and a provider sending 278 today will be sending FHIR tomorrow to the same payers who still accept both.</p>
@@ -4380,17 +4512,17 @@ destinations:
 <li><strong>A decision is never upgraded.</strong> Partial certification does not become approval, and a request the payer refused to consider does not become a denial. Both of those collapses are available in the obvious mapping and both are wrong in the direction that costs somebody weeks: an appeal filed against a decision nobody made, or six sessions booked against three approved. - <strong>Nothing is invented to fill a required field.</strong> Where the target format demands something the source does not carry, the mapping reports it as a note rather than supplying a plausible default. A fabricated authorisation number is worse than an absent one. - <strong>Every judgement is reported.</strong> Notes come back with the result, so a person can read the handful that needed a decision rather than the whole output. - <strong>Round trips are tested, not assumed.</strong> A mapping that loses a field in one direction is found by converting back and comparing, which is the only way to see a field nobody thought to assert on.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/pas278</code></p>
-<h3 id="s24-44-pdf"><span class="num">24.44</span> pdf</h3>
+<h3 id="s24-45-pdf"><span class="num">24.45</span> pdf</h3>
 <p>Package pdf writes simple text documents, using only the standard library.</p>
 <p>Mirth&#39;s Document Writer renders HTML to PDF, which needs a layout engine. That is not what this is. This produces a plain, paginated text document with a monospaced font, and it exists because the actual requirement at almost every site that uses that connector is &#34;put this report on a share so somebody can print it&#34; - a discharge summary, a result report, a daily reconciliation. Those are text.</p>
 <p>Refusing the feature entirely would leave a Tier 2 migration blocker in place. Pulling in an HTML rendering engine would cost more than the whole rest of the binary and bring a CVE stream with it, which would undo the argument the bill of materials makes. So: text, honestly described as text, and a site that genuinely needs typeset output is better served by a file destination and a tool built for it.</p>
 <p># Why write a PDF at all rather than a text file</p>
 <p>Because the receiving end is usually a person with a printer and a Windows share, and a .txt file printed from a share loses its pagination, its margins and often its line endings. A PDF prints the same everywhere, which is the entire reason anybody asked for one.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/pdf</code></p>
-<h3 id="s24-45-priorauth"><span class="num">24.45</span> priorauth</h3>
+<h3 id="s24-46-priorauth"><span class="num">24.46</span> priorauth</h3>
 <p>Package priorauth implements the provider-side prior authorization workflow required by CMS-0057. It submits prior auth requests to payer FHIR APIs, tracks responses, and converts between internal types and FHIR resources.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/priorauth</code></p>
-<h3 id="s24-46-publichealth"><span class="num">24.46</span> publichealth</h3>
+<h3 id="s24-47-publichealth"><span class="num">24.47</span> publichealth</h3>
 <p>Package publichealth implements bidirectional public health reporting: electronic case reporting (eCR), electronic lab reporting (ELR), and immunization registry queries.</p>
 <p>Every hospital is legally required to report certain conditions — tuberculosis, measles, hepatitis, COVID-19, sexually transmitted infections, foodborne illness — to state and local public health agencies. The reporting happens through three distinct interfaces:</p>
 <ul>
@@ -4399,14 +4531,14 @@ destinations:
 <p>The package is bidirectional: it reports outward (ELR, eCR, VXU) and queries back (VXQ/VXR). All operations are real-time rather than nightly batch.</p>
 <p>Thread safety: SubmissionLog is safe for concurrent use. The builder functions are pure and safe to call from any goroutine.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/publichealth</code></p>
-<h3 id="s24-47-queue"><span class="num">24.47</span> queue</h3>
+<h3 id="s24-48-queue"><span class="num">24.48</span> queue</h3>
 <p>Package queue is a durable, per-destination delivery queue.</p>
 <p>Without it, a destination that is down for two minutes loses everything sent during those two minutes: retries happen in memory, and when they run out the message is recorded as failed and gone. With it, the message is on disk and keeps its place until the destination comes back.</p>
 <p>Two design decisions shape everything else.</p>
 <p><strong>Order is preserved per destination, and that means a queued destination stops taking the fast path.</strong> HL7 is a stream of events about the same patients: an A01 admits, an A03 discharges. If a failed A01 goes to the queue while the next A03 is delivered directly, the receiving system sees a discharge for a patient it never admitted. So once anything is queued for a destination, everything for that destination queues behind it until the queue drains. That costs throughput during an outage and it is not optional, because the alternative is silent clinical nonsense. It is also the specific thing that goes wrong in other engines when somebody turns on concurrent queue threads to make a backlog drain faster.</p>
 <p><strong>A queued message is an accepted message.</strong> The sender is told AA, because the bytes are on disk and fsynced before the acknowledgement goes out. Saying AE would make a correctly functioning store-and-forward queue look like a fault and invite the sender to resend what we already hold.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/queue</code></p>
-<h3 id="s24-48-s3put"><span class="num">24.48</span> s3put</h3>
+<h3 id="s24-49-s3put"><span class="num">24.49</span> s3put</h3>
 <p>Package s3put writes objects to S3 using only the standard library.</p>
 <p>The obvious way to talk to S3 is the AWS SDK, and the SDK is enormous. This project sells a static binary with eight direct dependencies and a bill of materials that fits on one screen - that is a real argument with the person who reviews software before a hospital installs it, and trading it away for one connector would be a bad bargain.</p>
 <p>What S3 actually needs is an HTTP PUT and a signature. Signature Version 4 is fully specified, it is deterministic, and AWS publishes test vectors for it. So it is implemented here: about two hundred lines against crypto/hmac and net/http, with no new dependency and nothing to patch when the SDK has an advisory.</p>
@@ -4414,12 +4546,12 @@ destinations:
 <p>No multipart upload, no retries of its own, no credential chain beyond static keys and the standard environment variables. An HL7 message is kilobytes, so multipart solves a problem this does not have; the engine already retries; and an instance-role credential chain would mean IMDS calls, caching and refresh logic, which is where a small implementation stops being small. If somebody needs those, the honest answer is a file destination and a sync tool, not a half-built SDK.</p>
 <p>It works with anything speaking the S3 API - MinIO, Ceph, Wasabi, Backblaze - because it is just signed HTTP. That is a side effect worth having, since a hospital object store is often not AWS.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/s3put</code></p>
-<h3 id="s24-49-saml"><span class="num">24.49</span> saml</h3>
+<h3 id="s24-50-saml"><span class="num">24.50</span> saml</h3>
 <p>Exclusive XML Canonicalization (exc-c14n) per https://www.w3.org/TR/xml-exc-c14n/</p>
 <p>This is the byte-exact canonical form that an XML signature signs. Getting it wrong means valid signatures appear invalid and - worse - an implementation that gets it mostly right will pass in testing against its own signatures while rejecting real IdP responses.</p>
 <p>The rules that matter for SAML: - Namespace declarations are rendered only if visibly utilised by the element or its attributes. - Inherited namespaces that an element uses but did not declare are rendered as if declared on that element. - Attributes are sorted: namespace declarations first (sorted by prefix), then other attributes (sorted by expanded name: namespace URI then local name). - Empty elements use start-tag/end-tag, never self-closing. - Text nodes are output verbatim; CDATA is replaced by its content with entity escaping. - Processing instructions and comments outside the document element are excluded.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/saml</code></p>
-<h3 id="s24-50-scim"><span class="num">24.50</span> scim</h3>
+<h3 id="s24-51-scim"><span class="num">24.51</span> scim</h3>
 <p>Package scim implements SCIM 2.0, the protocol identity providers use to provision accounts.</p>
 <p>Okta, Entra ID, Google Workspace and OneLogin all speak it. An administrator adds somebody to a group in the identity provider, and within a minute an account appears here with the right role. They remove them, and the account goes away.</p>
 <p># Deprovisioning is the point</p>
@@ -4432,7 +4564,7 @@ destinations:
 <p># Why it is a separate package</p>
 <p>SCIM&#39;s shapes are not Perfuse&#39;s. It has its own error format, its own list envelope, its own patch language, and its own opinions about attribute casing. Keeping the translation in one place means the handlers can be about what happens to an account rather than about JSON.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/scim</code></p>
-<h3 id="s24-51-script"><span class="num">24.51</span> script</h3>
+<h3 id="s24-52-script"><span class="num">24.52</span> script</h3>
 <p>Package script runs Mirth Connect JavaScript.</p>
 <p>The goal is that a channel&#39;s scripts move across untouched. That is a compatibility exercise, not a design exercise, so the shape of everything here is dictated by what Mirth exposes: msg and tmp as E4X trees, six maps with Java&#39;s Map methods, the $ family of lookup functions, logger, and a handful of utility objects whose method names and date-format strings are Java&#39;s.</p>
 <p>Three decisions are ours rather than Mirth&#39;s, and each is a deliberate departure:</p>
@@ -4440,7 +4572,7 @@ destinations:
 <p>Java interoperability is refused with an error naming the class, rather than returning undefined. A script reaching into Packages.java.sql cannot be made to work here, and the useful outcome is a message saying exactly that at the line where it happens, not a NullPointerException three lines later.</p>
 <p>File and database access are off unless a channel turns them on. Mirth grants both to every script by default. A transformer that can read any file the process can read is a reasonable thing to want and an unreasonable default.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/script</code></p>
-<h3 id="s24-52-settings"><span class="num">24.52</span> settings</h3>
+<h3 id="s24-53-settings"><span class="num">24.53</span> settings</h3>
 <p>Package settings is the single description of everything about a Perfuse server that an operator may change.</p>
 <p># Why this exists</p>
 <p>Before this package, roughly thirty things were command-line flags and nothing else. Changing how long messages are kept meant editing a service definition and restarting, which in a hospital means a change ticket - so in practice nobody changed them, and a default chosen on the first afternoon became the setting forever.</p>
@@ -4454,11 +4586,11 @@ destinations:
 <p>The file wins once it exists, and flags supply the initial contents. The alternative - flags always winning - would make the interface a liar, since anything ever passed on a command line could be edited and saved and silently ignored.</p>
 <p>A flag that disagrees with the file is reported at startup, naming both values, because otherwise the flag stays in the service definition for years and the next person to read it believes it.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/settings</code></p>
-<h3 id="s24-53-sftpconn"><span class="num">24.53</span> sftpconn</h3>
+<h3 id="s24-54-sftpconn"><span class="num">24.54</span> sftpconn</h3>
 <p>Package sftpconn opens SFTP connections.</p>
 <p>Split out from the connectors because the interesting part is authentication and host key verification, and both are identical whether a channel is collecting files or writing them. Two copies would drift, and the half that drifted would be the half that stopped verifying.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sftpconn</code></p>
-<h3 id="s24-54-shadow"><span class="num">24.54</span> shadow</h3>
+<h3 id="s24-55-shadow"><span class="num">24.55</span> shadow</h3>
 <p>Package shadow compares a candidate channel against the live one.</p>
 <p>The comparison itself is the easy part. The whole value is in two guarantees, and both are enforced by construction rather than by configuration:</p>
 <ul>
@@ -4466,7 +4598,7 @@ destinations:
 </ul>
 <p>Anything less than that and shadow mode becomes a way to break production while trying to avoid breaking production.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/shadow</code></p>
-<h3 id="s24-55-soap"><span class="num">24.55</span> soap</h3>
+<h3 id="s24-56-soap"><span class="num">24.56</span> soap</h3>
 <p>Package soap sends SOAP requests and reads SOAP faults, using only the standard library.</p>
 <p>SOAP is a fair amount of ceremony around an HTTP POST, and it is still how a great deal of hospital middleware accepts data - patient administration systems, document repositories, regional record services, anything specified in the decade when this was the answer. Mirth has a Web Service connector, so this is a Tier 2 migration blocker rather than a nice-to-have.</p>
 <p># Why not a generated client</p>
@@ -4475,17 +4607,17 @@ destinations:
 <p>No WSDL parsing, no WS-Security, no MTOM, no WS-Addressing. Those are each a specification in their own right, and pretending to support one while getting a detail wrong is worse than not offering it - a signature that almost verifies is indistinguishable from an attack at the far end. WS-Security in particular is where a half-implementation would do real harm.</p>
 <p>What is here: SOAP 1.1 and 1.2 envelopes, a templated body, the SOAPAction header, and fault detection that reads the fault string rather than reporting &#34;500&#34;.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/soap</code></p>
-<h3 id="s24-56-sqldb"><span class="num">24.56</span> sqldb</h3>
+<h3 id="s24-57-sqldb"><span class="num">24.57</span> sqldb</h3>
 <p>Package sqldb opens database connections for the database source and destination.</p>
 <p>The drivers are registered here and nowhere else, so there is exactly one place that decides what Perfuse can connect to.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqldb</code></p>
-<h3 id="s24-57-sqlitedb"><span class="num">24.57</span> sqlitedb</h3>
+<h3 id="s24-58-sqlitedb"><span class="num">24.58</span> sqlitedb</h3>
 <p>Package sqlitedb opens SQLite the way a server needs it: one connection for writes and several for reads.</p>
 <p>The reason is a failure mode that only appears once a deployment has been running for a while. SQLite in WAL mode lets readers run alongside a writer, but Go&#39;s connection pool sits above SQLite, so a pool of one serialises everything regardless of what the database would allow. A message browser search scanning the payload column then holds the only connection, and every arriving message waits behind it.</p>
 <p>Measured on this machine, a write takes 104µs with the store idle and 2.6ms while a search scans four thousand messages: twenty-five times slower. That scales with the table, so at a few hundred thousand stored messages a report turns into seconds of delivery latency, and a write is on the acknowledgement path. The sender sees a timeout, resends, and somebody spends a morning looking for a problem in the network.</p>
 <p>Splitting the pools costs nothing and removes the interaction: reports get their own connections, and the writer keeps one to itself because SQLite permits exactly one writer anyway.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqlitedb</code></p>
-<h3 id="s24-58-steps"><span class="num">24.58</span> steps</h3>
+<h3 id="s24-59-steps"><span class="num">24.59</span> steps</h3>
 <p>Declarative transformation steps, for any message format.</p>
 <p># Why this is shared</p>
 <p>The step vocabulary - set, copy, clear, map, replace, trim, case, each with a description and an optional condition - has nothing to do with any particular format. Only three things differ between formats: how a path is written, how a value is read, and how it is written back.</p>
@@ -4493,18 +4625,18 @@ destinations:
 <p># What a format supplies</p>
 <p>An Accessor: a path compiler, a condition compiler, and an optional veto on steps it cannot honour. Nothing else.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/steps</code></p>
-<h3 id="s24-59-stomp"><span class="num">24.59</span> stomp</h3>
+<h3 id="s24-60-stomp"><span class="num">24.60</span> stomp</h3>
 <p>Package stomp speaks STOMP 1.2 to a message broker.</p>
 <p>This is what &#34;JMS support&#34; has to mean in a program that is not Java. JMS is an API rather than a protocol, so there is nothing to implement: what a site actually needs is for Perfuse to talk to the broker sitting behind their JMS applications.</p>
 <p>STOMP rather than OpenWire, and the reasoning is worth recording because the obvious answer is wrong. OpenWire is ActiveMQ&#39;s native protocol and a binary serialisation of JMS commands - weeks of work, specific to one broker family, and undocumented except by its implementation. ActiveMQ auto-detects STOMP, AMQP and MQTT on the same port it serves OpenWire on, so a text protocol reaches the same brokers. STOMP covers ActiveMQ Classic, Artemis and RabbitMQ; AMQP 1.0 would add Azure Service Bus and IBM MQ, and is the sensible next one rather than OpenWire.</p>
 <p>Written against the standard library. A broker client is not the place for a dependency whose failure modes are somebody else&#39;s to explain, and the framing here is small enough that owning it costs less than reading their issue tracker.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/stomp</code></p>
-<h3 id="s24-60-store"><span class="num">24.60</span> store</h3>
+<h3 id="s24-61-store"><span class="num">24.61</span> store</h3>
 <p>Package store holds the data that is genuinely stateful: users, sessions and an audit trail.</p>
 <p>Channels are deliberately not in here. They live in files, because that is what gives git, diffs, code review and environment promotion for free. Putting channels in a database is the decision that forces every one of those to be bought separately, and it is the reason a third-party product exists purely to shuttle Mirth channels between its database and a git repository.</p>
 <p>So the split is: configuration in files, identity and history in SQLite.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/store</code></p>
-<h3 id="s24-61-tefca"><span class="num">24.61</span> tefca</h3>
+<h3 id="s24-62-tefca"><span class="num">24.62</span> tefca</h3>
 <p>Package tefca implements the parts of TEFCA participation that do not require a QHIN connection.</p>
 <p># What is real</p>
 <p>Purpose-of-use validation, configuration validation, and the audit trail - including its persistence, its query interface and its obligation to record failed attempts as well as successful ones. That last part is not a technicality: a run of failed deliveries to one recipient is how a misconfigured partner shows up, and a run of failed queries for different patients is how probing shows up.</p>
@@ -4514,7 +4646,7 @@ destinations:
 <p># What completing it requires</p>
 <p>Onboarding with a Qualified Health Information Network, mutually authenticated TLS using certificates issued through that process, and either the IHE profiles the Common Agreement started with or Facilitated FHIR as defined by the Sequoia Project&#39;s standard operating procedure, effective 8 March 2026. None of it can be written speculatively: it is tested against a real QHIN or it is not tested, and an untested exchange implementation is the same defect as no implementation wearing a better disguise.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tefca</code></p>
-<h3 id="s24-62-tenant"><span class="num">24.62</span> tenant</h3>
+<h3 id="s24-63-tenant"><span class="num">24.63</span> tenant</h3>
 <p>Package tenant provides the identity and isolation rules for multi-tenant operation.</p>
 <p>An HIE, a clearinghouse or a managed service provider runs one engine on behalf of many organisations. Mirth cannot do this - one instance serves one organisation, and an MSP ends up running fifty JVMs and fifty databases.</p>
 <p># What a tenant owns</p>
@@ -4523,19 +4655,19 @@ destinations:
 <p>The dangerous failure here is not a crash. It is tenant A seeing tenant B&#39;s messages, which is a reportable breach rather than a bug. A design where every query takes a tenant_id parameter fails the first time somebody writes a query and forgets one, and that query looks perfectly correct in review.</p>
 <p>So the tenant is not a parameter. Data access goes through a handle that already carries it, and there is no way to reach the tables without one. Forgetting is not available.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tenant</code></p>
-<h3 id="s24-63-tlsconf"><span class="num">24.63</span> tlsconf</h3>
+<h3 id="s24-64-tlsconf"><span class="num">24.64</span> tlsconf</h3>
 <p>Package tlsconf builds TLS configuration from files and describes certificates.</p>
 <p>This is the free equivalent of an extension Mirth now charges for. Most of the value is not the encryption, which is a few lines, but the part that stops somebody deploying something they think is secure and is not: refusing to skip verification silently, insisting a client certificate is actually checked when one is requested, and saying plainly when a certificate is about to expire.</p>
 <p>An expired certificate on an interface feed is a genuine hospital outage, and it happens because nobody was told. The describing half of this package exists for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tlsconf</code></p>
-<h3 id="s24-64-tomirth"><span class="num">24.64</span> tomirth</h3>
+<h3 id="s24-65-tomirth"><span class="num">24.65</span> tomirth</h3>
 <p>Package tomirth writes a Perfuse channel back out as Mirth channel XML.</p>
 <p>Why this exists. The objection to adopting a new integration engine is rarely &#34;is it any good&#34;. It is &#34;what if we are wrong and we are stuck&#34;, and the cheapest answer to that is being able to walk back out. Perfuse has read Mirth&#39;s channels since the beginning; until now it could not write one, which made the reassurance one-directional and therefore not much of a reassurance.</p>
 <p>How it avoids the trap that made the first attempt useless. Mirth&#39;s XML is XStream&#39;s output, and XStream reads the class and version attributes as instructions: an element it does not recognise is dropped without a word, and a channel it cannot assemble is stored with its description replaced by &#34;This channel is invalid. Verify all required extensions are loaded correctly&#34; and its destinations discarded. Nothing in that response names the element at fault. An exporter that composes property blocks from a reading of the format therefore fails in the one way that is expensive to diagnose, which is what happened: this repository carried an exporter with nine passing tests whose output Mirth threw away, because every test compared it against our own parser instead of a server.</p>
 <p>So none of the property blocks are composed here. scripts/mirth-dump-connector-templates.sh has Mirth&#39;s own ObjectXMLSerializer serialise the defaults of each connector properties class, and those documents are committed under templates/. This package substitutes values into them, and mirth.SetRawProperty refuses any path the template does not already contain - so a mistake is an error naming the path, at the moment of export, rather than a channel that vanishes on import.</p>
 <p>What it will not do. A transport with no Mirth equivalent is refused by name rather than approximated. An export that quietly turned an S3 destination into a file writer would be worse than no export at all, because the channel would import cleanly and deliver to the wrong place.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tomirth</code></p>
-<h3 id="s24-65-trace"><span class="num">24.65</span> trace</h3>
+<h3 id="s24-66-trace"><span class="num">24.66</span> trace</h3>
 <p>Package trace produces distributed traces for messages moving through a channel, and exports them over OTLP/HTTP with the JSON encoding.</p>
 <p>Why this exists rather than the OpenTelemetry SDK: the SDK plus an OTLP exporter pulls in roughly sixty modules and adds about as much to the binary as the whole of the rest of this program. What is actually needed here is narrow - W3C trace context propagation, a span model, head sampling, and a batched HTTP POST - and OTLP/JSON is a documented stable encoding that can be produced with the standard library alone. Same trade as choosing lib/pq over pgx: take the small thing when only part of the big thing is wanted.</p>
 <p>The consequence worth stating: there is no auto-instrumentation and no vendor-specific exporter. Spans are the ones this program creates deliberately, and they go to any OTLP endpoint - a collector, Jaeger, Grafana Tempo, Honeycomb, Datadog&#39;s OTLP ingest.</p>
@@ -4544,12 +4676,12 @@ destinations:
 <p># Tracing must never affect delivery</p>
 <p>Every operation here is best-effort. Spans are dropped when the buffer is full, export failures are counted and never retried into the message path, and no call blocks on the network. A dropped span is an inconvenience. A message delayed or lost because the tracing backend was slow is a clinical incident, so the trade is never in question.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/trace</code></p>
-<h3 id="s24-66-transform"><span class="num">24.66</span> transform</h3>
+<h3 id="s24-67-transform"><span class="num">24.67</span> transform</h3>
 <p>Package transform applies declarative changes to a message.</p>
 <p>This is the layer meant to carry the ordinary work, with scripting kept as a marked escape hatch. The distinction is not stylistic. A step declared in YAML can be validated before it runs, shown in a diff, reviewed by somebody who does not read JavaScript, and reported on; a script can only be executed and hoped about. Most of what Mirth transformers actually do is boring - copy a field, pad an identifier, map a code through a table, clear something that should not leave the building - and all of that belongs here.</p>
 <p>Every step names its target explicitly and every step is reversible in the sense that it says what it did, because the most expensive failure in an interface is a transformation nobody knew was happening.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/transform</code></p>
-<h3 id="s24-67-translate"><span class="num">24.67</span> translate</h3>
+<h3 id="s24-68-translate"><span class="num">24.68</span> translate</h3>
 <p>Package translate converts a Mirth channel into a Perfuse channel definition.</p>
 <p><code>perfuse explain</code> reports what blocks a migration. This does most of the migration, which is a different and much larger claim, so it is deliberately conservative about what it will assert.</p>
 <p>Three rules shape the whole thing.</p>
@@ -4557,26 +4689,26 @@ destinations:
 <p><strong>Declarative where it is certain, script where it is not.</strong> A Mapper step that copies a field becomes a declarative step, because that is readable and checkable. A JavaScript step becomes a script, because Perfuse runs Mirth&#39;s JavaScript unchanged and rewriting it into something that looks equivalent is exactly where a translator would introduce a difference nobody notices.</p>
 <p><strong>The output is meant to be read.</strong> It carries comments explaining what came from where, and what was left for a person. A migration is reviewed by somebody who has to sign off on it, and an unannotated wall of YAML cannot be reviewed.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/translate</code></p>
-<h3 id="s24-68-udap"><span class="num">24.68</span> udap</h3>
+<h3 id="s24-69-udap"><span class="num">24.69</span> udap</h3>
 <p>Package udap implements the client half of HL7 Security for Scalable Registration, Authentication, and Authorization — the specification TEFCA&#39;s Facilitated FHIR exchange rests on.</p>
 <p>UDAP is a public key infrastructure bolted onto OAuth 2.0. A trust community issues X.509 certificates to its members; a member proves who it is by signing JWTs with the private key and attaching the certificate chain in the JWT header. That replaces the shared client secret of ordinary OAuth, which does not scale to thousands of organisations who have never met.</p>
 <p>Why this package exists at all. The TEFCA item in the queue said the exchange &#34;cannot be written speculatively: it is tested against a real QHIN or it is not tested&#34;. That was half right. Joining a QHIN needs onboarding and issued certificates and cannot be faked. But the security profile underneath it is a published HL7 implementation guide with public reference servers, and one of them answers on the open internet. So the part that can be verified is verified here, and the part that cannot is refused at the boundary rather than guessed at.</p>
 <p>The distinction matters because of what happened with SAML in this repository: a thousand lines of tests passed, five of them specifically about signature canonicalisation, while no real identity provider could authenticate anybody. Both halves had been written here and agreed with each other. The lesson taken from it is that a security implementation is worth nothing until something somebody else wrote has accepted or rejected it.</p>
 <p>Specification references: - HL7 UDAP Security STU 1: http://hl7.org/fhir/us/udap-security/STU1/ - TEFCA SOP Facilitated FHIR Implementation v2.0, effective 8 March 2026</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/udap</code></p>
-<h3 id="s24-69-v2fhir"><span class="num">24.69</span> v2fhir</h3>
+<h3 id="s24-70-v2fhir"><span class="num">24.70</span> v2fhir</h3>
 <p>Package v2fhir maps HL7 v2 messages to FHIR resources.</p>
 <p>Mapping is where interoperability projects actually fail, so the rules this package follows are stated rather than implied:</p>
 <ul>
 <li>A value that cannot be mapped is preserved as text, never guessed at. A local code turned into a plausible-looking standard code is worse than an uncoded value, because the receiver believes it. - Every mapping decision that involved judgement is reported as a note, so a human can check the ones that matter instead of reading the whole output. - Timestamps are converted, not copied. HL7 v2 timestamps are not ISO 8601, and a dateTime carrying a local time with no offset is the single most common reason a converted resource is rejected. - Units keep their original text and gain a UCUM code only when the mapping is certain. A wrong unit code is a patient-safety defect, not a formatting problem.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/v2fhir</code></p>
-<h3 id="s24-70-vcs"><span class="num">24.70</span> vcs</h3>
+<h3 id="s24-71-vcs"><span class="num">24.71</span> vcs</h3>
 <p>Package vcs reads the history of channel files from git.</p>
 <p>Channel history is a paid extension elsewhere, and it is a paid extension because those engines keep channels in a database, so tracking changes means building a change-tracking system. Perfuse keeps channels in files, so the history already exists and has since the first commit. This package only has to read it.</p>
 <p>It shells out to git rather than embedding a git library. The library would add a large dependency to a binary whose selling point is having four, and it would buy nothing: a deployment keeping its channels under version control has git installed, and one that does not gets a clear &#34;not a git repository&#34; rather than a subtly different implementation of the same thing.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vcs</code></p>
-<h3 id="s24-71-vfs"><span class="num">24.71</span> vfs</h3>
+<h3 id="s24-72-vfs"><span class="num">24.72</span> vfs</h3>
 <p>Package vfs is the small set of file operations a polling connector needs.</p>
 <p># Why an interface rather than four connectors</p>
 <p>Perfuse collects files from a local disk, an SFTP server, an FTP server, a Windows share and a WebDAV server. The transfer differs in every case. Everything that actually decides whether messages survive does not:</p>
@@ -4588,12 +4720,12 @@ destinations:
 <p>No writing, beyond what disposal needs. Sending files is a different problem with different failure modes - a partially written file at the far end, which the existing senders handle by writing to a temporary name and renaming. Folding both directions into one interface would make each harder to reason about.</p>
 <p>No recursion. A poller that descends into subdirectories collects the archive directory it just moved a file into.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vfs</code></p>
-<h3 id="s24-72-web"><span class="num">24.72</span> web</h3>
+<h3 id="s24-73-web"><span class="num">24.73</span> web</h3>
 <p>Package web serves the built front end from inside the binary.</p>
 <p>The assets are embedded rather than shipped alongside, so deployment stays one file. That is the same reason the engine avoids cgo: an operator should be able to copy a binary onto a server and run it, with no JVM, no installer and no asset directory to get out of step with the executable.</p>
 <p>The built output is committed so that <code>go build</code> works on a checkout without Node installed. Rebuild it with <code>make web</code>.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/web</code></p>
-<h3 id="s24-73-webauthn"><span class="num">24.73</span> webauthn</h3>
+<h3 id="s24-74-webauthn"><span class="num">24.74</span> webauthn</h3>
 <p>Package webauthn verifies passkeys.</p>
 <p>A passkey is a key pair the authenticator holds - Touch ID, Windows Hello, a YubiKey, a phone - where the private half never leaves the device. Signing in means the server sends a random challenge, the authenticator signs it after checking the user is present, and the server verifies the signature against the public key it stored at registration.</p>
 <p>The property that matters is not that it is convenient. It is that there is nothing to phish. A password can be typed into a convincing copy of a login page; a passkey signature is bound to the origin it was created for, so the copy gets a signature its server cannot use. For an integration engine holding a hospital&#39;s interfaces, that is the difference worth having.</p>
@@ -4603,12 +4735,12 @@ destinations:
 <li>The signing algorithm is fixed at registration and stored with the key. Nothing at sign-in reads an algorithm from the client, because that is algorithm confusion and there is no function here that could do it. - The origin is compared exactly, never by prefix or suffix. A check that accepts anything ending in the right domain accepts an attacker&#39;s subdomain. - A challenge is single-use and expires. It is deleted when consumed, so a captured assertion cannot be replayed. - Attestation is not trusted for anything. The attestation statement is parsed to extract the credential and then its signature is ignored, because verifying it properly needs a maintained root store and pretending to verify it is worse than not claiming to. - The sign count is checked when the authenticator provides one, and its absence is not treated as suspicious. Many authenticators legitimately leave it at zero.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/webauthn</code></p>
-<h3 id="s24-74-winservice"><span class="num">24.74</span> winservice</h3>
+<h3 id="s24-75-winservice"><span class="num">24.75</span> winservice</h3>
 <p>Package winservice runs Perfuse as a Windows service.</p>
 <p>This file is the everywhere-else half. It exists so that cmd/perfuse can call into this package without wrapping every call site in a build tag: the subcommand is always compiled, and on Linux or macOS it explains that services are a Windows idea rather than failing to exist.</p>
 <p>Refusing with a clear sentence is better than hiding the subcommand. Somebody following Windows instructions on the wrong machine gets told what is actually going on, and the equivalent for their platform.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/winservice</code></p>
-<h3 id="s24-75-x12"><span class="num">24.75</span> x12</h3>
+<h3 id="s24-76-x12"><span class="num">24.76</span> x12</h3>
 <p>Reading and writing values at a path.</p>
 <p># Why this is separate from Path</p>
 <p>path.go decides what a path expression means. This file resolves one against an actual interchange. Kept apart because the parsing rules are worth reading without the byte handling, and because the parser is used by the configuration validator, which has no message to resolve against.</p>
@@ -4616,7 +4748,7 @@ destinations:
 <p>Segment.elements are subslices of Segment.raw, and Message.segs indexes into Message.raw. Editing a value in place changes the length of everything after it, so every one of those slices would need adjusting, and any that was missed would read correct until the one message where it did not.</p>
 <p>So a write rebuilds the segment, rebuilds the interchange, and parses it again. That costs a parse per changed message and buys the guarantee that a Message returned from here is exactly what parsing its own bytes produces. There is no state where the indexes and the bytes disagree, because that state is unrepresentable.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12</code></p>
-<h3 id="s24-76-x12xml"><span class="num">24.76</span> x12xml</h3>
+<h3 id="s24-77-x12xml"><span class="num">24.77</span> x12xml</h3>
 <p>Package x12xml converts an X12 interchange to and from the node tree the transformation, filter and script layers already work on.</p>
 <p>This is the same trick hl7xml plays, and for the same reason. Everything above the parser - declarative transformation steps, the filter language, JavaScript, the channel test runner - operates on an xtree.Node rather than on a format. Render X12 into that tree and all of it works on claims without a line of new code in any of those packages. Write a second addressing layer instead and every one of them grows an X12 branch that has to be kept in step with the HL7 one for ever.</p>
 <p># Element naming</p>
@@ -4624,7 +4756,7 @@ destinations:
 <p>Two independent reasons point the same way. It is what every 837 and 835 implementation guide writes, so a person reading the guide and a person reading the tree see the same token. And it is what Mirth&#39;s own X12 serialiser produces, so a Mirth script that walks msg[&#39;CLM&#39;][&#39;CLM01&#39;] keeps working - which is the whole migration promise.</p>
 <p>The element number is always two digits, matching the guides, so CLM01 rather than CLM1. Composite components add a further dotted number, CLM05.1, because X12 composites are one level deep and there is nothing to collide with.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12xml</code></p>
-<h3 id="s24-77-xmldsig"><span class="num">24.77</span> xmldsig</h3>
+<h3 id="s24-78-xmldsig"><span class="num">24.78</span> xmldsig</h3>
 <p>Package xmldsig implements XML Digital Signatures and the XAdES profile of them.</p>
 <p># Why this is written rather than borrowed</p>
 <p>A signed clinical document is a legal artefact. It asserts that a named person, at a named time, took responsibility for a specific set of bytes. Getting that wrong in either direction is serious: a signature that cannot be verified makes a valid document look forged, and a verifier that is too generous accepts a document somebody altered.</p>
@@ -4634,7 +4766,7 @@ destinations:
 <p># Exclusive rather than inclusive, by default</p>
 <p>Inclusive canonicalisation pulls in every namespace declaration that is in scope, including ones the signed element never uses. That makes a signature break when the document is later embedded inside something that declares an unrelated namespace on an ancestor, which is precisely what happens when a CDA is put inside a SOAP envelope or an IHE metadata wrapper. Exclusive canonicalisation includes only the declarations the element actually uses, and is what document exchange profiles specify for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xmldsig</code></p>
-<h3 id="s24-78-xtree"><span class="num">24.78</span> xtree</h3>
+<h3 id="s24-79-xtree"><span class="num">24.79</span> xtree</h3>
 <p>Package xtree is a mutable XML tree.</p>
 <p>Three very different features need to modify XML: HL7 transformations, which Mirth models as XML because that is what its scripts operate on; clinical documents, which are XML natively; and the declarative transformation steps. They share this one tree rather than each growing their own, because the alternative is three models that disagree about what an empty element means.</p>
 <p>The design goal is faithfulness to E4X semantics, since Mirth scripts are E4X and the whole point of running them unchanged is that they behave the same. That drives two decisions that would otherwise look strange: a node keeps a pointer to its parent, because E4X exposes parent(), and children are ordered with duplicates allowed, because an HL7 field repetition is literally a repeated element and scripts index into them by position.</p>
@@ -4652,6 +4784,7 @@ destinations:
 <tr><td><code>ack_sender_id</code></td><td>X12 Options</td></tr>
 <tr><td><code>ack_sender_qualifier</code></td><td>X12 Options</td></tr>
 <tr><td><code>acknowledge</code></td><td>HL7v3 Options, X12 Options</td></tr>
+<tr><td><code>acks</code></td><td>Kafka Destination</td></tr>
 <tr><td><code>action</code></td><td>SOAP Destination</td></tr>
 <tr><td><code>addr</code></td><td>Broker Destination, Broker Source</td></tr>
 <tr><td><code>address</code></td><td>DICOM Destination, DICOM Query Source, Destination, TCP Dest</td></tr>
@@ -4676,6 +4809,7 @@ destinations:
 <tr><td><code>big_endian</code></td><td>TCP Framing</td></tr>
 <tr><td><code>body</code></td><td>SMTP Destination, SOAP Destination</td></tr>
 <tr><td><code>broker</code></td><td>Destination, Source</td></tr>
+<tr><td><code>brokers</code></td><td>Kafka Destination, Kafka Source</td></tr>
 <tr><td><code>bucket</code></td><td>S3 Destination</td></tr>
 <tr><td><code>called_ae</code></td><td>DICOM Destination, DICOM Query Source</td></tr>
 <tr><td><code>calling_ae</code></td><td>DICOM Destination, DICOM Query Source</td></tr>
@@ -4687,7 +4821,9 @@ destinations:
 <tr><td><code>column</code></td><td>Database Source</td></tr>
 <tr><td><code>columns</code></td><td>Delimited</td></tr>
 <tr><td><code>comment</code></td><td>Delimited</td></tr>
+<tr><td><code>commit_after_delivery</code></td><td>Kafka Source</td></tr>
 <tr><td><code>compare</code></td><td>Shadow</td></tr>
+<tr><td><code>compression</code></td><td>Kafka Destination</td></tr>
 <tr><td><code>content_type</code></td><td>Broker Destination, HTTP Destination, S3 Destination</td></tr>
 <tr><td><code>contract</code></td><td>Channel</td></tr>
 <tr><td><code>dataType</code></td><td>Channel</td></tr>
@@ -4732,11 +4868,12 @@ destinations:
 <tr><td><code>framed</code></td><td>FTP Destination, File Poll, S3 Destination, SFTP Destination, SFTP Source</td></tr>
 <tr><td><code>framing</code></td><td>TCP Framing</td></tr>
 <tr><td><code>from</code></td><td>SMTP Destination</td></tr>
+<tr><td><code>from_beginning</code></td><td>Kafka Source</td></tr>
 <tr><td><code>ftp</code></td><td>Destination, Source</td></tr>
-<tr><td><code>group</code></td><td>Channel</td></tr>
+<tr><td><code>group</code></td><td>Channel, Kafka Source</td></tr>
 <tr><td><code>has_header</code></td><td>Delimited</td></tr>
 <tr><td><code>header</code></td><td>SOAP Destination</td></tr>
-<tr><td><code>headers</code></td><td>Broker Destination, CDA Destination, FHIR Destination, HTTP Destination, SOAP Destination</td></tr>
+<tr><td><code>headers</code></td><td>Broker Destination, CDA Destination, FHIR Destination, HTTP Destination, Kafka Destination, SOAP Destination</td></tr>
 <tr><td><code>heartbeat</code></td><td>Broker Source</td></tr>
 <tr><td><code>hl7v3</code></td><td>Channel</td></tr>
 <tr><td><code>host</code></td><td>Broker Destination, Broker Source, FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, SMTP Destination</td></tr>
@@ -4750,10 +4887,11 @@ destinations:
 <tr><td><code>insecure_skip_verify</code></td><td>FTP Destination, FTP Source, SMTP Destination, Web DAV Source</td></tr>
 <tr><td><code>interval</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>javascript</code></td><td>Destination, Source</td></tr>
+<tr><td><code>kafka</code></td><td>Destination, Source</td></tr>
 <tr><td><code>keep_alive</code></td><td>TCP Dest</td></tr>
 <tr><td><code>keep_blank_lines</code></td><td>Delimited</td></tr>
 <tr><td><code>keep_delimiter</code></td><td>TCP Framing</td></tr>
-<tr><td><code>key</code></td><td>S3 Destination</td></tr>
+<tr><td><code>key</code></td><td>Kafka Destination, S3 Destination</td></tr>
 <tr><td><code>key_column</code></td><td>Database Source</td></tr>
 <tr><td><code>key_file</code></td><td>SFTP Destination, SFTP Source</td></tr>
 <tr><td><code>key_passphrase</code></td><td>SFTP Destination, SFTP Source</td></tr>
@@ -4773,9 +4911,10 @@ destinations:
 <tr><td><code>max_depth</code></td><td>Queue Config</td></tr>
 <tr><td><code>max_differences</code></td><td>Shadow</td></tr>
 <tr><td><code>max_file_size</code></td><td>File Poll, SFTP Source</td></tr>
-<tr><td><code>max_message_size</code></td><td>HTTP Source, SOAP Source, Serial Source, Source, TCP Dest, TCP Source</td></tr>
+<tr><td><code>max_message_size</code></td><td>HTTP Source, Kafka Source, SOAP Source, Serial Source, Source, TCP Dest, TCP Source</td></tr>
 <tr><td><code>max_object_bytes</code></td><td>DICOM Source</td></tr>
 <tr><td><code>max_open_conns</code></td><td>Database Destination</td></tr>
+<tr><td><code>mechanism</code></td><td>Kafka SASL</td></tr>
 <tr><td><code>method</code></td><td>HTTP Destination</td></tr>
 <tr><td><code>move_to</code></td><td>File Poll, SFTP Source</td></tr>
 <tr><td><code>name</code></td><td>Channel, Channel Destination, Destination</td></tr>
@@ -4786,7 +4925,7 @@ destinations:
 <tr><td><code>params</code></td><td>Database Destination</td></tr>
 <tr><td><code>parity</code></td><td>Serial Source</td></tr>
 <tr><td><code>passcode</code></td><td>Broker Destination, Broker Source</td></tr>
-<tr><td><code>password</code></td><td>FTP Destination, FTP Source, HTTP Destination, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, SOAP Source, Web DAV Source</td></tr>
+<tr><td><code>password</code></td><td>FTP Destination, FTP Source, HTTP Destination, Kafka SASL, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, SOAP Source, Web DAV Source</td></tr>
 <tr><td><code>path</code></td><td>HTTP Source, SOAP Source</td></tr>
 <tr><td><code>path_style</code></td><td>S3 Destination</td></tr>
 <tr><td><code>patient_root</code></td><td>DICOM Query Source</td></tr>
@@ -4822,6 +4961,7 @@ destinations:
 <tr><td><code>root</code></td><td>FTP Source, File Source, SMB Source</td></tr>
 <tr><td><code>s3</code></td><td>Destination</td></tr>
 <tr><td><code>sample</code></td><td>Shadow</td></tr>
+<tr><td><code>sasl</code></td><td>Kafka Destination, Kafka Source</td></tr>
 <tr><td><code>script</code></td><td>Channel, Java Script Destination, Java Script Source</td></tr>
 <tr><td><code>scripts</code></td><td>Channel</td></tr>
 <tr><td><code>secret_access_key</code></td><td>S3 Destination</td></tr>
@@ -4831,6 +4971,7 @@ destinations:
 <tr><td><code>sender_oid</code></td><td>HL7v3 Options</td></tr>
 <tr><td><code>serial</code></td><td>Source</td></tr>
 <tr><td><code>server_side_encryption</code></td><td>S3 Destination</td></tr>
+<tr><td><code>session_timeout</code></td><td>Kafka Source</td></tr>
 <tr><td><code>session_token</code></td><td>S3 Destination</td></tr>
 <tr><td><code>sftp</code></td><td>Destination, Source</td></tr>
 <tr><td><code>shadow</code></td><td>Channel</td></tr>
@@ -4855,12 +4996,14 @@ destinations:
 <tr><td><code>tcp</code></td><td>Destination, Source</td></tr>
 <tr><td><code>temp_suffix</code></td><td>Document Destination, FTP Destination, SFTP Destination</td></tr>
 <tr><td><code>template</code></td><td>Database Source, Document Destination</td></tr>
-<tr><td><code>timeout</code></td><td>Broker Destination, Broker Source, DICOM Destination, DICOM Query Source, Database Destination, Destination, Document Destination, FTP Destination, FTP Source, Java Script Destination, Java Script Source, S3 Destination, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, Scripts, Shadow, TCP Dest, Web DAV Source</td></tr>
+<tr><td><code>timeout</code></td><td>Broker Destination, Broker Source, DICOM Destination, DICOM Query Source, Database Destination, Destination, Document Destination, FTP Destination, FTP Source, Java Script Destination, Java Script Source, Kafka Destination, Kafka Source, S3 Destination, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, Scripts, Shadow, TCP Dest, Web DAV Source</td></tr>
 <tr><td><code>timezone</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>title</code></td><td>Document Destination</td></tr>
-<tr><td><code>tls</code></td><td>Broker Destination, Broker Source, DICOM Destination, DICOM Query Source, DICOM Source, Destination, HTTP Destination, HTTP Source, SOAP Destination, SOAP Source, Source, TCP Dest, TCP Source</td></tr>
+<tr><td><code>tls</code></td><td>Broker Destination, Broker Source, DICOM Destination, DICOM Query Source, DICOM Source, Destination, HTTP Destination, HTTP Source, Kafka Destination, Kafka Source, SOAP Destination, SOAP Source, Source, TCP Dest, TCP Source</td></tr>
 <tr><td><code>to</code></td><td>SMTP Destination</td></tr>
 <tr><td><code>token</code></td><td>HTTP Source, SOAP Source</td></tr>
+<tr><td><code>topic</code></td><td>Kafka Destination</td></tr>
+<tr><td><code>topics</code></td><td>Kafka Source</td></tr>
 <tr><td><code>transfer_syntaxes</code></td><td>DICOM Destination, DICOM Source</td></tr>
 <tr><td><code>transformations</code></td><td>Channel, DICOM Options, Delimited, HL7v3 Options, NCPDP Options, Script Options, X12 Options</td></tr>
 <tr><td><code>transformer</code></td><td>Scripts</td></tr>
@@ -4870,7 +5013,7 @@ destinations:
 <tr><td><code>undeploy</code></td><td>Scripts</td></tr>
 <tr><td><code>url</code></td><td>CDA Destination, FHIR Destination, HTTP Destination, SOAP Destination, Web DAV Source</td></tr>
 <tr><td><code>user</code></td><td>FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, Web DAV Source</td></tr>
-<tr><td><code>username</code></td><td>HTTP Destination, SMTP Destination, SOAP Destination, SOAP Source</td></tr>
+<tr><td><code>username</code></td><td>HTTP Destination, Kafka SASL, SMTP Destination, SOAP Destination, SOAP Source</td></tr>
 <tr><td><code>validate_before_send</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>version</code></td><td>CDA Destination, FHIR Destination, SOAP Destination, SOAP Source</td></tr>
 <tr><td><code>webdav</code></td><td>Source</td></tr>

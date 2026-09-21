@@ -207,6 +207,16 @@ func describeSource(c *config.Channel) string {
 		}
 		return out
 
+	case config.SourceKafka:
+		if src.Kafka == nil {
+			return "a Kafka topic"
+		}
+		out := "kafka " + strings.Join(src.Kafka.Topics, ", ") + " at " + strings.Join(src.Kafka.Brokers, ", ")
+		if src.Kafka.TLS != nil {
+			out += " over TLS"
+		}
+		return out
+
 	case config.SourceBroker:
 		if src.Broker == nil {
 			return "a message broker"
@@ -374,6 +384,16 @@ func describeDestination(d config.Destination) string {
 			out = "broker " + d.Broker.Destination + " at " + d.Broker.Addr
 		} else {
 			out = "a message broker"
+		}
+
+	case config.DestinationKafka:
+		if d.Kafka != nil {
+			out = "kafka " + d.Kafka.Topic + " at " + strings.Join(d.Kafka.Brokers, ", ")
+			if d.Kafka.Key != "" {
+				out += " keyed on " + d.Kafka.Key
+			}
+		} else {
+			out = "a Kafka topic"
 		}
 
 	case config.DestinationJavaScript:

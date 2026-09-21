@@ -1,6 +1,6 @@
 module github.com/biodream-llc/perfuse
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/cloudsoda/go-smb2 v0.0.0-20260803221621-0b399b9d036c
@@ -10,6 +10,8 @@ require (
 	github.com/microsoft/go-mssqldb v1.7.2
 	github.com/pkg/sftp v1.13.7
 	github.com/tetratelabs/wazero v1.12.0
+	github.com/twmb/franz-go v1.22.0
+	github.com/twmb/franz-go/pkg/kadm v1.19.0
 	github.com/yuin/gopher-lua v1.1.1
 	go.bug.st/serial v1.8.0
 	golang.org/x/crypto v0.18.0
@@ -36,10 +38,13 @@ require (
 	github.com/jcmturner/goidentity/v6 v6.0.1 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
+	github.com/klauspost/compress v1.20.0 // indirect
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.30 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	modernc.org/libc v1.74.4 // indirect

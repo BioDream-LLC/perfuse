@@ -20,6 +20,7 @@ export type DestinationType =
   | 'cda'
   | 'channel'
   | 'broker'
+  | 'kafka'
   | 's3'
   | 'ftp'
   | 'document'
@@ -45,6 +46,7 @@ export const destinationLabels: Record<DestinationType, string> = {
   dicom: 'An imaging archive (DICOM C-STORE)',
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
+  kafka: 'A Kafka topic',
 }
 
 export const destinationHints: Record<DestinationType, string> = {
@@ -77,6 +79,8 @@ export const destinationHints: Record<DestinationType, string> = {
     'Runs your script instead of sending anywhere. This is the escape hatch: when nothing else here fits, do the work yourself with the message in hand. Returning nothing counts as success, and returning a string fails the delivery with that string as the reason.',
   broker:
     'Publishes over STOMP, which is what crosses the wire for JMS brokers. Persistent by default, so a message survives the broker restarting.',
+  kafka:
+    'Publishes to a Kafka topic. Give it a key - PID-3.1 keys by patient - because Kafka keeps records in order only within a partition, and records with the same key always share one. Without a key there is no guarantee: records may stay together for a while and then move, so a discharge can be read before its admission intermittently, under load.',
 }
 
 /** A single filter condition, as the visual rule builder sees it. */
@@ -361,6 +365,29 @@ export interface Destination {
   /** destBrokerPersistent asks the broker to survive its own restart. True by default, and sent only when turned off. */
   destBrokerPersistent: boolean
 
+  /** A Kafka destination. Named apart from the source's fields because a channel can read from
+   * one cluster and publish to another. */
+  destKafkaBrokers: string
+  destKafkaTopic: string
+  /**
+   * destKafkaKey decides the partition, and therefore decides ordering.
+   *
+   * Kafka keeps records in order only within a partition, and records sharing a key share a
+   * partition. PID-3.1 keys by patient, which keeps one patient's events in sequence while
+   * letting different patients proceed in parallel.
+   *
+   * Without a key there is no guarantee. Measured against a real broker, unkeyed records stayed
+   * in one partition and then moved between batches - so ordering holds by accident and fails at
+   * a boundary nobody can see, which is worse than failing consistently.
+   */
+  destKafkaKey: string
+  /** destKafkaAcks is all, leader or none. All is the only one that survives a broker failing mid-write. */
+  destKafkaAcks: 'all' | 'leader' | 'none'
+  destKafkaCompression: 'none' | 'gzip' | 'snappy' | 'lz4' | 'zstd'
+  destKafkaSaslMechanism: '' | 'plain' | 'scram-sha-256' | 'scram-sha-512'
+  destKafkaSaslUsername: string
+  destKafkaSaslPassword: string
+
   /** smtpStartTLS encrypts the connection. True by default, and sent only when turned off. */
   smtpStartTLS: boolean
 
@@ -448,6 +475,7 @@ export type SourceKind =
   | 'dicom_query'
   | 'javascript'
   | 'broker'
+  | 'kafka'
   | 'soap'
   | 'file'
   | 'ftp'
@@ -949,6 +977,42 @@ export interface ChannelDraft {
   /** brokerReconnect is the wait after a dropped connection. */
   brokerReconnect: string
 
+  // A Kafka topic. Separate from the broker fields above because Kafka's model differs where it
+  // matters: a topic is partitioned, ordering holds only within a partition, and the consumer
+  // tracks its own position rather than the broker tracking it.
+
+  /** kafkaBrokers is the bootstrap list, comma separated. One address is a single point of failure for starting up. */
+  kafkaBrokers: string
+  /** kafkaTopics is the topics to read, comma separated. */
+  kafkaTopics: string
+  /**
+   * kafkaGroup is the consumer group, and it is required.
+   *
+   * It is what remembers how far this channel has read. A generated one would restart from
+   * scratch on every restart and leave the old group holding offsets nobody reads.
+   */
+  kafkaGroup: string
+  /**
+   * kafkaFromBeginning replays the topic from its start when the group is new.
+   *
+   * Off by default so a channel pointed at a topic with two years of history does not replay two
+   * years of patient events into a live system on the day it is switched on.
+   */
+  kafkaFromBeginning: boolean
+  /**
+   * kafkaCommitAfterDelivery commits the position only once a message has been handled.
+   *
+   * On by default, and it is the difference between losing a message and seeing it twice.
+   * Committing on read means a crash loses the message with nothing recording it existed.
+   */
+  kafkaCommitAfterDelivery: boolean
+  /** kafkaSessionTimeout is how long before the coordinator reassigns this consumer's partitions. */
+  kafkaSessionTimeout: string
+  /** kafkaSaslMechanism is plain, scram-sha-256 or scram-sha-512. Empty means no authentication. */
+  kafkaSaslMechanism: '' | 'plain' | 'scram-sha-256' | 'scram-sha-512'
+  kafkaSaslUsername: string
+  kafkaSaslPassword: string
+
   ftpSrcHost: string
   ftpSrcUser: string
   ftpSrcPassword: string
@@ -1215,6 +1279,24 @@ export function draftToWire(draft: ChannelDraft): unknown {
         stableFor: secondsOrNone(draft.sftpStableSeconds),
         keyPassphrase: draft.sftpKeyPassphrase || undefined,
         maxFileSize: positiveOrNone(draft.sftpMaxFileSize),
+      }
+      break
+    case 'kafka':
+      source.kafka = {
+        brokers: commaList(draft.kafkaBrokers),
+        topics: commaList(draft.kafkaTopics),
+        group: draft.kafkaGroup || undefined,
+        fromBeginning: draft.kafkaFromBeginning || undefined,
+        // Sent only when turned off, because true is the default on the server too. Sending
+        // it always would write the safe value into every file and make the unsafe one look
+        // like a deliberate edit rather than a deliberate risk.
+        commitAfterDelivery: draft.kafkaCommitAfterDelivery ? undefined : false,
+        sessionTimeout: draft.kafkaSessionTimeout || undefined,
+        sasl: kafkaSasl(
+          draft.kafkaSaslMechanism,
+          draft.kafkaSaslUsername,
+          draft.kafkaSaslPassword,
+        ),
       }
       break
     case 'broker':
@@ -1717,6 +1799,23 @@ function destinationToWire(d: Destination): unknown {
       out.tcp = tcp
       break
     }
+    case 'kafka':
+      out.kafka = {
+        brokers: commaList(d.destKafkaBrokers),
+        topic: d.destKafkaTopic || undefined,
+        key: d.destKafkaKey || undefined,
+        // Sent only when it is not the default, because all-ISR is what the server uses
+        // anyway and writing it into every file would make the weaker settings look
+        // ordinary.
+        acks: d.destKafkaAcks === 'all' ? undefined : d.destKafkaAcks,
+        compression: d.destKafkaCompression === 'snappy' ? undefined : d.destKafkaCompression,
+        sasl: kafkaSasl(
+          d.destKafkaSaslMechanism,
+          d.destKafkaSaslUsername,
+          d.destKafkaSaslPassword,
+        ),
+      }
+      break
     case 'broker':
       out.broker = {
         addr: d.destBrokerAddr || undefined,
@@ -2000,6 +2099,15 @@ export function newDestination(): Destination {
     destBrokerContentType: '',
     // True, matching the server. A message that does not survive a broker restart is a message lost without anything reporting it.
     destBrokerPersistent: true,
+
+    destKafkaBrokers: '',
+    destKafkaTopic: '',
+    destKafkaKey: '',
+    destKafkaAcks: 'all',
+    destKafkaCompression: 'snappy',
+    destKafkaSaslMechanism: '',
+    destKafkaSaslUsername: '',
+    destKafkaSaslPassword: '',
     // True, matching the server's secure default. False here would turn encryption off on any channel built and saved without
     // touching the control.
     smtpStartTLS: true,
@@ -2050,6 +2158,35 @@ export function newDestination(): Destination {
     retryBackoffSeconds: 1,
     retryMaxBackoffSeconds: 60,
     rules: [],
+  }
+}
+
+/** commaList splits a comma-separated field into a list, dropping blanks. */
+function commaList(value: string): string[] | undefined {
+  const out = value
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+  return out.length > 0 ? out : undefined
+}
+
+/**
+ * kafkaSasl builds the authentication block, or nothing when no mechanism is chosen.
+ *
+ * Omitted entirely rather than sent with an empty mechanism, because the server validates the
+ * mechanism when the block is present and an empty one would be refused - turning "I did not
+ * configure authentication" into a rejected channel.
+ */
+function kafkaSasl(
+  mechanism: string,
+  username: string,
+  password: string,
+): { mechanism: string; username?: string; password?: string } | undefined {
+  if (!mechanism) return undefined
+  return {
+    mechanism,
+    username: username || undefined,
+    password: password || undefined,
   }
 }
 
@@ -2226,6 +2363,16 @@ export function emptyDraft(): ChannelDraft {
     brokerSubscriptionID: '',
     brokerHeartbeat: '',
     brokerReconnect: '',
+
+    kafkaBrokers: '',
+    kafkaTopics: '',
+    kafkaGroup: '',
+    kafkaFromBeginning: false,
+    kafkaCommitAfterDelivery: true,
+    kafkaSessionTimeout: '',
+    kafkaSaslMechanism: '',
+    kafkaSaslUsername: '',
+    kafkaSaslPassword: '',
 
     ftpSrcHost: '',
     ftpSrcUser: '',

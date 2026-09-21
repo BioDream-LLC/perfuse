@@ -53,6 +53,8 @@ func DefaultSenderFactory(d config.Destination) (Sender, error) {
 		return NewDICOMSender(d)
 	case config.DestinationBroker:
 		return NewBrokerSender(d)
+	case config.DestinationKafka:
+		return NewKafkaSender(d)
 	case config.DestinationJavaScript:
 		// A placeholder the channel replaces, because a script destination needs the channel's script engine and the
 		// factory sees only the destination. Returning an error here instead would make the factory the thing that

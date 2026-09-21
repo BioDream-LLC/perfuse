@@ -169,6 +169,26 @@ func describeTransport(d config.Destination) string {
 		}
 		return "stored as an object in S3"
 
+	case config.DestinationKafka:
+		if d.Kafka != nil {
+			out := fmt.Sprintf("published to the Kafka topic %s at %s",
+				d.Kafka.Topic, strings.Join(d.Kafka.Brokers, ", "))
+			if d.Kafka.Key != "" {
+				// Named because it decides ordering, which a specification's reader needs.
+				// Without a key there is no ordering guarantee at all: measured against a
+				// real broker, unkeyed records stayed in one partition and then moved
+				// between batches.
+				out += ", keyed on " + d.Kafka.Key + " so records for one patient stay in order"
+			} else {
+				out += ", unkeyed, so the order records are read in is not guaranteed"
+			}
+			if acks := d.Kafka.ResolvedAcks(); acks != "all" {
+				out += ", acknowledged by " + acks
+			}
+			return out
+		}
+		return "published to a Kafka topic"
+
 	case config.DestinationBroker:
 		if d.Broker != nil {
 			out := fmt.Sprintf("published to %s on the broker at %s", d.Broker.Destination, d.Broker.Addr)
@@ -412,6 +432,22 @@ func describeArrival(c *config.Channel) string {
 				// new sender connecting at all, and the failure looks like a network fault.
 				out += ", and must present a client certificate"
 			}
+		}
+		return out
+
+	case config.SourceKafka:
+		if src.Kafka == nil {
+			return "messages are read from a Kafka topic"
+		}
+		// The group is named because a specification's reader needs to know which consumer
+		// group this interface owns: two interfaces sharing one group split the traffic
+		// between them, which looks like messages going missing.
+		out := fmt.Sprintf("messages are read from the Kafka topic %s at %s, as the consumer group %s",
+			strings.Join(src.Kafka.Topics, ", "),
+			strings.Join(src.Kafka.Brokers, ", "),
+			src.Kafka.Group)
+		if src.Kafka.FromBeginning {
+			out += ", starting from the beginning of the topic when the group is new"
 		}
 		return out
 

@@ -300,6 +300,17 @@ func (s *Source) validate() []error {
 				"source.listen does not apply to a broker source; it connects out to the broker rather than listening"))
 		}
 
+	case SourceKafka:
+		if s.Kafka == nil {
+			errs = append(errs, errors.New("a kafka source needs a kafka section"))
+		} else if err := s.Kafka.Validate(); err != nil {
+			errs = append(errs, err)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New(
+				"source.listen does not apply to a kafka source; it connects out to the brokers rather than listening"))
+		}
+
 	case SourceDICOMQuery:
 		errs = append(errs, s.DICOMQuery.validate()...)
 		if s.Listen != "" {
@@ -568,6 +579,13 @@ func (d *Destination) validate(dataType DataType) []error {
 
 	case DestinationBroker:
 		errs = append(errs, validateBrokerDest(d)...)
+
+	case DestinationKafka:
+		if d.Kafka == nil {
+			errs = append(errs, errors.New("a kafka destination needs a kafka section"))
+		} else if err := d.Kafka.Validate(); err != nil {
+			errs = append(errs, err)
+		}
 
 	case DestinationSOAP:
 		errs = append(errs, validateSOAPDest(d)...)

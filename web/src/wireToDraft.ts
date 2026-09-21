@@ -181,6 +181,21 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.dicomQueryEmitFirst = source.dicom_query?.emit_on_first_poll ?? false
       draft.dicomQueryTls = source.dicom_query?.tls?.enabled ?? false
       break
+    case 'kafka':
+      draft.kafkaBrokers = (source.kafka?.brokers ?? []).join(', ')
+      draft.kafkaTopics = (source.kafka?.topics ?? []).join(', ')
+      draft.kafkaGroup = source.kafka?.group ?? ''
+      draft.kafkaFromBeginning = source.kafka?.fromBeginning === true
+      // Absent means on, matching the server: the field is written only when turned off, so
+      // reading a missing value as false would flip a safe channel to an unsafe one the next
+      // time somebody saved it from the form.
+      draft.kafkaCommitAfterDelivery = source.kafka?.commitAfterDelivery !== false
+      draft.kafkaSessionTimeout = source.kafka?.sessionTimeout ?? ''
+      draft.kafkaSaslMechanism = (source.kafka?.sasl?.mechanism ??
+        '') as ChannelDraft['kafkaSaslMechanism']
+      draft.kafkaSaslUsername = source.kafka?.sasl?.username ?? ''
+      draft.kafkaSaslPassword = source.kafka?.sasl?.password ?? ''
+      break
     case 'http':
       draft.httpListen = source.http?.listen ?? ''
       draft.httpPath = source.http?.path ?? ''
@@ -727,6 +742,26 @@ function readDestination(d: WireDest): Destination {
       dest.s3PathStyle = d.s3?.pathStyle ?? false
       dest.s3Encryption = d.s3?.serverSideEncryption ?? ''
       break
+    case 'kafka':
+      dest.destKafkaBrokers = (d.kafka?.brokers ?? []).join(', ')
+      dest.destKafkaTopic = d.kafka?.topic ?? ''
+      dest.destKafkaKey = d.kafka?.key ?? ''
+      // Absent means the default in both cases, for the same reason as above.
+      dest.destKafkaAcks = (d.kafka?.acks ?? 'all') as 'all' | 'leader' | 'none'
+      dest.destKafkaCompression = (d.kafka?.compression ?? 'snappy') as
+        | 'none'
+        | 'gzip'
+        | 'snappy'
+        | 'lz4'
+        | 'zstd'
+      dest.destKafkaSaslMechanism = (d.kafka?.sasl?.mechanism ?? '') as
+        | ''
+        | 'plain'
+        | 'scram-sha-256'
+        | 'scram-sha-512'
+      dest.destKafkaSaslUsername = d.kafka?.sasl?.username ?? ''
+      dest.destKafkaSaslPassword = d.kafka?.sasl?.password ?? ''
+      break
     case 'broker':
       dest.destBrokerAddr = d.broker?.addr ?? ''
       dest.destBrokerDestination = d.broker?.destination ?? ''
@@ -839,6 +874,17 @@ export interface WireModel {
 interface WireSource {
   type?: string
   listen?: string
+
+  kafka?: {
+    brokers?: string[]
+    topics?: string[]
+    group?: string
+    fromBeginning?: boolean
+    commitAfterDelivery?: boolean
+    sessionTimeout?: string
+    sasl?: { mechanism?: string; username?: string; password?: string }
+  }
+
   dicom?: {
     listen?: string
     aeTitle?: string
@@ -952,6 +998,15 @@ interface WireDest {
     login?: string
     contentType?: string
     persistent?: boolean
+  }
+
+  kafka?: {
+    brokers?: string[]
+    topic?: string
+    key?: string
+    acks?: string
+    compression?: string
+    sasl?: { mechanism?: string; username?: string; password?: string }
   }
 
   // MLLP delivery semantics, under their own block.

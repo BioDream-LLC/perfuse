@@ -303,6 +303,9 @@ type buildSource struct {
 	// Broker reads from a message broker.
 	Broker *buildBrokerSource `json:"broker,omitempty" yaml:"broker,omitempty"`
 
+	// Kafka reads from a Kafka topic.
+	Kafka *buildKafkaSource `json:"kafka,omitempty" yaml:"kafka,omitempty"`
+
 	// DICOMQuery polls an imaging archive.
 	//
 	// This was missing until the graphical builder needed it, and the drift guard did not notice - it checks destinations
@@ -808,7 +811,10 @@ type buildDest struct {
 
 	// Broker applies to a broker destination.
 	Broker *buildBrokerDest `json:"broker,omitempty" yaml:"broker,omitempty"`
-	TLS    *buildTLS        `json:"tls,omitempty" yaml:"tls,omitempty"`
+
+	// Kafka applies to a kafka destination.
+	Kafka *buildKafkaDest `json:"kafka,omitempty" yaml:"kafka,omitempty"`
+	TLS   *buildTLS       `json:"tls,omitempty" yaml:"tls,omitempty"`
 
 	Timeout string      `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	Retry   *buildRetry `json:"retry,omitempty" yaml:"retry,omitempty"`
@@ -1085,6 +1091,46 @@ type buildBrokerDest struct {
 	Persistent  *bool             `json:"persistent,omitempty" yaml:"persistent,omitempty"`
 	Timeout     string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	TLS         *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
+}
+
+// buildKafkaSource reads from a Kafka topic.
+//
+// Brokers and topics are lists because Kafka's are: one bootstrap address is a single point of
+// failure for starting up, and one channel legitimately reads several topics.
+type buildKafkaSource struct {
+	Brokers             []string        `json:"brokers,omitempty" yaml:"brokers,omitempty"`
+	Topics              []string        `json:"topics,omitempty" yaml:"topics,omitempty"`
+	Group               string          `json:"group,omitempty" yaml:"group,omitempty"`
+	FromBeginning       bool            `json:"fromBeginning,omitempty" yaml:"from_beginning,omitempty"`
+	CommitAfterDelivery *bool           `json:"commitAfterDelivery,omitempty" yaml:"commit_after_delivery,omitempty"`
+	MaxMessageSize      int             `json:"maxMessageSize,omitempty" yaml:"max_message_size,omitempty"`
+	SessionTimeout      string          `json:"sessionTimeout,omitempty" yaml:"session_timeout,omitempty"`
+	Timeout             string          `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	SASL                *buildKafkaSASL `json:"sasl,omitempty" yaml:"sasl,omitempty"`
+	TLS                 *buildTLS       `json:"tls,omitempty" yaml:"tls,omitempty"`
+}
+
+// buildKafkaDest publishes to a Kafka topic.
+type buildKafkaDest struct {
+	Brokers []string `json:"brokers,omitempty" yaml:"brokers,omitempty"`
+	Topic   string   `json:"topic,omitempty" yaml:"topic,omitempty"`
+
+	// Key decides the partition, and therefore decides ordering. PID-3.1 keys by patient.
+	Key string `json:"key,omitempty" yaml:"key,omitempty"`
+
+	Acks        string            `json:"acks,omitempty" yaml:"acks,omitempty"`
+	Compression string            `json:"compression,omitempty" yaml:"compression,omitempty"`
+	Headers     map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Timeout     string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	SASL        *buildKafkaSASL   `json:"sasl,omitempty" yaml:"sasl,omitempty"`
+	TLS         *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
+}
+
+// buildKafkaSASL authenticates to a Kafka cluster.
+type buildKafkaSASL struct {
+	Mechanism string `json:"mechanism,omitempty" yaml:"mechanism,omitempty"`
+	Username  string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password  string `json:"password,omitempty" yaml:"password,omitempty"`
 }
 
 // buildDICOMQuerySource polls an imaging archive with C-FIND.

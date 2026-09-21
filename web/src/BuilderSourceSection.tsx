@@ -50,6 +50,7 @@ export function SourceSection({
   const [showLimits, setShowLimits] = useState(false)
   const [showSoapAdvanced, setShowSoapAdvanced] = useState(false)
   const [showHttpAdvanced, setShowHttpAdvanced] = useState(false)
+  const [showKafkaSasl, setShowKafkaSasl] = useState(false)
   const [showDicomAdvanced, setShowDicomAdvanced] = useState(false)
   const [showMllpTls, setShowMllpTls] = useState(false)
   const isX12 = draft.dataType === 'x12'
@@ -239,6 +240,98 @@ export function SourceSection({
                 placeholder="0"
                 mono
                 hint="Zero or empty means no limit, and the limit is then memory. A sender that posts a gigabyte is refused rather than absorbed."
+              />
+            </Pair>
+          </Advanced>
+        </>
+      )}
+
+      {draft.sourceKind === 'kafka' && (
+        <>
+          <Pair>
+            <Text
+              label="Bootstrap servers"
+              required
+              value={draft.kafkaBrokers}
+              onChange={(v) => set('kafkaBrokers', v)}
+              placeholder="kafka-1.hospital.local:9092, kafka-2.hospital.local:9092"
+              mono
+              hint="Comma separated. Give more than one: a single bootstrap address is a single point of failure for starting up, and the cluster survives losing it when this channel would not."
+            />
+            <Text
+              label="Topics"
+              required
+              value={draft.kafkaTopics}
+              onChange={(v) => set('kafkaTopics', v)}
+              placeholder="adt.events, orders.inbound"
+              mono
+              hint="Comma separated. One channel can read several topics."
+            />
+          </Pair>
+
+          <Pair>
+            <Text
+              label="Consumer group"
+              required
+              value={draft.kafkaGroup}
+              onChange={(v) => set('kafkaGroup', v)}
+              placeholder="perfuse-adt"
+              mono
+              hint="Required, not defaulted, because this is what remembers how far this channel has read. A generated name would start over on every restart and leave the old group holding offsets nobody reads. Two channels sharing a group split the traffic between them, which looks like messages going missing."
+            />
+            <Text
+              label="Session timeout"
+              value={draft.kafkaSessionTimeout}
+              onChange={(v) => set('kafkaSessionTimeout', v)}
+              placeholder="45s"
+              mono
+              hint="How long the cluster waits before deciding this consumer is gone and giving its partitions to someone else."
+            />
+          </Pair>
+
+          <Check
+            label="Commit only after a message has been handled"
+            value={draft.kafkaCommitAfterDelivery}
+            onChange={(v) => set('kafkaCommitAfterDelivery', v)}
+            hint="Leave this on. With it on, a crash redelivers the message — a duplicate, which receivers are built to absorb. With it off, a crash between the commit and the delivery loses the message silently, with nothing anywhere recording that it existed."
+          />
+
+          <Check
+            label="Read the topic from the beginning when the group is new"
+            value={draft.kafkaFromBeginning}
+            onChange={(v) => set('kafkaFromBeginning', v)}
+            hint="Off by default on purpose. A topic with two years of history would replay two years of patient events into whatever this channel feeds, on the day it is switched on."
+          />
+
+          <Advanced
+            title="Authentication"
+            open={showKafkaSasl}
+            onToggle={() => setShowKafkaSasl((v) => !v)}
+          >
+            <Pair>
+              <Choose
+                label="Mechanism"
+                value={draft.kafkaSaslMechanism}
+                onChange={(v) => set('kafkaSaslMechanism', v)}
+                options={[
+                  { value: '', label: 'None' },
+                  { value: 'plain', label: 'PLAIN' },
+                  { value: 'scram-sha-256', label: 'SCRAM-SHA-256' },
+                  { value: 'scram-sha-512', label: 'SCRAM-SHA-512' },
+                ]}
+                hint="PLAIN sends the password readable on the wire, so pair it with TLS. SCRAM does not."
+              />
+              <Text
+                label="Username"
+                value={draft.kafkaSaslUsername}
+                onChange={(v) => set('kafkaSaslUsername', v)}
+              />
+            </Pair>
+            <Pair>
+              <Secret
+                label="Password"
+                value={draft.kafkaSaslPassword}
+                onChange={(v) => set('kafkaSaslPassword', v)}
               />
             </Pair>
           </Advanced>

@@ -222,6 +222,10 @@ const (
 	// returned messages into the channel. This is the equivalent of Mirth's
 	// JavaScript Reader.
 	SourceJavaScript SourceType = "javascript"
+	// SourceKafka reads from a Kafka topic, which Mirth cannot do without a
+	// custom plugin. Separate from SourceBroker because Kafka's model differs
+	// where it matters: partitioned ordering and a consumer-tracked position.
+	SourceKafka SourceType = "kafka"
 )
 
 // Source is where a channel receives messages.
@@ -280,6 +284,9 @@ type Source struct {
 
 	// Broker applies to a broker source.
 	Broker *BrokerSource `yaml:"broker,omitempty"`
+
+	// Kafka applies to a kafka source.
+	Kafka *KafkaSource `yaml:"kafka,omitempty"`
 
 	// Database configures a database source.
 	Database *DatabaseSource `yaml:"database,omitempty"`
@@ -368,6 +375,9 @@ const (
 	DestinationJavaScript DestinationType = "javascript"
 	// DestinationBroker publishes to a message broker, which is Mirth's JMS Writer.
 	DestinationBroker DestinationType = "broker"
+	// DestinationKafka publishes to a Kafka topic, keyed so one patient's events
+	// stay in order while different patients go in parallel.
+	DestinationKafka DestinationType = "kafka"
 	// DestinationSMTP sends the message, or a note about it, as email. Its usual
 	// purpose is not integration but notification: a coordinator told when a
 	// particular order type arrives, or a daily report that a feed produced
@@ -403,6 +413,7 @@ var allDestinationTypes = []DestinationType{
 	DestinationDocument,
 	DestinationDICOM,
 	DestinationBroker,
+	DestinationKafka,
 	DestinationJavaScript,
 	DestinationChannel,
 }
@@ -486,6 +497,9 @@ type Destination struct {
 
 	// Broker applies to a broker destination.
 	Broker *BrokerDestination `yaml:"broker,omitempty"`
+
+	// Kafka applies to a kafka destination.
+	Kafka *KafkaDestination `yaml:"kafka,omitempty"`
 
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	//

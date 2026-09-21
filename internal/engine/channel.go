@@ -198,6 +198,9 @@ type Channel struct {
 	// broker is the message broker reader, nil unless this is a broker source.
 	broker *brokerPoller
 
+	// kafka is the Kafka consumer, nil unless this is a kafka source.
+	kafka *kafkaPoller
+
 	// jsReader is the JavaScript Reader, nil unless this is a javascript source.
 	jsReader *jsReader
 
@@ -492,6 +495,13 @@ func (c *Channel) Start() error {
 		c.resumeQueues(context.Background())
 		return nil
 
+	case config.SourceKafka:
+		if err := c.startKafkaSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
 	case config.SourceDICOMQuery:
 		if err := c.startDICOMQuerySource(); err != nil {
 			return err
@@ -604,6 +614,9 @@ func (c *Channel) Stop(ctx context.Context) error {
 	}
 	if brokerErr := c.stopBrokerSource(); brokerErr != nil && err == nil {
 		err = brokerErr
+	}
+	if kafkaErr := c.stopKafkaSource(); kafkaErr != nil && err == nil {
+		err = kafkaErr
 	}
 	if queryErr := c.stopDICOMQuerySource(); queryErr != nil && err == nil {
 		err = queryErr

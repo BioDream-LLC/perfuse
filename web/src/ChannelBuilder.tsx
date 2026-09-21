@@ -970,6 +970,130 @@ function DestinationCard({
           </>
         )}
 
+        {dest.type === 'kafka' && (
+          <>
+            <Field
+              label="Bootstrap servers"
+              hint="Comma separated. Give more than one: a single bootstrap address is a single point of failure for starting up, and the cluster survives losing it when this destination would not."
+            >
+              <input
+                className="input font-mono"
+                value={dest.destKafkaBrokers}
+                onChange={(e) => onChange({ destKafkaBrokers: e.target.value })}
+                placeholder="kafka-1.hospital.local:9092, kafka-2.hospital.local:9092"
+              />
+            </Field>
+
+            <Field label="Topic">
+              <input
+                className="input font-mono"
+                value={dest.destKafkaTopic}
+                onChange={(e) => onChange({ destKafkaTopic: e.target.value })}
+                placeholder="adt.events"
+              />
+            </Field>
+
+            <Field
+              label="Partition key"
+              hint="Set this. Kafka keeps records in order only within a partition, and records sharing a key always share a partition — so PID-3.1 keeps one patient's events in sequence while letting different patients go in parallel. Left empty there is no guarantee: records stay together for a while and then move, so a discharge can be read before its admission intermittently, under load."
+            >
+              <input
+                className="input font-mono"
+                value={dest.destKafkaKey}
+                onChange={(e) => onChange({ destKafkaKey: e.target.value })}
+                placeholder="PID-3.1"
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Acknowledgement"
+                hint="All waits for every in-sync replica and is the only setting that survives a broker failing mid-write. None does not wait at all and will lose messages."
+              >
+                <select
+                  className="input"
+                  value={dest.destKafkaAcks}
+                  onChange={(e) =>
+                    onChange({ destKafkaAcks: e.target.value as 'all' | 'leader' | 'none' })
+                  }
+                >
+                  <option value="all">All in-sync replicas</option>
+                  <option value="leader">Leader only</option>
+                  <option value="none">None — may lose messages</option>
+                </select>
+              </Field>
+              <Field
+                label="Compression"
+                hint="HL7 is highly compressible text and the wire is usually the constraint. Snappy is the cheapest in CPU, which matters on the delivery path."
+              >
+                <select
+                  className="input"
+                  value={dest.destKafkaCompression}
+                  onChange={(e) =>
+                    onChange({
+                      destKafkaCompression: e.target.value as
+                        | 'none'
+                        | 'gzip'
+                        | 'snappy'
+                        | 'lz4'
+                        | 'zstd',
+                    })
+                  }
+                >
+                  <option value="snappy">Snappy</option>
+                  <option value="lz4">LZ4</option>
+                  <option value="zstd">Zstandard</option>
+                  <option value="gzip">gzip</option>
+                  <option value="none">None</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Authentication"
+                hint="PLAIN sends the password readable on the wire, so pair it with TLS. SCRAM does not."
+              >
+                <select
+                  className="input"
+                  value={dest.destKafkaSaslMechanism}
+                  onChange={(e) =>
+                    onChange({
+                      destKafkaSaslMechanism: e.target.value as
+                        | ''
+                        | 'plain'
+                        | 'scram-sha-256'
+                        | 'scram-sha-512',
+                    })
+                  }
+                >
+                  <option value="">None</option>
+                  <option value="plain">PLAIN</option>
+                  <option value="scram-sha-256">SCRAM-SHA-256</option>
+                  <option value="scram-sha-512">SCRAM-SHA-512</option>
+                </select>
+              </Field>
+              <Field label="Username">
+                <input
+                  className="input font-mono"
+                  value={dest.destKafkaSaslUsername}
+                  onChange={(e) => onChange({ destKafkaSaslUsername: e.target.value })}
+                />
+              </Field>
+            </div>
+
+            <Field label="Password">
+              <input
+                type={dest.destKafkaSaslPassword.startsWith('${') ? 'text' : 'password'}
+                className="input font-mono"
+                value={dest.destKafkaSaslPassword}
+                onChange={(e) => onChange({ destKafkaSaslPassword: e.target.value })}
+                placeholder="${KAFKA_PASSWORD}"
+              />
+            </Field>
+          </>
+        )}
+
         {dest.type === 'broker' && (
           <>
             <Field
