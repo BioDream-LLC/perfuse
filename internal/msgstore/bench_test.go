@@ -111,10 +111,20 @@ func BenchmarkRecordMessageConcurrent(b *testing.B) {
 	}
 }
 
-// TestSustainedWriteRate is a test rather than a benchmark so it runs in CI and
-// fails if the store gets materially slower. The floor is set low enough not to
-// be flaky on a loaded machine and high enough to catch a regression that would
-// matter, such as an index being dropped or a transaction per statement.
+// TestSustainedWriteRate is a test rather than a benchmark so it runs in CI and fails
+// if the store gets materially slower.
+//
+// It asserts a ratio, not a rate. The first version required 100 msg/s absolute, and
+// failed on a GitHub runner that managed 76 - not because anything had regressed, but
+// because a shared, throttled disk is several times slower than a local SSD and varies
+// with whoever else is on the machine. An absolute floor low enough to survive that is
+// too low to detect a real regression, so the test was simultaneously noisy and blind.
+//
+// So the same database on the same disk is measured twice in the same process: once
+// doing the cheapest possible insert, then once through the recorder. Both scale with
+// the hardware, so the ratio between them does not, and it is the ratio that reveals
+// the regressions this test was written for - a transaction per statement, an fsync per
+// row, a dropped index turning a write into a scan.
 func TestSustainedWriteRate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("timing test")
@@ -123,10 +133,23 @@ func TestSustainedWriteRate(t *testing.T) {
 	store, cleanup := benchStore(t)
 	defer cleanup()
 
-	rec := NewRecorder(store, quietBenchLogger())
 	ctx := context.Background()
-
 	const count = 500
+
+	// The baseline: how fast this disk accepts a single trivial row, committed
+	// individually, which is the same durability the recorder is paying for.
+	if _, err := store.db.ExecContext(ctx, `CREATE TABLE ratebaseline (id INTEGER PRIMARY KEY, v TEXT)`); err != nil {
+		t.Fatal(err)
+	}
+	baseStart := time.Now()
+	for i := range count {
+		if _, err := store.db.ExecContext(ctx, `INSERT INTO ratebaseline (v) VALUES (?)`, i); err != nil {
+			t.Fatal(err)
+		}
+	}
+	baseline := time.Since(baseStart)
+
+	rec := NewRecorder(store, quietBenchLogger())
 	start := time.Now()
 	for i := range count {
 		rec.RecordMessage(ctx, benchRecord("rate", i))
@@ -134,13 +157,35 @@ func TestSustainedWriteRate(t *testing.T) {
 	elapsed := time.Since(start)
 
 	rate := float64(count) / elapsed.Seconds()
-	t.Logf("recorded %d messages in %s: %.0f msg/s", count, elapsed.Round(time.Millisecond), rate)
+	baseRate := float64(count) / baseline.Seconds()
+	ratio := elapsed.Seconds() / baseline.Seconds()
 
-	const floor = 100
-	if rate < floor {
-		t.Errorf("the message store manages %.0f msg/s, below the %d floor; "+
-			"it is the slowest thing on the delivery path so this is the channel's ceiling too",
-			rate, floor)
+	// Logged rather than asserted, so the absolute figure is still visible in CI output
+	// for anyone watching the trend, without deciding whether the build passes.
+	t.Logf("recorded %d messages in %s: %.0f msg/s (this disk does %.0f bare inserts/s; ratio %.1fx)",
+		count, elapsed.Round(time.Millisecond), rate, baseRate, ratio)
+
+	// A recorded message is one message row plus its deliveries, so a small multiple of
+	// one bare insert is expected.
+	//
+	// What this ceiling catches, measured rather than assumed:
+	//
+	//	healthy                          2.0x - 2.9x over eight runs
+	//	20 redundant queries per message  4.0x   not caught
+	//	100 redundant queries per message 12.5x  caught
+	//
+	// So it catches severe regressions and not moderate ones. Catching the 4.0x case
+	// would need a ceiling near 3.5x, which is 20% above the worst healthy reading and
+	// would flake on a shared runner. The logged figures above are how a moderate
+	// regression gets noticed; this assertion is a backstop against a catastrophe.
+	//
+	// PRAGMA synchronous=FULL was tried as a way to simulate one and moved the ratio not
+	// at all on macOS, which is worth knowing before reaching for it again.
+	const maxRatio = 8
+	if ratio > maxRatio {
+		t.Errorf("recording a message costs %.1fx a bare insert on this same disk, above the %.0fx ceiling; "+
+			"the store is the slowest thing on the delivery path, so this is the channel's ceiling too",
+			ratio, float64(maxRatio))
 	}
 
 	// And the messages are actually there. A fast write that lost rows would be
