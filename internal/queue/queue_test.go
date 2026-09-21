@@ -693,7 +693,20 @@ func TestWorkerKeepsTryingWhenMaxAttemptsIsZero(t *testing.T) {
 	done := make(chan struct{})
 	go func() { defer close(done); w.Run(runCtx) }()
 
-	waitFor(t, func() bool { return sender.count() == 1 })
+	// Wait for the state this test asserts on, not for the send that precedes it.
+	//
+	// The identical race as TestWorkerRetriesThenSucceeds, which was fixed and this sibling
+	// was not. count() counts successful sends only, so waiting for one was the right
+	// condition for "the seventh attempt succeeded". The gap is after that: the worker
+	// sends, and then records the attempt in the store. Cancelling on the send could stop
+	// it in between, and the item was read with six attempts. CI failed with exactly that,
+	// attempts = 6 where 7 was wanted.
+	waitFor(t, func() bool {
+		items, _, err := s.List(ctx, Query{})
+
+		return err == nil && len(items) == 1 && items[0].Attempts >= 7
+	})
+
 	cancel()
 	<-done
 
