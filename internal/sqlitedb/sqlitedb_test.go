@@ -3,6 +3,8 @@ package sqlitedb
 import (
 	"context"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -115,17 +117,45 @@ func TestAReadDoesNotBlockAWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Baseline.
-	start := time.Now()
-	if _, err := db.Write.ExecContext(ctx, `INSERT INTO t (v) VALUES ('quiet')`); err != nil {
-		t.Fatal(err)
+	// Baseline, measured the same way as the loaded case so the two are comparable.
+	//
+	// A single sample here was one cold write, which came out slower than the warm
+	// writes it was the baseline for - 75us against 58us - so the ratio understated the
+	// difference and the test was less sensitive than it looked. Both sides are now the
+	// median of five warm samples.
+	quietSamples := make([]time.Duration, 0, 5)
+	for range 6 {
+		start := time.Now()
+		if _, err := db.Write.ExecContext(ctx, `INSERT INTO t (v) VALUES ('quiet')`); err != nil {
+			t.Fatal(err)
+		}
+		quietSamples = append(quietSamples, time.Since(start))
 	}
-	quiet := time.Since(start)
+	// The first is discarded: it pays for whatever the connection has not done yet.
+	quietSamples = quietSamples[1:]
+	slices.Sort(quietSamples)
+	quiet := quietSamples[len(quietSamples)/2]
 
-	// Now hammer the read pool with scans and time a write against them.
+	// Hammer the read pool with scans and time a write against them.
+	//
+	// The number of scanners is bounded so the writer always has a core. The first
+	// version started four unconditionally and spun them in a tight loop, which on a
+	// two-core CI runner saturated the machine: the write was then slow because there
+	// was no CPU left, not because the pools were competing, and the test could not tell
+	// those apart. It failed on a GitHub runner at 26ms against a 25ms limit with
+	// nothing wrong. A small sleep keeps each scanner off the spin and makes pool
+	// contention the dominant signal again.
+	scanners := runtime.NumCPU() - 1
+	if scanners < 1 {
+		scanners = 1
+	}
+	if scanners > 4 {
+		scanners = 4
+	}
+
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
-	for range 4 {
+	for range scanners {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -138,29 +168,43 @@ func TestAReadDoesNotBlockAWrite(t *testing.T) {
 				var n int
 				_ = db.Read.QueryRowContext(ctx,
 					`SELECT count(*) FROM t WHERE v LIKE '%moderately%'`).Scan(&n)
+				time.Sleep(time.Millisecond)
 			}
 		}()
 	}
 	time.Sleep(30 * time.Millisecond)
 
-	start = time.Now()
-	if _, err := db.Write.ExecContext(ctx, `INSERT INTO t (v) VALUES ('busy')`); err != nil {
-		t.Fatal(err)
+	// Median of several, so one scheduling hiccup on a shared runner is not the result.
+	busySamples := make([]time.Duration, 0, 5)
+	for range 5 {
+		start := time.Now()
+		if _, err := db.Write.ExecContext(ctx, `INSERT INTO t (v) VALUES ('busy')`); err != nil {
+			t.Fatal(err)
+		}
+		busySamples = append(busySamples, time.Since(start))
 	}
-	busy := time.Since(start)
+	slices.Sort(busySamples)
+	busy := busySamples[len(busySamples)/2]
 
 	close(stop)
 	wg.Wait()
 
 	t.Logf("write with the database idle: %s", quiet.Round(time.Microsecond))
-	t.Logf("write with four scans running: %s", busy.Round(time.Microsecond))
+	t.Logf("write with %d scans running: %s (median of 5)", scanners, busy.Round(time.Microsecond))
 
-	// The write is on the acknowledgement path. It is allowed to be slower under
-	// load, but not by an order of magnitude, which is what a shared single
-	// connection produced.
-	if busy > 25*time.Millisecond {
-		t.Errorf("a write took %s while reports were running: the pools are still competing",
-			busy.Round(time.Millisecond))
+	// The write is on the acknowledgement path. It is allowed to be slower under load,
+	// but not by an order of magnitude, which is what a shared single connection
+	// produced.
+	//
+	// Asserted as a ratio against the idle write on the same machine, not as an absolute
+	// duration. Both scale with the hardware, so the ratio does not, and it was an
+	// absolute 25ms that failed on a runner where the idle write itself took 1.1ms.
+	const maxRatio = 12
+	if quiet > 0 && busy > time.Duration(maxRatio)*quiet {
+		t.Errorf("a write took %s against %s idle, %.0fx slower while reports were running: "+
+			"the pools are still competing",
+			busy.Round(time.Microsecond), quiet.Round(time.Microsecond),
+			float64(busy)/float64(quiet))
 	}
 }
 
