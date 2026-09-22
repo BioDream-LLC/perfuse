@@ -9,7 +9,7 @@ PKG     := ./cmd/perfuse
 # somebody reports a bug against a version that does not exist.
 #
 # Override it for a local build: make build VERSION=mine
-VERSION ?= v0.1.2
+VERSION ?= v0.1.3
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
 .PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs
