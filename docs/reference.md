@@ -1971,6 +1971,54 @@ remounted read-only or removed underneath the process, which has not been done. 
 listed here rather than omitted, because a gap nobody mentions reads as a gap nobody
 looked for.
 
+## Measured against public conformance corpora
+
+Tested against other people's data rather than only its own, because a test suite whose
+fixtures were written here proves agreement with oneself.
+
+### FHIR R4, the specification's own examples
+
+All 2,912 example files published with the FHIR R4 specification, which is to say every
+example the authors of the standard wrote.
+
+| Result | Count |
+|---|---|
+| Resources validated with no findings | **13,723** |
+| Resources reported invalid | 0 |
+| Files refused as an unimplemented resource type | 753 |
+| Bundle entries skipped as an unimplemented type | 1,348 |
+
+Not a single resource was validated incorrectly. Every failure is an explicit refusal
+naming the type it cannot read — 672 `ValueSet`, 80 `ConceptMap` and one `Parameters`.
+That is the intended behaviour: a validator that quietly passes what it does not
+understand is worse than one that says so.
+
+The corpus found a real defect, which is the reason for running it. Validating a bundle
+printed "Bundle validation from a file is not supported yet" and carried on. That was
+false in both directions. Bundles whose entries happened to be types the Bundle struct
+could hold were already being validated and reported valid. And a bundle that was
+genuinely invalid — an impossible `birthDate`, a code outside its value set — produced
+the same line, told the operator the tool could not check their file, counted nothing,
+and **exited zero**. With `-strict`, which exists so this can gate a build, a broken
+bundle passed the gate. Forty-two of the specification's own bundles were being skipped
+this way.
+
+Bundles are now validated entry by entry. The same corpus went from 2,100 resources
+checked to 13,723.
+
+### HL7 v2, the HAPI test corpus
+
+The message fixtures from HAPI, the reference Java HL7 v2 implementation — deliberately
+awkward material, including uuencoded payloads, escaped delimiters and repeating groups.
+
+59 messages, 59 parsed, nothing refused. Seven message types in a corpus that any one
+system would describe as one thing, which is the point `perfuse profile` exists to make.
+
+### What has not been run
+
+DICOM against a public conformance set, and X12 against a published corpus. Neither has
+been done, and neither should be assumed from the two above.
+
 ## Roadmap
 
 Not built yet. Listed so the direction is clear, not to suggest it works.

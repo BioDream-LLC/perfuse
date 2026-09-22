@@ -227,6 +227,73 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 	return nil
 }
 
+// validateBundle checks each entry of a bundle on its own.
+//
+// entry.resource is polymorphic, so the Bundle struct cannot hold it and unmarshalling
+// the whole document fails for most real bundles. Each entry is therefore pulled out as
+// raw JSON and validated as the resource it declares itself to be.
+//
+// Returns the number of entries checked, the number skipped for being a type this build
+// does not implement, and the number with problems. Skipped entries are counted
+// separately on purpose: "this build cannot check that" and "that is wrong" are
+// different answers and conflating them is what made a broken bundle look supported.
+func validateBundle(raw []byte, version fhir.Version, strict bool, path string, stdout io.Writer) (checked, skipped, problems int) {
+	var doc struct {
+		Entry []struct {
+			Resource json.RawMessage `json:"resource"`
+		} `json:"entry"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		fmt.Fprintf(stdout, "%-40s %-8s bundle could not be read: %v\n", path, "INVALID", err)
+		return 0, 0, 1
+	}
+
+	var totalErr, totalWarn int
+	for i, entry := range doc.Entry {
+		if len(entry.Resource) == 0 {
+			// A request-only entry in a batch or transaction carries no body. Not a
+			// problem, and not something to count as checked either.
+			continue
+		}
+		resource, err := fhir.UnmarshalResource(entry.Resource)
+		if err != nil {
+			if strings.Contains(err.Error(), "is not implemented") {
+				skipped++
+				continue
+			}
+			fmt.Fprintf(stdout, "  %-8s %s entry[%d]  %v\n", "INVALID", path, i, err)
+			problems++
+			continue
+		}
+		checked++
+
+		result := fhir.Validate(resource, version)
+		errCount, warnCount, _ := result.Counts()
+		totalErr += errCount
+		totalWarn += warnCount
+		if errCount > 0 || (strict && warnCount > 0) {
+			problems++
+			fmt.Fprintf(stdout, "  %-8s %s entry[%d] %s/%s  %d error(s), %d warning(s)\n",
+				"INVALID", path, i, resource.ResourceTypeName(), resource.ResourceID(),
+				errCount, warnCount)
+			for _, f := range result.Findings {
+				if f.Severity == fhir.Info && !strict {
+					continue
+				}
+				fmt.Fprintf(stdout, "    %-8s %-36s %s\n", f.Severity, f.Path, f.Message)
+			}
+		}
+	}
+
+	status := "valid"
+	if problems > 0 {
+		status = "INVALID"
+	}
+	fmt.Fprintf(stdout, "%-40s %-8s Bundle  %d entr(ies), %d error(s), %d warning(s)\n",
+		path, status, checked, totalErr, totalWarn)
+	return checked, skipped, problems
+}
+
 func cmdFHIRValidate(args []string, stdout, stderr io.Writer) error {
 	fset := flag.NewFlagSet("fhir validate", flag.ContinueOnError)
 	fset.SetOutput(stderr)
@@ -253,12 +320,29 @@ func cmdFHIRValidate(args []string, stdout, stderr io.Writer) error {
 
 		resource, err := fhir.UnmarshalResource(raw)
 		if err != nil {
-			// A bundle needs its own path, because entry.resource is polymorphic.
+			// A bundle needs its own path, because entry.resource is polymorphic and
+			// the Bundle struct cannot hold an arbitrary resource in that field.
+			//
+			// This used to print "Bundle validation from a file is not supported yet"
+			// for any bundle that failed to unmarshal, which was wrong in two
+			// directions. Bundles whose entries happened to be types the struct could
+			// hold were validated and reported valid, so the claim that it was
+			// unsupported was already false. And a bundle that was genuinely invalid -
+			// an impossible birthDate, a code outside its value set - produced the same
+			// "not supported" line, told the operator the tool could not check their
+			// file, and exited zero. With -strict, which exists so this can gate CI,
+			// a broken bundle passed.
 			var probe struct {
 				ResourceType string `json:"resourceType"`
 			}
 			if json.Unmarshal(raw, &probe) == nil && probe.ResourceType == "Bundle" {
-				fmt.Fprintf(stdout, "%s: Bundle validation from a file is not supported yet\n", path)
+				entries, skipped, problems := validateBundle(raw, version, *strict, path, stdout)
+				checked += entries
+				bad += problems
+				if skipped > 0 {
+					fmt.Fprintf(stdout, "  %-8s %-40s %d entr(ies) of a type this build does not implement\n",
+						"skipped", path, skipped)
+				}
 				continue
 			}
 			fmt.Fprintf(stderr, "%s: %v\n", path, err)
