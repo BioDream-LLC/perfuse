@@ -172,6 +172,7 @@ func (s *SerialSource) Validate() []error {
 	}
 
 	errs = append(errs, s.validateFraming("serial source", s.MaxMessageSize)...)
+	errs = append(errs, s.validateReadable("serial source")...)
 
 	// Whole-stream framing needs a close to mark the end of a message, and a serial line never closes.
 	if s.Framing == "whole" {

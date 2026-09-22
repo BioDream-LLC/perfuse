@@ -466,6 +466,44 @@ func decodeLength(b []byte, bigEndian bool) int64 {
 	}
 }
 
+// CanRead reports whether a Reader can read a mode.
+//
+// MLLP is the same deliberate gap as CanFrame and for the same reason: an mllp
+// source is its own type, which owns the connection and the acknowledgement it
+// sends back. This package's generic reader does not implement it.
+//
+// Exported for the same reason too. A tcp source framed as mllp validated cleanly,
+// logged that it was listening with framing=mllp, and then failed every message
+// with "framing mllp cannot be read here" while resetting the sender's connection.
+func CanRead(mode Mode) bool {
+	switch mode {
+	case ModeDelimited, ModeFixed, ModeLengthPrefixed, ModeWhole:
+		return true
+	default:
+		return false
+	}
+}
+
+// CanFrame reports whether Frame can write a mode.
+//
+// MLLP is readable and deliberately not writable. An MLLP destination is its own
+// type because sending MLLP means reading the acknowledgement back and deciding
+// what an AE means; writing the frame onto a raw socket would send the bytes and
+// ignore the answer, which looks like success and is not.
+//
+// Exported so configuration can refuse the combination when a channel is loaded.
+// Without it a tcp destination framed as mllp validated cleanly and then failed
+// every single message at runtime with a framing error, which is the worst place
+// to learn about a configuration mistake.
+func CanFrame(mode Mode) bool {
+	switch mode {
+	case ModeDelimited, ModeFixed, ModeLengthPrefixed, ModeWhole:
+		return true
+	default:
+		return false
+	}
+}
+
 // Frame wraps a message for sending.
 func Frame(msg []byte, s Settings) ([]byte, error) {
 	switch s.Mode {

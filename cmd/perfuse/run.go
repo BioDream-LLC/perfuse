@@ -113,6 +113,20 @@ func cmdCheck(args []string, stdout, stderr io.Writer) error {
 			if r.Filter != "" {
 				fmt.Fprintf(stdout, "      filter    %s\n", r.Filter)
 			}
+
+			// Printed because the attempt count above is not the whole story when a
+			// queue is on: those attempts happen in memory and then the queue takes
+			// over, holding the message on disk until the receiver comes back. A
+			// summary that showed only "5 attempt(s)" read as though five failures
+			// meant the message was gone, which is what it means without a queue and
+			// the opposite of what it means with one.
+			if q := d.Queue; q != nil && q.Enabled {
+				forever := "retries forever"
+				if q.MaxAttempts > 0 {
+					forever = fmt.Sprintf("gives up after %d", q.MaxAttempts)
+				}
+				fmt.Fprintf(stdout, "      queued    on disk, %s (needs perfuse serve)\n", forever)
+			}
 		}
 		if paths := c.Paths(); len(paths) > 0 {
 			// A channel stating its own data dependencies is worth printing: it
@@ -199,6 +213,19 @@ func cmdRun(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
+	// A durable queue needs somewhere durable to put things, and run has no database.
+	//
+	// Refused rather than ignored. serve prepares the queue whether or not a channel
+	// asks for it, precisely so that enabling it cannot fail at the first delivery
+	// instead of at load; run had the queue absent and silently fell back to the
+	// in-memory retries, so a destination configured to retry indefinitely made five
+	// attempts and dropped the message. Anyone who writes queue.enabled has decided
+	// that losing messages is unacceptable, which makes silently not queueing the
+	// worst available behaviour.
+	if err := refuseQueuesWithoutAStore(channels); err != nil {
+		return err
+	}
+
 	// MLLP has no authentication and no encryption. Say so at startup rather
 	// than in documentation nobody reads.
 	var listens []string
@@ -236,6 +263,29 @@ func cmdRun(args []string, stdout, stderr io.Writer) error {
 }
 
 // loadChannels accepts a mix of files and directories.
+// refuseQueuesWithoutAStore reports destinations that asked for durability run cannot provide.
+func refuseQueuesWithoutAStore(channels []*config.Channel) error {
+	var queued []string
+	for _, c := range channels {
+		if !c.IsEnabled() {
+			continue
+		}
+		for _, d := range c.Destinations {
+			if d.Queue != nil && d.Queue.Enabled {
+				queued = append(queued, c.Name+"/"+d.Name)
+			}
+		}
+	}
+	if len(queued) == 0 {
+		return nil
+	}
+	return fmt.Errorf("these destinations ask for a durable queue, which needs a database that run "+
+		"does not have: %s. Run them with perfuse serve, which keeps the queue in its database and "+
+		"shows the backlog draining. Removing queue.enabled would let run start, but a receiver that "+
+		"goes down would then lose everything sent while it was away rather than holding it",
+		strings.Join(queued, ", "))
+}
+
 func loadChannels(paths []string) ([]*config.Channel, error) {
 	var out []*config.Channel
 	byName := map[string]string{}

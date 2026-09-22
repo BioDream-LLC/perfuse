@@ -84,6 +84,31 @@ func (f TCPFraming) Settings(maxSize int) (framing.Settings, error) {
 //
 // Reported rather than ignored. A record_length set on a delimited stream means somebody believed one of the two was
 // taking effect, and silence leaves them believing it.
+// validateFraming checks the framing settings and reports settings that do not apply.
+//
+// Direction is checked separately, by validateReadable and validateWritable, because
+// the two are not the same set: mllp can be neither read nor written by the generic
+// code here, and a mode added later might be one and not the other.
+func (f TCPFraming) validateReadable(what string) []error {
+	if mode := framing.Mode(f.Framing); f.Framing != "" && !framing.CanRead(mode) {
+		return []error{fmt.Errorf("%s: framing %q cannot be read on a raw socket. "+
+			"For inbound MLLP use a source of type mllp, which also sends the acknowledgement; "+
+			"a tcp or serial source can read framing delimited, fixed, length or whole", what, f.Framing)}
+	}
+	return nil
+}
+
+// validateWritable is the sending half of validateReadable.
+func (f TCPFraming) validateWritable(what string) []error {
+	if mode := framing.Mode(f.Framing); f.Framing != "" && !framing.CanFrame(mode) {
+		return []error{fmt.Errorf("%s: framing %q cannot be sent, only configured. "+
+			"For outbound MLLP use a destination of type mllp, which also reads the "+
+			"acknowledgement back; a tcp destination can write framing delimited, fixed, "+
+			"length or whole", what, f.Framing)}
+	}
+	return nil
+}
+
 func (f TCPFraming) validateFraming(what string, maxSize int) []error {
 	var errs []error
 
@@ -186,6 +211,7 @@ func (t *TCPSource) Validate() []error {
 	}
 
 	errs = append(errs, t.validateFraming("tcp source", t.MaxMessageSize)...)
+	errs = append(errs, t.validateReadable("tcp source")...)
 
 	switch t.Reply {
 	case ReplyNone, ReplyACK:
@@ -300,6 +326,8 @@ func (t *TCPDest) Validate() []error {
 	}
 
 	errs = append(errs, t.validateFraming("tcp destination", t.MaxMessageSize)...)
+
+	errs = append(errs, t.validateWritable("tcp destination")...)
 
 	if framing.Mode(t.Framing) == framing.ModeWhole {
 		if t.KeepAlive {
