@@ -137,9 +137,9 @@
   </div>
 
   <div class="buttons">
-    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-linux-amd64.tar.gz"><img src="assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>
-    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-darwin-arm64.tar.gz"><img src="assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>
-    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-windows-amd64.zip"><img src="assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
+    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-linux-amd64.tar.gz"><img src="assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>
+    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-darwin-arm64.tar.gz"><img src="assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>
+    <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-windows-amd64.zip"><img src="assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
   </div>
   <p class="note">
     <a href="https://github.com/BioDream-LLC/perfuse/releases/latest">Intel Macs, ARM64 Linux, ARM64 Windows and checksums</a> ·
@@ -220,13 +220,14 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
     <tr><td>Existing Mirth JavaScript</td><td>Runs unchanged, including E4X</td><td>Native</td></tr>
     <tr><td>Kafka</td><td>Source and destination, keyed for per-patient ordering</td><td>No connector</td></tr>
     <tr><td>Config in the browser</td><td>Everything, by policy</td><td>Most things</td></tr>
-    <tr><td>Production track record</td><td><b>None yet. v0.1.1</b></td><td>Twenty years, thousands of sites</td></tr>
+    <tr><td>Multi-server view</td><td>Fleet view, included</td><td>A paid feature</td></tr>
+    <tr><td>Production track record</td><td><b>None yet. v0.1.2</b></td><td>Twenty years, thousands of sites</td></tr>
   </tbody>
 </table>
 
 <div class="caution">
   <p style="margin:0">
-    <b>That last row is the honest one.</b> Perfuse v0.1.1 has never processed production clinical traffic,
+    <b>That last row is the honest one.</b> Perfuse v0.1.2 has never processed production clinical traffic,
     and the Windows and ARM64 Linux binaries have never been executed at all. Everything that
     <a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/verification.md">was</a> verified is
     recorded, and so is everything that was not. Evaluate it in parallel, against real messages, with the
@@ -263,6 +264,20 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
   Interoperability claims are cheap. Perfuse's SAML was tested against real Keycloak and real Microsoft Entra,
   its Mirth import against a real Mirth Connect export, its FHIR output against HAPI, and its DICOM against
   Orthanc. Two of those found defects in the other party.
+</p>
+
+<p>
+  It is also measured against other people's data rather than only its own. All <b>2,912 example files published
+  with the FHIR R4 specification</b> were run through it: 13,723 resources validated, none reported wrongly, and
+  every refusal names the type it cannot read. The HAPI HL7 v2 test corpus — the reference Java implementation's
+  own awkward material — parses completely, 59 of 59.
+</p>
+
+<p>
+  And the question nobody answers: <b>what happens when it is killed?</b> Terminated with SIGKILL part way through
+  a batch, at five different points, <b>255 messages were acknowledged and 255 were present downstream</b>. None
+  lost, none duplicated. The numbers for the faster acknowledgement mode, which loses almost everything in flight,
+  are published alongside, because a setting like that should be chosen knowing the size of it.
 </p>
 
 <p><a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/verification.md">What was tested, what it found, and what was never run →</a></p>

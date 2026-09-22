@@ -9,7 +9,7 @@ PKG     := ./cmd/perfuse
 # somebody reports a bug against a version that does not exist.
 #
 # Override it for a local build: make build VERSION=mine
-VERSION ?= v0.1.1
+VERSION ?= v0.1.2
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
 .PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs
@@ -164,20 +164,30 @@ release: cross sbom package
 #
 # Each archive unpacks into its own directory rather than scattering files into the current one, because somebody
 # extracting three of these to compare them should not have them overwrite each other.
+#
+# The version is in the archive name and in the directory it unpacks to, so a file sitting in a downloads folder
+# says what it is without being run, and two releases extracted side by side do not collide. That second part was
+# already the stated intent of using a directory at all, and unversioned names quietly defeated it: extracting
+# v0.1.1 and v0.1.2 of the same platform overwrote one with the other.
+#
+# The executable inside keeps its unversioned name on purpose. A systemd unit, a launchd plist or a Windows
+# service definition names a path, and renaming the binary every release would break all three on upgrade.
+# Which version it is is a question `perfuse version` answers.
 package:
 	@mkdir -p dist
 	@for f in dist/perfuse-*; do \
 		case "$$f" in *.tar.gz|*.zip|*.json|*SHA256SUMS) continue;; esac; \
 		base=$$(basename $$f); \
 		name=$${base%.exe}; \
-		stage="dist/stage/$$name"; \
+		stage="dist/stage/perfuse-$(VERSION)-$${name#perfuse-}"; \
 		rm -rf $$stage; mkdir -p $$stage; \
 		cp $$f $$stage/$$(basename $$f); \
 		cp LICENSE NOTICE README.md $$stage/; \
 		if [ -f docs/manual/perfuse-manual.pdf ]; then cp docs/manual/perfuse-manual.pdf $$stage/; fi; \
+		vname="perfuse-$(VERSION)-$${name#perfuse-}"; \
 		case "$$base" in \
-			*.exe) (cd dist/stage && zip -qr ../$$name.zip $$name) && echo "  dist/$$name.zip";; \
-			*) tar -czf dist/$$name.tar.gz -C dist/stage $$name && echo "  dist/$$name.tar.gz";; \
+			*.exe) (cd dist/stage && zip -qr ../$$vname.zip $$vname) && echo "  dist/$$vname.zip";; \
+			*) tar -czf dist/$$vname.tar.gz -C dist/stage $$vname && echo "  dist/$$vname.tar.gz";; \
 		esac; \
 	done
 	@rm -rf dist/stage

@@ -12,11 +12,11 @@ Your existing Mirth JavaScript runs unchanged.
 **31 MB of memory at rest, against Mirth's 383 MB** — measured on the same machine, both idle. One file to copy
 instead of a 254 MB install and a Java runtime, and it starts immediately rather than warming up.
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg?logo=go&logoColor=white)](https://go.dev) [![Release](https://img.shields.io/badge/release-v0.1.1-success.svg)](#download) [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#download) [![Tests](https://img.shields.io/badge/tests-verified%20against%20real%20Mirth%2C%20Keycloak%20%26%20Entra-brightgreen.svg)](#verified-against-real-software-not-mocks)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg?logo=go&logoColor=white)](https://go.dev) [![Release](https://img.shields.io/badge/release-v0.1.2-success.svg)](#download) [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#download) [![Tests](https://img.shields.io/badge/tests-verified%20against%20real%20Mirth%2C%20Keycloak%20%26%20Entra-brightgreen.svg)](#verified-against-real-software-not-mocks)
 
-### Download v0.1.1
+### Download v0.1.2
 
-<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-linux-amd64.tar.gz"><img src="docs/assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-darwin-arm64.tar.gz"><img src="docs/assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-windows-amd64.zip"><img src="docs/assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
+<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-linux-amd64.tar.gz"><img src="docs/assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-darwin-arm64.tar.gz"><img src="docs/assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-windows-amd64.zip"><img src="docs/assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
 
 <sub>One file, nothing to install. [Intel Macs, ARM64 Linux, ARM64 Windows and checksums](#download)</sub>
 
@@ -124,6 +124,7 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2">Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle and SQLite</b>, with the dialect checked when the channel is saved rather than at three in the morning</td></tr>
 <tr><td colspan="2"><b>Kafka</b>, keyed so one patient's events stay in order while different patients go in parallel — Kafka orders within a partition and nowhere else, and records sharing a key always share one. Offsets commit <b>after</b> a batch is handled, so a crash redelivers rather than loses</td></tr>
 <tr><td colspan="2">A <b>channel destination</b> so one feed can hand off to another without a network round trip</td></tr>
+<tr><td colspan="2">A <b>fleet view</b> for a site running more than one instance — every channel on every server in one table, with a rollup that counts <b>undetermined</b> separately from <b>unreachable</b>, because a screen of zeros looks like health. Peers are read with a token they issue themselves, and the report between instances carries counts only: no message identifiers, no patient data. Mirth charges for this</td></tr>
 <tr><td colspan="2">SFTP verified against <b>OpenSSH</b>, databases against <b>real PostgreSQL</b>, mutual TLS against <b>OpenSSL</b> — a client and server from the same library agreeing only proves they agree with each other</td></tr>
 </tbody></table>
 
@@ -262,14 +263,14 @@ the notice and the full PDF manual.
 
 | Platform | Architecture | Download |
 |---|---|---|
-| **Windows** | x64 (Intel/AMD) | [`perfuse-windows-amd64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-windows-amd64.zip) |
-| **Windows** | ARM64 | [`perfuse-windows-arm64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-windows-arm64.zip) |
-| **macOS** | Apple Silicon (M1–M4) | [`perfuse-darwin-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-darwin-arm64.tar.gz) |
-| **macOS** | Intel | [`perfuse-darwin-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-darwin-amd64.tar.gz) |
-| **Linux** | x86-64 | [`perfuse-linux-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-linux-amd64.tar.gz) |
-| **Linux** | ARM64 / aarch64 | [`perfuse-linux-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/perfuse-linux-arm64.tar.gz) |
+| **Windows** | x64 (Intel/AMD) | [`perfuse-v0.1.2-windows-amd64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-windows-amd64.zip) |
+| **Windows** | ARM64 | [`perfuse-v0.1.2-windows-arm64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-windows-arm64.zip) |
+| **macOS** | Apple Silicon (M1–M4) | [`perfuse-v0.1.2-darwin-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-darwin-arm64.tar.gz) |
+| **macOS** | Intel | [`perfuse-v0.1.2-darwin-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-darwin-amd64.tar.gz) |
+| **Linux** | x86-64 | [`perfuse-v0.1.2-linux-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-linux-amd64.tar.gz) |
+| **Linux** | ARM64 / aarch64 | [`perfuse-v0.1.2-linux-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/perfuse-v0.1.2-linux-arm64.tar.gz) |
 
-**Verify what you downloaded** against [`SHA256SUMS`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.1/SHA256SUMS):
+**Verify what you downloaded** against [`SHA256SUMS`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.2/SHA256SUMS):
 
 ```sh
 shasum -a 256 -c SHA256SUMS --ignore-missing     # macOS / Linux
@@ -427,6 +428,9 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | **HAPI FHIR** | FHIR resources Perfuse produces validate in an independent server |
 | **Orthanc** | DICOM C-STORE and C-FIND against a real PACS |
 | **PostgreSQL, SFTP, ActiveMQ** | Database, file transfer and broker destinations against real services |
+| **The FHIR R4 specification's own examples** | All 2,912 example files the standard's authors published. 13,723 resources validated, none reported wrongly. Found a bundle whose invalid content was being reported as a missing feature, exiting zero under `-strict` |
+| **The HAPI HL7 v2 test corpus** | 59 of the reference Java implementation's own awkward messages — uuencoded payloads, escaped delimiters, repeating groups — all parsed |
+| **SIGKILL, mid-batch** | 255 messages acknowledged across five hard kills, 255 present downstream, none lost and none duplicated. The numbers for the weaker acknowledgement mode are published too |
 
 Interoperability tests run against containers, not stubs. Where a real product's behaviour contradicted
 the specification, the real behaviour won and a fixture recording it was committed.
@@ -518,6 +522,8 @@ Full detail: [Migrating from Mirth](docs/reference.md#migrating-from-mirth) ·
 | **Export back to the other engine** | Yes — writes Mirth channel files a real Mirth accepts | N/A |
 | **Kafka** | Source and destination, keyed for per-patient ordering | No connector |
 | **Configuration from the web UI** | Everything | Most things |
+| **Multi-server view** | Fleet view, included | A paid feature |
+| **Published crash-consistency results** | Killed mid-batch and counted: 255 acknowledged, 255 delivered | None published |
 
 Perfuse is younger and has a smaller connector catalogue. Where a capability is missing it says so rather
 than approximating it.
