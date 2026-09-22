@@ -1870,6 +1870,107 @@ have signed anybody in**: the canonical form a signature covers was computed wit
 Perfuse had not written could show it. Mutual TLS, checked the same way, turned out to be correct. The method mattered more than the
 outcome in both cases.
 
+## What happens when it is killed
+
+The question anyone who has run an interface engine asks first, and the one nobody
+answers, because the honest answer is usually embarrassing.
+
+It was answered by killing the process with `SIGKILL` part way through a batch, which
+is what a power failure, an out-of-memory kill and a hypervisor reset all look like
+from inside, and then counting what survived against what had been promised.
+
+### The property being tested
+
+Not "nothing is lost". That is not achievable and claiming it would be a lie. The
+narrower promise is the one a sender actually relies on:
+
+> a message that was positively acknowledged is a message that arrived.
+
+With `ack.when: on_delivery`, which is the default, every destination is written
+before the acknowledgement goes out, so an `AA` is a statement about the destination
+rather than about a queue. A message killed before its acknowledgement may well be
+lost, and that is correct: the sender was never promised anything and will send it
+again.
+
+### Killed mid-batch, acknowledging on delivery
+
+Five runs, killed after 5, 25, 40, 75 and 110 messages of 120.
+
+| Acknowledged | Present downstream afterwards | Acknowledged but missing |
+|---|---|---|
+| 255 | 255 | **0** |
+
+The promise held at every kill point. Nothing was duplicated either, though a
+duplicate would have been acceptable and a loss would not: a resent A08 is a nuisance
+receivers absorb, and a lab result that silently never arrived is a patient safety
+event.
+
+### Killed mid-batch, acknowledging on receipt
+
+`on_receipt` answers as soon as the message is queued, before any destination has been
+written. The documentation has always said an acknowledged message can still be lost
+this way. Here is the size of it:
+
+| Killed after | Acknowledged | Present downstream | Lost |
+|---|---|---|---|
+| 5 | 5 | 1 | 4 |
+| 25 | 25 | 1 | 24 |
+| 75 | 75 | 2 | 73 |
+| 110 | 110 | 2 | 108 |
+
+Essentially everything in flight. The setting is not a defect and there are feeds
+where it is the right choice, but it should be chosen in full knowledge that a crash
+discards what has been acknowledged and not yet written, and that "what has been
+acknowledged and not yet written" is almost all of a burst.
+
+Nothing recovered on restart, because `perfuse run` has no durable store. A
+destination that must not lose messages during an outage needs `queue.enabled`, which
+needs the database that `perfuse serve` provides.
+
+### A sender that dies half way through a message
+
+The most dangerous of these faults, because a truncated HL7 message usually still
+parses. The segments before the cut are complete and well formed, so a receiver has no
+way to know that `PID` and `PV1` arrived and the `OBX` segments carrying the results
+did not.
+
+A frame was opened, six tenths of a message sent, and the connection reset rather than
+closed. The partial message was not delivered, the listener survived, and a
+well-formed message sent immediately afterwards was accepted normally — so the
+fragment was not carried forward into the next message either.
+
+What this did find was a reporting gap. The number of bytes abandoned was reported
+when the peer closed tidily and omitted for every other read failure — which is to say
+omitted for a sender that crashed, a process that was killed and a cable that was
+pulled. Those connections logged `messages=0` and nothing else, so an operator could
+not tell an empty health check from a lab result thrown away nine tenths of the way
+through. It is now reported for every failure mode.
+
+### A full disk
+
+The destination volume was filled to zero bytes available and messages kept coming.
+Space exhaustion is detected and logged rather than swallowed.
+
+Two things are worth knowing. The sender does not get a prompt rejection: the delivery
+retries on the usual schedule — one second, two, four, eight — and the negative
+acknowledgement arrives about fifteen seconds later. A sender whose own timeout is
+shorter than that sees a stalled connection rather than an `AE`, and will conclude the
+network is at fault rather than the disk.
+
+And a volume reporting zero bytes free can still accept small appends for a while,
+because adding a couple of hundred bytes to a file whose last block has room needs no
+new allocation. Do not treat the first write failure as the moment the disk filled; it
+is later than that.
+
+### What was not tested
+
+A destination directory losing write permission. It could not be injected with
+`chmod`: the engine holds the output file open, and changing a file's mode does not
+affect a descriptor already opened against it. Testing it properly needs the volume
+remounted read-only or removed underneath the process, which has not been done. It is
+listed here rather than omitted, because a gap nobody mentions reads as a gap nobody
+looked for.
+
 ## Roadmap
 
 Not built yet. Listed so the direction is clear, not to suggest it works.

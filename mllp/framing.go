@@ -81,8 +81,21 @@ func (r *Reader) ReadMessage() ([]byte, error) {
 		if err != nil {
 			// A truncated frame is not a message. Returning what arrived so far
 			// would hand a half-message to a clinical system.
-			if errors.Is(err, io.EOF) && len(buf) > 0 {
-				return nil, fmt.Errorf("mllp: stream ended %d bytes into a frame: %w", len(buf), io.ErrUnexpectedEOF)
+			//
+			// The byte count is reported for any read failure rather than only a
+			// clean EOF. A sender that crashes, a process that is killed and a
+			// cable that is pulled all produce a reset or a read timeout, not a
+			// polite close, so the likely cases were the ones arriving with no
+			// count at all: the connection logged messages=0 and an operator
+			// could not tell a port scan from a lab result abandoned nine tenths
+			// of the way through.
+			if len(buf) > 0 {
+				if errors.Is(err, io.EOF) {
+					// Deliberately not wrapping io.EOF. Callers treat a bare EOF as
+					// a peer closing tidily between messages, which this is not.
+					return nil, fmt.Errorf("mllp: stream ended %d bytes into a frame: %w", len(buf), io.ErrUnexpectedEOF)
+				}
+				return nil, fmt.Errorf("mllp: stream failed %d bytes into a frame: %w", len(buf), err)
 			}
 			return nil, err
 		}
