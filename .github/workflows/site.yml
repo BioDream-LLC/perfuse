@@ -9,6 +9,12 @@ on:
     paths:
       - 'site/**'
       - 'docs/assets/**'
+      # The manual is copied into the published site by the build step below, so a
+      # change to it has to trigger a deploy. Without this the published manual
+      # updated only by accident, whenever something in site/ happened to change,
+      # and three new chapters sat in the repository while the live manual and the
+      # shipped PDF stayed a release behind with nothing to indicate it.
+      - 'docs/manual/**'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
