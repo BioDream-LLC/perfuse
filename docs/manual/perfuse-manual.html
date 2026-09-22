@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · aba0e55</p>
+<p class="version">version 0.1 · 14ecb3f</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -489,6 +489,12 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s10-12-writing-to-a-database"><span class="num">10.12</span> Writing to a database</a></div>
 <div class="toc-d2"><a href="#s10-13-sending-to-a-raw-socket"><span class="num">10.13</span> Sending to a raw socket</a></div>
 <div class="toc-d2"><a href="#s10-14-delivery-to-another-channel"><span class="num">10.14</span> Delivery to another channel</a></div>
+<div class="toc-d2"><a href="#s10-15-what-happens-when-the-process-is-killed"><span class="num">10.15</span> What happens when the process is killed</a></div>
+<div class="toc-d3"><a href="#s10-15-1-acknowledging-on-delivery"><span class="num">10.15.1</span> Acknowledging on delivery</a></div>
+<div class="toc-d3"><a href="#s10-15-2-acknowledging-on-receipt"><span class="num">10.15.2</span> Acknowledging on receipt</a></div>
+<div class="toc-d3"><a href="#s10-15-3-a-sender-that-dies-half-way-through-a-message"><span class="num">10.15.3</span> A sender that dies half way through a message</a></div>
+<div class="toc-d3"><a href="#s10-15-4-a-full-disk"><span class="num">10.15.4</span> A full disk</a></div>
+<div class="toc-d3"><a href="#s10-15-5-what-was-not-tested"><span class="num">10.15.5</span> What was not tested</a></div>
 <div class="toc-d1"><a href="#s11-alerting"><span class="num">11</span> Alerting</a></div>
 <div class="toc-d2"><a href="#s11-1-the-alert-kinds"><span class="num">11.1</span> The alert kinds</a></div>
 <div class="toc-d2"><a href="#s11-2-silence-is-the-hardest-thing-to-detect"><span class="num">11.2</span> Silence is the hardest thing to detect</a></div>
@@ -522,6 +528,10 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s14-4-verifying-against-the-real-thing-in-containers"><span class="num">14.4</span> Verifying against the real thing, in containers</a></div>
 <div class="toc-d2"><a href="#s14-5-diagnosing-a-test-that-fails-once-and-never-again"><span class="num">14.5</span> Diagnosing a test that fails once and never again</a></div>
 <div class="toc-d2"><a href="#s14-6-what-still-needs-real-infrastructure"><span class="num">14.6</span> What still needs real infrastructure</a></div>
+<div class="toc-d2"><a href="#s14-7-measured-against-public-conformance-corpora"><span class="num">14.7</span> Measured against public conformance corpora</a></div>
+<div class="toc-d3"><a href="#s14-7-1-fhir-r4-the-specifications-own-examples"><span class="num">14.7.1</span> FHIR R4, the specification&#39;s own examples</a></div>
+<div class="toc-d3"><a href="#s14-7-2-hl7-v2-the-hapi-test-corpus"><span class="num">14.7.2</span> HL7 v2, the HAPI test corpus</a></div>
+<div class="toc-d3"><a href="#s14-7-3-what-has-not-been-run"><span class="num">14.7.3</span> What has not been run</a></div>
 <div class="toc-d1"><a href="#s15-migration-from-mirth"><span class="num">15</span> Migration from Mirth</a></div>
 <div class="toc-d2"><a href="#s15-1-importing-channels"><span class="num">15.1</span> Importing channels</a></div>
 <div class="toc-d2"><a href="#s15-2-what-translates-and-what-needs-a-decision"><span class="num">15.2</span> What translates and what needs a decision</a></div>
@@ -561,6 +571,14 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s17-8-where-this-installation-got-stuck"><span class="num">17.8</span> Where this installation got stuck</a></div>
 <div class="toc-d2"><a href="#s17-9-logs"><span class="num">17.9</span> Logs</a></div>
 <div class="toc-d2"><a href="#s17-10-running-two-instances"><span class="num">17.10</span> Running two instances</a></div>
+<div class="toc-d2"><a href="#s17-11-more-than-one-server"><span class="num">17.11</span> More than one server</a></div>
+<div class="toc-d3"><a href="#s17-11-1-adding-a-peer"><span class="num">17.11.1</span> Adding a peer</a></div>
+<div class="toc-d3"><a href="#s17-11-2-controlling-a-peer-which-is-off"><span class="num">17.11.2</span> Controlling a peer, which is off</a></div>
+<div class="toc-d3"><a href="#s17-11-3-what-the-report-says"><span class="num">17.11.3</span> What the report says</a></div>
+<div class="toc-d3"><a href="#s17-11-4-clock-skew"><span class="num">17.11.4</span> Clock skew</a></div>
+<div class="toc-d3"><a href="#s17-11-5-what-a-peer-learns-about-you"><span class="num">17.11.5</span> What a peer learns about you</a></div>
+<div class="toc-d3"><a href="#s17-11-6-a-peer-pointed-at-itself"><span class="num">17.11.6</span> A peer pointed at itself</a></div>
+<div class="toc-d3"><a href="#s17-11-7-tls-on-internal-networks"><span class="num">17.11.7</span> TLS on internal networks</a></div>
 <div class="toc-d1"><a href="#s18-the-command-line"><span class="num">18</span> The Command Line</a></div>
 <div class="toc-d2"><a href="#s18-1-running-channels"><span class="num">18.1</span> Running channels</a></div>
 <div class="toc-d3"><a href="#s18-1-1-perfuse-serve"><span class="num">18.1.1</span> perfuse serve</a></div>
@@ -1844,6 +1862,43 @@ destinations:
 <p>A channel destination hands the message to another channel by name. The receiving channel treats it like any other arrival: it records it, filters it, transforms it and fans it out.</p>
 <p>This is the supported way to build a chain. It is deliberately visible — two channels, two sets of statistics, two entries in the message history — because a chain hidden inside one channel is a chain nobody can monitor.</p>
 <p>The message is handed over in memory rather than over a network, so there is no framing, no acknowledgement and no timeout between the two.</p>
+<h3 id="s10-15-what-happens-when-the-process-is-killed"><span class="num">10.15</span> What happens when the process is killed</h3>
+<p>The question anyone who has run an interface engine asks first, and the one that is rarely answered, because the honest answer is usually embarrassing.</p>
+<p>It was answered by killing the process with <code>SIGKILL</code> part way through a batch — which is what a power failure, an out-of-memory kill and a hypervisor reset all look like from inside — and counting what survived against what had been promised.</p>
+<p>The property under test is not &#34;nothing is lost&#34;. That is not achievable and claiming it would be a lie. It is the narrower promise a sender actually relies on: <strong>a message that was positively acknowledged is a message that arrived.</strong></p>
+<p>With <code>ack.when: on_delivery</code>, which is the default, every destination is written before the acknowledgement goes out, so an <code>AA</code> is a statement about the destination rather than about a queue. A message killed before its acknowledgement may well be lost, and that is correct: the sender was never promised anything and will send it again.</p>
+<h4 id="s10-15-1-acknowledging-on-delivery"><span class="num">10.15.1</span> Acknowledging on delivery</h4>
+<p>Five runs, killed after 5, 25, 40, 75 and 110 messages of 120.</p>
+<table>
+<thead><tr><th>Acknowledged</th><th>Present downstream afterwards</th><th>Acknowledged but missing</th></tr></thead>
+<tbody>
+<tr><td>255</td><td>255</td><td>0</td></tr>
+</tbody>
+</table>
+<p>The promise held at every kill point, and nothing was duplicated. A duplicate would have been acceptable and a loss would not: a resent A08 is a nuisance receivers absorb, and a lab result that silently never arrived is a patient safety event.</p>
+<h4 id="s10-15-2-acknowledging-on-receipt"><span class="num">10.15.2</span> Acknowledging on receipt</h4>
+<p><code>on_receipt</code> answers as soon as the message is queued, before any destination has been written. This chapter has always said an acknowledged message can still be lost that way. Here is the size of it.</p>
+<table>
+<thead><tr><th>Killed after</th><th>Acknowledged</th><th>Present downstream</th><th>Lost</th></tr></thead>
+<tbody>
+<tr><td>5</td><td>5</td><td>1</td><td>4</td></tr>
+<tr><td>25</td><td>25</td><td>1</td><td>24</td></tr>
+<tr><td>75</td><td>75</td><td>2</td><td>73</td></tr>
+<tr><td>110</td><td>110</td><td>2</td><td>108</td></tr>
+</tbody>
+</table>
+<p>Essentially everything in flight. The setting is not a defect and there are feeds where it is the right choice, but it should be chosen knowing that a crash discards what has been acknowledged and not yet written, and that this is almost all of a burst.</p>
+<p>Nothing recovered on restart, because <code>perfuse run</code> has no durable store. A destination that must not lose messages during an outage needs <code>queue.enabled</code>, which needs the database that <code>perfuse serve</code> provides — and <code>perfuse run</code> now refuses such a channel rather than starting it without the queue.</p>
+<h4 id="s10-15-3-a-sender-that-dies-half-way-through-a-message"><span class="num">10.15.3</span> A sender that dies half way through a message</h4>
+<p>The most dangerous of these faults, because a truncated HL7 message usually still parses. The segments before the cut are complete and well formed, so a receiver has no way to know that <code>PID</code> and <code>PV1</code> arrived and the <code>OBX</code> segments carrying the results did not.</p>
+<p>A frame was opened, six tenths of a message sent, and the connection reset rather than closed. The partial message was not delivered, the listener survived, and a well-formed message sent immediately afterwards was accepted normally, so the fragment was not carried into the next message either.</p>
+<p>The connection log now reports how many bytes of an unfinished frame were abandoned, for every failure mode rather than only a tidy close. Previously a crashed sender, a killed process and a pulled cable all logged <code>messages=0</code> and nothing else, which cannot distinguish an empty health check from a lab result thrown away nine tenths of the way through.</p>
+<h4 id="s10-15-4-a-full-disk"><span class="num">10.15.4</span> A full disk</h4>
+<p>Space exhaustion is detected and logged rather than swallowed. Two things about it are worth knowing.</p>
+<p>The sender does not get a prompt rejection. The delivery retries on the usual schedule — one second, two, four, eight — and the negative acknowledgement arrives about fifteen seconds later. A sender whose own timeout is shorter than that sees a stalled connection rather than an <code>AE</code>, and will conclude the network is at fault rather than the disk.</p>
+<p>And a volume reporting zero bytes free can still accept small appends for a while, because adding a couple of hundred bytes to a file whose last block has room needs no new allocation. The first write failure is later than the moment the disk filled.</p>
+<h4 id="s10-15-5-what-was-not-tested"><span class="num">10.15.5</span> What was not tested</h4>
+<p>A destination directory losing write permission. It could not be injected with <code>chmod</code>: the engine holds the output file open, and changing a file&#39;s mode does not affect a descriptor already opened against it. Testing it properly needs the volume remounted read-only or removed underneath the process, which has not been done. It is named here rather than omitted, because a gap nobody mentions reads as a gap nobody looked for.</p>
 </section>
 <section class="chapter">
 <h2 id="s11-alerting"><span class="num">11</span> Alerting</h2>
@@ -2048,6 +2103,27 @@ destinations:
 <li>A SCRIPT message through Surescripts, where certification is a commercial process rather than a technical one.</li>
 </ul>
 <p>And the honest general gap: Perfuse has no production hours. Its throughput ceiling is unmeasured, its long-uptime behaviour is unobserved, and the same person wrote both the code and the tests that check it. The features in this chapter and the next exist so that you can close those gaps with your own evidence rather than taking anybody&#39;s word.</p>
+<h3 id="s14-7-measured-against-public-conformance-corpora"><span class="num">14.7</span> Measured against public conformance corpora</h3>
+<p>A test suite whose fixtures were written here proves agreement with oneself. These are other people&#39;s data.</p>
+<h4 id="s14-7-1-fhir-r4-the-specifications-own-examples"><span class="num">14.7.1</span> FHIR R4, the specification&#39;s own examples</h4>
+<p>All 2,912 example files published with the FHIR R4 specification — every example the authors of the standard wrote.</p>
+<table>
+<thead><tr><th>Result</th><th>Count</th></tr></thead>
+<tbody>
+<tr><td>Resources validated with no findings</td><td>13,723</td></tr>
+<tr><td>Resources reported invalid</td><td>0</td></tr>
+<tr><td>Files refused as an unimplemented resource type</td><td>753</td></tr>
+<tr><td>Bundle entries skipped as an unimplemented type</td><td>1,348</td></tr>
+</tbody>
+</table>
+<p>Not one resource was validated incorrectly. Every failure is an explicit refusal naming the type it cannot read — 672 <code>ValueSet</code>, 80 <code>ConceptMap</code> and one <code>Parameters</code>. A validator that quietly passes what it does not understand is worse than one that says so.</p>
+<p>The corpus found a defect, which is the reason for running it. Validating a bundle printed &#34;Bundle validation from a file is not supported yet&#34; and carried on. That was false in both directions: bundles whose entries happened to be types the parser could hold were already being validated, and a bundle that was genuinely invalid produced the same line, counted nothing, and exited zero — including under <code>-strict</code>, which exists so this can gate a build. Forty-two of the specification&#39;s own bundles were being skipped.</p>
+<p>Bundles are now validated entry by entry, with three outcomes kept apart: an entry that is wrong fails and names the field, an entry of a type this build cannot read is counted as skipped and reported, and a bundle carrying no resource bodies is neither. The same corpus went from 2,100 resources checked to 13,723.</p>
+<h4 id="s14-7-2-hl7-v2-the-hapi-test-corpus"><span class="num">14.7.2</span> HL7 v2, the HAPI test corpus</h4>
+<p>The message fixtures from HAPI, the reference Java HL7 v2 implementation — deliberately awkward material including uuencoded payloads, escaped delimiters and repeating groups.</p>
+<p>59 messages, 59 parsed, nothing refused. Seven message types in a corpus any single system would describe as one thing, which is the point <code>perfuse profile</code> exists to make.</p>
+<h4 id="s14-7-3-what-has-not-been-run"><span class="num">14.7.3</span> What has not been run</h4>
+<p>DICOM against a public conformance set, and X12 against a published corpus. Neither has been done, and neither should be inferred from the two above.</p>
 </section>
 <section class="chapter">
 <h2 id="s15-migration-from-mirth"><span class="num">15</span> Migration from Mirth</h2>
@@ -2313,6 +2389,30 @@ destinations:
 <h3 id="s17-10-running-two-instances"><span class="num">17.10</span> Running two instances</h3>
 <p>Two Perfuse processes against the same channel directory and the same database is not supported and will not behave well — both will try to listen on the same ports and both will write to the same SQLite file.</p>
 <p>For availability, run one instance and make its restart fast. MLLP senders queue and retry, so a short outage is absorbed by the sender rather than losing data. This is a deliberate trade in favour of simplicity, and it means Perfuse is not the right choice if your requirement is continuous availability through a host failure.</p>
+<h3 id="s17-11-more-than-one-server"><span class="num">17.11</span> More than one server</h3>
+<p>A site with two instances has a question no single console can answer: is everything running? Mirth charges for the answer. This is the fleet view.</p>
+<p>One instance is nominated as the place you look. It polls the others and shows every channel on every server in one table, with a rollup across all of them.</p>
+<h4 id="s17-11-1-adding-a-peer"><span class="num">17.11.1</span> Adding a peer</h4>
+<p>Settings → Fleet, or <code>PUT /api/fleet/peers</code>. A peer needs a name, a URL, and a token issued by the peer itself.</p>
+<p>The name is required and is not the URL, because a URL is not something anybody recognises at three in the morning.</p>
+<p>The token must be created <strong>on the peer</strong>, under Users, and should be viewer-scoped. Adding a peer without one is refused, with those instructions, rather than accepted and then failing quietly on every poll. Reading another instance&#39;s health is the smallest privilege there is, and it is the only one the fleet view needs.</p>
+<h4 id="s17-11-2-controlling-a-peer-which-is-off"><span class="num">17.11.2</span> Controlling a peer, which is off</h4>
+<p><code>allow_control</code> permits starting and stopping that peer&#39;s channels from here. It is off by default and every use is audited by name.</p>
+<p>The two privileges are deliberately separate. Reading another server&#39;s health is minor; stopping its channels during a transfusion is not, and the second should never arrive silently attached to the first.</p>
+<h4 id="s17-11-3-what-the-report-says"><span class="num">17.11.3</span> What the report says</h4>
+<p>Each server reports the total number of channels, how many are running, stopped or errored, the queue depth and the age of the oldest waiting message, how many alerts are firing, and whether it is draining for shutdown.</p>
+<p>The rollup counts servers three ways: <strong>reachable</strong>, <strong>unreachable</strong> and <strong>undetermined</strong>. The third covers peers whose health nobody knows — not yet polled, refusing the token, or running a version this one cannot read. It is kept apart from unreachable because &#34;we cannot tell&#34; is not &#34;it is down&#34;, and folding the two together is how a fleet page starts lying.</p>
+<p>For the same reason the rollup carries <strong>knownFrom</strong>: how many instances the channel and queue figures were actually read from. Twelve channels running across a fleet means something different when two of five servers did not answer, and the total alone cannot say so.</p>
+<p>An unreachable peer says why in terms an operator can act on. A refused connection is reported as the host being up with nothing listening on that port, which is a different problem from a host that does not answer at all.</p>
+<h4 id="s17-11-4-clock-skew"><span class="num">17.11.4</span> Clock skew</h4>
+<p>The rollup reports the largest difference between the clocks of the servers in it. Worth a number of its own: correlating an incident across two instances whose clocks disagree by four minutes produces a sequence of events that did not happen.</p>
+<h4 id="s17-11-5-what-a-peer-learns-about-you"><span class="num">17.11.5</span> What a peer learns about you</h4>
+<p>Counts and rates. The report one instance gives another carries no message identifiers, no channel-level detail and no patient data of any kind.</p>
+<p>That is what stops a fleet view being a centralisation of clinical data: the aggregating instance learns how many channels are running and nothing whatsoever about what flowed through them. If you want the messages you open that server&#39;s own console, where the audit log records that you did.</p>
+<h4 id="s17-11-6-a-peer-pointed-at-itself"><span class="num">17.11.6</span> A peer pointed at itself</h4>
+<p>Refused. An instance polling its own address through its own HTTP stack appears twice in its own fleet view and double-counts every channel it has.</p>
+<h4 id="s17-11-7-tls-on-internal-networks"><span class="num">17.11.7</span> TLS on internal networks</h4>
+<p><code>insecure_skip_verify</code> accepts a peer&#39;s certificate without verifying it. It exists because hospital infrastructure runs on private certificate authorities, and refusing to work at all would push people onto plain HTTP, which is worse. It is named so it cannot be mistaken for a good idea.</p>
 </section>
 <section class="chapter">
 <h2 id="s18-the-command-line"><span class="num">18</span> The Command Line</h2>

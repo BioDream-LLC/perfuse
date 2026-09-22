@@ -82,3 +82,82 @@ The log carries what the store cannot: startup and shutdown, configuration load 
 Two Perfuse processes against the same channel directory and the same database is not supported and will not behave well — both will try to listen on the same ports and both will write to the same SQLite file.
 
 For availability, run one instance and make its restart fast. MLLP senders queue and retry, so a short outage is absorbed by the sender rather than losing data. This is a deliberate trade in favour of simplicity, and it means Perfuse is not the right choice if your requirement is continuous availability through a host failure.
+
+## More than one server
+
+A site with two instances has a question no single console can answer: is everything
+running? Mirth charges for the answer. This is the fleet view.
+
+One instance is nominated as the place you look. It polls the others and shows every
+channel on every server in one table, with a rollup across all of them.
+
+### Adding a peer
+
+Settings → Fleet, or `PUT /api/fleet/peers`. A peer needs a name, a URL, and a token
+issued by the peer itself.
+
+The name is required and is not the URL, because a URL is not something anybody recognises
+at three in the morning.
+
+The token must be created **on the peer**, under Users, and should be viewer-scoped. Adding
+a peer without one is refused, with those instructions, rather than accepted and then
+failing quietly on every poll. Reading another instance's health is the smallest privilege
+there is, and it is the only one the fleet view needs.
+
+### Controlling a peer, which is off
+
+`allow_control` permits starting and stopping that peer's channels from here. It is off by
+default and every use is audited by name.
+
+The two privileges are deliberately separate. Reading another server's health is minor;
+stopping its channels during a transfusion is not, and the second should never arrive
+silently attached to the first.
+
+### What the report says
+
+Each server reports the total number of channels, how many are running, stopped or errored,
+the queue depth and the age of the oldest waiting message, how many alerts are firing, and
+whether it is draining for shutdown.
+
+The rollup counts servers three ways: **reachable**, **unreachable** and **undetermined**.
+The third covers peers whose health nobody knows — not yet polled, refusing the token, or
+running a version this one cannot read. It is kept apart from unreachable because "we
+cannot tell" is not "it is down", and folding the two together is how a fleet page starts
+lying.
+
+For the same reason the rollup carries **knownFrom**: how many instances the channel and
+queue figures were actually read from. Twelve channels running across a fleet means
+something different when two of five servers did not answer, and the total alone cannot say
+so.
+
+An unreachable peer says why in terms an operator can act on. A refused connection is
+reported as the host being up with nothing listening on that port, which is a different
+problem from a host that does not answer at all.
+
+### Clock skew
+
+The rollup reports the largest difference between the clocks of the servers in it. Worth a
+number of its own: correlating an incident across two instances whose clocks disagree by
+four minutes produces a sequence of events that did not happen.
+
+### What a peer learns about you
+
+Counts and rates. The report one instance gives another carries no message identifiers, no
+channel-level detail and no patient data of any kind.
+
+That is what stops a fleet view being a centralisation of clinical data: the aggregating
+instance learns how many channels are running and nothing whatsoever about what flowed
+through them. If you want the messages you open that server's own console, where the audit
+log records that you did.
+
+### A peer pointed at itself
+
+Refused. An instance polling its own address through its own HTTP stack appears twice in
+its own fleet view and double-counts every channel it has.
+
+### TLS on internal networks
+
+`insecure_skip_verify` accepts a peer's certificate without verifying it. It exists because
+hospital infrastructure runs on private certificate authorities, and refusing to work at all
+would push people onto plain HTTP, which is worse. It is named so it cannot be mistaken for
+a good idea.
