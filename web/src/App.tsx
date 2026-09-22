@@ -779,7 +779,7 @@ function Console() {
         onClose={() => setPaletteOpen(false)}
       />
 
-      <AlertBanner snapshot={alerts} onOpen={() => setTab('alerts')} />
+      <AlertBanner snapshot={alerts.snapshot} onOpen={() => setTab('alerts')} />
 
       <main
         id="view-panel"
@@ -791,7 +791,9 @@ function Console() {
         {tab === 'channels' && <Channels />}
         {tab === 'messages' && <Messages />}
         {tab === 'queue' && <Queue role={me.role as 'viewer' | 'editor' | 'admin'} />}
-        {tab === 'alerts' && <Alerts role={me.role as 'viewer' | 'editor' | 'admin'} />}
+        {tab === 'alerts' && (
+          <Alerts role={me.role as 'viewer' | 'editor' | 'admin'} alerts={alerts} />
+        )}
         {tab === 'metrics' && <Metrics />}
         {tab === 'fhir' && <FhirLab />}
         {tab === 'documents' && <DocumentLab />}

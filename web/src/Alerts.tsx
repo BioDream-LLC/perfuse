@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { AlertRulesEditor } from './AlertRulesEditor'
-import { api } from './api'
+import { ApiError, api } from './api'
 import type { Alert, AlertSnapshot } from './api'
 
 /**
@@ -13,20 +14,65 @@ import type { Alert, AlertSnapshot } from './api'
  * an interface showing only current state cannot answer it at all.
  */
 
+/**
+ * AlertsState keeps the three cases apart, because collapsing them loses work.
+ *
+ * The server already distinguishes them: it answers 501 when alerting is switched
+ * off, and some other status when a request merely failed. Treating both as "no
+ * data" means one unlucky poll replaces a working page with "alerting is not
+ * enabled", and takes any half-finished rule edit down with it.
+ */
+export type AlertsState = {
+  /** The last snapshot that loaded. Kept across a failed poll on purpose. */
+  snapshot: AlertSnapshot | null
+  /** Set only when the server says alerting is switched off. */
+  disabled: boolean
+  /** True until the first attempt finishes, so "nothing yet" is not "nothing wrong". */
+  loading: boolean
+}
+
+/** The state before anything has been asked of the server. */
+export const initialAlertsState: AlertsState = {
+  snapshot: null,
+  disabled: false,
+  loading: true,
+}
+
+/**
+ * nextAlertsState decides what one poll result means.
+ *
+ * Pulled out of the hook so it can be tested without a fake clock. The rule it
+ * encodes is the whole point: 501 is the server stating that alerting is not
+ * configured, which is durable and worth showing. Anything else — a dropped
+ * connection, a restart, an expired session — is transient, and throwing away the
+ * last good snapshot for one of those is what replaced a working page with
+ * "not enabled" and took any half-finished rule edit with it.
+ */
+export function nextAlertsState(
+  prev: AlertsState,
+  outcome: { snapshot: AlertSnapshot } | { error: unknown },
+): AlertsState {
+  if ('snapshot' in outcome) {
+    return { snapshot: outcome.snapshot, disabled: false, loading: false }
+  }
+  if (outcome.error instanceof ApiError && outcome.error.status === 501) {
+    return { snapshot: null, disabled: true, loading: false }
+  }
+  return { ...prev, loading: false }
+}
+
 /** useAlerts polls, and is shared by the banner and the panel. */
-export function useAlerts(): AlertSnapshot | null {
-  const [snapshot, setSnapshot] = useState<AlertSnapshot | null>(null)
+export function useAlerts(): AlertsState {
+  const [state, setState] = useState<AlertsState>(initialAlertsState)
 
   useEffect(() => {
     let live = true
     async function load() {
       try {
         const res = await api.alerts()
-        if (live) setSnapshot(res)
-      } catch {
-        // Alerting may not be enabled, or the session may have expired. Neither is
-        // worth an error box on every page: the banner simply does not appear.
-        if (live) setSnapshot(null)
+        if (live) setState((prev) => nextAlertsState(prev, { snapshot: res }))
+      } catch (err) {
+        if (live) setState((prev) => nextAlertsState(prev, { error: err }))
       }
     }
     load()
@@ -37,7 +83,7 @@ export function useAlerts(): AlertSnapshot | null {
     }
   }, [])
 
-  return snapshot
+  return state
 }
 
 export function AlertBanner({
@@ -108,8 +154,17 @@ export function AlertBanner({
   )
 }
 
-export function Alerts({ role }: { role: 'viewer' | 'editor' | 'admin' }) {
-  const snapshot = useAlerts()
+export function Alerts({
+  role,
+  alerts,
+}: {
+  role: 'viewer' | 'editor' | 'admin'
+  alerts: AlertsState
+}) {
+  // Taken as a prop rather than polled again. App already polls for the banner, and
+  // a second timer on the same endpoint doubled the requests and gave the two views
+  // different ideas of the current state for up to fifteen seconds.
+  const { snapshot, disabled, loading } = alerts
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
@@ -125,13 +180,28 @@ export function Alerts({ role }: { role: 'viewer' | 'editor' | 'admin' }) {
     }
   }
 
-  if (!snapshot) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-lg font-semibold text-slate-100">Alerts</h1>
-        <div className="card p-6 text-sm text-slate-500">
-          Alerting is not enabled on this server.
-        </div>
+  // The rules editor edits configuration and does not depend on what is currently
+  // firing, so it is mounted independently of the snapshot. Keeping it inside the
+  // snapshot branch meant a single failed poll unmounted it and discarded whatever
+  // was half-typed.
+  const rulesEditor = role === 'admin' ? <AlertRulesEditor /> : null
+
+  // One return, and the editor always sits in the same place in the tree.
+  // Returning a different shape per state remounts everything below the point the
+  // shapes diverge, which is what threw away half-finished edits when a poll failed.
+  let status: ReactNode = null
+  if (loading) {
+    status = <div className="card p-6 text-sm text-slate-500">Loading.</div>
+  } else if (disabled) {
+    status = (
+      <div className="card p-6 text-sm text-slate-500">
+        Alerting is not enabled on this server.
+      </div>
+    )
+  } else if (!snapshot) {
+    status = (
+      <div className="card p-6 text-sm text-slate-500">
+        Could not reach the server for the current alerts. Retrying every fifteen seconds.
       </div>
     )
   }
@@ -153,6 +223,10 @@ export function Alerts({ role }: { role: 'viewer' | 'editor' | 'admin' }) {
         </div>
       )}
 
+      {status}
+
+      {snapshot && (
+        <>
       {snapshot.firing.length === 0 ? (
         <div className="card p-10 text-center">
           <p className="text-emerald-300">Nothing is wrong.</p>
@@ -244,13 +318,15 @@ export function Alerts({ role }: { role: 'viewer' | 'editor' | 'admin' }) {
           </tbody>
         </table>
       </details>
+        </>
+      )}
 
       {/* Editing, for an administrator.
           
           The table above says what is being watched and could not change it, so an operator who found a threshold wrong had to
           leave, open the settings screen, and edit YAML - knowing already that the kind is spelled error-rate and that threshold
           means a share for some kinds and a count for others. The rules are now editable where they are read. */}
-      {role === 'admin' && <AlertRulesEditor />}
+      {rulesEditor}
     </div>
   )
 }
