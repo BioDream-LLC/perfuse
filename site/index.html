@@ -136,11 +136,27 @@
 
     /* One button per row, each as wide as the screen allows. Three at 248px side by side cannot
      * fit any phone, and letting them wrap left a ragged column instead. */
-    .buttons { flex-direction: column; align-items: stretch; gap: 10px; }
+    .buttons { flex-direction: column; align-items: stretch; gap: 10px; margin: 16px 0 18px; }
     .buttons a { display: block; }
     .buttons img { width: 100%; max-width: 320px; margin: 0 auto; }
 
-    h1 { font-size: 30px; }
+    /* Get the download onto the first screen.
+     *
+     * Measured rather than guessed: the buttons began 833px down a 568px screen, a screen and a
+     * half of scrolling before a visitor on the smallest common phone saw a download at all. The
+     * hero's spacing is tuned for a desktop where all of this is visible at once.
+     *
+     * The header becomes a flex column purely so the memory comparison can move below the
+     * buttons. On a phone the order that matters is what it is, then how to get it; the proof
+     * that it uses 31 MB is what convinces somebody who has already decided to look. Centring is
+     * done with auto margins because flex items are not centred by text-align.
+     */
+    header { display: flex; flex-direction: column; padding: 22px 0 6px; }
+    header img.mark { width: 56px; height: 56px; margin: 0 auto; }
+    header img.word { max-width: 250px; margin: 12px auto 2px; }
+    header .measure { order: 1; }
+    .tagline { font-size: 18px; margin: 10px 0 6px; }
+
     h2 { font-size: 22px; }
 
     /* A comparison table cannot usefully reflow to 300px, so it scrolls inside its own box rather
