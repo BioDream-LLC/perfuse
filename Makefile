@@ -12,7 +12,7 @@ PKG     := ./cmd/perfuse
 VERSION ?= v0.1.3
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs
+.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs site
 
 all: check build
 
@@ -220,6 +220,14 @@ e2e: web build
 # The PDF is printed from the HTML by the browser Playwright already installs, so this needs no Ruby, no gems and no TeX
 # distribution - only what the end-to-end tests already require. The two files cannot disagree about layout because the
 # layout is defined once, in the manual's own stylesheet.
+# The website, built from the documents this repository already publishes rather than from a
+# separate copy of them. SITE_BASE is the canonical origin; every canonical tag, og:url and
+# sitemap entry is written from it, so building with the wrong one is visible rather than silent.
+SITE_BASE ?= https://perfuse.health
+
+site: docs
+	go run ./cmd/perfusesite -out dist-site -base "$(SITE_BASE)"
+
 docs:
 	go run ./cmd/perfusedoc -version "version 0.1 · $$(git rev-parse --short HEAD)"
 	cd web && node print-manual.mjs ../docs/manual/perfuse-manual.html ../docs/manual/perfuse-manual.pdf

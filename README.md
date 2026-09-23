@@ -24,6 +24,8 @@ instead of a 254 MB install and a Java runtime, and it starts immediately rather
 [**Mirth migration**](#migrating-from-mirth-connect) · [**Everything it does**](#everything-it-does) ·
 [**Manual**](docs/manual/perfuse-manual.html) · [**Reference**](docs/reference.md) · [**FAQ**](#faq)
 
+[**perfuse.health**](https://perfuse.health) — the manual, the reference and this page, on the web
+
 </div>
 
 ---

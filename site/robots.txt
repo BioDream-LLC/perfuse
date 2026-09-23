@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://biodream-llc.github.io/perfuse/sitemap.xml
+Sitemap: https://perfuse.health/sitemap.xml

@@ -1,6 +1,9 @@
 # build output
 /bin/
 /dist/
+# The generated website. Built by make site, uploaded to S3, never committed:
+# it is entirely derived from README.md, docs/ and site/.
+/dist-site/
 # anchored to the repo root so it does not match the cmd/perfuse package
 /perfuse
 /perfuse.exe

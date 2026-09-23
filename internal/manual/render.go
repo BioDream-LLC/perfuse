@@ -280,6 +280,34 @@ func renderProse(src string, links map[string]string) string {
 			fmt.Fprintf(&b, "<pre class=\"%s\"><code>%s</code></pre>\n",
 				cls, html.EscapeString(strings.Join(code, "\n")))
 
+		// Headings, for documents rendered whole rather than split into chapters.
+		//
+		// The manual never reaches this case: Build consumes #, ## and ### to discover chapters,
+		// sections and subsections, so renderProse is only ever handed the prose between them. A
+		// document rendered standalone for the website has no such splitter in front of it, and
+		// without this its headings became paragraphs beginning with a hash.
+		case headingOf(line) != nil:
+			h := headingOf(line)
+			fmt.Fprintf(&b, "<h%d id=%q>%s</h%d>\n", h.level, slugFor(h.title), inline(h.title, links), h.level)
+
+		// Raw HTML, passed through as itself.
+		//
+		// The README uses HTML tables, <details> blocks and <img> tags that markdown cannot express, and
+		// the website is generated from the README so that the two cannot drift. Escaping those would
+		// publish the tags as visible text; ignoring them would drop whole tables.
+		//
+		// Not escaping is safe here for the same reason the svg fence above is safe and for no other
+		// reason: every document this renderer is given is a file in this repository, written by someone
+		// who can already change the program, so no trust boundary is being crossed. It must never be
+		// pointed at input from a user.
+		//
+		// This is deliberately line-level rather than block-level. The markdown between an opening
+		// <details> and its close still has to render as markdown, because that is where the install
+		// instructions and the FAQ answers live.
+		case isRawHTMLLine(line):
+			b.WriteString(line)
+			b.WriteString("\n")
+
 		// Tables. A leading pipe row, then a separator row, then rows.
 		case strings.HasPrefix(line, "|"):
 			var rows []string
