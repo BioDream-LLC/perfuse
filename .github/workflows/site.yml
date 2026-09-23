@@ -1,20 +1,25 @@
 name: site
 
-# Publishes site/ to GitHub Pages, with docs/assets copied in so the page and the README share
-# one copy of every image rather than drifting apart.
+# Points the old GitHub Pages address at perfuse.health.
+#
+# This workflow used to publish the site. It does not any more: the site is built by
+# cmd/perfusesite and served from S3 behind CloudFront at perfuse.health, which is where a
+# healthcare integration engine belongs and where robots.txt and sitemap.xml sit at a domain
+# root rather than under a project path.
+#
+# What is published here is a set of redirect stubs, one for each URL this address used to
+# serve, so that anything already indexed or linked lands on the equivalent page instead of a
+# 404. Keeping a second full copy was the alternative and it was worse: this address served
+# only some of the pages perfuse.health now has, so it was a partial duplicate whose sitemap
+# named a host it did not serve. Two copies of the same thing drift. This one is a signpost.
 
 on:
   push:
     branches: [main]
     paths:
+      # The search-console verification files are copied from here, and a deploy that reads a
+      # file it does not watch is the defect this filter existed to fix in the first place.
       - 'site/**'
-      - 'docs/assets/**'
-      # The manual is copied into the published site by the build step below, so a
-      # change to it has to trigger a deploy. Without this the published manual
-      # updated only by accident, whenever something in site/ happened to change,
-      # and three new chapters sat in the repository while the live manual and the
-      # shipped PDF stayed a release behind with nothing to indicate it.
-      - 'docs/manual/**'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
@@ -28,58 +33,88 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  CANONICAL: https://perfuse.health
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assemble the site
+      - name: Build the redirect stubs
         run: |
+          set -euo pipefail
           mkdir -p _site
-          cp -R site/. _site/
-          mkdir -p _site/assets
-          cp -R docs/assets/. _site/assets/
 
-          # The reference manual is already generated as self-contained HTML for the release
-          # archives. Publishing the same file gives the site a large page of real content
-          # on its own domain instead of leaving it only inside a tarball and on github.com.
-          mkdir -p _site/manual
-          cp docs/manual/perfuse-manual.html _site/manual/index.html
+          # Every path this address published. A stub for each, so no previously working URL
+          # becomes a 404. GitHub Pages cannot issue a 301, so each stub does the three things
+          # a static page can: tells a crawler the canonical location, moves a browser there,
+          # and says so in text for anyone who arrives with scripting disabled.
+          for path in "/" "/manual/" "/mirth-connect-alternative/"; do
+            dir="_site${path}"
+            mkdir -p "$dir"
+            target="${CANONICAL}${path}"
+            cat > "${dir}index.html" <<HTML
+          <!doctype html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Perfuse has moved to perfuse.health</title>
+          <link rel="canonical" href="${target}">
+          <meta http-equiv="refresh" content="0; url=${target}">
+          <meta name="robots" content="noindex, follow">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                   max-width: 34rem; margin: 6rem auto; padding: 0 1.5rem; line-height: 1.6; }
+            a { color: #0b6bcb; }
+          </style>
+          </head>
+          <body>
+          <h1>Perfuse is now at perfuse.health</h1>
+          <p>This page has moved to <a href="${target}">${target}</a>.</p>
+          <p>If you are not redirected, follow the link above.</p>
+          </body>
+          </html>
+          HTML
+          done
 
-      - name: Check every local asset the page references actually exists
+          # Crawlers must be allowed in, or they cannot see the redirect they are being told
+          # about. No sitemap here: perfuse.health publishes the only one, and a sitemap on this
+          # host listing URLs on that one is a cross-submission rather than a signpost.
+          printf 'User-agent: *\nAllow: /\n' > _site/robots.txt
+
+          # Search-console verification files stay, because removing them un-verifies the
+          # property that is being used to watch the migration.
+          for v in google32f8480bb1e4af80.html BingSiteAuth.xml; do
+            if [ -f "site/$v" ]; then cp "site/$v" "_site/$v"; fi
+          done
+
+          find _site -type f | sort
+
+      - name: Check every stub points at a page that exists
         run: |
-          missing=0
-          # A page that silently 404s its own images looks broken to every visitor and fine in CI.
-          for ref in $(grep -oE '(src|href)="assets/[^"]+"' _site/index.html | sed 's/.*="//;s/"//' | sort -u); do
-            if [ ! -f "_site/$ref" ]; then
-              echo "missing: $ref"
-              missing=1
+          set -uo pipefail
+          bad=0
+          # A redirect to a 404 is worse than no redirect: it turns a working-but-old URL into a
+          # dead end, and it does so silently because the stub itself returns 200.
+          for f in $(find _site -name index.html); do
+            target=$(grep -oE 'rel="canonical" href="[^"]+"' "$f" | sed -E 's/.*href="([^"]+)".*/\1/')
+            if [ -z "$target" ]; then
+              echo "no canonical target in $f"
+              bad=1
+              continue
+            fi
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$target" || echo 000)
+            echo "$f -> $target [$code]"
+            if [ "$code" != "200" ]; then
+              echo "  the target does not return 200"
+              bad=1
             fi
           done
-          [ "$missing" = "0" ] && echo "all referenced assets present"
-          exit $missing
+          exit $bad
 
-      - name: Check the sitemap only lists pages that exist
-        run: |
-          missing=0
-          # A sitemap entry for a 404 is reported as an error and spends crawl budget.
-          for loc in $(grep -oE '<loc>[^<]+</loc>' _site/sitemap.xml | sed -E 's|</?loc>||g'); do
-            path="${loc#https://biodream-llc.github.io/perfuse}"
-            case "$path" in
-              */) candidate="_site${path}index.html" ;;
-              "")  candidate="_site/index.html" ;;
-              *)   candidate="_site${path}" ;;
-            esac
-            if [ ! -f "$candidate" ]; then
-              echo "sitemap lists $loc but $candidate does not exist"
-              missing=1
-            fi
-          done
-          [ "$missing" = "0" ] && echo "every sitemap entry resolves to a file"
-          exit $missing
-
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

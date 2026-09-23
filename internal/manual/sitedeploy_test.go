@@ -28,8 +28,10 @@ func TestSiteWorkflowWatchesEverythingItPublishes(t *testing.T) {
 	}
 	body := string(raw)
 
-	// Everything the build copies out of the repository.
-	cp := regexp.MustCompile(`cp (?:-R )?([A-Za-z0-9_./-]+)`)
+	// Everything the build copies out of the repository. Quoted and unquoted forms both, because
+	// a path in quotes is still a path being copied, and a pattern that silently stopped matching
+	// is how a guard comes to check nothing.
+	cp := regexp.MustCompile(`cp (?:-R )?"?([A-Za-z0-9_./$-]+)"?`)
 	matches := cp.FindAllStringSubmatch(body, -1)
 	if len(matches) == 0 {
 		t.Fatal("found no cp commands in the site workflow. The pattern has stopped matching, " +
