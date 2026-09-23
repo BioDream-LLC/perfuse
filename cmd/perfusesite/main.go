@@ -173,6 +173,12 @@ func run(root, out, base string) error {
 		if d.IsDir() {
 			return nil
 		}
+		// The screenshot manifest is a record for the repository, not a file the website serves.
+		// It was being published because this walk copies whatever it finds, and it was caught by
+		// the deploy script refusing to upload a file it had no Content-Type for.
+		if d.Name() == "sources.sha256" {
+			return nil
+		}
 		rel, err := filepath.Rel(filepath.Join(root, "docs/assets"), p)
 		if err != nil {
 			return err
