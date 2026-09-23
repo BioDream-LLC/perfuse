@@ -387,15 +387,19 @@ func rewriteLinks(s string) string {
 	s = strings.ReplaceAll(s, "src=\"docs/assets/", "src=\"/assets/")
 
 	// Files that exist in the repository and have no web equivalent. The licence and the notice
-	// are the two the README links to, and both are things a reader may genuinely want, so they
-	// point at the canonical copy on GitHub rather than being stripped.
+	// are the two the README and the reference link to, and both are things a reader may genuinely
+	// want, so they point at the canonical copy on GitHub rather than being stripped.
 	//
-	// These were invisible until links started rendering at all: as literal markdown text they
-	// were not links, so nothing could be broken about them. The build refuses to finish with a
-	// local reference it did not write, which is how they were found.
+	// Both the bare and the parent-relative form, because the same file is linked from the root
+	// (README.md, so "LICENSE") and from a subdirectory (docs/reference.md, so "../LICENSE"). That
+	// second form arrived when the link was corrected for GitHub, where a bare "LICENSE" inside
+	// docs/ resolves to docs/LICENSE and 404s. One link, two readers, and a fix for one of them
+	// broke the other - which is why the build refuses to finish with a reference it did not write.
 	const blob = "https://github.com/BioDream-LLC/perfuse/blob/main/"
 	for _, f := range []string{"LICENSE", "NOTICE"} {
-		s = strings.ReplaceAll(s, "]("+f+")", "]("+blob+f+")")
+		for _, form := range []string{f, "../" + f, "./" + f} {
+			s = strings.ReplaceAll(s, "]("+form+")", "]("+blob+f+")")
+		}
 	}
 
 	for _, p := range pages {

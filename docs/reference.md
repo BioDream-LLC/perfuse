@@ -2160,4 +2160,4 @@ at 425 MB/s and 3 allocations per message. The widest message had 13 segments, a
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](../LICENSE).

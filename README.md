@@ -22,7 +22,7 @@ instead of a 254 MB install and a Java runtime, and it starts immediately rather
 
 [**Quick start**](#quick-start) · [**Why Perfuse**](#why-perfuse-exists) ·
 [**Mirth migration**](#migrating-from-mirth-connect) · [**Everything it does**](#everything-it-does) ·
-[**Manual**](docs/manual/perfuse-manual.html) · [**Reference**](docs/reference.md) · [**FAQ**](#faq)
+[**Manual**](https://perfuse.health/manual/) · [**Reference**](docs/reference.md) · [**FAQ**](#faq)
 
 [**perfuse.health**](https://perfuse.health) — the manual, the reference and this page, on the web
 
@@ -575,7 +575,7 @@ processing. Those stay in Kafka's ecosystem.
 | | |
 |---|---|
 | [**Reference**](docs/reference.md) | Every command, connector, transformation step and configuration key |
-| [**Manual (HTML)**](docs/manual/perfuse-manual.html) | The full book, with worked examples |
+| [**Manual**](https://perfuse.health/manual/) | The full book, with worked examples. Also `docs/manual/perfuse-manual.html` in a checkout, in every release archive, and served at `/manual` by a running instance |
 | [**Manual (PDF)**](docs/manual/perfuse-manual.pdf) | The same, for printing and for aeroplanes |
 | [**Verification record**](docs/verification.md) | What was tested against which real software, what it found, and what remains unverified |
 | [**Security**](docs/reference.md#tls) | TLS, authentication, audit and what is deliberately refused |
