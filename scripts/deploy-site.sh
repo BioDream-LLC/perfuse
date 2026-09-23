@@ -80,4 +80,50 @@ if [ "${1:-}" != "--no-invalidate" ]; then
     --region us-east-1 --query 'Invalidation.Id' --output text
 fi
 
+# Tell the search engines that accept being told.
+#
+# IndexNow is a single POST that reaches Bing, Yandex, Seznam and Naver. Google declined to adopt it,
+# so Google still learns about changes by crawling or by being asked in Search Console.
+#
+# The URL list is read from the sitemap the build just wrote, so a page added to the site is
+# submitted without anybody remembering to add it here. A list maintained separately from the
+# sitemap would drift, and the drift would be invisible: the submission would succeed, just without
+# the new page in it.
+KEY=$(basename "$(find "$DIR" -maxdepth 1 -name '*.txt' ! -name 'robots.txt' | head -1)" .txt 2>/dev/null || true)
+if [ -n "$KEY" ]; then
+  echo "indexnow"
+  python3 - "$KEY" "$DIR/sitemap.xml" <<'PY'
+import json, re, sys, urllib.error, urllib.request
+
+key, sitemap = sys.argv[1], sys.argv[2]
+urls = re.findall(r"<loc>([^<]+)</loc>", open(sitemap).read())
+if not urls:
+    print("  no URLs in the sitemap; nothing submitted")
+    raise SystemExit(0)
+
+payload = {
+    "host": "perfuse.health",
+    "key": key,
+    "keyLocation": "https://perfuse.health/%s.txt" % key,
+    "urlList": urls,
+}
+req = urllib.request.Request(
+    "https://api.indexnow.org/indexnow",
+    data=json.dumps(payload).encode(),
+    headers={"Content-Type": "application/json; charset=utf-8"},
+)
+try:
+    r = urllib.request.urlopen(req, timeout=30)
+    print("  %s %s for %d URLs" % (r.status, r.reason, len(urls)))
+except urllib.error.HTTPError as e:
+    # Not fatal. A rejected submission means the search engines were not told about this deploy,
+    # which is worth seeing, but the deploy itself succeeded and the site is live.
+    print("  IndexNow refused: HTTP %s %s" % (e.code, e.read().decode()[:200]))
+except Exception as e:
+    print("  IndexNow unreachable: %s" % e)
+PY
+else
+  echo "  no IndexNow key in the build; skipping submission" >&2
+fi
+
 echo "done"

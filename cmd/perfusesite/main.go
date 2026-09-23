@@ -24,6 +24,11 @@ import (
 	"github.com/biodream-llc/perfuse/internal/manual"
 )
 
+// indexNowKey proves to IndexNow that whoever submits URLs for this site controls it. The key is
+// served as a file at the site root; anyone can read it, which is fine - it authorises notifying a
+// search engine that a page changed and nothing else.
+const indexNowKey = "8f08bc81acb53071f925d0fe1603b225"
+
 // page is one markdown document published as its own URL.
 type page struct {
 	src         string // path to the markdown, relative to the module root
@@ -205,6 +210,19 @@ func run(root, out, base string) error {
 	}
 
 	if err := writeFile(filepath.Join(out, "robots.txt"), []byte(robots(base))); err != nil {
+		return err
+	}
+
+	// The IndexNow key.
+	//
+	// IndexNow lets a site tell a search engine that a URL has changed, rather than waiting to be
+	// crawled. Bing, Yandex, Seznam and Naver accept it; Google declined to adopt it, so Google
+	// still has to be told through Search Console.
+	//
+	// Ownership is proved by serving the key as a file at the root. It is written by the build on
+	// purpose: the deploy uses --delete, so a key uploaded by hand would survive exactly until the
+	// next deploy and then vanish, and the submissions would start failing with no obvious cause.
+	if err := writeFile(filepath.Join(out, indexNowKey+".txt"), []byte(indexNowKey+"\n")); err != nil {
 		return err
 	}
 	if err := writeFile(filepath.Join(out, "sitemap.xml"), []byte(sitemap(urls))); err != nil {
