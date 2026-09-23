@@ -1,0 +1,16 @@
+# Source hashes for the web-sized screenshots in this directory.
+#
+# The website serves WebP because a 3000px PNG screenshot is 460 KB and the same image at the size
+# it is actually displayed is 40 KB. The README cannot: GitHub documents PNG, GIF, JPEG and SVG as
+# its supported image types and does not list WebP, so the repository keeps the PNGs and the site
+# gets derivatives.
+#
+# Two copies of an image drift. This file is how that is caught: it records the SHA256 of each
+# source PNG at the time its WebP was generated, and a test fails if a PNG has changed since.
+a07f53bc2d95006b4c7dacd30f7be957b1fd2c2358fa31702cafbbd470904f8f  channels.png
+ea58688c2a23b7ee9654ce4e183d9fec6fe1f95b4eb7d58536717a3c82fbc330  dashboard.png
+b87a3af789b0b051c485db8cf41cf90f9455233219b0b894e6bc5727990ad75f  fhirlab.png
+bedb14ef40c0093a9c24ccc20a48289451d1d1830d52bd5f48ff1688c9ee1f80  flowmap.png
+221bd1e6e81e61daf5c13666fb410b5fbb3894ff0e0a05d0e405bdf3acd264e6  messages.png
+b4c23eb65f5a49b275827ff37d39b0c789d8673a9c6a0f1f7e41b94b600a4220  metrics.png
+e5c47ce9d4c0ad8eb8f2e37e596ba3f00d05b7dfbf83cfccb52ba1e4dcaa0ee9  playground.png

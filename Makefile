@@ -12,7 +12,7 @@ PKG     := ./cmd/perfuse
 VERSION ?= v0.1.3
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs site
+.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs site screens
 
 all: check build
 
@@ -224,6 +224,30 @@ e2e: web build
 # separate copy of them. SITE_BASE is the canonical origin; every canonical tag, og:url and
 # sitemap entry is written from it, so building with the wrong one is visible rather than silent.
 SITE_BASE ?= https://perfuse.health
+
+# Web-sized screenshots.
+#
+# A 3000px PNG screenshot is around 460 KB and is displayed at about 800px, so the landing page was
+# carrying two megabytes of images to show four of them. The same images as WebP at the size they are
+# actually shown come to 341 KB for all seven. The README keeps the PNGs, because GitHub documents
+# PNG, GIF, JPEG and SVG as its image types and does not list WebP.
+#
+# Needs sips (macOS) and cwebp. Records the source hashes so that a PNG changed without regenerating
+# is caught by a test rather than shipping a stale picture of the product.
+screens:
+	@command -v cwebp >/dev/null || { echo "cwebp not found: brew install webp"; exit 1; }
+	@mkdir -p docs/assets/screens/web
+	@for f in docs/assets/screens/*.png; do \
+		b=$$(basename "$$f" .png); \
+		sips -Z 1600 "$$f" --out "/tmp/perfuse-$$b.png" >/dev/null; \
+		cwebp -q 82 -quiet "/tmp/perfuse-$$b.png" -o "docs/assets/screens/web/$$b.webp"; \
+		rm -f "/tmp/perfuse-$$b.png"; \
+		echo "  $$b.webp"; \
+	done
+	@( head -9 docs/assets/screens/web/sources.sha256 2>/dev/null || true; \
+	   cd docs/assets/screens && for f in *.png; do shasum -a 256 "$$f"; done ) > /tmp/perfuse-sums \
+	   && mv /tmp/perfuse-sums docs/assets/screens/web/sources.sha256
+	@echo "  sources.sha256 updated"
 
 site: docs
 	go run ./cmd/perfusesite -out dist-site -base "$(SITE_BASE)"

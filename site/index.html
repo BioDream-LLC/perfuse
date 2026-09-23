@@ -118,6 +118,34 @@
     color: var(--faint); font-size: 14.5px; text-align: center;
   }
 
+  /* Screenshots of the shipped console.
+   *
+   * These are the thing a buyer actually wants to see and the page did not have them: fifteen
+   * capability chips and seven screenshots sat in docs/assets, all of them used by the README and
+   * none of them by this page, which is most of why it read as thinner than the repository.
+   *
+   * width and height are on the element so the browser reserves the right space before the image
+   * arrives. Without them a page with four large screenshots reflows four times as it loads, which
+   * is the jumping that makes a site feel cheap.
+   */
+  figure.shot { margin: 26px 0 34px; }
+  figure.shot img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+    background: var(--panel);
+  }
+  figure.shot figcaption {
+    margin-top: 11px; font-size: 15px; color: var(--dim); text-align: center;
+  }
+
+  /* The capability chips, as a scannable index rather than a wall of prose. */
+  .chips {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin: 20px 0 26px;
+  }
+  .chips img { display: block; }
+
   /* Narrow screens.
    *
    * The page had no width-based media query at all, and the download buttons are SVGs carrying a
@@ -221,6 +249,34 @@
   express can also be done from the browser</b> — a feature reachable only from YAML is treated as a bug.
 </p>
 
+<h2>What it looks like</h2>
+
+<p>
+  The web console is compiled into the binary. There is nothing to deploy beside it, no separate
+  administration tool, and no step where a channel has to be exported from one place and imported
+  into another. These are screenshots of the shipped build.
+</p>
+
+<figure class="shot">
+  <img src="assets/screens/web/dashboard.webp" alt="The Perfuse dashboard showing 5,000 messages in 24 hours, no failures, channels running, a throughput graph and a breakdown by HL7 message type." width="1600" height="1004" loading="lazy" decoding="async">
+  <figcaption><b>Dashboard</b> — Live channel state and the last 24 hours, with the share of traffic that went wrong readable at the same time as the total.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="assets/screens/web/messages.webp" alt="The message browser, with search by channel, outcome, type and control ID, a filter expression box, and a table of delivered messages with their timings." width="1600" height="1004" loading="lazy" decoding="async">
+  <figcaption><b>Messages</b> — Every message that arrived, what happened to it, and the bytes as they were sent. The filter box takes the same expression language channels use, so anything that works here can be pasted into a channel.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="assets/screens/web/flowmap.webp" alt="The flow map showing four channels, each with its destinations and a sparkline of traffic, and a scrubber for moving back through the last hour." width="1600" height="1004" loading="lazy" decoding="async">
+  <figcaption><b>Flow map</b> — Every feed and destination on one page, with a scrubber. Drag it back to a moment and see which strands were dark.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="assets/screens/web/channels.webp" alt="The channel list, showing each channel with what it listens on, when it acknowledges, where it sends, and the file it lives in." width="1600" height="1004" loading="lazy" decoding="async">
+  <figcaption><b>Channels</b> — Each channel is a file on disk. Anything built in the browser can be edited by hand, and the other way round. <b>To Mirth</b> writes a Mirth channel file that a real Mirth server accepts.</figcaption>
+</figure>
+
 <h2>Try it against your own traffic without asking anyone</h2>
 
 <p>
@@ -289,6 +345,24 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
 
 <h2>What it does</h2>
 
+<div class="chips">
+  <img src="assets/chips/hl7v2.svg" width="168" height="40" alt="HL7 v2" loading="lazy">
+  <img src="assets/chips/fhir.svg" width="168" height="40" alt="FHIR" loading="lazy">
+  <img src="assets/chips/dicom.svg" width="168" height="40" alt="DICOM" loading="lazy">
+  <img src="assets/chips/x12.svg" width="168" height="40" alt="X12" loading="lazy">
+  <img src="assets/chips/cda.svg" width="168" height="40" alt="Documents" loading="lazy">
+  <img src="assets/chips/mirth.svg" width="168" height="40" alt="Mirth" loading="lazy">
+  <img src="assets/chips/connectors.svg" width="168" height="40" alt="Connectors" loading="lazy">
+  <img src="assets/chips/transform.svg" width="168" height="40" alt="Transform" loading="lazy">
+  <img src="assets/chips/delivery.svg" width="168" height="40" alt="Delivery" loading="lazy">
+  <img src="assets/chips/liveinterface.svg" width="168" height="40" alt="Live changes" loading="lazy">
+  <img src="assets/chips/operations.svg" width="168" height="40" alt="Operations" loading="lazy">
+  <img src="assets/chips/security.svg" width="168" height="40" alt="Security" loading="lazy">
+  <img src="assets/chips/tefca.svg" width="168" height="40" alt="TEFCA" loading="lazy">
+  <img src="assets/chips/priorauth.svg" width="168" height="40" alt="Prior auth" loading="lazy">
+  <img src="assets/chips/publichealth.svg" width="168" height="40" alt="Public health" loading="lazy">
+</div>
+
 <ul>
   <li><b>Formats:</b> HL7 v2, FHIR R4/R4B/R5, DICOM, X12 837/835/270/271/278, C-CDA and CDA, HL7 v3, delimited and raw</li>
   <li><b>Connections:</b> MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, <b>Kafka</b>, message brokers, S3 — sixteen source types and eighteen destination types</li>
@@ -339,7 +413,7 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
 <p>
   Perfuse is developed and maintained by <b>BioDream LLC</b>. Bug reports are welcome as
   <a href="https://github.com/BioDream-LLC/perfuse/issues">GitHub issues</a>. Code contributions are not
-  accepted — the source has a single maintainer by design, which is worth knowing before you build on it.
+  accepted — the source will be maintained by BioDream LLC.
 </p>
 
 <footer>
