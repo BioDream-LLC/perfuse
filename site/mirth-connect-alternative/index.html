@@ -113,6 +113,20 @@
   summary { cursor: pointer; font-weight: 600; }
   details p { margin: 11px 0 3px; }
   footer { margin-top: 50px; border-top: 1px solid var(--line); padding-top: 22px; color: var(--faint); font-size: 14.5px; }
+
+  /* Narrow screens. The comparison table here is the whole point of the page, and at phone width
+   * it would otherwise drag the rest of the layout sideways. It scrolls in its own box instead. */
+  img { max-width: 100%; height: auto; }
+
+  @media (max-width: 620px) {
+    .wrap { padding: 0 16px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 22px; }
+    table { display: block; overflow-x: auto; white-space: nowrap; font-size: 14px; }
+    th, td { padding: 7px 9px; }
+    pre { overflow-x: auto; }
+    code { word-break: break-word; }
+  }
 </style>
 </head>
 <body>

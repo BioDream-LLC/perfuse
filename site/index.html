@@ -117,6 +117,42 @@
     margin-top: 60px; border-top: 1px solid var(--line); padding: 26px 0 50px;
     color: var(--faint); font-size: 14.5px; text-align: center;
   }
+
+  /* Narrow screens.
+   *
+   * The page had no width-based media query at all, and the download buttons are SVGs carrying a
+   * fixed width attribute - 290px for the macOS one. On a 320px-wide phone .wrap leaves 276px of
+   * content, so that button was wider than the space it had, and an image with an intrinsic width
+   * and no max-width does not shrink: it overflows.
+   *
+   * The buttons are the one thing on this page that has to work on a phone. Somebody reading about
+   * an integration engine on a phone is deciding whether to look at it properly later, and a
+   * download they cannot see is the end of that.
+   */
+  img { max-width: 100%; height: auto; }
+
+  @media (max-width: 620px) {
+    .wrap { padding: 0 16px; }
+
+    /* One button per row, each as wide as the screen allows. Three at 248px side by side cannot
+     * fit any phone, and letting them wrap left a ragged column instead. */
+    .buttons { flex-direction: column; align-items: stretch; gap: 10px; }
+    .buttons a { display: block; }
+    .buttons img { width: 100%; max-width: 320px; margin: 0 auto; }
+
+    h1 { font-size: 30px; }
+    h2 { font-size: 22px; }
+
+    /* A comparison table cannot usefully reflow to 300px, so it scrolls inside its own box rather
+     * than widening the page and pushing every paragraph off screen. */
+    table { font-size: 14px; display: block; overflow-x: auto; white-space: nowrap; }
+    th, td { padding: 7px 9px; }
+
+    /* Long unbreakable strings - a command, a URL, an archive name - are the other thing that
+     * silently widens a phone layout. */
+    pre { overflow-x: auto; }
+    code { word-break: break-word; }
+  }
 </style>
 </head>
 <body>

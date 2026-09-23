@@ -290,6 +290,14 @@ func renderProse(src string, links map[string]string) string {
 			h := headingOf(line)
 			fmt.Fprintf(&b, "<h%d id=%q>%s</h%d>\n", h.level, slugFor(h.title), inline(h.title, links), h.level)
 
+		// A horizontal rule. The README uses them to separate sections; without this they rendered
+		// as a paragraph containing three hyphens, fourteen times on one page.
+		//
+		// Checked after the table case, which claims any line starting with a pipe, so a table's
+		// |---|---| separator never reaches here.
+		case isHorizontalRule(line):
+			b.WriteString("<hr>\n")
+
 		// Raw HTML, passed through as itself.
 		//
 		// The README uses HTML tables, <details> blocks and <img> tags that markdown cannot express, and
@@ -305,7 +313,7 @@ func renderProse(src string, links map[string]string) string {
 		// <details> and its close still has to render as markdown, because that is where the install
 		// instructions and the FAQ answers live.
 		case isRawHTMLLine(line):
-			b.WriteString(line)
+			b.WriteString(inlineWithinHTML(line, links))
 			b.WriteString("\n")
 
 		// Tables. A leading pipe row, then a separator row, then rows.
@@ -417,7 +425,7 @@ func numberedItem(line string) string {
 	return line[i+2:]
 }
 
-// inline handles code spans, emphasis and links.
+// inline handles code spans, emphasis, images and links.
 //
 // Escaping happens first and the markup is inserted afterwards, so a configuration value containing angle brackets
 // renders as itself rather than as an element.
@@ -427,30 +435,121 @@ func inline(s string, links map[string]string) string {
 	s = pairwise(s, "`", "<code>", "</code>")
 	s = pairwise(s, "**", "<strong>", "</strong>")
 
-	// Cross-references, written as [text](#anchor).
-	for {
-		i := strings.Index(s, "](#")
+	// Images before links, because a badge is an image inside a link - [![alt](src)](href) - and
+	// converting the inner one first leaves [<img>](href) for the link pass to finish. Done the
+	// other way round the link pass would swallow the exclamation mark and produce nonsense.
+	s = inlineImages(s)
+	s = inlineLinks(s, links)
+
+	return s
+}
+
+// inlineWithinHTML applies the inline markup rules to a line of raw HTML without escaping it.
+//
+// A line passed through as HTML still tends to contain markdown. The README's own subtitle is a
+// <sub> element wrapping a sentence with a link in it, and passing the line through verbatim
+// published the link as the characters [text](#anchor) in the middle of a sentence.
+//
+// Escaping is deliberately skipped, which is the difference from inline. That is safe here for
+// exactly the reason the passthrough itself is safe - these are files in this repository - and it
+// would not be safe for anything a user supplied. Escaping would defeat the purpose by turning
+// the surrounding tags into visible text.
+func inlineWithinHTML(s string, links map[string]string) string {
+	s = pairwise(s, "`", "<code>", "</code>")
+	s = pairwise(s, "**", "<strong>", "</strong>")
+	s = inlineImages(s)
+
+	return inlineLinks(s, links)
+}
+
+// inlineImages replaces ![alt](src) with an img element.
+func inlineImages(s string) string {
+	for at := 0; ; {
+		i := strings.Index(s[at:], "![")
 		if i < 0 {
 			break
 		}
-		open := strings.LastIndex(s[:i], "[")
-		if open < 0 {
-			break
-		}
-		close := strings.Index(s[i:], ")")
+		i += at
+
+		close := strings.Index(s[i:], "](")
 		if close < 0 {
 			break
 		}
-		text := s[open+1 : i]
-		target := s[i+3 : i+close]
-		// Resolved through the slug map so a chapter can be renumbered without every link into it breaking. An
-		// unresolvable target is left as written and caught by TestEveryCrossReferenceResolves rather than shipping as
-		// a link that goes nowhere.
-		anchor := target
-		if a, ok := links[target]; ok {
-			anchor = a
+		close += i
+
+		end := strings.Index(s[close:], ")")
+		if end < 0 {
+			break
 		}
-		s = s[:open] + fmt.Sprintf("<a href=\"#%s\">%s</a>", anchor, text) + s[i+close+1:]
+		end += close
+
+		alt := s[i+2 : close]
+		src := s[close+2 : end]
+
+		// An alt or src containing markup means this was not an image after all; leave it be
+		// rather than emitting a broken tag.
+		if strings.ContainsAny(alt, "<>") || strings.ContainsAny(src, "<> ") || src == "" {
+			at = i + 2
+
+			continue
+		}
+
+		// loading=lazy because these pages carry screenshots below the fold, and decoding them
+		// all before first paint is what makes a documentation page feel slow on a phone.
+		s = s[:i] + fmt.Sprintf("<img src=%q alt=%q loading=\"lazy\">", src, alt) + s[end+1:]
+		at = i
+	}
+
+	return s
+}
+
+// inlineLinks replaces [text](target) with an anchor.
+//
+// A target beginning with # is resolved through the slug map so a chapter can be renumbered without every link into
+// it breaking; an unresolvable one is left as written and caught by TestEveryCrossReferenceResolves rather than
+// shipping as a link that goes nowhere. Any other target is used as it stands, which is what makes the README's
+// external links and relative document links work when the same renderer builds the website.
+func inlineLinks(s string, links map[string]string) string {
+	for at := 0; ; {
+		i := strings.Index(s[at:], "](")
+		if i < 0 {
+			break
+		}
+		i += at
+
+		open := strings.LastIndex(s[:i], "[")
+		if open < 0 {
+			at = i + 2
+
+			continue
+		}
+
+		end := strings.Index(s[i:], ")")
+		if end < 0 {
+			break
+		}
+		end += i
+
+		text := s[open+1 : i]
+		target := s[i+2 : end]
+
+		if target == "" || strings.ContainsAny(target, " \t") {
+			at = i + 2
+
+			continue
+		}
+
+		href := target
+		if strings.HasPrefix(target, "#") {
+			anchor := strings.TrimPrefix(target, "#")
+			if a, ok := links[anchor]; ok {
+				anchor = a
+			}
+			href = "#" + anchor
+		}
+
+		s = s[:open] + fmt.Sprintf("<a href=%q>%s</a>", href, text) + s[end+1:]
+		at = open
 	}
 
 	return s
