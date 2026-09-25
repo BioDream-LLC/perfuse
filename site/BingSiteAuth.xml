@@ -1,15 +1,17 @@
 <?xml version="1.0"?>
 <!--
-  Bing Webmaster Tools ownership proof. One <user> entry per verified property.
+  Bing Webmaster Tools ownership proof for perfuse.health. Exactly one entry, and no tag names written
+  out in this comment.
 
-  Both are kept deliberately. The first was issued for the GitHub Pages site, which now serves
-  redirect stubs pointing here; the second was issued for the perfuse.health property. Bing issues a
-  fresh token per property rather than reusing one per account, so moving the site meant a new token,
-  and dropping the old one would unverify a property that still exists.
+  Both constraints are the result of failures. Bing rejected a file holding two entries even though the
+  expected key was present as the second, so its verifier appears to read the first and compare rather
+  than searching all of them - a second entry is not an alternative, it is hidden. And a comment that
+  spells out the element name in full puts that text ahead of the real entry, where anything matching
+  the file by pattern rather than parsing it as XML will find the comment first.
 
-  Keeping both costs nothing: Bing reads every <user> element and matches against any of them.
+  There is also no reason to want more than one entry. A verification file only proves ownership of the
+  host serving it, so a token issued for a different property was never doing any work from here.
 -->
 <users>
-	<user>952CC7EE2D29405C3FD96784A754A40E</user>
 	<user>42D236D1D0FABF2ACECEB64F9C371B43</user>
 </users>
