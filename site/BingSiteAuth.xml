@@ -1,4 +1,15 @@
 <?xml version="1.0"?>
+<!--
+  Bing Webmaster Tools ownership proof. One <user> entry per verified property.
+
+  Both are kept deliberately. The first was issued for the GitHub Pages site, which now serves
+  redirect stubs pointing here; the second was issued for the perfuse.health property. Bing issues a
+  fresh token per property rather than reusing one per account, so moving the site meant a new token,
+  and dropping the old one would unverify a property that still exists.
+
+  Keeping both costs nothing: Bing reads every <user> element and matches against any of them.
+-->
 <users>
 	<user>952CC7EE2D29405C3FD96784A754A40E</user>
+	<user>42D236D1D0FABF2ACECEB64F9C371B43</user>
 </users>
