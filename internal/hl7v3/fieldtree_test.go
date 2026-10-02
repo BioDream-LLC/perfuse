@@ -270,7 +270,7 @@ func TestTheShortFormIsUsedWhereItHelpsMost(t *testing.T) {
 		"Marie":    "//given(2)",
 		// Unique names need no occurrence at all.
 		"Okonkwo-Hale": "//family",
-		"Los Angeles":   "//city",
+		"Los Angeles":  "//city",
 		"19551014":     "//birthTime@value",
 	} {
 		if got := paths[value]; got != want {

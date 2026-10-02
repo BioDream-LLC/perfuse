@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: true
+
+      # gofmt must already be clean. Formatting in CI hides the diff from the
+      # person who caused it.
+      - name: gofmt
+        run: |
+          if [ -n "$(gofmt -l cmd internal)" ]; then
+            echo "these files need gofmt:"
+            gofmt -l cmd internal
+            gofmt -d cmd internal
+            exit 1
+          fi
+
+      # vet and the race detector both run inside check-go, through the Makefile, so
+      # the test timeout is defined in exactly one place (GOTESTTIMEOUT).
+      #
+      # The race detector is not optional: the MLLP server is concurrent, and a data
+      # race in message handling is a patient-safety defect.
+      - name: test and vet
+        run: make check-go
+
+      - name: build
+        run: go build ./...
+
+  cross:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: true
+
+      # Builds and vets every release target. This proves it compiles there, not
+      # that it runs there - tests only execute on the linux/amd64 runner above.
+      - name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          go build ./...
+          go vet ./...
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      # Type-check and unit-test the front end, then confirm the committed bundle in
+      # internal/web/dist is what web/src actually builds.
+      - name: type-check and test
+        run: make check-web
+
+      - name: bundle is current
+        run: make check-web-current

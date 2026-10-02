@@ -702,8 +702,7 @@ fastest way to describe a problem.
 This is deliberate, and it is not a judgement about anybody's code.
 
 Perfuse is developed and maintained by BioDream LLC, and it stays that way. **Pull requests will not be reviewed or
-merged**, and forking is disabled on this repository. There is no contributor agreement to sign because there is
-no route for a contribution to arrive.
+merged.** There is no contributor agreement to sign because there is no route for a contribution to arrive.
 
 The reason is the subject matter. This software moves clinical data, and the discipline that makes it worth
 trusting is that every behaviour is verified against real software rather than against its own assumptions, and
