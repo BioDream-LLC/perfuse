@@ -101,10 +101,12 @@ jobs:
         working-directory: web
         run: pnpm install --frozen-lockfile
 
-      # Type-check and unit-test the front end, then confirm the committed bundle in
-      # internal/web/dist is what web/src actually builds.
+      # Type-check and unit-test the front end.
+      #
+      # The bundle freshness check (make check-web-current) is deliberately not run
+      # here. The bundle includes perfuse.wasm, which is compiled by Go, and its bytes
+      # depend on the exact Go release - so a runner on a different patch release
+      # reports a stale bundle that is not stale. It runs locally, inside make check,
+      # on the machine whose toolchain built the committed bundle.
       - name: type-check and test
         run: make check-web
-
-      - name: bundle is current
-        run: make check-web-current
