@@ -51,6 +51,11 @@ type ExportJob struct {
 	PatientID   string
 	Error       string
 
+	// patients and filter come from the request and live only as long as the running job; a restart fails the job
+	// anyway, so there is nothing to persist them for.
+	patients []string
+	filter   func(map[string]any) map[string]any
+
 	// Files are the outputs, one per resource type that had anything.
 	Files []ExportFile
 }
@@ -144,6 +149,15 @@ type ExportRequest struct {
 	// PatientID restricts the export to one patient, for a caller whose token is limited to one.
 	PatientID string
 
+	// PatientIDs restricts the export to a set of patients: the members of a Group. Empty with PatientID empty means
+	// every patient. A Group export with no current members is refused before it reaches here, so empty never means
+	// "the group was empty, so export everyone".
+	PatientIDs []string
+
+	// Filter, when set, sees every resource before it is written and may change it or drop it (by returning nil). It is
+	// how the Provider Access and Payer-to-Payer exports leave out what CMS-0057 excludes from them.
+	Filter func(resource map[string]any) map[string]any
+
 	// RequestURL is recorded and returned in the manifest, because the specification requires the manifest to say what
 	// was asked for - a file with no record of its query is unusable six months later.
 	RequestURL string
@@ -175,6 +189,8 @@ func (m *ExportManager) Start(ctx context.Context, req ExportRequest) (*ExportJo
 		Types:       types,
 		Since:       req.Since,
 		PatientID:   req.PatientID,
+		patients:    req.PatientIDs,
+		filter:      req.Filter,
 	}
 
 	if _, err := m.store.db.ExecContext(ctx,
@@ -244,6 +260,35 @@ func (m *ExportManager) run(ctx context.Context, job *ExportJob) {
 
 // exportType writes every resource of one type as newline-delimited JSON.
 func (m *ExportManager) exportType(ctx context.Context, resourceType string, job *ExportJob) (string, int, error) {
+	var (
+		out   strings.Builder
+		count int
+	)
+
+	// A set of patients is exported in batches, so a large Group does not become one query with more bound parameters
+	// than the database allows.
+	batches := [][]string{nil}
+	if len(job.patients) > 0 {
+		batches = nil
+		for i := 0; i < len(job.patients); i += exportPatientBatch {
+			batches = append(batches, job.patients[i:min(i+exportPatientBatch, len(job.patients))])
+		}
+	}
+
+	for _, batch := range batches {
+		if err := m.exportBatch(ctx, resourceType, job, batch, &out, &count); err != nil {
+			return "", 0, err
+		}
+	}
+
+	return out.String(), count, nil
+}
+
+// exportPatientBatch bounds the patients in one query.
+const exportPatientBatch = 400
+
+func (m *ExportManager) exportBatch(ctx context.Context, resourceType string, job *ExportJob, patients []string,
+	out *strings.Builder, count *int) error {
 	query := `SELECT content FROM fhir_resources WHERE resource_type = ? AND deleted = 0`
 	args := []any{resourceType}
 
@@ -252,20 +297,26 @@ func (m *ExportManager) exportType(ctx context.Context, resourceType string, job
 		args = append(args, job.Since)
 	}
 
+	ids := patients
+	if job.PatientID != "" {
+		ids = []string{job.PatientID}
+	}
+
 	// A patient-limited export is narrowed in the query rather than filtered afterwards, so a resource belonging to
 	// another patient is never loaded at all.
-	if job.PatientID != "" {
+	if len(ids) > 0 {
 		if resourceType == "Patient" {
-			query += ` AND resource_id = ?`
-			args = append(args, job.PatientID)
+			query += ` AND resource_id IN (` + placeholders(len(ids)) + `)`
 		} else {
 			query += ` AND EXISTS (SELECT 1 FROM fhir_search x
 				WHERE x.resource_type = fhir_resources.resource_type
 				  AND x.resource_id = fhir_resources.resource_id
 				  AND x.param IN ('patient', 'subject')
-				  AND x.value = ?
+				  AND x.value IN (` + placeholders(len(ids)) + `)
 				  AND (x.ref_type = 'Patient' OR x.ref_type IS NULL OR x.ref_type = ''))`
-			args = append(args, job.PatientID)
+		}
+		for _, id := range ids {
+			args = append(args, id)
 		}
 	}
 
@@ -273,24 +324,35 @@ func (m *ExportManager) exportType(ctx context.Context, resourceType string, job
 
 	rows, err := m.store.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return "", 0, err
+		return err
 	}
 	defer rows.Close()
-
-	var (
-		out   strings.Builder
-		count int
-	)
 
 	for rows.Next() {
 		var content string
 		if err := rows.Scan(&content); err != nil {
-			return "", 0, err
+			return err
+		}
+
+		raw := []byte(content)
+		if job.filter != nil {
+			var tree map[string]any
+			if err := json.Unmarshal(raw, &tree); err != nil {
+				continue
+			}
+			kept := job.filter(tree)
+			if kept == nil {
+				// Excluded by the audience's rules - a denied prior authorisation going to another payer, say.
+				continue
+			}
+			if raw, err = json.Marshal(kept); err != nil {
+				continue
+			}
 		}
 
 		// Compacted, because stored content may be indented and NDJSON requires one resource per line - an
 		// indented resource would break the format in a way that is only visible to the consumer.
-		compact, err := compactJSON([]byte(content))
+		compact, err := compactJSON(raw)
 		if err != nil {
 			// Skipped rather than failing the export. A resource that cannot be re-encoded is one row, and
 			// losing the whole export over it helps nobody - but the count reflects what was written, so the
@@ -299,20 +361,17 @@ func (m *ExportManager) exportType(ctx context.Context, resourceType string, job
 		}
 
 		if out.Len()+len(compact)+1 > maxExportBytes {
-			return "", 0, fmt.Errorf(
+			return fmt.Errorf(
 				"the %s export exceeds %d bytes; narrow the request with _type or _since",
 				resourceType, maxExportBytes)
 		}
 
 		out.Write(compact)
 		out.WriteByte('\n')
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		return "", 0, err
+		*count++
 	}
 
-	return out.String(), count, nil
+	return rows.Err()
 }
 
 // fail records that a job stopped.

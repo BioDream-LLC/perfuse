@@ -347,6 +347,20 @@ Configuration validation refuses a `fhir.url` that uses plain HTTP to a remote
 host, and warns when no identifier system is configured, which is the single most
 common cause of unmatchable patients downstream.
 
+## CMS-0057 for payers
+
+The four APIs the CMS Interoperability and Prior Authorization rule requires of payers from 1 January 2027, and the data behind them. The full account is the [CMS-0057 chapter of the manual](https://perfuse.health/manual/#s16-cms-0057-for-payers); the commands and flags:
+
+| | |
+|---|---|
+| `perfuse cms0057 carinbb -system <uri> [-network innetwork] <837> <835>` | Paid claims to CARIN Blue Button 2.2.0 transactions, for the Patient Access API |
+| `perfuse cms0057 priorauth <pas-response.json> [pas-claim.json]` | A PAS decision to a PDex 2.2.0 prior authorisation ExplanationOfBenefit |
+| `perfuse cms0057 metrics -year <year> [-services <csv>] <decisions.csv>` | The yearly public prior authorisation metrics page, in CMS's template layout (`-format html`, `csv` or `json`) |
+| `serve -fhir-payer-apis` | `POST /fhir/Patient/$member-match` (HRex), and with `-fhir-bulk-export`, `Group/{id}/$davinci-data-export` and `Group/{id}/$export` |
+| `serve -fhir-member-match-without-consent` | Lets `$member-match` answer without an active Consent; for testing only |
+
+Provider Access and Payer-to-Payer exports leave out cost-sharing and provider remittances, Payer-to-Payer leaves out denied prior authorisations, and members with an active Provider Access opt-out are left out of a provider export. Drugs are out of scope throughout.
+
 ## Clinical documents
 
 A C-CDA is the densest clinical payload in an HL7 feed, and it almost never

@@ -79,6 +79,8 @@ type RemittanceClaim struct {
 	FilingIndicator string
 	// CLP07: payer claim control number (their internal reference).
 	PayerClaimControlNumber string
+	// CLP11: the DRG the payer adjudicated an inpatient claim under, which can differ from the one billed.
+	DRG string
 
 	// Patient info from NM1*QC within the CLP loop.
 	PatientLastName  string
@@ -94,6 +96,10 @@ type RemittanceClaim struct {
 	// Claim-level dates.
 	StatementFromDate string // DTM*232
 	StatementToDate   string // DTM*233
+
+	// ReceivedDate is when the payer received the claim (DTM*050). It is the date the CMS-0057 and CARIN
+	// "claim received" fields mean, and an 837 cannot carry it because the provider does not know it yet.
+	ReceivedDate string
 }
 
 // ServiceLine is one service within a claim (SVC loop).
@@ -122,6 +128,15 @@ type ServiceLine struct {
 
 	// Remark codes from LQ segments.
 	RemarkCodes []RemarkCode
+
+	// AllowedAmount is the amount the payer allowed for the line (AMT*B6). HasAllowed separates an allowed amount of
+	// zero from one the payer did not send, which an 835 routinely omits.
+	AllowedAmount float64
+	HasAllowed    bool
+
+	// LineControlNumber is REF*6R, the provider's line item control number echoed back from the 837. It is the only
+	// reliable way to pair a paid line with the billed line when the payer re-codes or reorders them.
+	LineControlNumber string
 }
 
 // Adjustment is one adjustment reason (from CAS segments).
@@ -249,6 +264,7 @@ func ParseERA(m *Message) (*Remittance, error) {
 				PatientResponsibility:   patientResp,
 				FilingIndicator:         seg.Element(6).String(),
 				PayerClaimControlNumber: seg.Element(7).String(),
+				DRG:                     seg.Element(11).String(),
 			}
 			currentSVC = nil
 			inCLP = true
@@ -331,7 +347,22 @@ func ParseERA(m *Message) (*Remittance, error) {
 					currentClaim.StatementFromDate = date
 				case "233":
 					currentClaim.StatementToDate = date
+				case "050":
+					currentClaim.ReceivedDate = date
 				}
+			}
+
+		case "AMT":
+			// AMT*B6 is the allowed amount at line level. Claim-level AMT qualifiers (AU, D8 and so on) are not modelled.
+			if currentSVC != nil && seg.Element(1).String() == "B6" {
+				if v, err := parseAmount(seg.Element(2).String()); err == nil {
+					currentSVC.AllowedAmount, currentSVC.HasAllowed = v, true
+				}
+			}
+
+		case "REF":
+			if currentSVC != nil && seg.Element(1).String() == "6R" {
+				currentSVC.LineControlNumber = seg.Element(2).String()
 			}
 
 		case "LQ":

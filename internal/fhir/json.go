@@ -39,6 +39,11 @@ func Marshal(r Resource, version Version) ([]byte, error) {
 	if tree["resourceType"] == nil || tree["resourceType"] == "" {
 		tree["resourceType"] = r.ResourceTypeName()
 	}
+	if keeper, ok := r.(unmodelledKeeper); ok {
+		if kept := keeper.unmodelledMembers(); len(kept) > 0 {
+			mergeMissing(tree, kept)
+		}
+	}
 
 	if err := applyChoiceRules(tree, r.ResourceTypeName()); err != nil {
 		return nil, err
@@ -501,7 +506,125 @@ func UnmarshalResource(data []byte) (Resource, error) {
 	// spelling and storing one is what makes the R4 default usable rather than merely honest.
 	upgradeCodes(target)
 
+	keepUnmodelled(target, data)
+
 	return target, nil
+}
+
+// unmodelledKeeper is implemented by every resource through the embedded base.
+type unmodelledKeeper interface {
+	unmodelledMembers() map[string]any
+	setUnmodelledMembers(map[string]any)
+}
+
+// keepUnmodelled records the parts of a resource its struct cannot hold, so Marshal can write them back.
+//
+// The structs model the fields this engine reads and writes, not the whole specification - and for years the package said
+// unknown members survived a round trip when they did not. An ExplanationOfBenefit lost its items, diagnoses, adjudication
+// and payment on the way into the FHIR server: everything a CARIN Blue Button claim is for. Found by checking that a claim
+// converted for the Patient Access API came back out of the store, which nothing had done.
+//
+// Only what the struct cannot represent is kept. A modelled field the program later clears stays cleared, because it was
+// never in this set - so this cannot bring back a value somebody removed on purpose.
+func keepUnmodelled(target Resource, data []byte) {
+	keeper, ok := target.(unmodelledKeeper)
+	if !ok {
+		return
+	}
+	var original map[string]any
+	if err := json.Unmarshal(data, &original); err != nil {
+		return
+	}
+	modelledRaw, err := json.Marshal(target)
+	if err != nil {
+		return
+	}
+	var modelled map[string]any
+	if err := json.Unmarshal(modelledRaw, &modelled); err != nil {
+		return
+	}
+	if missing, ok := missingMembers(original, modelled).(map[string]any); ok && len(missing) > 0 {
+		keeper.setUnmodelledMembers(missing)
+	}
+}
+
+// missingMembers returns the members of have that want lacks, recursively, or nil when there are none.
+//
+// Lists are compared element by element only when both have the same length; a list whose length the struct changed is one
+// this cannot line up safely, and it is left as the struct wrote it.
+func missingMembers(have, want any) any {
+	switch h := have.(type) {
+	case map[string]any:
+		w, ok := want.(map[string]any)
+		if !ok {
+			return nil
+		}
+		out := map[string]any{}
+		for k, hv := range h {
+			wv, present := w[k]
+			if !present {
+				out[k] = hv
+				continue
+			}
+			if sub := missingMembers(hv, wv); sub != nil {
+				out[k] = sub
+			}
+		}
+		if len(out) == 0 {
+			return nil
+		}
+		return out
+	case []any:
+		w, ok := want.([]any)
+		if !ok || len(w) != len(h) {
+			return nil
+		}
+		out := make([]any, len(h))
+		found := false
+		for i := range h {
+			if sub := missingMembers(h[i], w[i]); sub != nil {
+				out[i] = sub
+				found = true
+			}
+		}
+		if !found {
+			return nil
+		}
+		return out
+	}
+
+	return nil
+}
+
+// mergeMissing writes the kept members back into a serialised tree, without overwriting anything the struct wrote.
+func mergeMissing(dst map[string]any, kept map[string]any) {
+	for k, kv := range kept {
+		dv, present := dst[k]
+		if !present {
+			dst[k] = kv
+			continue
+		}
+		mergeInto(dv, kv)
+	}
+}
+
+func mergeInto(dst, kept any) {
+	switch k := kept.(type) {
+	case map[string]any:
+		if d, ok := dst.(map[string]any); ok {
+			mergeMissing(d, k)
+		}
+	case []any:
+		d, ok := dst.([]any)
+		if !ok || len(d) != len(k) {
+			return
+		}
+		for i := range k {
+			if k[i] != nil {
+				mergeInto(d[i], k[i])
+			}
+		}
+	}
 }
 
 // r4ShapeTypes are the resource types downgradeToR4 reshapes, and so the ones whose R4 spelling must be accepted inbound.

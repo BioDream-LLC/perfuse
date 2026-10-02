@@ -950,6 +950,14 @@ type Group struct {
 	Name           string           `json:"name,omitempty"`
 	Quantity       int              `json:"quantity,omitempty"`
 	ManagingEntity *Reference       `json:"managingEntity,omitempty"`
+	Member         []GroupMember    `json:"member,omitempty"`
+}
+
+// GroupMember is one entity in a Group, which for a Da Vinci attribution list is a member (Patient) attributed to a provider.
+type GroupMember struct {
+	Entity   *Reference `json:"entity,omitempty"`
+	Period   *Period    `json:"period,omitempty"`
+	Inactive *bool      `json:"inactive,omitempty"`
 }
 
 // Person links multiple patient records.

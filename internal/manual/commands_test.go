@@ -26,7 +26,7 @@ func TestEveryCommandIsMentionedInTheManual(t *testing.T) {
 
 	// The commands as the usage text advertises them, so this reads the same list a reader is shown. A separate test in
 	// cmd/perfuse asserts that list matches what the binary actually dispatches, so neither can drift alone.
-	found := regexp.MustCompile(`(?m)^  perfuse ([a-z-]+)`).FindAllStringSubmatch(string(usage), -1)
+	found := regexp.MustCompile(`(?m)^  perfuse ([a-z0-9-]+)`).FindAllStringSubmatch(string(usage), -1)
 
 	commands := map[string]bool{}
 	for _, m := range found {

@@ -46,8 +46,8 @@ and S3 — fourteen source types and seventeen destination types, in both direct
 **What it does beyond moving messages.** A **durable on-disk queue** that keeps ordering and survives a
 restart. **Shadow mode**, so a channel can be changed against real traffic while delivering nothing.
 **Feed contracts** that tell you when a sender quietly changes something. **TEFCA and UDAP** for exchanging
-records with organisations you have no direct connection to. **Prior authorisation** to payer FHIR APIs for
-CMS-0057. **eCR and ELR** public health reporting. **SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual
+records with organisations you have no direct connection to. **The four CMS-0057 payer APIs**, with claims
+as CARIN Blue Button, prior authorisations as Da Vinci PDex and the yearly metrics page. **eCR and ELR** public health reporting. **SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual
 TLS** for sign-on. Metrics, alerting, tracing, an audit log, and a searchable message store.
 
 **And it is one file.** Written in Go, licensed under **Apache 2.0**, running on **Linux, macOS and Windows**
@@ -179,11 +179,16 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/priorauth.svg" width="168" height="40" alt="Prior authorisation"></th><th align="left" valign="middle">CMS-0057: Da Vinci PAS, X12 278, payer FHIR APIs</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/priorauth.svg" width="168" height="40" alt="CMS-0057 for payers"></th><th align="left" valign="middle">CMS-0057: the four payer APIs, ready-made</th></tr></thead>
 <tbody>
-<tr><td colspan="2">Submits prior authorisation requests to <b>payer FHIR APIs</b>, which CMS-0057 requires</td></tr>
-<tr><td colspan="2">Maps <b>Da Vinci PAS to and from the X12 278</b> transaction, so a payer on either side is reachable</td></tr>
-<tr><td colspan="2">Tracks a request through to its determination rather than firing and forgetting</td></tr>
+<tr><td colspan="2"><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b> — the four FHIR APIs CMS-0057 requires of payers from 1 January 2027, served by the built-in FHIR endpoint, with a screen that says which are ready on this instance and what each still needs</td></tr>
+<tr><td colspan="2"><b>Paid claims to CARIN Blue Button 2.2.0</b>: an 837 and its 835 become professional, inpatient or outpatient ExplanationOfBenefits with their Patient, Coverage, Organizations and Practitioners — <b>no errors from the official HL7 validator</b> on any of the three</td></tr>
+<tr><td colspan="2"><b>PAS decisions to Da Vinci PDex 2.2.0</b> prior authorizations, tested on the PAS guide's own examples and validated the same way</td></tr>
+<tr><td colspan="2"><b>HRex <code>$member-match</code></b> for Payer-to-Payer — unique matches only, consent required — and <b>Da Vinci <code>$davinci-data-export</code></b> on a Group for Provider Access, honouring member opt-outs</td></tr>
+<tr><td colspan="2">The exports apply the rule's exclusions on the way out: <b>no cost-sharing or provider remittances</b> to providers or other payers, and <b>no denied prior authorizations</b> to another payer</td></tr>
+<tr><td colspan="2"><b>The yearly prior authorization metrics page</b>, in the layout of CMS's own template — approvals, denials, extensions, appeals, mean and median turnaround with the unit always written — as a self-contained public page, CSV or JSON</td></tr>
+<tr><td colspan="2">Submits prior authorization requests to payer FHIR APIs, and <b>maps Da Vinci PAS to and from the X12 278</b>, so a payer on either side is reachable</td></tr>
+<tr><td colspan="2">Drugs are out of scope, as they are in the rule. CRD and DTR are not provided, and the Prior Authorization card says so</td></tr>
 </tbody></table>
 
 <table width="100%">
@@ -525,6 +530,7 @@ Full detail: [Migrating from Mirth](docs/reference.md#migrating-from-mirth) ·
 | **Feed contracts / drift detection** | Yes | No |
 | **Export back to the other engine** | Yes — writes Mirth channel files a real Mirth accepts | N/A |
 | **Kafka** | Source and destination, keyed for per-patient ordering | No connector |
+| **CMS-0057 payer APIs** | Patient Access, Provider Access, Payer-to-Payer, Prior Authorization; CARIN BB and PDex output validated by the HL7 validator | Not provided |
 | **Configuration from the web UI** | Everything | Most things |
 | **Multi-server view** | Fleet view, included | A paid feature |
 | **Published crash-consistency results** | Killed mid-batch and counted: 255 acknowledged, 255 delivered | None published |

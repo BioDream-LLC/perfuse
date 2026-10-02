@@ -315,6 +315,11 @@ export default async function globalSetup() {
       // flag is for exactly this and never for patient data on a network.
       "-fhir-subscriptions",
       "-fhir-subscriptions-allow-http",
+
+      // The CMS-0057 payer operations and bulk export, so the CMS-0057 view reports APIs that can actually answer rather than
+      // only the "start it with" advice.
+      "-fhir-payer-apis",
+      "-fhir-bulk-export",
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
   );

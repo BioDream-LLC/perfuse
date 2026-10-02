@@ -1682,6 +1682,12 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'The document': IconDocuments,
   'X12 275': IconX12,
   'X12 278 response': IconX12,
+  'Claims and remittance': IconX12,
+  'CARIN Blue Button bundle': IconFhir,
+  'PAS response and request': IconFhir,
+  'PDex prior authorization': IconFhir,
+  'Prior authorization decisions': IconX12,
+  'Public metrics page': IconFhir,
   'ClaimResponse': IconFhir,
 
   // Subscriptions.

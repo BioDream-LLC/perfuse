@@ -146,8 +146,44 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err := s.addRefType(ctx); err != nil {
 		return err
 	}
+	if err := s.addValueRaw(ctx); err != nil {
+		return err
+	}
 
-	return s.addValueRaw(ctx)
+	return s.ensureIndexVersion(ctx)
+}
+
+// indexVersion changes whenever indexEntries starts indexing something it did not before.
+//
+// A new search parameter only covers resources written after it exists unless the stored ones are indexed again, and a search
+// that silently misses every older record reads as "there are none". 2: the CARIN and PDex parameters on ExplanationOfBenefit,
+// Coverage and Group.
+const indexVersion = "2"
+
+// ensureIndexVersion re-indexes the store once when the index definition has changed since it was last built.
+func (s *Store) ensureIndexVersion(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx,
+		`CREATE TABLE IF NOT EXISTS fhir_store_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`); err != nil {
+		return fmt.Errorf("fhirserver: creating store metadata: %w", err)
+	}
+	var current string
+	err := s.db.QueryRowContext(ctx, `SELECT value FROM fhir_store_meta WHERE key = 'index_version'`).Scan(&current)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("fhirserver: reading the index version: %w", err)
+	}
+	if current == indexVersion {
+		return nil
+	}
+	if err := s.reindexAll(ctx); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx,
+		`INSERT INTO fhir_store_meta (key, value) VALUES ('index_version', ?)
+		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`, indexVersion); err != nil {
+		return fmt.Errorf("fhirserver: recording the index version: %w", err)
+	}
+
+	return nil
 }
 
 // addRefType brings a database created before the ref_type column forward.

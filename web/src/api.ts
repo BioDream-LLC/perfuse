@@ -1365,6 +1365,28 @@ export const api = {
   /** fhirSubscriptions lists topic subscriptions and whether their notifications are arriving. Credentials are withheld. */
   fhirSubscriptions: () => request<SubscriptionsView>('GET', '/api/fhir/subscriptions'),
 
+  /** cms0057Status reports which of the four CMS-0057 payer APIs this instance can answer, and what each still needs. */
+  cms0057Status: () => request<CMS0057Status>('GET', '/api/cms0057/status'),
+
+  /** carinBB converts adjudicated claims (an 837 and its 835) into CARIN Blue Button bundles. Nothing is stored. */
+  carinBB: (input: { claims: string; remittance: string; identifierSystem: string; networkStatus: string }) =>
+    request<CARINConversion>('POST', '/api/cms0057/carinbb', input),
+
+  /** pdexPriorAuth converts a PAS ClaimResponse (and its Claim) into a PDex prior authorization ExplanationOfBenefit. */
+  pdexPriorAuth: (input: { response: string; claim: string }) =>
+    request<PDexPriorAuthResult>('POST', '/api/cms0057/priorauth', input),
+
+  /** paMetrics computes the prior authorization metrics CMS-0057 requires payers to post each year. */
+  paMetrics: (input: {
+    decisions: string
+    services: string
+    year: number
+    organization: string
+    contact: string
+    standardDays: number
+    expeditedHours: number
+  }) => request<PAMetricsResult>('POST', '/api/cms0057/metrics', input),
+
   /** buildAttachment renders a 006020X314 275 and reads it back. Nothing is sent anywhere. */
   buildAttachment: (input: AttachmentBuildInput) =>
     request<AttachmentBuildResult>('POST', '/api/x12/attachment/build', input),
@@ -2498,4 +2520,70 @@ export interface PriorAuthResult {
   decisions: PriorAuthDecision[]
   notes: string[]
   profile: string
+}
+
+/** One of the four APIs CMS-0057 requires of a payer, and whether this instance can answer it. */
+export interface CMS0057API {
+  name: string
+  rule: string
+  deadline: string
+  ready: boolean
+  endpoints: string[]
+  guides: string[]
+  missing: string[]
+}
+
+export interface CMS0057Status {
+  apis: CMS0057API[]
+  status: { fhir: boolean; baseUrl: string; smart: boolean; bulkExport: boolean; payerApis: boolean; consentRequired: boolean }
+}
+
+export interface CARINResult {
+  claimNumber: string
+  profile: string
+  bundle: Record<string, unknown>
+  notes: string[]
+}
+
+export interface CARINConversion {
+  results: CARINResult[]
+  skipped: string[]
+}
+
+export interface PDexPriorAuthResult {
+  explanationOfBenefit: Record<string, unknown>
+  decision: string
+  notes: string[]
+}
+
+export interface PACount {
+  count: number
+  of: number
+  percent: number
+}
+
+export interface PASection {
+  requests: number
+  approved: PACount
+  denied: PACount
+  partlyApproved: number
+  approvedWithinDeadline: PACount
+  deniedWithinDeadline: PACount
+  approvedAfterExtension: PACount
+  deniedAfterExtension: PACount
+  approvedAfterAppeal: PACount
+  deniedAfterAppeal: PACount
+  turnaround: { meanHours: number; medianHours: number; mean: string; median: string }
+  deadlineLabel: string
+}
+
+export interface PAMetricsResult {
+  report: {
+    year: number
+    linesOfBusiness: { name: string; standard: PASection; expedited: PASection; extendedAndApproved: PACount }[]
+    excluded: Record<string, number>
+    dataQuality: string[]
+  }
+  html: string
+  csv: string
 }

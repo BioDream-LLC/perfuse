@@ -9,6 +9,7 @@ import { Dashboard } from './Dashboard'
 import { DocumentLab } from './DocumentLab'
 import { FhirLab } from './FhirLab'
 import { PayerLab } from './PayerLab'
+import { CMS0057 } from './CMS0057'
 import { Subscriptions } from './Subscriptions'
 import { Messages } from './Messages'
 import { Metrics } from './Metrics'
@@ -64,6 +65,7 @@ export type Tab =
   | 'subscriptions'
   | 'documents'
   | 'payer'
+  | 'cms0057'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -82,7 +84,7 @@ export type Tab =
 // Every view's id, for reading one out of the URL. A string from the address bar is only trusted once it is in here.
 const TAB_IDS = [
   'dashboard', 'channels', 'messages', 'queue', 'alerts', 'metrics', 'fhir', 'subscriptions', 'documents', 'payer',
-  'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
+  'cms0057', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
   'mapper', 'users', 'audit', 'settings',
 ] as const satisfies readonly Tab[]
 
@@ -537,6 +539,13 @@ function Console() {
       about: 'X12 275 claims attachments (the CMS-0053-F standard) built and read, and X12 278 decisions turned into Da Vinci PAS',
     },
     {
+      id: 'cms0057',
+      label: 'CMS-0057',
+      minRole: 'viewer',
+      about:
+        'The four payer APIs the CMS prior authorization rule requires, claims as CARIN Blue Button, prior auths as PDex, and the yearly metrics',
+    },
+    {
       id: 'scripts',
       label: 'Scripts',
       minRole: 'editor',
@@ -857,6 +866,7 @@ function Console() {
         {tab === 'subscriptions' && <Subscriptions />}
         {tab === 'documents' && <DocumentLab />}
         {tab === 'payer' && <PayerLab />}
+        {tab === 'cms0057' && <CMS0057 />}
         {tab === 'certificates' && <Certificates />}
         {tab === 'scripts' && (
           <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

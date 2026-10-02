@@ -95,24 +95,25 @@ var SearchParams = map[string][]string{
 	"MedicationStatement":      {"_id", "_lastUpdated", "patient", "subject", "status"},
 	"MedicationDispense":       {"_id", "_lastUpdated", "patient", "subject", "status"},
 	"MedicationAdministration": {"_id", "_lastUpdated", "patient", "subject", "status"},
-	"Coverage":                 {"_id", "_lastUpdated", "patient", "beneficiary", "status"},
+	"Coverage":                 {"_id", "_lastUpdated", "identifier", "patient", "beneficiary", "status", "subscriber-id", "payor"},
 	"Claim":                    {"_id", "_lastUpdated", "patient", "status", "use", "created"},
-	"ExplanationOfBenefit":     {"_id", "_lastUpdated", "patient", "status", "use", "created"},
-	"CarePlan":                 {"_id", "_lastUpdated", "patient", "subject", "encounter", "status", "category"},
-	"CareTeam":                 {"_id", "_lastUpdated", "patient", "subject", "encounter", "status"},
-	"Goal":                     {"_id", "_lastUpdated", "patient", "subject", "lifecycle-status"},
-	"Device":                   {"_id", "_lastUpdated", "identifier", "patient", "type", "status"},
-	"RelatedPerson":            {"_id", "_lastUpdated", "identifier", "patient", "name"},
-	"PractitionerRole":         {"_id", "_lastUpdated", "identifier", "practitioner", "organization", "specialty"},
-	"Appointment":              {"_id", "_lastUpdated", "patient", "status", "date"},
-	"Consent":                  {"_id", "_lastUpdated", "patient", "status", "category"},
-	"Composition":              {"_id", "_lastUpdated", "patient", "subject", "encounter", "type", "status", "date"},
-	"FamilyMemberHistory":      {"_id", "_lastUpdated", "patient", "status"},
-	"Communication":            {"_id", "_lastUpdated", "patient", "subject", "encounter", "status"},
-	"Task":                     {"_id", "_lastUpdated", "patient", "status", "intent", "code"},
-	"Provenance":               {"_id", "_lastUpdated", "target", "recorded"},
-	"QuestionnaireResponse":    {"_id", "_lastUpdated", "patient", "subject", "encounter", "questionnaire", "status", "authored"},
-	"Media":                    {"_id", "_lastUpdated", "patient", "subject", "encounter", "status", "created"},
+	"ExplanationOfBenefit": {"_id", "_lastUpdated", "identifier", "patient", "status", "use", "created", "type",
+		"provider", "insurer", "coverage", "service-date", "billable-period-start"},
+	"CarePlan":              {"_id", "_lastUpdated", "patient", "subject", "encounter", "status", "category"},
+	"CareTeam":              {"_id", "_lastUpdated", "patient", "subject", "encounter", "status"},
+	"Goal":                  {"_id", "_lastUpdated", "patient", "subject", "lifecycle-status"},
+	"Device":                {"_id", "_lastUpdated", "identifier", "patient", "type", "status"},
+	"RelatedPerson":         {"_id", "_lastUpdated", "identifier", "patient", "name"},
+	"PractitionerRole":      {"_id", "_lastUpdated", "identifier", "practitioner", "organization", "specialty"},
+	"Appointment":           {"_id", "_lastUpdated", "patient", "status", "date"},
+	"Consent":               {"_id", "_lastUpdated", "patient", "status", "category"},
+	"Composition":           {"_id", "_lastUpdated", "patient", "subject", "encounter", "type", "status", "date"},
+	"FamilyMemberHistory":   {"_id", "_lastUpdated", "patient", "status"},
+	"Communication":         {"_id", "_lastUpdated", "patient", "subject", "encounter", "status"},
+	"Task":                  {"_id", "_lastUpdated", "patient", "status", "intent", "code"},
+	"Provenance":            {"_id", "_lastUpdated", "target", "recorded"},
+	"QuestionnaireResponse": {"_id", "_lastUpdated", "patient", "subject", "encounter", "questionnaire", "status", "authored"},
+	"Media":                 {"_id", "_lastUpdated", "patient", "subject", "encounter", "status", "created"},
 
 	// Foundation & infrastructure
 	"StructureDefinition":   {"_id", "_lastUpdated", "url", "name", "status", "type"},
@@ -198,7 +199,7 @@ var SearchParams = map[string][]string{
 	// Additional clinical & admin
 	"Endpoint":               {"_id", "_lastUpdated", "identifier", "status", "name", "connection-type"},
 	"HealthcareService":      {"_id", "_lastUpdated", "identifier", "name"},
-	"Group":                  {"_id", "_lastUpdated", "identifier", "type", "name"},
+	"Group":                  {"_id", "_lastUpdated", "identifier", "type", "name", "code", "member"},
 	"Person":                 {"_id", "_lastUpdated", "identifier", "gender", "birthdate"},
 	"Linkage":                {"_id", "_lastUpdated"},
 	"Basic":                  {"_id", "_lastUpdated", "identifier", "subject", "created"},
@@ -473,9 +474,14 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		add("status", v.Status, "")
 
 	case *fhir.Coverage:
+		addIdentifiers(v.Identifier)
 		addRef("patient", v.Beneficiary)
 		addRef("beneficiary", v.Beneficiary)
 		add("status", v.Status, "")
+		add("subscriber-id", v.SubscriberID, "")
+		for i := range v.Payor {
+			addRef("payor", &v.Payor[i])
+		}
 
 	case *fhir.Claim:
 		addRef("patient", v.Patient)
@@ -484,10 +490,23 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		add("created", v.Created, "")
 
 	case *fhir.ExplanationOfBenefit:
+		addIdentifiers(v.Identifier)
 		addRef("patient", v.Patient)
 		add("status", v.Status, "")
 		add("use", v.Use, "")
 		add("created", v.Created, "")
+		addCodeable("type", v.Type)
+		addRef("provider", v.Provider)
+		addRef("insurer", v.Insurer)
+		for _, ins := range v.Insurance {
+			addRef("coverage", ins.Coverage)
+		}
+		// CARIN's service-date and billable-period-start both search the start of the billable period, which is the date
+		// of service a member recognises.
+		if v.BillablePeriod != nil {
+			add("service-date", v.BillablePeriod.Start, "")
+			add("billable-period-start", v.BillablePeriod.Start, "")
+		}
 
 	case *fhir.CarePlan:
 		addRef("patient", v.Subject)
@@ -1003,6 +1022,10 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		addIdentifiers(v.Identifier)
 		add("type", v.Type, "")
 		add("name", v.Name, "")
+		addCodeable("code", v.Code)
+		for _, m := range v.Member {
+			addRef("member", m.Entity)
+		}
 
 	case *fhir.Person:
 		addIdentifiers(v.Identifier)
@@ -1546,7 +1569,7 @@ func isDateParam(param string) bool {
 	case "date", "birthdate", "_lastUpdated",
 		"onset-date", "recorded-date", "authoredon", "authored-on",
 		"datetime", "datewritten", "created", "authored",
-		"started", "recorded":
+		"started", "recorded", "service-date", "billable-period-start":
 		return true
 	}
 	return false
@@ -1577,7 +1600,7 @@ func isReferenceParam(param string) bool {
 		"individual", "study", "target",
 		"source", "device", "insurer", "request", "provider",
 		"schedule", "appointment", "actor",
-		"primary-organization", "For":
+		"primary-organization", "For", "coverage", "payor", "member":
 		return true
 	}
 

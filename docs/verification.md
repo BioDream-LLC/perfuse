@@ -156,6 +156,26 @@ The validator needs Java and a large download, so it is not run by `make check`.
 
 What this does not show: that any payer's PAS endpoint accepts these responses. Conformance to the profile is a necessary condition, not a sufficient one.
 
+## CARIN Blue Button 2.2.0 and PDex 2.2.0, against the official HL7 validator
+
+**What was found: five conformance defects in the new converters, and a store that had been dropping most of every ExplanationOfBenefit.**
+
+`cms0057` converts paid claims (an 837 with its 835) into CARIN Blue Button bundles, and Da Vinci PAS decisions into PDex prior authorisations. Both were run through the official HL7 validator (`validator_cli.jar`, FHIR 4.0.1) loaded with the published packages `hl7.fhir.us.carin-bb#2.2.0` and `hl7.fhir.us.davinci-pdex#2.2.0`. The CARIN inputs were synthetic professional, inpatient and outpatient claims; the PDex inputs were the PAS 2.2.1 guide's own example Claim and response bundles, not shapes written here to agree with the converter.
+
+The first run rejected all three CARIN claim types:
+
+- The institutional profiles fix the claim-type coding *with its code system version* (`1.0.1`), and the converter wrote no version.
+- CARIN's EOB invariants require `meta.profile` to carry the profile version (`|2.2.0`).
+- The CARIN Patient requires the member identifier to have a system. The converter left it out when none was configured; it now refuses to convert without one rather than inventing a namespace.
+- The outpatient profile allows a service date, not a period, on a line.
+- Two test NPIs failed their check digit. The fixtures were wrong, and the converter now reports a bad NPI in words before US Core rejects it.
+
+After the fixes the validator reports no errors on any of the three CARIN claim types or on either PDex decision. The remaining warnings are a missing narrative (a best-practice recommendation) and NUBC and X12 code systems the validator has no copy of, so cannot check codes in. The only PDex errors on the first run were `example.org` URLs carried in from the HL7 example inputs, which the validator refuses in non-example content; with those replaced it reports none.
+
+The larger finding came from asking whether a converted claim survived the FHIR server. It did not: the store parsed every resource into an internal model and serialised the model, and the model declared a dozen of ExplanationOfBenefit's fields. Items, diagnoses, supporting information, adjudication and payment were dropped on the way in - everything a CARIN claim is for - while the package's own comments said unknown members survived a round trip. The model now keeps whatever a resource carries that it does not declare, without bringing back a declared field the program cleared on purpose, and a test loads a CARIN bundle through the transaction endpoint and reads it back whole.
+
+Not verified: the member match and Group exports against another payer's implementation, and the metrics against a payer's published figures.
+
 ## The 006020 275, against the published companion guides
 
 **What was found: one of the two guides contradicts itself about the byte count, and the table is right.**

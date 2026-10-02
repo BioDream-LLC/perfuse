@@ -216,6 +216,9 @@ type Server struct {
 	TLSCertFile string
 	TLSKeyFile  string
 
+	// CMS0057 describes the FHIR endpoint, so the CMS-0057 page can say which payer APIs this instance can answer.
+	CMS0057 CMS0057Status
+
 	// TEFCA is this instance's participation in national exchange, nil when it does not participate.
 	//
 	// Held as a Participant rather than as a configuration, because a Participant cannot exchange without auditing -
@@ -390,6 +393,12 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/x12/attachment/build", s.require(store.RoleViewer, s.handleBuildAttachment))
 	mux.Handle("POST /api/x12/attachment/read", s.require(store.RoleViewer, s.handleReadAttachment))
 	mux.Handle("POST /api/priorauth/claimresponse", s.require(store.RoleViewer, s.handlePriorAuthResponse))
+
+	// CMS-0057 for payers: readiness of the four APIs, and the CARIN, PDex and metrics conversions behind them.
+	mux.Handle("GET /api/cms0057/status", s.require(store.RoleViewer, s.handleCMS0057Status))
+	mux.Handle("POST /api/cms0057/carinbb", s.require(store.RoleViewer, s.handleCARIN))
+	mux.Handle("POST /api/cms0057/priorauth", s.require(store.RoleViewer, s.handlePDexPriorAuth))
+	mux.Handle("POST /api/cms0057/metrics", s.require(store.RoleViewer, s.handlePAMetrics))
 	mux.Handle("GET /api/dictionary", s.require(store.RoleViewer, s.handleDictionary))
 
 	// Metrics. The JSON form is for the dashboard; the Prometheus form is

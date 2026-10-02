@@ -29,6 +29,9 @@ type Server struct {
 	// the honest state for an installation with no tables rather than an empty list implying there could be some.
 	Tables TableSource
 
+	// Payer turns on the CMS-0057 payer operations: $member-match and the Group exports. Nil leaves them off.
+	Payer *PayerAPIs
+
 	// Export runs bulk exports. Nil disables the operation, which is why it is a pointer rather than a value.
 	//
 	// Off unless something sets it, because an export produces a file holding every record this server has and that is
@@ -134,6 +137,8 @@ func (s *Server) Handler() http.Handler {
 	// Registered before the generic /{type}/{id} routes so "$everything" is never mistaken for a resource id.
 	s.registerTerminology(mux)
 	s.registerValueSets(mux)
+
+	s.registerPayerAPIs(mux)
 
 	mux.HandleFunc("GET /Patient/{id}/$everything", s.handleEverything)
 	mux.HandleFunc("POST /Patient/{id}/$everything", s.handleEverything)
@@ -262,10 +267,30 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		// imply it works everywhere. A capability statement that overstates is worse than none: a client reads this to
 		// decide what to call, and a promise it then honours with a 404 costs more than saying nothing.
 		if t == "Patient" {
-			entry["operation"] = []any{
+			ops := []any{
 				map[string]any{
 					"name":       "everything",
 					"definition": "http://hl7.org/fhir/OperationDefinition/Patient-everything",
+				},
+			}
+			if s.Payer != nil {
+				ops = append(ops, map[string]any{
+					"name":       "member-match",
+					"definition": "http://hl7.org/fhir/us/davinci-hrex/OperationDefinition/member-match",
+				})
+			}
+			entry["operation"] = ops
+		}
+		// Listed only when they would answer: the Group exports need both the payer operations and bulk export.
+		if t == "Group" && s.Payer != nil && s.Export != nil {
+			entry["operation"] = []any{
+				map[string]any{
+					"name":       "davinci-data-export",
+					"definition": "http://hl7.org/fhir/us/davinci-atr/OperationDefinition/davinci-data-export",
+				},
+				map[string]any{
+					"name":       "export",
+					"definition": "http://hl7.org/fhir/uv/bulkdata/OperationDefinition/group-export",
 				},
 			}
 		}
@@ -1040,14 +1065,16 @@ func hashID(kind, key string) string {
 }
 
 func searchParamType(param string) string {
-	switch param {
-	case "_id":
+	// Answered from the same classifiers the search uses, so the capability statement cannot call a parameter a token while
+	// the query treats it as a date.
+	switch {
+	case param == "_id":
 		return "token"
-	case "_lastUpdated", "date", "birthdate":
+	case isDateParam(param):
 		return "date"
-	case "name", "family", "given":
+	case isStringParam(param):
 		return "string"
-	case "patient", "subject", "encounter":
+	case isReferenceParam(param):
 		return "reference"
 	default:
 		return "token"

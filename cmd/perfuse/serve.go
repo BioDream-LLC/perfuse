@@ -159,6 +159,11 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"how often to rewrite the interface inventory")
 	fhirBulkExport := fset.Bool("fhir-bulk-export", false,
 		"enable $export, which produces a file holding every record the FHIR endpoint serves")
+	fhirPayerAPIs := fset.Bool("fhir-payer-apis", false,
+		"enable the CMS-0057 payer operations: $member-match (Payer-to-Payer) and Group $davinci-data-export (Provider Access); "+
+			"the Group exports also need -fhir-bulk-export")
+	fhirMatchWithoutConsent := fset.Bool("fhir-member-match-without-consent", false,
+		"let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing")
 	fhirReadOnly := fset.Bool("fhir-read-only", false, "refuse writes to the FHIR endpoint")
 	fhirSubscriptions := fset.Bool("fhir-subscriptions", false,
 		"enable topic-based subscriptions, which send encounter and appointment notifications to URLs FHIR clients choose")
@@ -987,6 +992,21 @@ oidcDone:
 				"note", "one request can produce every record this endpoint serves")
 		}
 
+		// The CMS-0057 payer operations are off unless asked for. $member-match tells a caller whether someone is this payer's
+		// member, and the Group export hands over many members' records at once.
+		if *fhirMatchWithoutConsent && !*fhirPayerAPIs {
+			return fmt.Errorf("-fhir-member-match-without-consent has no effect without -fhir-payer-apis")
+		}
+		if *fhirPayerAPIs {
+			fhirSrv.Payer = &fhirserver.PayerAPIs{RequireConsent: !*fhirMatchWithoutConsent}
+			log.Info("FHIR payer operations are enabled",
+				"operations", "Patient/$member-match, Group/[id]/$davinci-data-export, Group/[id]/$export",
+				"bulk_export", *fhirBulkExport, "consent_required", !*fhirMatchWithoutConsent)
+			if !*fhirBulkExport {
+				log.Warn("the Group exports need -fhir-bulk-export, so only $member-match will answer")
+			}
+		}
+
 		// Subscriptions are off unless asked for, for the same reason as bulk export: once on, a FHIR client can make
 		// this server send patient data to a URL of the client's choosing. The egress policy and https requirement bound
 		// where, but whether is the operator's decision.
@@ -1056,6 +1076,12 @@ oidcDone:
 			fhirSrv.ReadOnlyFn = func() bool {
 				return settingsStore.Bool("fhir.readOnly")
 			}
+		}
+
+		srv.CMS0057 = api.CMS0057Status{
+			FHIR: true, BaseURL: baseURL, SMART: strings.TrimSpace(*smartIssuer) != "",
+			BulkExport: *fhirBulkExport, PayerAPIs: *fhirPayerAPIs, Consent: *fhirPayerAPIs && !*fhirMatchWithoutConsent,
+			ReadOnly: *fhirReadOnly,
 		}
 
 		// The FHIR endpoint is deliberately outside the session-cookie API. FHIR

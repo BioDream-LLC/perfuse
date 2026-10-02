@@ -1,0 +1,11 @@
+request_id,line_of_business,priority,received,decided,decision,extended,appealed,appeal_decision,service_code,service_description
+PA1,Medicare Advantage H1234,standard,2025-01-06 09:00,2025-01-08 15:00,approved,no,no,,70553,MRI brain with and without contrast
+PA2,Medicare Advantage H1234,standard,2025-02-01 10:00,2025-02-12 10:00,denied,yes,yes,approved,27447,Total knee replacement
+PA3,Medicare Advantage H1234,standard,2025-03-03 08:00,2025-03-05 08:00,denied,no,yes,denied,E0601,CPAP device
+PA4,Medicare Advantage H1234,standard,2025-04-10 12:00,2025-04-20 12:00,approved,yes,no,,27447,Total knee replacement
+PA5,Medicare Advantage H1234,expedited,2025-05-01 08:00,2025-05-01 14:00,approved,no,no,,70553,MRI brain with and without contrast
+PA6,Medicare Advantage H1234,expedited,2025-05-02 08:00,2025-05-05 20:00,denied,no,no,,43775,Laparoscopic sleeve gastrectomy
+PA7,Medicare Advantage H1234,urgent,2025-06-02 08:00,2025-06-02 10:00,partial,no,no,,97110,Physical therapy
+PA8,Medicaid Managed Care,standard,2025-07-01 09:00,2025-07-03 09:00,approved,no,no,,70553,MRI brain with and without contrast
+PA9,Medicaid Managed Care,standard,2025-12-30 09:00,,pending,no,no,,70553,MRI brain with and without contrast
+PA10,Medicaid Managed Care,standard,2024-12-20 09:00,2024-12-22 09:00,approved,no,no,,70553,MRI brain with and without contrast

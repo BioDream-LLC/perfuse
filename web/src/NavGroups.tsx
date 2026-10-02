@@ -85,7 +85,7 @@ export const NAV_GROUPS: NavGroup[] = [
       ring: 'border-t-emerald-500/60',
       dot: 'bg-emerald-400',
     },
-    members: ['fhir', 'subscriptions', 'documents', 'payer', 'tefca'],
+    members: ['fhir', 'subscriptions', 'documents', 'payer', 'cms0057', 'tefca'],
   },
   {
     name: 'Administer',

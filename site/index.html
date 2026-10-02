@@ -370,6 +370,7 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
   <li><b>Shadow mode</b> — change a channel against real traffic while it delivers nothing</li>
   <li><b>Feed contracts</b> that tell you when a sender quietly changes something</li>
   <li><b>TEFCA and UDAP</b> for exchanging records with organisations you have no direct connection to</li>
+  <li><b>The four CMS-0057 payer APIs</b> — Patient Access, Provider Access, Payer-to-Payer and Prior Authorization — ready-made on the built-in FHIR server: paid claims become CARIN Blue Button 2.2.0, PAS decisions become Da Vinci PDex 2.2.0, both with no errors from the official HL7 validator, plus HRex <code>$member-match</code>, Group <code>$davinci-data-export</code> with the rule's exclusions applied, and the yearly prior authorization metrics page in CMS's template layout</li>
   <li><b>Prior authorisation</b> for CMS-0057-F: X12 278 decisions become Da Vinci PAS 2.2.1 ClaimResponses that pass the official HL7 validator</li>
   <li><b>Claims attachments</b> for CMS-0053-F: the 006020 X12 275 built from a C-CDA or a PDF and read back byte for byte</li>
   <li><b>FHIR subscriptions</b> for encounter and appointment notifications, recorded with the change itself so none is lost across a restart</li>

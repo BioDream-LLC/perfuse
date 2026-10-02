@@ -40,7 +40,14 @@ type base struct {
 	ID           string     `json:"id,omitempty"`
 	Meta         *Meta      `json:"meta,omitempty"`
 	Text         *Narrative `json:"text,omitempty"`
+
+	// unmodelled holds whatever the resource carried that the struct has no field for, captured when it was read and
+	// written back when it is serialised. See keepUnmodelled in json.go.
+	unmodelled map[string]any
 }
+
+func (b *base) unmodelledMembers() map[string]any     { return b.unmodelled }
+func (b *base) setUnmodelledMembers(m map[string]any) { b.unmodelled = m }
 
 // Patient is a person receiving care.
 type Patient struct {

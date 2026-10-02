@@ -149,6 +149,7 @@ func (m *MedicationAdministration) SetResourceID(id string) {
 type Coverage struct {
 	base
 
+	Identifier   []Identifier     `json:"identifier,omitempty"`
 	Status       string           `json:"status,omitempty"`
 	Type         *CodeableConcept `json:"type,omitempty"`
 	PolicyHolder *Reference       `json:"policyHolder,omitempty"`
@@ -231,16 +232,18 @@ func (c *Claim) SetResourceID(id string)  { c.ID = id; c.ResourceType = "Claim" 
 type ExplanationOfBenefit struct {
 	base
 
-	Status    string           `json:"status,omitempty"`
-	Type      *CodeableConcept `json:"type,omitempty"`
-	Use       string           `json:"use,omitempty"`
-	Patient   *Reference       `json:"patient,omitempty"`
-	Created   string           `json:"created,omitempty"`
-	Insurer   *Reference       `json:"insurer,omitempty"`
-	Provider  *Reference       `json:"provider,omitempty"`
-	Outcome   string           `json:"outcome,omitempty"`
-	Insurance []EOBInsurance   `json:"insurance,omitempty"`
-	Total     []EOBTotal       `json:"total,omitempty"`
+	Identifier     []Identifier     `json:"identifier,omitempty"`
+	BillablePeriod *Period          `json:"billablePeriod,omitempty"`
+	Status         string           `json:"status,omitempty"`
+	Type           *CodeableConcept `json:"type,omitempty"`
+	Use            string           `json:"use,omitempty"`
+	Patient        *Reference       `json:"patient,omitempty"`
+	Created        string           `json:"created,omitempty"`
+	Insurer        *Reference       `json:"insurer,omitempty"`
+	Provider       *Reference       `json:"provider,omitempty"`
+	Outcome        string           `json:"outcome,omitempty"`
+	Insurance      []EOBInsurance   `json:"insurance,omitempty"`
+	Total          []EOBTotal       `json:"total,omitempty"`
 }
 
 // EOBInsurance ties to a Coverage resource.

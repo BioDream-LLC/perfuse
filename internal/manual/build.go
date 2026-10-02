@@ -91,6 +91,7 @@ func Build(version string, prose map[string]string, components []Component, pack
 		"debugging",
 		"testing",
 		"migration",
+		"cms-0057",
 		"security",
 		"operations",
 		"command-line",
