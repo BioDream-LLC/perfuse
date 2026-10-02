@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Synthetic Mirth channel export written by hand for tests.
+  Not derived from any real deployment. Contains no clinical data.
+  Deliberately includes one unknown channel element and one unknown step
+  plugin to prove the parser reports rather than rejects them.
+
+  NOT WHAT MIRTH PRODUCES, and tested: posted to a real Mirth 4.5.2 the
+  server stores this as "This channel is invalid. Verify all required
+  extensions are loaded correctly" and discards the destinations. Mirth's
+  own deserialiser reads it as a source connector with no transport and
+  zero destinations, silently, because the serialiser ignores elements it
+  does not recognise.
+
+  Four things it gets wrong, found by comparing it against a document
+  Mirth wrote: HttpDispatcherProperties takes a host and not a url;
+  resourceIds holds entry/string pairs and not bare strings; Channel has
+  no enabled element and no setter for one; and every connector carries a
+  destinationConnectorProperties block of queueing and retry settings
+  that is missing here entirely.
+
+  Use real_channel_from_mirth.xml for anything about compatibility. That
+  one was built by Mirth's own model classes and written by its own
+  serialiser, and Mirth accepts it. This file is kept only as a small
+  document carrying deliberately unknown elements.
+-->
+<channel version="4.4.0">
+  <id>7f2c1a44-0000-4000-8000-000000000001</id>
+  <nextMetaDataId>3</nextMetaDataId>
+  <name>ADT Inbound - Synthetic Site</name>
+  <description>Receives ADT over MLLP, drops A28, forwards to the registry.</description>
+  <revision>12</revision>
+  <enabled>true</enabled>
+  <sourceConnector>
+    <metaDataId>0</metaDataId>
+    <name>sourceConnector</name>
+    <properties class="com.mirth.connect.connectors.tcp.TcpReceiverProperties">
+      <listenerConnectorProperties>
+        <host>0.0.0.0</host>
+        <port>6661</port>
+      </listenerConnectorProperties>
+      <transmissionModeProperties>
+        <startOfMessageBytes>0B</startOfMessageBytes>
+        <endOfMessageBytes>1C0D</endOfMessageBytes>
+      </transmissionModeProperties>
+      <serverMode>true</serverMode>
+      <responseTimeout>5000</responseTimeout>
+    </properties>
+    <transformer>
+      <elements>
+        <com.mirth.connect.plugins.mapper.MapperStep>
+          <sequenceNumber>0</sequenceNumber>
+          <name>mrn</name>
+          <variable>mrn</variable>
+          <mapping>msg['PID']['PID.3']['PID.3.1'].toString()</mapping>
+        </com.mirth.connect.plugins.mapper.MapperStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <sequenceNumber>1</sequenceNumber>
+          <name>normalise sending facility</name>
+          <script>var f = msg['MSH']['MSH.4']['MSH.4.1'].toString(); if (f == 'SITE_A') { msg['MSH']['MSH.4']['MSH.4.1'] = 'SITEA'; }</script>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.xsltstep.XsltStep>
+          <sequenceNumber>2</sequenceNumber>
+          <name>site transform</name>
+          <xsltTemplate>&lt;xsl:stylesheet version="1.0"/&gt;</xsltTemplate>
+        </com.mirth.connect.plugins.xsltstep.XsltStep>
+        <com.example.someplugin.WidgetStep>
+          <sequenceNumber>3</sequenceNumber>
+          <name>third party widget</name>
+          <script>doSomethingProprietary();</script>
+        </com.example.someplugin.WidgetStep>
+      </elements>
+      <inboundDataType>HL7V2</inboundDataType>
+      <outboundDataType>HL7V2</outboundDataType>
+    </transformer>
+    <filter>
+      <elements>
+        <com.mirth.connect.plugins.rulebuilder.RuleBuilderRule>
+          <sequenceNumber>0</sequenceNumber>
+          <name>drop A28</name>
+          <operator>NONE</operator>
+          <field>msg['MSH']['MSH.9']['MSH.9.2'].toString()</field>
+          <condition>NOT_EQUALS</condition>
+          <values>
+            <string>"A28"</string>
+          </values>
+        </com.mirth.connect.plugins.rulebuilder.RuleBuilderRule>
+        <com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
+          <sequenceNumber>1</sequenceNumber>
+          <name>require MRN</name>
+          <operator>AND</operator>
+          <script>return msg['PID']['PID.3']['PID.3.1'].toString().length &gt; 0;</script>
+        </com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
+      </elements>
+    </filter>
+    <transportName>TCP Listener</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <waitForPrevious>true</waitForPrevious>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector>
+      <metaDataId>1</metaDataId>
+      <name>Registry API</name>
+      <properties class="com.mirth.connect.connectors.http.HttpDispatcherProperties">
+        <url>https://registry.example.invalid/hl7</url>
+        <method>POST</method>
+        <useAuthentication>false</useAuthentication>
+      </properties>
+      <transformer>
+        <elements/>
+        <inboundDataType>HL7V2</inboundDataType>
+        <outboundDataType>JSON</outboundDataType>
+      </transformer>
+      <filter>
+        <elements/>
+      </filter>
+      <transportName>HTTP Sender</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>false</waitForPrevious>
+    </connector>
+    <connector>
+      <metaDataId>2</metaDataId>
+      <name>Archive</name>
+      <properties class="com.mirth.connect.connectors.file.FileDispatcherProperties">
+        <host>/var/spool/archive</host>
+        <outputPattern>${message.messageId}.hl7</outputPattern>
+      </properties>
+      <transformer>
+        <elements/>
+        <inboundDataType>HL7V2</inboundDataType>
+        <outboundDataType>HL7V2</outboundDataType>
+      </transformer>
+      <filter>
+        <elements/>
+      </filter>
+      <transportName>File Writer</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>false</enabled>
+      <waitForPrevious>false</waitForPrevious>
+    </connector>
+  </destinationConnectors>
+  <preprocessingScript>return message;</preprocessingScript>
+  <postprocessingScript>return;</postprocessingScript>
+  <deployScript>return;</deployScript>
+  <undeployScript>return;</undeployScript>
+  <properties class="com.mirth.connect.model.ChannelProperties">
+    <clearGlobalChannelMap>true</clearGlobalChannelMap>
+    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <encryptData>false</encryptData>
+    <removeContentOnCompletion>false</removeContentOnCompletion>
+    <storeAttachments>true</storeAttachments>
+    <pruneMetaDataDays>30</pruneMetaDataDays>
+    <pruneContentDays>14</pruneContentDays>
+    <resourceIds>
+      <string>Default Resource</string>
+    </resourceIds>
+  </properties>
+  <someFutureElement>ignored but reported</someFutureElement>
+</channel>

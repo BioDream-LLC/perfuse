@@ -1,0 +1,376 @@
+import { useState } from 'react'
+import { api, ApiError } from './api'
+import type { AttachmentBuildResult, AttachmentView, PriorAuthResult } from './api'
+import { CodeArea } from './CodeArea'
+import { IconX12 } from './Icons'
+import { ErrorBox, Field, Section } from './ui'
+import type { UiError } from './store'
+
+/**
+ * Claims attachments and prior authorisation: the two payer transactions with federal dates attached.
+ *
+ * CMS-0053-F makes the 006020 X12 275 the HIPAA standard for claims attachments from 26 May 2028. CMS-0057-F requires payers to
+ * run a FHIR prior authorisation API from 1 January 2027, which in practice means translating Da Vinci PAS to and from the X12 278
+ * their utilisation management systems still speak.
+ *
+ * Everything here transforms what is pasted and sends nothing. A 275 built on this page is handed back to be delivered through a
+ * channel, which is where the trading partner, the credentials and the audit trail belong.
+ */
+export function PayerLab() {
+  const [tab, setTab] = useState<'build' | 'read' | 'auth'>('build')
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-medium text-slate-100">Claims attachments and prior authorisation</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Build and read X12 275 claims attachments (006020X314, the CMS-0053-F standard), and turn X12 278 decisions into Da
+          Vinci PAS ClaimResponses. Nothing here is stored or sent.
+        </p>
+      </div>
+      {/* Toggle buttons rather than tabs: the view itself is already the selected tab in the navigation, and a second
+          selected tab on the same page leaves assistive technology - and anything else asking "which tab is selected" -
+          with two answers. */}
+      <div role="group" aria-label="Payer tools" className="flex flex-wrap gap-2">
+        {(
+          [
+            ['build', 'Build a 275'],
+            ['read', 'Read a 275'],
+            ['auth', '278 to PAS'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            aria-pressed={tab === id}
+            className={tab === id ? 'btn-primary py-1 text-sm' : 'btn-ghost py-1 text-sm'}
+            onClick={() => setTab(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'build' && <BuildAttachment />}
+      {tab === 'read' && <ReadAttachment />}
+      {tab === 'auth' && <PriorAuth />}
+    </div>
+  )
+}
+
+const toError = (e: unknown): UiError => ({
+  message: e instanceof Error ? e.message : String(e),
+  problems: e instanceof ApiError ? e.problems : [],
+})
+
+const sampleCCDA = `<?xml version="1.0" encoding="UTF-8"?>
+<ClinicalDocument xmlns="urn:hl7-org:v3">
+  <templateId root="2.16.840.1.113883.10.20.22.1.8" extension="2015-08-01"/>
+  <code code="11504-8" codeSystem="2.16.840.1.113883.6.1" displayName="Surgical operation note"/>
+  <title>Operative note (synthetic)</title>
+</ClinicalDocument>`
+
+function BuildAttachment() {
+  const [f, setF] = useState({
+    senderId: 'CLINIC01',
+    receiverId: 'PAYER01',
+    reference: 'ATT-0001',
+    traceNumber: 'ACN-778899',
+    solicited: false,
+    payerName: 'EXAMPLE HEALTH PLAN',
+    payerId: '12345',
+    providerName: 'EXAMPLE CLINIC',
+    providerNpi: '1234567893',
+    patientLast: 'DOE',
+    patientFirst: 'JANE',
+    patientId: 'MEMBER001',
+    claimId: 'CLAIM-42',
+    serviceDate: '20260901',
+    contentType: 'text/xml',
+    filename: 'operative-note.xml',
+  })
+  const [doc, setDoc] = useState(sampleCCDA)
+  const [fileB64, setFileB64] = useState<string | null>(null)
+  const [result, setResult] = useState<AttachmentBuildResult | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    let bin = ''
+    for (const b of bytes) bin += String.fromCharCode(b)
+    setFileB64(btoa(bin))
+    setF({ ...f, contentType: file.type || 'application/octet-stream', filename: file.name })
+  }
+
+  async function build() {
+    setBusy(true)
+    setError(null)
+    setResult(null)
+    try {
+      setResult(
+        await api.buildAttachment({
+          senderId: f.senderId,
+          receiverId: f.receiverId,
+          reference: f.reference,
+          traceNumber: f.traceNumber,
+          solicited: f.solicited,
+          payer: { name: f.payerName, id: f.payerId },
+          provider: { name: f.providerName, id: f.providerNpi },
+          patient: { name: f.patientLast, firstName: f.patientFirst, id: f.patientId },
+          providerClaimId: f.claimId,
+          serviceDate: f.serviceDate,
+          contentType: f.contentType,
+          filename: f.filename,
+          ...(fileB64 ? { documentBase64: fileB64 } : { documentText: doc }),
+        }),
+      )
+    } catch (e) {
+      setError(toError(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const input = (label: string, k: keyof typeof f, hint?: string) => (
+    <Field label={label} hint={hint}>
+      <input className="input font-mono" aria-label={label} value={String(f[k])} onChange={set(k)} />
+    </Field>
+  )
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      <div className="space-y-4">
+        <Section title="Who and which claim">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {input('Payer name', 'payerName')}
+            {input('Payer ID', 'payerId')}
+            {input('Provider name', 'providerName')}
+            {input('Provider NPI', 'providerNpi', 'Checked against the NPI check digit.')}
+            {input('Patient last name', 'patientLast')}
+            {input('Patient first name', 'patientFirst')}
+            {input('Member ID', 'patientId')}
+            {input('Provider claim ID', 'claimId')}
+            {input('Service date', 'serviceDate', 'CCYYMMDD, or a range CCYYMMDD-CCYYMMDD')}
+            {input(
+              'Trace number',
+              'traceNumber',
+              f.solicited ? "The 277 request's 2200D TRN02." : "The claim's PWK06 attachment control number.",
+            )}
+          </div>
+          <label className="mt-3 flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" checked={f.solicited} onChange={set('solicited')} />
+            This answers a payer's 277 request (BGN01 11) rather than accompanying a claim (02)
+          </label>
+        </Section>
+        <Section title="Envelope">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {input('Sender ID', 'senderId')}
+            {input('Receiver ID', 'receiverId')}
+            {input('Reference', 'reference')}
+          </div>
+        </Section>
+        <Section title="The document">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {input('Content type', 'contentType')}
+            {input('File name', 'filename')}
+          </div>
+          <div className="mt-3">
+            <label className="text-sm text-slate-300">
+              Upload a file (PDF, TIFF, JPEG) or paste a C-CDA below
+              <input type="file" className="mt-1 block text-xs text-slate-400" onChange={(e) => void onFile(e)} />
+            </label>
+          </div>
+          {!fileB64 && (
+            <CodeArea
+              language="xml"
+              aria-label="Document to attach"
+              className="mt-3 min-h-40"
+              value={doc}
+              onChange={setDoc}
+              spellCheck={false}
+            />
+          )}
+          <p className="mt-2 text-xs text-slate-400">Use synthetic data. This is a browser form, not a place for real patient information.</p>
+          <button className="btn-primary mt-4 w-full" onClick={() => void build()} disabled={busy}>
+            {busy ? 'Building…' : 'Build 275'}
+          </button>
+        </Section>
+      </div>
+      <div className="space-y-4">
+        {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+        {result && (
+          <>
+            <div className="card p-4" data-testid="attachment-result">
+              <p className={result.roundTrip ? 'text-sm text-emerald-300' : 'text-sm text-rose-300'}>
+                {result.roundTrip
+                  ? `Read back: the document inside is byte-for-byte the one that went in (${result.readBack.documents[0]?.size} bytes).`
+                  : 'Read back did not return the same document. Do not send this.'}
+              </p>
+              <p className="mt-2 text-xs text-amber-300">{result.basis}</p>
+            </div>
+            <Section title={`X12 275 (${result.bytes} bytes)`} icon={IconX12}>
+              <pre className="max-h-96 overflow-auto font-mono text-xs break-all whitespace-pre-wrap text-slate-300" data-testid="x12-output">
+                {result.x12.replace(/~/g, '~\n')}
+              </pre>
+            </Section>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ReadAttachment() {
+  const [x12, setX12] = useState('')
+  const [view, setView] = useState<AttachmentView | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+
+  async function read() {
+    setError(null)
+    setView(null)
+    try {
+      setView(await api.readAttachment(x12))
+    } catch (e) {
+      setError(toError(e))
+    }
+  }
+
+  function download(b64: string, name: string, type: string) {
+    const bin = atob(b64)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    const url = URL.createObjectURL(new Blob([bytes], { type: type || 'application/octet-stream' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = name || 'attachment'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      <Section title="X12 275">
+        <CodeArea language="x12" aria-label="X12 275 to read" className="min-h-64" value={x12} onChange={setX12} spellCheck={false} />
+        <button className="btn-primary mt-4 w-full" onClick={() => void read()}>
+          Read 275
+        </button>
+      </Section>
+      <div className="space-y-4">
+        {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+        {view && (
+          <div className="card p-4 text-sm" data-testid="attachment-view">
+            <p className="text-slate-200">
+              {view.version} · BGN01 {view.purpose} {view.purpose === '11' ? '(answers a 277 request)' : view.purpose === '02' ? '(unsolicited)' : ''}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Payer {view.payer.Name} ({view.payer.IDCode}) · Provider {view.provider.Name} ({view.provider.IDCode}) · Patient{' '}
+              {view.patient.FirstName} {view.patient.Name} ({view.patient.IDCode})
+              {view.providerClaimId && <> · Claim {view.providerClaimId}</>}
+            </p>
+            {view.documents.map((d, i) => (
+              <div key={i} className="mt-3 rounded border border-slate-700 p-3">
+                <p className="text-slate-200">
+                  {d.filename || `Document ${i + 1}`} · {d.contentType || 'no content type'} · {d.size} bytes
+                </p>
+                <p className="text-xs text-slate-400">
+                  Trace {d.traceType === '2' ? '(277 TRN02)' : '(claim PWK06)'} {d.traceNumber} · CAT {d.category}/{d.transmission}
+                </p>
+                {d.notes.map((n) => (
+                  <p key={n} className="mt-1 text-xs text-amber-300">
+                    {n}
+                  </p>
+                ))}
+                <button className="btn-ghost mt-2 py-1 text-xs" onClick={() => download(d.documentBase64, d.filename, d.contentType)}>
+                  Download the document
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const sample278 = [
+  'ISA*00*          *00*          *ZZ*PAYER          *ZZ*PROVIDER       *260916*1500*^*00501*000000404*0*T*:~',
+  'GS*HI*PAYER*PROVIDER*20260916*1500*404*X*005010X217~',
+  'ST*278*0001*005010X217~',
+  'BHT*0007*11*REQ-9*20260916*1500*11~',
+  'HL*1**20*1~',
+  'NM1*X3*2*ACME HEALTH PLAN*****PI*ACME01~',
+  'HL*2*1*21*1~',
+  'NM1*1P*2*RIVERSIDE ORTHOPAEDICS*****XX*1234567893~',
+  'HL*3*2*22*1~',
+  'NM1*IL*1*TURNER*ROSALIND****MI*MEM88771~',
+  'HL*4*3*EV*1~',
+  'TRN*2*AUTHREQ-4471~',
+  'UM*HS*I*4~',
+  'DTP*472*D8*20261001~',
+  'HI*BK:M1711~',
+  'HCR*A1*AUTH-99120~',
+  'HL*5*4*SS*0~',
+  'SV1*HC:29881*450.00*UN*1~',
+  'SE*15*0001~',
+  'GE*1*404~',
+  'IEA*1*000000404~',
+].join('\n')
+
+function PriorAuth() {
+  const [x12, setX12] = useState(sample278)
+  const [result, setResult] = useState<PriorAuthResult | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+
+  async function convert() {
+    setError(null)
+    setResult(null)
+    try {
+      setResult(await api.priorAuthClaimResponse(x12))
+    } catch (e) {
+      setError(toError(e))
+    }
+  }
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      <Section title="X12 278 response">
+        <CodeArea language="x12" aria-label="X12 278 response" className="min-h-64" value={x12} onChange={setX12} spellCheck={false} />
+        <button className="btn-primary mt-4 w-full" onClick={() => void convert()}>
+          Convert to PAS ClaimResponse
+        </button>
+      </Section>
+      <div className="space-y-4">
+        {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+        {result && (
+          <>
+            <div className="card p-4 text-sm" data-testid="priorauth-summary">
+              <p className="text-slate-200">{result.summary}</p>
+              {result.decisions.map((d, i) => (
+                <p key={i} className="mt-1 text-xs text-slate-400">
+                  Item {i + 1}: {d.decision}
+                  {d.number && <> · authorisation {d.number}</>}
+                  {d.reasonCode && <> · reason {d.reasonCode}</>}
+                  {d.lostInNarrowing && <> · {d.lostInNarrowing}</>}
+                </p>
+              ))}
+              {result.notes.map((n) => (
+                <p key={n} className="mt-1 text-xs text-amber-300">
+                  {n}
+                </p>
+              ))}
+              <p className="mt-2 text-xs text-slate-500">Shaped to {result.profile}.</p>
+            </div>
+            <Section title="ClaimResponse">
+              <pre className="max-h-[32rem] overflow-auto font-mono text-xs text-slate-300" data-testid="claimresponse">
+                {JSON.stringify(result.claimResponse, null, 2)}
+              </pre>
+            </Section>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

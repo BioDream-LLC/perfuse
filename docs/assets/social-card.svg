@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5eead4"/>
+      <stop offset="34%" stop-color="#22d3ee"/>
+      <stop offset="72%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+
+    <linearGradient id="gleam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.66"/>
+      <stop offset="30%" stop-color="#ffffff" stop-opacity="0.26"/>
+      <stop offset="47%" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="48%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="rule" gradientUnits="userSpaceOnUse" x1="96" y1="0" x2="1184" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/>
+      <stop offset="55%" stop-color="#3b82f6" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </linearGradient>
+
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+
+    <text id="word" x="96" y="250" font-size="132" font-weight="800" letter-spacing="-0.022em"
+          font-family="Avenir Next, Avenir, Segoe UI, system-ui, -apple-system, Helvetica Neue, Arial, sans-serif">Perfuse</text>
+    <clipPath id="letters"><use href="#word"/></clipPath>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <ellipse cx="1030" cy="150" rx="430" ry="330" fill="url(#halo)"/>
+
+  <use href="#word" fill="url(#ink)"/>
+  <g clip-path="url(#letters)"><rect x="0" y="0" width="1280" height="640" fill="url(#gleam)"/></g>
+
+  <!-- The pulse, the one mark that says what this is for. -->
+  <path d="M700 205 h22 l15 -52 l20 104 l17 -52 h70" fill="none" stroke="#22d3ee" stroke-width="9"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="96" y="306" font-size="30" fill="#94a3b8" letter-spacing="0.2em"
+        font-family="system-ui, -apple-system, Segoe UI, sans-serif">HEALTHCARE INTEGRATION ENGINE</text>
+
+  <path d="M96 352 H1184" stroke="url(#rule)" stroke-width="2.5" fill="none"/>
+
+  <text x="96" y="416" font-size="35" font-weight="600" fill="#f1f5f9"
+        font-family="system-ui, -apple-system, Segoe UI, sans-serif">HL7 v2 · FHIR · DICOM · X12 · CDA in one static binary</text>
+
+  <text x="96" y="470" font-size="27" fill="#cbd5e1"
+        font-family="system-ui, -apple-system, Segoe UI, sans-serif">An Apache-2.0 alternative to Mirth Connect. Your Mirth JavaScript runs unchanged.</text>
+
+  <!-- The measurement, which is the whole argument. -->
+  <g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+    <rect x="96" y="512" width="286" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
+    <text x="118" y="542" font-size="21" fill="#64748b">memory at rest</text>
+    <text x="118" y="572" font-size="25" font-weight="700" fill="#4ade80">31 MB <tspan font-weight="400" fill="#64748b">vs Mirth's 383 MB</tspan></text>
+
+    <rect x="404" y="512" width="232" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
+    <text x="426" y="542" font-size="21" fill="#64748b">to install</text>
+    <text x="426" y="572" font-size="25" font-weight="700" fill="#4ade80">one file <tspan font-weight="400" fill="#64748b">no JVM</tspan></text>
+
+    <rect x="658" y="512" width="252" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
+    <text x="680" y="542" font-size="21" fill="#64748b">licence</text>
+    <text x="680" y="572" font-size="25" font-weight="700" fill="#4ade80">Apache 2.0 <tspan font-weight="400" fill="#64748b">free</tspan></text>
+  </g>
+
+  <text x="1184" y="86" font-size="24" fill="#64748b" text-anchor="end"
+        font-family="ui-monospace, SFMono-Regular, Menlo, monospace">github.com/BioDream-LLC/perfuse</text>
+</svg>

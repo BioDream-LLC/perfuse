@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--
+  Bing Webmaster Tools ownership proof for perfuse.health. Exactly one entry, and no tag names written
+  out in this comment.
+
+  Both constraints are the result of failures. Bing rejected a file holding two entries even though the
+  expected key was present as the second, so its verifier appears to read the first and compare rather
+  than searching all of them - a second entry is not an alternative, it is hidden. And a comment that
+  spells out the element name in full puts that text ahead of the real entry, where anything matching
+  the file by pattern rather than parsing it as XML will find the comment first.
+
+  There is also no reason to want more than one entry. A verification file only proves ownership of the
+  host serving it, so a token issued for a different property was never doing any work from here.
+-->
+<users>
+	<user>42D236D1D0FABF2ACECEB64F9C371B43</user>
+</users>

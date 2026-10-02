@@ -1,0 +1,50 @@
+<com.mirth.connect.connectors.dimse.DICOMReceiverProperties version="4.5.2">
+  <listenerConnectorProperties version="4.5.2">
+    <host>0.0.0.0</host>
+    <port>104</port>
+  </listenerConnectorProperties>
+  <sourceConnectorProperties version="4.5.2">
+    <responseVariable>None</responseVariable>
+    <respondAfterProcessing>true</respondAfterProcessing>
+    <processBatch>false</processBatch>
+    <firstResponse>false</firstResponse>
+    <processingThreads>1</processingThreads>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+    <queueBufferSize>0</queueBufferSize>
+  </sourceConnectorProperties>
+  <applicationEntity></applicationEntity>
+  <localHost></localHost>
+  <localPort></localPort>
+  <localApplicationEntity></localApplicationEntity>
+  <soCloseDelay>50</soCloseDelay>
+  <releaseTo>5</releaseTo>
+  <requestTo>5</requestTo>
+  <idleTo>60</idleTo>
+  <reaper>10</reaper>
+  <rspDelay>0</rspDelay>
+  <pdv1>false</pdv1>
+  <sndpdulen>16</sndpdulen>
+  <rcvpdulen>16</rcvpdulen>
+  <async>0</async>
+  <bigEndian>false</bigEndian>
+  <bufSize>1</bufSize>
+  <defts>false</defts>
+  <dest></dest>
+  <nativeData>false</nativeData>
+  <sorcvbuf>0</sorcvbuf>
+  <sosndbuf>0</sosndbuf>
+  <tcpDelay>true</tcpDelay>
+  <keyPW></keyPW>
+  <keyStore></keyStore>
+  <keyStorePW></keyStorePW>
+  <noClientAuth>true</noClientAuth>
+  <nossl2>true</nossl2>
+  <tls>notls</tls>
+  <trustStore></trustStore>
+  <trustStorePW></trustStorePW>
+</com.mirth.connect.connectors.dimse.DICOMReceiverProperties>
