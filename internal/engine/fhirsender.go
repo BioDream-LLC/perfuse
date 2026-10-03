@@ -38,6 +38,8 @@ type FHIRSender struct {
 	// Counters for the dashboard. Conversion problems are worth surfacing
 	// separately from transport problems, because they mean different things: one
 	// is a mapping gap and the other is a network or server fault.
+	auth *fhirAuthorizer
+
 	converted    atomic.Int64
 	convertFails atomic.Int64
 	rejected     atomic.Int64
@@ -103,6 +105,7 @@ func NewFHIRSender(d config.Destination, log *slog.Logger) (*FHIRSender, error) 
 			Timezone:                  location,
 		},
 	}
+	s.auth = newFHIRAuthorizer(d.FHIR.Auth, d.FHIR.URL, &http.Client{Timeout: 30 * time.Second})
 	return s, nil
 }
 
@@ -208,6 +211,9 @@ func (s *FHIRSender) post(ctx context.Context, body []byte) error {
 	}
 	if s.cfg.BearerToken != "" {
 		req.Header.Set("Authorization", "Bearer "+s.cfg.BearerToken)
+	}
+	if err := s.auth.authorize(ctx, req, body); err != nil {
+		return err
 	}
 
 	resp, err := s.client.Do(req)

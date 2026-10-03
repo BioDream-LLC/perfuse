@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · a09f34b</p>
+<p class="version">version 0.1 · adfb84d</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -491,6 +491,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s10-6-what-an-http-endpoint-counts-as-delivered"><span class="num">10.6</span> What an HTTP endpoint counts as delivered</a></div>
 <div class="toc-d2"><a href="#s10-7-naming-and-pruning-an-archive-folder"><span class="num">10.7</span> Naming and pruning an archive folder</a></div>
 <div class="toc-d2"><a href="#s10-8-sending-to-a-fhir-server"><span class="num">10.8</span> Sending to a FHIR server</a></div>
+<div class="toc-d3"><a href="#s10-8-1-hosted-fhir-services"><span class="num">10.8.1</span> Hosted FHIR services</a></div>
 <div class="toc-d2"><a href="#s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</a></div>
 <div class="toc-d2"><a href="#s10-10-what-a-delivery-outcome-means"><span class="num">10.10</span> What a delivery outcome means</a></div>
 <div class="toc-d2"><a href="#s10-11-slow-delivery"><span class="num">10.11</span> Slow delivery</a></div>
@@ -951,46 +952,52 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s24-5-1-check-every"><span class="num">24.5.1</span> check_every</a></div>
 <div class="toc-d3"><a href="#s24-5-2-over"><span class="num">24.5.2</span> over</a></div>
 <div class="toc-d2"><a href="#s24-6-dicom-options"><span class="num">24.6</span> DICOM Options</a></div>
-<div class="toc-d2"><a href="#s24-7-file-poll"><span class="num">24.7</span> File Poll</a></div>
-<div class="toc-d3"><a href="#s24-7-1-pattern"><span class="num">24.7.1</span> pattern</a></div>
-<div class="toc-d3"><a href="#s24-7-2-error-dir"><span class="num">24.7.2</span> error_dir</a></div>
-<div class="toc-d3"><a href="#s24-7-3-raw"><span class="num">24.7.3</span> raw</a></div>
-<div class="toc-d3"><a href="#s24-7-4-batch-size"><span class="num">24.7.4</span> batch_size</a></div>
-<div class="toc-d3"><a href="#s24-7-5-sort-by"><span class="num">24.7.5</span> sort_by</a></div>
-<div class="toc-d2"><a href="#s24-8-kafka-sasl"><span class="num">24.8</span> Kafka SASL</a></div>
-<div class="toc-d3"><a href="#s24-8-1-mechanism"><span class="num">24.8.1</span> mechanism</a></div>
-<div class="toc-d3"><a href="#s24-8-2-password"><span class="num">24.8.2</span> password</a></div>
-<div class="toc-d2"><a href="#s24-9-ncpdp-options"><span class="num">24.9</span> NCPDP Options</a></div>
-<div class="toc-d3"><a href="#s24-9-1-transformations"><span class="num">24.9.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s24-10-queue-config"><span class="num">24.10</span> Queue Config</a></div>
-<div class="toc-d3"><a href="#s24-10-1-max-attempts"><span class="num">24.10.1</span> max_attempts</a></div>
-<div class="toc-d3"><a href="#s24-10-2-max-backoff"><span class="num">24.10.2</span> max_backoff</a></div>
-<div class="toc-d3"><a href="#s24-10-3-max-depth"><span class="num">24.10.3</span> max_depth</a></div>
-<div class="toc-d3"><a href="#s24-10-4-retain-hours"><span class="num">24.10.4</span> retain_hours</a></div>
-<div class="toc-d2"><a href="#s24-11-retry"><span class="num">24.11</span> Retry</a></div>
-<div class="toc-d3"><a href="#s24-11-1-attempts"><span class="num">24.11.1</span> attempts</a></div>
-<div class="toc-d3"><a href="#s24-11-2-backoff"><span class="num">24.11.2</span> backoff</a></div>
-<div class="toc-d2"><a href="#s24-12-script-options"><span class="num">24.12</span> Script Options</a></div>
-<div class="toc-d3"><a href="#s24-12-1-transformations"><span class="num">24.12.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s24-13-scripts"><span class="num">24.13</span> Scripts</a></div>
-<div class="toc-d3"><a href="#s24-13-1-filter"><span class="num">24.13.1</span> filter</a></div>
-<div class="toc-d3"><a href="#s24-13-2-transformer"><span class="num">24.13.2</span> transformer</a></div>
-<div class="toc-d3"><a href="#s24-13-3-preprocessor"><span class="num">24.13.3</span> preprocessor</a></div>
-<div class="toc-d3"><a href="#s24-13-4-deploy"><span class="num">24.13.4</span> deploy</a></div>
-<div class="toc-d3"><a href="#s24-13-5-undeploy"><span class="num">24.13.5</span> undeploy</a></div>
-<div class="toc-d3"><a href="#s24-13-6-postprocessor"><span class="num">24.13.6</span> postprocessor</a></div>
-<div class="toc-d3"><a href="#s24-13-7-language"><span class="num">24.13.7</span> language</a></div>
-<div class="toc-d3"><a href="#s24-13-8-timeout"><span class="num">24.13.8</span> timeout</a></div>
-<div class="toc-d3"><a href="#s24-13-9-include"><span class="num">24.13.9</span> include</a></div>
-<div class="toc-d3"><a href="#s24-13-10-file-roots"><span class="num">24.13.10</span> file_roots</a></div>
-<div class="toc-d3"><a href="#s24-13-11-allow"><span class="num">24.13.11</span> allow</a></div>
-<div class="toc-d2"><a href="#s24-14-shadow"><span class="num">24.14</span> Shadow</a></div>
-<div class="toc-d3"><a href="#s24-14-1-channel"><span class="num">24.14.1</span> channel</a></div>
-<div class="toc-d3"><a href="#s24-14-2-sample"><span class="num">24.14.2</span> sample</a></div>
-<div class="toc-d3"><a href="#s24-14-3-compare"><span class="num">24.14.3</span> compare</a></div>
-<div class="toc-d3"><a href="#s24-14-4-ignore"><span class="num">24.14.4</span> ignore</a></div>
-<div class="toc-d3"><a href="#s24-14-5-max-differences"><span class="num">24.14.5</span> max_differences</a></div>
-<div class="toc-d3"><a href="#s24-14-6-timeout"><span class="num">24.14.6</span> timeout</a></div>
+<div class="toc-d2"><a href="#s24-7-fhir-auth"><span class="num">24.7</span> FHIR Auth</a></div>
+<div class="toc-d3"><a href="#s24-7-1-region"><span class="num">24.7.1</span> region</a></div>
+<div class="toc-d3"><a href="#s24-7-2-token-url"><span class="num">24.7.2</span> token_url</a></div>
+<div class="toc-d3"><a href="#s24-7-3-client-id"><span class="num">24.7.3</span> client_id</a></div>
+<div class="toc-d3"><a href="#s24-7-4-client-secret"><span class="num">24.7.4</span> client_secret</a></div>
+<div class="toc-d3"><a href="#s24-7-5-scope"><span class="num">24.7.5</span> scope</a></div>
+<div class="toc-d2"><a href="#s24-8-file-poll"><span class="num">24.8</span> File Poll</a></div>
+<div class="toc-d3"><a href="#s24-8-1-pattern"><span class="num">24.8.1</span> pattern</a></div>
+<div class="toc-d3"><a href="#s24-8-2-error-dir"><span class="num">24.8.2</span> error_dir</a></div>
+<div class="toc-d3"><a href="#s24-8-3-raw"><span class="num">24.8.3</span> raw</a></div>
+<div class="toc-d3"><a href="#s24-8-4-batch-size"><span class="num">24.8.4</span> batch_size</a></div>
+<div class="toc-d3"><a href="#s24-8-5-sort-by"><span class="num">24.8.5</span> sort_by</a></div>
+<div class="toc-d2"><a href="#s24-9-kafka-sasl"><span class="num">24.9</span> Kafka SASL</a></div>
+<div class="toc-d3"><a href="#s24-9-1-mechanism"><span class="num">24.9.1</span> mechanism</a></div>
+<div class="toc-d3"><a href="#s24-9-2-password"><span class="num">24.9.2</span> password</a></div>
+<div class="toc-d2"><a href="#s24-10-ncpdp-options"><span class="num">24.10</span> NCPDP Options</a></div>
+<div class="toc-d3"><a href="#s24-10-1-transformations"><span class="num">24.10.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s24-11-queue-config"><span class="num">24.11</span> Queue Config</a></div>
+<div class="toc-d3"><a href="#s24-11-1-max-attempts"><span class="num">24.11.1</span> max_attempts</a></div>
+<div class="toc-d3"><a href="#s24-11-2-max-backoff"><span class="num">24.11.2</span> max_backoff</a></div>
+<div class="toc-d3"><a href="#s24-11-3-max-depth"><span class="num">24.11.3</span> max_depth</a></div>
+<div class="toc-d3"><a href="#s24-11-4-retain-hours"><span class="num">24.11.4</span> retain_hours</a></div>
+<div class="toc-d2"><a href="#s24-12-retry"><span class="num">24.12</span> Retry</a></div>
+<div class="toc-d3"><a href="#s24-12-1-attempts"><span class="num">24.12.1</span> attempts</a></div>
+<div class="toc-d3"><a href="#s24-12-2-backoff"><span class="num">24.12.2</span> backoff</a></div>
+<div class="toc-d2"><a href="#s24-13-script-options"><span class="num">24.13</span> Script Options</a></div>
+<div class="toc-d3"><a href="#s24-13-1-transformations"><span class="num">24.13.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s24-14-scripts"><span class="num">24.14</span> Scripts</a></div>
+<div class="toc-d3"><a href="#s24-14-1-filter"><span class="num">24.14.1</span> filter</a></div>
+<div class="toc-d3"><a href="#s24-14-2-transformer"><span class="num">24.14.2</span> transformer</a></div>
+<div class="toc-d3"><a href="#s24-14-3-preprocessor"><span class="num">24.14.3</span> preprocessor</a></div>
+<div class="toc-d3"><a href="#s24-14-4-deploy"><span class="num">24.14.4</span> deploy</a></div>
+<div class="toc-d3"><a href="#s24-14-5-undeploy"><span class="num">24.14.5</span> undeploy</a></div>
+<div class="toc-d3"><a href="#s24-14-6-postprocessor"><span class="num">24.14.6</span> postprocessor</a></div>
+<div class="toc-d3"><a href="#s24-14-7-language"><span class="num">24.14.7</span> language</a></div>
+<div class="toc-d3"><a href="#s24-14-8-timeout"><span class="num">24.14.8</span> timeout</a></div>
+<div class="toc-d3"><a href="#s24-14-9-include"><span class="num">24.14.9</span> include</a></div>
+<div class="toc-d3"><a href="#s24-14-10-file-roots"><span class="num">24.14.10</span> file_roots</a></div>
+<div class="toc-d3"><a href="#s24-14-11-allow"><span class="num">24.14.11</span> allow</a></div>
+<div class="toc-d2"><a href="#s24-15-shadow"><span class="num">24.15</span> Shadow</a></div>
+<div class="toc-d3"><a href="#s24-15-1-channel"><span class="num">24.15.1</span> channel</a></div>
+<div class="toc-d3"><a href="#s24-15-2-sample"><span class="num">24.15.2</span> sample</a></div>
+<div class="toc-d3"><a href="#s24-15-3-compare"><span class="num">24.15.3</span> compare</a></div>
+<div class="toc-d3"><a href="#s24-15-4-ignore"><span class="num">24.15.4</span> ignore</a></div>
+<div class="toc-d3"><a href="#s24-15-5-max-differences"><span class="num">24.15.5</span> max_differences</a></div>
+<div class="toc-d3"><a href="#s24-15-6-timeout"><span class="num">24.15.6</span> timeout</a></div>
 <div class="toc-d1"><a href="#s25-how-each-component-works"><span class="num">25</span> How Each Component Works</a></div>
 <div class="toc-d2"><a href="#s25-1-hl7"><span class="num">25.1</span> hl7</a></div>
 <div class="toc-d2"><a href="#s25-2-admit"><span class="num">25.2</span> admit</a></div>
@@ -2002,6 +2009,12 @@ destinations:
 <p><strong>Claim US Core conformance</strong> adds the profile to each resource. Only claim it when the resource carries what the profile requires, because a receiver may validate against the claim and reject a bundle that would otherwise have been accepted.</p>
 <p><strong>Validate before sending</strong> checks each resource here rather than learning from the receiver. A rejection at the far end tells you less, later, and often only in a log you cannot read.</p>
 <p><strong>Treat warnings as rejections</strong> only has an effect when validation is on, and the control is unavailable until it is. It is strict enough to stop a bundle a receiver would accept, so it belongs on a feed being brought up rather than one in service.</p>
+<h4 id="s10-8-1-hosted-fhir-services"><span class="num">10.8.1</span> Hosted FHIR services</h4>
+<p>A <code>fhir</code> destination&#39;s <code>auth</code> block signs in to the hosted services, where a pasted bearer token stops working within the hour:</p>
+<pre class="code lang-yaml"><code>fhir:
+  url: https://healthlake.us-east-1.amazonaws.com/datastore/&lt;id&gt;/r4/
+  auth: {type: aws, access_key_id: ${AWS_ACCESS_KEY_ID}, secret_access_key: ${AWS_SECRET_ACCESS_KEY}}</code></pre>
+<p><code>aws</code> signs each request for AWS HealthLake with Signature Version 4, with the region read from the URL. <code>azure</code> gets a Microsoft Entra ID token for Azure Health Data Services from <code>tenant_id</code>, <code>client_id</code> and <code>client_secret</code> - an app registration holding the FHIR Data Contributor role - with the FHIR service URL as its audience. <code>client_credentials</code> does the same against any OAuth 2.0 <code>token_url</code>. Tokens are reused until a minute before they expire. The same choices are under the destination&#39;s <strong>Hosted service sign-in</strong> in the channel builder.</p>
 <h3 id="s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</h3>
 <p>&#34;Did this arrive&#34; is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.</p>
 <p><strong>Inspect the reply</strong> on a destination takes a script given the receiver&#39;s response. Return false, or throw, and the delivery is marked failed — which means it retries, queues, and appears in the failure count instead of being silently counted as delivered.</p>
@@ -3940,6 +3953,7 @@ rules:
 <tr><td><code>reject_on_warning</code></td><td>true or false</td><td>no</td><td>—</td></tr>
 <tr><td><code>headers</code></td><td>mapping of text to text</td><td>no</td><td>—</td></tr>
 <tr><td><code>bearer_token</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>auth</code></td><td>FHIRAuth (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
 <h4 id="s22-10-1-url"><span class="num">22.10.1</span> url</h4>
@@ -4613,7 +4627,45 @@ rules:
 <tr><td><code>transformations</code></td><td>list of dicom.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h3 id="s24-7-file-poll"><span class="num">24.7</span> File Poll</h3>
+<h3 id="s24-7-fhir-auth"><span class="num">24.7</span> FHIR Auth</h3>
+<p>FHIRAuth is how a fhir destination authenticates to a hosted FHIR service.</p>
+<p>Three presets, because the hosted services are where a bearer token pasted into a file stops working within the hour:</p>
+<ul>
+<li>aws: AWS HealthLake, which takes requests signed with Signature Version 4 for the service &#34;healthlake&#34; - no token at all. - azure: Azure Health Data Services, which takes a Microsoft Entra ID token for the FHIR service&#39;s own audience, got with the client-credentials grant of an app registration that holds the FHIR Data Contributor role. - client_credentials: any OAuth 2.0 token endpoint - Keycloak, Okta, a SMART backend service with a client secret.</li>
+</ul>
+<p>Tokens are fetched when needed and reused until a minute before they expire.</p>
+<p>Defined as <code>FHIRAuth</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>type</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>region</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>access_key_id</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>secret_access_key</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>session_token</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>tenant_id</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>token_url</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>client_id</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>client_secret</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>scope</code></td><td>text</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s24-7-1-region"><span class="num">24.7.1</span> region</h4>
+<p>Region is the AWS region.</p>
+<p>Read from a HealthLake URL when it is not given.</p>
+<h4 id="s24-7-2-token-url"><span class="num">24.7.2</span> token_url</h4>
+<p>TokenURL is the OAuth token endpoint, for client_credentials.</p>
+<p>For azure it is derived from the tenant.</p>
+<h4 id="s24-7-3-client-id"><span class="num">24.7.3</span> client_id</h4>
+<p>ClientID and ClientSecret identify the application.</p>
+<p>The secret may be a ${ENV} reference, which is how it should be given.</p>
+<h4 id="s24-7-4-client-secret"><span class="num">24.7.4</span> client_secret</h4>
+<p>ClientID and ClientSecret identify the application.</p>
+<p>The secret may be a ${ENV} reference, which is how it should be given.</p>
+<h4 id="s24-7-5-scope"><span class="num">24.7.5</span> scope</h4>
+<p>Scope is requested with the token.</p>
+<p>For azure it defaults to the FHIR service URL followed by /.default, which is its audience.</p>
+<h3 id="s24-8-file-poll"><span class="num">24.8</span> File Poll</h3>
 <p>FilePoll is the part of a file-collecting source that has nothing to do with the transport.</p>
 <p>Shared by the local, FTP, SMB and WebDAV sources, and by SFTP. Every one of these settings exists because of a way files go wrong rather than a way transports differ, which is why they belong together: a site that has worked out the right stable_for for its analyser should not have to work it out again when the analyser moves to a share.</p>
 <p>Defined as <code>FilePoll</code> in <code>internal/config</code>.</p>
@@ -4634,23 +4686,23 @@ rules:
 <tr><td><code>sort_by</code></td><td>text</td><td>no</td><td>name</td></tr>
 </tbody>
 </table>
-<h4 id="s24-7-1-pattern"><span class="num">24.7.1</span> pattern</h4>
+<h4 id="s24-8-1-pattern"><span class="num">24.8.1</span> pattern</h4>
 <p>Pattern selects files by glob.</p>
 <p>Empty means every file.</p>
-<h4 id="s24-7-2-error-dir"><span class="num">24.7.2</span> error_dir</h4>
+<h4 id="s24-8-2-error-dir"><span class="num">24.8.2</span> error_dir</h4>
 <p>ErrorDir is where a file that could not be processed goes.</p>
 <p>Separate from MoveTo deliberately. A directory holding nothing but failures is one somebody can watch, and mixing failures into the archive means the only way to find them is to read every file.</p>
-<h4 id="s24-7-3-raw"><span class="num">24.7.3</span> raw</h4>
+<h4 id="s24-8-3-raw"><span class="num">24.8.3</span> raw</h4>
 <p>Raw treats the whole file as one message regardless of content.</p>
 <p>The setting that makes this connector useful for anything other than HL7. Without it a CSV batch, an X12 claim file or a PDF is split on lines beginning MSH and produces nothing, and the error says the file is not HL7 - true but not the point, since the file was never meant to be.</p>
-<h4 id="s24-7-4-batch-size"><span class="num">24.7.4</span> batch_size</h4>
+<h4 id="s24-8-4-batch-size"><span class="num">24.8.4</span> batch_size</h4>
 <p>BatchSize bounds how many files one poll will read.</p>
 <p>Zero means no limit.</p>
 <p>Exists for the first poll after an outage. A directory holding forty thousand files that accumulated overnight will otherwise be read in one pass, which holds the poll loop for as long as it takes and makes the channel look hung. Reading a bounded number per poll keeps the channel responsive and the queue draining visibly.</p>
-<h4 id="s24-7-5-sort-by"><span class="num">24.7.5</span> sort_by</h4>
+<h4 id="s24-8-5-sort-by"><span class="num">24.8.5</span> sort_by</h4>
 <p>SortBy orders the files within a poll: name, modified or none.</p>
 <p>Defaults to name. Ordering matters more than it looks: an ADT stream where A08 updates arrive before the A01 admission produces patients that do not exist yet. Directory listing order is arbitrary on most filesystems, so leaving it unsorted means the order changes between polls for no visible reason.</p>
-<h3 id="s24-8-kafka-sasl"><span class="num">24.8</span> Kafka SASL</h3>
+<h3 id="s24-9-kafka-sasl"><span class="num">24.9</span> Kafka SASL</h3>
 <p>KafkaSASL authenticates to a Kafka cluster.</p>
 <p>Defined as <code>KafkaSASL</code> in <code>internal/config</code>.</p>
 <table>
@@ -4661,13 +4713,13 @@ rules:
 <tr><td><code>password</code></td><td>text</td><td>yes</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-8-1-mechanism"><span class="num">24.8.1</span> mechanism</h4>
+<h4 id="s24-9-1-mechanism"><span class="num">24.9.1</span> mechanism</h4>
 <p>Mechanism is &#34;plain&#34;, &#34;scram-sha-256&#34; or &#34;scram-sha-512&#34;.</p>
 <p>PLAIN sends the password readable on the wire, so it belongs with TLS. SCRAM does not, which is why it is worth naming the difference here rather than treating the three as interchangeable.</p>
-<h4 id="s24-8-2-password"><span class="num">24.8.2</span> password</h4>
+<h4 id="s24-9-2-password"><span class="num">24.9.2</span> password</h4>
 <p>Password is the SASL password.</p>
 <p>Supports ${ENV} references like every other secret here, so a cluster credential need not be written into the channel file.</p>
-<h3 id="s24-9-ncpdp-options"><span class="num">24.9</span> NCPDP Options</h3>
+<h3 id="s24-10-ncpdp-options"><span class="num">24.10</span> NCPDP Options</h3>
 <p>NCPDPOptions are the settings that only apply to a pharmacy claim channel.</p>
 <p>Defined as <code>NCPDPOptions</code> in <code>internal/config</code>.</p>
 <table>
@@ -4676,10 +4728,10 @@ rules:
 <tr><td><code>transformations</code></td><td>list of ncpdp.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-9-1-transformations"><span class="num">24.9.1</span> transformations</h4>
+<h4 id="s24-10-1-transformations"><span class="num">24.10.1</span> transformations</h4>
 <p>Transformations are declarative changes applied to each transmission before delivery.</p>
 <p>The same vocabulary as every other format - set, copy, clear, map, replace, trim, case, each with an optional condition - because the step engine in internal/steps is generic. What differs is the notation: a path is written D1 or 07-D7, using the standard&#39;s own two-character field identifiers.</p>
-<h3 id="s24-10-queue-config"><span class="num">24.10</span> Queue Config</h3>
+<h3 id="s24-11-queue-config"><span class="num">24.11</span> Queue Config</h3>
 <p>QueueConfig turns on durable queueing for a destination.</p>
 <p>Without it, a destination that is down for two minutes loses everything sent during those two minutes: retries happen in memory and when they run out the message is recorded as failed and gone. With it, the message is on disk and keeps its place until the receiver comes back.</p>
 <p>It is off by default, which is a deliberate choice rather than caution. A queue changes what an acknowledgement means and it changes ordering behaviour during an outage, and both of those are things an operator should opt into knowingly rather than discover.</p>
@@ -4695,20 +4747,20 @@ rules:
 <tr><td><code>retain_hours</code></td><td>whole number</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-10-1-max-attempts"><span class="num">24.10.1</span> max_attempts</h4>
+<h4 id="s24-11-1-max-attempts"><span class="num">24.11.1</span> max_attempts</h4>
 <p>MaxAttempts is how many times the queue tries before marking a message failed and moving on to the next one.</p>
 <p>Zero means keep trying indefinitely, which is legitimate for a feed that must not lose anything but should be chosen rather than inherited.</p>
-<h4 id="s24-10-2-max-backoff"><span class="num">24.10.2</span> max_backoff</h4>
+<h4 id="s24-11-2-max-backoff"><span class="num">24.11.2</span> max_backoff</h4>
 <p>MaxBackoff caps the growing delay.</p>
 <p>The default is a minute rather than something larger because a receiver that comes back after a brief outage should be found quickly: an hour-long ceiling turns a two-minute blip into an hour of backlog.</p>
-<h4 id="s24-10-3-max-depth"><span class="num">24.10.3</span> max_depth</h4>
+<h4 id="s24-11-3-max-depth"><span class="num">24.11.3</span> max_depth</h4>
 <p>MaxDepth refuses new messages once this many are waiting, so a receiver that has been down for a week cannot fill the disk.</p>
 <p>Zero means no limit.</p>
 <p>When the limit is reached the message is failed rather than queued, and the sender is told so — which is the honest answer, because we are no longer promising to deliver it.</p>
-<h4 id="s24-10-4-retain-hours"><span class="num">24.10.4</span> retain_hours</h4>
+<h4 id="s24-11-4-retain-hours"><span class="num">24.11.4</span> retain_hours</h4>
 <p>RetainHours is how long delivered and abandoned items are kept before being purged.</p>
 <p>They are kept at all so somebody watching a backlog drain can see it happening, and so an abandoned message can be found afterwards.</p>
-<h3 id="s24-11-retry"><span class="num">24.11</span> Retry</h3>
+<h3 id="s24-12-retry"><span class="num">24.12</span> Retry</h3>
 <p>Retry controls redelivery after a failure.</p>
 <p>Defined as <code>Retry</code> in <code>internal/config</code>.</p>
 <table>
@@ -4719,13 +4771,13 @@ rules:
 <tr><td><code>max_backoff</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-11-1-attempts"><span class="num">24.11.1</span> attempts</h4>
+<h4 id="s24-12-1-attempts"><span class="num">24.12.1</span> attempts</h4>
 <p>Attempts is the total number of tries, including the first.</p>
 <p>Zero means the default.</p>
-<h4 id="s24-11-2-backoff"><span class="num">24.11.2</span> backoff</h4>
+<h4 id="s24-12-2-backoff"><span class="num">24.12.2</span> backoff</h4>
 <p>Backoff is the wait before the second attempt.</p>
 <p>It doubles each time, up to MaxBackoff.</p>
-<h3 id="s24-12-script-options"><span class="num">24.12</span> Script Options</h3>
+<h3 id="s24-13-script-options"><span class="num">24.13</span> Script Options</h3>
 <p>ScriptOptions configures an NCPDP SCRIPT channel.</p>
 <h1 id="why-script-gets-a-block-when-its-filter-is-top-level">Why SCRIPT gets a block when its filter is top-level</h1>
 <p>The channel filter for every data type is the top-level filter key, because internal/expr is generic over the message type: one key, compiled against whichever tree or claim the channel carries. Steps cannot be arranged that way. A v2 step addresses a segment and a field, an X12 step addresses a fixed-width element, and the types are different, so one yaml key would have to hold whichever the data type implied - which is a field that means different things depending on another field, and the failure mode is a step that silently does nothing.</p>
@@ -4737,11 +4789,11 @@ rules:
 <tr><td><code>transformations</code></td><td>list of hl7v3.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-12-1-transformations"><span class="num">24.12.1</span> transformations</h4>
+<h4 id="s24-13-1-transformations"><span class="num">24.13.1</span> transformations</h4>
 <p>Transformations are the declarative steps, addressing the prescription as an XML tree.</p>
 <p>hl7v3.Step rather than a type of its own, and that is not laziness. A prescription and a v3 document are both XML, the path grammar is the same one, and internal/eprescribe already borrows hl7v3.Path for its filter with a comment saying so - v3 and CDA already use it, and a third copy would be a third set of answers to what //a/b[2]@c means.</p>
 <p>The steps that carry v3-only meaning are refused at load rather than being silently available. nullflavor is the one: it writes the v3 attribute stating why a value is absent, which a prescription has no equivalent of, and a step that wrote it would produce a document the receiver does not understand.</p>
-<h3 id="s24-13-scripts"><span class="num">24.13</span> Scripts</h3>
+<h3 id="s24-14-scripts"><span class="num">24.14</span> Scripts</h3>
 <p>Scripts holds the JavaScript attached to a channel.</p>
 <p>Defined as <code>Scripts</code> in <code>internal/config</code>.</p>
 <table>
@@ -4760,47 +4812,47 @@ rules:
 <tr><td><code>allow</code></td><td>list of text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-13-1-filter"><span class="num">24.13.1</span> filter</h4>
+<h4 id="s24-14-1-filter"><span class="num">24.14.1</span> filter</h4>
 <p>Filter runs after the expression filter, if any, and must return a boolean.</p>
 <p>A Mirth filter script drops in here unchanged.</p>
-<h4 id="s24-13-2-transformer"><span class="num">24.13.2</span> transformer</h4>
+<h4 id="s24-14-2-transformer"><span class="num">24.14.2</span> transformer</h4>
 <p>Transformer runs after the declarative steps and may modify the message.</p>
 <p>A Mirth transformer script drops in here unchanged.</p>
-<h4 id="s24-13-3-preprocessor"><span class="num">24.13.3</span> preprocessor</h4>
+<h4 id="s24-14-3-preprocessor"><span class="num">24.14.3</span> preprocessor</h4>
 <p>Preprocessor runs before the message is parsed, reads the text as &#34;message&#34; and returns the text to parse.</p>
 <p>A Mirth preprocessor drops in here unchanged.</p>
 <p>This is the only place a message that does not parse can be repaired. Sites use it for a stray character from a serial gateway, a segment terminator that arrived as a line feed, or a vendor padding a field with something illegal for its position. Without it, Perfuse rejects traffic that Mirth accepts today.</p>
-<h4 id="s24-13-4-deploy"><span class="num">24.13.4</span> deploy</h4>
+<h4 id="s24-14-4-deploy"><span class="num">24.14.4</span> deploy</h4>
 <p>Deploy runs once when the channel starts, before it accepts anything.</p>
 <p>This is where sites warm a lookup cache or check that something they depend on is reachable. It runs before the source binds, so a deploy script that fails stops the channel from starting rather than letting it accept messages it cannot handle.</p>
-<h4 id="s24-13-5-undeploy"><span class="num">24.13.5</span> undeploy</h4>
+<h4 id="s24-14-5-undeploy"><span class="num">24.14.5</span> undeploy</h4>
 <p>Undeploy runs once when the channel stops.</p>
 <p>After the source has stopped accepting and after in-flight messages have finished, so it sees a channel that is genuinely idle. Its failure cannot stop a stop: a channel that could not be shut down because a cleanup script threw would be worse than one that logged and closed.</p>
-<h4 id="s24-13-6-postprocessor"><span class="num">24.13.6</span> postprocessor</h4>
+<h4 id="s24-14-6-postprocessor"><span class="num">24.14.6</span> postprocessor</h4>
 <p>Postprocessor runs after the message has been handled and cannot change it.</p>
 <p>The message and what happened to it are visible, so it can notify, count or record. It cannot alter what was sent: by the time it runs the sending has happened, and a script that appeared to change a delivered message would be lying about it.</p>
-<h4 id="s24-13-7-language"><span class="num">24.13.7</span> language</h4>
+<h4 id="s24-14-7-language"><span class="num">24.14.7</span> language</h4>
 <p>Language is which scripting language these scripts are written in: javascript or lua.</p>
 <h1 id="why-one-setting-for-the-whole-block-rather-than-one-per-script">Why one setting for the whole block rather than one per script</h1>
 <p>A channel&#39;s scripts share the channel map and the connector map, and they are read together by whoever maintains them. A filter in Lua beside a transformer in JavaScript would mean two languages in one review, sharing state through a map whose values would have to mean the same in both. Sites that want that can split the channel.</p>
 <h1 id="why-the-default-is-javascript">Why the default is javascript</h1>
 <p>Every script written before this setting existed is JavaScript and says nothing about its language. Making lua the default would silently reinterpret all of them; requiring the field would refuse them. Neither is acceptable for a setting added later.</p>
-<h4 id="s24-13-8-timeout"><span class="num">24.13.8</span> timeout</h4>
+<h4 id="s24-14-8-timeout"><span class="num">24.14.8</span> timeout</h4>
 <p>Timeout bounds each script.</p>
 <p>Zero means five seconds.</p>
 <p>There is deliberately no way to disable it. Mirth allows a transformer to loop forever, which stops the channel, and an interface that stops accepting admissions because of a typo is not something to offer as an option.</p>
-<h4 id="s24-13-9-include"><span class="num">24.13.9</span> include</h4>
+<h4 id="s24-14-9-include"><span class="num">24.14.9</span> include</h4>
 <p>Include names files of shared script source made available to every script on this channel, in whichever language scripts.language names.</p>
 <p>This is Mirth&#39;s code templates. A site with forty channels usually has one library every channel calls, and without it a migration means copying that library into forty files - forty places to fix the next time it changes.</p>
 <p>Paths are relative to the channel file, so a library beside the channels travels with them. It is a list because the alternative is one enormous file, and libraries tend to divide by subject.</p>
 <p>The files have to be in the channel&#39;s language. This was JavaScript-only for a while, and not by refusal: a Lua channel read the files, refused a missing one, and then the runtime installed none of it, so every call into the library failed on the first message with a nil global - the exact error the refusal above exists to avoid. Both languages install it now, and a library that does not parse is refused at load naming the file.</p>
-<h4 id="s24-13-10-file-roots"><span class="num">24.13.10</span> file_roots</h4>
+<h4 id="s24-14-10-file-roots"><span class="num">24.14.10</span> file_roots</h4>
 <p>FileRoots are the directories FileUtil may read and write.</p>
 <p>Required whenever &#34;file&#34; is allowed. Granting file access without naming directories used to mean the whole filesystem: a script could read Perfuse&#39;s own database, which holds password hashes, the LDAP service account password and the OIDC client secret. Creating a channel needs only the editor role, so the escalation completed the moment an administrator started it.</p>
-<h4 id="s24-13-11-allow"><span class="num">24.13.11</span> allow</h4>
+<h4 id="s24-14-11-allow"><span class="num">24.14.11</span> allow</h4>
 <p>Allow grants capabilities a script would otherwise be refused: &#34;file&#34;, &#34;database&#34;, &#34;route&#34;.</p>
 <p>Mirth grants all of these to every script; requiring them to be named means a transformer cannot quietly start reading the filesystem after a copy-paste.</p>
-<h3 id="s24-14-shadow"><span class="num">24.14</span> Shadow</h3>
+<h3 id="s24-15-shadow"><span class="num">24.15</span> Shadow</h3>
 <p>Shadow runs a candidate version of a channel beside the live one and reports where they differ.</p>
 <p>This is the answer to the question that makes interface work frightening: how do you know a change is safe? Not by reading it. A transformation is a program operating on messages whose variety nobody has catalogued, and the case that breaks is always the one nobody thought of - the patient with two identifiers, the result with an empty units field, the A08 that arrives before its A01.</p>
 <p>A channel test proves the cases somebody thought of. Shadow mode proves the cases that actually arrive, against real traffic, before the change carries any of it.</p>
@@ -4820,22 +4872,22 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>5s</td></tr>
 </tbody>
 </table>
-<h4 id="s24-14-1-channel"><span class="num">24.14.1</span> channel</h4>
+<h4 id="s24-15-1-channel"><span class="num">24.15.1</span> channel</h4>
 <p>Channel is the path to the candidate channel file.</p>
 <p>A separate file rather than an inline block, on purpose: the candidate is meant to become the live channel, so it should be the artefact that gets reviewed, committed and promoted, not a fragment that has to be extracted.</p>
-<h4 id="s24-14-2-sample"><span class="num">24.14.2</span> sample</h4>
+<h4 id="s24-15-2-sample"><span class="num">24.15.2</span> sample</h4>
 <p>Sample is the fraction of messages to shadow, from 0 to 1. Defaults to 1.</p>
 <p>Worth lowering only on a busy feed, and worth understanding before doing so: sampling reduces cost and reduces confidence in exactly the same proportion, and the message that would have shown the difference is the unusual one.</p>
-<h4 id="s24-14-3-compare"><span class="num">24.14.3</span> compare</h4>
+<h4 id="s24-15-3-compare"><span class="num">24.15.3</span> compare</h4>
 <p>Compare limits the comparison to these field paths.</p>
 <p>Empty compares everything.</p>
-<h4 id="s24-14-4-ignore"><span class="num">24.14.4</span> ignore</h4>
+<h4 id="s24-15-4-ignore"><span class="num">24.15.4</span> ignore</h4>
 <p>Ignore excludes field paths from the comparison.</p>
 <p>Needed in practice, because a channel that stamps a timestamp or a sequence number differs on every single message and would report a difference rate of 100% while telling you nothing.</p>
-<h4 id="s24-14-5-max-differences"><span class="num">24.14.5</span> max_differences</h4>
+<h4 id="s24-15-5-max-differences"><span class="num">24.15.5</span> max_differences</h4>
 <p>MaxDifferences bounds how many differing messages are kept for inspection.</p>
 <p>Defaults to 100.</p>
-<h4 id="s24-14-6-timeout"><span class="num">24.14.6</span> timeout</h4>
+<h4 id="s24-15-6-timeout"><span class="num">24.15.6</span> timeout</h4>
 <p>Timeout bounds one shadow run.</p>
 <p>Defaults to 5s.</p>
 <p>Separate from the channel&#39;s own timeout, and shorter. A candidate with a runaway script must not accumulate goroutines behind the live traffic.</p>
@@ -5479,7 +5531,7 @@ rules:
 <table>
 <thead><tr><th>Key</th><th>Appears in</th></tr></thead>
 <tbody>
-<tr><td><code>access_key_id</code></td><td>AWS Access, S3 Destination</td></tr>
+<tr><td><code>access_key_id</code></td><td>AWS Access, FHIR Auth, S3 Destination</td></tr>
 <tr><td><code>account</code></td><td>Azure Blob Access</td></tr>
 <tr><td><code>ack</code></td><td>HTTP Source, SOAP Source, Source</td></tr>
 <tr><td><code>ack_sender_id</code></td><td>X12 Options</td></tr>
@@ -5502,6 +5554,7 @@ rules:
 <tr><td><code>attach_name</code></td><td>SMTP Destination</td></tr>
 <tr><td><code>attachments</code></td><td>Channel</td></tr>
 <tr><td><code>attempts</code></td><td>Retry</td></tr>
+<tr><td><code>auth</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>azure_blob</code></td><td>Destination, Source</td></tr>
 <tr><td><code>backoff</code></td><td>Queue Config, Retry</td></tr>
 <tr><td><code>base64</code></td><td>SOAP Source</td></tr>
@@ -5522,6 +5575,8 @@ rules:
 <tr><td><code>channel</code></td><td>Destination, Shadow</td></tr>
 <tr><td><code>check_every</code></td><td>Contract Ref</td></tr>
 <tr><td><code>claim_us_core</code></td><td>FHIR Destination</td></tr>
+<tr><td><code>client_id</code></td><td>FHIR Auth</td></tr>
+<tr><td><code>client_secret</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>column</code></td><td>Database Source</td></tr>
 <tr><td><code>columns</code></td><td>Delimited</td></tr>
 <tr><td><code>comment</code></td><td>Delimited</td></tr>
@@ -5658,7 +5713,7 @@ rules:
 <tr><td><code>reassemble</code></td><td>Attachments</td></tr>
 <tr><td><code>reconnect</code></td><td>AMQP Source, Broker Source</td></tr>
 <tr><td><code>record_length</code></td><td>TCP Framing</td></tr>
-<tr><td><code>region</code></td><td>AWS Access, S3 Destination</td></tr>
+<tr><td><code>region</code></td><td>AWS Access, FHIR Auth, S3 Destination</td></tr>
 <tr><td><code>reject_on_warning</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>relaxed</code></td><td>Delimited</td></tr>
 <tr><td><code>reopen_after</code></td><td>Serial Source</td></tr>
@@ -5676,9 +5731,10 @@ rules:
 <tr><td><code>sample</code></td><td>Shadow</td></tr>
 <tr><td><code>sas</code></td><td>Azure Blob Access</td></tr>
 <tr><td><code>sasl</code></td><td>Kafka Destination, Kafka Source</td></tr>
+<tr><td><code>scope</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>script</code></td><td>Channel, Java Script Destination, Java Script Source</td></tr>
 <tr><td><code>scripts</code></td><td>Channel</td></tr>
-<tr><td><code>secret_access_key</code></td><td>AWS Access, S3 Destination</td></tr>
+<tr><td><code>secret_access_key</code></td><td>AWS Access, FHIR Auth, S3 Destination</td></tr>
 <tr><td><code>security</code></td><td>FTP Destination, FTP Source</td></tr>
 <tr><td><code>selector</code></td><td>Broker Source</td></tr>
 <tr><td><code>sender_device</code></td><td>HL7v3 Options</td></tr>
@@ -5686,7 +5742,7 @@ rules:
 <tr><td><code>serial</code></td><td>Source</td></tr>
 <tr><td><code>server_side_encryption</code></td><td>S3 Destination</td></tr>
 <tr><td><code>session_timeout</code></td><td>Kafka Source</td></tr>
-<tr><td><code>session_token</code></td><td>AWS Access, S3 Destination</td></tr>
+<tr><td><code>session_token</code></td><td>AWS Access, FHIR Auth, S3 Destination</td></tr>
 <tr><td><code>sftp</code></td><td>Destination, Source</td></tr>
 <tr><td><code>shadow</code></td><td>Channel</td></tr>
 <tr><td><code>share</code></td><td>SMB Source</td></tr>
@@ -5714,6 +5770,7 @@ rules:
 <tr><td><code>tcp</code></td><td>Destination, Source</td></tr>
 <tr><td><code>temp_suffix</code></td><td>Document Destination, FTP Destination, SFTP Destination</td></tr>
 <tr><td><code>template</code></td><td>Database Source, Document Destination</td></tr>
+<tr><td><code>tenant_id</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>tier</code></td><td>Azure Blob Destination</td></tr>
 <tr><td><code>timeout</code></td><td>AMQP Connection, Broker Destination, Broker Source, DICOM Destination, DICOM Query Source, Database Destination, Destination, Document Destination, FTP Destination, FTP Source, Java Script Destination, Java Script Source, Kafka Destination, Kafka Source, S3 Destination, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, Scripts, Shadow, TCP Dest, Web DAV Source</td></tr>
 <tr><td><code>timezone</code></td><td>FHIR Destination</td></tr>
@@ -5721,6 +5778,7 @@ rules:
 <tr><td><code>tls</code></td><td>AMQP Connection, Broker Destination, Broker Source, DICOM Destination, DICOM Query Source, DICOM Source, Destination, HTTP Destination, HTTP Source, Kafka Destination, Kafka Source, SOAP Destination, SOAP Source, Source, TCP Dest, TCP Source</td></tr>
 <tr><td><code>to</code></td><td>SMTP Destination</td></tr>
 <tr><td><code>token</code></td><td>HTTP Source, SOAP Source</td></tr>
+<tr><td><code>token_url</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>topic</code></td><td>Kafka Destination</td></tr>
 <tr><td><code>topic_arn</code></td><td>SNS Destination</td></tr>
 <tr><td><code>topics</code></td><td>Kafka Source</td></tr>
@@ -5729,7 +5787,7 @@ rules:
 <tr><td><code>transformer</code></td><td>Scripts</td></tr>
 <tr><td><code>trim_padding</code></td><td>TCP Framing</td></tr>
 <tr><td><code>trim_space</code></td><td>Delimited</td></tr>
-<tr><td><code>type</code></td><td>Destination, Source</td></tr>
+<tr><td><code>type</code></td><td>Destination, FHIR Auth, Source</td></tr>
 <tr><td><code>undeploy</code></td><td>Scripts</td></tr>
 <tr><td><code>url</code></td><td>CDA Destination, FHIR Destination, HTTP Destination, SOAP Destination, Web DAV Source</td></tr>
 <tr><td><code>user</code></td><td>FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, Web DAV Source</td></tr>

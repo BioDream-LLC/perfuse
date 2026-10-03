@@ -2423,6 +2423,72 @@ function DestinationCard({
               />
             </Field>
             <Field
+              label="Hosted service sign-in"
+              hint="AWS HealthLake signs every request with your AWS keys. Azure Health Data Services and other OAuth servers take a client-credentials token, fetched and reused until it expires."
+            >
+              <select
+                className="input"
+                value={dest.fhirAuthType}
+                onChange={(e) => onChange({ fhirAuthType: e.target.value as Destination['fhirAuthType'] })}
+              >
+                <option value="">None, or a bearer token in a header</option>
+                <option value="aws">AWS HealthLake (Signature Version 4)</option>
+                <option value="azure">Azure Health Data Services (Entra ID)</option>
+                <option value="client_credentials">OAuth 2.0 client credentials</option>
+              </select>
+            </Field>
+            {dest.fhirAuthType === 'aws' && (
+              <>
+                <Field label="AWS region" hint="Read from a HealthLake URL when left empty.">
+                  <input className="input font-mono" value={dest.s3Region} onChange={(e) => onChange({ s3Region: e.target.value })} placeholder="us-east-1" />
+                </Field>
+                <Field label="AWS access key ID">
+                  <input className="input font-mono text-xs" value={dest.s3AccessKeyId} onChange={(e) => onChange({ s3AccessKeyId: e.target.value })} placeholder="${AWS_ACCESS_KEY_ID}" />
+                </Field>
+                <Field label="AWS secret access key">
+                  <input
+                    type={dest.s3SecretAccessKey.startsWith('${') ? 'text' : 'password'}
+                    className="input font-mono text-xs"
+                    value={dest.s3SecretAccessKey}
+                    onChange={(e) => onChange({ s3SecretAccessKey: e.target.value })}
+                    placeholder="${AWS_SECRET_ACCESS_KEY}"
+                  />
+                </Field>
+              </>
+            )}
+            {(dest.fhirAuthType === 'azure' || dest.fhirAuthType === 'client_credentials') && (
+              <>
+                {dest.fhirAuthType === 'azure' ? (
+                  <Field label="Entra tenant ID">
+                    <input className="input font-mono text-xs" value={dest.fhirAuthTenantId} onChange={(e) => onChange({ fhirAuthTenantId: e.target.value })} />
+                  </Field>
+                ) : (
+                  <Field label="Token URL">
+                    <input
+                      className="input font-mono text-xs"
+                      value={dest.fhirAuthTokenUrl}
+                      onChange={(e) => onChange({ fhirAuthTokenUrl: e.target.value })}
+                      placeholder="https://idp.example/oauth2/token"
+                    />
+                  </Field>
+                )}
+                <Field label="Client ID">
+                  <input className="input font-mono text-xs" value={dest.fhirAuthClientId} onChange={(e) => onChange({ fhirAuthClientId: e.target.value })} />
+                </Field>
+                <Field label="Client secret" hint="Write ${FHIR_CLIENT_SECRET} to read it from the environment at startup.">
+                  <input
+                    type={dest.fhirAuthClientSecret.startsWith('${') ? 'text' : 'password'}
+                    className="input font-mono text-xs"
+                    value={dest.fhirAuthClientSecret}
+                    onChange={(e) => onChange({ fhirAuthClientSecret: e.target.value })}
+                  />
+                </Field>
+                <Field label="Scope" hint={dest.fhirAuthType === 'azure' ? 'Defaults to the FHIR service URL followed by /.default.' : 'Optional.'}>
+                  <input className="input font-mono text-xs" value={dest.fhirAuthScope} onChange={(e) => onChange({ fhirAuthScope: e.target.value })} />
+                </Field>
+              </>
+            )}
+            <Field
               label="Release"
               hint="R4 unless you know otherwise: it is what US Core, and therefore most EHRs and the CMS rules, are built on. R5 is newer and almost nothing accepts it yet."
             >

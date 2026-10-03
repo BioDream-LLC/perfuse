@@ -887,6 +887,22 @@ type buildFHIRDest struct {
 
 	Headers     map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	BearerToken string            `json:"bearerToken,omitempty" yaml:"bearer_token,omitempty"`
+
+	// Auth is the hosted-service preset: aws (HealthLake), azure (Health Data Services) or client_credentials.
+	Auth *buildFHIRAuth `json:"auth,omitempty" yaml:"auth,omitempty"`
+}
+
+type buildFHIRAuth struct {
+	Type            string `json:"type,omitempty" yaml:"type,omitempty"`
+	Region          string `json:"region,omitempty" yaml:"region,omitempty"`
+	AccessKeyID     string `json:"accessKeyId,omitempty" yaml:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secretAccessKey,omitempty" yaml:"secret_access_key,omitempty"`
+	SessionToken    string `json:"sessionToken,omitempty" yaml:"session_token,omitempty"`
+	TenantID        string `json:"tenantId,omitempty" yaml:"tenant_id,omitempty"`
+	TokenURL        string `json:"tokenUrl,omitempty" yaml:"token_url,omitempty"`
+	ClientID        string `json:"clientId,omitempty" yaml:"client_id,omitempty"`
+	ClientSecret    string `json:"clientSecret,omitempty" yaml:"client_secret,omitempty"`
+	Scope           string `json:"scope,omitempty" yaml:"scope,omitempty"`
 }
 
 type buildCDADest struct {

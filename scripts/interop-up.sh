@@ -130,7 +130,8 @@ Ready. What each one unlocks:
   LocalStack      go test ./internal/awsmsg/ ./internal/s3put/ ./internal/engine/ -run LocalStack -v
   Mirth, OIE,     go test ./internal/mirth/... ./internal/tomirth/ -v    (each test runs once per engine)
   BridgeLink      ./scripts/mirth-engine-corpus.sh    regenerates internal/mirth/testdata/engines from all four
-  Keycloak        scripts/keycloak-saml-setup.sh && scripts/saml-verify-serve.sh
+  Keycloak        go test ./internal/engine/ -run Keycloak -v       (FHIR client-credentials sign-in)
+                  scripts/keycloak-saml-setup.sh && scripts/saml-verify-serve.sh
                   then: cd web && npx playwright test --config playwright-saml.config.ts
 
 Every one of those tests skips rather than fails when its container is absent, so `make check` passes on a

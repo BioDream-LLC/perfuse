@@ -144,6 +144,22 @@ Three settings decide how much is checked before a bundle leaves.
 
 **Treat warnings as rejections** only has an effect when validation is on, and the control is unavailable until it is. It is strict enough to stop a bundle a receiver would accept, so it belongs on a feed being brought up rather than one in service.
 
+### Hosted FHIR services
+
+A `fhir` destination's `auth` block signs in to the hosted services, where a pasted bearer token stops working within the hour:
+
+```yaml
+fhir:
+  url: https://healthlake.us-east-1.amazonaws.com/datastore/<id>/r4/
+  auth: {type: aws, access_key_id: ${AWS_ACCESS_KEY_ID}, secret_access_key: ${AWS_SECRET_ACCESS_KEY}}
+```
+
+`aws` signs each request for AWS HealthLake with Signature Version 4, with the region read from the URL. `azure` gets a Microsoft Entra
+ID token for Azure Health Data Services from `tenant_id`, `client_id` and `client_secret` - an app registration holding the FHIR Data
+Contributor role - with the FHIR service URL as its audience. `client_credentials` does the same against any OAuth 2.0 `token_url`.
+Tokens are reused until a minute before they expire. The same choices are under the destination's **Hosted service sign-in** in the
+channel builder.
+
 ## When the transport says yes and the message did not arrive
 
 "Did this arrive" is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.

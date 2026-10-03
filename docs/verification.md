@@ -287,6 +287,13 @@ questions. It now uses the serialiser that does.
 
 What this does not show: CRD against a real EHR's CDS Hooks client, and DTR against a real SMART on FHIR documentation app.
 
+## Hosted FHIR sign-in, against Keycloak
+
+The `client_credentials` preset was run against Keycloak 26: a confidential client created through Keycloak's admin API, the token
+Perfuse fetched checked to be Keycloak's and issued to that client, and a wrong secret refused with Keycloak's own error, without the
+secret in the message. The `aws` preset signs with the shared Signature Version 4 signer, which matches AWS's published example, for the
+service `healthlake` in the URL's region. Not verified: AWS HealthLake and Azure Health Data Services themselves, which need accounts.
+
 ## The 006020 275, against the published companion guides
 
 **What was found: one of the two guides contradicts itself about the byte count, and the table is right.**

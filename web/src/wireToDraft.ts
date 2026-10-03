@@ -709,6 +709,19 @@ function readDestination(d: WireDest): Destination {
       dest.fhirClaimUSCore = d.fhir?.claimUSCore === true
       dest.fhirValidateBeforeSend = d.fhir?.validateBeforeSend === true
       dest.fhirRejectOnWarning = d.fhir?.rejectOnWarning === true
+      if (d.fhir?.auth) {
+        const a = d.fhir.auth
+        dest.fhirAuthType = (a.type ?? '') as Destination['fhirAuthType']
+        dest.fhirAuthTenantId = a.tenantId ?? ''
+        dest.fhirAuthTokenUrl = a.tokenUrl ?? ''
+        dest.fhirAuthClientId = a.clientId ?? ''
+        dest.fhirAuthClientSecret = a.clientSecret ?? ''
+        dest.fhirAuthScope = a.scope ?? ''
+        dest.s3Region = a.region ?? ''
+        dest.s3AccessKeyId = a.accessKeyId ?? ''
+        dest.s3SecretAccessKey = a.secretAccessKey ?? ''
+        dest.s3SessionToken = a.sessionToken ?? ''
+      }
       break
     case 'cda':
       dest.url = d.cda?.url ?? ''
@@ -1235,6 +1248,14 @@ interface WireDest {
     claimUSCore?: boolean
     validateBeforeSend?: boolean
     rejectOnWarning?: boolean
+    auth?: WireAWSAccess & {
+      type?: string
+      tenantId?: string
+      tokenUrl?: string
+      clientId?: string
+      clientSecret?: string
+      scope?: string
+    }
   }
   cda?: {
     url?: string

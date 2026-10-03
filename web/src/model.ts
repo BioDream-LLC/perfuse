@@ -475,6 +475,14 @@ export interface Destination {
   /** awsGroupBy is the FIFO group: patient (the default), channel, or a message path such as MSH-4. */
   awsGroupBy: string
 
+  /** fhirAuthType signs or authorises requests to a hosted FHIR service. AWS uses the shared s3* key fields. */
+  fhirAuthType: '' | 'aws' | 'azure' | 'client_credentials'
+  fhirAuthTenantId: string
+  fhirAuthTokenUrl: string
+  fhirAuthClientId: string
+  fhirAuthClientSecret: string
+  fhirAuthScope: string
+
   // AMQP 1.0.
   destAmqpAddr: string
   destAmqpAddress: string
@@ -2001,6 +2009,19 @@ function destinationToWire(d: Destination): unknown {
         rejectOnWarning: d.fhirValidateBeforeSend && d.fhirRejectOnWarning ? true : undefined,
         timezone: d.fhirTimezone || undefined,
         identifierSystems: parsePairs(d.fhirIdentifierSystems),
+        auth:
+          d.fhirAuthType === 'aws'
+            ? { type: 'aws', ...awsDestAccess(d), endpoint: undefined }
+            : d.fhirAuthType
+              ? {
+                  type: d.fhirAuthType,
+                  tenantId: d.fhirAuthType === 'azure' ? d.fhirAuthTenantId || undefined : undefined,
+                  tokenUrl: d.fhirAuthType === 'client_credentials' ? d.fhirAuthTokenUrl || undefined : undefined,
+                  clientId: d.fhirAuthClientId || undefined,
+                  clientSecret: d.fhirAuthClientSecret || undefined,
+                  scope: d.fhirAuthScope || undefined,
+                }
+              : undefined,
       }
       break
     case 'cda':
@@ -2332,6 +2353,12 @@ export function newDestination(): Destination {
     snsTopicArn: '',
     snsSubject: '',
     awsGroupBy: '',
+    fhirAuthType: '',
+    fhirAuthTenantId: '',
+    fhirAuthTokenUrl: '',
+    fhirAuthClientId: '',
+    fhirAuthClientSecret: '',
+    fhirAuthScope: '',
     destAmqpAddr: '',
     destAmqpAddress: '',
     destAmqpUsername: '',

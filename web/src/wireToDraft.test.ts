@@ -74,6 +74,17 @@ describe('reading a channel back into the form', () => {
     expect(blobs.source).toMatchObject({ type: 'azure_blob', azureBlob: { prefix: 'inbound/', afterRead: 'delete', framed: true } })
   })
 
+  it('keeps a hosted FHIR service sign-in through a round trip', () => {
+    for (const auth of [
+      { type: 'azure', tenantId: 't1', clientId: 'app', clientSecret: '${S}' },
+      { type: 'aws', region: 'us-east-1', accessKeyId: '${A}', secretAccessKey: '${B}' },
+      { type: 'client_credentials', tokenUrl: 'https://idp/token', clientId: 'c', clientSecret: 's', scope: 'system/*.write' },
+    ]) {
+      const model = { ...minimal, destinations: [{ name: 'f', type: 'fhir', fhir: { url: 'https://fhir.example', auth } }] } as unknown as WireModel
+      expect(roundTrip(model).destinations?.[0]).toMatchObject({ fhir: { auth } })
+    }
+  })
+
   it('treats an absent enabled key as enabled', () => {
     // The channel default is true, so an absent key must not come back as disabled - that would
     // stop a live interface on the next save.

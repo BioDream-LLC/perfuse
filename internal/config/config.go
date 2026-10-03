@@ -629,6 +629,10 @@ type FHIRDestination struct {
 	// BearerToken is sent as an Authorization header. Prefer an environment
 	// variable reference over a literal in a file that goes into git.
 	BearerToken string `yaml:"bearer_token,omitempty"`
+
+	// Auth signs or authorises each request for a hosted FHIR service: AWS HealthLake, Azure Health Data Services, or any server
+	// taking an OAuth 2.0 client-credentials token.
+	Auth *FHIRAuth `yaml:"auth,omitempty"`
 }
 
 // ShouldValidate reports whether a bundle is validated before sending.

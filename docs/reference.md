@@ -1627,6 +1627,13 @@ WHERE dt >= '2026-10-01' AND message_type = 'ADT' AND patient_id = '555';
 The archive holds patient data. Encrypt the bucket (`server_side_encryption` or a bucket default), and give Athena's query results
 location the same protection - results are written there in the clear unless it is encrypted too.
 
+## Hosted FHIR services
+
+`fhir.auth` on a fhir destination: `type: aws` (HealthLake; `region`, `access_key_id`, `secret_access_key`, `session_token`),
+`type: azure` (Health Data Services; `tenant_id`, `client_id`, `client_secret`, `scope` defaulting to `<url>/.default`), or
+`type: client_credentials` (`token_url`, `client_id`, `client_secret`, `scope`). Secrets may be `${ENV}` references. Cannot be combined
+with `bearer_token`.
+
 ## AMQP 1.0 and Azure Blob Storage
 
 ```yaml

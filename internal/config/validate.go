@@ -844,6 +844,9 @@ func (d *Destination) validate(dataType DataType) []error {
 
 func (f *FHIRDestination) validate() []error {
 	var errs []error
+	if f.Auth != nil {
+		errs = append(errs, f.Auth.validate(f.URL, f.BearerToken)...)
+	}
 
 	if strings.TrimSpace(f.URL) == "" {
 		errs = append(errs, errors.New("fhir.url is required"))
