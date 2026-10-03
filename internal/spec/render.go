@@ -165,9 +165,32 @@ func describeTransport(d config.Destination) string {
 			if d.S3.Endpoint != "" {
 				where += " at " + d.S3.Endpoint
 			}
-			return fmt.Sprintf("stored as an object in %s", where)
+			out := fmt.Sprintf("stored as an object in %s", where)
+			if d.S3.StorageClass != "" {
+				out += " (storage class " + d.S3.StorageClass + ")"
+			}
+			if d.S3.Format == "ndjson" {
+				out += ", as one JSON line per message that Amazon Athena can query"
+			}
+			return out
 		}
 		return "stored as an object in S3"
+
+	case config.DestinationSQS:
+		if d.SQS != nil {
+			out := "sent to the SQS queue " + d.SQS.QueueURL
+			if strings.HasSuffix(d.SQS.QueueURL, ".fifo") {
+				out += ", grouped by " + d.SQS.GroupBy + " so those messages stay in order"
+			}
+			return out
+		}
+		return "sent to an SQS queue"
+
+	case config.DestinationSNS:
+		if d.SNS != nil {
+			return "published to the SNS topic " + d.SNS.TopicARN
+		}
+		return "published to an SNS topic"
 
 	case config.DestinationKafka:
 		if d.Kafka != nil {
@@ -434,6 +457,20 @@ func describeArrival(c *config.Channel) string {
 			}
 		}
 		return out
+
+	case config.SourceSQS:
+		if src.SQS == nil {
+			return "messages are read from an SQS queue"
+		}
+		return "messages are read from the SQS queue " + src.SQS.QueueURL + ", and each is deleted from it once handled"
+
+	case config.SourceS3:
+		if src.S3 == nil {
+			return "objects are read from an S3 bucket"
+		}
+		return fmt.Sprintf("objects are read from s3://%s/%s and moved to %s once handled, or to %s if they cannot be",
+			src.S3.Bucket, src.S3.Prefix, map[bool]string{true: src.S3.MoveTo, false: "nowhere (deleted)"}[src.S3.AfterRead == "move"],
+			src.S3.ErrorPrefix)
 
 	case config.SourceKafka:
 		if src.Kafka == nil {

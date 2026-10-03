@@ -181,6 +181,35 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.dicomQueryEmitFirst = source.dicom_query?.emit_on_first_poll ?? false
       draft.dicomQueryTls = source.dicom_query?.tls?.enabled ?? false
       break
+    case 'sqs':
+    case 's3': {
+      const a = source.sqs ?? source.s3
+      draft.awsSrcRegion = a?.region ?? ''
+      draft.awsSrcAccessKeyId = a?.accessKeyId ?? ''
+      draft.awsSrcSecretAccessKey = a?.secretAccessKey ?? ''
+      draft.awsSrcSessionToken = a?.sessionToken ?? ''
+      draft.awsSrcEndpoint = a?.endpoint ?? ''
+      if (source.sqs) {
+        draft.sqsSrcQueueUrl = source.sqs.queueUrl ?? ''
+        draft.sqsSrcWaitSeconds = source.sqs.waitSeconds ? String(source.sqs.waitSeconds) : ''
+        draft.sqsSrcMaxMessages = source.sqs.maxMessages ? String(source.sqs.maxMessages) : ''
+        draft.sqsSrcVisibility = source.sqs.visibilityTimeout ?? ''
+      }
+      if (source.s3) {
+        draft.s3SrcBucket = source.s3.bucket ?? ''
+        draft.s3SrcPrefix = source.s3.prefix ?? ''
+        draft.s3SrcSuffix = source.s3.suffix ?? ''
+        // Absent is move, the server's default.
+        draft.s3SrcAfterRead = source.s3.afterRead === 'delete' ? 'delete' : 'move'
+        draft.s3SrcMoveTo = source.s3.moveTo ?? ''
+        draft.s3SrcErrorPrefix = source.s3.errorPrefix ?? ''
+        draft.s3SrcPollSeconds = readSeconds(source.s3.pollInterval) || 30
+        draft.s3SrcPathStyle = source.s3.pathStyle ?? false
+        draft.s3SrcFramed = source.s3.framed ?? false
+        draft.s3SrcMaxObjectSize = source.s3.maxObjectSize ? String(source.s3.maxObjectSize) : ''
+      }
+      break
+    }
     case 'kafka':
       draft.kafkaBrokers = (source.kafka?.brokers ?? []).join(', ')
       draft.kafkaTopics = (source.kafka?.topics ?? []).join(', ')
@@ -741,7 +770,24 @@ function readDestination(d: WireDest): Destination {
       dest.s3Endpoint = d.s3?.endpoint ?? ''
       dest.s3PathStyle = d.s3?.pathStyle ?? false
       dest.s3Encryption = d.s3?.serverSideEncryption ?? ''
+      dest.s3StorageClass = d.s3?.storageClass ?? ''
+      dest.s3Format = d.s3?.format === 'ndjson' ? 'ndjson' : ''
       break
+    case 'sqs':
+    case 'sns': {
+      // The shared s3* access fields, as in the model.
+      const a = d.sqs ?? d.sns
+      dest.s3Region = a?.region ?? ''
+      dest.s3AccessKeyId = a?.accessKeyId ?? ''
+      dest.s3SecretAccessKey = a?.secretAccessKey ?? ''
+      dest.s3SessionToken = a?.sessionToken ?? ''
+      dest.s3Endpoint = a?.endpoint ?? ''
+      dest.awsGroupBy = a?.groupBy ?? ''
+      dest.sqsQueueUrl = d.sqs?.queueUrl ?? ''
+      dest.snsTopicArn = d.sns?.topicArn ?? ''
+      dest.snsSubject = d.sns?.subject ?? ''
+      break
+    }
     case 'kafka':
       dest.destKafkaBrokers = (d.kafka?.brokers ?? []).join(', ')
       dest.destKafkaTopic = d.kafka?.topic ?? ''
@@ -871,10 +917,32 @@ export interface WireModel {
   destinations?: WireDest[]
 }
 
+/** The region, keys and endpoint every AWS block carries inline. */
+interface WireAWSAccess {
+  region?: string
+  accessKeyId?: string
+  secretAccessKey?: string
+  sessionToken?: string
+  endpoint?: string
+}
+
 interface WireSource {
   type?: string
   listen?: string
 
+  sqs?: WireAWSAccess & { queueUrl?: string; waitSeconds?: number; maxMessages?: number; visibilityTimeout?: string }
+  s3?: WireAWSAccess & {
+    bucket?: string
+    pathStyle?: boolean
+    prefix?: string
+    suffix?: string
+    afterRead?: string
+    moveTo?: string
+    errorPrefix?: string
+    pollInterval?: string
+    maxObjectSize?: number
+    framed?: boolean
+  }
   kafka?: {
     brokers?: string[]
     topics?: string[]
@@ -1068,7 +1136,11 @@ interface WireDest {
     pathStyle?: boolean
     serverSideEncryption?: string
     sessionToken?: string
+    storageClass?: string
+    format?: string
   }
+  sqs?: WireAWSAccess & { queueUrl?: string; groupBy?: string }
+  sns?: WireAWSAccess & { topicArn?: string; subject?: string; groupBy?: string }
   name?: string
   type?: string
   enabled?: boolean

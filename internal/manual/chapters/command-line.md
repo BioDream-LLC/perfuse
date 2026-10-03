@@ -160,6 +160,15 @@ Only the hash is stored, so a token is displayed once when it is created and can
 
 `-fhir-groups riverside-attributed,riverside-north` limits a token to those FHIR Groups, for a provider's CMS-0057 Provider Access export: on the FHIR endpoint it can read those Groups and export them, and nothing else. See [CMS-0057 for payers](#cms-0057-for-payers).
 
+### perfuse athena
+
+Prints the Amazon Athena `CREATE EXTERNAL TABLE` for an S3 archive written with `format: ndjson`, using partition projection on the
+`dt=YYYY-MM-DD` part of the key, so no crawler has to run as days are added.
+
+    perfuse athena -bucket hospital-archive -destination archive
+
+Printed rather than run, because creating a table needs Athena and Glue permissions this program should not hold.
+
 ### perfuse sbom
 
 Lists everything linked into the binary, read from the build itself rather than from `go.mod` — so it describes the binary in front of you and not what somebody once asked for.

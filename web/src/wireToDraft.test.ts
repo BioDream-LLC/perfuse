@@ -26,6 +26,33 @@ describe('reading a channel back into the form', () => {
     expect(draft.destinations[0]?.dir).toBe('/tmp/out')
   })
 
+  it('survives a round trip of the AWS connectors, settings and all', () => {
+    // A form that reads a setting back wrongly rewrites it on the next save: an SQS visibility timeout lost, a Glacier archive
+    // silently returned to STANDARD, an S3 source switched from move to delete.
+    const access = { region: 'us-east-1', accessKeyId: '${AWS_ACCESS_KEY_ID}', secretAccessKey: '${AWS_SECRET_ACCESS_KEY}' }
+    const model = {
+      name: 'aws',
+      source: {
+        type: 's3',
+        s3: { ...access, bucket: 'in', prefix: 'inbound/', suffix: '.hl7', afterRead: 'delete', framed: true },
+      },
+      destinations: [
+        { name: 'q', type: 'sqs', sqs: { ...access, queueUrl: 'https://sqs.us-east-1.amazonaws.com/1/a.fifo', groupBy: 'MSH-4' } },
+        { name: 't', type: 'sns', sns: { ...access, topicArn: 'arn:aws:sns:us-east-1:1:t', subject: 'x' } },
+        { name: 'a', type: 's3', s3: { ...access, bucket: 'arch', storageClass: 'DEEP_ARCHIVE', format: 'ndjson' } },
+      ],
+    } as unknown as WireModel
+    const out = roundTrip(model)
+    expect(out.source).toMatchObject(model.source as object)
+    expect(out.destinations).toMatchObject(model.destinations as object[])
+
+    const sqs = roundTrip({
+      ...minimal,
+      source: { type: 'sqs', sqs: { ...access, queueUrl: 'https://sqs.us-east-1.amazonaws.com/1/in', visibilityTimeout: '90s' } },
+    } as unknown as WireModel)
+    expect(sqs.source).toMatchObject({ type: 'sqs', sqs: { queueUrl: 'https://sqs.us-east-1.amazonaws.com/1/in', visibilityTimeout: '90s' } })
+  })
+
   it('treats an absent enabled key as enabled', () => {
     // The channel default is true, so an absent key must not come back as disabled - that would
     // stop a live interface on the next save.

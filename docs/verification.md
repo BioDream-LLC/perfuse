@@ -144,6 +144,27 @@ The other direction: every live test of Perfuse's Mirth export now runs once per
 
 What this does not show: channels authored by hand in each Administrator, which may use settings the corpus does not; and plugins beyond those the images ship.
 
+## S3, SQS and SNS, against LocalStack and AWS's signature example
+
+**What was checked: the five AWS connectors end to end, with the message looked for where it should have arrived.**
+
+The signer (`internal/awsv4`, shared by every AWS connector) reproduces the signature in AWS's own worked example from the Signature
+Version 4 documentation, and the signing-key derivation vector. LocalStack 4 does not verify signatures by default, so those two
+tests are what hold the signature; LocalStack holds everything else.
+
+Against LocalStack: SQS send, long-poll receive and delete; a FIFO queue keeping order within a patient's group and dropping a resend
+with the same deduplication id; an SNS publish arriving in an SQS queue subscribed to the topic; S3 listing with `start-after`, a key
+containing a space, get with a size limit, copy and delete; and an object written with `GLACIER_IR` reporting that storage class back.
+Then two running channels: SQS in, to an SQS queue and an Athena-shaped archive in S3, checked in the destination queue, in the source
+queue (empty, so the message was deleted after handling) and in the bucket (one JSON line under `dt=<today>/` with the fields parsed);
+and S3 in, where a good object moved to `processed/`, an unparseable one to `error/`, and a `.txt` the suffix excludes stayed put.
+
+The first run found that an unparseable S3 object was moved to `processed/`: the channel reports a message it cannot parse without
+returning an error, so the source now checks the outcome as the file source does.
+
+What this does not show: behaviour against AWS itself, IAM policy failures, KMS-encrypted buckets, and the `perfuse athena` table
+run in a real Athena.
+
 ## FHIR, against HAPI FHIR
 
 **What was found: the converter was fabricating an identifier system, and HAPI did not object to it.**

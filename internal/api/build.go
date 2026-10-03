@@ -306,6 +306,12 @@ type buildSource struct {
 	// Kafka reads from a Kafka topic.
 	Kafka *buildKafkaSource `json:"kafka,omitempty" yaml:"kafka,omitempty"`
 
+	// SQS reads from an Amazon SQS queue.
+	SQS *buildSQSSource `json:"sqs,omitempty" yaml:"sqs,omitempty"`
+
+	// S3 picks objects up from an S3 bucket prefix.
+	S3 *buildS3Source `json:"s3,omitempty" yaml:"s3,omitempty"`
+
 	// DICOMQuery polls an imaging archive.
 	//
 	// This was missing until the graphical builder needed it, and the drift guard did not notice - it checks destinations
@@ -814,7 +820,13 @@ type buildDest struct {
 
 	// Kafka applies to a kafka destination.
 	Kafka *buildKafkaDest `json:"kafka,omitempty" yaml:"kafka,omitempty"`
-	TLS   *buildTLS       `json:"tls,omitempty" yaml:"tls,omitempty"`
+
+	// SQS applies to an sqs destination.
+	SQS *buildSQSDest `json:"sqs,omitempty" yaml:"sqs,omitempty"`
+
+	// SNS applies to an sns destination.
+	SNS *buildSNSDest `json:"sns,omitempty" yaml:"sns,omitempty"`
+	TLS *buildTLS     `json:"tls,omitempty" yaml:"tls,omitempty"`
 
 	Timeout string      `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	Retry   *buildRetry `json:"retry,omitempty" yaml:"retry,omitempty"`
@@ -960,6 +972,58 @@ type buildS3Dest struct {
 	ContentType          string `json:"contentType,omitempty" yaml:"content_type,omitempty"`
 	Framed               bool   `json:"framed,omitempty" yaml:"framed,omitempty"`
 	Timeout              string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	// StorageClass sends the object straight to an S3 storage class: GLACIER, DEEP_ARCHIVE and the rest.
+	StorageClass string `json:"storageClass,omitempty" yaml:"storage_class,omitempty"`
+	// Format is hl7 or ndjson, the second for an archive Amazon Athena can query.
+	Format string `json:"format,omitempty" yaml:"format,omitempty"`
+}
+
+// buildAWSAccess is the region, keys and endpoint every AWS connector signs with. Inline, as in the channel file.
+type buildAWSAccess struct {
+	Region          string `json:"region,omitempty" yaml:"region,omitempty"`
+	AccessKeyID     string `json:"accessKeyId,omitempty" yaml:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secretAccessKey,omitempty" yaml:"secret_access_key,omitempty"`
+	SessionToken    string `json:"sessionToken,omitempty" yaml:"session_token,omitempty"`
+	Endpoint        string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+}
+
+// buildSQSSource reads from an SQS queue.
+type buildSQSSource struct {
+	buildAWSAccess    `yaml:",inline"`
+	QueueURL          string `json:"queueUrl,omitempty" yaml:"queue_url,omitempty"`
+	WaitSeconds       int    `json:"waitSeconds,omitempty" yaml:"wait_seconds,omitempty"`
+	MaxMessages       int    `json:"maxMessages,omitempty" yaml:"max_messages,omitempty"`
+	VisibilityTimeout string `json:"visibilityTimeout,omitempty" yaml:"visibility_timeout,omitempty"`
+}
+
+// buildS3Source picks objects up from a bucket.
+type buildS3Source struct {
+	buildAWSAccess `yaml:",inline"`
+	Bucket         string `json:"bucket,omitempty" yaml:"bucket,omitempty"`
+	PathStyle      bool   `json:"pathStyle,omitempty" yaml:"path_style,omitempty"`
+	Prefix         string `json:"prefix,omitempty" yaml:"prefix,omitempty"`
+	Suffix         string `json:"suffix,omitempty" yaml:"suffix,omitempty"`
+	AfterRead      string `json:"afterRead,omitempty" yaml:"after_read,omitempty"`
+	MoveTo         string `json:"moveTo,omitempty" yaml:"move_to,omitempty"`
+	ErrorPrefix    string `json:"errorPrefix,omitempty" yaml:"error_prefix,omitempty"`
+	PollInterval   string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
+	MaxObjectSize  int64  `json:"maxObjectSize,omitempty" yaml:"max_object_size,omitempty"`
+	Framed         bool   `json:"framed,omitempty" yaml:"framed,omitempty"`
+}
+
+// buildSQSDest sends to an SQS queue.
+type buildSQSDest struct {
+	buildAWSAccess `yaml:",inline"`
+	QueueURL       string `json:"queueUrl,omitempty" yaml:"queue_url,omitempty"`
+	GroupBy        string `json:"groupBy,omitempty" yaml:"group_by,omitempty"`
+}
+
+// buildSNSDest publishes to an SNS topic.
+type buildSNSDest struct {
+	buildAWSAccess `yaml:",inline"`
+	TopicARN       string `json:"topicArn,omitempty" yaml:"topic_arn,omitempty"`
+	Subject        string `json:"subject,omitempty" yaml:"subject,omitempty"`
+	GroupBy        string `json:"groupBy,omitempty" yaml:"group_by,omitempty"`
 }
 
 // buildFTPDest is an FTP destination in the form.

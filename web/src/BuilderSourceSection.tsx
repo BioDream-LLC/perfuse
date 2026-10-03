@@ -38,6 +38,9 @@ const SOURCE_OPTIONS: { value: SourceKind; label: string }[] = [
   { value: 'tcp', label: 'A device connects to us on a socket, not MLLP (TCP)' },
   { value: 'serial', label: 'A device is wired to us (serial cable)' },
   { value: 'broker', label: 'We read from a message queue (ActiveMQ, RabbitMQ)' },
+  { value: 'kafka', label: 'We read from a Kafka topic' },
+  { value: 'sqs', label: 'We read from an Amazon SQS queue' },
+  { value: 's3', label: 'We collect objects from an Amazon S3 bucket' },
 ]
 
 export function SourceSection({
@@ -243,6 +246,136 @@ export function SourceSection({
               />
             </Pair>
           </Advanced>
+        </>
+      )}
+
+      {(draft.sourceKind === 'sqs' || draft.sourceKind === 's3') && <AwsSourceAccess draft={draft} set={set} />}
+
+      {draft.sourceKind === 'sqs' && (
+        <>
+          <Text
+            label="Queue URL"
+            required
+            value={draft.sqsSrcQueueUrl}
+            onChange={(v) => set('sqsSrcQueueUrl', v)}
+            placeholder="https://sqs.eu-west-2.amazonaws.com/123456789012/adt"
+            mono
+            hint="Each message is deleted from the queue only after this channel has handled it. Until then it stays hidden, and comes back if Perfuse stops - so nothing is lost, and a redrive policy on the queue moves one that keeps failing to a dead-letter queue."
+          />
+          <Pair>
+            <Text
+              label="Long poll, seconds"
+              value={draft.sqsSrcWaitSeconds}
+              onChange={(v) => set('sqsSrcWaitSeconds', v)}
+              placeholder="20"
+              hint="1 to 20. An empty queue then costs one request every 20 seconds rather than a busy loop."
+            />
+            <Text
+              label="Messages per request"
+              value={draft.sqsSrcMaxMessages}
+              onChange={(v) => set('sqsSrcMaxMessages', v)}
+              placeholder="10"
+              hint="1 to 10. They are handled one at a time, in order."
+            />
+          </Pair>
+          <Text
+            label="Visibility timeout"
+            value={draft.sqsSrcVisibility}
+            onChange={(v) => set('sqsSrcVisibility', v)}
+            placeholder="60s"
+            mono
+            hint="How long a received message stays hidden while it is handled. Empty uses the queue's own setting. Make it longer than the slowest delivery, or a message comes back while still being delivered."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 's3' && (
+        <>
+          <Pair>
+            <Text
+              label="Bucket"
+              required
+              value={draft.s3SrcBucket}
+              onChange={(v) => set('s3SrcBucket', v)}
+              placeholder="hospital-inbound"
+              mono
+            />
+            <Text
+              label="Prefix to read"
+              required
+              value={draft.s3SrcPrefix}
+              onChange={(v) => set('s3SrcPrefix', v)}
+              placeholder="inbound/"
+              mono
+              hint="Ends in /. Handled objects move out of it, so they are not read again."
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Only keys ending in"
+              value={draft.s3SrcSuffix}
+              onChange={(v) => set('s3SrcSuffix', v)}
+              placeholder=".hl7"
+              mono
+            />
+            <Num
+              label="Poll every, seconds"
+              value={draft.s3SrcPollSeconds}
+              onChange={(v) => set('s3SrcPollSeconds', v ?? 30)}
+              placeholder="30"
+            />
+          </Pair>
+          <Pair>
+            <Choose
+              label="After an object is handled"
+              value={draft.s3SrcAfterRead}
+              onChange={(v) => set('s3SrcAfterRead', v)}
+              options={[
+                { value: 'move', label: 'Move it to another prefix' },
+                { value: 'delete', label: 'Delete it' },
+              ]}
+              hint="There is no leave-it-there: a bucket gives a poller nothing to remember across a restart, so every object would be read again."
+            />
+            {draft.s3SrcAfterRead === 'move' ? (
+              <Text
+                label="Move to"
+                value={draft.s3SrcMoveTo}
+                onChange={(v) => set('s3SrcMoveTo', v)}
+                placeholder="processed/"
+                mono
+              />
+            ) : (
+              <span />
+            )}
+          </Pair>
+          <Pair>
+            <Text
+              label="Objects that fail go to"
+              value={draft.s3SrcErrorPrefix}
+              onChange={(v) => set('s3SrcErrorPrefix', v)}
+              placeholder="error/"
+              mono
+              hint="So one bad file does not stop the ones behind it."
+            />
+            <Text
+              label="Largest object, bytes"
+              value={draft.s3SrcMaxObjectSize}
+              onChange={(v) => set('s3SrcMaxObjectSize', v)}
+              placeholder="16777216"
+            />
+          </Pair>
+          <Check
+            label="Objects hold several MLLP-framed messages"
+            value={draft.s3SrcFramed}
+            onChange={(v) => set('s3SrcFramed', v)}
+            hint="Otherwise each object is one message. Every message in an object must be accepted before the object is moved."
+          />
+          <Check
+            label="Path-style addressing"
+            value={draft.s3SrcPathStyle}
+            onChange={(v) => set('s3SrcPathStyle', v)}
+            hint="Needed by MinIO, Ceph and most S3-compatible stores."
+          />
         </>
       )}
 
@@ -1279,5 +1412,61 @@ export function FormatSection({
         </div>
       )}
     </div>
+  )
+}
+
+/** The region, keys and endpoint an SQS or S3 source signs with. */
+function AwsSourceAccess({
+  draft,
+  set,
+}: {
+  draft: ChannelDraft
+  set: <K extends keyof ChannelDraft>(key: K, value: ChannelDraft[K]) => void
+}) {
+  return (
+    <>
+      <Pair>
+        <Text
+          label="Region"
+          required
+          value={draft.awsSrcRegion}
+          onChange={(v) => set('awsSrcRegion', v)}
+          placeholder="eu-west-2"
+          mono
+          hint="Part of the request signature, so a wrong one fails as if the credentials were wrong."
+        />
+        <Text
+          label="Endpoint"
+          value={draft.awsSrcEndpoint}
+          onChange={(v) => set('awsSrcEndpoint', v)}
+          placeholder="Leave empty for AWS"
+          mono
+          hint="Only for LocalStack, MinIO, a VPC endpoint and the like."
+        />
+      </Pair>
+      <Pair>
+        <Text
+          label="Access key ID"
+          required
+          value={draft.awsSrcAccessKeyId}
+          onChange={(v) => set('awsSrcAccessKeyId', v)}
+          placeholder="${AWS_ACCESS_KEY_ID}"
+          mono
+          hint="Reference the environment rather than writing the value, because this file goes into version control."
+        />
+        <Secret
+          label="Secret access key"
+          value={draft.awsSrcSecretAccessKey}
+          onChange={(v) => set('awsSrcSecretAccessKey', v)}
+          hint="Write ${AWS_SECRET_ACCESS_KEY} to read it from the environment at startup."
+        />
+      </Pair>
+      <Secret
+        label="Session token"
+        value={draft.awsSrcSessionToken}
+        onChange={(v) => set('awsSrcSessionToken', v)}
+        hint="Write ${AWS_SESSION_TOKEN} to read it from the environment. Only for temporary credentials, which expire - and the channel stops reading when they do."
+      />
+    </>
   )
 }

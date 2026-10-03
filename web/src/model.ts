@@ -22,6 +22,8 @@ export type DestinationType =
   | 'broker'
   | 'kafka'
   | 's3'
+  | 'sqs'
+  | 'sns'
   | 'ftp'
   | 'document'
   | 'soap'
@@ -47,6 +49,8 @@ export const destinationLabels: Record<DestinationType, string> = {
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
   kafka: 'A Kafka topic',
+  sqs: 'An Amazon SQS queue',
+  sns: 'An Amazon SNS topic',
 }
 
 export const destinationHints: Record<DestinationType, string> = {
@@ -81,6 +85,8 @@ export const destinationHints: Record<DestinationType, string> = {
     'Publishes over STOMP, which is what crosses the wire for JMS brokers. Persistent by default, so a message survives the broker restarting.',
   kafka:
     'Publishes to a Kafka topic. Give it a key - PID-3.1 keys by patient - because Kafka keeps records in order only within a partition, and records with the same key always share one. Without a key there is no guarantee: records may stay together for a while and then move, so a discharge can be read before its admission intermittently, under load.',
+  sqs: 'Sends each message to an SQS queue. On a FIFO queue (a URL ending .fifo) messages are grouped by patient, so one patient\'s events stay in order while different patients go in parallel, and an engine retry is not delivered twice. SQS refuses a message over 256 KB.',
+  sns: 'Publishes each message to an SNS topic, for fanning out to several subscribers - queues, Lambda functions, email. Email and SMS subscribers receive patient data in the clear, so subscribe queues rather than people.',
 }
 
 /** A single filter condition, as the visual rule builder sees it. */
@@ -449,6 +455,18 @@ export interface Destination {
   s3Endpoint: string
   s3PathStyle: boolean
   s3Encryption: string
+  /** s3StorageClass sends objects straight to a storage class, Glacier included. Empty is STANDARD. */
+  s3StorageClass: string
+  /** s3Format is hl7, or ndjson for an archive Amazon Athena can query. */
+  s3Format: '' | 'ndjson'
+
+  // SQS and SNS. Their region, keys and endpoint are the s3* fields above: a destination is one type at a time, and the three share
+  // exactly the same signing settings, so one set of fields and one piece of form serves all of them.
+  sqsQueueUrl: string
+  snsTopicArn: string
+  snsSubject: string
+  /** awsGroupBy is the FIFO group: patient (the default), channel, or a message path such as MSH-4. */
+  awsGroupBy: string
 
   /** routeTo is the name of another channel to hand the message to. */
   routeTo: string
@@ -476,6 +494,8 @@ export type SourceKind =
   | 'javascript'
   | 'broker'
   | 'kafka'
+  | 'sqs'
+  | 's3'
   | 'soap'
   | 'file'
   | 'ftp'
@@ -1013,6 +1033,29 @@ export interface ChannelDraft {
   kafkaSaslUsername: string
   kafkaSaslPassword: string
 
+  // AWS sources. One set of access fields serves both, as on the destination side.
+  awsSrcRegion: string
+  awsSrcAccessKeyId: string
+  awsSrcSecretAccessKey: string
+  awsSrcSessionToken: string
+  awsSrcEndpoint: string
+  sqsSrcQueueUrl: string
+  /** sqsSrcWaitSeconds is the long poll, 1 to 20; empty is 20. */
+  sqsSrcWaitSeconds: string
+  sqsSrcMaxMessages: string
+  /** sqsSrcVisibility is how long a message stays hidden while it is handled, e.g. 60s. Empty uses the queue's setting. */
+  sqsSrcVisibility: string
+  s3SrcBucket: string
+  s3SrcPrefix: string
+  s3SrcSuffix: string
+  s3SrcAfterRead: 'move' | 'delete'
+  s3SrcMoveTo: string
+  s3SrcErrorPrefix: string
+  s3SrcPollSeconds: number
+  s3SrcPathStyle: boolean
+  s3SrcFramed: boolean
+  s3SrcMaxObjectSize: string
+
   ftpSrcHost: string
   ftpSrcUser: string
   ftpSrcPassword: string
@@ -1279,6 +1322,31 @@ export function draftToWire(draft: ChannelDraft): unknown {
         stableFor: secondsOrNone(draft.sftpStableSeconds),
         keyPassphrase: draft.sftpKeyPassphrase || undefined,
         maxFileSize: positiveOrNone(draft.sftpMaxFileSize),
+      }
+      break
+    case 'sqs':
+      source.sqs = {
+        ...awsSrcAccess(draft),
+        queueUrl: draft.sqsSrcQueueUrl || undefined,
+        waitSeconds: positiveOrNone(draft.sqsSrcWaitSeconds),
+        maxMessages: positiveOrNone(draft.sqsSrcMaxMessages),
+        visibilityTimeout: draft.sqsSrcVisibility || undefined,
+      }
+      break
+    case 's3':
+      source.s3 = {
+        ...awsSrcAccess(draft),
+        bucket: draft.s3SrcBucket || undefined,
+        pathStyle: draft.s3SrcPathStyle || undefined,
+        prefix: draft.s3SrcPrefix || undefined,
+        suffix: draft.s3SrcSuffix || undefined,
+        // Move is the server's default, so only delete is written.
+        afterRead: draft.s3SrcAfterRead === 'delete' ? 'delete' : undefined,
+        moveTo: draft.s3SrcAfterRead === 'move' ? draft.s3SrcMoveTo || undefined : undefined,
+        errorPrefix: draft.s3SrcErrorPrefix || undefined,
+        pollInterval: secondsOrNone(draft.s3SrcPollSeconds),
+        maxObjectSize: positiveOrNone(draft.s3SrcMaxObjectSize),
+        framed: draft.s3SrcFramed || undefined,
       }
       break
     case 'kafka':
@@ -1967,6 +2035,23 @@ function destinationToWire(d: Destination): unknown {
         endpoint: d.s3Endpoint || undefined,
         pathStyle: d.s3PathStyle || undefined,
         serverSideEncryption: d.s3Encryption || undefined,
+        storageClass: d.s3StorageClass || undefined,
+        format: d.s3Format || undefined,
+      }
+      break
+    case 'sqs':
+      out.sqs = {
+        ...awsDestAccess(d),
+        queueUrl: d.sqsQueueUrl || undefined,
+        groupBy: d.awsGroupBy && d.awsGroupBy !== 'patient' ? d.awsGroupBy : undefined,
+      }
+      break
+    case 'sns':
+      out.sns = {
+        ...awsDestAccess(d),
+        topicArn: d.snsTopicArn || undefined,
+        subject: d.snsSubject || undefined,
+        groupBy: d.awsGroupBy && d.awsGroupBy !== 'patient' ? d.awsGroupBy : undefined,
       }
       break
     case 'smtp':
@@ -2150,6 +2235,12 @@ export function newDestination(): Destination {
     s3Endpoint: '',
     s3PathStyle: false,
     s3Encryption: '',
+    s3StorageClass: '',
+    s3Format: '',
+    sqsQueueUrl: '',
+    snsTopicArn: '',
+    snsSubject: '',
+    awsGroupBy: '',
     routeTo: '',
     smtpUsername: '',
     smtpPassword: '',
@@ -2158,6 +2249,28 @@ export function newDestination(): Destination {
     retryBackoffSeconds: 1,
     retryMaxBackoffSeconds: 60,
     rules: [],
+  }
+}
+
+/** The region, keys and endpoint an AWS source signs with, inline in its block as in the channel file. */
+function awsSrcAccess(d: ChannelDraft): Record<string, unknown> {
+  return {
+    region: d.awsSrcRegion || undefined,
+    accessKeyId: d.awsSrcAccessKeyId || undefined,
+    secretAccessKey: d.awsSrcSecretAccessKey || undefined,
+    sessionToken: d.awsSrcSessionToken || undefined,
+    endpoint: d.awsSrcEndpoint || undefined,
+  }
+}
+
+/** The same for an SQS or SNS destination, from the shared s3* access fields. */
+function awsDestAccess(d: Destination): Record<string, unknown> {
+  return {
+    region: d.s3Region || undefined,
+    accessKeyId: d.s3AccessKeyId || undefined,
+    secretAccessKey: d.s3SecretAccessKey || undefined,
+    sessionToken: d.s3SessionToken || undefined,
+    endpoint: d.s3Endpoint || undefined,
   }
 }
 
@@ -2373,6 +2486,26 @@ export function emptyDraft(): ChannelDraft {
     kafkaSaslMechanism: '',
     kafkaSaslUsername: '',
     kafkaSaslPassword: '',
+
+    awsSrcRegion: '',
+    awsSrcAccessKeyId: '',
+    awsSrcSecretAccessKey: '',
+    awsSrcSessionToken: '',
+    awsSrcEndpoint: '',
+    sqsSrcQueueUrl: '',
+    sqsSrcWaitSeconds: '',
+    sqsSrcMaxMessages: '',
+    sqsSrcVisibility: '',
+    s3SrcBucket: '',
+    s3SrcPrefix: 'inbound/',
+    s3SrcSuffix: '',
+    s3SrcAfterRead: 'move',
+    s3SrcMoveTo: '',
+    s3SrcErrorPrefix: '',
+    s3SrcPollSeconds: 30,
+    s3SrcPathStyle: false,
+    s3SrcFramed: false,
+    s3SrcMaxObjectSize: '',
 
     ftpSrcHost: '',
     ftpSrcUser: '',

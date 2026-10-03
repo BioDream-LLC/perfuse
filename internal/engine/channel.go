@@ -201,6 +201,9 @@ type Channel struct {
 	// kafka is the Kafka consumer, nil unless this is a kafka source.
 	kafka *kafkaPoller
 
+	// awsSource polls SQS or S3, whichever the source is.
+	awsSource *kafkaPoller
+
 	// jsReader is the JavaScript Reader, nil unless this is a javascript source.
 	jsReader *jsReader
 
@@ -502,6 +505,20 @@ func (c *Channel) Start() error {
 		c.resumeQueues(context.Background())
 		return nil
 
+	case config.SourceSQS:
+		if err := c.startSQSSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
+	case config.SourceS3:
+		if err := c.startS3Source(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
 	case config.SourceDICOMQuery:
 		if err := c.startDICOMQuerySource(); err != nil {
 			return err
@@ -617,6 +634,9 @@ func (c *Channel) Stop(ctx context.Context) error {
 	}
 	if kafkaErr := c.stopKafkaSource(); kafkaErr != nil && err == nil {
 		err = kafkaErr
+	}
+	if awsErr := c.stopAWSSource(); awsErr != nil && err == nil {
+		err = awsErr
 	}
 	if queryErr := c.stopDICOMQuerySource(); queryErr != nil && err == nil {
 		err = queryErr

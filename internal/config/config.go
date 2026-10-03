@@ -226,6 +226,12 @@ const (
 	// custom plugin. Separate from SourceBroker because Kafka's model differs
 	// where it matters: partitioned ordering and a consumer-tracked position.
 	SourceKafka SourceType = "kafka"
+
+	// SourceSQS reads from an Amazon SQS queue, deleting each message once handled.
+	SourceSQS SourceType = "sqs"
+
+	// SourceS3 picks objects up from an S3 bucket prefix and moves or deletes them once handled.
+	SourceS3 SourceType = "s3"
 )
 
 // Source is where a channel receives messages.
@@ -287,6 +293,12 @@ type Source struct {
 
 	// Kafka applies to a kafka source.
 	Kafka *KafkaSource `yaml:"kafka,omitempty"`
+
+	// SQS applies to an sqs source.
+	SQS *SQSSource `yaml:"sqs,omitempty"`
+
+	// S3 applies to an s3 source.
+	S3 *S3Source `yaml:"s3,omitempty"`
 
 	// Database configures a database source.
 	Database *DatabaseSource `yaml:"database,omitempty"`
@@ -378,6 +390,12 @@ const (
 	// DestinationKafka publishes to a Kafka topic, keyed so one patient's events
 	// stay in order while different patients go in parallel.
 	DestinationKafka DestinationType = "kafka"
+
+	// DestinationSQS sends to an Amazon SQS queue; a FIFO queue keeps each patient's messages in order.
+	DestinationSQS DestinationType = "sqs"
+
+	// DestinationSNS publishes to an Amazon SNS topic.
+	DestinationSNS DestinationType = "sns"
 	// DestinationSMTP sends the message, or a note about it, as email. Its usual
 	// purpose is not integration but notification: a coordinator told when a
 	// particular order type arrives, or a daily report that a feed produced
@@ -414,6 +432,8 @@ var allDestinationTypes = []DestinationType{
 	DestinationDICOM,
 	DestinationBroker,
 	DestinationKafka,
+	DestinationSQS,
+	DestinationSNS,
 	DestinationJavaScript,
 	DestinationChannel,
 }
@@ -500,6 +520,12 @@ type Destination struct {
 
 	// Kafka applies to a kafka destination.
 	Kafka *KafkaDestination `yaml:"kafka,omitempty"`
+
+	// SQS applies to an sqs destination.
+	SQS *SQSDestination `yaml:"sqs,omitempty"`
+
+	// SNS applies to an sns destination.
+	SNS *SNSDestination `yaml:"sns,omitempty"`
 
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	//

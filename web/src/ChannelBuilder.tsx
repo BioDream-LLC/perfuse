@@ -1843,16 +1843,82 @@ function DestinationCard({
           </>
         )}
 
-        {dest.type === 's3' && (
+        {/* S3, SQS and SNS share one set of signing fields - region, keys, endpoint - because they are signed identically. */}
+        {(dest.type === 's3' || dest.type === 'sqs' || dest.type === 'sns') && (
           <>
-            <Field label="Bucket">
-              <input
-                className="input font-mono"
-                value={dest.s3Bucket}
-                onChange={(e) => onChange({ s3Bucket: e.target.value })}
-                placeholder="hospital-hl7-archive"
-              />
-            </Field>
+            {dest.type === 's3' && (
+              <Field label="Bucket">
+                <input
+                  className="input font-mono"
+                  value={dest.s3Bucket}
+                  onChange={(e) => onChange({ s3Bucket: e.target.value })}
+                  placeholder="hospital-hl7-archive"
+                />
+              </Field>
+            )}
+
+            {dest.type === 'sqs' && (
+              <Field
+                label="Queue URL"
+                hint="A URL ending .fifo is a FIFO queue: messages are then grouped so each patient's stay in order, and an engine retry is not delivered twice."
+              >
+                <input
+                  className="input font-mono text-xs"
+                  value={dest.sqsQueueUrl}
+                  onChange={(e) => onChange({ sqsQueueUrl: e.target.value })}
+                  placeholder="https://sqs.eu-west-2.amazonaws.com/123456789012/adt.fifo"
+                />
+              </Field>
+            )}
+
+            {dest.type === 'sns' && (
+              <>
+                <Field label="Topic ARN">
+                  <input
+                    className="input font-mono text-xs"
+                    value={dest.snsTopicArn}
+                    onChange={(e) => onChange({ snsTopicArn: e.target.value })}
+                    placeholder="arn:aws:sns:eu-west-2:123456789012:adt"
+                  />
+                </Field>
+                <Field label="Subject" hint="Sent to email subscribers. ${message_type} and ${control_id} are filled in.">
+                  <input
+                    className="input font-mono text-xs"
+                    value={dest.snsSubject}
+                    onChange={(e) => onChange({ snsSubject: e.target.value })}
+                    placeholder="${message_type} ${control_id}"
+                  />
+                </Field>
+              </>
+            )}
+
+            {(dest.type === 'sqs' || dest.type === 'sns') && (
+              <Field
+                label="FIFO group"
+                hint="Only for a FIFO queue or topic, which keeps order within a group and nowhere else. Patient (PID-3.1) keeps one patient's events in sequence while letting different patients go in parallel."
+              >
+                <select
+                  className="input"
+                  value={['', 'patient', 'channel'].includes(dest.awsGroupBy) ? dest.awsGroupBy || 'patient' : 'path'}
+                  onChange={(e) =>
+                    onChange({ awsGroupBy: e.target.value === 'path' ? 'MSH-4' : e.target.value === 'patient' ? '' : e.target.value })
+                  }
+                >
+                  <option value="patient">The patient (PID-3.1)</option>
+                  <option value="channel">This channel, one group for everything</option>
+                  <option value="path">A field in the message</option>
+                </select>
+                {!['', 'patient', 'channel'].includes(dest.awsGroupBy) && (
+                  <input
+                    className="input mt-2 font-mono"
+                    aria-label="FIFO group field"
+                    value={dest.awsGroupBy}
+                    onChange={(e) => onChange({ awsGroupBy: e.target.value })}
+                    placeholder="MSH-4"
+                  />
+                )}
+              </Field>
+            )}
 
             <Field
               label="Region"
@@ -1866,6 +1932,7 @@ function DestinationCard({
               />
             </Field>
 
+            {dest.type === 's3' && (
             <Field
               label="Object key"
               hint="Leave empty for a date-partitioned default, which keeps the bucket listable and lets
@@ -1876,9 +1943,10 @@ function DestinationCard({
                 className="input font-mono text-xs"
                 value={dest.s3Key}
                 onChange={(e) => onChange({ s3Key: e.target.value })}
-                placeholder="${date}/${channel}/${control_id}.hl7"
+                placeholder={dest.s3Format === 'ndjson' ? '${channel}/dt=${date_iso}/${timestamp}-${control_id}.json' : '${date}/${channel}/${control_id}.hl7'}
               />
             </Field>
+            )}
 
             <Field
               label="Access key ID"
@@ -1928,7 +1996,7 @@ function DestinationCard({
 
             <Field
               label="Endpoint"
-              hint="Only for MinIO, Ceph, Wasabi and the like. Leave empty for AWS."
+              hint="Only for LocalStack, MinIO, Ceph, Wasabi, a VPC endpoint and the like. Leave empty for AWS."
             >
               <input
                 className="input font-mono text-xs"
@@ -1939,13 +2007,15 @@ function DestinationCard({
                     // Turned on with the endpoint, because nearly every S3-compatible store requires it
                     // and forgetting produces a DNS error naming a hostname nobody typed. Still a
                     // checkbox, so it can be turned back off.
-                    s3PathStyle: e.target.value !== '' ? true : dest.s3PathStyle,
+                    s3PathStyle: dest.type === 's3' && e.target.value !== '' ? true : dest.s3PathStyle,
                   })
                 }
                 placeholder="https://minio.hospital.local:9000"
               />
             </Field>
 
+            {dest.type === 's3' && (
+            <>
             <Toggle
               label="Path-style addressing"
               checked={dest.s3PathStyle}
@@ -1964,6 +2034,41 @@ function DestinationCard({
                 placeholder="AES256"
               />
             </Field>
+
+            <Field
+              label="Storage class"
+              hint="Objects can go straight to an archive tier. Glacier classes cost far less to keep and more to read back - Glacier Flexible Retrieval and Deep Archive take hours to restore - so they suit a legal-hold archive, not one anybody searches."
+            >
+              <select
+                className="input"
+                value={dest.s3StorageClass}
+                onChange={(e) => onChange({ s3StorageClass: e.target.value })}
+              >
+                <option value="">Standard</option>
+                <option value="INTELLIGENT_TIERING">Intelligent-Tiering</option>
+                <option value="STANDARD_IA">Standard-IA (infrequent access)</option>
+                <option value="ONEZONE_IA">One Zone-IA</option>
+                <option value="GLACIER_IR">Glacier Instant Retrieval</option>
+                <option value="GLACIER">Glacier Flexible Retrieval</option>
+                <option value="DEEP_ARCHIVE">Glacier Deep Archive</option>
+              </select>
+            </Field>
+
+            <Field
+              label="Write as"
+              hint="JSON lines puts the fields people search on - type, control id, facility, patient - beside the whole message, under date partitions Amazon Athena reads. Run perfuse athena to print the table."
+            >
+              <select
+                className="input"
+                value={dest.s3Format}
+                onChange={(e) => onChange({ s3Format: e.target.value as '' | 'ndjson' })}
+              >
+                <option value="">The message, one object each</option>
+                <option value="ndjson">JSON lines for Amazon Athena</option>
+              </select>
+            </Field>
+            </>
+            )}
           </>
         )}
 

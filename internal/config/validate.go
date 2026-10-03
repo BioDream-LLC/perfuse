@@ -300,6 +300,26 @@ func (s *Source) validate() []error {
 				"source.listen does not apply to a broker source; it connects out to the broker rather than listening"))
 		}
 
+	case SourceSQS:
+		if s.SQS == nil {
+			errs = append(errs, errors.New("an sqs source needs an sqs section with queue_url and region"))
+		} else {
+			errs = append(errs, s.SQS.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to an sqs source; it polls the queue"))
+		}
+
+	case SourceS3:
+		if s.S3 == nil {
+			errs = append(errs, errors.New("an s3 source needs an s3 section with bucket, prefix and region"))
+		} else {
+			errs = append(errs, s.S3.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to an s3 source; it polls the bucket"))
+		}
+
 	case SourceKafka:
 		if s.Kafka == nil {
 			errs = append(errs, errors.New("a kafka source needs a kafka section"))
@@ -458,7 +478,7 @@ func (s *Source) validate() []error {
 	default:
 		errs = append(errs, fmt.Errorf(
 			"source.type %q is not supported; use mllp, tcp, http, file, database, sftp, ftp, smb, webdav, "+
-				"soap, dicom, dicom_query, broker, serial or javascript", s.Type))
+				"soap, dicom, dicom_query, broker, kafka, sqs, s3, serial or javascript", s.Type))
 	}
 
 	if s.Type != SourceSerial && s.Serial != nil {
@@ -579,6 +599,20 @@ func (d *Destination) validate(dataType DataType) []error {
 
 	case DestinationBroker:
 		errs = append(errs, validateBrokerDest(d)...)
+
+	case DestinationSQS:
+		if d.SQS == nil {
+			errs = append(errs, errors.New("an sqs destination needs an sqs section with queue_url and region"))
+		} else {
+			errs = append(errs, d.SQS.Validate()...)
+		}
+
+	case DestinationSNS:
+		if d.SNS == nil {
+			errs = append(errs, errors.New("an sns destination needs an sns section with topic_arn and region"))
+		} else {
+			errs = append(errs, d.SNS.Validate()...)
+		}
 
 	case DestinationKafka:
 		if d.Kafka == nil {

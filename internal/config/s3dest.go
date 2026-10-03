@@ -61,6 +61,14 @@ type S3Destination struct {
 
 	// Timeout bounds one upload. Defaults to 60s.
 	Timeout time.Duration `yaml:"timeout,omitempty"`
+
+	// StorageClass is the S3 storage class each object is written with: STANDARD_IA, INTELLIGENT_TIERING, GLACIER_IR, GLACIER,
+	// DEEP_ARCHIVE and so on. This is how an archive goes straight to Glacier - S3 has no separate Glacier API to call.
+	StorageClass string `yaml:"storage_class,omitempty"`
+
+	// Format is hl7 (the default: each object is the message) or ndjson: each object is one JSON line with the message and the
+	// fields worth querying, under date-partitioned keys, so Amazon Athena can query the archive. See perfuse athena.
+	Format string `yaml:"format,omitempty"`
 }
 
 // defaultS3Key is a date-partitioned path.
@@ -68,6 +76,13 @@ type S3Destination struct {
 // concept would be a genuine usability failure - somebody would write one and get the other's literal
 // text in their object keys.
 const defaultS3Key = "${date}/${channel}/${control_id}.hl7"
+
+// AthenaKey partitions an ndjson archive the way Athena's partition projection reads it: channel, then dt=YYYY-MM-DD.
+const AthenaKey = "${channel}/dt=${date_iso}/${timestamp}-${control_id}.json"
+
+// s3StorageClasses are the values S3 accepts on a PUT. Kept here rather than imported, so config stays free of transport packages.
+var s3StorageClasses = []string{"STANDARD", "STANDARD_IA", "ONEZONE_IA", "INTELLIGENT_TIERING", "GLACIER_IR", "GLACIER",
+	"DEEP_ARCHIVE"}
 
 // validateS3Dest checks an S3 destination.
 func validateS3Dest(d *Destination) []error {
@@ -117,6 +132,31 @@ func validateS3Dest(d *Destination) []error {
 					"stores require path style, and without it the request goes to a bucket subdomain "+
 					"that usually does not resolve", d.Name))
 		}
+	}
+
+	if s.StorageClass != "" {
+		ok := false
+		for _, c := range s3StorageClasses {
+			if strings.EqualFold(c, s.StorageClass) {
+				s.StorageClass, ok = c, true
+			}
+		}
+		if !ok {
+			errs = append(errs, fmt.Errorf("destination %q: s3.storage_class %q is not one S3 accepts; use one of %s", d.Name,
+				s.StorageClass, strings.Join(s3StorageClasses, ", ")))
+		}
+	}
+	switch s.Format {
+	case "", "hl7":
+	case "ndjson":
+		if s.Key == "" {
+			s.Key = AthenaKey
+		}
+		if s.Framed {
+			errs = append(errs, fmt.Errorf("destination %q: s3.framed does not apply to ndjson, which is one JSON line per object", d.Name))
+		}
+	default:
+		errs = append(errs, fmt.Errorf("destination %q: s3.format %q is not valid; use hl7 or ndjson", d.Name, s.Format))
 	}
 
 	if s.Key == "" {

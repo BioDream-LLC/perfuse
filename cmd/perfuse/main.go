@@ -71,6 +71,7 @@ Usage:
   perfuse token   <subcommand>         issue credentials for machines rather than people
   perfuse sbom    [flags]              list everything linked into this binary
   perfuse cms0057 <subcommand>         CARIN claims, PDex prior auths and CMS-0057 metrics for payers
+  perfuse athena  [flags]              print the Amazon Athena table for an S3 ndjson archive
   perfuse version                      print the version
 
 Run a command with -h for its flags.
@@ -166,6 +167,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdSBOM(args[1:], stdout, stderr)
 	case "cms0057":
 		return cmdCMS0057(args[1:], stdout, stderr)
+	case "athena":
+		return cmdAthena(args[1:], stdout, stderr)
 	case "version", "--version", "-v":
 		fmt.Fprintf(stdout, "perfuse %s\n", buildVersion())
 		return nil

@@ -80,6 +80,15 @@ func (d *Destination) OutboundHosts() []string {
 		if d.S3 != nil {
 			addURL(d.S3.Endpoint)
 		}
+	case DestinationSQS:
+		if d.SQS != nil {
+			addURL(d.SQS.Endpoint)
+			addURL(d.SQS.QueueURL)
+		}
+	case DestinationSNS:
+		if d.SNS != nil {
+			addURL(d.SNS.Endpoint)
+		}
 	case DestinationDatabase:
 		// A DSN, deliberately not parsed for a host. Every driver spells it differently, and a wrong guess here
 		// would either miss the host or extract the password into a place it does not belong. A database destination

@@ -225,6 +225,25 @@ Only the settings the chosen framing uses are accepted. A record length on a del
 
 `expect_reply` changes what delivered means. Without it, success means the bytes reached the operating system's send buffer — which a peer that crashed a moment later never read.
 
+## Amazon S3, SQS and SNS
+
+A channel can read from an **SQS queue** or an **S3 bucket prefix**, and deliver to SQS, SNS or S3. All five are signed HTTP with
+no AWS SDK in the binary, and all five take the same access settings: `region`, `access_key_id`, `secret_access_key` (write
+`${AWS_SECRET_ACCESS_KEY}` to read the environment), an optional `session_token`, and `endpoint` for LocalStack, MinIO or a VPC
+endpoint. Under **Channels → New channel**, choose *We read from an Amazon SQS queue*, *We collect objects from an Amazon S3
+bucket*, or the SQS, SNS and S3 destination types.
+
+Nothing is acknowledged to AWS until the channel has handled it. An SQS message is deleted afterwards and otherwise reappears when
+its visibility timeout ends, so a queue's redrive policy is what moves one that keeps failing to a dead-letter queue. An S3 object
+moves to `processed/` afterwards, or to `error/` if it could not be handled, so one bad file does not stop the rest.
+
+On a FIFO queue or topic, messages are grouped by patient by default - SQS keeps order within a group and nowhere else - and
+deduplicated by content, so a retry is not delivered twice.
+
+An S3 archive can be written straight to **Glacier** with `storage_class`, and as **JSON lines for Amazon Athena** with
+`format: ndjson`; `perfuse athena` prints the table. The [reference](https://github.com/BioDream-LLC/perfuse/blob/main/docs/reference.md#amazon-web-services-s3-sqs-and-sns)
+has every setting.
+
 ## Delivery to another channel
 
 A channel destination hands the message to another channel by name. The receiving channel treats it like any other arrival: it records it, filters it, transforms it and fans it out.

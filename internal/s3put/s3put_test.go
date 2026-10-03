@@ -2,89 +2,15 @@ package s3put
 
 import (
 	"context"
-	"encoding/hex"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/awsv4"
 )
-
-// A signing bug produces a 403 that looks exactly like wrong credentials, and somebody then rotates keys
-// that were never the problem. So signing is tested against AWS's own published derivation vector rather
-// than against my own output, which would only prove the code agrees with itself.
-
-func TestTheSigningKeyMatchesTheAWSPublishedVector(t *testing.T) {
-	// From the AWS documentation's worked example of deriving a signing key. If this passes, the four-step
-	// chain is right; if it fails, everything else about the signature is untrustworthy.
-	const (
-		secret    = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
-		dateStamp = "20150830"
-		region    = "us-east-1"
-		service   = "iam"
-		want      = "c4afb1cc5771d871763a393e44b703571b55cc28424d1a5e86da6ed3c154a4b9"
-	)
-
-	got := hex.EncodeToString(signingKey(secret, dateStamp, region, service))
-	if got != want {
-		t.Errorf("signing key = %s\nwant           %s", got, want)
-	}
-}
-
-func TestHostIsAlwaysSigned(t *testing.T) {
-	// Go does not put Host in Header, and omitting it from the signature is the single commonest way a
-	// hand-written SigV4 implementation fails.
-	req, err := http.NewRequest(http.MethodPut, "https://bucket.s3.eu-west-2.amazonaws.com/a/b.hl7", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Host = "bucket.s3.eu-west-2.amazonaws.com"
-
-	signed, canonical := canonicalizeHeaders(req)
-	if !strings.Contains(signed, "host") {
-		t.Errorf("signed headers do not include host: %q", signed)
-	}
-	if !strings.Contains(canonical, "host:bucket.s3.eu-west-2.amazonaws.com") {
-		t.Errorf("the canonical headers do not carry the host: %q", canonical)
-	}
-}
-
-func TestVolatileHeadersAreNotSigned(t *testing.T) {
-	// Content-Length and User-Agent get rewritten by clients and proxies. Signing them means a request
-	// that verified locally fails in production, which is the worst possible place to discover it.
-	req, err := http.NewRequest(http.MethodPut, "https://b.s3.eu-west-2.amazonaws.com/k", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Host = "b.s3.eu-west-2.amazonaws.com"
-	req.Header.Set("User-Agent", "something")
-	req.Header.Set("Content-Length", "12")
-	req.Header.Set("Authorization", "should not be signed")
-
-	signed, _ := canonicalizeHeaders(req)
-	for _, bad := range []string{"user-agent", "content-length", "authorization"} {
-		if strings.Contains(signed, bad) {
-			t.Errorf("%s should not be signed: %q", bad, signed)
-		}
-	}
-}
-
-func TestKeySlashesSurviveEscaping(t *testing.T) {
-	// Slashes are the key's own structure - S3 keys routinely contain them to look like directories - and
-	// escaping them would create an object with a literal %2F in its name that nothing else can find.
-	got := escapePath("2026/08/20/adt-C1.hl7")
-	if got != "2026/08/20/adt-C1.hl7" {
-		t.Errorf("escaped = %q, want the slashes preserved", got)
-	}
-}
-
-func TestAwkwardCharactersInAKeyAreEscaped(t *testing.T) {
-	got := escapePath("a b+c.hl7")
-	if got != "a%20b%2Bc.hl7" {
-		t.Errorf("escaped = %q, want spaces and plus encoded", got)
-	}
-}
 
 func TestPutSendsASignedRequest(t *testing.T) {
 	var (
@@ -132,7 +58,7 @@ func TestPutSendsASignedRequest(t *testing.T) {
 	if !strings.HasPrefix(gotAuth, "AWS4-HMAC-SHA256 Credential=AKIAEXAMPLE/") {
 		t.Errorf("authorization = %q", gotAuth)
 	}
-	if gotSHA != sha256Hex(body) {
+	if gotSHA != awsv4.SHA256Hex(body) {
 		t.Errorf("content sha = %q, want the body's hash", gotSHA)
 	}
 	if string(gotBody) != string(body) {

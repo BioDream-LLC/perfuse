@@ -40,8 +40,8 @@ parses each of them properly, transforms what needs transforming, and delivers w
 **What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM · X12 837, 835, 270/271 and 278 ·
 C-CDA and CDA · HL7 v3 · delimited and raw formats.
 
-**How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, message brokers
-and S3 — fourteen source types and seventeen destination types, in both directions.
+**How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, Kafka, message
+brokers, and AWS — S3, SQS and SNS — eighteen source types and twenty destination types, in both directions.
 
 **What it does beyond moving messages.** A **durable on-disk queue** that keeps ordering and survives a
 restart. **Shadow mode**, so a channel can be changed against real traffic while delivering nothing.
@@ -121,10 +121,11 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"></th><th align="left" valign="middle">16 source types, 18 destination types, in both directions</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"></th><th align="left" valign="middle">18 source types, 20 destination types, in both directions</th></tr></thead>
 <tbody>
-<tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · JavaScript Reader · serial</td></tr>
-<tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</td></tr>
+<tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · JavaScript Reader · serial</td></tr>
+<tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</td></tr>
+<tr><td colspan="2"><b>AWS without the AWS SDK</b>: S3, SQS and SNS over signed HTTP, checked against AWS's published signature example and run against LocalStack. An SQS message is deleted only once handled; a FIFO queue keeps each patient's messages in order. An S3 archive can go straight to <b>Glacier</b> by storage class, or be written as <b>date-partitioned JSON for Amazon Athena</b> to query — <code>perfuse athena</code> prints the table</td></tr>
 <tr><td colspan="2">Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle and SQLite</b>, with the dialect checked when the channel is saved rather than at three in the morning</td></tr>
 <tr><td colspan="2"><b>Kafka</b>, keyed so one patient's events stay in order while different patients go in parallel — Kafka orders within a partition and nowhere else, and records sharing a key always share one. Offsets commit <b>after</b> a batch is handled, so a crash redelivers rather than loses</td></tr>
 <tr><td colspan="2">A <b>channel destination</b> so one feed can hand off to another without a network round trip</td></tr>

@@ -207,6 +207,18 @@ func describeSource(c *config.Channel) string {
 		}
 		return out
 
+	case config.SourceSQS:
+		if src.SQS == nil {
+			return "an SQS queue"
+		}
+		return "sqs " + src.SQS.QueueURL
+
+	case config.SourceS3:
+		if src.S3 == nil {
+			return "an S3 bucket"
+		}
+		return "s3://" + src.S3.Bucket + "/" + src.S3.Prefix
+
 	case config.SourceKafka:
 		if src.Kafka == nil {
 			return "a Kafka topic"
@@ -375,8 +387,25 @@ func describeDestination(d config.Destination) string {
 	case config.DestinationS3:
 		if d.S3 != nil {
 			out = fmt.Sprintf("stored as an object in the %s bucket", d.S3.Bucket)
+			if d.S3.StorageClass != "" {
+				out += " as " + d.S3.StorageClass
+			}
 		} else {
 			out = "stored as an object in S3"
+		}
+
+	case config.DestinationSQS:
+		if d.SQS != nil {
+			out = "sqs " + d.SQS.QueueURL
+		} else {
+			out = "an SQS queue"
+		}
+
+	case config.DestinationSNS:
+		if d.SNS != nil {
+			out = "sns " + d.SNS.TopicARN
+		} else {
+			out = "an SNS topic"
 		}
 
 	case config.DestinationBroker:

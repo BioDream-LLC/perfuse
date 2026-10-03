@@ -77,6 +77,9 @@ start keycloak -p 8080:8080 \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
   quay.io/keycloak/keycloak:26.0 start-dev
 
+# LocalStack, for S3, SQS and SNS. It does not check signatures by default; internal/awsv4 is held to AWS's published example for that.
+start localstack -p 4566:4566 -e SERVICES=s3,sqs,sns localstack/localstack:4
+
 # The Mirth family: where a site leaving Mirth goes. Mirth 4.5.2 is the last open-source release; the Open Integration Engine (the
 # Eclipse fork) and BridgeLink (Innovar's fork) continue it. OIE publishes images only up to 4.5.2, so 4.6.0 is built locally from
 # the project's signed release tarball, with its checksum verified first. OIE's image is amd64 only and runs emulated on Apple silicon.
@@ -116,6 +119,7 @@ Ready. What each one unlocks:
   Orthanc PACS    go test ./internal/engine/ -run 'RealPACS|CalledAE' -v
   PostgreSQL      go test ./internal/engine/ -run 'RealPostgres|Placeholder' -v
   OpenSSH SFTP    go test ./internal/engine/ -run 'OpenSSHServer|SFTPRefusesAWrong' -v
+  LocalStack      go test ./internal/awsmsg/ ./internal/s3put/ ./internal/engine/ -run LocalStack -v
   Mirth, OIE,     go test ./internal/mirth/... ./internal/tomirth/ -v    (each test runs once per engine)
   BridgeLink      ./scripts/mirth-engine-corpus.sh    regenerates internal/mirth/testdata/engines from all four
   Keycloak        scripts/keycloak-saml-setup.sh && scripts/saml-verify-serve.sh
@@ -124,5 +128,5 @@ Ready. What each one unlocks:
 Every one of those tests skips rather than fails when its container is absent, so `make check` passes on a
 machine with no Docker. That is deliberate: a check that needs Docker is a check people stop running.
 
-Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460
+Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460 localstack
 MSG

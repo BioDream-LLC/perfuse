@@ -39,6 +39,7 @@ func NewS3Sender(d config.Destination) (*S3Sender, error) {
 		Endpoint:             d.S3.Endpoint,
 		PathStyle:            d.S3.PathStyle,
 		ServerSideEncryption: d.S3.ServerSideEncryption,
+		StorageClass:         d.S3.StorageClass,
 		HTTPClient:           nil,
 	})
 	if err != nil {
@@ -64,6 +65,13 @@ func (s *S3Sender) Send(ctx context.Context, msg []byte) error {
 	if contentType == "" {
 		contentType = "application/hl7-v2"
 	}
+	if s.cfg.Format == "ndjson" {
+		line, err := athenaRecord(msg, s.name, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		body, contentType = line, "application/x-ndjson"
+	}
 
 	// The engine already retries, so this does not. Two layers of retry multiply rather than add, and the
 	// result is a destination that keeps trying for an hour when its policy said thirty seconds.
@@ -79,7 +87,14 @@ func (s *S3Sender) Describe() string {
 	if s.cfg.Endpoint != "" {
 		where += " at " + s.cfg.Endpoint
 	}
-	return where + "/" + s.keyTemplate()
+	where += "/" + s.keyTemplate()
+	if s.cfg.StorageClass != "" {
+		where += " (" + s.cfg.StorageClass + ")"
+	}
+	if s.cfg.Format == "ndjson" {
+		where += " as JSON lines for Athena"
+	}
+	return where
 }
 
 // Close releases nothing: the HTTP client is shared and has no state to release.
@@ -121,6 +136,8 @@ func (s *S3Sender) objectKey(raw []byte) (string, error) {
 	// Slashes in the date, so the default key partitions by day. A flat prefix makes a bucket slow to
 	// list and impossible to lifecycle by age, and nobody notices until there are four million objects.
 	out = strings.ReplaceAll(out, "${date}", now.Format("2006/01/02"))
+	// The form Athena's date partitions use, dt=2026-10-03.
+	out = strings.ReplaceAll(out, "${date_iso}", now.Format("2006-01-02"))
 	out = strings.ReplaceAll(out, "${control_id}", sanitiseKeySegment(controlID))
 	out = strings.ReplaceAll(out, "${message_type}", sanitiseKeySegment(msgType))
 	out = strings.ReplaceAll(out, "${channel}", sanitiseKeySegment(s.name))

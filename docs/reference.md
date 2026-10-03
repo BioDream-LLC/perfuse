@@ -1478,6 +1478,122 @@ the fixture has fewer than two. That is not defensive padding. The first version
 that test ran against a single-partition topic, where every record shares a partition
 whatever its key — so it passed while proving nothing.
 
+## Amazon Web Services: S3, SQS and SNS
+
+Five connectors, none of them using the AWS SDK: each is signed HTTP through one Signature Version 4 implementation
+(`internal/awsv4`), checked against AWS's own published example. An endpoint override points any of them at LocalStack,
+ElasticMQ, MinIO or a VPC interface endpoint.
+
+Every one takes the same access settings, inline in its block:
+
+| Key | |
+|---|---|
+| `region` | Required. Part of the signature, so a wrong one fails exactly like wrong credentials |
+| `access_key_id`, `secret_access_key` | Literal, or `${AWS_ACCESS_KEY_ID}` and `${AWS_SECRET_ACCESS_KEY}` to read the environment at startup |
+| `session_token` | For temporary credentials, which expire - and the channel stops when they do |
+| `endpoint` | Overrides AWS's host |
+
+There is no instance-metadata credential chain, deliberately: metadata addresses are refused as destinations by default, and a
+credential cache with refresh is where a small implementation stops being small.
+
+### SQS source
+
+```yaml
+source:
+  type: sqs
+  sqs:
+    queue_url: https://sqs.eu-west-2.amazonaws.com/123456789012/adt
+    region: eu-west-2
+    access_key_id: ${AWS_ACCESS_KEY_ID}
+    secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+    wait_seconds: 20          # long poll, 1-20
+    max_messages: 10          # per receive, 1-10
+    visibility_timeout: 90s   # optional; the queue's own setting otherwise
+```
+
+A message is deleted only after the channel has handled it. One the channel could not parse or deliver is left, so SQS offers
+it again when its visibility timeout ends - and a redrive policy on the queue moves it to a dead-letter queue after however many
+attempts the queue allows. Nothing is lost; a message can arrive twice, which SQS allows anyway.
+
+### S3 source
+
+```yaml
+source:
+  type: s3
+  s3:
+    bucket: hospital-inbound
+    prefix: inbound/          # required, ends in /
+    suffix: .hl7              # optional
+    after_read: move          # move (default) or delete
+    move_to: processed/       # default
+    error_prefix: error/      # default
+    poll_interval: 30s
+    region: eu-west-2
+    access_key_id: ${AWS_ACCESS_KEY_ID}
+    secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+```
+
+Objects are read in key order. A handled object is moved (copied, then deleted) or deleted; one that cannot be handled moves to
+`error_prefix`, so it does not block the rest. There is no `leave`: a bucket gives a poller nothing to remember across a restart,
+so leaving objects would read them all again. `move_to` and `error_prefix` may not be inside `prefix`. `framed: true` reads several
+MLLP-framed messages from one object, every one of which must be accepted before the object is moved. `max_object_size` defaults to
+16 MiB.
+
+### SQS and SNS destinations
+
+```yaml
+destinations:
+  - name: events
+    type: sqs
+    sqs:
+      queue_url: https://sqs.eu-west-2.amazonaws.com/123456789012/adt.fifo
+      group_by: patient       # patient (default), channel, or a path such as MSH-4
+      region: eu-west-2
+      access_key_id: ${AWS_ACCESS_KEY_ID}
+      secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+  - name: fanout
+    type: sns
+    sns:
+      topic_arn: arn:aws:sns:eu-west-2:123456789012:adt
+      subject: ${message_type} ${control_id}   # for email subscribers
+      region: eu-west-2
+      access_key_id: ${AWS_ACCESS_KEY_ID}
+      secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+```
+
+On a FIFO queue or topic (a name ending `.fifo`) the message group is the patient by default: SQS orders within a group and nowhere
+else, so one patient's events stay in sequence while different patients proceed in parallel. The deduplication id is the
+message's SHA-256, so an engine retry inside SQS's five-minute window is not delivered twice. Both refuse a message over 256 KB with
+that reason, rather than SQS's generic validation error.
+
+### S3 destination: storage class and Athena
+
+```yaml
+  - name: archive
+    type: s3
+    s3:
+      bucket: hospital-archive
+      storage_class: GLACIER_IR     # STANDARD_IA, INTELLIGENT_TIERING, GLACIER, DEEP_ARCHIVE...
+      format: ndjson                # one JSON line per message, for Athena
+      region: eu-west-2
+      access_key_id: ${AWS_ACCESS_KEY_ID}
+      secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+```
+
+`storage_class` is how an archive goes to Glacier: S3 has no separate Glacier API to call. `format: ndjson` writes each message as
+one JSON object with `received_at`, `channel`, `message_type`, `trigger_event`, `control_id`, `sending_application`,
+`sending_facility`, `receiving_facility`, `patient_id`, `message_time` and the whole `message`, under
+`<destination>/dt=YYYY-MM-DD/`. `perfuse athena -bucket hospital-archive -destination archive` prints the `CREATE EXTERNAL TABLE`
+for it, with partition projection so nothing has to run as days are added:
+
+```sql
+SELECT control_id, received_at FROM perfuse.hl7_archive
+WHERE dt >= '2026-10-01' AND message_type = 'ADT' AND patient_id = '555';
+```
+
+The archive holds patient data. Encrypt the bucket (`server_side_encryption` or a bucket default), and give Athena's query results
+location the same protection - results are written there in the clear unless it is encrypted too.
+
 ## TLS
 
 ```yaml

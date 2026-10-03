@@ -25,16 +25,15 @@ package s3put
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/awsv4"
 )
 
 // Config describes where and how to write.
@@ -66,6 +65,10 @@ type Config struct {
 	// unencrypted uploads produces a 403 with no explanation of what was wrong, and the person reading
 	// it is looking at an integration engine, not at IAM.
 	ServerSideEncryption string
+
+	// StorageClass sets x-amz-storage-class: STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING, GLACIER_IR, GLACIER, DEEP_ARCHIVE. Empty
+	// is STANDARD. This is how an archive goes to Glacier: there is no Glacier API to call, only a storage class on the object.
+	StorageClass string
 
 	// HTTPClient is used for the request. Defaults to a client with a sensible timeout.
 	HTTPClient *http.Client
@@ -121,6 +124,9 @@ func (c *Client) Put(ctx context.Context, key string, body []byte, contentType s
 	}
 	if c.cfg.ServerSideEncryption != "" {
 		req.Header.Set("X-Amz-Server-Side-Encryption", c.cfg.ServerSideEncryption)
+	}
+	if c.cfg.StorageClass != "" {
+		req.Header.Set("X-Amz-Storage-Class", c.cfg.StorageClass)
 	}
 	req.Header.Set("Host", host)
 	req.Host = host
@@ -180,141 +186,15 @@ func (c *Client) objectURL(key string) (string, string, error) {
 	return scheme + "://" + host + prefix + "/" + escapePath(key), host, nil
 }
 
-// sign adds the Signature Version 4 authorization header.
-//
-// Implemented from the specification rather than copied from an SDK, and checked against AWS's published
-// test vectors, because a signing bug produces a 403 that looks exactly like wrong credentials.
+// sign adds the Signature Version 4 authorization header, through the signer every AWS connector shares.
 func (c *Client) sign(req *http.Request, body []byte, now time.Time) error {
-	amzDate := now.Format("20060102T150405Z")
-	dateStamp := now.Format("20060102")
-
-	payloadHash := sha256Hex(body)
-
-	req.Header.Set("X-Amz-Date", amzDate)
-	req.Header.Set("X-Amz-Content-Sha256", payloadHash)
-	if c.cfg.SessionToken != "" {
-		req.Header.Set("X-Amz-Security-Token", c.cfg.SessionToken)
-	}
-
-	signedHeaders, canonicalHeaders := canonicalizeHeaders(req)
-
-	canonicalRequest := strings.Join([]string{
-		req.Method,
-		canonicalURI(req.URL),
-		req.URL.RawQuery,
-		canonicalHeaders,
-		signedHeaders,
-		payloadHash,
-	}, "\n")
-
-	scope := strings.Join([]string{dateStamp, c.cfg.Region, "s3", "aws4_request"}, "/")
-
-	stringToSign := strings.Join([]string{
-		"AWS4-HMAC-SHA256",
-		amzDate,
-		scope,
-		sha256Hex([]byte(canonicalRequest)),
-	}, "\n")
-
-	key := signingKey(c.cfg.SecretAccessKey, dateStamp, c.cfg.Region, "s3")
-	signature := hex.EncodeToString(hmacSHA256(key, []byte(stringToSign)))
-
-	req.Header.Set("Authorization", fmt.Sprintf(
-		"AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%s",
-		c.cfg.AccessKeyID, scope, signedHeaders, signature))
-
+	awsv4.Sign(req, body, awsv4.Credentials{
+		AccessKeyID: c.cfg.AccessKeyID, SecretAccessKey: c.cfg.SecretAccessKey, SessionToken: c.cfg.SessionToken,
+	}, c.cfg.Region, "s3", now)
 	return nil
 }
 
-// signingKey derives the request key by the four-step chain the specification describes.
-func signingKey(secret, dateStamp, region, service string) []byte {
-	kDate := hmacSHA256([]byte("AWS4"+secret), []byte(dateStamp))
-	kRegion := hmacSHA256(kDate, []byte(region))
-	kService := hmacSHA256(kRegion, []byte(service))
-	return hmacSHA256(kService, []byte("aws4_request"))
-}
-
-// canonicalizeHeaders builds the signed header list and the canonical header block.
-//
-// Host is included explicitly because Go does not put it in Header, and omitting it from the signature is
-// the single commonest way a hand-written SigV4 implementation fails.
-func canonicalizeHeaders(req *http.Request) (string, string) {
-	headers := map[string]string{"host": req.Host}
-
-	for name, values := range req.Header {
-		lower := strings.ToLower(name)
-		switch lower {
-		case "authorization", "user-agent", "content-length":
-			// Excluded: authorization is what is being produced, and the other two are altered in
-			// transit by clients and proxies, which would invalidate the signature.
-			continue
-		}
-		headers[lower] = strings.Join(trimAll(values), ",")
-	}
-
-	names := make([]string, 0, len(headers))
-	for name := range headers {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	var block strings.Builder
-	for _, name := range names {
-		block.WriteString(name)
-		block.WriteByte(':')
-		block.WriteString(headers[name])
-		block.WriteByte('\n')
-	}
-
-	return strings.Join(names, ";"), block.String()
-}
-
-func canonicalURI(u *url.URL) string {
-	if u.EscapedPath() == "" {
-		return "/"
-	}
-	return u.EscapedPath()
-}
-
-// escapePath encodes an object key for a URL path.
-//
-// Slashes are left alone because they are the key's own structure, and S3 keys routinely contain them to
-// look like directories. Everything else outside the unreserved set is percent-encoded, which is what the
-// signature calculation assumes.
-func escapePath(key string) string {
-	var b strings.Builder
-	for i := 0; i < len(key); i++ {
-		ch := key[i]
-		switch {
-		case ch >= 'A' && ch <= 'Z', ch >= 'a' && ch <= 'z', ch >= '0' && ch <= '9':
-			b.WriteByte(ch)
-		case ch == '-' || ch == '_' || ch == '.' || ch == '~' || ch == '/':
-			b.WriteByte(ch)
-		default:
-			fmt.Fprintf(&b, "%%%02X", ch)
-		}
-	}
-	return b.String()
-}
-
-func hmacSHA256(key, data []byte) []byte {
-	mac := hmac.New(sha256.New, key)
-	mac.Write(data)
-	return mac.Sum(nil)
-}
-
-func sha256Hex(data []byte) string {
-	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:])
-}
-
-func trimAll(values []string) []string {
-	out := make([]string, 0, len(values))
-	for _, v := range values {
-		out = append(out, strings.TrimSpace(v))
-	}
-	return out
-}
+func escapePath(key string) string { return awsv4.EscapePath(key) }
 
 // collapse turns an XML error body into one line.
 //
@@ -327,4 +207,127 @@ func collapse(s string) string {
 		s = strings.ReplaceAll(s, "  ", " ")
 	}
 	return s
+}
+
+// StorageClasses are the values S3 accepts for x-amz-storage-class on a PUT.
+var StorageClasses = []string{"STANDARD", "STANDARD_IA", "ONEZONE_IA", "INTELLIGENT_TIERING", "GLACIER_IR", "GLACIER",
+	"DEEP_ARCHIVE"}
+
+// Object is one entry in a listing.
+type Object struct {
+	Key          string
+	Size         int64
+	LastModified time.Time
+	ETag         string
+}
+
+// List returns up to max objects under prefix, in key order, starting after the given key. S3 returns keys in UTF-8 binary order,
+// which is what makes "start after the last one read" a correct cursor.
+func (c *Client) List(ctx context.Context, prefix, startAfter string, max int) ([]Object, error) {
+	q := url.Values{"list-type": {"2"}}
+	if prefix != "" {
+		q.Set("prefix", prefix)
+	}
+	if startAfter != "" {
+		q.Set("start-after", startAfter)
+	}
+	if max > 0 {
+		q.Set("max-keys", fmt.Sprint(max))
+	}
+	body, err := c.do(ctx, http.MethodGet, "", q, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var res struct {
+		Contents []struct {
+			Key          string `xml:"Key"`
+			Size         int64  `xml:"Size"`
+			LastModified string `xml:"LastModified"`
+			ETag         string `xml:"ETag"`
+		} `xml:"Contents"`
+	}
+	if err := xml.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("the S3 listing could not be read: %w", err)
+	}
+	out := make([]Object, 0, len(res.Contents))
+	for _, o := range res.Contents {
+		t, _ := time.Parse(time.RFC3339, o.LastModified)
+		out = append(out, Object{Key: o.Key, Size: o.Size, LastModified: t, ETag: strings.Trim(o.ETag, `"`)})
+	}
+	return out, nil
+}
+
+// Get reads one object, refusing anything over limit bytes.
+func (c *Client) Get(ctx context.Context, key string, limit int64) ([]byte, error) {
+	body, err := c.doLimit(ctx, http.MethodGet, key, nil, nil, nil, limit)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+// Delete removes one object.
+func (c *Client) Delete(ctx context.Context, key string) error {
+	_, err := c.do(ctx, http.MethodDelete, key, nil, nil, nil)
+	return err
+}
+
+// Copy copies an object within the bucket, which is how S3 moves one: copy, then delete.
+func (c *Client) Copy(ctx context.Context, from, to string) error {
+	_, err := c.do(ctx, http.MethodPut, to, nil, nil, map[string]string{
+		"X-Amz-Copy-Source": "/" + c.cfg.Bucket + "/" + awsv4.EscapePath(strings.TrimPrefix(from, "/")),
+	})
+	return err
+}
+
+func (c *Client) do(ctx context.Context, method, key string, q url.Values, body []byte, headers map[string]string) ([]byte, error) {
+	return c.doLimit(ctx, method, key, q, body, headers, 16<<20)
+}
+
+func (c *Client) doLimit(ctx context.Context, method, key string, q url.Values, body []byte, headers map[string]string,
+	limit int64) ([]byte, error) {
+	endpoint, host, err := c.objectURL(strings.TrimPrefix(key, "/"))
+	if err != nil {
+		return nil, err
+	}
+	if key == "" {
+		// The bucket itself: objectURL ends in "/" with an empty key, which is the listing's path.
+		endpoint = strings.TrimSuffix(endpoint, "/") + "/"
+	}
+	if len(q) > 0 {
+		endpoint += "?" + awsv4.CanonicalQuery(q)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	req.Host = host
+	req.ContentLength = int64(len(body))
+	if err := c.sign(req, body, time.Now().UTC()); err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("S3 refused the %s with %s: %s", strings.ToLower(method), resp.Status,
+			strings.TrimSpace(collapse(string(data[:min(len(data), 2048)]))))
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("the object %s is larger than the %d bytes allowed", key, limit)
+	}
+	return data, nil
 }
