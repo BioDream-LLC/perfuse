@@ -135,6 +135,10 @@ type Session struct {
 	// thing that quietly authorised the wrong organisation.
 	TenantID  tenant.ID
 	ExpiresAt time.Time
+
+	// FHIRGroups limits an API token to these FHIR Group ids on the FHIR endpoint. Empty means no limit, and it is always
+	// empty for a person's session.
+	FHIRGroups []string
 }
 
 // AuditEntry is one recorded action.

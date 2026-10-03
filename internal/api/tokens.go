@@ -24,6 +24,8 @@ type apiTokenResponse struct {
 	LastUsed  string `json:"lastUsed,omitempty"`
 	Revoked   bool   `json:"revoked"`
 	RevokedAt string `json:"revokedAt,omitempty"`
+	// FHIRGroups are the FHIR Groups the token is limited to; empty means no limit.
+	FHIRGroups []string `json:"fhirGroups"`
 }
 
 // handleListAPITokens lists tokens without their values.
@@ -40,10 +42,14 @@ func (s *Server) handleListAPITokens(w http.ResponseWriter, r *http.Request, ses
 	out := make([]apiTokenResponse, 0, len(tokens))
 	for _, t := range tokens {
 		entry := apiTokenResponse{
-			Label:     t.Label,
-			Role:      string(t.Role),
-			CreatedBy: t.CreatedBy,
-			Revoked:   t.Revoked(),
+			Label:      t.Label,
+			Role:       string(t.Role),
+			CreatedBy:  t.CreatedBy,
+			Revoked:    t.Revoked(),
+			FHIRGroups: t.FHIRGroups,
+		}
+		if entry.FHIRGroups == nil {
+			entry.FHIRGroups = []string{}
 		}
 		if !t.CreatedAt.IsZero() {
 			entry.CreatedAt = t.CreatedAt.UTC().Format(time.RFC3339)
@@ -64,6 +70,8 @@ func (s *Server) handleListAPITokens(w http.ResponseWriter, r *http.Request, ses
 type createTokenRequest struct {
 	Label string `json:"label"`
 	Role  string `json:"role"`
+	// FHIRGroups limits the token to these FHIR Group ids: a provider's CMS-0057 Provider Access token.
+	FHIRGroups []string `json:"fhirGroups"`
 }
 
 // createTokenResponse carries the one and only sight of the value.
@@ -117,6 +125,17 @@ func (s *Server) handleCreateAPIToken(w http.ResponseWriter, r *http.Request, se
 		s.failErr(w, r, err)
 		return
 	}
+	detail := "role " + string(role)
+	if len(req.FHIRGroups) > 0 {
+		if err := s.storeFor(sess).LimitAPITokenToGroups(r.Context(), label, req.FHIRGroups); err != nil {
+			// Revoked rather than left half-made: a token meant to be limited and issued without the limit is a
+			// provider holding every member's records.
+			_ = s.storeFor(sess).RevokeAPIToken(r.Context(), label)
+			s.fail(w, r, http.StatusBadRequest, err.Error())
+			return
+		}
+		detail += ", limited to FHIR Groups " + strings.Join(req.FHIRGroups, ", ")
+	}
 
 	s.log().Info("an API token was created",
 		"label", label, "role", string(role), "by", sess.Username)
@@ -124,7 +143,7 @@ func (s *Server) handleCreateAPIToken(w http.ResponseWriter, r *http.Request, se
 		Username: sess.Username,
 		Action:   "token.create",
 		Target:   label,
-		Detail:   "role " + string(role),
+		Detail:   detail,
 		IP:       clientIP(r),
 	})
 

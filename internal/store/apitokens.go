@@ -25,6 +25,9 @@ type APIToken struct {
 	LastUsed  *time.Time `json:"lastUsed,omitempty"`
 	RevokedAt *time.Time `json:"revokedAt,omitempty"`
 
+	// FHIRGroups limits the token, on the FHIR endpoint, to these Group ids. Empty means no limit.
+	FHIRGroups []string `json:"fhirGroups"`
+
 	// hash identifies the row without exposing the token.
 	hash string
 }
@@ -83,10 +86,11 @@ func (s *Store) LookupAPIToken(ctx context.Context, token string) (*Session, err
 		label     string
 		role      string
 		revokedAt sql.NullString
+		groups    string
 	)
 	err := s.db.QueryRowContext(ctx,
-		`SELECT tenant_id, label, role, revoked_at FROM api_tokens WHERE token_hash = ?`,
-		hash).Scan(&tid, &label, &role, &revokedAt)
+		`SELECT tenant_id, label, role, revoked_at, fhir_groups FROM api_tokens WHERE token_hash = ?`,
+		hash).Scan(&tid, &label, &role, &revokedAt, &groups)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTokenNotFound
 	}
@@ -106,10 +110,52 @@ func (s *Store) LookupAPIToken(ctx context.Context, token string) (*Session, err
 	return &Session{
 		// Named so the audit log distinguishes a machine from a person. A fleet poll appearing as a username
 		// somebody recognises would be actively misleading.
-		Username: "token:" + label,
-		Role:     Role(role),
-		TenantID: tenant.ID(tid),
+		Username:   "token:" + label,
+		Role:       Role(role),
+		TenantID:   tenant.ID(tid),
+		FHIRGroups: splitGroups(groups),
 	}, nil
+}
+
+// LimitAPITokenToGroups restricts a token, on the FHIR endpoint, to the given Group ids. An empty list removes the limit.
+func (s *Store) LimitAPITokenToGroups(ctx context.Context, label string, groups []string) error {
+	return s.limitAPITokenIn(ctx, DefaultTenant, label, groups)
+}
+
+func (s *Store) limitAPITokenIn(ctx context.Context, tid tenant.ID, label string, groups []string) error {
+	clean := make([]string, 0, len(groups))
+	for _, g := range groups {
+		g = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(g), "Group/"))
+		if g == "" {
+			continue
+		}
+		if strings.ContainsAny(g, ", ") {
+			return fmt.Errorf("%q is not a FHIR Group id", g)
+		}
+		clean = append(clean, g)
+	}
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE api_tokens SET fhir_groups = ? WHERE tenant_id = ? AND label = ? AND revoked_at IS NULL`,
+		strings.Join(clean, ","), string(tid), label)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrTokenNotFound
+	}
+
+	return nil
+}
+
+func splitGroups(v string) []string {
+	var out []string
+	for _, g := range strings.Split(v, ",") {
+		if g = strings.TrimSpace(g); g != "" {
+			out = append(out, g)
+		}
+	}
+
+	return out
 }
 
 // ListAPITokens returns every token, revoked ones included.
@@ -122,7 +168,7 @@ func (s *Store) ListAPITokens(ctx context.Context) ([]APIToken, error) {
 
 func (s *Store) listAPITokensIn(ctx context.Context, tid tenant.ID) ([]APIToken, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT token_hash, label, role, created_at, created_by, last_used, revoked_at
+		`SELECT token_hash, label, role, created_at, created_by, last_used, revoked_at, fhir_groups
 		 FROM api_tokens WHERE tenant_id = ?
 		 ORDER BY revoked_at IS NOT NULL, label`,
 		string(tid))
@@ -137,9 +183,14 @@ func (s *Store) listAPITokensIn(ctx context.Context, tid tenant.ID) ([]APIToken,
 			t                   APIToken
 			created, createdBy  string
 			lastUsed, revokedAt sql.NullString
+			groups              string
 		)
-		if err := rows.Scan(&t.hash, &t.Label, &t.Role, &created, &createdBy, &lastUsed, &revokedAt); err != nil {
+		if err := rows.Scan(&t.hash, &t.Label, &t.Role, &created, &createdBy, &lastUsed, &revokedAt, &groups); err != nil {
 			return nil, err
+		}
+		t.FHIRGroups = splitGroups(groups)
+		if t.FHIRGroups == nil {
+			t.FHIRGroups = []string{}
 		}
 		t.CreatedBy = createdBy
 		t.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)

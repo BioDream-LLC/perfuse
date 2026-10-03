@@ -31,6 +31,34 @@ type migration struct {
 	name string
 	// stmts run in order inside one transaction.
 	stmts []string
+	// addColumns are added only when missing, which plain ALTER TABLE cannot express in SQLite. For a column that a
+	// database may already have - one rebuilt from a later schema, or migrated, rolled back and migrated again.
+	addColumns []columnAdd
+}
+
+type columnAdd struct{ table, column, definition string }
+
+func addColumnIfMissing(ctx context.Context, tx *sql.Tx, c columnAdd) error {
+	rows, err := tx.QueryContext(ctx, "SELECT name FROM pragma_table_info(?)", c.table)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if name == c.column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "ALTER TABLE "+c.table+" ADD COLUMN "+c.column+" "+c.definition)
+
+	return err
 }
 
 var migrations = []migration{
@@ -359,6 +387,14 @@ var migrations = []migration{
 			`CREATE INDEX IF NOT EXISTS friction_grouping ON friction (route, status, message)`,
 		},
 	},
+	{
+		// The FHIR Groups an API token is limited to, comma-separated; empty means no limit.
+		//
+		// For the CMS-0057 Provider Access API, where each provider must reach only its own attribution list. SMART scopes
+		// say which kinds of resource a token may read, not which Group, so the limit has to live on the token.
+		name:       "api-token-fhir-groups",
+		addColumns: []columnAdd{{"api_tokens", "fhir_groups", "TEXT NOT NULL DEFAULT ''"}},
+	},
 }
 
 // applyMigrations runs whatever has not run yet.
@@ -391,6 +427,11 @@ func (s *Store) applyMigration(ctx context.Context, index int, m migration) erro
 	for j, stmt := range m.stmts {
 		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return fmt.Errorf("statement %d: %w", j, err)
+		}
+	}
+	for _, c := range m.addColumns {
+		if err := addColumnIfMissing(ctx, tx, c); err != nil {
+			return fmt.Errorf("adding %s.%s: %w", c.table, c.column, err)
 		}
 	}
 

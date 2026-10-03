@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · dbbf5db</p>
+<p class="version">version 0.1 · 8838a03</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2443,7 +2443,7 @@ destinations:
 <li><code>GET /fhir/Group/{id}/$export</code> — the standard Bulk Data group export, treated as Provider Access.</li>
 </ul>
 <p>The exports apply the rule&#39;s exclusions on the way out. Claims lose the payment and every cost-sharing and remittance amount, and keep the services, codes, dates and providers; the CARIN profile is removed from <code>meta.profile</code> because the resource no longer meets it. Payer-to-Payer also leaves out denied prior authorisations. Members holding an active PDex Provider Access opt-out Consent are left out of a provider export, and the log records how many. The <code>patient</code> parameter can only narrow to members of the Group; naming anyone else is refused.</p>
-<p>Access to a Group&#39;s export is decided by the endpoint&#39;s authentication. SMART scopes say what kinds of resource a token may read, not which Group, so issuing each provider a token that can reach only its own attribution list is part of deploying this — and the reason it is stated here.</p>
+<p>Access to a Group&#39;s export is decided by the endpoint&#39;s authentication. SMART scopes say what kinds of resource a token may read, not which Group, so each provider needs a token that can reach only its own attribution list. An API token can be limited to Groups when it is made — <code>perfuse token create -label riverside-provider-access -fhir-groups riverside-attributed</code>, or the <strong>Limit to FHIR Groups</strong> field under Users → Machine credentials — and on the FHIR endpoint it can then read those Groups, run <code>$davinci-data-export</code> or <code>$export</code> on them and fetch what the export produced, and nothing else. Another provider&#39;s Group answers not-found rather than forbidden, so a token does not learn which other attribution lists exist; every other request, member matching and ordinary search included, is refused. The limit applies to API tokens; a token from a SMART issuer carries no Group limit.</p>
 <h3 id="s16-5-prior-authorisation-metrics"><span class="num">16.5</span> Prior authorisation metrics</h3>
 <p><code>perfuse cms0057 metrics</code> reads a CSV of decisions exported from the utilisation management system and produces the public page CMS requires, in the layout of its *Prior Authorization Metrics Reporting — Overview and Template*.</p>
 <pre class="code lang-sh"><code>perfuse cms0057 metrics -year 2025 -org &#34;Springfield Health Plan&#34; -services services.csv \
@@ -2687,6 +2687,7 @@ destinations:
 <p>Issues credentials for machines rather than people. A token does not expire and is not affected by anybody signing out, which is what a server polling its neighbour needs and what a browser session deliberately is not.</p>
 <p>    perfuse token create -db perfuse.db -label fleet-from-site-a -role viewer     perfuse token list   -db perfuse.db     perfuse token revoke -db perfuse.db -label fleet-from-site-a</p>
 <p>Only the hash is stored, so a token is displayed once when it is created and cannot be recovered afterwards. A stolen database therefore yields no usable token. Give a token the lowest role that does the job: a fleet view needs <code>viewer</code>, and nothing that only reads should hold anything more.</p>
+<p><code>-fhir-groups riverside-attributed,riverside-north</code> limits a token to those FHIR Groups, for a provider&#39;s CMS-0057 Provider Access export: on the FHIR endpoint it can read those Groups and export them, and nothing else. See <a href="#s16-cms-0057-for-payers">CMS-0057 for payers</a>.</p>
 <h4 id="s19-7-4-perfuse-sbom"><span class="num">19.7.4</span> perfuse sbom</h4>
 <p>Lists everything linked into the binary, read from the build itself rather than from <code>go.mod</code> — so it describes the binary in front of you and not what somebody once asked for.</p>
 <p><code>-json</code> emits CycloneDX and <code>-spdx</code> emits SPDX tag-value, which is usually what a procurement or security review is actually asking for. The browser code embedded in the binary is included, because a reviewer matching a binary against advisories needs to know it contains a React application.</p>

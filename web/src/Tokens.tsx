@@ -24,6 +24,7 @@ export function Tokens() {
 
   const [label, setLabel] = useState('')
   const [role, setRole] = useState('viewer')
+  const [groups, setGroups] = useState('')
   const [creating, setCreating] = useState(false)
 
   // Held in state rather than shown in the list, because this is the only time the value
@@ -51,9 +52,14 @@ export function Tokens() {
     setCreating(true)
     setError(null)
     try {
-      const res = await api.createToken(label.trim(), role)
+      const limit = groups
+        .split(',')
+        .map((g) => g.trim())
+        .filter(Boolean)
+      const res = await api.createToken(label.trim(), role, limit)
       setIssued(res)
       setLabel('')
+      setGroups('')
       await load()
     } catch (err) {
       setError(toUiError(err))
@@ -85,7 +91,10 @@ export function Tokens() {
             <p className="text-sm font-medium text-emerald-900">
               Token issued for {issued.label} ({issued.role})
             </p>
-            <p className="mt-2 break-all rounded border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-100">
+            <p
+              data-testid="issued-token"
+              className="mt-2 break-all rounded border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-100"
+            >
               {issued.token}
             </p>
             <p className="mt-2 text-xs text-emerald-900">{issued.note}</p>
@@ -130,6 +139,13 @@ export function Tokens() {
             </select>
           </Field>
 
+          <Field
+            label="Limit to FHIR Groups"
+            hint="For a provider's CMS-0057 Provider Access token: comma-separated Group ids. The token can then read those Groups and export them, and nothing else on the FHIR endpoint. Leave empty for no limit."
+          >
+            <input className="input" value={groups} placeholder="riverside-attributed" onChange={(e) => setGroups(e.target.value)} />
+          </Field>
+
           <button
             className="btn-primary"
             disabled={creating || label.trim() === ''}
@@ -170,7 +186,12 @@ export function Tokens() {
                     className={t.revoked ? 'border-b border-slate-100 text-slate-400' : 'border-b border-slate-100'}
                   >
                     <td className="py-2 pr-4 font-mono text-xs">{t.label}</td>
-                    <td className="py-2 pr-4">{t.role}</td>
+                    <td className="py-2 pr-4">
+                      {t.role}
+                      {t.fhirGroups && t.fhirGroups.length > 0 && (
+                        <span className="block text-xs text-slate-400">FHIR Groups: {t.fhirGroups.join(', ')}</span>
+                      )}
+                    </td>
                     <td className="py-2 pr-4 text-xs">
                       {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '—'}
                       {t.createdBy ? ` by ${t.createdBy}` : ''}

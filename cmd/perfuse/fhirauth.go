@@ -89,6 +89,12 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 
 			return sess.Username, string(sess.Role), nil
 		},
+		Groups: func(ctx context.Context, token string) []string {
+			if sess, err := opts.Store.LookupAPIToken(ctx, token); err == nil {
+				return sess.FHIRGroups
+			}
+			return nil
+		},
 		Log: opts.Log,
 	}, nil
 }

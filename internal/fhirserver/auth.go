@@ -57,6 +57,10 @@ type Caller struct {
 	// encounter of that id - so the two are enforced together and the patient check is never skipped because an encounter
 	// was present.
 	Encounter string
+
+	// Groups limits the caller to these Group ids for Group operations - the CMS-0057 Provider Access export - and for
+	// reading Groups. Empty means no Group limit. Set from an API token limited to its provider's attribution list.
+	Groups []string
 }
 
 // ErrNoCredentials means the request carried none.
@@ -75,6 +79,9 @@ type TokenLookup func(ctx context.Context, token string) (name string, role stri
 type BearerAuth struct {
 	// Lookup checks the token.
 	Lookup TokenLookup
+
+	// Groups, when set, returns the Group ids a valid token is limited to. Called only after Lookup accepted the token.
+	Groups func(ctx context.Context, token string) []string
 
 	// Log records failures.
 	Log *slog.Logger
@@ -114,13 +121,18 @@ func (b *BearerAuth) Authenticate(r *http.Request) (*Caller, error) {
 
 	b.attempts.Succeeded(ip)
 
-	return &Caller{
+	caller := &Caller{
 		Name: name,
 		// Read for a viewer, write for anything above it. The same role names the console uses, so there is one
 		// place where "what may this role do" is decided.
 		Write:     role != "viewer",
 		AllScopes: true,
-	}, nil
+	}
+	if b.Groups != nil {
+		caller.Groups = b.Groups(r.Context(), token)
+	}
+
+	return caller, nil
 }
 
 // Describe names the scheme.

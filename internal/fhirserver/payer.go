@@ -202,6 +202,11 @@ func (s *Server) handleGroupExport(w http.ResponseWriter, r *http.Request) {
 		s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityError, "not-found", fmt.Sprintf("Group/%s does not exist", id))
 		return
 	}
+	if !callerMayUseGroup(caller, id) {
+		// Not found rather than forbidden: a provider's token should not learn which other attribution lists exist.
+		s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityError, "not-found", fmt.Sprintf("Group/%s does not exist", id))
+		return
+	}
 	if !permitsResource(caller, g) {
 		s.writeOutcome(w, r, http.StatusForbidden, fhir.SeverityError, "forbidden", "this token may not read that Group")
 		return
@@ -419,4 +424,54 @@ func asSliceAny(v any) []any {
 	s, _ := v.([]any)
 
 	return s
+}
+
+// callerMayUseGroup applies a token's Group limit. A caller with no limit may use any Group.
+func callerMayUseGroup(c *Caller, id string) bool {
+	if c == nil || len(c.Groups) == 0 {
+		return true
+	}
+	for _, g := range c.Groups {
+		if g == id {
+			return true
+		}
+	}
+
+	return false
+}
+
+// limitToGroups confines a Group-limited caller to the Provider Access surface: reading its own Groups, exporting them, and
+// fetching what the export produced.
+//
+// Everything else is refused, not narrowed. A provider token holds no patient context, so an ordinary search would be a search
+// over every member the payer has; narrowing each query to the Groups' members would be a second access-control system to get
+// right, and the rule asks for bulk access only.
+func (s *Server) limitToGroups(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := CallerFrom(r.Context())
+		if c == nil || len(c.Groups) == 0 || groupLimitedPath(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		s.writeOutcome(w, r, http.StatusForbidden, fhir.SeverityError, "forbidden",
+			"this token is limited to its provider's Groups, and may only read them and run $davinci-data-export or $export on them")
+	})
+}
+
+func groupLimitedPath(r *http.Request) bool {
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	switch {
+	case r.Method == http.MethodGet && len(parts) == 1 && parts[0] == "metadata":
+		return true
+	case len(parts) >= 2 && parts[0] == "_export":
+		// Poll, cancel and download. Job ids are unguessable and returned only to whoever started the job.
+		return true
+	case len(parts) == 2 && parts[0] == "Group" && r.Method == http.MethodGet:
+		return callerMayUseGroup(CallerFrom(r.Context()), parts[1])
+	case len(parts) == 3 && parts[0] == "Group" && (parts[2] == "$davinci-data-export" || parts[2] == "$export"):
+		// The handler applies the Group limit itself, answering not-found for someone else's Group.
+		return true
+	}
+
+	return false
 }

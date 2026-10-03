@@ -641,6 +641,12 @@ func buildFHIRAuth(tokens, authDB string, noAuth, readOnly bool, log *slog.Logge
 				}
 				return sess.Username, string(sess.Role), nil
 			},
+			Groups: func(ctx context.Context, token string) []string {
+				if sess, err := st.LookupAPIToken(ctx, token); err == nil {
+					return sess.FHIRGroups
+				}
+				return nil
+			},
 			Log: log,
 		}, nil
 

@@ -154,6 +154,8 @@ Issues credentials for machines rather than people. A token does not expire and 
 
 Only the hash is stored, so a token is displayed once when it is created and cannot be recovered afterwards. A stolen database therefore yields no usable token. Give a token the lowest role that does the job: a fleet view needs `viewer`, and nothing that only reads should hold anything more.
 
+`-fhir-groups riverside-attributed,riverside-north` limits a token to those FHIR Groups, for a provider's CMS-0057 Provider Access export: on the FHIR endpoint it can read those Groups and export them, and nothing else. See [CMS-0057 for payers](#cms-0057-for-payers).
+
 ### perfuse sbom
 
 Lists everything linked into the binary, read from the build itself rather than from `go.mod` — so it describes the binary in front of you and not what somebody once asked for.

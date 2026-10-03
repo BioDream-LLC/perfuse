@@ -722,6 +722,8 @@ export interface ApiToken {
   lastUsed?: string
   revoked: boolean
   revokedAt?: string
+  /** The FHIR Groups the token is limited to: a provider's CMS-0057 Provider Access token. Empty means no limit. */
+  fhirGroups?: string[]
 }
 
 /** The one and only sight of a new token's value. */
@@ -961,8 +963,8 @@ export const api = {
     request<Me>('POST', '/api/passkeys/signin/finish', { challenge, response }),
 
   tokens: () => request<{ tokens: ApiToken[] }>('GET', '/api/tokens'),
-  createToken: (label: string, role: string) =>
-    request<NewApiToken>('POST', '/api/tokens', { label, role }),
+  createToken: (label: string, role: string, fhirGroups: string[] = []) =>
+    request<NewApiToken>('POST', '/api/tokens', { label, role, fhirGroups }),
   revokeToken: (label: string) =>
     request<{ status: string }>('DELETE', `/api/tokens/${encodeURIComponent(label)}`),
 
@@ -2531,6 +2533,8 @@ export interface CMS0057API {
   endpoints: string[]
   guides: string[]
   missing: string[]
+  /** Advice that does not decide readiness, such as whether any provider token is limited to its Groups. */
+  note?: string
 }
 
 export interface CMS0057Status {

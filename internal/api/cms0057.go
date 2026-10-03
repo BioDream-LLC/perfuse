@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -33,6 +34,8 @@ type cms0057API struct {
 	Endpoints []string `json:"endpoints"`
 	Guides    []string `json:"guides"`
 	Missing   []string `json:"missing"`
+	// Note is advice that does not decide readiness: something a deployment needs that this instance cannot check for.
+	Note string `json:"note,omitempty"`
 }
 
 func (s *Server) handleCMS0057Status(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -58,6 +61,7 @@ func (s *Server) handleCMS0057Status(w http.ResponseWriter, r *http.Request, ses
 	need(st.FHIR, "the FHIR endpoint (-fhir)", &provider.Missing)
 	need(st.PayerAPIs, "the payer operations (-fhir-payer-apis)", &provider.Missing)
 	need(st.BulkExport, "bulk export (-fhir-bulk-export)", &provider.Missing)
+	provider.Note = s.providerTokenNote(r, sess)
 
 	p2p := cms0057API{Name: "Payer-to-Payer API", Rule: "42 CFR 422.121(b), 431.61(b), 457.731(b), 45 CFR 156.222(b)",
 		Deadline:  "1 January 2027",
@@ -188,4 +192,30 @@ func (s *Server) handlePAMetrics(w http.ResponseWriter, r *http.Request, sess *s
 	var view map[string]any
 	_ = json.Unmarshal(raw, &view)
 	s.ok(w, map[string]any{"report": view, "html": string(page), "csv": string(cms0057.MetricsCSV(report))})
+}
+
+// providerTokenNote says whether any provider can be given only its own attribution list.
+//
+// Not a readiness condition: a SMART issuer may be how providers authenticate, and that is outside what this instance can see. But an
+// unlimited token can export every Group, so the card says how many tokens are limited rather than leaving it to be found out.
+func (s *Server) providerTokenNote(r *http.Request, sess *store.Session) string {
+	tokens, err := s.storeFor(sess).ListAPITokens(r.Context())
+	if err != nil {
+		return ""
+	}
+	limited := 0
+	for _, t := range tokens {
+		if !t.Revoked() && len(t.FHIRGroups) > 0 {
+			limited++
+		}
+	}
+	switch limited {
+	case 0:
+		return "No API token is limited to FHIR Groups yet. An unlimited token can export every provider's attribution list: " +
+			"issue each provider one limited to its own Groups, under Users → Machine credentials."
+	case 1:
+		return "1 API token is limited to FHIR Groups, for a provider's attribution list."
+	default:
+		return fmt.Sprintf("%d API tokens are limited to FHIR Groups, for providers' attribution lists.", limited)
+	}
 }

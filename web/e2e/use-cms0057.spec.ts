@@ -79,3 +79,32 @@ test("the prior authorization metrics follow the CMS template, with a median und
   const csv = readFileSync((await download.path())!, "utf8");
   expect(csv).toContain("2025,Medicare Advantage H1234,standard,approved,1,3,33.3");
 });
+
+test("a provider's token is issued limited to its Group, and the FHIR endpoint refuses it everything else", async ({ page }) => {
+  // Exporting its own Group is covered against the server in Go (TestGroupLimitedTokenReachesOnlyItsGroup); this checks the
+  // console issues the limit and that the running endpoint enforces it.
+  const label = `e2e-provider-${Date.now().toString(36)}`;
+
+  await page.goto("/");
+  await openTab(page, "Users");
+  await page.getByLabel("What is it for", { exact: true }).fill(label);
+  await page.getByLabel("Limit to FHIR Groups", { exact: true }).fill(`${label}-own`);
+  await page.getByRole("button", { name: "Issue token" }).click();
+  const token = (await page.getByTestId("issued-token").innerText()).trim();
+  expect(token.length).toBeGreaterThan(20);
+  await page.getByRole("button", { name: "I have saved it" }).click();
+  await expect(page.locator("tbody tr").filter({ hasText: label })).toContainText(`FHIR Groups: ${label}-own`);
+
+  // Checked against the FHIR endpoint itself, not the page: the limit is only real if the server enforces it.
+  const bearer = { Authorization: `Bearer ${token}`, Prefer: "respond-async" };
+  expect((await page.request.get("/fhir/Patient", { headers: bearer })).status(), "an ordinary search").toBe(403);
+  expect((await page.request.get(`/fhir/Group/${label}-other/$davinci-data-export`, { headers: bearer })).status(),
+    "another provider's Group").toBe(404);
+  expect((await page.request.get("/fhir/metadata", { headers: bearer })).status(), "the capability statement").toBe(200);
+
+  await openTab(page, "CMS-0057");
+  const provider = page.getByTestId("cms0057-apis").locator("section", { has: page.getByRole("heading", { name: "Provider Access API" }) });
+  await expect(provider).toContainText(/API tokens? (is|are) limited to FHIR Groups/);
+
+  await page.request.delete(`/api/tokens/${encodeURIComponent(label)}`, { headers: { "X-Perfuse-Request": "1" } });
+});

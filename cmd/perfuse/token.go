@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -40,6 +41,8 @@ func runToken(args []string, stdout, stderr io.Writer) error {
 	dbPath := fset.String("db", "./perfuse.db", "database file")
 	label := fset.String("label", "", "what this token is for")
 	roleName := fset.String("role", "viewer", "role: viewer, editor, admin or platform")
+	groups := fset.String("fhir-groups", "", "comma-separated FHIR Group ids to limit the token to, for a provider's "+
+		"CMS-0057 Provider Access export; the token can then do nothing else on the FHIR endpoint")
 
 	if err := fset.Parse(args[1:]); err != nil {
 		return err
@@ -75,6 +78,16 @@ func runToken(args []string, stdout, stderr io.Writer) error {
 		token, err := st.CreateAPIToken(ctx, *label, role, "perfuse token create")
 		if err != nil {
 			return err
+		}
+		if strings.TrimSpace(*groups) != "" {
+			if err := st.LimitAPITokenToGroups(ctx, *label, strings.Split(*groups, ",")); err != nil {
+				_ = st.RevokeAPIToken(ctx, *label)
+				return err
+			}
+			fmt.Fprintf(stdout, "token created: %s, limited to FHIR Groups %s\n\n%s\n\n", *label, *groups, token)
+			fmt.Fprint(stdout, "Copy it now. Only its hash is stored, so it cannot be shown again.\n"+
+				"On the FHIR endpoint it can read those Groups and run $davinci-data-export on them, and nothing else.\n")
+			return nil
 		}
 
 		fmt.Fprintf(stdout, "token created: %s (%s)\n\n%s\n\n", *label, role, token)

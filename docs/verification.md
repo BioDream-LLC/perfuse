@@ -174,6 +174,8 @@ After the fixes the validator reports no errors on any of the three CARIN claim 
 
 The larger finding came from asking whether a converted claim survived the FHIR server. It did not: the store parsed every resource into an internal model and serialised the model, and the model declared a dozen of ExplanationOfBenefit's fields. Items, diagnoses, supporting information, adjudication and payment were dropped on the way in - everything a CARIN claim is for - while the package's own comments said unknown members survived a round trip. The model now keeps whatever a resource carries that it does not declare, without bringing back a declared field the program cleared on purpose, and a test loads a CARIN bundle through the transaction endpoint and reads it back whole.
 
+Asking who could call a Group export found the next gap: any valid token could export any Group, so a provider given a token for its own attribution list could read every other provider's. API tokens can now be limited to Groups (`perfuse token create -fhir-groups`). `TestGroupLimitedTokenReachesOnlyItsGroup` holds that such a token exports and reads its own Group, gets not-found for another provider's, and is refused ordinary reads, searches and `$member-match`; `TestAPITokenGroupLimit` and `TestCreateTokenWithFHIRGroups` cover storing the limit and issuing it through the console API.
+
 Not verified: the member match and Group exports against another payer's implementation, and the metrics against a payer's published figures.
 
 ## The 006020 275, against the published companion guides

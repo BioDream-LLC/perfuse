@@ -104,6 +104,7 @@ function Readiness() {
               </ul>
             </div>
           )}
+          {a.note && <p className="mt-3 text-xs text-slate-400">{a.note}</p>}
         </section>
       ))}
     </div>

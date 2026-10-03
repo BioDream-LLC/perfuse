@@ -163,3 +163,40 @@ func TestGroupExportRefusesANonMember(t *testing.T) {
 		t.Fatalf("a patient outside the Group was accepted: %d %s", rec.Code, rec.Body)
 	}
 }
+
+// groupAuth is a caller limited to some Groups, as a provider's API token is.
+type groupAuth struct{ groups []string }
+
+func (g groupAuth) Authenticate(*http.Request) (*Caller, error) {
+	return &Caller{Name: "token:provider", AllScopes: true, Groups: g.groups}, nil
+}
+func (groupAuth) Describe() string { return "test" }
+
+func TestGroupLimitedTokenReachesOnlyItsGroup(t *testing.T) {
+	srv, _ := payerFixture(t)
+	other := `{"resourceType":"Group","id":"other","type":"person","actual":true,"member":[{"entity":{"reference":"Patient/pt-MBR123456"}}]}`
+	if rec := payerDo(t, srv.Handler(), "PUT", "/Group/other", other, nil); rec.Code >= 300 {
+		t.Fatal(rec.Body)
+	}
+	srv.Auth = groupAuth{groups: []string{"attributed"}}
+	h := srv.Handler()
+	async := map[string]string{"Prefer": "respond-async"}
+
+	if rec := payerDo(t, h, "GET", "/Group/attributed/$davinci-data-export", "", async); rec.Code != http.StatusAccepted {
+		t.Fatalf("its own Group: %d %s", rec.Code, rec.Body)
+	}
+	if rec := payerDo(t, h, "GET", "/Group/other/$davinci-data-export", "", async); rec.Code != http.StatusNotFound {
+		t.Fatalf("another provider's Group was exported: %d %s", rec.Code, rec.Body)
+	}
+	if rec := payerDo(t, h, "GET", "/Group/attributed", "", nil); rec.Code != http.StatusOK {
+		t.Fatalf("reading its own Group: %d", rec.Code)
+	}
+	for _, path := range []string{"/Group/other", "/Patient", "/ExplanationOfBenefit?patient=Patient/pt-MBR123456", "/Patient/pt-MBR123456"} {
+		if rec := payerDo(t, h, "GET", path, "", nil); rec.Code != http.StatusForbidden {
+			t.Errorf("%s answered %d for a Group-limited token", path, rec.Code)
+		}
+	}
+	if rec := payerDo(t, h, "POST", "/Patient/$member-match", matchBody, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("member-match answered %d for a provider's token", rec.Code)
+	}
+}

@@ -184,6 +184,11 @@ func (sc *Scoped) ListAPITokens(ctx context.Context) ([]APIToken, error) {
 	return sc.store.listAPITokensIn(ctx, sc.id)
 }
 
+// LimitAPITokenToGroups restricts one of this tenant's tokens to FHIR Groups.
+func (sc *Scoped) LimitAPITokenToGroups(ctx context.Context, label string, groups []string) error {
+	return sc.store.limitAPITokenIn(ctx, sc.id, label, groups)
+}
+
 // RevokeAPIToken withdraws one of this tenant's tokens.
 func (sc *Scoped) RevokeAPIToken(ctx context.Context, label string) error {
 	return sc.store.revokeAPITokenIn(ctx, sc.id, label)

@@ -147,6 +147,52 @@ func TestIssuingATokenIsAudited(t *testing.T) {
 	}
 }
 
+// TestCreateTokenWithFHIRGroups covers a provider's Provider Access token issued through the console.
+func TestCreateTokenWithFHIRGroups(t *testing.T) {
+	h := newHarness(t)
+
+	rec := h.do("admin", http.MethodPost, "/api/tokens",
+		map[string]any{"label": "riverside", "role": "viewer", "fhirGroups": []string{"riverside-attributed", "Group/north"}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+
+	rec = h.do("admin", http.MethodGet, "/api/tokens", nil)
+	var listed struct{ Tokens []apiTokenResponse }
+	if err := json.Unmarshal(rec.Body.Bytes(), &listed); err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Tokens) != 1 || strings.Join(listed.Tokens[0].FHIRGroups, ",") != "riverside-attributed,north" {
+		t.Fatalf("the limit was not stored: %+v", listed.Tokens)
+	}
+
+	audit := h.do("admin", http.MethodGet, "/api/audit?limit=20", nil).Body.String()
+	if !strings.Contains(audit, "limited to FHIR Groups riverside-attributed") {
+		t.Errorf("the audit entry does not record the limit:\n%s", audit)
+	}
+}
+
+// TestABadGroupIDIssuesNoToken covers the failure: a token meant to be limited must not exist without its limit.
+func TestABadGroupIDIssuesNoToken(t *testing.T) {
+	h := newHarness(t)
+
+	rec := h.do("admin", http.MethodPost, "/api/tokens",
+		map[string]any{"label": "typo", "role": "viewer", "fhirGroups": []string{"riverside attributed"}})
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("a Group id with a space was accepted: %d %s", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), `"token"`) {
+		t.Errorf("a token value was returned for a refused request:\n%s", rec.Body.String())
+	}
+
+	// The label is still free once the mistake is corrected.
+	rec = h.do("admin", http.MethodPost, "/api/tokens",
+		map[string]any{"label": "typo", "role": "viewer", "fhirGroups": []string{"riverside-attributed"}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("the corrected request was refused: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
 // asToken issues a request with a bearer credential.
 //
 // The harness's do sends a session cookie, which is right for a person's session and wrong for an API token: a token

@@ -174,7 +174,7 @@ func (s *Server) Handler() http.Handler {
 	//
 	// Wrapping the whole mux rather than each handler means a route added later is protected by default. Listing
 	// routes individually is how one gets forgotten.
-	protected := s.requireAuth(mux)
+	protected := s.requireAuth(s.limitToGroups(mux))
 
 	// The SMART discovery document is the one deliberate exception, and it is served outside the wrapper rather
 	// than exempted inside it.

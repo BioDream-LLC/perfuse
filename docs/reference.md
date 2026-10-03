@@ -358,6 +358,7 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `perfuse cms0057 metrics -year <year> [-services <csv>] <decisions.csv>` | The yearly public prior authorisation metrics page, in CMS's template layout (`-format html`, `csv` or `json`) |
 | `serve -fhir-payer-apis` | `POST /fhir/Patient/$member-match` (HRex), and with `-fhir-bulk-export`, `Group/{id}/$davinci-data-export` and `Group/{id}/$export` |
 | `serve -fhir-member-match-without-consent` | Lets `$member-match` answer without an active Consent; for testing only |
+| `perfuse token create -label <name> -fhir-groups <id>[,<id>]` | A provider's Provider Access token: on the FHIR endpoint it can read those Groups, export them and fetch the export, and nothing else. Also under Users → Machine credentials, or `fhirGroups` on `POST /api/tokens` |
 
 Provider Access and Payer-to-Payer exports leave out cost-sharing and provider remittances, Payer-to-Payer leaves out denied prior authorisations, and members with an active Provider Access opt-out are left out of a provider export. Drugs are out of scope throughout.
 
