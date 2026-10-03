@@ -145,6 +145,22 @@ func (s *Server) handleSignDocument(w http.ResponseWriter, r *http.Request, sess
 // Read from disk on each use rather than cached. Signing is rare, the file is small, and a cached key means a
 // replaced certificate keeps producing signatures against the old one until somebody restarts - with nothing on
 // screen to explain why the new certificate is not being used.
+// signingChain is the signing certificate followed by any CA certificates in the same file, as DSDR wants them carried.
+func (s *Server) signingChain() ([]*x509.Certificate, crypto.Signer, error) {
+	cert, key, err := s.signingIdentity()
+	if err != nil {
+		return nil, nil, err
+	}
+	chain := []*x509.Certificate{cert}
+	pair, _ := tls.LoadX509KeyPair(s.TLSCertFile, s.TLSKeyFile)
+	for _, der := range pair.Certificate[1:] {
+		if c, err := x509.ParseCertificate(der); err == nil {
+			chain = append(chain, c)
+		}
+	}
+	return chain, key, nil
+}
+
 func (s *Server) signingIdentity() (*x509.Certificate, crypto.Signer, error) {
 	if s.TLSCertFile == "" || s.TLSKeyFile == "" {
 		return nil, nil, fmt.Errorf("this server has no certificate to sign with. Start it with -tls-cert and " +

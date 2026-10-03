@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 )
@@ -82,4 +83,69 @@ func TestSubscriptionsEndpointSaysWhenOff(t *testing.T) {
 		t.Errorf("%d %s", rec.Code, rec.Body.String())
 	}
 	assertNoNulls(t, "GET /api/fhir/subscriptions", rec.Body.Bytes())
+}
+
+// A C-CDA signed with DSDR on the way into a 275, and the signature checked on the way out of reading one. Signing uses the
+// server's key, so it is an admin action even though building is not.
+func TestAnAttachmentCanCarryADSDRSignature(t *testing.T) {
+	h := newHarness(t)
+	certPath, keyPath, _ := writeKeyPair(t, h.dir, "perfuse-test.example")
+	h.server.TLSCertFile, h.server.TLSKeyFile = certPath, keyPath
+	cda, err := os.ReadFile("../dsdr/testdata/discharge.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := attachmentBody("")
+	delete(body, "documentBase64")
+	body["documentText"], body["contentType"], body["filename"] = string(cda), "text/xml", "discharge.xml"
+	body["sign"] = map[string]any{"role": "207R00000X", "roleDisplay": "Internal Medicine"}
+
+	if rec := h.do("viewer", "POST", "/api/x12/attachment/build", body); rec.Code != http.StatusForbidden {
+		t.Fatalf("a viewer signed with the server's key: %d", rec.Code)
+	}
+	rec := h.do("admin", "POST", "/api/x12/attachment/build", body)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("%d %s", rec.Code, rec.Body.String())
+	}
+	assertNoNulls(t, "POST /api/x12/attachment/build signed", rec.Body.Bytes())
+	var built struct {
+		X12       string `json:"x12"`
+		Signature struct {
+			Participant string   `json:"participant"`
+			Level       string   `json:"level"`
+			Missing     []string `json:"missing"`
+		} `json:"signature"`
+		ReadBack struct {
+			Documents []struct {
+				DocumentBase64 string `json:"documentBase64"`
+				Signatures     []struct {
+					Sound       bool   `json:"sound"`
+					DigestValid bool   `json:"digestValid"`
+					Purpose     string `json:"purpose"`
+				} `json:"signatures"`
+			} `json:"documents"`
+		} `json:"readBack"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &built)
+	// A self-signed server certificate and no time-stamping authority: signed, sound, and honest that it is not X-L.
+	if built.Signature.Participant != "legalAuthenticator" || built.Signature.Level != "EPES" || len(built.Signature.Missing) == 0 {
+		t.Errorf("%+v", built.Signature)
+	}
+	sigs := built.ReadBack.Documents[0].Signatures
+	if len(sigs) != 1 || !sigs[0].Sound || sigs[0].Purpose != "8.2.1.1 - Author's signature" {
+		t.Fatalf("%+v", sigs)
+	}
+
+	// The payer's side: a signed document altered before it was put in a 275 is reported when the 275 is read.
+	signedDoc, _ := base64.StdEncoding.DecodeString(built.ReadBack.Documents[0].DocumentBase64)
+	altered := strings.Replace(string(signedDoc), "1 g IV daily", "2 g IV daily", 1)
+	body["documentText"] = altered
+	delete(body, "sign")
+	rec = h.do("viewer", "POST", "/api/x12/attachment/build", body)
+	_ = json.Unmarshal(rec.Body.Bytes(), &built)
+	rec = h.do("viewer", "POST", "/api/x12/attachment/read", map[string]any{"x12": built.X12})
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"sound":false`) ||
+		!strings.Contains(rec.Body.String(), "changed since it was signed") {
+		t.Errorf("an altered signed document read back as: %d %.400s", rec.Code, rec.Body.String())
+	}
 }

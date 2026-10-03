@@ -55,6 +55,20 @@ func CanonicaliseElement(doc []byte, id string, exclusive bool, inclusiveNamespa
 			"afterwards may each pick a different one, so the content checked is not the content used", found, id)
 	}
 
+	return canonicaliseMatching(doc, func(t xml.StartElement, _ map[string]string) bool { return elementID(t) == id },
+		fmt.Sprintf("identifier %q", id), exclusive, inclusiveNamespaces)
+}
+
+// CanonicaliseNamed returns the canonical form of the first element with the given local name and namespace URI, with the
+// namespace context it inherits - for elements such as SignedInfo that carry no identifier.
+func CanonicaliseNamed(doc []byte, localName, namespace string, exclusive bool) ([]byte, error) {
+	return canonicaliseMatching(doc, func(t xml.StartElement, scope map[string]string) bool {
+		return t.Name.Local == localName && scope[t.Name.Space] == namespace
+	}, localName, exclusive, nil)
+}
+
+func canonicaliseMatching(doc []byte, match func(xml.StartElement, map[string]string) bool, what string, exclusive bool,
+	inclusiveNamespaces []string) ([]byte, error) {
 	dec := xml.NewDecoder(bytes.NewReader(doc))
 	dec.Strict = true
 	dec.Entity = xml.HTMLEntity
@@ -97,7 +111,7 @@ func CanonicaliseElement(doc []byte, id string, exclusive bool, inclusiveNamespa
 			}
 			scope = append(scope, declared)
 
-			if target < 0 && elementID(t) == id {
+			if target < 0 && match(t, mergeScopes(scope)) {
 				target = depth
 
 				// The ancestors' declarations are pushed onto the canonicaliser as a synthetic outer scope, so the
@@ -136,9 +150,9 @@ func CanonicaliseElement(doc []byte, id string, exclusive bool, inclusiveNamespa
 	}
 
 	if target < 0 {
-		return nil, fmt.Errorf("canonicalising: no element has the identifier %q", id)
+		return nil, fmt.Errorf("canonicalising: no element matches %s", what)
 	}
-	return nil, fmt.Errorf("canonicalising: the element with identifier %q was never closed", id)
+	return nil, fmt.Errorf("canonicalising: the element matching %s was never closed", what)
 }
 
 // countIDs counts elements carrying an identifier, so an ambiguous reference can be refused.

@@ -7,8 +7,10 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/base64"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 )
@@ -151,6 +153,13 @@ func Sign(doc []byte, opts SignOptions) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("signing: %w", err)
 	}
+	if pub, ok := opts.Key.Public().(*ecdsa.PublicKey); ok {
+		// XML-DSig carries ECDSA as r and s side by side, each the size of the curve (RFC 4051). Go's signers give DER, which
+		// only another Go verifier reads.
+		if sigValue, err = ecdsaRawFromDER(sigValue, pub); err != nil {
+			return nil, err
+		}
+	}
 
 	signature := assembleSignature(signedInfo, base64.StdEncoding.EncodeToString(sigValue),
 		opts.Certificate, opts.Chain, props)
@@ -192,6 +201,9 @@ func buildSignedInfo(c14nAlg, sigAlg, reference string, digest, propsDigest []by
 	// The signed properties reference. Type identifies it as XAdES properties, which is how a verifier knows to
 	// treat it as more than another signed object.
 	fmt.Fprintf(&b, `<ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" URI="#sig-props">`)
+	// The canonicalisation named, not left to the default. With no transform XML-DSig canonicalises a same-document reference
+	// inclusively, carrying in the document's namespaces, and every other verifier computes a different digest.
+	fmt.Fprintf(&b, `<ds:Transforms><ds:Transform Algorithm="%s"></ds:Transform></ds:Transforms>`, c14nAlg)
 	fmt.Fprintf(&b, `<ds:DigestMethod Algorithm="%s"></ds:DigestMethod>`, DigestSHA256)
 	fmt.Fprintf(&b, `<ds:DigestValue>%s</ds:DigestValue>`, base64.StdEncoding.EncodeToString(propsDigest))
 	b.WriteString(`</ds:Reference>`)
@@ -305,4 +317,13 @@ func unwrapForCanon(canon []byte) []byte {
 	s = strings.TrimPrefix(s, open)
 	s = strings.TrimSuffix(s, close)
 	return []byte(s)
+}
+
+func ecdsaRawFromDER(der []byte, pub *ecdsa.PublicKey) ([]byte, error) {
+	var rs struct{ R, S *big.Int }
+	if _, err := asn1.Unmarshal(der, &rs); err != nil {
+		return nil, fmt.Errorf("signing: reading the ECDSA signature: %w", err)
+	}
+	size := (pub.Curve.Params().BitSize + 7) / 8
+	return append(rs.R.FillBytes(make([]byte, size)), rs.S.FillBytes(make([]byte, size))...), nil
 }

@@ -1627,6 +1627,19 @@ WHERE dt >= '2026-10-01' AND message_type = 'ADT' AND patient_id = '555';
 The archive holds patient data. Encrypt the bucket (`server_side_encryption` or a bucket default), and give Athena's query results
 location the same protection - results are written there in the clear unless it is encrypted too.
 
+## Claims attachment signatures (HL7 DSDR)
+
+`POST /api/x12/attachment/build` with `sign: {role, roleDisplay, purpose, as, signerName, npi}` signs a C-CDA before it is put in
+the 275 (admin only). `role` is a NUCC taxonomy code (required). `purpose` is an Appendix E code from `8.2.1.1` to `8.2.1.18`. `as` is
+`legalAuthenticator` or `authenticator`. The response's `signature` gives the participant, the XAdES `level` reached, whether it
+`conforms` (X-L) and what is `missing`. `POST /api/x12/attachment/read` checks every DSDR signature in the documents, against
+`trustPem` when given.
+
+| Flag | |
+|---|---|
+| `serve -signing-cert`, `-signing-key` | The signing key. CA certificates after the signer's in the same PEM travel with the signature |
+| `serve -tsa-url <url>` | RFC 3161 time-stamping authority, for XAdES-T and XAdES-X. Without one the signature stops at EPES |
+
 ## Hosted FHIR services
 
 `fhir.auth` on a fhir destination: `type: aws` (HealthLake; `region`, `access_key_id`, `secret_access_key`, `session_token`),

@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 )
@@ -319,7 +320,10 @@ func checkSignature(sig *signature, cert *x509.Certificate) error {
 			return fmt.Errorf("the signature was not made by the key in this certificate: %w", err)
 		}
 	case *ecdsa.PublicKey:
-		if !ecdsa.VerifyASN1(pub, sum[:], raw) {
+		// r and s side by side, as XML-DSig specifies; DER is accepted too, because Perfuse wrote that before it was corrected.
+		n := len(raw) / 2
+		raw2 := n > 0 && len(raw)%2 == 0 && ecdsa.Verify(pub, sum[:], new(big.Int).SetBytes(raw[:n]), new(big.Int).SetBytes(raw[n:]))
+		if !raw2 && !ecdsa.VerifyASN1(pub, sum[:], raw) {
 			return fmt.Errorf("the signature was not made by the key in this certificate")
 		}
 	default:

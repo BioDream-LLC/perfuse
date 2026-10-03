@@ -340,3 +340,17 @@ func TestNamespacedAttributesSortByURINotPrefix(t *testing.T) {
 		t.Errorf("attributes were sorted by prefix rather than by namespace URI: %q", a)
 	}
 }
+
+// Canonical XML has no text outside the document element. Line breaks after the declaration and at the end of the file are
+// not written; processing instructions outside it are separated from it by a line feed. Matches libxml2's xmllint --exc-c14n.
+func TestNothingOutsideTheDocumentElementButProcessingInstructions(t *testing.T) {
+	in := "<?xml version=\"1.0\"?>\n<?xml-stylesheet href=\"cda.xsl\"?>\n<a>\n <b/>\n</a>\n<?trailer x?>\n"
+	got, err := Canonicalise([]byte(in), true, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "<?xml-stylesheet href=\"cda.xsl\"?>\n<a>\n <b></b>\n</a>\n<?trailer x?>"
+	if string(got) != want {
+		t.Errorf("got %q\nwant %q", got, want)
+	}
+}

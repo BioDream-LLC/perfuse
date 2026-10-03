@@ -2487,6 +2487,30 @@ export interface AttachmentBuildInput {
   filename?: string
   documentBase64?: string
   documentText?: string
+  /** sign applies an HL7 DSDR signature to a C-CDA with the server's key. Admin only. */
+  sign?: { role: string; roleDisplay?: string; purpose?: string; as?: string; signerName?: string; npi?: string }
+}
+
+/** AttachmentSignature is one DSDR signature on a C-CDA, as checked. */
+export interface AttachmentSignature {
+  participant: string
+  thumbnail: string
+  signer: string
+  issuer: string
+  signingTime: string
+  role: string
+  purpose: string
+  level: string
+  digestValid: boolean
+  signatureValid: boolean
+  propertiesValid: boolean
+  trustChecked: boolean
+  trusted: boolean
+  revocation: string
+  timeStamped?: string
+  problems: string[]
+  notes: string[]
+  sound: boolean
 }
 
 export interface X12Party {
@@ -2508,6 +2532,7 @@ export interface AttachmentDocumentView {
   size: number
   documentBase64: string
   notes: string[]
+  signatures: AttachmentSignature[]
 }
 
 export interface AttachmentView {
@@ -2528,6 +2553,7 @@ export interface AttachmentBuildResult {
   readBack: AttachmentView
   basis: string
   roundTrip: boolean
+  signature?: { participant: string; level: string; conforms: boolean; missing: string[]; thumbnail: string; signedAt: string }
 }
 
 export interface PriorAuthDecision {

@@ -190,16 +190,28 @@ The structure comes from the two published companion guides for `006020X314`: th
 - Where they differ, it satisfies both if it can. `CAT02` is `HL` for an HL7 document, which esMD uses, and `IA` for an image, which UnitedHealthcare uses.
 - Otherwise it sends the optional segment only when given the value: esMD's `REF*X1` claim identifier and UnitedHealthcare's `DTP*472` service date.
 
-Two things a trading partner may require are not done:
+There is no validation against the technical report. The partner's companion guide governs.
 
-- There is no validation against the technical report.
-- No electronic signature is applied. CMS-0053-F also adopts a standard for signing attachments, and a partner that requires one will reject what this builds.
+### Electronic signatures on attachments
 
-The partner's companion guide governs.
+CMS-0053-F also adopts a signature standard, at 45 CFR 162.2002(e): the HL7 Implementation Guide for CDA Release 2, Digital Signatures and Delegation of Rights, Release 1. It applies to signatures put on attachment information when it is sent in a HIPAA attachment transaction, from 26 May 2028. A payer may not ask for more than the guide does.
+
+Perfuse signs a C-CDA that way on its way into a `275`, and checks the signatures on every C-CDA in a `275` it reads.
+
+- **What is signed.** The whole document except its `legalAuthenticator` and `authenticator` participants, so each later signer leaves the earlier signatures intact. The signature says so with an XPath Filter 2.0 transform any XML signature library can evaluate.
+- **Where it goes.** Base64 in `sdtc:signatureText` on the signing participant, with a one-line plain-text description. The signer is the document's legal authenticator if it has an unsigned one, otherwise a new `authenticator`.
+- **What it states.** The signer's certificate, the time in UTC, a role from the NUCC provider taxonomy and a purpose from ASTM E1762. The purpose defaults to *Author's signature* for a legal authenticator and *Coauthor's signature* otherwise, as in the guide's own example.
+- **How long it lasts.** The guide asks for XAdES-X-L, which carries everything a payer needs to verify the signature years later without reaching the network. That is the certification path, an OCSP response or CRL from the CA, and two time-stamps from a time-stamping authority. Perfuse fetches the revocation data from the addresses in the certificate and the time-stamps from `-tsa-url`.
+
+If any of that is unavailable, the signature is still made and holds. The result names the XAdES form it reached, and says what stopped it short of X-L: for example a self-signed certificate (no CA to ask) or no time-stamping authority.
+
+The key is `-signing-cert` and `-signing-key`. Put the CA certificates after the signer's in the same file so the path travels with the signature. For a signature that means what DSDR means, the certificate should name the clinician, with their NPI, rather than the server. Signing is an admin action, as signing any document is.
+
+The guide does not name a namespace for its own elements. Perfuse puts `digitalSignature`, `authorizedSigner` and `SignaturePurpose` in `urn:hl7-org:sdtc`. It also states the purpose as a XAdES commitment type with the ASTM OID, which XAdES tools understand. Delegation of rights, where a delegate signs with a SAML assertion from the authorised signer, is not produced, and a received one is reported as not verified.
 
 The provider NPI is checked against its check digit. A payer matches an attachment to its claim partly on that number, and a mistyped one leaves the attachment unmatched while the claim is denied for missing documentation.
 
-The **Claims & auth** view builds a `275` from a pasted C-CDA or an uploaded file, and reads one back. Nothing on that page sends anything: the interchange is handed back to be delivered through a channel, which is where the partner, the credentials and the audit trail belong.
+The **Claims & auth** view builds a `275` from a pasted C-CDA or an uploaded file, optionally signing the C-CDA, and reads one back with each signature's findings. Nothing on that page sends anything: the interchange is handed back to be delivered through a channel, which is where the partner, the credentials and the audit trail belong.
 
 ### Binary segments
 

@@ -203,3 +203,9 @@ func extractElement(doc []byte, localName, namespace string) ([]byte, error) {
 		}
 	}
 }
+
+// Element returns the first element with the given local name and namespace URI, byte for byte as it appears in doc.
+// Nil when there is none.
+func Element(doc []byte, localName, namespace string) ([]byte, error) {
+	return extractElement(doc, localName, namespace)
+}

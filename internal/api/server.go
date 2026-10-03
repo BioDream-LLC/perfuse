@@ -233,6 +233,10 @@ type Server struct {
 	TLSCertFile string
 	TLSKeyFile  string
 
+	// TSAURL is the RFC 3161 time-stamping authority for DSDR signatures on claims attachments. Without one a signature stops
+	// short of the XAdES-X-L the guide asks for, and says so.
+	TSAURL string
+
 	// CMS0057 describes the FHIR endpoint, so the CMS-0057 page can say which payer APIs this instance can answer.
 	CMS0057 CMS0057Status
 

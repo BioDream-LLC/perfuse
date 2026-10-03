@@ -77,6 +77,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	// signing response says so - but the compromise should be a fallback rather than the only option.
 	signCertFile := fset.String("signing-cert", "", "certificate for signing documents (defaults to -tls-cert)")
 	signKeyFile := fset.String("signing-key", "", "key for signing documents (defaults to -tls-key)")
+	tsaURL := fset.String("tsa-url", "", "RFC 3161 time-stamping authority for DSDR signatures on claims attachments")
 	keyFile := fset.String("tls-key", "", "TLS private key file")
 	insecure := fset.Bool("insecure", false, "serve over plain HTTP on a non-loopback address (not recommended)")
 	jsonLogs := fset.Bool("json-logs", false, "emit structured JSON logs")
@@ -914,6 +915,7 @@ oidcDone:
 		attachTEFCA(srv, tefcaParticipant, tefcaAudit)
 
 		srv.TLSCertFile, srv.TLSKeyFile = *certFile, *keyFile
+		srv.TSAURL = *tsaURL
 
 		if *signCertFile != "" && *signKeyFile != "" {
 			srv.TLSCertFile, srv.TLSKeyFile = *signCertFile, *signKeyFile

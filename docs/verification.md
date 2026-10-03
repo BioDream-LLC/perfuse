@@ -287,6 +287,33 @@ questions. It now uses the serialiser that does.
 
 What this does not show: CRD against a real EHR's CDS Hooks client, and DTR against a real SMART on FHIR documentation app.
 
+## HL7 DSDR signatures, against OpenSSL and xmlsec1
+
+The signing PKI was all OpenSSL: a CA from `openssl ca`, its OCSP responder from `openssl ocsp`, and a time-stamping authority
+from `openssl ts -reply`. Against those, a C-CDA was signed to XAdES-X-L. Independent software then checked the result:
+
+- OpenSSL verified both time-stamps, each over the canonical bytes XAdES says it covers, and the embedded OCSP response.
+- xmlsec1 1.3 (libxmlsec) verified the XML signature with the certificate chained to the CA. That covers the XPath Filter 2.0
+  exclusion of the signers, exclusive canonicalisation, the signed-properties reference and the RSA signature.
+- xmlsec1 refused the document once a dose in it was changed.
+
+The guide was read from HL7's October 2014 publication. The regulation was read from the CMS-0053-F final rule.
+
+Running xmlsec1 against Perfuse's XML signatures for the first time found three faults in the existing signer, which only Perfuse
+had ever checked:
+
+- Canonicalisation wrote the line break after the XML declaration. Canonical XML has no text outside the document element, so
+  no other verifier reproduced the digest. Now byte-for-byte equal to libxml2's.
+- The signed-properties reference named no canonicalisation, so XML-DSig's inclusive default applied while Perfuse digested
+  exclusively.
+- ECDSA signature values were DER, where XML-DSig carries r and s side by side (RFC 4051). Older Perfuse signatures still verify
+  in Perfuse.
+
+xmlsec1 now verifies Perfuse's enveloped and by-ID signatures, RSA and ECDSA (`internal/xmldsig`), and its DSDR signatures
+(`internal/dsdr`). Both tests run when Docker is available.
+
+What this does not show: a payer's own DSDR verifier, which none publishes, and a signature from a commercial healthcare CA.
+
 ## Hosted FHIR sign-in, against Keycloak
 
 The `client_credentials` preset was run against Keycloak 26: a confidential client created through Keycloak's admin API, the token

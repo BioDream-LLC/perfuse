@@ -104,6 +104,10 @@ type canonicaliser struct {
 
 	// depth tracks how deep we are so a leading declaration can be handled once.
 	rendered []map[string]string
+
+	// rootDone is set once the document element has closed, for the line breaks Canonical XML puts around processing
+	// instructions outside it.
+	rootDone bool
 }
 
 type frame struct {
@@ -130,9 +134,18 @@ func (c *canonicaliser) token(tok xml.Token) error {
 		// Always a full end tag. Canonical XML has no self-closing form: <a/> and <a></a> are the same element and
 		// must produce the same bytes, so one of the two spellings has to win and the specification picks this one.
 		fmt.Fprintf(c.out, "</%s>", top.raw)
+		if len(c.stack) == 0 {
+			c.rootDone = true
+		}
 		return nil
 
 	case xml.CharData:
+		// Text outside the document element is not part of the data model - it can only be whitespace, such as the line
+		// break after the XML declaration - and Canonical XML writes none of it. Writing it produces a digest no other
+		// implementation reproduces, while every Perfuse-to-Perfuse check still passes.
+		if len(c.stack) == 0 {
+			return nil
+		}
 		c.out.Write(escapeText(t))
 		return nil
 
@@ -148,10 +161,17 @@ func (c *canonicaliser) token(tok xml.Token) error {
 		if strings.EqualFold(t.Target, "xml") {
 			return nil
 		}
+		// Outside the document element, Canonical XML separates a processing instruction from it with a line feed.
+		if len(c.stack) == 0 && c.rootDone {
+			c.out.WriteString("\n")
+		}
 		if len(t.Inst) == 0 {
 			fmt.Fprintf(c.out, "<?%s?>", t.Target)
 		} else {
 			fmt.Fprintf(c.out, "<?%s %s?>", t.Target, t.Inst)
+		}
+		if len(c.stack) == 0 && !c.rootDone {
+			c.out.WriteString("\n")
 		}
 		return nil
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api, ApiError } from './api'
 import type {
   AttachmentBuildResult,
+  AttachmentSignature,
   AttachmentView,
   BuiltX12,
   CRDResponse,
@@ -83,7 +84,59 @@ const sampleCCDA = `<?xml version="1.0" encoding="UTF-8"?>
   <templateId root="2.16.840.1.113883.10.20.22.1.8" extension="2015-08-01"/>
   <code code="11504-8" codeSystem="2.16.840.1.113883.6.1" displayName="Surgical operation note"/>
   <title>Operative note (synthetic)</title>
+  <legalAuthenticator>
+    <time value="20260901120000-0500"/>
+    <signatureCode code="S"/>
+    <assignedEntity>
+      <id root="2.16.840.1.113883.4.6" extension="1234567893"/>
+      <assignedPerson><name><given>Pat</given><family>Surgeon</family></name></assignedPerson>
+    </assignedEntity>
+  </legalAuthenticator>
+  <component><structuredBody><component><section><title>Procedure</title><text>Right knee arthroscopy.</text></section></component></structuredBody></component>
 </ClinicalDocument>`
+
+// The guide's Appendix E, ASTM E1762 signature purposes.
+const signaturePurposes: [string, string][] = [
+  ['', 'Chosen by role: author for a legal authenticator, coauthor otherwise'],
+  ['8.2.1.1', "Author's signature"],
+  ['8.2.1.2', "Coauthor's signature"],
+  ['8.2.1.3', "Co-participant's signature"],
+  ['8.2.1.5', 'Verification signature'],
+  ['8.2.1.6', 'Validation signature'],
+  ['8.2.1.13', 'Review signature'],
+  ['8.2.1.15', 'Addendum signature'],
+  ['8.2.1.16', 'Administrative signature'],
+]
+
+function SignatureReports({ signatures }: { signatures: AttachmentSignature[] }) {
+  if (signatures.length === 0) return null
+  return (
+    <ul className="mt-2 space-y-2" data-testid="attachment-signatures">
+      {signatures.map((s, i) => (
+        <li key={i} className="rounded border border-slate-700 p-2 text-xs">
+          <p className={s.sound ? 'font-medium text-emerald-300' : 'font-medium text-rose-300'}>
+            {s.sound ? 'Signature holds' : 'Signature does not hold'} · {s.participant} · XAdES-{s.level}
+          </p>
+          <p className="mt-1 text-slate-300">{s.thumbnail}</p>
+          <p className="mt-1 text-slate-400">
+            Signer {s.signer} · purpose {s.purpose || 'none'} · role {s.role || 'none'} · revocation {s.revocation}
+            {s.timeStamped && <> · time-stamped {new Date(s.timeStamped).toISOString()}</>}
+          </p>
+          {s.problems.map((p) => (
+            <p key={p} className="mt-1 text-rose-300">
+              {p}
+            </p>
+          ))}
+          {s.notes.map((n) => (
+            <p key={n} className="mt-1 text-slate-500">
+              {n}
+            </p>
+          ))}
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 function BuildAttachment() {
   const [f, setF] = useState({
@@ -105,6 +158,7 @@ function BuildAttachment() {
     filename: 'operative-note.xml',
   })
   const [doc, setDoc] = useState(sampleCCDA)
+  const [sign, setSign] = useState({ on: false, role: '207X00000X', roleDisplay: 'Orthopaedic Surgery', purpose: '', as: '' })
   const [fileB64, setFileB64] = useState<string | null>(null)
   const [result, setResult] = useState<AttachmentBuildResult | null>(null)
   const [error, setError] = useState<UiError | null>(null)
@@ -143,6 +197,9 @@ function BuildAttachment() {
           contentType: f.contentType,
           filename: f.filename,
           ...(fileB64 ? { documentBase64: fileB64 } : { documentText: doc }),
+          ...(sign.on && !fileB64
+            ? { sign: { role: sign.role, roleDisplay: sign.roleDisplay, purpose: sign.purpose || undefined, as: sign.as || undefined } }
+            : {}),
         }),
       )
     } catch (e) {
@@ -212,6 +269,43 @@ function BuildAttachment() {
             />
           )}
           <p className="mt-2 text-xs text-slate-400">Use synthetic data. This is a browser form, not a place for real patient information.</p>
+        </Section>
+        <Section title="Electronic signature (HL7 DSDR)">
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" checked={sign.on} disabled={!!fileB64} onChange={(e) => setSign({ ...sign, on: e.target.checked })} />
+            Sign the C-CDA before it goes in, with this server's signing key
+          </label>
+          <p className="mt-1 text-xs text-slate-400">
+            CMS-0053 adopts HL7's Digital Signatures and Delegation of Rights guide for signatures on claims attachments, from 26 May 2028.
+            The signature goes on the document's legal authenticator, or a new authenticator, as XAdES; it reaches the XAdES-X-L the guide
+            asks for only with a CA-issued certificate and a time-stamping authority (-tsa-url). Admins only.
+          </p>
+          {sign.on && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <Field label="Signer role (NUCC taxonomy code)">
+                <input className="input font-mono" aria-label="Signer role" value={sign.role} onChange={(e) => setSign({ ...sign, role: e.target.value })} />
+              </Field>
+              <Field label="Role name">
+                <input className="input" aria-label="Role name" value={sign.roleDisplay} onChange={(e) => setSign({ ...sign, roleDisplay: e.target.value })} />
+              </Field>
+              <Field label="Signature purpose">
+                <select className="input" aria-label="Signature purpose" value={sign.purpose} onChange={(e) => setSign({ ...sign, purpose: e.target.value })}>
+                  {signaturePurposes.map(([code, label]) => (
+                    <option key={code} value={code}>
+                      {code ? `${code} ${label}` : label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Sign as">
+                <select className="input" aria-label="Sign as" value={sign.as} onChange={(e) => setSign({ ...sign, as: e.target.value })}>
+                  <option value="">The legal authenticator if unsigned, else a new authenticator</option>
+                  <option value="legalAuthenticator">Legal authenticator</option>
+                  <option value="authenticator">Authenticator</option>
+                </select>
+              </Field>
+            </div>
+          )}
           <button className="btn-primary mt-4 w-full" onClick={() => void build()} disabled={busy}>
             {busy ? 'Building…' : 'Build 275'}
           </button>
@@ -228,6 +322,20 @@ function BuildAttachment() {
                   : 'Read back did not return the same document. Do not send this.'}
               </p>
               <p className="mt-2 text-xs text-amber-300">{result.basis}</p>
+              {result.signature && (
+                <div className="mt-2 text-xs" data-testid="attachment-signed">
+                  <p className={result.signature.conforms ? 'text-emerald-300' : 'text-amber-300'}>
+                    Signed as {result.signature.participant} at XAdES-{result.signature.level}
+                    {result.signature.conforms ? ', as the guide requires.' : ', short of the XAdES-X-L the guide asks for:'}
+                  </p>
+                  {result.signature.missing.map((m) => (
+                    <p key={m} className="mt-1 text-amber-300">
+                      {m}
+                    </p>
+                  ))}
+                </div>
+              )}
+              <SignatureReports signatures={result.readBack.documents[0]?.signatures ?? []} />
             </div>
             <Section title={`X12 275 (${result.bytes} bytes)`} icon={IconX12}>
               <pre className="max-h-96 overflow-auto font-mono text-xs break-all whitespace-pre-wrap text-slate-300" data-testid="x12-output">
@@ -301,6 +409,7 @@ function ReadAttachment() {
                     {n}
                   </p>
                 ))}
+                <SignatureReports signatures={d.signatures} />
                 <button className="btn-ghost mt-2 py-1 text-xs" onClick={() => download(d.documentBase64, d.filename, d.contentType)}>
                   Download the document
                 </button>
