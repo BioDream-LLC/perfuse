@@ -82,13 +82,13 @@ describe('MapperPanel', () => {
     const button = container.querySelector('.btn-primary') as HTMLButtonElement
     fireEvent.click(button)
 
+    // Find the suggestion rows by their border+p-3 styling. Waited for together, not after the first name appears: on a slow CI
+    // runner the text arrived a render before the rows did, and the count read 0.
+    const rowSelector = '.mb-2.flex.items-center.gap-3.rounded-lg.border.p-3'
     await waitFor(() => {
-      expect(container.textContent).toContain('PID-3.1')
+      expect(container.querySelectorAll(rowSelector).length).toBe(2)
     })
-
-    // Find the suggestion rows by their border+p-3 styling
-    const rows = container.querySelectorAll('.mb-2.flex.items-center.gap-3.rounded-lg.border.p-3')
-    expect(rows.length).toBe(2)
+    const rows = container.querySelectorAll(rowSelector)
 
     // The first row (PID-3.1, not abstained) should NOT have amber
     const firstRow = rows[0]!
