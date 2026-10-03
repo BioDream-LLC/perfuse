@@ -81,12 +81,15 @@ test("a channel built through the form saves, and comes back the same", async ({
   await page.getByPlaceholder("ADT from the hospital, forwarded to the registry").fill("Built through the GUI");
   await page.getByPlaceholder(":6661").fill("127.0.0.1:0");
 
-  // Read the YAML the form generated, before saving. This is what the operator is shown and told will be written.
-  const shownBefore = await yamlPreview(page);
+  // Read the YAML the form generated, before saving. This is what the operator is shown and told will be written. Waited for by
+  // the name typed, because the preview is rebuilt after a pause in typing.
+  const shownBefore = await yamlPreview(page, `name: ${name}`);
 
   await page.getByRole("button", { name: "Create channel" }).click();
 
-  // Saving returns to the list, so the channel appearing there is the signal it worked.
+  // Saving returns to the list, so the channel appearing there is the signal it worked. The save builds from the form as it
+  // stands, not the debounced preview: pressing Create inside the pause used to save the blank channel the builder opened with,
+  // and the server's 400 for it was the console error this test kept reporting.
   await expect(page.getByText(name, { exact: false }).first()).toBeVisible({ timeout: 15_000 });
 
   // Now reopen it. This is the leg that was never exercised: the saved file parsed back into form state.

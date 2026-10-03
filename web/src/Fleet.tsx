@@ -295,7 +295,9 @@ export function Fleet() {
           title="Fleet"
           description="Watch every Perfuse instance from any one of them. No agent to install and no monitoring server to buy — the console is already in every binary."
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          {/* min-w-0 on the children: a grid track is never narrower than its widest child's minimum content, so one card
+              with an unbreakable line widened both past a phone screen. */}
+          <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
           <MemberCard
             name={self.name}
             reachability={self.reachability}
@@ -414,7 +416,7 @@ export function Fleet() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
         <MemberCard
           name={self.name}
           reachability={self.reachability}

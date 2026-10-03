@@ -220,7 +220,23 @@ export function ChannelBuilder({
   }
 
   async function submit() {
-    const result = await dispatch(saveChannel({ name: editing?.name, yaml: generated }))
+    // Built from the form as it is now, not taken from the preview. The preview is rebuilt 400ms after typing stops, so pressing
+    // Create inside that window used to save the previous state of the form - a stale port, or, straight after choosing a
+    // template, the blank channel the builder opened with.
+    let yaml = generated
+    if (rawYaml === null) {
+      try {
+        const fresh = await api.buildChannel(draftToWire(draft))
+        ++buildSeq.current
+        setBuilt(fresh)
+        setBuildError(null)
+        yaml = fresh.yaml
+      } catch (err) {
+        setBuildError(err instanceof Error ? err.message : String(err))
+        return
+      }
+    }
+    const result = await dispatch(saveChannel({ name: editing?.name, yaml }))
     if (!saveChannel.fulfilled.match(result)) return
 
     // Start it, if it was built to run.
