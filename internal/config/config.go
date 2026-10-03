@@ -608,9 +608,9 @@ type FHIRDestination struct {
 	// IdentifierSystems maps an HL7 assigning authority to a system URI.
 	IdentifierSystems map[string]string `yaml:"identifier_systems,omitempty"`
 
-	// ClaimUSCore adds US Core profile URLs to the resources produced. Only set
-	// it once the output has actually been checked, because asserting a profile
-	// that does not hold is worse than asserting none.
+	// ClaimUSCore adds the US Core 9.0.0 profile to each resource produced that has
+	// been checked against it and conforms. A resource that falls short is sent
+	// without the claim, with a note saying why.
 	ClaimUSCore bool `yaml:"claim_us_core,omitempty"`
 
 	// ValidateBeforeSend refuses to post a bundle that fails validation.

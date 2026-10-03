@@ -232,7 +232,7 @@ The message type decides what is produced, and every conversion reports the judg
 
 | v2 | FHIR |
 | --- | --- |
-| `ADT` | Patient, and an Encounter when there is a visit. `A28`, `A31`, `A29` and `A24` are about the person, so they produce no Encounter. |
+| `ADT` | Patient, an Encounter when there is a visit, a Condition per `DG1` diagnosis and an AllergyIntolerance per `AL1`. `A28`, `A31`, `A29` and `A24` are about the person, so they produce no Encounter or diagnoses, but do carry allergies. |
 | `ORU` | DiagnosticReport per `OBR`, with its Observations and Specimen. Results are grouped under the `OBR` before them by position, because `OBX-4` is not reliable. |
 | `ORM`, `OML`, `OMG` | ServiceRequest. |
 | `SIU` | Appointment, with the patient, the practitioners from `AIP` and the locations from `AIL`. |
@@ -264,6 +264,34 @@ This is what CMS Interoperability Framework criterion 14 asks for: chart notes a
 - **Historical records.** A record transcribed from somewhere else (`RXA-9` other than `00`) is not a primary source.
 - **Unknown amounts.** An amount of `999` means unknown, not 999.
 - **Routes and sites.** Each dose takes the route and site from the `RXR` after it, so a message with two doses does not give the second one the first one's route.
+
+### US Core 9.0.0 and USCDI v6
+
+`-us-core` (and `claim_us_core` on a `fhir` destination) puts a US Core profile in `meta.profile`, but only on a resource that has
+been checked against that profile and found to conform. One that falls short is still converted and sent without the claim, and a
+note gives the reason, such as "US Core requires an encounter type, and this Encounter has none". The checks are transcribed from US
+Core 9.0.0, the version ONC's 2026 Standards Version Advancement Process approves for USCDI v6. They cover Patient, Encounter,
+the laboratory Observation and DiagnosticReport, Specimen, Practitioner, Organization, Location, Immunization, DocumentReference,
+the encounter-diagnosis Condition and AllergyIntolerance.
+
+What the converter carries, by USCDI v6 data class:
+
+| USCDI v6 | From | As |
+| --- | --- | --- |
+| Patient Demographics | `PID` | Name, birth date, sex, address, phone and email, identifiers. Race and ethnicity (`PID-10`, `PID-22`) in US Core's extensions when coded in CDC Race and Ethnicity. Preferred language (`PID-15`) as BCP 47 |
+| Encounter Information | `PV1` | Encounter with type, class, period, location and participants |
+| Facility Information | `PV1-3` | Location, with the facility as its managing Organization |
+| Problems, Date of Onset | `DG1` | Condition (encounter diagnosis). `DG1-5` is the onset, as the HL7 v2-to-FHIR map has it |
+| Allergies and Intolerances, Reaction | `AL1` | AllergyIntolerance with category, criticality and reaction |
+| Laboratory | `ORU` | DiagnosticReport, Observations, Specimen (from `SPM`) |
+| Orders | `ORM`, `OML` | ServiceRequest |
+| Immunizations | `VXU` | Immunization |
+| Clinical Notes | `MDM` | DocumentReference |
+| Care Team Members | `PV1`, `TXA`, `DG1` | Practitioner |
+
+Not carried, because v2 messages of these types do not hold them or Perfuse does not map them: Medications, Procedures, Goals and
+Preferences, Health Status Assessments, Care Plan, Family Health History, Medical Devices (UDI), Health Insurance Information, Vital
+Signs as a distinct profile, and Provenance.
 
 ### R4 in both directions
 

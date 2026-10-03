@@ -152,6 +152,8 @@ var codingSystemMap = map[string]string{
 	"ICD10CM": "http://hl7.org/fhir/sid/icd-10-cm",
 	"CVX":     systemCVX,
 	"MVX":     systemMVX,
+	// The NCI Thesaurus, which CDC's immunization guide uses for routes of administration.
+	"NCIT": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
 	// CPT is deliberately absent. CPT is licensed by the AMA and redistributing a
 	// mapping to it is a licensing question, not a technical one.
 }
@@ -257,6 +259,10 @@ func mapCodingSystem(id string) (string, bool) {
 	if uri, ok := codingSystemMap[id]; ok {
 		return uri, true
 	}
+	// HL7-defined tables, named HL7 and four digits (HL70002, HL70163), are code systems on terminology.hl7.org.
+	if len(id) == 7 && strings.HasPrefix(id, "HL7") && strings.Trim(id[3:], "0123456789") == "" {
+		return fhir.SystemV2Table + id[3:], true
+	}
 	// A local code system is real and common. Naming it honestly beats pretending
 	// it is a standard one.
 	return "", false
@@ -305,6 +311,17 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 				c.note("warning", sourceLabel, "code.coding.system",
 					"coding system %q is not a standard system; recorded as %s", systemID, uri)
 			}
+		}
+		// The sender's text is not the code system's display. For a standard system - LOINC, SNOMED, CVX, RxNorm, ICD - a
+		// display that differs from the system's own is an error to a terminology-aware validator, and a v2 sender's text
+		// usually does differ ("Comprehensive metabolic panel" for LOINC's "Comprehensive metabolic 2000 panel - Serum or
+		// Plasma"). The text is kept as the concept's text, which is what it is. A local code keeps it as the display too,
+		// since there is no system display for it to contradict.
+		if known && display != "" {
+			if concept.Text == "" {
+				concept.Text = display
+			}
+			display = ""
 		}
 		concept.Coding = append(concept.Coding, fhir.Coding{
 			System: uri, Code: code, Display: display,

@@ -273,6 +273,36 @@ Asking who could call a Group export found the next gap: any valid token could e
 
 Not verified: the member match and Group exports against another payer's implementation, and the metrics against a payer's published figures.
 
+## HL7 v2 to US Core 9.0.0, against the official HL7 validator
+
+Five synthetic v2.5.1 messages (`internal/v2fhir/testdata/uscdi`: ADT^A01 with a diagnosis and an allergy, ORU^R01 with a
+specimen, VXU^V04, MDM^T02, SIU^S12) were converted with `-us-core`. Each resulting resource was then validated against US Core
+9.0.0 with the official HL7 validator, using the live terminology server. US Core 9.0.0 is the version ONC's 2026 SVAP approves for
+USCDI v6.
+
+The first run found that `-us-core` had been claiming almost nothing. Perfuse's own checker knew only US Core Patient, so every
+other resource went out without a claim. Validating those resources against the profiles they should have met found errors in
+the converter itself:
+
+- A Location's `partOf` named the facility Organization, which is invalid FHIR (`partOf` is another Location). It is now
+  `managingOrganization`.
+- The facility Organization had no `active`, which US Core requires.
+- A Specimen's type was read only from `OBR-15`, which v2.5 withdrew. A 2.5.1 result's `SPM` segment was ignored.
+- The sender's code text was written as the coding's display, so LOINC and CVX codes carried displays their code systems
+  contradict. It is now the concept's text.
+- A LOINC document type in `TXA-2` was labelled as HL7 table 0270.
+- `DG1` diagnoses and `AL1` allergies were not converted at all. Race, ethnicity and preferred language were dropped. A phone
+  number in v2.5's split components was dropped too.
+
+After the fixes, Perfuse checks every profile the converter can claim. 23 of the 24 resources claim US Core, and the validator
+reports **no errors on any resource**. The 24th is an Encounter with no type, so it carries no claim and the conversion notes say
+why. The remaining warnings include a missing narrative, observations with no performer, local codes outside extensible value
+sets, and an inactive RxNorm code in the test data.
+
+`TestEveryConformingResourceClaimsItsUSCoreProfile` and `TestTheUSCoreValidatorFindingsStayFixed` hold the result without Java.
+
+What this does not show: conversions of messages from a real EHR feed, or an ONC certification test (Inferno) run.
+
 ## Da Vinci CRD 2.2.1 and DTR 2.1.0, against the official HL7 validator
 
 The order CRD updates (a DeviceRequest carrying the coverage-information extension), the whole CDS Hooks response validated against

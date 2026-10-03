@@ -2532,7 +2532,7 @@ function DestinationCard({
 
             <Field
               label="Claim US Core conformance"
-              hint="Adds the US Core profile to each resource. Only claim it if the resource really carries what the profile requires, because a receiver may validate against the claim."
+              hint="Adds the US Core 9.0.0 profile to each resource that has been checked against it and conforms. One that falls short is still sent, without the claim, and the conversion notes say why."
             >
               <label className="flex items-center gap-2 text-sm text-slate-300">
                 <input

@@ -338,7 +338,9 @@ type Location struct {
 	Type         []CodeableConcept `json:"type,omitempty"`
 	Address      *Address          `json:"address,omitempty"`
 	PhysicalType *CodeableConcept  `json:"physicalType,omitempty"`
-	PartOf       *Reference        `json:"partOf,omitempty"`
+	// ManagingOrganization is the organization responsible for the place. PartOf is another Location, never an organization.
+	ManagingOrganization *Reference `json:"managingOrganization,omitempty"`
+	PartOf               *Reference `json:"partOf,omitempty"`
 }
 
 // ResourceTypeName implements Resource.

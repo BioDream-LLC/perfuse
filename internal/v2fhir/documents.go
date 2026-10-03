@@ -110,7 +110,11 @@ func (c *converter) buildDocumentReference(patient, encounter *fhir.Reference) *
 	}
 
 	docType := strings.ToUpper(strings.TrimSpace(c.get("TXA-2.1")))
-	if docType != "" {
+	if sys, _ := mapCodingSystem(c.get("TXA-2.3")); docType != "" && sys == fhir.SystemLOINC {
+		// A LOINC document code sent as such, which is what a US Core document type needs. Not a table 0270 code, so it is not
+		// labelled as one.
+		doc.Type = &fhir.CodeableConcept{Coding: []fhir.Coding{{System: fhir.SystemLOINC, Code: c.get("TXA-2.1")}}, Text: c.get("TXA-2.2")}
+	} else if docType != "" {
 		cc := &fhir.CodeableConcept{}
 		if l, ok := documentTypeLOINC[docType]; ok {
 			cc.Coding = append(cc.Coding, fhir.Coding{System: fhir.SystemLOINC, Code: l[0], Display: l[1]})

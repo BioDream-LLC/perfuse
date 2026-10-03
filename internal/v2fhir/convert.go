@@ -226,6 +226,9 @@ func (c *converter) convertADT() {
 		return
 	}
 	c.addEntry(patient, "Patient", patientConditionalURL(patient))
+	patRef := fhir.Ref("Patient", patient.ID)
+	// Allergies belong to the person, so a person-level message carries them too.
+	c.buildAllergies(patRef)
 
 	// A28 and A31 are person-level messages with no visit, so an encounter would
 	// be invented rather than mapped.
@@ -236,11 +239,14 @@ func (c *converter) convertADT() {
 		return
 	}
 
+	var encRef *fhir.Reference
 	if enc := c.buildEncounter(patient); enc != nil {
 		c.addEntry(enc, "Encounter", encounterConditionalURL(enc))
+		encRef = fhir.Ref("Encounter", enc.ID)
 	} else {
 		c.note("info", "PV1", "Encounter", "no PV1 segment, so no Encounter was created")
 	}
+	c.buildDiagnoses(patRef, encRef)
 }
 
 func (c *converter) convertORU() {

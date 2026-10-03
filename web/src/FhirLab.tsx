@@ -57,6 +57,15 @@ const sampleVXU = [
   'RXR|IM^Intramuscular^HL70162|LT^Left thigh^HL70163',
 ].join('\n')
 
+/** usCoreClaims lists each resource in a bundle with the US Core profile it claims, if any. */
+function usCoreClaims(bundle: unknown): { resource: string; profile: string }[] {
+  const entries = (bundle as { entry?: { resource: { resourceType: string; id?: string; meta?: { profile?: string[] } } }[] })?.entry ?? []
+  return entries.map(({ resource: r }) => ({
+    resource: `${r.resourceType}/${r.id ?? ''}`,
+    profile: (r.meta?.profile ?? []).map((p) => p.replace('http://hl7.org/fhir/us/core/StructureDefinition/', '')).join(', '),
+  }))
+}
+
 export function FhirLab() {
   const { copy: copyBundle, label: copyLabel } = useCopy()
 
@@ -203,8 +212,8 @@ export function FhirLab() {
                 label="Claim US Core profiles on the output"
               />
               <p className="mt-1.5 text-xs text-slate-400">
-                Only worth doing once you have checked the output. Asserting a profile that does not
-                hold is worse than asserting none.
+                Each resource is checked against its US Core 9.0.0 profile first, and only one that conforms carries the
+                claim. The notes say why any did not.
               </p>
             </div>
 
@@ -256,6 +265,16 @@ export function FhirLab() {
                     </span>
                   ))}
                 </div>
+
+                {usCore && (
+                  <ul className="mt-3 space-y-0.5 text-xs" data-testid="us-core-claims">
+                    {usCoreClaims(result.bundle).map((c) => (
+                      <li key={c.resource} className={c.profile ? 'text-emerald-300' : 'text-amber-300'}>
+                        {c.resource}: {c.profile ? `claims ${c.profile}` : 'no claim; see the notes'}
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 <div className="mt-4 flex gap-4 border-t border-slate-800 pt-3 text-xs">
                   <span className={result.validation.errors > 0 ? 'text-rose-300' : 'text-slate-500'}>

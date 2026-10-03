@@ -92,6 +92,17 @@ func (c *converter) buildPatient() *fhir.Patient {
 		p.MaritalStatus = ms
 	}
 
+	// USCDI race, ethnicity and preferred language.
+	if ext := c.omb("PID-10", "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race", ombRace); ext != nil {
+		p.Extension = append(p.Extension, *ext)
+	}
+	if ext := c.omb("PID-22", "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity", ombEthnicity); ext != nil {
+		p.Extension = append(p.Extension, *ext)
+	}
+	if lang := c.language("PID-15"); lang != nil {
+		p.Communication = append(p.Communication, fhir.PatientCommunication{Language: lang})
+	}
+
 	// PID-30 is the deceased indicator and PID-29 the date. Setting both halves of
 	// deceased[x] is invalid, so the date wins when present because it carries
 	// more information.
@@ -432,10 +443,14 @@ func (c *converter) buildLocation() *fhir.Location {
 	}
 
 	if facility != "" {
-		org := &fhir.Organization{Name: facility}
+		// A facility named on a current message is in operation, which is what US Core's required active asserts.
+		active := true
+		org := &fhir.Organization{Name: facility, Active: &active}
 		org.SetResourceID(c.deterministicID("Organization", facility))
 		c.addEntry(org, "Organization", "")
-		l.PartOf = fhir.Ref("Organization", org.ID)
+		// The facility runs the place: managingOrganization. partOf is for a Location inside another Location, and an
+		// Organization there is invalid FHIR - which the HL7 validator reported and this package's own checks did not.
+		l.ManagingOrganization = fhir.Ref("Organization", org.ID)
 	}
 
 	return l
@@ -821,11 +836,23 @@ func (c *converter) rangeQuantity(value float64, unit string) *fhir.Quantity {
 func (c *converter) buildSpecimen(obrIndex int, patient *fhir.Reference) *fhir.Specimen {
 	prefix := fmt.Sprintf("OBR(%d)", obrIndex)
 
-	// OBR-15 is the specimen source, OBR-14 when the sample reached the lab.
+	// OBR-15 is the specimen source, OBR-14 when the sample reached the lab. From v2.5 the SPM segment carries the specimen
+	// instead, and OBR-15 is withdrawn; a 2.5.1 lab result sends SPM, so SPM wins where both are present.
 	source := c.codedValue(prefix+"-15", prefix+"-15")
 	received := c.v2Instant(c.get(prefix+"-14"), prefix+"-14")
 	collected := c.v2DateTime(c.get(prefix+"-7"), prefix+"-7")
 	accession := c.get(prefix + "-3.1")
+	if spm := c.spmFor(obrIndex); spm != "" {
+		if t := c.codedValue(spm+"-4", spm+"-4"); t != nil {
+			source = t
+		}
+		if v := c.v2Instant(c.get(spm+"-18"), spm+"-18"); v != "" {
+			received = v
+		}
+		if v := c.v2DateTime(c.get(spm+"-17.1"), spm+"-17"); v != "" {
+			collected = v
+		}
+	}
 
 	if source == nil && received == "" && accession == "" {
 		return nil
@@ -850,6 +877,25 @@ func (c *converter) buildSpecimen(obrIndex int, patient *fhir.Reference) *fhir.S
 	}
 
 	return s
+}
+
+// spmFor is the path prefix of the SPM segment belonging to an OBR, or "" when there is none. In ORU^R01 the specimen follows its
+// order: the first SPM after the OBR, before the next one.
+func (c *converter) spmFor(obrIndex int) string {
+	obr, spm := 0, 0
+	found := ""
+	for _, name := range c.msg.SegmentNames() {
+		switch name {
+		case "OBR":
+			obr++
+		case "SPM":
+			spm++
+			if obr == obrIndex && found == "" {
+				found = fmt.Sprintf("SPM(%d)", spm)
+			}
+		}
+	}
+	return found
 }
 
 func (c *converter) buildServiceRequest(obrIndex int, patient, encounter *fhir.Reference) *fhir.ServiceRequest {
@@ -1011,6 +1057,11 @@ func (c *converter) contactPoint(path, defaultUse string) *fhir.ContactPoint {
 	if number == "" {
 		number = c.get(path + ".12")
 	}
+	if number == "" {
+		// From v2.5 the number is in parts: country code, area code, local number and extension (components 5 to 8). Reading only
+		// the whole-number components dropped every phone number a 2.5.1 sender split this way.
+		number = joinPhone(c.get(path+".5"), c.get(path+".6"), c.get(path+".7"), c.get(path+".8"))
+	}
 	email := c.get(path + ".4")
 	equipment := strings.ToUpper(c.get(path + ".3"))
 
@@ -1036,6 +1087,29 @@ func (c *converter) contactPoint(path, defaultUse string) *fhir.ContactPoint {
 		cp.System = "phone"
 	}
 	return cp
+}
+
+// joinPhone renders the parts of an XTN number as one: +1 217 555 0100, with the extension after an x.
+func joinPhone(country, area, local, ext string) string {
+	if local == "" {
+		return ""
+	}
+	if len(local) == 7 && strings.Trim(local, "0123456789") == "" {
+		local = local[:3] + " " + local[3:]
+	}
+	parts := []string{}
+	if country != "" {
+		parts = append(parts, "+"+strings.TrimPrefix(country, "+"))
+	}
+	if area != "" {
+		parts = append(parts, area)
+	}
+	parts = append(parts, local)
+	out := strings.Join(parts, " ")
+	if ext != "" {
+		out += " x" + ext
+	}
+	return out
 }
 
 // repeatCount returns how many repetitions a field has, or 1 when it is present

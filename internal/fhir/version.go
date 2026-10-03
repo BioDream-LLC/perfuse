@@ -214,6 +214,15 @@ func USCoreProfile(resourceType string) string {
 		return "http://hl7.org/fhir/us/core/StructureDefinition/us-core-location"
 	case "Specimen":
 		return "http://hl7.org/fhir/us/core/StructureDefinition/us-core-specimen"
+	case "Immunization":
+		return "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+	case "DocumentReference":
+		return "http://hl7.org/fhir/us/core/StructureDefinition/us-core-documentreference"
+	case "Condition":
+		// The converter's Conditions come from DG1, which records a visit's diagnoses.
+		return "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-encounter-diagnosis"
+	case "AllergyIntolerance":
+		return "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance"
 	default:
 		return ""
 	}

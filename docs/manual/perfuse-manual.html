@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · ba074a8</p>
+<p class="version">version 0.1 · 6ea281f</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -460,8 +460,9 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s8-3-8-binary-segments"><span class="num">8.3.8</span> Binary segments</a></div>
 <div class="toc-d2"><a href="#s8-4-fhir"><span class="num">8.4</span> FHIR</a></div>
 <div class="toc-d3"><a href="#s8-4-1-what-an-hl7-v2-message-becomes"><span class="num">8.4.1</span> What an HL7 v2 message becomes</a></div>
-<div class="toc-d3"><a href="#s8-4-2-r4-in-both-directions"><span class="num">8.4.2</span> R4 in both directions</a></div>
-<div class="toc-d3"><a href="#s8-4-3-subscriptions"><span class="num">8.4.3</span> Subscriptions</a></div>
+<div class="toc-d3"><a href="#s8-4-2-us-core-900-and-uscdi-v6"><span class="num">8.4.2</span> US Core 9.0.0 and USCDI v6</a></div>
+<div class="toc-d3"><a href="#s8-4-3-r4-in-both-directions"><span class="num">8.4.3</span> R4 in both directions</a></div>
+<div class="toc-d3"><a href="#s8-4-4-subscriptions"><span class="num">8.4.4</span> Subscriptions</a></div>
 <div class="toc-d2"><a href="#s8-5-ncpdp-telecommunication-standard"><span class="num">8.5</span> NCPDP Telecommunication Standard</a></div>
 <div class="toc-d2"><a href="#s8-6-ncpdp-script"><span class="num">8.6</span> NCPDP SCRIPT</a></div>
 <div class="toc-d2"><a href="#s8-7-dicom"><span class="num">8.7</span> DICOM</a></div>
@@ -1746,7 +1747,7 @@ destinations:
 <table>
 <thead><tr><th>v2</th><th>FHIR</th></tr></thead>
 <tbody>
-<tr><td><code>ADT</code></td><td>Patient, and an Encounter when there is a visit. <code>A28</code>, <code>A31</code>, <code>A29</code> and <code>A24</code> are about the person, so they produce no Encounter.</td></tr>
+<tr><td><code>ADT</code></td><td>Patient, an Encounter when there is a visit, a Condition per <code>DG1</code> diagnosis and an AllergyIntolerance per <code>AL1</code>. <code>A28</code>, <code>A31</code>, <code>A29</code> and <code>A24</code> are about the person, so they produce no Encounter or diagnoses, but do carry allergies.</td></tr>
 <tr><td><code>ORU</code></td><td>DiagnosticReport per <code>OBR</code>, with its Observations and Specimen. Results are grouped under the <code>OBR</code> before them by position, because <code>OBX-4</code> is not reliable.</td></tr>
 <tr><td><code>ORM</code>, <code>OML</code>, <code>OMG</code></td><td>ServiceRequest.</td></tr>
 <tr><td><code>SIU</code></td><td>Appointment, with the patient, the practitioners from <code>AIP</code> and the locations from <code>AIL</code>.</td></tr>
@@ -1778,10 +1779,29 @@ destinations:
 <li><strong>Unknown amounts.</strong> An amount of <code>999</code> means unknown, not 999.</li>
 <li><strong>Routes and sites.</strong> Each dose takes the route and site from the <code>RXR</code> after it, so a message with two doses does not give the second one the first one&#39;s route.</li>
 </ul>
-<h4 id="s8-4-2-r4-in-both-directions"><span class="num">8.4.2</span> R4 in both directions</h4>
+<h4 id="s8-4-2-us-core-900-and-uscdi-v6"><span class="num">8.4.2</span> US Core 9.0.0 and USCDI v6</h4>
+<p><code>-us-core</code> (and <code>claim_us_core</code> on a <code>fhir</code> destination) puts a US Core profile in <code>meta.profile</code>, but only on a resource that has been checked against that profile and found to conform. One that falls short is still converted and sent without the claim, and a note gives the reason, such as &#34;US Core requires an encounter type, and this Encounter has none&#34;. The checks are transcribed from US Core 9.0.0, the version ONC&#39;s 2026 Standards Version Advancement Process approves for USCDI v6. They cover Patient, Encounter, the laboratory Observation and DiagnosticReport, Specimen, Practitioner, Organization, Location, Immunization, DocumentReference, the encounter-diagnosis Condition and AllergyIntolerance.</p>
+<p>What the converter carries, by USCDI v6 data class:</p>
+<table>
+<thead><tr><th>USCDI v6</th><th>From</th><th>As</th></tr></thead>
+<tbody>
+<tr><td>Patient Demographics</td><td><code>PID</code></td><td>Name, birth date, sex, address, phone and email, identifiers. Race and ethnicity (<code>PID-10</code>, <code>PID-22</code>) in US Core&#39;s extensions when coded in CDC Race and Ethnicity. Preferred language (<code>PID-15</code>) as BCP 47</td></tr>
+<tr><td>Encounter Information</td><td><code>PV1</code></td><td>Encounter with type, class, period, location and participants</td></tr>
+<tr><td>Facility Information</td><td><code>PV1-3</code></td><td>Location, with the facility as its managing Organization</td></tr>
+<tr><td>Problems, Date of Onset</td><td><code>DG1</code></td><td>Condition (encounter diagnosis). <code>DG1-5</code> is the onset, as the HL7 v2-to-FHIR map has it</td></tr>
+<tr><td>Allergies and Intolerances, Reaction</td><td><code>AL1</code></td><td>AllergyIntolerance with category, criticality and reaction</td></tr>
+<tr><td>Laboratory</td><td><code>ORU</code></td><td>DiagnosticReport, Observations, Specimen (from <code>SPM</code>)</td></tr>
+<tr><td>Orders</td><td><code>ORM</code>, <code>OML</code></td><td>ServiceRequest</td></tr>
+<tr><td>Immunizations</td><td><code>VXU</code></td><td>Immunization</td></tr>
+<tr><td>Clinical Notes</td><td><code>MDM</code></td><td>DocumentReference</td></tr>
+<tr><td>Care Team Members</td><td><code>PV1</code>, <code>TXA</code>, <code>DG1</code></td><td>Practitioner</td></tr>
+</tbody>
+</table>
+<p>Not carried, because v2 messages of these types do not hold them or Perfuse does not map them: Medications, Procedures, Goals and Preferences, Health Status Assessments, Care Plan, Family Health History, Medical Devices (UDI), Health Insurance Information, Vital Signs as a distinct profile, and Provenance.</p>
+<h4 id="s8-4-3-r4-in-both-directions"><span class="num">8.4.3</span> R4 in both directions</h4>
 <p>A FHIR server declaring R4 accepts R4. That was not true of Encounters until this release. The server converted what it served to R4 but read what it received as if it were already in its internal form, so an R4 Encounter was refused with a 400. So was every bundle Perfuse&#39;s own ADT conversion produced, because each carries <code>Encounter.class</code>, which R4 writes as a single coding.</p>
 <p>It was found the first time anything posted a converted ADT to Perfuse&#39;s own R4 server. A test now does that for every mapped message type, and another checks that everything written as R4 is read back unchanged.</p>
-<h4 id="s8-4-3-subscriptions"><span class="num">8.4.3</span> Subscriptions</h4>
+<h4 id="s8-4-4-subscriptions"><span class="num">8.4.4</span> Subscriptions</h4>
 <p>With <code>-fhir-subscriptions</code>, the FHIR endpoint sends notifications when an Encounter or an Appointment is created or changed. It follows the FHIR Subscriptions R5 Backport IG for R4, which is what CMS Interoperability Framework criterion 15 and TEFCA&#39;s FHIR roadmap use for appointment and encounter notifications.</p>
 <p>A client creates a <code>Subscription</code> naming a topic, and optionally a filter such as <code>Encounter?patient=Patient/123</code>. The topics are listed in the capability statement:</p>
 <table>
@@ -3978,8 +3998,8 @@ rules:
 <p>DefaultIdentifierSystem namespaces identifiers whose assigning authority has no configured URI.</p>
 <p>Without a system, an MRN is ambiguous between facilities.</p>
 <h4 id="s22-10-5-claim-us-core"><span class="num">22.10.5</span> claim_us_core</h4>
-<p>ClaimUSCore adds US Core profile URLs to the resources produced.</p>
-<p>Only set it once the output has actually been checked, because asserting a profile that does not hold is worse than asserting none.</p>
+<p>ClaimUSCore adds the US Core 9.0.0 profile to each resource produced that has been checked against it and conforms.</p>
+<p>A resource that falls short is sent without the claim, with a note saying why.</p>
 <h4 id="s22-10-6-validate-before-send"><span class="num">22.10.6</span> validate_before_send</h4>
 <p>ValidateBeforeSend refuses to post a bundle that fails validation.</p>
 <p>Defaults to true: sending a resource a server will reject wastes a retry budget and hides the real problem behind a transport error.</p>
