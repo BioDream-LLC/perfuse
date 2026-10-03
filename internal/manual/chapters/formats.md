@@ -75,7 +75,28 @@ Any X12 interchange can be routed, filtered and addressed by path. These transac
 | `278` | Prior authorisation: the request for review, and the payer's decision. |
 | `999` | Functional acknowledgement, which Perfuse also generates. |
 
-`270`, `271`, `834` and `837` are parsed as interchanges and addressed by path; they have no named model because routing and filtering are what channels do with them.
+| `271` | Eligibility: whether a patient is covered, and their co-payment, coinsurance, deductible and out-of-pocket amounts, in and out of network. |
+| `834` | Enrolment: members added, changed and terminated, with each coverage line and its dates. |
+| `837` | Claims, professional and institutional (read for CMS-0057's CARIN conversion). |
+
+Perfuse also **builds** the `270` eligibility inquiry and the `276` claim status request, under **Exchange → Claims & auth** or through
+`POST /api/x12/eligibility/build` and `/api/x12/claimstatus/build`. Both are the HIPAA 5010 versions (005010X279A1, 005010X212), read
+back and envelope-checked before they are shown, and neither is sent from that page: delivering one is a channel's job, where the
+trading partner and its credentials are.
+
+### Eligibility, and the CAQH CORE data content rule
+
+A 271 is a list of EB segments, each a single fact: active coverage, or a $25 co-payment for service type 30 in network, or $800 of
+the individual deductible remaining. The reader assembles them into the answer a front desk wants - "coverage active under Gold PPO
+2000; co-payment in network $25; individual deductible remaining in network $800" - and names a rejection (an AAA segment) in words,
+with what the payer says to do next.
+
+It also checks the response against the CAQH CORE Eligibility & Benefits data content rule: for an inquiry about health benefit plan
+coverage (service type 30), an active response should carry plan dates, the plan name, co-payment, coinsurance, deductible and remaining
+deductible both in and out of network, and the base service types (1, 33, 35, 47, 48, 50, 86, 88, 98, AL, MH, UC). Each is listed as
+met or missing. This is Perfuse's reading of the rule, useful for "why does this payer never tell us the deductible?" - it is not CORE
+certification, which CAQH's authorised testing vendors carry out.
+
 
 ### Prior authorisation
 

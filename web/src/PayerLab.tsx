@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, ApiError } from './api'
-import type { AttachmentBuildResult, AttachmentView, PriorAuthResult } from './api'
+import type { AttachmentBuildResult, AttachmentView, BuiltX12, EligibilityRead, Enrollment, PriorAuthResult } from './api'
+import { sample271, sample834 } from './api'
 import { CodeArea } from './CodeArea'
 import { IconX12 } from './Icons'
 import { ErrorBox, Field, Section } from './ui'
@@ -17,14 +18,15 @@ import type { UiError } from './store'
  * channel, which is where the trading partner, the credentials and the audit trail belong.
  */
 export function PayerLab() {
-  const [tab, setTab] = useState<'build' | 'read' | 'auth'>('build')
+  const [tab, setTab] = useState<'build' | 'read' | 'auth' | 'elig' | 'status' | 'enrol'>('build')
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-medium text-slate-100">Claims attachments and prior authorisation</h2>
+        <h2 className="text-lg font-medium text-slate-100">Eligibility, claim status, attachments and prior authorisation</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Build and read X12 275 claims attachments (006020X314, the CMS-0053-F standard), and turn X12 278 decisions into Da
-          Vinci PAS ClaimResponses. Nothing here is stored or sent.
+          Build 270 eligibility inquiries and read the 271 answer - checked against the CAQH CORE data content rule - build 276
+          claim status requests, read 834 enrolment files, build and read X12 275 claims attachments (006020X314, the CMS-0053-F
+          standard), and turn X12 278 decisions into Da Vinci PAS ClaimResponses. Nothing here is stored or sent.
         </p>
       </div>
       {/* Toggle buttons rather than tabs: the view itself is already the selected tab in the navigation, and a second
@@ -33,6 +35,9 @@ export function PayerLab() {
       <div role="group" aria-label="Payer tools" className="flex flex-wrap gap-2">
         {(
           [
+            ['elig', 'Eligibility (270/271)'],
+            ['status', 'Claim status (276)'],
+            ['enrol', 'Enrolment (834)'],
             ['build', 'Build a 275'],
             ['read', 'Read a 275'],
             ['auth', '278 to PAS'],
@@ -51,6 +56,9 @@ export function PayerLab() {
       {tab === 'build' && <BuildAttachment />}
       {tab === 'read' && <ReadAttachment />}
       {tab === 'auth' && <PriorAuth />}
+      {tab === 'elig' && <Eligibility />}
+      {tab === 'status' && <ClaimStatus />}
+      {tab === 'enrol' && <EnrollmentReader />}
     </div>
   )
 }
@@ -369,6 +377,289 @@ function PriorAuth() {
               </pre>
             </Section>
           </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** A small labelled input, so the forms below stay readable. */
+function In({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Field label={label}>
+      <input className="input font-mono text-xs" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+    </Field>
+  )
+}
+
+function BuiltResult({ result, title }: { result: BuiltX12; title: string }) {
+  return (
+    <Section title={title} icon={IconX12}>
+      {result.envelopeProblems.length === 0 ? (
+        <p className="mb-2 text-xs text-emerald-300">Read back: {result.segments} segments, envelope counts and control numbers agree.</p>
+      ) : (
+        result.envelopeProblems.map((p) => (
+          <p key={p.Message} className="mb-1 text-xs text-rose-300">
+            {p.Segment}: {p.Message}
+          </p>
+        ))
+      )}
+      <pre data-testid="built-x12" className="max-h-96 overflow-auto whitespace-pre-wrap break-all font-mono text-xs text-slate-300">
+        {result.x12.replaceAll('~', '~\n')}
+      </pre>
+      <p className="mt-2 text-xs text-slate-500">{result.basis}</p>
+    </Section>
+  )
+}
+
+/** Eligibility: build a 270, and read the 271 that comes back into the answer a front desk needs. */
+function Eligibility() {
+  const [f, setF] = useState({
+    senderId: 'CLINIC01', receiverId: 'PAYER01', payerName: 'Springfield Health Plan', payerId: 'SHP01',
+    providerName: 'Riverside Clinic', npi: '1234567893', last: 'DOE', first: 'JANE', member: 'MBR123456', dob: '19800101',
+    types: '30',
+  })
+  const set = (k: keyof typeof f) => (v: string) => setF((o) => ({ ...o, [k]: v }))
+  const [built, setBuilt] = useState<BuiltX12 | null>(null)
+  const [x271, setX271] = useState(sample271)
+  const [read, setRead] = useState<EligibilityRead | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+
+  async function build() {
+    setError(null)
+    try {
+      setBuilt(
+        await api.buildEligibility({
+          senderId: f.senderId, receiverId: f.receiverId,
+          payer: { lastName: f.payerName, id: f.payerId },
+          provider: { lastName: f.providerName, id: f.npi },
+          subscriber: { lastName: f.last, firstName: f.first, id: f.member, dob: f.dob },
+          serviceTypes: f.types.split(/[ ,]+/).filter(Boolean),
+        }),
+      )
+    } catch (e) {
+      setError(toError(e))
+    }
+  }
+  async function readIt() {
+    setError(null)
+    try {
+      setRead(await api.readEligibility(x271))
+    } catch (e) {
+      setError(toError(e))
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Section title="Ask: a 270 inquiry">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <In label="Payer name" value={f.payerName} onChange={set('payerName')} />
+            <In label="Payer ID" value={f.payerId} onChange={set('payerId')} />
+            <In label="Provider name" value={f.providerName} onChange={set('providerName')} />
+            <In label="Provider NPI" value={f.npi} onChange={set('npi')} />
+            <In label="Subscriber last name" value={f.last} onChange={set('last')} />
+            <In label="Subscriber first name" value={f.first} onChange={set('first')} />
+            <In label="Member ID" value={f.member} onChange={set('member')} />
+            <In label="Date of birth (CCYYMMDD)" value={f.dob} onChange={set('dob')} />
+            <In label="Service types" value={f.types} onChange={set('types')} placeholder="30" />
+            <In label="Sender ID (ISA06)" value={f.senderId} onChange={set('senderId')} />
+            <In label="Receiver ID (ISA08)" value={f.receiverId} onChange={set('receiverId')} />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Service type 30 is health benefit plan coverage, the one a CORE-certified payer must answer in full.
+          </p>
+          <button className="btn-primary mt-4 w-full" onClick={() => void build()}>
+            Build the 270
+          </button>
+        </Section>
+        {built && <BuiltResult result={built} title="X12 270" />}
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Section title="Answer: read a 271">
+          <CodeArea language="x12" aria-label="X12 271 response" className="min-h-48" value={x271} onChange={setX271} spellCheck={false} />
+          <button className="btn-primary mt-4 w-full" onClick={() => void readIt()}>
+            Read the 271
+          </button>
+        </Section>
+        {read && (
+          <div className="space-y-4">
+            <div className="card p-4 text-sm" data-testid="eligibility-summary">
+              <p className={read.eligibility.status === 'active' ? 'font-medium text-emerald-300' : 'font-medium text-amber-300'}>
+                Coverage {read.eligibility.status}
+              </p>
+              {read.eligibility.summary.map((l) => (
+                <p key={l} className="mt-1 text-slate-200">
+                  {l}
+                </p>
+              ))}
+            </div>
+            <Section title="CAQH CORE data content">
+              <ul className="space-y-1 text-xs" data-testid="eligibility-core">
+                {read.core.map((c) => (
+                  <li key={c.requirement} className={c.met ? 'text-emerald-300' : 'text-amber-300'}>
+                    {c.met ? 'Met' : 'Missing'}: {c.requirement}
+                    {c.detail && !c.met ? ` (${c.detail})` : ''}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-slate-500">{read.coreBasis}</p>
+            </Section>
+            <Section title={`Benefits (${read.eligibility.benefits.length})`} icon={IconX12}>
+              <table className="w-full text-left text-xs">
+                <thead className="text-slate-500">
+                  <tr>
+                    <th className="py-1 pr-2">Benefit</th>
+                    <th className="py-1 pr-2">Service types</th>
+                    <th className="py-1 pr-2">Network</th>
+                    <th className="py-1">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-300">
+                  {read.eligibility.benefits.map((b, i) => (
+                    <tr key={i} className="border-t border-slate-800">
+                      <td className="py-1 pr-2">
+                        {b.meaning || b.code}
+                        {b.level ? ` (${b.level})` : ''}
+                        {b.period === '29' ? ', remaining' : ''}
+                      </td>
+                      <td className="py-1 pr-2 font-mono">{(b.serviceTypes ?? []).join(' ')}</td>
+                      <td className="py-1 pr-2">{{ Y: 'in', N: 'out', W: 'both' }[b.inNetwork ?? ''] ?? ''}</td>
+                      <td className="py-1 font-mono">
+                        {b.amount ? `$${b.amount}` : b.percent ? `${Math.round(Number(b.percent) * 100)}%` : b.plan ?? ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Section>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Claim status: build a 276. The 277 that answers it is read on the attachments tab, which already reads 277s. */
+function ClaimStatus() {
+  const [f, setF] = useState({
+    senderId: 'CLINIC01', receiverId: 'PAYER01', payerName: 'Springfield Health Plan', payerId: 'SHP01',
+    providerName: 'Riverside Clinic', npi: '1234567893', last: 'DOE', first: 'JANE', member: 'MBR123456',
+    account: 'PCN0042', payerClaim: '', charge: '250.00', from: '20260915', to: '',
+  })
+  const set = (k: keyof typeof f) => (v: string) => setF((o) => ({ ...o, [k]: v }))
+  const [built, setBuilt] = useState<BuiltX12 | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+
+  async function build() {
+    setError(null)
+    try {
+      setBuilt(
+        await api.buildClaimStatus({
+          senderId: f.senderId, receiverId: f.receiverId,
+          payer: { lastName: f.payerName, id: f.payerId },
+          provider: { lastName: f.providerName, id: f.npi },
+          subscriber: { lastName: f.last, firstName: f.first, id: f.member },
+          patientAccount: f.account, payerClaimNumber: f.payerClaim || undefined, chargeAmount: f.charge || undefined,
+          serviceFrom: f.from, serviceTo: f.to || undefined,
+        }),
+      )
+    } catch (e) {
+      setError(toError(e))
+    }
+  }
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      <Section title="Ask: a 276 claim status request">
+        {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <In label="Payer name" value={f.payerName} onChange={set('payerName')} />
+          <In label="Payer ID" value={f.payerId} onChange={set('payerId')} />
+          <In label="Provider name" value={f.providerName} onChange={set('providerName')} />
+          <In label="Provider NPI" value={f.npi} onChange={set('npi')} />
+          <In label="Subscriber last name" value={f.last} onChange={set('last')} />
+          <In label="Member ID" value={f.member} onChange={set('member')} />
+          <In label="Patient account (CLM01)" value={f.account} onChange={set('account')} />
+          <In label="Payer claim number" value={f.payerClaim} onChange={set('payerClaim')} placeholder="if known" />
+          <In label="Total charge" value={f.charge} onChange={set('charge')} />
+          <In label="Service from (CCYYMMDD)" value={f.from} onChange={set('from')} />
+          <In label="Service to" value={f.to} onChange={set('to')} placeholder="same day" />
+        </div>
+        <button className="btn-primary mt-4 w-full" onClick={() => void build()}>
+          Build the 276
+        </button>
+      </Section>
+      {built && <BuiltResult result={built} title="X12 276" />}
+    </div>
+  )
+}
+
+/** Enrolment: read an 834 into who was added, changed or terminated, and on which coverage. */
+function EnrollmentReader() {
+  const [x, setX] = useState(sample834)
+  const [e, setE] = useState<Enrollment | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+
+  async function readIt() {
+    setError(null)
+    try {
+      setE(await api.readEnrollment(x))
+    } catch (err) {
+      setError(toError(err))
+    }
+  }
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      <Section title="An 834 enrolment file">
+        <CodeArea language="x12" aria-label="X12 834" className="min-h-48" value={x} onChange={setX} spellCheck={false} />
+        <button className="btn-primary mt-4 w-full" onClick={() => void readIt()}>
+          Read the 834
+        </button>
+      </Section>
+      <div className="space-y-4">
+        {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+        {e && (
+          <Section
+            title={`${e.members.length} member${e.members.length === 1 ? '' : 's'} from ${e.sponsor.lastName || 'the sponsor'}`}
+            icon={IconX12}
+          >
+            <table className="w-full text-left text-xs" data-testid="enrollment-members">
+              <thead className="text-slate-500">
+                <tr>
+                  <th className="py-1 pr-2">Member</th>
+                  <th className="py-1 pr-2">Change</th>
+                  <th className="py-1">Coverage</th>
+                </tr>
+              </thead>
+              <tbody className="text-slate-300">
+                {e.members.map((m, i) => (
+                  <tr key={i} className="border-t border-slate-800 align-top">
+                    <td className="py-1 pr-2">
+                      {m.person.firstName} {m.person.lastName}
+                      <span className="block text-slate-500">
+                        {m.subscriber ? 'subscriber' : m.relationship} · {m.memberId || m.subscriberId}
+                      </span>
+                    </td>
+                    <td className="py-1 pr-2">{m.action}</td>
+                    <td className="py-1">
+                      {m.coverages.map((c, j) => (
+                        <span key={j} className="block">
+                          {c.line} {c.plan} {c.level}
+                          {c.begin ? ` from ${c.begin}` : ''}
+                          {c.end ? ` until ${c.end}` : ''}
+                        </span>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
         )}
       </div>
     </div>

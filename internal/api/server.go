@@ -393,6 +393,10 @@ func (s *Server) Handler() http.Handler {
 	// is supplied, store nothing and send nothing, so viewer is the floor.
 	mux.Handle("POST /api/x12/attachment/build", s.require(store.RoleViewer, s.handleBuildAttachment))
 	mux.Handle("POST /api/x12/attachment/read", s.require(store.RoleViewer, s.handleReadAttachment))
+	mux.Handle("POST /api/x12/eligibility/build", s.require(store.RoleViewer, s.handleBuildEligibility))
+	mux.Handle("POST /api/x12/eligibility/read", s.require(store.RoleViewer, s.handleReadEligibility))
+	mux.Handle("POST /api/x12/claimstatus/build", s.require(store.RoleViewer, s.handleBuildClaimStatus))
+	mux.Handle("POST /api/x12/enrollment/read", s.require(store.RoleViewer, s.handleReadEnrollment))
 	mux.Handle("POST /api/priorauth/claimresponse", s.require(store.RoleViewer, s.handlePriorAuthResponse))
 
 	// CMS-0057 for payers: readiness of the four APIs, and the CARIN, PDex and metrics conversions behind them.

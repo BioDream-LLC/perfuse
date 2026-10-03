@@ -1478,6 +1478,20 @@ the fixture has fewer than two. That is not defensive padding. The first version
 that test ran against a single-partition topic, where every record shares a partition
 whatever its key — so it passed while proving nothing.
 
+## Eligibility, claim status and enrolment (X12 5010)
+
+Inspectors, like the attachment and prior authorisation ones: they build or read what is sent and store nothing. Viewer role.
+
+| Endpoint | |
+|---|---|
+| `POST /api/x12/eligibility/build` | A 270 (005010X279A1) from `{senderId, receiverId, payer, provider, subscriber, dependent?, serviceTypes?, serviceDate?}`; each party is `{lastName, firstName?, id, dob?, gender?}`. The provider's NPI check digit is verified |
+| `POST /api/x12/eligibility/read` | `{x12}` holding a 271: the assembled answer, every benefit, rejections in words, and `core`, the CAQH CORE data content findings |
+| `POST /api/x12/claimstatus/build` | A 276 (005010X212) from `{..., patientAccount, payerClaimNumber?, chargeAmount?, serviceFrom, serviceTo?}` |
+| `POST /api/x12/enrollment/read` | `{x12}` holding an 834: sponsor, payer, and each member's action, relationship, identifiers and coverages |
+
+Built interchanges are read back and envelope-checked before they are returned, with any problem listed. The 277 that answers a 276 is
+read by the existing claim status reader.
+
 ## Amazon Web Services: S3, SQS and SNS
 
 Five connectors, none of them using the AWS SDK: each is signed HTTP through one Signature Version 4 implementation

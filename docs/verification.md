@@ -144,6 +144,20 @@ The other direction: every live test of Perfuse's Mirth export now runs once per
 
 What this does not show: channels authored by hand in each Administrator, which may use settings the corpus does not; and plugins beyond those the images ship.
 
+## Eligibility (270/271), claim status (276) and enrolment (834)
+
+**What was checked, and what could not be.**
+
+Every built 270 and 276 is parsed back by Perfuse's X12 reader and passes its envelope check - SE01 segment counts, ST/SE and GS/GE
+control numbers, ISA/IEA. The synthetic 271 used in the tests and the browser was itself caught by that check on its first run:
+it declared 21 segments and held 23.
+
+The independent check available was pyx12 4.0.0, the open-source HIPAA validator. It accepts the 834 test file as valid against
+005010X220A1. It ships no maps for 005010X279A1 or 005010X212, so it could not check the 270, 271 or 276; those were built to the 5010
+implementation guide structure and have not been checked against a TR3-based validator or accepted by a payer.
+
+The CORE check is this program's reading of the CAQH CORE Eligibility & Benefits data content rule. It is not CORE certification.
+
 ## S3, SQS and SNS, against LocalStack and AWS's signature example
 
 **What was checked: the five AWS connectors end to end, with the message looked for where it should have arrived.**

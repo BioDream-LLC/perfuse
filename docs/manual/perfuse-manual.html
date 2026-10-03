@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 4e5b267</p>
+<p class="version">version 0.1 · 91373c1</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -453,9 +453,10 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s8-3-1-splitting-an-interchange"><span class="num">8.3.1</span> Splitting an interchange</a></div>
 <div class="toc-d3"><a href="#s8-3-2-when-the-counts-do-not-add-up"><span class="num">8.3.2</span> When the counts do not add up</a></div>
 <div class="toc-d3"><a href="#s8-3-3-transactions-perfuse-reads-as-structured-data"><span class="num">8.3.3</span> Transactions Perfuse reads as structured data</a></div>
-<div class="toc-d3"><a href="#s8-3-4-prior-authorisation"><span class="num">8.3.4</span> Prior authorisation</a></div>
-<div class="toc-d3"><a href="#s8-3-5-attachments-and-why-they-need-special-handling"><span class="num">8.3.5</span> Attachments, and why they need special handling</a></div>
-<div class="toc-d3"><a href="#s8-3-6-binary-segments"><span class="num">8.3.6</span> Binary segments</a></div>
+<div class="toc-d3"><a href="#s8-3-4-eligibility-and-the-caqh-core-data-content-rule"><span class="num">8.3.4</span> Eligibility, and the CAQH CORE data content rule</a></div>
+<div class="toc-d3"><a href="#s8-3-5-prior-authorisation"><span class="num">8.3.5</span> Prior authorisation</a></div>
+<div class="toc-d3"><a href="#s8-3-6-attachments-and-why-they-need-special-handling"><span class="num">8.3.6</span> Attachments, and why they need special handling</a></div>
+<div class="toc-d3"><a href="#s8-3-7-binary-segments"><span class="num">8.3.7</span> Binary segments</a></div>
 <div class="toc-d2"><a href="#s8-4-fhir"><span class="num">8.4</span> FHIR</a></div>
 <div class="toc-d3"><a href="#s8-4-1-what-an-hl7-v2-message-becomes"><span class="num">8.4.1</span> What an HL7 v2 message becomes</a></div>
 <div class="toc-d3"><a href="#s8-4-2-r4-in-both-directions"><span class="num">8.4.2</span> R4 in both directions</a></div>
@@ -1604,8 +1605,18 @@ destinations:
 <tr><td><code>999</code></td><td>Functional acknowledgement, which Perfuse also generates.</td></tr>
 </tbody>
 </table>
-<p><code>270</code>, <code>271</code>, <code>834</code> and <code>837</code> are parsed as interchanges and addressed by path; they have no named model because routing and filtering are what channels do with them.</p>
-<h4 id="s8-3-4-prior-authorisation"><span class="num">8.3.4</span> Prior authorisation</h4>
+<table>
+<thead><tr><th><code>271</code></th><th>Eligibility: whether a patient is covered, and their co-payment, coinsurance, deductible and out-of-pocket amounts, in and out of network.</th></tr></thead>
+<tbody>
+<tr><td><code>834</code></td><td>Enrolment: members added, changed and terminated, with each coverage line and its dates.</td></tr>
+<tr><td><code>837</code></td><td>Claims, professional and institutional (read for CMS-0057&#39;s CARIN conversion).</td></tr>
+</tbody>
+</table>
+<p>Perfuse also <strong>builds</strong> the <code>270</code> eligibility inquiry and the <code>276</code> claim status request, under <strong>Exchange → Claims &amp; auth</strong> or through <code>POST /api/x12/eligibility/build</code> and <code>/api/x12/claimstatus/build</code>. Both are the HIPAA 5010 versions (005010X279A1, 005010X212), read back and envelope-checked before they are shown, and neither is sent from that page: delivering one is a channel&#39;s job, where the trading partner and its credentials are.</p>
+<h4 id="s8-3-4-eligibility-and-the-caqh-core-data-content-rule"><span class="num">8.3.4</span> Eligibility, and the CAQH CORE data content rule</h4>
+<p>A 271 is a list of EB segments, each a single fact: active coverage, or a $25 co-payment for service type 30 in network, or $800 of the individual deductible remaining. The reader assembles them into the answer a front desk wants - &#34;coverage active under Gold PPO 2000; co-payment in network $25; individual deductible remaining in network $800&#34; - and names a rejection (an AAA segment) in words, with what the payer says to do next.</p>
+<p>It also checks the response against the CAQH CORE Eligibility &amp; Benefits data content rule: for an inquiry about health benefit plan coverage (service type 30), an active response should carry plan dates, the plan name, co-payment, coinsurance, deductible and remaining deductible both in and out of network, and the base service types (1, 33, 35, 47, 48, 50, 86, 88, 98, AL, MH, UC). Each is listed as met or missing. This is Perfuse&#39;s reading of the rule, useful for &#34;why does this payer never tell us the deductible?&#34; - it is not CORE certification, which CAQH&#39;s authorised testing vendors carry out.</p>
+<h4 id="s8-3-5-prior-authorisation"><span class="num">8.3.5</span> Prior authorisation</h4>
 <p>Perfuse implements prior authorisation twice, on purpose.</p>
 <p>The <strong>FHIR</strong> side is what CMS-0057-F requires payers to expose by 1 January 2027. The <strong><code>278</code></strong> is what payers accept today, and the rule does not replace it — Da Vinci PAS is in practice a mapping onto this transaction, because a <code>278</code> is what a utilisation management system speaks. An engine reading only the FHIR half can talk to the systems that will exist and not to the ones that do.</p>
 <p>A <code>278</code> response carries the <strong>authorisation number</strong>, and that is the field the whole transaction exists to deliver. Without it a certified service is not billable: the claim goes in with no authorisation number and is denied for the lack of one, which reads downstream as a clinical denial.</p>
@@ -1646,7 +1657,7 @@ destinations:
 <p>The corrected output validates with no errors for a certification, a denial and a pend. The warnings that remain are the validator saying it cannot load X12&#39;s code systems, which X12 licenses. The authorisation number is carried in <code>reviewAction.number</code>, where the guide&#39;s own example puts it, and in <code>preAuthRef</code> when the response has only one.</p>
 <p>The validator is not part of <code>make check</code>, because it needs Java and a download of the guide and its dependencies. What it found is held by a test instead: each rule it enforced is asserted, so a change that reintroduces one of those errors fails.</p>
 <p>The <strong>Claims &amp; auth</strong> view converts a pasted <code>278</code> and shows the decisions, the notes and the resource.</p>
-<h4 id="s8-3-5-attachments-and-why-they-need-special-handling"><span class="num">8.3.5</span> Attachments, and why they need special handling</h4>
+<h4 id="s8-3-6-attachments-and-why-they-need-special-handling"><span class="num">8.3.6</span> Attachments, and why they need special handling</h4>
 <p>CMS-0053-F makes the <code>275</code> a HIPAA standard for claims attachments, with compliance required by 26 May 2028. It carries a document — an operative note, an imaging report, a scanned form — tied to the claim it supports.</p>
 <p>The <code>277</code> is the other half of the same conversation. A payer receives a claim, decides it needs documentation, and sends a <code>277</code> asking for it; the provider answers with a <code>275</code>.</p>
 <p>A channel can route on the status code directly, because <code>STC01</code> is a composite and its second component is the status. Written in canonical form, because a component is addressed with a dot and the two notations cannot be mixed — <code>STC-1.2</code> is element 1, component 2:</p>
@@ -1676,7 +1687,7 @@ destinations:
 <p>The partner&#39;s companion guide governs.</p>
 <p>The provider NPI is checked against its check digit. A payer matches an attachment to its claim partly on that number, and a mistyped one leaves the attachment unmatched while the claim is denied for missing documentation.</p>
 <p>The <strong>Claims &amp; auth</strong> view builds a <code>275</code> from a pasted C-CDA or an uploaded file, and reads one back. Nothing on that page sends anything: the interchange is handed back to be delivered through a channel, which is where the partner, the credentials and the audit trail belong.</p>
-<h4 id="s8-3-6-binary-segments"><span class="num">8.3.6</span> Binary segments</h4>
+<h4 id="s8-3-7-binary-segments"><span class="num">8.3.7</span> Binary segments</h4>
 <p>A <code>BIN</code> segment carries raw bytes, and raw bytes contain delimiters. Every other X12 segment ends at the segment terminator, so an ordinary parser finds segments by searching for one byte; an attachment cannot be found that way. A PDF containing a <code>~</code> would be cut into pieces, and each piece is a structurally valid segment — so the document is truncated, every segment after it is misaligned, and nothing reports an error.</p>
 <p>Perfuse reads the byte count the segment declares and takes exactly that many bytes. Two consequences worth knowing:</p>
 <ul>

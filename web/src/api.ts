@@ -1396,6 +1396,14 @@ export const api = {
   buildAttachment: (input: AttachmentBuildInput) =>
     request<AttachmentBuildResult>('POST', '/api/x12/attachment/build', input),
 
+  /** buildEligibility renders a 005010X279A1 270. Nothing is sent. */
+  buildEligibility: (input: EligibilityRequest) => request<BuiltX12>('POST', '/api/x12/eligibility/build', input),
+  /** readEligibility assembles a 271 and checks it against the CAQH CORE data content rule. */
+  readEligibility: (x12: string) => request<EligibilityRead>('POST', '/api/x12/eligibility/read', { x12 }),
+  /** buildClaimStatus renders a 005010X212 276. */
+  buildClaimStatus: (input: ClaimStatusRequest) => request<BuiltX12>('POST', '/api/x12/claimstatus/build', input),
+  /** readEnrollment reads an 834's members and coverages. */
+  readEnrollment: (x12: string) => request<Enrollment>('POST', '/api/x12/enrollment/read', { x12 }),
   /** readAttachment parses a 275 and unwraps the documents inside it. */
   readAttachment: (x12: string) => request<AttachmentView>('POST', '/api/x12/attachment/read', { x12 }),
 
@@ -2594,3 +2602,94 @@ export interface PAMetricsResult {
   html: string
   csv: string
 }
+
+/** A person or organisation in an eligibility, claim status or enrolment transaction. */
+export interface X12Person {
+  lastName: string
+  firstName?: string
+  id: string
+  dob?: string
+  gender?: string
+}
+
+export interface X12Envelope {
+  senderId: string
+  receiverId: string
+  production?: boolean
+}
+
+export interface EligibilityRequest extends X12Envelope {
+  payer: X12Person
+  provider: X12Person
+  subscriber: X12Person
+  dependent?: X12Person
+  serviceTypes?: string[]
+  serviceDate?: string
+}
+
+export interface ClaimStatusRequest extends X12Envelope {
+  payer: X12Person
+  provider: X12Person
+  subscriber: X12Person
+  patientAccount: string
+  payerClaimNumber?: string
+  chargeAmount?: string
+  serviceFrom: string
+  serviceTo?: string
+}
+
+export interface BuiltX12 {
+  x12: string
+  segments: number
+  envelopeProblems: { Segment: string; Message: string; Fatal: boolean }[]
+  basis: string
+}
+
+export interface EligibilityBenefit {
+  code: string
+  meaning: string
+  level?: string
+  serviceTypes?: string[]
+  plan?: string
+  period?: string
+  amount?: string
+  percent?: string
+  inNetwork?: string
+  messages?: string[]
+}
+
+export interface EligibilityRead {
+  eligibility: {
+    status: 'active' | 'inactive' | 'unknown'
+    plan?: string
+    payer: X12Person
+    subscriber: X12Person
+    dependent?: X12Person
+    rejections: { where: string; reason: string; meaning: string; followUp?: string }[]
+    benefits: EligibilityBenefit[]
+    summary: string[]
+  }
+  core: { requirement: string; met: boolean; detail?: string }[]
+  coreBasis: string
+}
+
+export interface Enrollment {
+  sponsor: X12Person
+  payer: X12Person
+  purpose?: string
+  members: {
+    subscriber: boolean
+    relationship: string
+    action: string
+    subscriberId?: string
+    memberId?: string
+    person: X12Person
+    coverages: { action: string; line: string; plan?: string; level?: string; begin?: string; end?: string }[]
+  }[]
+}
+
+/** A synthetic 271, for trying the reader. */
+export const sample271 = 'ISA*00*          *00*          *ZZ*PAYER01        *ZZ*CLINIC01       *261003*0931*^*00501*000000043*0*T*:~GS*HB*PAYER01*CLINIC01*20261003*0931*43*X*005010X279A1~ST*271*0043*005010X279A1~BHT*0022*11*TRACE42*20261003*0931~HL*1**20*1~NM1*PR*2*Springfield Health Plan*****PI*SHP01~HL*2*1*21*1~NM1*1P*2*Riverside Clinic*****XX*1234567893~HL*3*2*22*0~TRN*2*TRACE42*9CLINIC010~NM1*IL*1*DOE*JANE****MI*MBR123456~DMG*D8*19800101*F~DTP*346*D8*20260101~EB*1*IND*30^1^33^35^47^48^50^86^88^98^AL^MH^UC*PR*Gold PPO 2000~EB*B*IND*30***27*25*****Y~EB*B*IND*30***27*60*****N~EB*A*IND*30*****.2****Y~EB*A*IND*30*****.4****N~EB*C*IND*30***23*2000*****Y~EB*C*IND*30***29*800*****Y~EB*C*IND*30***23*4000*****N~EB*C*IND*30***29*4000*****N~EB*G*FAM*30***23*12000*****Y~MSG*Includes medical and pharmacy~SE*23*0043~GE*1*43~IEA*1*000000043~'
+
+/** A synthetic 834, for trying the reader. */
+export const sample834 = 'ISA*00*          *00*          *ZZ*SPONSOR        *ZZ*PAYER01        *261003*0931*^*00501*000000050*0*T*:~GS*BE*SPONSOR*PAYER01*20261003*0931*50*X*005010X220A1~ST*834*0050*005010X220A1~BGN*00*REF1*20261003*0931****2~N1*P5*Acme Manufacturing*FI*123456789~N1*IN*Springfield Health Plan*FI*987654321~INS*Y*18*021*28*A***FT~REF*0F*MBR123456~NM1*IL*1*DOE*JANE****34*123456789~DMG*D8*19800101*F~HD*021**HLT*GOLDPPO*FAM~DTP*348*D8*20261101~HD*021**DEN*DENTAL1*FAM~DTP*348*D8*20261101~INS*N*19*021*28*A~REF*0F*MBR123456~REF*23*MBR123456-02~NM1*IL*1*DOE*AMY~DMG*D8*20150505*F~HD*021**HLT*GOLDPPO*FAM~DTP*348*D8*20261101~INS*Y*18*024*07*A~REF*0F*MBR999~NM1*IL*1*ROE*RICHARD~HD*024**HLT*GOLDPPO*IND~DTP*349*D8*20260930~SE*25*0050~GE*1*50~IEA*1*000000050~'
