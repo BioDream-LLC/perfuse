@@ -312,6 +312,12 @@ type buildSource struct {
 	// S3 picks objects up from an S3 bucket prefix.
 	S3 *buildS3Source `json:"s3,omitempty" yaml:"s3,omitempty"`
 
+	// AMQP receives over AMQP 1.0.
+	AMQP *buildAMQPSource `json:"amqp,omitempty" yaml:"amqp,omitempty"`
+
+	// AzureBlob picks blobs up from a container prefix.
+	AzureBlob *buildAzureBlobSource `json:"azureBlob,omitempty" yaml:"azure_blob,omitempty"`
+
 	// DICOMQuery polls an imaging archive.
 	//
 	// This was missing until the graphical builder needed it, and the drift guard did not notice - it checks destinations
@@ -826,7 +832,13 @@ type buildDest struct {
 
 	// SNS applies to an sns destination.
 	SNS *buildSNSDest `json:"sns,omitempty" yaml:"sns,omitempty"`
-	TLS *buildTLS     `json:"tls,omitempty" yaml:"tls,omitempty"`
+
+	// AMQP applies to an amqp destination.
+	AMQP *buildAMQPDest `json:"amqp,omitempty" yaml:"amqp,omitempty"`
+
+	// AzureBlob applies to an azure_blob destination.
+	AzureBlob *buildAzureBlobDest `json:"azureBlob,omitempty" yaml:"azure_blob,omitempty"`
+	TLS       *buildTLS           `json:"tls,omitempty" yaml:"tls,omitempty"`
 
 	Timeout string      `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	Retry   *buildRetry `json:"retry,omitempty" yaml:"retry,omitempty"`
@@ -1024,6 +1036,56 @@ type buildSNSDest struct {
 	TopicARN       string `json:"topicArn,omitempty" yaml:"topic_arn,omitempty"`
 	Subject        string `json:"subject,omitempty" yaml:"subject,omitempty"`
 	GroupBy        string `json:"groupBy,omitempty" yaml:"group_by,omitempty"`
+}
+
+// buildAMQPConnection is where and as whom an AMQP connector connects.
+type buildAMQPConnection struct {
+	Addr     string    `json:"addr,omitempty" yaml:"addr,omitempty"`
+	Address  string    `json:"address,omitempty" yaml:"address,omitempty"`
+	Username string    `json:"username,omitempty" yaml:"username,omitempty"`
+	Password string    `json:"password,omitempty" yaml:"password,omitempty"`
+	Hostname string    `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+	TLS      *buildTLS `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Timeout  string    `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
+type buildAMQPSource struct {
+	buildAMQPConnection `yaml:",inline"`
+	Prefetch            int    `json:"prefetch,omitempty" yaml:"prefetch,omitempty"`
+	Reconnect           string `json:"reconnect,omitempty" yaml:"reconnect,omitempty"`
+}
+
+type buildAMQPDest struct {
+	buildAMQPConnection `yaml:",inline"`
+	ContentType         string `json:"contentType,omitempty" yaml:"content_type,omitempty"`
+}
+
+// buildAzureBlobAccess is the account, container and credential.
+type buildAzureBlobAccess struct {
+	Account   string `json:"account,omitempty" yaml:"account,omitempty"`
+	Container string `json:"container,omitempty" yaml:"container,omitempty"`
+	Key       string `json:"key,omitempty" yaml:"key,omitempty"`
+	SAS       string `json:"sas,omitempty" yaml:"sas,omitempty"`
+	Endpoint  string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+}
+
+type buildAzureBlobDest struct {
+	buildAzureBlobAccess `yaml:",inline"`
+	Blob                 string `json:"blob,omitempty" yaml:"blob,omitempty"`
+	Tier                 string `json:"tier,omitempty" yaml:"tier,omitempty"`
+	ContentType          string `json:"contentType,omitempty" yaml:"content_type,omitempty"`
+}
+
+type buildAzureBlobSource struct {
+	buildAzureBlobAccess `yaml:",inline"`
+	Prefix               string `json:"prefix,omitempty" yaml:"prefix,omitempty"`
+	Suffix               string `json:"suffix,omitempty" yaml:"suffix,omitempty"`
+	AfterRead            string `json:"afterRead,omitempty" yaml:"after_read,omitempty"`
+	MoveTo               string `json:"moveTo,omitempty" yaml:"move_to,omitempty"`
+	ErrorPrefix          string `json:"errorPrefix,omitempty" yaml:"error_prefix,omitempty"`
+	PollInterval         string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
+	MaxObjectSize        int64  `json:"maxObjectSize,omitempty" yaml:"max_object_size,omitempty"`
+	Framed               bool   `json:"framed,omitempty" yaml:"framed,omitempty"`
 }
 
 // buildFTPDest is an FTP destination in the form.

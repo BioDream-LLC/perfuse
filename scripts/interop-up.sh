@@ -46,7 +46,7 @@ start pg -p 5433:5432 -e POSTGRES_PASSWORD=perfuse -e POSTGRES_DB=perfusetest po
 # every real feed. The upload directory is bind-mounted so a test can see what landed rather than asking the server.
 mkdir -p "$HOME/sftp-test/upload"
 start sftpd -p 2222:22 -v "$HOME/sftp-test/upload:/home/perfuse/upload" atmoz/sftp:latest perfuse:perfuse:1001
-start activemq -p 61613:61613 -p 8161:8161 apache/activemq-classic:latest
+start activemq -p 61613:61613 -p 8161:8161 -p 5673:5672 apache/activemq-classic:latest
 
 # Orthanc needs a configuration file to accept stores from an unknown modality, which is the sensible default for a PACS and the
 # opposite of what a test wants.
@@ -79,6 +79,11 @@ start keycloak -p 8080:8080 \
 
 # LocalStack, for S3, SQS and SNS. It does not check signatures by default; internal/awsv4 is held to AWS's published example for that.
 start localstack -p 4566:4566 -e SERVICES=s3,sqs,sns localstack/localstack:4
+
+# AMQP 1.0: RabbitMQ 4 speaks it natively. ActiveMQ above does too, on 5673. Azurite is Microsoft's Blob Storage emulator, and checks
+# Shared Key signatures the way the service does.
+start rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER=perfuse -e RABBITMQ_DEFAULT_PASS=perfuse rabbitmq:4-management
+start azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0
 
 # The Mirth family: where a site leaving Mirth goes. Mirth 4.5.2 is the last open-source release; the Open Integration Engine (the
 # Eclipse fork) and BridgeLink (Innovar's fork) continue it. OIE publishes images only up to 4.5.2, so 4.6.0 is built locally from
@@ -119,6 +124,9 @@ Ready. What each one unlocks:
   Orthanc PACS    go test ./internal/engine/ -run 'RealPACS|CalledAE' -v
   PostgreSQL      go test ./internal/engine/ -run 'RealPostgres|Placeholder' -v
   OpenSSH SFTP    go test ./internal/engine/ -run 'OpenSSHServer|SFTPRefusesAWrong' -v
+  RabbitMQ 4,     go test ./internal/amqp/ ./internal/engine/ -run 'RealBrokers|AMQPChannel' -v
+  ActiveMQ AMQP
+  Azurite         go test ./internal/azblob/ ./internal/engine/ -run 'Azurite|AzureBlob' -v
   LocalStack      go test ./internal/awsmsg/ ./internal/s3put/ ./internal/engine/ -run LocalStack -v
   Mirth, OIE,     go test ./internal/mirth/... ./internal/tomirth/ -v    (each test runs once per engine)
   BridgeLink      ./scripts/mirth-engine-corpus.sh    regenerates internal/mirth/testdata/engines from all four
@@ -128,5 +136,5 @@ Ready. What each one unlocks:
 Every one of those tests skips rather than fails when its container is absent, so `make check` passes on a
 machine with no Docker. That is deliberate: a check that needs Docker is a check people stop running.
 
-Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460 localstack
+Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460 localstack rabbitmq azurite
 MSG

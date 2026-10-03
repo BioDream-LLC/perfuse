@@ -244,6 +244,19 @@ An S3 archive can be written straight to **Glacier** with `storage_class`, and a
 `format: ndjson`; `perfuse athena` prints the table. The [reference](https://github.com/BioDream-LLC/perfuse/blob/main/docs/reference.md#amazon-web-services-s3-sqs-and-sns)
 has every setting.
 
+## AMQP 1.0 and Azure
+
+**AMQP 1.0** is what Azure Service Bus and Event Hubs speak, and RabbitMQ 4, ActiveMQ and Artemis beside their other protocols. An
+`amqp` source receives from a queue or a subscription and accepts each message only once the channel has handled it; one that could
+not be handled is released as a failed delivery, so the broker redelivers it and, past the queue's limit, dead-letters it. An `amqp`
+destination reports success only when the broker accepts the message. For Service Bus: `addr` is
+`<namespace>.servicebus.windows.net:5671` with `tls`, `username` the shared access policy name, `password` its key, and `address` the
+queue name, or `<topic>/subscriptions/<name>` to receive.
+
+**Azure Blob Storage**: an `azure_blob` destination writes a blob per message in the access tier chosen - Hot, Cool, Cold or Archive -
+and an `azure_blob` source picks blobs up from a prefix, moving them to `processed/` or `error/` as the S3 source does. Prefer a SAS
+token limited to the container over the account key.
+
 ## Delivery to another channel
 
 A channel destination hands the message to another channel by name. The receiving channel treats it like any other arrival: it records it, filters it, transforms it and fans it out.

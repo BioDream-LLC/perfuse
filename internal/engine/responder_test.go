@@ -36,6 +36,8 @@ var respondingSenders = map[config.DestinationType]Sender{
 	config.DestinationKafka:      (*KafkaSender)(nil),
 	config.DestinationSQS:        (*SQSSender)(nil),
 	config.DestinationSNS:        (*SNSSender)(nil),
+	config.DestinationAMQP:       (*AMQPSender)(nil),
+	config.DestinationAzureBlob:  (*AzureBlobSender)(nil),
 }
 
 // TestTheResponseTransformerListMatchesReality is a drift guard.

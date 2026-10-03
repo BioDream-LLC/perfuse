@@ -310,6 +310,23 @@ func (s *Source) validate() []error {
 			errs = append(errs, errors.New("source.listen does not apply to an sqs source; it polls the queue"))
 		}
 
+	case SourceAMQP:
+		if s.AMQP == nil {
+			errs = append(errs, errors.New("an amqp source needs an amqp section with addr and address"))
+		} else {
+			errs = append(errs, s.AMQP.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to an amqp source; it connects out to the broker"))
+		}
+
+	case SourceAzureBlob:
+		if s.AzureBlob == nil {
+			errs = append(errs, errors.New("an azure_blob source needs an azure_blob section with account, container and prefix"))
+		} else {
+			errs = append(errs, s.AzureBlob.Validate()...)
+		}
+
 	case SourceS3:
 		if s.S3 == nil {
 			errs = append(errs, errors.New("an s3 source needs an s3 section with bucket, prefix and region"))
@@ -478,7 +495,7 @@ func (s *Source) validate() []error {
 	default:
 		errs = append(errs, fmt.Errorf(
 			"source.type %q is not supported; use mllp, tcp, http, file, database, sftp, ftp, smb, webdav, "+
-				"soap, dicom, dicom_query, broker, kafka, sqs, s3, serial or javascript", s.Type))
+				"soap, dicom, dicom_query, broker, kafka, amqp, sqs, s3, azure_blob, serial or javascript", s.Type))
 	}
 
 	if s.Type != SourceSerial && s.Serial != nil {
@@ -605,6 +622,20 @@ func (d *Destination) validate(dataType DataType) []error {
 			errs = append(errs, errors.New("an sqs destination needs an sqs section with queue_url and region"))
 		} else {
 			errs = append(errs, d.SQS.Validate()...)
+		}
+
+	case DestinationAzureBlob:
+		if d.AzureBlob == nil {
+			errs = append(errs, errors.New("an azure_blob destination needs an azure_blob section with account and container"))
+		} else {
+			errs = append(errs, d.AzureBlob.Validate()...)
+		}
+
+	case DestinationAMQP:
+		if d.AMQP == nil {
+			errs = append(errs, errors.New("an amqp destination needs an amqp section with addr and address"))
+		} else {
+			errs = append(errs, d.AMQP.Validate()...)
 		}
 
 	case DestinationSNS:

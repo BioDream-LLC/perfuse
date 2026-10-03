@@ -192,6 +192,22 @@ func describeTransport(d config.Destination) string {
 		}
 		return "published to an SNS topic"
 
+	case config.DestinationAMQP:
+		if d.AMQP != nil {
+			return "sent over AMQP 1.0 to " + d.AMQP.Address + " at " + d.AMQP.Addr + ", confirmed by the broker"
+		}
+		return "sent over AMQP 1.0"
+
+	case config.DestinationAzureBlob:
+		if d.AzureBlob != nil {
+			out := "stored as a blob in the " + d.AzureBlob.Container + " container of " + d.AzureBlob.Account
+			if d.AzureBlob.Tier != "" {
+				out += " (" + d.AzureBlob.Tier + " tier)"
+			}
+			return out
+		}
+		return "stored in Azure Blob Storage"
+
 	case config.DestinationKafka:
 		if d.Kafka != nil {
 			out := fmt.Sprintf("published to the Kafka topic %s at %s",
@@ -463,6 +479,20 @@ func describeArrival(c *config.Channel) string {
 			return "messages are read from an SQS queue"
 		}
 		return "messages are read from the SQS queue " + src.SQS.QueueURL + ", and each is deleted from it once handled"
+
+	case config.SourceAMQP:
+		if src.AMQP == nil {
+			return "messages are received over AMQP 1.0"
+		}
+		return "messages are received over AMQP 1.0 from " + src.AMQP.Address + " at " + src.AMQP.Addr +
+			", each accepted only once handled"
+
+	case config.SourceAzureBlob:
+		if src.AzureBlob == nil {
+			return "blobs are read from Azure Blob Storage"
+		}
+		return "blobs are read from " + src.AzureBlob.Account + "/" + src.AzureBlob.Container + "/" + src.AzureBlob.Prefix +
+			" and moved once handled"
 
 	case config.SourceS3:
 		if src.S3 == nil {

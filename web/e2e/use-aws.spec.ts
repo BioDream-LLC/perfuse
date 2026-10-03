@@ -129,3 +129,30 @@ test("an SNS topic is offered as a destination", async ({ page }) => {
   await page.getByPlaceholder("arn:aws:sns:eu-west-2:123456789012:adt").fill("arn:aws:sns:us-east-1:123456789012:adt");
   await yamlContaining(page, ["type: sns", "topic_arn: arn:aws:sns:us-east-1:123456789012:adt"]);
 });
+
+test("an Azure Service Bus queue to an Azure Blob archive, from the form", async ({ page }) => {
+  const name = "e2e-azure";
+  await newChannel(page, name);
+  await chooseSource(page, /AMQP 1\.0 queue/);
+  await page.getByLabel(/^Broker/).first().fill("contoso.servicebus.windows.net:5671");
+  await page.getByLabel(/^Queue or subscription/).fill("adt-inbound");
+  await page.getByLabel(/^Username/).first().fill("RootManageSharedAccessKey");
+
+  const type = page.locator('select[id^="dest-"][id$="-type"]').first();
+  await type.selectOption("azure_blob");
+  await page.getByRole("textbox", { name: "Name", exact: true }).last().fill("archive");
+  await page.getByLabel("Storage account").last().fill("hospitalarchive");
+  await page.getByLabel("Container").last().fill("hl7");
+  await page.getByLabel("SAS token").last().fill("${AZURE_STORAGE_SAS}");
+  await page.getByLabel("Access tier").selectOption("Archive");
+
+  await yamlContaining(page, [
+    "type: amqp",
+    "addr: contoso.servicebus.windows.net:5671",
+    "address: adt-inbound",
+    "enabled: true",
+    "type: azure_blob",
+    "account: hospitalarchive",
+    "tier: Archive",
+  ]);
+});

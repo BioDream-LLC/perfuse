@@ -1623,6 +1623,34 @@ WHERE dt >= '2026-10-01' AND message_type = 'ADT' AND patient_id = '555';
 The archive holds patient data. Encrypt the bucket (`server_side_encryption` or a bucket default), and give Athena's query results
 location the same protection - results are written there in the clear unless it is encrypted too.
 
+## AMQP 1.0 and Azure Blob Storage
+
+```yaml
+source:
+  type: amqp
+  amqp:
+    addr: contoso.servicebus.windows.net:5671
+    address: adt-inbound              # or <topic>/subscriptions/<name>; RabbitMQ 4: /queues/<name>
+    username: RootManageSharedAccessKey
+    password: ${SERVICEBUS_KEY}
+    tls: {enabled: true}
+    prefetch: 10                      # sent ahead; still handled one at a time, in order
+destinations:
+  - name: archive
+    type: azure_blob
+    azure_blob:
+      account: hospitalarchive
+      container: hl7
+      sas: ${AZURE_STORAGE_SAS}       # or key: ${AZURE_STORAGE_KEY}
+      blob: ${date}/${channel}/${control_id}.hl7
+      tier: Cool                      # Hot, Cool, Cold, Archive
+```
+
+AMQP: SASL PLAIN (or ANONYMOUS with no username), TLS, credit-based flow, transfers split at the peer's maximum frame size, and an
+explicit disposition for every message. Messages carry the HL7 control id as message-id and MSH-9 as subject. An `azure_blob` source
+takes `prefix` (required), `suffix`, `after_read` (move or delete), `move_to`, `error_prefix`, `poll_interval`, `max_object_size` and
+`framed`, as the S3 source does. `endpoint` points either at an emulator or a private endpoint.
+
 ## TLS
 
 ```yaml

@@ -232,6 +232,12 @@ const (
 
 	// SourceS3 picks objects up from an S3 bucket prefix and moves or deletes them once handled.
 	SourceS3 SourceType = "s3"
+
+	// SourceAMQP receives over AMQP 1.0: Azure Service Bus, RabbitMQ 4, ActiveMQ, Artemis.
+	SourceAMQP SourceType = "amqp"
+
+	// SourceAzureBlob picks blobs up from an Azure Blob Storage container prefix.
+	SourceAzureBlob SourceType = "azure_blob"
 )
 
 // Source is where a channel receives messages.
@@ -299,6 +305,12 @@ type Source struct {
 
 	// S3 applies to an s3 source.
 	S3 *S3Source `yaml:"s3,omitempty"`
+
+	// AMQP applies to an amqp source.
+	AMQP *AMQPSource `yaml:"amqp,omitempty"`
+
+	// AzureBlob applies to an azure_blob source.
+	AzureBlob *AzureBlobSource `yaml:"azure_blob,omitempty"`
 
 	// Database configures a database source.
 	Database *DatabaseSource `yaml:"database,omitempty"`
@@ -396,6 +408,12 @@ const (
 
 	// DestinationSNS publishes to an Amazon SNS topic.
 	DestinationSNS DestinationType = "sns"
+
+	// DestinationAMQP sends over AMQP 1.0: Azure Service Bus and Event Hubs, RabbitMQ 4, ActiveMQ, Artemis.
+	DestinationAMQP DestinationType = "amqp"
+
+	// DestinationAzureBlob writes each message as a blob in Azure Blob Storage, in the access tier chosen.
+	DestinationAzureBlob DestinationType = "azure_blob"
 	// DestinationSMTP sends the message, or a note about it, as email. Its usual
 	// purpose is not integration but notification: a coordinator told when a
 	// particular order type arrives, or a daily report that a feed produced
@@ -434,6 +452,8 @@ var allDestinationTypes = []DestinationType{
 	DestinationKafka,
 	DestinationSQS,
 	DestinationSNS,
+	DestinationAMQP,
+	DestinationAzureBlob,
 	DestinationJavaScript,
 	DestinationChannel,
 }
@@ -526,6 +546,12 @@ type Destination struct {
 
 	// SNS applies to an sns destination.
 	SNS *SNSDestination `yaml:"sns,omitempty"`
+
+	// AMQP applies to an amqp destination.
+	AMQP *AMQPDestination `yaml:"amqp,omitempty"`
+
+	// AzureBlob applies to an azure_blob destination.
+	AzureBlob *AzureBlobDestination `yaml:"azure_blob,omitempty"`
 
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	//

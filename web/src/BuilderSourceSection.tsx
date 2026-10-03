@@ -41,6 +41,8 @@ const SOURCE_OPTIONS: { value: SourceKind; label: string }[] = [
   { value: 'kafka', label: 'We read from a Kafka topic' },
   { value: 'sqs', label: 'We read from an Amazon SQS queue' },
   { value: 's3', label: 'We collect objects from an Amazon S3 bucket' },
+  { value: 'amqp', label: 'We read from an AMQP 1.0 queue (Azure Service Bus, RabbitMQ 4)' },
+  { value: 'azure_blob', label: 'We collect blobs from Azure Blob Storage' },
 ]
 
 export function SourceSection({
@@ -375,6 +377,119 @@ export function SourceSection({
             value={draft.s3SrcPathStyle}
             onChange={(v) => set('s3SrcPathStyle', v)}
             hint="Needed by MinIO, Ceph and most S3-compatible stores."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 'amqp' && (
+        <>
+          <Pair>
+            <Text
+              label="Broker"
+              required
+              value={draft.amqpAddr}
+              onChange={(v) => set('amqpAddr', v)}
+              placeholder="contoso.servicebus.windows.net:5671"
+              mono
+              hint="host:port. 5671 with TLS for Service Bus and Event Hubs; 5672 plain for a broker on a trusted network."
+            />
+            <Text
+              label="Queue or subscription"
+              required
+              value={draft.amqpAddress}
+              onChange={(v) => set('amqpAddress', v)}
+              placeholder="adt-inbound"
+              mono
+              hint="Service Bus: the queue name, or topic/subscriptions/name. RabbitMQ 4: /queues/name."
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Username"
+              value={draft.amqpUsername}
+              onChange={(v) => set('amqpUsername', v)}
+              placeholder="RootManageSharedAccessKey"
+              mono
+              hint="For Service Bus, the shared access policy name. Empty for an anonymous broker."
+            />
+            <Secret
+              label="Password"
+              value={draft.amqpPassword}
+              onChange={(v) => set('amqpPassword', v)}
+              hint="For Service Bus, the policy's key. Write ${SERVICEBUS_KEY} to read it from the environment."
+            />
+          </Pair>
+          <Check
+            label="Encrypt the connection with TLS"
+            value={draft.amqpTls}
+            onChange={(v) => set('amqpTls', v)}
+            hint="Required by Service Bus and Event Hubs. A message is accepted only after this channel has handled it; one that fails is released, and the broker redelivers it and dead-letters it past the queue's limit."
+          />
+          <Text
+            label="Prefetch"
+            value={draft.amqpPrefetch}
+            onChange={(v) => set('amqpPrefetch', v)}
+            placeholder="10"
+            hint="How many the broker may send ahead. They are still handled one at a time, in order."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 'azure_blob' && (
+        <>
+          <Pair>
+            <Text label="Storage account" required value={draft.azSrcAccount} onChange={(v) => set('azSrcAccount', v)} mono />
+            <Text label="Container" required value={draft.azSrcContainer} onChange={(v) => set('azSrcContainer', v)} mono />
+          </Pair>
+          <Pair>
+            <Secret
+              label="SAS token"
+              value={draft.azSrcSas}
+              onChange={(v) => set('azSrcSas', v)}
+              hint="Preferred: limit it to this container, with read, list, write and delete. Or ${AZURE_STORAGE_SAS}."
+            />
+            <Secret
+              label="Account key"
+              value={draft.azSrcKey}
+              onChange={(v) => set('azSrcKey', v)}
+              hint="Only if there is no SAS token. It unlocks the whole account."
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Prefix to read"
+              required
+              value={draft.azSrcPrefix}
+              onChange={(v) => set('azSrcPrefix', v)}
+              placeholder="inbound/"
+              mono
+            />
+            <Text label="Only names ending in" value={draft.azSrcSuffix} onChange={(v) => set('azSrcSuffix', v)} placeholder=".hl7" mono />
+          </Pair>
+          <Pair>
+            <Choose
+              label="After a blob is handled"
+              value={draft.azSrcAfterRead}
+              onChange={(v) => set('azSrcAfterRead', v)}
+              options={[
+                { value: 'move', label: 'Move it to another prefix' },
+                { value: 'delete', label: 'Delete it' },
+              ]}
+            />
+            <Num
+              label="Poll every, seconds"
+              value={draft.azSrcPollSeconds}
+              onChange={(v) => set('azSrcPollSeconds', v ?? 30)}
+              placeholder="30"
+            />
+          </Pair>
+          <Text
+            label="Endpoint"
+            value={draft.azSrcEndpoint}
+            onChange={(v) => set('azSrcEndpoint', v)}
+            placeholder="Leave empty for Azure"
+            mono
+            hint="Only for Azurite or a private endpoint, e.g. http://127.0.0.1:10000/devstoreaccount1."
           />
         </>
       )}

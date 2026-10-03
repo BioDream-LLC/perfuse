@@ -512,6 +512,20 @@ func (c *Channel) Start() error {
 		c.resumeQueues(context.Background())
 		return nil
 
+	case config.SourceAzureBlob:
+		if err := c.startAzureBlobSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
+	case config.SourceAMQP:
+		if err := c.startAMQPSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
 	case config.SourceS3:
 		if err := c.startS3Source(); err != nil {
 			return err

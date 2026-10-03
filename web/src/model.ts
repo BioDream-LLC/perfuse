@@ -24,6 +24,8 @@ export type DestinationType =
   | 's3'
   | 'sqs'
   | 'sns'
+  | 'amqp'
+  | 'azure_blob'
   | 'ftp'
   | 'document'
   | 'soap'
@@ -51,6 +53,8 @@ export const destinationLabels: Record<DestinationType, string> = {
   kafka: 'A Kafka topic',
   sqs: 'An Amazon SQS queue',
   sns: 'An Amazon SNS topic',
+  amqp: 'An AMQP 1.0 queue (Azure Service Bus, RabbitMQ)',
+  'azure_blob': 'Azure Blob Storage',
 }
 
 export const destinationHints: Record<DestinationType, string> = {
@@ -86,6 +90,9 @@ export const destinationHints: Record<DestinationType, string> = {
   kafka:
     'Publishes to a Kafka topic. Give it a key - PID-3.1 keys by patient - because Kafka keeps records in order only within a partition, and records with the same key always share one. Without a key there is no guarantee: records may stay together for a while and then move, so a discharge can be read before its admission intermittently, under load.',
   sqs: 'Sends each message to an SQS queue. On a FIFO queue (a URL ending .fifo) messages are grouped by patient, so one patient\'s events stay in order while different patients go in parallel, and an engine retry is not delivered twice. SQS refuses a message over 256 KB.',
+  amqp: 'Sends over AMQP 1.0, the protocol of Azure Service Bus and Event Hubs, RabbitMQ 4, ActiveMQ and Artemis. A delivery counts only once the broker accepts the message. For Service Bus: the namespace on port 5671 with TLS, the shared access policy name and key, and the queue name.',
+  'azure_blob':
+    'Writes each message as a blob, in the access tier you choose. Archive is the cheapest to keep and is offline: reading a blob back means rehydrating it, which takes hours. Prefer a SAS token limited to the container over the account key.',
   sns: 'Publishes each message to an SNS topic, for fanning out to several subscribers - queues, Lambda functions, email. Email and SMS subscribers receive patient data in the clear, so subscribe queues rather than people.',
 }
 
@@ -468,6 +475,22 @@ export interface Destination {
   /** awsGroupBy is the FIFO group: patient (the default), channel, or a message path such as MSH-4. */
   awsGroupBy: string
 
+  // AMQP 1.0.
+  destAmqpAddr: string
+  destAmqpAddress: string
+  destAmqpUsername: string
+  destAmqpPassword: string
+  destAmqpTls: boolean
+
+  // Azure Blob Storage.
+  azAccount: string
+  azContainer: string
+  azKey: string
+  azSas: string
+  azEndpoint: string
+  azBlob: string
+  azTier: '' | 'Hot' | 'Cool' | 'Cold' | 'Archive'
+
   /** routeTo is the name of another channel to hand the message to. */
   routeTo: string
   smtpUsername: string
@@ -496,6 +519,8 @@ export type SourceKind =
   | 'kafka'
   | 'sqs'
   | 's3'
+  | 'amqp'
+  | 'azure_blob'
   | 'soap'
   | 'file'
   | 'ftp'
@@ -1056,6 +1081,26 @@ export interface ChannelDraft {
   s3SrcFramed: boolean
   s3SrcMaxObjectSize: string
 
+  amqpAddr: string
+  amqpAddress: string
+  amqpUsername: string
+  amqpPassword: string
+  amqpTls: boolean
+  amqpPrefetch: string
+
+  azSrcAccount: string
+  azSrcContainer: string
+  azSrcKey: string
+  azSrcSas: string
+  azSrcEndpoint: string
+  azSrcPrefix: string
+  azSrcSuffix: string
+  azSrcAfterRead: 'move' | 'delete'
+  azSrcMoveTo: string
+  azSrcErrorPrefix: string
+  azSrcPollSeconds: number
+  azSrcFramed: boolean
+
   ftpSrcHost: string
   ftpSrcUser: string
   ftpSrcPassword: string
@@ -1322,6 +1367,32 @@ export function draftToWire(draft: ChannelDraft): unknown {
         stableFor: secondsOrNone(draft.sftpStableSeconds),
         keyPassphrase: draft.sftpKeyPassphrase || undefined,
         maxFileSize: positiveOrNone(draft.sftpMaxFileSize),
+      }
+      break
+    case 'amqp':
+      source.amqp = {
+        addr: draft.amqpAddr || undefined,
+        address: draft.amqpAddress || undefined,
+        username: draft.amqpUsername || undefined,
+        password: draft.amqpPassword || undefined,
+        tls: draft.amqpTls ? { enabled: true } : undefined,
+        prefetch: positiveOrNone(draft.amqpPrefetch),
+      }
+      break
+    case 'azure_blob':
+      source.azureBlob = {
+        account: draft.azSrcAccount || undefined,
+        container: draft.azSrcContainer || undefined,
+        key: draft.azSrcKey || undefined,
+        sas: draft.azSrcSas || undefined,
+        endpoint: draft.azSrcEndpoint || undefined,
+        prefix: draft.azSrcPrefix || undefined,
+        suffix: draft.azSrcSuffix || undefined,
+        afterRead: draft.azSrcAfterRead === 'delete' ? 'delete' : undefined,
+        moveTo: draft.azSrcAfterRead === 'move' ? draft.azSrcMoveTo || undefined : undefined,
+        errorPrefix: draft.azSrcErrorPrefix || undefined,
+        pollInterval: secondsOrNone(draft.azSrcPollSeconds),
+        framed: draft.azSrcFramed || undefined,
       }
       break
     case 'sqs':
@@ -2039,6 +2110,26 @@ function destinationToWire(d: Destination): unknown {
         format: d.s3Format || undefined,
       }
       break
+    case 'amqp':
+      out.amqp = {
+        addr: d.destAmqpAddr || undefined,
+        address: d.destAmqpAddress || undefined,
+        username: d.destAmqpUsername || undefined,
+        password: d.destAmqpPassword || undefined,
+        tls: d.destAmqpTls ? { enabled: true } : undefined,
+      }
+      break
+    case 'azure_blob':
+      out.azureBlob = {
+        account: d.azAccount || undefined,
+        container: d.azContainer || undefined,
+        key: d.azKey || undefined,
+        sas: d.azSas || undefined,
+        endpoint: d.azEndpoint || undefined,
+        blob: d.azBlob || undefined,
+        tier: d.azTier || undefined,
+      }
+      break
     case 'sqs':
       out.sqs = {
         ...awsDestAccess(d),
@@ -2241,6 +2332,18 @@ export function newDestination(): Destination {
     snsTopicArn: '',
     snsSubject: '',
     awsGroupBy: '',
+    destAmqpAddr: '',
+    destAmqpAddress: '',
+    destAmqpUsername: '',
+    destAmqpPassword: '',
+    destAmqpTls: true,
+    azAccount: '',
+    azContainer: '',
+    azKey: '',
+    azSas: '',
+    azEndpoint: '',
+    azBlob: '',
+    azTier: '',
     routeTo: '',
     smtpUsername: '',
     smtpPassword: '',
@@ -2506,6 +2609,26 @@ export function emptyDraft(): ChannelDraft {
     s3SrcPathStyle: false,
     s3SrcFramed: false,
     s3SrcMaxObjectSize: '',
+
+    amqpAddr: '',
+    amqpAddress: '',
+    amqpUsername: '',
+    amqpPassword: '',
+    amqpTls: true,
+    amqpPrefetch: '',
+
+    azSrcAccount: '',
+    azSrcContainer: '',
+    azSrcKey: '',
+    azSrcSas: '',
+    azSrcEndpoint: '',
+    azSrcPrefix: 'inbound/',
+    azSrcSuffix: '',
+    azSrcAfterRead: 'move',
+    azSrcMoveTo: '',
+    azSrcErrorPrefix: '',
+    azSrcPollSeconds: 30,
+    azSrcFramed: false,
 
     ftpSrcHost: '',
     ftpSrcUser: '',

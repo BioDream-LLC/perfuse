@@ -114,6 +114,11 @@ func (s *S3Sender) keyTemplate() string {
 // key means the second silently replaces the first, and in a bucket there is no ".part" rename to make
 // that obvious.
 func (s *S3Sender) objectKey(raw []byte) (string, error) {
+	return renderObjectKey(s.keyTemplate(), s.name, raw)
+}
+
+// renderObjectKey fills an object or blob name template from a message. Shared by S3 and Azure Blob.
+func renderObjectKey(template, name string, raw []byte) (string, error) {
 	msg, err := hl7.Parse(raw)
 	if err != nil {
 		return "", fmt.Errorf("naming the object needs the message parsed, and a transformation "+
@@ -131,7 +136,7 @@ func (s *S3Sender) objectKey(raw []byte) (string, error) {
 	}
 
 	now := time.Now().UTC()
-	out := s.keyTemplate()
+	out := template
 	out = strings.ReplaceAll(out, "${timestamp}", now.Format("20060102150405"))
 	// Slashes in the date, so the default key partitions by day. A flat prefix makes a bucket slow to
 	// list and impossible to lifecycle by age, and nobody notices until there are four million objects.
@@ -140,7 +145,7 @@ func (s *S3Sender) objectKey(raw []byte) (string, error) {
 	out = strings.ReplaceAll(out, "${date_iso}", now.Format("2006-01-02"))
 	out = strings.ReplaceAll(out, "${control_id}", sanitiseKeySegment(controlID))
 	out = strings.ReplaceAll(out, "${message_type}", sanitiseKeySegment(msgType))
-	out = strings.ReplaceAll(out, "${channel}", sanitiseKeySegment(s.name))
+	out = strings.ReplaceAll(out, "${channel}", sanitiseKeySegment(name))
 
 	return strings.TrimPrefix(out, "/"), nil
 }

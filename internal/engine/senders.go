@@ -59,6 +59,10 @@ func DefaultSenderFactory(d config.Destination) (Sender, error) {
 		return NewSQSSender(d)
 	case config.DestinationSNS:
 		return NewSNSSender(d)
+	case config.DestinationAMQP:
+		return NewAMQPSender(d)
+	case config.DestinationAzureBlob:
+		return NewAzureBlobSender(d)
 	case config.DestinationJavaScript:
 		// A placeholder the channel replaces, because a script destination needs the channel's script engine and the
 		// factory sees only the destination. Returning an error here instead would make the factory the thing that

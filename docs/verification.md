@@ -144,6 +144,26 @@ The other direction: every live test of Perfuse's Mirth export now runs once per
 
 What this does not show: channels authored by hand in each Administrator, which may use settings the corpus does not; and plugins beyond those the images ship.
 
+## AMQP 1.0, against RabbitMQ 4 and ActiveMQ; Azure Blob, against Azurite
+
+**What was found: two protocol defects that the codec's own round-trip tests could not have shown.**
+
+The AMQP 1.0 client (`internal/amqp`) sends, receives and settles against RabbitMQ 4 and ActiveMQ Classic 6.2: three messages, the
+third 250 KB and so split across frames; the first released and redelivered; the rest accepted once. A channel reading one queue and
+writing another, on each broker, delivered the message with its control id and MSH-9 as the AMQP message-id and subject, and left the
+source queue empty.
+
+- **Links were matched by our handle number rather than the broker's.** Each side numbers its own handles, and RabbitMQ's happened to
+  agree with ours, so everything passed there; ActiveMQ numbered differently and the second link never saw its attach.
+- **A split transfer put the `more` flag in the wrong field**, so RabbitMQ refused the 250 KB message as malformed.
+
+Azure Blob (`internal/azblob`) against Azurite, which checks Shared Key signatures as the service does - a wrong key is refused with
+403: put, list, get and delete, a name with a space (first stored double-escaped, `a%20b`, until fixed), and an access tier read back
+from the blob. A channel took blobs from one container to another, moving the good one to `processed/` and the unparseable one to
+`error/`.
+
+What this does not show: Azure Service Bus itself, whose emulator needs SQL Server beside it; Event Hubs; SAS tokens against Azure.
+
 ## SMART Health Links and Cards, against kill-the-clipboard and the specification's examples
 
 **What was checked.**

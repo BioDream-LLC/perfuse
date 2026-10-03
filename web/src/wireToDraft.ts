@@ -181,6 +181,30 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.dicomQueryEmitFirst = source.dicom_query?.emit_on_first_poll ?? false
       draft.dicomQueryTls = source.dicom_query?.tls?.enabled ?? false
       break
+    case 'amqp':
+      draft.amqpAddr = source.amqp?.addr ?? ''
+      draft.amqpAddress = source.amqp?.address ?? ''
+      draft.amqpUsername = source.amqp?.username ?? ''
+      draft.amqpPassword = source.amqp?.password ?? ''
+      draft.amqpTls = source.amqp?.tls?.enabled ?? false
+      draft.amqpPrefetch = source.amqp?.prefetch ? String(source.amqp.prefetch) : ''
+      break
+    case 'azure_blob': {
+      const a = source.azureBlob
+      draft.azSrcAccount = a?.account ?? ''
+      draft.azSrcContainer = a?.container ?? ''
+      draft.azSrcKey = a?.key ?? ''
+      draft.azSrcSas = a?.sas ?? ''
+      draft.azSrcEndpoint = a?.endpoint ?? ''
+      draft.azSrcPrefix = a?.prefix ?? ''
+      draft.azSrcSuffix = a?.suffix ?? ''
+      draft.azSrcAfterRead = a?.afterRead === 'delete' ? 'delete' : 'move'
+      draft.azSrcMoveTo = a?.moveTo ?? ''
+      draft.azSrcErrorPrefix = a?.errorPrefix ?? ''
+      draft.azSrcPollSeconds = readSeconds(a?.pollInterval) || 30
+      draft.azSrcFramed = a?.framed ?? false
+      break
+    }
     case 'sqs':
     case 's3': {
       const a = source.sqs ?? source.s3
@@ -773,6 +797,22 @@ function readDestination(d: WireDest): Destination {
       dest.s3StorageClass = d.s3?.storageClass ?? ''
       dest.s3Format = d.s3?.format === 'ndjson' ? 'ndjson' : ''
       break
+    case 'amqp':
+      dest.destAmqpAddr = d.amqp?.addr ?? ''
+      dest.destAmqpAddress = d.amqp?.address ?? ''
+      dest.destAmqpUsername = d.amqp?.username ?? ''
+      dest.destAmqpPassword = d.amqp?.password ?? ''
+      dest.destAmqpTls = d.amqp?.tls?.enabled ?? false
+      break
+    case 'azure_blob':
+      dest.azAccount = d.azureBlob?.account ?? ''
+      dest.azContainer = d.azureBlob?.container ?? ''
+      dest.azKey = d.azureBlob?.key ?? ''
+      dest.azSas = d.azureBlob?.sas ?? ''
+      dest.azEndpoint = d.azureBlob?.endpoint ?? ''
+      dest.azBlob = d.azureBlob?.blob ?? ''
+      dest.azTier = (d.azureBlob?.tier ?? '') as Destination['azTier']
+      break
     case 'sqs':
     case 'sns': {
       // The shared s3* access fields, as in the model.
@@ -926,11 +966,37 @@ interface WireAWSAccess {
   endpoint?: string
 }
 
+interface WireAMQP {
+  addr?: string
+  address?: string
+  username?: string
+  password?: string
+  tls?: { enabled?: boolean }
+}
+
+interface WireAzureBlob {
+  account?: string
+  container?: string
+  key?: string
+  sas?: string
+  endpoint?: string
+}
+
 interface WireSource {
   type?: string
   listen?: string
 
   sqs?: WireAWSAccess & { queueUrl?: string; waitSeconds?: number; maxMessages?: number; visibilityTimeout?: string }
+  amqp?: WireAMQP & { prefetch?: number }
+  azureBlob?: WireAzureBlob & {
+    prefix?: string
+    suffix?: string
+    afterRead?: string
+    moveTo?: string
+    errorPrefix?: string
+    pollInterval?: string
+    framed?: boolean
+  }
   s3?: WireAWSAccess & {
     bucket?: string
     pathStyle?: boolean
@@ -1141,6 +1207,8 @@ interface WireDest {
   }
   sqs?: WireAWSAccess & { queueUrl?: string; groupBy?: string }
   sns?: WireAWSAccess & { topicArn?: string; subject?: string; groupBy?: string }
+  amqp?: WireAMQP
+  azureBlob?: WireAzureBlob & { blob?: string; tier?: string }
   name?: string
   type?: string
   enabled?: boolean

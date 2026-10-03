@@ -2072,6 +2072,99 @@ function DestinationCard({
           </>
         )}
 
+        {dest.type === 'amqp' && (
+          <>
+            <Field label="Broker" hint="host:port. Service Bus: <namespace>.servicebus.windows.net:5671 with TLS.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destAmqpAddr}
+                onChange={(e) => onChange({ destAmqpAddr: e.target.value })}
+                placeholder="contoso.servicebus.windows.net:5671"
+              />
+            </Field>
+            <Field label="Queue or topic" hint="Service Bus: the queue or topic name. RabbitMQ 4: /queues/name.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destAmqpAddress}
+                onChange={(e) => onChange({ destAmqpAddress: e.target.value })}
+                placeholder="adt-outbound"
+              />
+            </Field>
+            <Field label="Username" hint="For Service Bus, the shared access policy name.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destAmqpUsername}
+                onChange={(e) => onChange({ destAmqpUsername: e.target.value })}
+              />
+            </Field>
+            <Field label="Password" hint="For Service Bus, the policy's key, or ${SERVICEBUS_KEY}.">
+              <input
+                type={dest.destAmqpPassword.startsWith('${') ? 'text' : 'password'}
+                className="input font-mono text-xs"
+                value={dest.destAmqpPassword}
+                onChange={(e) => onChange({ destAmqpPassword: e.target.value })}
+              />
+            </Field>
+            <Toggle label="Encrypt with TLS" checked={dest.destAmqpTls} onChange={(v) => onChange({ destAmqpTls: v })} />
+          </>
+        )}
+
+        {dest.type === 'azure_blob' && (
+          <>
+            <Field label="Storage account">
+              <input className="input font-mono" value={dest.azAccount} onChange={(e) => onChange({ azAccount: e.target.value })} />
+            </Field>
+            <Field label="Container">
+              <input className="input font-mono" value={dest.azContainer} onChange={(e) => onChange({ azContainer: e.target.value })} />
+            </Field>
+            <Field label="SAS token" hint="Preferred, limited to this container with write permission. Or ${AZURE_STORAGE_SAS}.">
+              <input
+                type={dest.azSas.startsWith('${') ? 'text' : 'password'}
+                className="input font-mono text-xs"
+                value={dest.azSas}
+                onChange={(e) => onChange({ azSas: e.target.value })}
+              />
+            </Field>
+            <Field label="Account key" hint="Only if there is no SAS token: it unlocks the whole account.">
+              <input
+                type={dest.azKey.startsWith('${') ? 'text' : 'password'}
+                className="input font-mono text-xs"
+                value={dest.azKey}
+                onChange={(e) => onChange({ azKey: e.target.value })}
+              />
+            </Field>
+            <Field label="Blob name" hint="Placeholders: ${date} ${date_iso} ${timestamp} ${control_id} ${message_type} ${channel}">
+              <input
+                className="input font-mono text-xs"
+                value={dest.azBlob}
+                onChange={(e) => onChange({ azBlob: e.target.value })}
+                placeholder="${date}/${channel}/${control_id}.hl7"
+              />
+            </Field>
+            <Field label="Access tier" hint="Archive is offline: reading a blob back means rehydrating it, which takes hours.">
+              <select
+                className="input"
+                value={dest.azTier}
+                onChange={(e) => onChange({ azTier: e.target.value as typeof dest.azTier })}
+              >
+                <option value="">The account's default</option>
+                <option value="Hot">Hot</option>
+                <option value="Cool">Cool</option>
+                <option value="Cold">Cold</option>
+                <option value="Archive">Archive</option>
+              </select>
+            </Field>
+            <Field label="Endpoint" hint="Only for Azurite or a private endpoint.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.azEndpoint}
+                onChange={(e) => onChange({ azEndpoint: e.target.value })}
+                placeholder="http://127.0.0.1:10000/devstoreaccount1"
+              />
+            </Field>
+          </>
+        )}
+
         {dest.type === 'sftp' && (
           <>
             <Field label="Server" hint="Host, and a port if it is not 22.">

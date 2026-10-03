@@ -53,6 +53,27 @@ describe('reading a channel back into the form', () => {
     expect(sqs.source).toMatchObject({ type: 'sqs', sqs: { queueUrl: 'https://sqs.us-east-1.amazonaws.com/1/in', visibilityTimeout: '90s' } })
   })
 
+  it('survives a round trip of AMQP and Azure Blob', () => {
+    const model = {
+      name: 'azure',
+      source: {
+        type: 'amqp',
+        amqp: { addr: 'contoso.servicebus.windows.net:5671', address: 'adt', username: 'RootManageSharedAccessKey',
+          password: '${SERVICEBUS_KEY}', tls: { enabled: true }, prefetch: 20 },
+      },
+      destinations: [
+        { name: 'q', type: 'amqp', amqp: { addr: 'rabbit:5672', address: '/queues/out' } },
+        { name: 'b', type: 'azure_blob', azureBlob: { account: 'acct', container: 'c', sas: '${SAS}', blob: 'x/${control_id}', tier: 'Archive' } },
+      ],
+    } as unknown as WireModel
+    const out = roundTrip(model)
+    expect(out.source).toMatchObject(model.source as object)
+    expect(out.destinations).toMatchObject(model.destinations as object[])
+    const blobs = roundTrip({ ...minimal, source: { type: 'azure_blob', azureBlob: { account: 'a', container: 'c', key: 'k',
+      prefix: 'inbound/', afterRead: 'delete', framed: true } } } as unknown as WireModel)
+    expect(blobs.source).toMatchObject({ type: 'azure_blob', azureBlob: { prefix: 'inbound/', afterRead: 'delete', framed: true } })
+  })
+
   it('treats an absent enabled key as enabled', () => {
     // The channel default is true, so an absent key must not come back as disabled - that would
     // stop a live interface on the next save.

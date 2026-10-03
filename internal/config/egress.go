@@ -85,6 +85,14 @@ func (d *Destination) OutboundHosts() []string {
 			addURL(d.SQS.Endpoint)
 			addURL(d.SQS.QueueURL)
 		}
+	case DestinationAzureBlob:
+		if d.AzureBlob != nil {
+			addURL(d.AzureBlob.Endpoint)
+		}
+	case DestinationAMQP:
+		if d.AMQP != nil {
+			add(d.AMQP.Addr)
+		}
 	case DestinationSNS:
 		if d.SNS != nil {
 			addURL(d.SNS.Endpoint)

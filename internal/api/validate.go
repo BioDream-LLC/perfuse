@@ -213,6 +213,18 @@ func describeSource(c *config.Channel) string {
 		}
 		return "sqs " + src.SQS.QueueURL
 
+	case config.SourceAMQP:
+		if src.AMQP == nil {
+			return "an AMQP queue"
+		}
+		return "amqp " + src.AMQP.Address + " at " + src.AMQP.Addr
+
+	case config.SourceAzureBlob:
+		if src.AzureBlob == nil {
+			return "an Azure blob container"
+		}
+		return "azure blob " + src.AzureBlob.Account + "/" + src.AzureBlob.Container + "/" + src.AzureBlob.Prefix
+
 	case config.SourceS3:
 		if src.S3 == nil {
 			return "an S3 bucket"
@@ -406,6 +418,20 @@ func describeDestination(d config.Destination) string {
 			out = "sns " + d.SNS.TopicARN
 		} else {
 			out = "an SNS topic"
+		}
+
+	case config.DestinationAMQP:
+		if d.AMQP != nil {
+			out = "amqp " + d.AMQP.Address + " at " + d.AMQP.Addr
+		} else {
+			out = "an AMQP queue"
+		}
+
+	case config.DestinationAzureBlob:
+		if d.AzureBlob != nil {
+			out = "azure blob " + d.AzureBlob.Account + "/" + d.AzureBlob.Container
+		} else {
+			out = "an Azure blob container"
 		}
 
 	case config.DestinationBroker:
