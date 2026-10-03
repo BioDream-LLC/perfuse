@@ -1,0 +1,19 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "home-oxygen",
+  "meta": {"profile": ["http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire"]},
+  "text": {"status": "generated", "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Home oxygen therapy: documentation for prior authorization</div>"},
+  "url": "https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen",
+  "version": "1.0.0",
+  "name": "HomeOxygen",
+  "title": "Home oxygen therapy: documentation for prior authorization",
+  "status": "active",
+  "subjectType": ["Patient"],
+  "date": "2026-10-03",
+  "publisher": "Springfield Health Plan",
+  "item": [
+    {"linkId": "1", "text": "Oxygen saturation at rest on room air (%)", "type": "decimal", "required": true},
+    {"linkId": "2", "text": "Date of the measurement", "type": "date", "required": true},
+    {"linkId": "3", "text": "Qualifying diagnosis", "type": "string", "required": true}
+  ]
+}

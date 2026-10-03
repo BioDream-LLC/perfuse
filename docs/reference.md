@@ -376,6 +376,10 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `perfuse cms0057 metrics -year <year> [-services <csv>] <decisions.csv>` | The yearly public prior authorisation metrics page, in CMS's template layout (`-format html`, `csv` or `json`) |
 | `serve -fhir-payer-apis` | `POST /fhir/Patient/$member-match` (HRex), and with `-fhir-bulk-export`, `Group/{id}/$davinci-data-export` and `Group/{id}/$export` |
 | `serve -fhir-member-match-without-consent` | Lets `$member-match` answer without an active Consent; for testing only |
+| `serve -crd-rules <file>` | Da Vinci CRD 2.2.1 over CDS Hooks at `/cds-services` (order-sign, order-select, order-dispatch, appointment-book). See `examples/crd/rules.yaml` |
+| `serve -cds-clients <file>` | EHRs trusted to call it with signed JWTs: `clients: [{issuer, jwks_url}]`. A Perfuse API token is also accepted |
+| `POST /fhir/Questionnaire/$questionnaire-package` | Da Vinci DTR 2.1.0: the questionnaires named, or named on the order's coverage-information, as package bundles |
+| `POST /api/crd/ask` | From the console: an order sent to this server's CRD rules or to a payer's CDS service URL |
 | `perfuse token create -label <name> -fhir-groups <id>[,<id>]` | A provider's Provider Access token: on the FHIR endpoint it can read those Groups, export them and fetch the export, and nothing else. Also under Users → Machine credentials, or `fhirGroups` on `POST /api/tokens` |
 
 Provider Access and Payer-to-Payer exports leave out cost-sharing and provider remittances, Payer-to-Payer leaves out denied prior authorisations, and members with an active Provider Access opt-out are left out of a provider export. Drugs are out of scope throughout.

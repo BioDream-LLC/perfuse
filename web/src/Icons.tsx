@@ -1709,6 +1709,8 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Ask: a 276 claim status request': IconX12,
   'An 834 enrolment file': IconX12,
   'CAQH CORE data content': IconCheck,
+  'Ask: an order at order-sign': IconX12,
+  'Coverage information on the order': IconCheck,
   'X12 278 response': IconX12,
   'Claims and remittance': IconX12,
   'CARIN Blue Button bundle': IconFhir,

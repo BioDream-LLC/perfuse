@@ -48,6 +48,8 @@ var publicRoutes = map[string]string{
 	"GET /api/health":                  "liveness for a load balancer, which has no session",
 	"POST /shl/{id}":                   "a SMART Health Link manifest: the link is the credential, as the specification requires",
 	"OPTIONS /shl/{id}":                "CORS preflight for the manifest, which browser-based SHL viewers send",
+	"GET /cds-services":                "CDS Hooks discovery, which the specification requires be open",
+	"POST /cds-services/{id}":          "a CDS Hooks call, authenticated in the handler by an EHR's signed JWT or an API token",
 	"GET /shl/file/{ticket}":           "a one-time, one-minute file location handed out by an authorised manifest request",
 	"GET /livez":                       "liveness probe",
 	"GET /readyz":                      "readiness probe",

@@ -1406,6 +1406,9 @@ export const api = {
     request<SHLResolved>('POST', '/api/shl/resolve', input),
   /** verifySHC checks a SMART Health Card's signature against its issuer's published key. */
   verifySHC: (text: string) => request<{ cards: HealthCard[] }>('POST', '/api/shc/verify', { text }),
+  /** askCRD sends an order to a coverage requirements service - this server's rules, or a payer's CDS service URL. */
+  askCRD: (input: { url?: string; token?: string; hook?: string; order: unknown; coverage: unknown; patientId: string }) =>
+    request<CRDResponse>('POST', '/api/crd/ask', input),
   /** buildEligibility renders a 005010X279A1 270. Nothing is sent. */
   buildEligibility: (input: EligibilityRequest) => request<BuiltX12>('POST', '/api/x12/eligibility/build', input),
   /** readEligibility assembles a 271 and checks it against the CAQH CORE data content rule. */
@@ -2745,4 +2748,18 @@ export interface SHLResolved {
     cards?: HealthCard[]
     routed?: string
   }[]
+}
+
+export interface CRDCard {
+  uuid: string
+  summary: string
+  detail?: string
+  indicator: 'info' | 'warning' | 'critical'
+  source: { label: string; url?: string }
+  links?: { label: string; url: string }[]
+}
+
+export interface CRDResponse {
+  cards: CRDCard[]
+  systemActions?: { type: string; resource: Record<string, unknown> }[]
 }

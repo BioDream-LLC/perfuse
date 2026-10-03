@@ -47,3 +47,21 @@ test("a 276 is built and an 834 is read into members", async ({ page }) => {
   await expect(members).toContainText("cancellation or termination");
   await expect(members).toContainText("dental DENTAL1 FAM from 20261101");
 });
+
+test("an order is asked about at order-sign, and the payer's rules answer with coverage information", async ({ page }) => {
+  await page.goto("/");
+  await openTab(page, "Claims & auth");
+  await page.getByRole("button", { name: "Coverage requirements (CRD)" }).click();
+  await page.getByRole("button", { name: "Ask for coverage requirements" }).click();
+  const cards = page.getByTestId("crd-cards");
+  await expect(cards).toContainText("Home oxygen equipment: covered, prior authorization required");
+  await expect(cards).toContainText("From Springfield Health Plan");
+  const info = page.getByTestId("crd-coverage-info");
+  await expect(info).toContainText("pa-needed: auth-needed");
+  await expect(info).toContainText("questionnaire: https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen");
+
+  // And the discovery document is published for EHRs.
+  const discovery = await page.request.get("/cds-services");
+  expect(discovery.ok()).toBeTruthy();
+  expect(JSON.stringify(await discovery.json())).toContain("crd-order-sign");
+});

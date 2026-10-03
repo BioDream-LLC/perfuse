@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { api, ApiError } from './api'
-import type { AttachmentBuildResult, AttachmentView, BuiltX12, EligibilityRead, Enrollment, PriorAuthResult } from './api'
+import type {
+  AttachmentBuildResult,
+  AttachmentView,
+  BuiltX12,
+  CRDResponse,
+  EligibilityRead,
+  Enrollment,
+  PriorAuthResult,
+} from './api'
 import { sample271, sample834 } from './api'
 import { CodeArea } from './CodeArea'
 import { IconX12 } from './Icons'
@@ -18,7 +26,7 @@ import type { UiError } from './store'
  * channel, which is where the trading partner, the credentials and the audit trail belong.
  */
 export function PayerLab() {
-  const [tab, setTab] = useState<'build' | 'read' | 'auth' | 'elig' | 'status' | 'enrol'>('build')
+  const [tab, setTab] = useState<'build' | 'read' | 'auth' | 'elig' | 'status' | 'enrol' | 'crd'>('build')
   return (
     <div className="space-y-6">
       <div>
@@ -38,6 +46,7 @@ export function PayerLab() {
             ['elig', 'Eligibility (270/271)'],
             ['status', 'Claim status (276)'],
             ['enrol', 'Enrolment (834)'],
+            ['crd', 'Coverage requirements (CRD)'],
             ['build', 'Build a 275'],
             ['read', 'Read a 275'],
             ['auth', '278 to PAS'],
@@ -59,6 +68,7 @@ export function PayerLab() {
       {tab === 'elig' && <Eligibility />}
       {tab === 'status' && <ClaimStatus />}
       {tab === 'enrol' && <EnrollmentReader />}
+      {tab === 'crd' && <CoverageRequirements />}
     </div>
   )
 }
@@ -662,6 +672,99 @@ function EnrollmentReader() {
           </Section>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Coverage requirements: an order sent to a Da Vinci CRD service, the way an EHR does at order-sign, to see whether it is covered,
+ * needs prior authorisation, and which questionnaire gathers the documentation. Empty URL asks this server's own rules.
+ */
+function CoverageRequirements() {
+  const [f, setF] = useState({ url: '', token: '', system: 'https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets', code: 'E0424',
+    kind: 'DeviceRequest', coverage: 'cov-1', patient: 'p-1' })
+  const set = (k: keyof typeof f) => (v: string) => setF((o) => ({ ...o, [k]: v }))
+  const [resp, setResp] = useState<CRDResponse | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+
+  async function ask() {
+    setError(null)
+    setResp(null)
+    const coding = { coding: [{ system: f.system || undefined, code: f.code }] }
+    const order: Record<string, unknown> = { resourceType: f.kind, id: 'draft-1', status: 'draft', subject: { reference: `Patient/${f.patient}` } }
+    if (f.kind === 'DeviceRequest') Object.assign(order, { intent: 'original-order', codeCodeableConcept: coding })
+    else Object.assign(order, { intent: 'order', code: coding })
+    try {
+      setResp(
+        await api.askCRD({
+          url: f.url || undefined,
+          token: f.token || undefined,
+          order,
+          coverage: { resourceType: 'Coverage', id: f.coverage, status: 'active' },
+          patientId: f.patient,
+        }),
+      )
+    } catch (e) {
+      setError(toError(e))
+    }
+  }
+
+  const info = (resp?.systemActions ?? []).flatMap((a) =>
+    ((a.resource.extension as { url: string; extension?: { url: string; valueCode?: string; valueCanonical?: string }[] }[]) ?? [])
+      .filter((e) => e.url.endsWith('ext-coverage-information'))
+      .map((e) => e.extension ?? []),
+  )
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      <Section title="Ask: an order at order-sign">
+        {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Order type">
+            <select className="input" value={f.kind} onChange={(e) => set('kind')(e.target.value)}>
+              <option value="DeviceRequest">DeviceRequest (equipment)</option>
+              <option value="ServiceRequest">ServiceRequest (procedure, imaging)</option>
+            </select>
+          </Field>
+          <In label="Code" value={f.code} onChange={set('code')} placeholder="E0424" />
+          <In label="Code system" value={f.system} onChange={set('system')} />
+          <In label="Coverage id" value={f.coverage} onChange={set('coverage')} />
+          <In label="CRD service URL" value={f.url} onChange={set('url')} placeholder="this server's rules" />
+          <In label="Bearer token" value={f.token} onChange={set('token')} placeholder="for a payer's service" />
+        </div>
+        <button className="btn-primary mt-4 w-full" onClick={() => void ask()}>
+          Ask for coverage requirements
+        </button>
+      </Section>
+      {resp && (
+        <div className="space-y-3" data-testid="crd-cards">
+          {resp.cards.map((c) => (
+            <div key={c.uuid} className="card p-4 text-sm">
+              <p className={c.indicator === 'info' ? 'font-medium text-slate-100' : 'font-medium text-amber-300'}>{c.summary}</p>
+              {c.detail && <p className="mt-1 text-slate-300">{c.detail}</p>}
+              <p className="mt-1 text-xs text-slate-500">From {c.source.label}</p>
+              {(c.links ?? []).map((l) => (
+                <a key={l.url} className="mt-1 block text-xs text-sky-300 underline" href={l.url} target="_blank" rel="noreferrer">
+                  {l.label}
+                </a>
+              ))}
+            </div>
+          ))}
+          {info.map((ext, i) => (
+            <Section key={i} title="Coverage information on the order">
+              <ul className="space-y-0.5 font-mono text-xs text-slate-300" data-testid="crd-coverage-info">
+                {ext
+                  .filter((x) => x.valueCode || x.valueCanonical)
+                  .map((x) => (
+                    <li key={x.url + (x.valueCode ?? x.valueCanonical)}>
+                      {x.url}: {x.valueCode ?? x.valueCanonical}
+                    </li>
+                  ))}
+              </ul>
+            </Section>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

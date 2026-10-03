@@ -273,6 +273,20 @@ Asking who could call a Group export found the next gap: any valid token could e
 
 Not verified: the member match and Group exports against another payer's implementation, and the metrics against a payer's published figures.
 
+## Da Vinci CRD 2.2.1 and DTR 2.1.0, against the official HL7 validator
+
+The order CRD updates (a DeviceRequest carrying the coverage-information extension), the whole CDS Hooks response validated against
+CRD's `CRDHooksResponse` logical model, the example questionnaire against DTR's `dtr-std-questionnaire`, and the server's own
+`$questionnaire-package` output against `dtr-qpackage-output-parameters`: no errors. The remaining warnings are a missing narrative on the
+order and the HCPCS code system, which the validator has no copy of.
+
+The first run found that cards named their topic in CRD's temporary code system, which the response model's value set does not
+include; they now use the CDS Hooks card-type system. Building the package found that the FHIR store's Questionnaire model declares no
+`item`, and the package was written through a path that did not restore undeclared members - so every questionnaire went out with no
+questions. It now uses the serialiser that does.
+
+What this does not show: CRD against a real EHR's CDS Hooks client, and DTR against a real SMART on FHIR documentation app.
+
 ## The 006020 275, against the published companion guides
 
 **What was found: one of the two guides contradicts itself about the byte count, and the table is right.**

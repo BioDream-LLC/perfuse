@@ -139,6 +139,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerValueSets(mux)
 
 	s.registerPayerAPIs(mux)
+	s.registerDTR(mux)
 
 	mux.HandleFunc("GET /Patient/{id}/$everything", s.handleEverything)
 	mux.HandleFunc("POST /Patient/{id}/$everything", s.handleEverything)

@@ -321,6 +321,8 @@ export default async function globalSetup() {
       "-fhir-payer-apis",
       // The test server is plain HTTP on loopback, and the health links test reads back a link this server hosts.
       "-shl-allow-http",
+      // Da Vinci CRD, with the example rules, so the coverage requirements tab answers from a real rules file.
+      "-crd-rules", join(REPO, "examples", "crd", "rules.yaml"),
       "-fhir-bulk-export",
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },

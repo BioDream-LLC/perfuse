@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/crd"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -215,6 +216,12 @@ type Server struct {
 	// SHLAllowHTTP lets a received SMART Health Link point at plain HTTP. Off: only tests and a laboratory want it.
 	SHLAllowHTTP bool
 
+	// CRD is the Da Vinci Coverage Requirements Discovery rules, when the payer's CDS service is on.
+	CRD *crd.Rules
+
+	// CDSClients are the EHRs trusted to call it with signed JWTs.
+	CDSClients []*CDSClient
+
 	// shlFiles holds one-time file locations for manifest responses.
 	shlFiles shlTickets
 
@@ -289,6 +296,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /shl/{id}", s.handleSHLManifest)
 	mux.HandleFunc("OPTIONS /shl/{id}", s.handleSHLManifest)
 	mux.HandleFunc("GET /shl/file/{ticket}", s.handleSHLFile)
+
+	// CDS Hooks for Da Vinci CRD. Discovery is open as CDS Hooks requires; a service call authenticates itself in the handler - an EHR's
+	// signed JWT or an API token - because neither is a Perfuse session.
+	mux.HandleFunc("GET /cds-services", s.handleCDSDiscovery)
+	mux.HandleFunc("POST /cds-services/{id}", s.handleCDSService)
 
 	// Probes are unauthenticated. A kubelet has no credentials, and issuing it
 	// some would be a worse trade than disclosing that a process is running.
@@ -414,6 +426,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("DELETE /api/shl/{id}", s.require(store.RoleEditor, s.handleRevokeSHL))
 	// Receiving is an editor's: it fetches from an address in a stranger's QR code and can deliver into a channel.
 	mux.Handle("POST /api/shl/resolve", s.require(store.RoleEditor, s.handleResolveSHL))
+	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))
 	mux.Handle("POST /api/shc/verify", s.require(store.RoleViewer, s.handleVerifySHC))
 	mux.Handle("POST /api/x12/eligibility/build", s.require(store.RoleViewer, s.handleBuildEligibility))
 	mux.Handle("POST /api/x12/eligibility/read", s.require(store.RoleViewer, s.handleReadEligibility))

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/crd"
 	"github.com/biodream-llc/perfuse/internal/trace"
 	"io"
 	"log/slog"
@@ -87,6 +88,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	publicURL := fset.String("public-url", "", "the https address patients' phones and other organisations reach this server at, for the "+
 		"SMART Health Links it hosts (default: the listen address)")
 	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
+	crdRules := fset.String("crd-rules", "", "a Da Vinci CRD rules file: serve coverage requirements over CDS Hooks at /cds-services")
+	cdsClients := fset.String("cds-clients", "", "the EHRs trusted to call the CDS services with signed JWTs (issuer and jwks_url)")
 
 	runEngine := fset.Bool("engine", true,
 		"run the channel engine in this process, so the interface can start, stop and monitor channels")
@@ -872,6 +875,21 @@ oidcDone:
 		srv.SelfURL = fmt.Sprintf("%s://%s", schemeFor(useTLS), *addr)
 		srv.PublicURL = strings.TrimRight(strings.TrimSpace(*publicURL), "/")
 		srv.SHLAllowHTTP = *shlAllowHTTP
+		if *crdRules != "" {
+			rules, err := crd.LoadRules(*crdRules)
+			if err != nil {
+				return fmt.Errorf("-crd-rules: %w", err)
+			}
+			srv.CRD = rules
+			log.Info("serving Da Vinci CRD over CDS Hooks", "discovery", srv.SelfURL+"/cds-services", "rules", len(rules.Rules))
+		}
+		if *cdsClients != "" {
+			clients, err := api.LoadCDSClients(*cdsClients)
+			if err != nil {
+				return fmt.Errorf("-cds-clients: %w", err)
+			}
+			srv.CDSClients = clients
+		}
 		if srv.PublicURL != "" && len(srv.PublicURL)+len("/shl/")+43 > 128 {
 			return fmt.Errorf("-public-url is %d characters; a SMART Health Link's manifest URL may be at most 128, so it can be at "+
 				"most 80", len(srv.PublicURL))
