@@ -37,7 +37,8 @@ between systems that were never designed to talk to each other. A lab sends resu
 department speaks DICOM, a payer sends X12, and the receiving system wants FHIR. Perfuse sits in the middle,
 parses each of them properly, transforms what needs transforming, and delivers without losing anything.
 
-**What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM · X12 837, 835, 270/271 and 278 ·
+**What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM · X12 837, 835, 270/271, 276/277, 834 and 278 ·
+SMART Health Links and Cards ·
 C-CDA and CDA · HL7 v3 · delimited and raw formats.
 
 **How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, Kafka, message
@@ -125,6 +126,7 @@ depends on something outside this software that is stated too.
 <tbody>
 <tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · JavaScript Reader · serial</td></tr>
 <tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</td></tr>
+<tr><td colspan="2"><b>SMART Health Links and Cards</b> for CMS's <i>Kill the Clipboard</i>: read the QR code a patient shows at check-in, verify the health cards inside, deliver the records to a channel - and share the visit record back as a passcode-protected link this server hosts without holding its key. Tested against the kill-the-clipboard library in both directions</td></tr>
 <tr><td colspan="2"><b>AWS without the AWS SDK</b>: S3, SQS and SNS over signed HTTP, checked against AWS's published signature example and run against LocalStack. An SQS message is deleted only once handled; a FIFO queue keeps each patient's messages in order. An S3 archive can go straight to <b>Glacier</b> by storage class, or be written as <b>date-partitioned JSON for Amazon Athena</b> to query — <code>perfuse athena</code> prints the table</td></tr>
 <tr><td colspan="2">Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle and SQLite</b>, with the dialect checked when the channel is saved rather than at three in the morning</td></tr>
 <tr><td colspan="2"><b>Kafka</b>, keyed so one patient's events stay in order while different patients go in parallel — Kafka orders within a partition and nowhere else, and records sharing a key always share one. Offsets commit <b>after</b> a batch is handled, so a crash redelivers rather than loses</td></tr>

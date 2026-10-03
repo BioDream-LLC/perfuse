@@ -22,6 +22,7 @@ import { Contracts } from './Contracts'
 import { Fleet } from './Fleet'
 import { Tables } from './Tables'
 import { MirthMigration } from './MirthMigration'
+import { HealthLinks } from './HealthLinks'
 import { MapperPanel } from './MapperPanel'
 import { Shadow } from './Shadow'
 import { CommandPalette, type Command } from './CommandPalette'
@@ -66,6 +67,7 @@ export type Tab =
   | 'documents'
   | 'payer'
   | 'cms0057'
+  | 'shl'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -84,7 +86,7 @@ export type Tab =
 // Every view's id, for reading one out of the URL. A string from the address bar is only trusted once it is in here.
 const TAB_IDS = [
   'dashboard', 'channels', 'messages', 'queue', 'alerts', 'metrics', 'fhir', 'subscriptions', 'documents', 'payer',
-  'cms0057', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
+  'cms0057', 'shl', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
   'mapper', 'users', 'audit', 'settings',
 ] as const satisfies readonly Tab[]
 
@@ -539,6 +541,12 @@ function Console() {
       about: 'X12 275 claims attachments (the CMS-0053-F standard) built and read, and X12 278 decisions turned into Da Vinci PAS',
     },
     {
+      id: 'shl',
+      label: 'Health links',
+      minRole: 'editor',
+      about: 'SMART Health Links and Cards: read the QR code a patient shows at check-in, and share the visit record back the same way',
+    },
+    {
       id: 'cms0057',
       label: 'CMS-0057',
       minRole: 'viewer',
@@ -867,6 +875,7 @@ function Console() {
         {tab === 'documents' && <DocumentLab />}
         {tab === 'payer' && <PayerLab />}
         {tab === 'cms0057' && <CMS0057 />}
+        {tab === 'shl' && <HealthLinks />}
         {tab === 'certificates' && <Certificates />}
         {tab === 'scripts' && (
           <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

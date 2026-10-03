@@ -84,6 +84,9 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	ldapFile := fset.String("ldap", "", "YAML file configuring directory (LDAP) sign-in")
 	samlFile := fset.String("saml", "", "YAML file configuring SAML 2.0 sign-in")
 	fleetLabel := fset.String("fleet-label", "", "how this instance names itself in a fleet view (default: hostname)")
+	publicURL := fset.String("public-url", "", "the https address patients' phones and other organisations reach this server at, for the "+
+		"SMART Health Links it hosts (default: the listen address)")
+	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
 
 	runEngine := fset.Bool("engine", true,
 		"run the channel engine in this process, so the interface can start, stop and monitor channels")
@@ -867,6 +870,12 @@ oidcDone:
 		// this instance through its own HTTP stack and appears twice in the fleet view, which reads as two
 		// machines and is one.
 		srv.SelfURL = fmt.Sprintf("%s://%s", schemeFor(useTLS), *addr)
+		srv.PublicURL = strings.TrimRight(strings.TrimSpace(*publicURL), "/")
+		srv.SHLAllowHTTP = *shlAllowHTTP
+		if srv.PublicURL != "" && len(srv.PublicURL)+len("/shl/")+43 > 128 {
+			return fmt.Errorf("-public-url is %d characters; a SMART Health Link's manifest URL may be at most 128, so it can be at "+
+				"most 80", len(srv.PublicURL))
+		}
 
 		// The certificate used to sign documents from the interface.
 		//

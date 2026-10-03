@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 91373c1</p>
+<p class="version">version 0.1 · eb07dc2</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -471,6 +471,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s8-8-3-the-three-that-change-what-counts-as-an-error"><span class="num">8.8.3</span> The three that change what counts as an error</a></div>
 <div class="toc-d2"><a href="#s8-9-raw"><span class="num">8.9</span> Raw</a></div>
 <div class="toc-d2"><a href="#s8-10-choosing"><span class="num">8.10</span> Choosing</a></div>
+<div class="toc-d2"><a href="#s8-11-smart-health-links-and-cards"><span class="num">8.11</span> SMART Health Links and Cards</a></div>
 <div class="toc-d1"><a href="#s9-acknowledgements"><span class="num">9</span> Acknowledgements</a></div>
 <div class="toc-d2"><a href="#s9-1-timing"><span class="num">9.1</span> Timing</a></div>
 <div class="toc-d2"><a href="#s9-2-what-perfuse-sends"><span class="num">9.2</span> What Perfuse sends</a></div>
@@ -1026,30 +1027,31 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s25-57-settings"><span class="num">25.57</span> settings</a></div>
 <div class="toc-d2"><a href="#s25-58-sftpconn"><span class="num">25.58</span> sftpconn</a></div>
 <div class="toc-d2"><a href="#s25-59-shadow"><span class="num">25.59</span> shadow</a></div>
-<div class="toc-d2"><a href="#s25-60-soap"><span class="num">25.60</span> soap</a></div>
-<div class="toc-d2"><a href="#s25-61-sqldb"><span class="num">25.61</span> sqldb</a></div>
-<div class="toc-d2"><a href="#s25-62-sqlitedb"><span class="num">25.62</span> sqlitedb</a></div>
-<div class="toc-d2"><a href="#s25-63-steps"><span class="num">25.63</span> steps</a></div>
-<div class="toc-d2"><a href="#s25-64-stomp"><span class="num">25.64</span> stomp</a></div>
-<div class="toc-d2"><a href="#s25-65-store"><span class="num">25.65</span> store</a></div>
-<div class="toc-d2"><a href="#s25-66-tefca"><span class="num">25.66</span> tefca</a></div>
-<div class="toc-d2"><a href="#s25-67-tenant"><span class="num">25.67</span> tenant</a></div>
-<div class="toc-d2"><a href="#s25-68-tlsconf"><span class="num">25.68</span> tlsconf</a></div>
-<div class="toc-d2"><a href="#s25-69-tomirth"><span class="num">25.69</span> tomirth</a></div>
-<div class="toc-d2"><a href="#s25-70-trace"><span class="num">25.70</span> trace</a></div>
-<div class="toc-d2"><a href="#s25-71-transform"><span class="num">25.71</span> transform</a></div>
-<div class="toc-d2"><a href="#s25-72-translate"><span class="num">25.72</span> translate</a></div>
-<div class="toc-d2"><a href="#s25-73-udap"><span class="num">25.73</span> udap</a></div>
-<div class="toc-d2"><a href="#s25-74-v2fhir"><span class="num">25.74</span> v2fhir</a></div>
-<div class="toc-d2"><a href="#s25-75-vcs"><span class="num">25.75</span> vcs</a></div>
-<div class="toc-d2"><a href="#s25-76-vfs"><span class="num">25.76</span> vfs</a></div>
-<div class="toc-d2"><a href="#s25-77-web"><span class="num">25.77</span> web</a></div>
-<div class="toc-d2"><a href="#s25-78-webauthn"><span class="num">25.78</span> webauthn</a></div>
-<div class="toc-d2"><a href="#s25-79-winservice"><span class="num">25.79</span> winservice</a></div>
-<div class="toc-d2"><a href="#s25-80-x12"><span class="num">25.80</span> x12</a></div>
-<div class="toc-d2"><a href="#s25-81-x12xml"><span class="num">25.81</span> x12xml</a></div>
-<div class="toc-d2"><a href="#s25-82-xmldsig"><span class="num">25.82</span> xmldsig</a></div>
-<div class="toc-d2"><a href="#s25-83-xtree"><span class="num">25.83</span> xtree</a></div>
+<div class="toc-d2"><a href="#s25-60-shl"><span class="num">25.60</span> shl</a></div>
+<div class="toc-d2"><a href="#s25-61-soap"><span class="num">25.61</span> soap</a></div>
+<div class="toc-d2"><a href="#s25-62-sqldb"><span class="num">25.62</span> sqldb</a></div>
+<div class="toc-d2"><a href="#s25-63-sqlitedb"><span class="num">25.63</span> sqlitedb</a></div>
+<div class="toc-d2"><a href="#s25-64-steps"><span class="num">25.64</span> steps</a></div>
+<div class="toc-d2"><a href="#s25-65-stomp"><span class="num">25.65</span> stomp</a></div>
+<div class="toc-d2"><a href="#s25-66-store"><span class="num">25.66</span> store</a></div>
+<div class="toc-d2"><a href="#s25-67-tefca"><span class="num">25.67</span> tefca</a></div>
+<div class="toc-d2"><a href="#s25-68-tenant"><span class="num">25.68</span> tenant</a></div>
+<div class="toc-d2"><a href="#s25-69-tlsconf"><span class="num">25.69</span> tlsconf</a></div>
+<div class="toc-d2"><a href="#s25-70-tomirth"><span class="num">25.70</span> tomirth</a></div>
+<div class="toc-d2"><a href="#s25-71-trace"><span class="num">25.71</span> trace</a></div>
+<div class="toc-d2"><a href="#s25-72-transform"><span class="num">25.72</span> transform</a></div>
+<div class="toc-d2"><a href="#s25-73-translate"><span class="num">25.73</span> translate</a></div>
+<div class="toc-d2"><a href="#s25-74-udap"><span class="num">25.74</span> udap</a></div>
+<div class="toc-d2"><a href="#s25-75-v2fhir"><span class="num">25.75</span> v2fhir</a></div>
+<div class="toc-d2"><a href="#s25-76-vcs"><span class="num">25.76</span> vcs</a></div>
+<div class="toc-d2"><a href="#s25-77-vfs"><span class="num">25.77</span> vfs</a></div>
+<div class="toc-d2"><a href="#s25-78-web"><span class="num">25.78</span> web</a></div>
+<div class="toc-d2"><a href="#s25-79-webauthn"><span class="num">25.79</span> webauthn</a></div>
+<div class="toc-d2"><a href="#s25-80-winservice"><span class="num">25.80</span> winservice</a></div>
+<div class="toc-d2"><a href="#s25-81-x12"><span class="num">25.81</span> x12</a></div>
+<div class="toc-d2"><a href="#s25-82-x12xml"><span class="num">25.82</span> x12xml</a></div>
+<div class="toc-d2"><a href="#s25-83-xmldsig"><span class="num">25.83</span> xmldsig</a></div>
+<div class="toc-d2"><a href="#s25-84-xtree"><span class="num">25.84</span> xtree</a></div>
 <div class="toc-d1"><a href="#s26-index-of-configuration-keys"><span class="num">26</span> Index of Configuration Keys</a></div>
 <div class="toc-d2"><a href="#s26-1-all-keys"><span class="num">26.1</span> All keys</a></div>
 </nav>
@@ -1812,6 +1814,11 @@ destinations:
 <h3 id="s8-10-choosing"><span class="num">8.10</span> Choosing</h3>
 <p>If the message is HL7 v2, use <code>hl7</code>, even if you only intend to forward it unchanged. Parsing gives you the trace, the field-level statistics, the ability to filter later and the ability to compare. <code>raw</code> on parseable content buys nothing and loses all of that.</p>
 <p>Use <code>raw</code> when parsing would fail or would be a lie about the content.</p>
+<h3 id="s8-11-smart-health-links-and-cards"><span class="num">8.11</span> SMART Health Links and Cards</h3>
+<p>CMS&#39;s *Kill the Clipboard* asks providers to accept a patient&#39;s records from a QR code at check-in, and to hand the visit record back the same way. The QR code holds a <strong>SMART Health Link</strong> (<code>shlink:/...</code>): an address, a 256-bit key and, optionally, a label, an expiry and a passcode flag. <strong>Exchange → Health links</strong> reads one.</p>
+<p><strong>Receiving.</strong> Paste the link, or scan it with the camera where the browser can (Chrome and Edge). Perfuse fetches the manifest, decrypts each file with the key from the link, summarises any FHIR bundle - who the patient is, how many of each resource - and checks any <strong>SMART Health Card</strong> inside against its issuer&#39;s published key. *Deliver to the channel* hands the FHIR content to a channel as a message, which is how it reaches the EHR. The fetch is held to the egress policy at connect time, plain HTTP is refused, and the response of a server that is not a manifest server is never shown, because the address came from a stranger&#39;s QR code.</p>
+<p><strong>Sharing.</strong> *Share* encrypts a FHIR bundle, hosts it, and shows the link and its QR code once. The server keeps the ciphertext and not the key - it cannot open what it hosts, and cannot show the link again. A passcode is hashed; ten wrong ones disable the link. Links expire after 30 days by default, can be revoked, and list how often and by whom they were fetched. Start the server with <code>-public-url</code> set to the https address patients&#39; phones reach; the manifest URL it builds must fit the specification&#39;s 128 characters.</p>
+<p><strong>Verifying a card.</strong> *Verify a card* takes a numeric <code>shc:/</code> QR (one chunk or several), a <code>.smart-health-card</code> file or a JWS, and says whether the signature matches the issuer&#39;s key.</p>
 </section>
 <section class="chapter">
 <h2 id="s9-acknowledgements"><span class="num">9</span> Acknowledgements</h2>
@@ -5097,7 +5104,13 @@ destinations:
 </ul>
 <p>Anything less than that and shadow mode becomes a way to break production while trying to avoid breaking production.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/shadow</code></p>
-<h3 id="s25-60-soap"><span class="num">25.60</span> soap</h3>
+<h3 id="s25-60-shl"><span class="num">25.60</span> shl</h3>
+<p>Package shl implements SMART Health Links and SMART Health Cards: the QR codes CMS&#39;s &#34;Kill the Clipboard&#34; asks providers to accept at check-in, and to hand back with the visit record.</p>
+<p>A SMART Health Link (SMART Health Links STU 1) is shlink:/ followed by base64url JSON: a manifest URL, a 256-bit key, and optionally an expiry, a label and flags (P passcode, L long-term, U a single file by GET). The receiver posts to the manifest URL and gets back files, each a JWE encrypted with that key - alg dir, enc A256GCM, optionally DEFLATE-compressed - holding FHIR JSON, SMART Health Cards, or a SMART access token. The server that hosts the files never sees the key: it travels only in the link, which is the patient&#39;s.</p>
+<p>A SMART Health Card (SMART Health Cards Framework 1.4) is a signed FHIR bundle: a compact JWS, ES256, with a DEFLATE-compressed payload naming its issuer, whose public key is at &lt;iss&gt;/.well-known/jwks.json. It travels as a numeric shc:/ QR code or a .smart-health-card file.</p>
+<p>Only the standard library: crypto/aes, crypto/cipher, crypto/ecdsa and compress/flate cover everything, and a JOSE library would bring a much larger surface for two algorithms.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/shl</code></p>
+<h3 id="s25-61-soap"><span class="num">25.61</span> soap</h3>
 <p>Package soap sends SOAP requests and reads SOAP faults, using only the standard library.</p>
 <p>SOAP is a fair amount of ceremony around an HTTP POST, and it is still how a great deal of hospital middleware accepts data - patient administration systems, document repositories, regional record services, anything specified in the decade when this was the answer. Mirth has a Web Service connector, so this is a Tier 2 migration blocker rather than a nice-to-have.</p>
 <h1 id="why-not-a-generated-client">Why not a generated client</h1>
@@ -5106,17 +5119,17 @@ destinations:
 <p>No WSDL parsing, no WS-Security, no MTOM, no WS-Addressing. Those are each a specification in their own right, and pretending to support one while getting a detail wrong is worse than not offering it - a signature that almost verifies is indistinguishable from an attack at the far end. WS-Security in particular is where a half-implementation would do real harm.</p>
 <p>What is here: SOAP 1.1 and 1.2 envelopes, a templated body, the SOAPAction header, and fault detection that reads the fault string rather than reporting &#34;500&#34;.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/soap</code></p>
-<h3 id="s25-61-sqldb"><span class="num">25.61</span> sqldb</h3>
+<h3 id="s25-62-sqldb"><span class="num">25.62</span> sqldb</h3>
 <p>Package sqldb opens database connections for the database source and destination.</p>
 <p>The drivers are registered here and nowhere else, so there is exactly one place that decides what Perfuse can connect to.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqldb</code></p>
-<h3 id="s25-62-sqlitedb"><span class="num">25.62</span> sqlitedb</h3>
+<h3 id="s25-63-sqlitedb"><span class="num">25.63</span> sqlitedb</h3>
 <p>Package sqlitedb opens SQLite the way a server needs it: one connection for writes and several for reads.</p>
 <p>The reason is a failure mode that only appears once a deployment has been running for a while. SQLite in WAL mode lets readers run alongside a writer, but Go&#39;s connection pool sits above SQLite, so a pool of one serialises everything regardless of what the database would allow. A message browser search scanning the payload column then holds the only connection, and every arriving message waits behind it.</p>
 <p>Measured on this machine, a write takes 104µs with the store idle and 2.6ms while a search scans four thousand messages: twenty-five times slower. That scales with the table, so at a few hundred thousand stored messages a report turns into seconds of delivery latency, and a write is on the acknowledgement path. The sender sees a timeout, resends, and somebody spends a morning looking for a problem in the network.</p>
 <p>Splitting the pools costs nothing and removes the interaction: reports get their own connections, and the writer keeps one to itself because SQLite permits exactly one writer anyway.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqlitedb</code></p>
-<h3 id="s25-63-steps"><span class="num">25.63</span> steps</h3>
+<h3 id="s25-64-steps"><span class="num">25.64</span> steps</h3>
 <p>Declarative transformation steps, for any message format.</p>
 <h1 id="why-this-is-shared">Why this is shared</h1>
 <p>The step vocabulary - set, copy, clear, map, replace, trim, case, each with a description and an optional condition - has nothing to do with any particular format. Only three things differ between formats: how a path is written, how a value is read, and how it is written back.</p>
@@ -5124,18 +5137,18 @@ destinations:
 <h1 id="what-a-format-supplies">What a format supplies</h1>
 <p>An Accessor: a path compiler, a condition compiler, and an optional veto on steps it cannot honour. Nothing else.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/steps</code></p>
-<h3 id="s25-64-stomp"><span class="num">25.64</span> stomp</h3>
+<h3 id="s25-65-stomp"><span class="num">25.65</span> stomp</h3>
 <p>Package stomp speaks STOMP 1.2 to a message broker.</p>
 <p>This is what &#34;JMS support&#34; has to mean in a program that is not Java. JMS is an API rather than a protocol, so there is nothing to implement: what a site actually needs is for Perfuse to talk to the broker sitting behind their JMS applications.</p>
 <p>STOMP rather than OpenWire, and the reasoning is worth recording because the obvious answer is wrong. OpenWire is ActiveMQ&#39;s native protocol and a binary serialisation of JMS commands - weeks of work, specific to one broker family, and undocumented except by its implementation. ActiveMQ auto-detects STOMP, AMQP and MQTT on the same port it serves OpenWire on, so a text protocol reaches the same brokers. STOMP covers ActiveMQ Classic, Artemis and RabbitMQ; AMQP 1.0 would add Azure Service Bus and IBM MQ, and is the sensible next one rather than OpenWire.</p>
 <p>Written against the standard library. A broker client is not the place for a dependency whose failure modes are somebody else&#39;s to explain, and the framing here is small enough that owning it costs less than reading their issue tracker.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/stomp</code></p>
-<h3 id="s25-65-store"><span class="num">25.65</span> store</h3>
+<h3 id="s25-66-store"><span class="num">25.66</span> store</h3>
 <p>Package store holds the data that is genuinely stateful: users, sessions and an audit trail.</p>
 <p>Channels are deliberately not in here. They live in files, because that is what gives git, diffs, code review and environment promotion for free. Putting channels in a database is the decision that forces every one of those to be bought separately, and it is the reason a third-party product exists purely to shuttle Mirth channels between its database and a git repository.</p>
 <p>So the split is: configuration in files, identity and history in SQLite.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/store</code></p>
-<h3 id="s25-66-tefca"><span class="num">25.66</span> tefca</h3>
+<h3 id="s25-67-tefca"><span class="num">25.67</span> tefca</h3>
 <p>Package tefca implements the parts of TEFCA participation that do not require a QHIN connection.</p>
 <h1 id="what-is-real">What is real</h1>
 <p>Purpose-of-use validation, configuration validation, and the audit trail - including its persistence, its query interface and its obligation to record failed attempts as well as successful ones. That last part is not a technicality: a run of failed deliveries to one recipient is how a misconfigured partner shows up, and a run of failed queries for different patients is how probing shows up.</p>
@@ -5145,7 +5158,7 @@ destinations:
 <h1 id="what-completing-it-requires">What completing it requires</h1>
 <p>Onboarding with a Qualified Health Information Network, mutually authenticated TLS using certificates issued through that process, and either the IHE profiles the Common Agreement started with or Facilitated FHIR as defined by the Sequoia Project&#39;s standard operating procedure, effective 8 March 2026. None of it can be written speculatively: it is tested against a real QHIN or it is not tested, and an untested exchange implementation is the same defect as no implementation wearing a better disguise.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tefca</code></p>
-<h3 id="s25-67-tenant"><span class="num">25.67</span> tenant</h3>
+<h3 id="s25-68-tenant"><span class="num">25.68</span> tenant</h3>
 <p>Package tenant provides the identity and isolation rules for multi-tenant operation.</p>
 <p>An HIE, a clearinghouse or a managed service provider runs one engine on behalf of many organisations. Mirth cannot do this - one instance serves one organisation, and an MSP ends up running fifty JVMs and fifty databases.</p>
 <h1 id="what-a-tenant-owns">What a tenant owns</h1>
@@ -5154,19 +5167,19 @@ destinations:
 <p>The dangerous failure here is not a crash. It is tenant A seeing tenant B&#39;s messages, which is a reportable breach rather than a bug. A design where every query takes a tenant_id parameter fails the first time somebody writes a query and forgets one, and that query looks perfectly correct in review.</p>
 <p>So the tenant is not a parameter. Data access goes through a handle that already carries it, and there is no way to reach the tables without one. Forgetting is not available.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tenant</code></p>
-<h3 id="s25-68-tlsconf"><span class="num">25.68</span> tlsconf</h3>
+<h3 id="s25-69-tlsconf"><span class="num">25.69</span> tlsconf</h3>
 <p>Package tlsconf builds TLS configuration from files and describes certificates.</p>
 <p>This is the free equivalent of an extension Mirth now charges for. Most of the value is not the encryption, which is a few lines, but the part that stops somebody deploying something they think is secure and is not: refusing to skip verification silently, insisting a client certificate is actually checked when one is requested, and saying plainly when a certificate is about to expire.</p>
 <p>An expired certificate on an interface feed is a genuine hospital outage, and it happens because nobody was told. The describing half of this package exists for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tlsconf</code></p>
-<h3 id="s25-69-tomirth"><span class="num">25.69</span> tomirth</h3>
+<h3 id="s25-70-tomirth"><span class="num">25.70</span> tomirth</h3>
 <p>Package tomirth writes a Perfuse channel back out as Mirth channel XML.</p>
 <p>Why this exists. The objection to adopting a new integration engine is rarely &#34;is it any good&#34;. It is &#34;what if we are wrong and we are stuck&#34;, and the cheapest answer to that is being able to walk back out. Perfuse has read Mirth&#39;s channels since the beginning; until now it could not write one, which made the reassurance one-directional and therefore not much of a reassurance.</p>
 <p>How it avoids the trap that made the first attempt useless. Mirth&#39;s XML is XStream&#39;s output, and XStream reads the class and version attributes as instructions: an element it does not recognise is dropped without a word, and a channel it cannot assemble is stored with its description replaced by &#34;This channel is invalid. Verify all required extensions are loaded correctly&#34; and its destinations discarded. Nothing in that response names the element at fault. An exporter that composes property blocks from a reading of the format therefore fails in the one way that is expensive to diagnose, which is what happened: this repository carried an exporter with nine passing tests whose output Mirth threw away, because every test compared it against our own parser instead of a server.</p>
 <p>So none of the property blocks are composed here. scripts/mirth-dump-connector-templates.sh has Mirth&#39;s own ObjectXMLSerializer serialise the defaults of each connector properties class, and those documents are committed under templates/. This package substitutes values into them, and mirth.SetRawProperty refuses any path the template does not already contain - so a mistake is an error naming the path, at the moment of export, rather than a channel that vanishes on import.</p>
 <p>What it will not do. A transport with no Mirth equivalent is refused by name rather than approximated. An export that quietly turned an S3 destination into a file writer would be worse than no export at all, because the channel would import cleanly and deliver to the wrong place.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tomirth</code></p>
-<h3 id="s25-70-trace"><span class="num">25.70</span> trace</h3>
+<h3 id="s25-71-trace"><span class="num">25.71</span> trace</h3>
 <p>Package trace produces distributed traces for messages moving through a channel, and exports them over OTLP/HTTP with the JSON encoding.</p>
 <p>Why this exists rather than the OpenTelemetry SDK: the SDK plus an OTLP exporter pulls in roughly sixty modules and adds about as much to the binary as the whole of the rest of this program. What is actually needed here is narrow - W3C trace context propagation, a span model, head sampling, and a batched HTTP POST - and OTLP/JSON is a documented stable encoding that can be produced with the standard library alone. Same trade as choosing lib/pq over pgx: take the small thing when only part of the big thing is wanted.</p>
 <p>The consequence worth stating: there is no auto-instrumentation and no vendor-specific exporter. Spans are the ones this program creates deliberately, and they go to any OTLP endpoint - a collector, Jaeger, Grafana Tempo, Honeycomb, Datadog&#39;s OTLP ingest.</p>
@@ -5175,12 +5188,12 @@ destinations:
 <h1 id="tracing-must-never-affect-delivery">Tracing must never affect delivery</h1>
 <p>Every operation here is best-effort. Spans are dropped when the buffer is full, export failures are counted and never retried into the message path, and no call blocks on the network. A dropped span is an inconvenience. A message delayed or lost because the tracing backend was slow is a clinical incident, so the trade is never in question.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/trace</code></p>
-<h3 id="s25-71-transform"><span class="num">25.71</span> transform</h3>
+<h3 id="s25-72-transform"><span class="num">25.72</span> transform</h3>
 <p>Package transform applies declarative changes to a message.</p>
 <p>This is the layer meant to carry the ordinary work, with scripting kept as a marked escape hatch. The distinction is not stylistic. A step declared in YAML can be validated before it runs, shown in a diff, reviewed by somebody who does not read JavaScript, and reported on; a script can only be executed and hoped about. Most of what Mirth transformers actually do is boring - copy a field, pad an identifier, map a code through a table, clear something that should not leave the building - and all of that belongs here.</p>
 <p>Every step names its target explicitly and every step is reversible in the sense that it says what it did, because the most expensive failure in an interface is a transformation nobody knew was happening.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/transform</code></p>
-<h3 id="s25-72-translate"><span class="num">25.72</span> translate</h3>
+<h3 id="s25-73-translate"><span class="num">25.73</span> translate</h3>
 <p>Package translate converts a Mirth channel into a Perfuse channel definition.</p>
 <p><code>perfuse explain</code> reports what blocks a migration. This does most of the migration, which is a different and much larger claim, so it is deliberately conservative about what it will assert.</p>
 <p>Three rules shape the whole thing.</p>
@@ -5188,26 +5201,26 @@ destinations:
 <p><strong>Declarative where it is certain, script where it is not.</strong> A Mapper step that copies a field becomes a declarative step, because that is readable and checkable. A JavaScript step becomes a script, because Perfuse runs Mirth&#39;s JavaScript unchanged and rewriting it into something that looks equivalent is exactly where a translator would introduce a difference nobody notices.</p>
 <p><strong>The output is meant to be read.</strong> It carries comments explaining what came from where, and what was left for a person. A migration is reviewed by somebody who has to sign off on it, and an unannotated wall of YAML cannot be reviewed.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/translate</code></p>
-<h3 id="s25-73-udap"><span class="num">25.73</span> udap</h3>
+<h3 id="s25-74-udap"><span class="num">25.74</span> udap</h3>
 <p>Package udap implements the client half of HL7 Security for Scalable Registration, Authentication, and Authorization — the specification TEFCA&#39;s Facilitated FHIR exchange rests on.</p>
 <p>UDAP is a public key infrastructure bolted onto OAuth 2.0. A trust community issues X.509 certificates to its members; a member proves who it is by signing JWTs with the private key and attaching the certificate chain in the JWT header. That replaces the shared client secret of ordinary OAuth, which does not scale to thousands of organisations who have never met.</p>
 <p>Why this package exists at all. TEFCA exchange cannot be fully verified without a real QHIN: joining one needs onboarding and issued certificates, and cannot be faked. But the security profile underneath it is a published HL7 implementation guide with public reference servers, and one of them answers on the open internet. So the part that can be verified is verified here, and the part that cannot is refused at the boundary rather than guessed at.</p>
 <p>The distinction matters because of what happened with SAML in this repository: a thousand lines of tests passed, five of them specifically about signature canonicalisation, while no real identity provider could authenticate anybody. Both halves had been written here and agreed with each other. The lesson taken from it is that a security implementation is worth nothing until something somebody else wrote has accepted or rejected it.</p>
 <p>Specification references: - HL7 UDAP Security STU 1: http://hl7.org/fhir/us/udap-security/STU1/ - TEFCA SOP Facilitated FHIR Implementation v2.0, effective 8 March 2026</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/udap</code></p>
-<h3 id="s25-74-v2fhir"><span class="num">25.74</span> v2fhir</h3>
+<h3 id="s25-75-v2fhir"><span class="num">25.75</span> v2fhir</h3>
 <p>Package v2fhir maps HL7 v2 messages to FHIR resources.</p>
 <p>Mapping is where interoperability projects actually fail, so the rules this package follows are stated rather than implied:</p>
 <ul>
 <li>A value that cannot be mapped is preserved as text, never guessed at. A local code turned into a plausible-looking standard code is worse than an uncoded value, because the receiver believes it. - Every mapping decision that involved judgement is reported as a note, so a human can check the ones that matter instead of reading the whole output. - Timestamps are converted, not copied. HL7 v2 timestamps are not ISO 8601, and a dateTime carrying a local time with no offset is the single most common reason a converted resource is rejected. - Units keep their original text and gain a UCUM code only when the mapping is certain. A wrong unit code is a patient-safety defect, not a formatting problem.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/v2fhir</code></p>
-<h3 id="s25-75-vcs"><span class="num">25.75</span> vcs</h3>
+<h3 id="s25-76-vcs"><span class="num">25.76</span> vcs</h3>
 <p>Package vcs reads the history of channel files from git.</p>
 <p>Channel history is a paid extension elsewhere, and it is a paid extension because those engines keep channels in a database, so tracking changes means building a change-tracking system. Perfuse keeps channels in files, so the history already exists and has since the first commit. This package only has to read it.</p>
 <p>It shells out to git rather than embedding a git library. The library would add a large dependency to a binary whose selling point is having four, and it would buy nothing: a deployment keeping its channels under version control has git installed, and one that does not gets a clear &#34;not a git repository&#34; rather than a subtly different implementation of the same thing.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vcs</code></p>
-<h3 id="s25-76-vfs"><span class="num">25.76</span> vfs</h3>
+<h3 id="s25-77-vfs"><span class="num">25.77</span> vfs</h3>
 <p>Package vfs is the small set of file operations a polling connector needs.</p>
 <h1 id="why-an-interface-rather-than-four-connectors">Why an interface rather than four connectors</h1>
 <p>Perfuse collects files from a local disk, an SFTP server, an FTP server, a Windows share and a WebDAV server. The transfer differs in every case. Everything that actually decides whether messages survive does not:</p>
@@ -5219,12 +5232,12 @@ destinations:
 <p>No writing, beyond what disposal needs. Sending files is a different problem with different failure modes - a partially written file at the far end, which the existing senders handle by writing to a temporary name and renaming. Folding both directions into one interface would make each harder to reason about.</p>
 <p>No recursion. A poller that descends into subdirectories collects the archive directory it just moved a file into.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vfs</code></p>
-<h3 id="s25-77-web"><span class="num">25.77</span> web</h3>
+<h3 id="s25-78-web"><span class="num">25.78</span> web</h3>
 <p>Package web serves the built front end from inside the binary.</p>
 <p>The assets are embedded rather than shipped alongside, so deployment stays one file. That is the same reason the engine avoids cgo: an operator should be able to copy a binary onto a server and run it, with no JVM, no installer and no asset directory to get out of step with the executable.</p>
 <p>The built output is committed so that <code>go build</code> works on a checkout without Node installed. Rebuild it with <code>make web</code>.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/web</code></p>
-<h3 id="s25-78-webauthn"><span class="num">25.78</span> webauthn</h3>
+<h3 id="s25-79-webauthn"><span class="num">25.79</span> webauthn</h3>
 <p>Package webauthn verifies passkeys.</p>
 <p>A passkey is a key pair the authenticator holds - Touch ID, Windows Hello, a YubiKey, a phone - where the private half never leaves the device. Signing in means the server sends a random challenge, the authenticator signs it after checking the user is present, and the server verifies the signature against the public key it stored at registration.</p>
 <p>The property that matters is not that it is convenient. It is that there is nothing to phish. A password can be typed into a convincing copy of a login page; a passkey signature is bound to the origin it was created for, so the copy gets a signature its server cannot use. For an integration engine holding a hospital&#39;s interfaces, that is the difference worth having.</p>
@@ -5234,12 +5247,12 @@ destinations:
 <li>The signing algorithm is fixed at registration and stored with the key. Nothing at sign-in reads an algorithm from the client, because that is algorithm confusion and there is no function here that could do it. - The origin is compared exactly, never by prefix or suffix. A check that accepts anything ending in the right domain accepts an attacker&#39;s subdomain. - A challenge is single-use and expires. It is deleted when consumed, so a captured assertion cannot be replayed. - Attestation is not trusted for anything. The attestation statement is parsed to extract the credential and then its signature is ignored, because verifying it properly needs a maintained root store and pretending to verify it is worse than not claiming to. - The sign count is checked when the authenticator provides one, and its absence is not treated as suspicious. Many authenticators legitimately leave it at zero.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/webauthn</code></p>
-<h3 id="s25-79-winservice"><span class="num">25.79</span> winservice</h3>
+<h3 id="s25-80-winservice"><span class="num">25.80</span> winservice</h3>
 <p>Package winservice runs Perfuse as a Windows service.</p>
 <p>This file is the everywhere-else half. It exists so that cmd/perfuse can call into this package without wrapping every call site in a build tag: the subcommand is always compiled, and on Linux or macOS it explains that services are a Windows idea rather than failing to exist.</p>
 <p>Refusing with a clear sentence is better than hiding the subcommand. Somebody following Windows instructions on the wrong machine gets told what is actually going on, and the equivalent for their platform.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/winservice</code></p>
-<h3 id="s25-80-x12"><span class="num">25.80</span> x12</h3>
+<h3 id="s25-81-x12"><span class="num">25.81</span> x12</h3>
 <p>Reading and writing values at a path.</p>
 <h1 id="why-this-is-separate-from-path">Why this is separate from Path</h1>
 <p>path.go decides what a path expression means. This file resolves one against an actual interchange. Kept apart because the parsing rules are worth reading without the byte handling, and because the parser is used by the configuration validator, which has no message to resolve against.</p>
@@ -5247,7 +5260,7 @@ destinations:
 <p>Segment.elements are subslices of Segment.raw, and Message.segs indexes into Message.raw. Editing a value in place changes the length of everything after it, so every one of those slices would need adjusting, and any that was missed would read correct until the one message where it did not.</p>
 <p>So a write rebuilds the segment, rebuilds the interchange, and parses it again. That costs a parse per changed message and buys the guarantee that a Message returned from here is exactly what parsing its own bytes produces. There is no state where the indexes and the bytes disagree, because that state is unrepresentable.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12</code></p>
-<h3 id="s25-81-x12xml"><span class="num">25.81</span> x12xml</h3>
+<h3 id="s25-82-x12xml"><span class="num">25.82</span> x12xml</h3>
 <p>Package x12xml converts an X12 interchange to and from the node tree the transformation, filter and script layers already work on.</p>
 <p>This is the same trick hl7xml plays, and for the same reason. Everything above the parser - declarative transformation steps, the filter language, JavaScript, the channel test runner - operates on an xtree.Node rather than on a format. Render X12 into that tree and all of it works on claims without a line of new code in any of those packages. Write a second addressing layer instead and every one of them grows an X12 branch that has to be kept in step with the HL7 one for ever.</p>
 <h1 id="element-naming">Element naming</h1>
@@ -5255,7 +5268,7 @@ destinations:
 <p>Two independent reasons point the same way. It is what every 837 and 835 implementation guide writes, so a person reading the guide and a person reading the tree see the same token. And it is what Mirth&#39;s own X12 serialiser produces, so a Mirth script that walks msg[&#39;CLM&#39;][&#39;CLM01&#39;] keeps working - which is the whole migration promise.</p>
 <p>The element number is always two digits, matching the guides, so CLM01 rather than CLM1. Composite components add a further dotted number, CLM05.1, because X12 composites are one level deep and there is nothing to collide with.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12xml</code></p>
-<h3 id="s25-82-xmldsig"><span class="num">25.82</span> xmldsig</h3>
+<h3 id="s25-83-xmldsig"><span class="num">25.83</span> xmldsig</h3>
 <p>Package xmldsig implements XML Digital Signatures and the XAdES profile of them.</p>
 <h1 id="why-this-is-written-rather-than-borrowed">Why this is written rather than borrowed</h1>
 <p>A signed clinical document is a legal artefact. It asserts that a named person, at a named time, took responsibility for a specific set of bytes. Getting that wrong in either direction is serious: a signature that cannot be verified makes a valid document look forged, and a verifier that is too generous accepts a document somebody altered.</p>
@@ -5265,7 +5278,7 @@ destinations:
 <h1 id="exclusive-rather-than-inclusive-by-default">Exclusive rather than inclusive, by default</h1>
 <p>Inclusive canonicalisation pulls in every namespace declaration that is in scope, including ones the signed element never uses. That makes a signature break when the document is later embedded inside something that declares an unrelated namespace on an ancestor, which is precisely what happens when a CDA is put inside a SOAP envelope or an IHE metadata wrapper. Exclusive canonicalisation includes only the declarations the element actually uses, and is what document exchange profiles specify for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xmldsig</code></p>
-<h3 id="s25-83-xtree"><span class="num">25.83</span> xtree</h3>
+<h3 id="s25-84-xtree"><span class="num">25.84</span> xtree</h3>
 <p>Package xtree is a mutable XML tree.</p>
 <p>Three very different features need to modify XML: HL7 transformations, which Mirth models as XML because that is what its scripts operate on; clinical documents, which are XML natively; and the declarative transformation steps. They share this one tree rather than each growing their own, because the alternative is three models that disagree about what an empty element means.</p>
 <p>The design goal is faithfulness to E4X semantics, since Mirth scripts are E4X and the whole point of running them unchanged is that they behave the same. That drives two decisions that would otherwise look strange: a node keeps a pointer to its parent, because E4X exposes parent(), and children are ordered with duplicates allowed, because an HL7 field repetition is literally a repeated element and scripts index into them by position.</p>

@@ -319,6 +319,8 @@ export default async function globalSetup() {
       // The CMS-0057 payer operations and bulk export, so the CMS-0057 view reports APIs that can actually answer rather than
       // only the "start it with" advice.
       "-fhir-payer-apis",
+      // The test server is plain HTTP on loopback, and the health links test reads back a link this server hosts.
+      "-shl-allow-http",
       "-fhir-bulk-export",
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },

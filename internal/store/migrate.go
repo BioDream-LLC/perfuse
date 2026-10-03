@@ -395,6 +395,29 @@ var migrations = []migration{
 		name:       "api-token-fhir-groups",
 		addColumns: []columnAdd{{"api_tokens", "fhir_groups", "TEXT NOT NULL DEFAULT ''"}},
 	},
+	{
+		// SMART Health Links this server hosts: the encrypted file and the rules for handing it out. The key is not here - it is in the
+		// link, which only the patient holds - so a copy of this table opens nothing.
+		name: "shl-links",
+		stmts: []string{
+			`CREATE TABLE IF NOT EXISTS shl_links (
+				id             TEXT PRIMARY KEY,
+				tenant_id      TEXT NOT NULL DEFAULT '',
+				label          TEXT NOT NULL DEFAULT '',
+				content_type   TEXT NOT NULL,
+				jwe            TEXT NOT NULL,
+				passcode_hash  TEXT NOT NULL DEFAULT '',
+				attempts_left  INTEGER NOT NULL DEFAULT 0,
+				expires_at     TEXT NOT NULL DEFAULT '',
+				created_by     TEXT NOT NULL DEFAULT '',
+				created_at     TEXT NOT NULL,
+				revoked_at     TEXT,
+				accesses       INTEGER NOT NULL DEFAULT 0,
+				last_recipient TEXT NOT NULL DEFAULT ''
+			)`,
+			`CREATE INDEX IF NOT EXISTS shl_links_tenant ON shl_links(tenant_id, created_at)`,
+		},
+	},
 }
 
 // applyMigrations runs whatever has not run yet.

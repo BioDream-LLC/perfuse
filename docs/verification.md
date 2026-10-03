@@ -144,6 +144,26 @@ The other direction: every live test of Perfuse's Mirth export now runs once per
 
 What this does not show: channels authored by hand in each Administrator, which may use settings the corpus does not; and plugins beyond those the images ship.
 
+## SMART Health Links and Cards, against kill-the-clipboard and the specification's examples
+
+**What was checked.**
+
+`scripts/shl-interop.sh` runs a Linux build of Perfuse beside vintasoftware's kill-the-clipboard TypeScript library, an independent
+implementation of SMART Health Links STU 1 and SMART Health Cards 1.4. The library's `SHLViewer` resolved a passcode-protected link
+Perfuse hosted - embedded, and by one-time location - and got the bundle back byte for byte; a wrong passcode raised the library's own
+`SHLInvalidPasscodeError`. The other way, the library built a link with `SHLManifestBuilder`, including a SMART Health Card it issued and
+signed, and Perfuse's `/api/shl/resolve` decrypted both files and decoded the card (not verified, correctly: its issuer was plain HTTP).
+
+The SMART Health Cards specification's own example card verifies against the example issuer's published key, from its JWS, its
+numeric QR form and its file form; altering one character of the payload stops it verifying (`internal/shl/testdata`, offline).
+
+The QR encoder is written here, so `scripts/qr-check.sh` decodes its output with zbar, an independent reader: 26 codes from 1 to 1,800
+bytes at both error correction levels, all read back exactly. The code on the share screen was photographed by the browser test and
+read by zbar too.
+
+What this does not show: a patient's phone app reading a Perfuse link over the internet, and verification against issuers in the VCI
+directory.
+
 ## Eligibility (270/271), claim status (276) and enrolment (834)
 
 **What was checked, and what could not be.**

@@ -52,7 +52,12 @@ func HashPassword(password string) (string, error) {
 	if len([]rune(password)) < MinPasswordLength {
 		return "", ErrPasswordTooShort
 	}
+	return hashSecret(password)
+}
 
+// hashSecret hashes without the account password policy: for a SMART Health Link passcode, which is short by nature - read out to a
+// patient - and is protected instead by allowing only a few attempts.
+func hashSecret(password string) (string, error) {
 	salt := make([]byte, saltLength)
 	if _, err := rand.Read(salt); err != nil {
 		return "", err

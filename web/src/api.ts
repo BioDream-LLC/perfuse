@@ -1396,6 +1396,16 @@ export const api = {
   buildAttachment: (input: AttachmentBuildInput) =>
     request<AttachmentBuildResult>('POST', '/api/x12/attachment/build', input),
 
+  /** createSHL hosts a file behind a new SMART Health Link. The link, which holds the key, is returned only this once. */
+  createSHL: (input: { label?: string; content: unknown; passcode?: string; expiresInDays?: number }) =>
+    request<SHLCreated>('POST', '/api/shl', input),
+  listSHL: () => request<{ links: SHLHosted[] }>('GET', '/api/shl'),
+  revokeSHL: (id: string) => request<{ status: string }>('DELETE', `/api/shl/${encodeURIComponent(id)}`),
+  /** resolveSHL fetches and decrypts what a link points at, and can deliver its FHIR content to a channel. */
+  resolveSHL: (input: { link: string; passcode?: string; recipient?: string; channel?: string }) =>
+    request<SHLResolved>('POST', '/api/shl/resolve', input),
+  /** verifySHC checks a SMART Health Card's signature against its issuer's published key. */
+  verifySHC: (text: string) => request<{ cards: HealthCard[] }>('POST', '/api/shc/verify', { text }),
   /** buildEligibility renders a 005010X279A1 270. Nothing is sent. */
   buildEligibility: (input: EligibilityRequest) => request<BuiltX12>('POST', '/api/x12/eligibility/build', input),
   /** readEligibility assembles a 271 and checks it against the CAQH CORE data content rule. */
@@ -2693,3 +2703,46 @@ export const sample271 = 'ISA*00*          *00*          *ZZ*PAYER01        *ZZ*
 
 /** A synthetic 834, for trying the reader. */
 export const sample834 = 'ISA*00*          *00*          *ZZ*SPONSOR        *ZZ*PAYER01        *261003*0931*^*00501*000000050*0*T*:~GS*BE*SPONSOR*PAYER01*20261003*0931*50*X*005010X220A1~ST*834*0050*005010X220A1~BGN*00*REF1*20261003*0931****2~N1*P5*Acme Manufacturing*FI*123456789~N1*IN*Springfield Health Plan*FI*987654321~INS*Y*18*021*28*A***FT~REF*0F*MBR123456~NM1*IL*1*DOE*JANE****34*123456789~DMG*D8*19800101*F~HD*021**HLT*GOLDPPO*FAM~DTP*348*D8*20261101~HD*021**DEN*DENTAL1*FAM~DTP*348*D8*20261101~INS*N*19*021*28*A~REF*0F*MBR123456~REF*23*MBR123456-02~NM1*IL*1*DOE*AMY~DMG*D8*20150505*F~HD*021**HLT*GOLDPPO*FAM~DTP*348*D8*20261101~INS*Y*18*024*07*A~REF*0F*MBR999~NM1*IL*1*ROE*RICHARD~HD*024**HLT*GOLDPPO*IND~DTP*349*D8*20260930~SE*25*0050~GE*1*50~IEA*1*000000050~'
+
+export interface SHLCreated {
+  id: string
+  link: string
+  qrSvg: string
+  expiresAt: string
+  warning: string
+  note: string
+}
+
+export interface SHLHosted {
+  id: string
+  label: string
+  contentType: string
+  hasPasscode: boolean
+  attemptsLeft: number
+  expiresAt?: string
+  createdBy: string
+  createdAt: string
+  revokedAt?: string
+  accesses: number
+  lastRecipient?: string
+}
+
+export interface HealthCard {
+  issuer: string
+  issuedAt: string
+  types: string[]
+  verified: boolean
+  problem?: string
+  bundle: unknown
+}
+
+export interface SHLResolved {
+  label?: string
+  files: {
+    contentType: string
+    summary: { resourceType?: string; counts: Record<string, number>; patient?: string; birthDate?: string }
+    content: string
+    cards?: HealthCard[]
+    routed?: string
+  }[]
+}

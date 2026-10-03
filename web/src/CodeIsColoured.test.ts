@@ -33,6 +33,7 @@ const allowedPlain: Record<string, string> = {
     'whose own hint says it is not markup. The code-bearing boxes in this file use CodeArea',
   'builderFields.tsx': 'the generic Area, used for prose fields. ScriptArea beside it carries the script slots',
   'Playground.tsx': 'the shared field here uses CodeArea; this entry covers nothing else in the file',
+  'HealthLinks.tsx': 'a SMART Health Link is one base64url token after shlink:/, with no structure to colour',
   'CodeArea.tsx': 'the implementation. The textarea underneath the coloured layer is the whole mechanism',
 }
 

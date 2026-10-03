@@ -1492,6 +1492,21 @@ Inspectors, like the attachment and prior authorisation ones: they build or read
 Built interchanges are read back and envelope-checked before they are returned, with any problem listed. The 277 that answers a 276 is
 read by the existing claim status reader.
 
+## SMART Health Links and Cards
+
+| Endpoint | |
+|---|---|
+| `POST /api/shl` | Host a file behind a new link: `{label?, content, contentType?, passcode?, expiresInDays?}`. `content` is a FHIR resource or a `.smart-health-card` file. Returns `{id, link, qrSvg, expiresAt}` - the link, which holds the key, only this once. Editor |
+| `GET /api/shl`, `DELETE /api/shl/{id}` | List hosted links (no keys - the server has none), and revoke one, which deletes its file. Editor |
+| `POST /shl/{id}` | The public manifest endpoint, unauthenticated as the specification requires: `{recipient, passcode?, embeddedLengthMax?}`. 401 with `remainingAttempts` for a wrong passcode; 404 once revoked, expired or out of attempts. CORS open |
+| `GET /shl/file/{ticket}` | A file by location, one use, valid a minute |
+| `POST /api/shl/resolve` | Read a link: `{link, passcode?, recipient?, channel?}`. Returns each file decrypted, a FHIR summary, verified cards, and - with `channel` - the delivery result. Editor |
+| `POST /api/shc/verify` | `{text}`: a numeric `shc:/` QR, a `.smart-health-card` file or a JWS. Viewer |
+
+`serve -public-url https://records.example.org` sets the address links point at (at most 80 characters, so the manifest URL fits 128).
+`-shl-allow-http` lets a received link use plain HTTP, for tests. Files are JWE `dir`/`A256GCM`, DEFLATE-compressed; cards ES256 with
+the issuer key from `<iss>/.well-known/jwks.json`, fetched only over https.
+
 ## Amazon Web Services: S3, SQS and SNS
 
 Five connectors, none of them using the AWS SDK: each is signed HTTP through one Signature Version 4 implementation

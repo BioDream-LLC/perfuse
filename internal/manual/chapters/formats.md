@@ -379,3 +379,23 @@ The cost is that nothing which depends on structure works — no field-level tra
 If the message is HL7 v2, use `hl7`, even if you only intend to forward it unchanged. Parsing gives you the trace, the field-level statistics, the ability to filter later and the ability to compare. `raw` on parseable content buys nothing and loses all of that.
 
 Use `raw` when parsing would fail or would be a lie about the content.
+
+## SMART Health Links and Cards
+
+CMS's *Kill the Clipboard* asks providers to accept a patient's records from a QR code at check-in, and to hand the visit record back the
+same way. The QR code holds a **SMART Health Link** (`shlink:/...`): an address, a 256-bit key and, optionally, a label, an expiry and a
+passcode flag. **Exchange → Health links** reads one.
+
+**Receiving.** Paste the link, or scan it with the camera where the browser can (Chrome and Edge). Perfuse fetches the manifest,
+decrypts each file with the key from the link, summarises any FHIR bundle - who the patient is, how many of each resource - and checks
+any **SMART Health Card** inside against its issuer's published key. *Deliver to the channel* hands the FHIR content to a channel as a
+message, which is how it reaches the EHR. The fetch is held to the egress policy at connect time, plain HTTP is refused, and the
+response of a server that is not a manifest server is never shown, because the address came from a stranger's QR code.
+
+**Sharing.** *Share* encrypts a FHIR bundle, hosts it, and shows the link and its QR code once. The server keeps the ciphertext and not
+the key - it cannot open what it hosts, and cannot show the link again. A passcode is hashed; ten wrong ones disable the link. Links
+expire after 30 days by default, can be revoked, and list how often and by whom they were fetched. Start the server with `-public-url`
+set to the https address patients' phones reach; the manifest URL it builds must fit the specification's 128 characters.
+
+**Verifying a card.** *Verify a card* takes a numeric `shc:/` QR (one chunk or several), a `.smart-health-card` file or a JWS, and
+says whether the signature matches the issuer's key.

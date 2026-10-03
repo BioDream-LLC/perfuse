@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/biodream-llc/perfuse/internal/tenant"
 )
@@ -253,4 +254,19 @@ func (sc *Scoped) CountUserSessions(ctx context.Context, userID int64) (int, err
 		 WHERE s.user_id = ? AND u.tenant_id = ?`, userID, string(sc.id)).Scan(&n)
 
 	return n, err
+}
+
+// CreateSHLink stores a SMART Health Link for this tenant.
+func (sc *Scoped) CreateSHLink(ctx context.Context, id, label, contentType, jwe, passcode string, expires *time.Time, by string) error {
+	return sc.store.createSHLinkIn(ctx, sc.id, id, label, contentType, jwe, passcode, expires, by)
+}
+
+// ListSHLinks lists this tenant's SMART Health Links.
+func (sc *Scoped) ListSHLinks(ctx context.Context) ([]SHLink, error) {
+	return sc.store.listSHLinksIn(ctx, sc.id)
+}
+
+// RevokeSHLink revokes one of this tenant's SMART Health Links.
+func (sc *Scoped) RevokeSHLink(ctx context.Context, id string) error {
+	return sc.store.revokeSHLinkIn(ctx, sc.id, id)
 }

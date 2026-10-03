@@ -1532,6 +1532,28 @@ export function IconLock(props: IconProps) {
   )
 }
 
+/** IconQR is a QR code: SMART Health Links and Cards. */
+export function IconQR(props: IconProps) {
+  return (
+    <SvgWrapper {...props}>
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-a`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#0ea5e9" />
+            </linearGradient>
+          </defs>
+          <rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke={`url(#${id}-a)`} strokeWidth="2" />
+          <rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke={`url(#${id}-a)`} strokeWidth="2" />
+          <rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke={`url(#${id}-a)`} strokeWidth="2" />
+          <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14h2" stroke={`url(#${id}-a)`} strokeWidth="2" strokeLinecap="round" fill="none" />
+        </>
+      )}
+    </SvgWrapper>
+  )
+}
+
 export function IconKey(props: IconProps) {
   return (
     <SvgWrapper {...props}>
@@ -1606,6 +1628,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Subscriptions': IconSend,
   'Documents': IconDocuments,
   'Claims & auth': IconBilling,
+  'Health links': IconQR,
   'Scripts': IconScripts,
   'Migrate': IconMigrate,
   'Contracts': IconContracts,
@@ -1766,6 +1789,12 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Start from a message somebody sent you': IconUpload,
   'Delivery time distribution': IconMetrics,
   'Come across from Mirth': IconMigrate,
+  'Receive a SMART Health Link': IconQR,
+  'Share a visit record': IconQR,
+  'Links this server hosts': IconQR,
+  'Verify a SMART Health Card': IconQR,
+  'For the patient': IconQR,
+  'Send it on': IconChannels,
   'Shared code': IconScripts,
   'What would this have done?': IconShadow,
   'Machine credentials': IconKey,

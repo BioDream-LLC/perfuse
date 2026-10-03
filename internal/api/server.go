@@ -208,6 +208,16 @@ type Server struct {
 	// view - once as this server and once as a peer - which reads as two machines and is one.
 	SelfURL string
 
+	// PublicURL is where patients' phones and other organisations reach this server, for the SMART Health Links it hosts. Defaults to
+	// SelfURL, which is right only when the two are the same machine name.
+	PublicURL string
+
+	// SHLAllowHTTP lets a received SMART Health Link point at plain HTTP. Off: only tests and a laboratory want it.
+	SHLAllowHTTP bool
+
+	// shlFiles holds one-time file locations for manifest responses.
+	shlFiles shlTickets
+
 	// TLSCertFile and TLSKeyFile are the server's own certificate and key, when it was started with them.
 	//
 	// Held as paths rather than as a loaded key pair so they can be read at the moment they are used. Signing is
@@ -273,6 +283,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /auth/saml/acs", s.handleSAMLACS)
 	mux.HandleFunc("GET /auth/callback", s.handleOIDCCallback)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
+
+	// SMART Health Links this server hosts. Unauthenticated by design, like the specification requires: the link is the credential -
+	// 256 random bits of id, and a key the server never had - and a passcode, when set, is checked and counted here.
+	mux.HandleFunc("POST /shl/{id}", s.handleSHLManifest)
+	mux.HandleFunc("OPTIONS /shl/{id}", s.handleSHLManifest)
+	mux.HandleFunc("GET /shl/file/{ticket}", s.handleSHLFile)
 
 	// Probes are unauthenticated. A kubelet has no credentials, and issuing it
 	// some would be a worse trade than disclosing that a process is running.
@@ -393,6 +409,12 @@ func (s *Server) Handler() http.Handler {
 	// is supplied, store nothing and send nothing, so viewer is the floor.
 	mux.Handle("POST /api/x12/attachment/build", s.require(store.RoleViewer, s.handleBuildAttachment))
 	mux.Handle("POST /api/x12/attachment/read", s.require(store.RoleViewer, s.handleReadAttachment))
+	mux.Handle("POST /api/shl", s.require(store.RoleEditor, s.handleCreateSHL))
+	mux.Handle("GET /api/shl", s.require(store.RoleEditor, s.handleListSHL))
+	mux.Handle("DELETE /api/shl/{id}", s.require(store.RoleEditor, s.handleRevokeSHL))
+	// Receiving is an editor's: it fetches from an address in a stranger's QR code and can deliver into a channel.
+	mux.Handle("POST /api/shl/resolve", s.require(store.RoleEditor, s.handleResolveSHL))
+	mux.Handle("POST /api/shc/verify", s.require(store.RoleViewer, s.handleVerifySHC))
 	mux.Handle("POST /api/x12/eligibility/build", s.require(store.RoleViewer, s.handleBuildEligibility))
 	mux.Handle("POST /api/x12/eligibility/read", s.require(store.RoleViewer, s.handleReadEligibility))
 	mux.Handle("POST /api/x12/claimstatus/build", s.require(store.RoleViewer, s.handleBuildClaimStatus))
@@ -1056,7 +1078,7 @@ func (s *Server) failErr(w http.ResponseWriter, r *http.Request, err error) {
 		// These three were missing too, and revoking a token that does not exist answered 500 "something went wrong" -
 		// found by hunt-api.spec.ts sending every route a name that exists nowhere. The store defines its not-found
 		// errors separately, so each one is a place this list can fall behind; TestEveryStoreErrorIsMapped now checks.
-		errors.Is(err, store.ErrTokenNotFound), errors.Is(err, store.ErrTenantNotFound),
+		errors.Is(err, store.ErrTokenNotFound), errors.Is(err, store.ErrTenantNotFound), errors.Is(err, store.ErrSHLNotFound),
 		errors.Is(err, store.ErrChallengeNotFound):
 		// msgstore.ErrNotFound was missing here, so a request for a message that does not exist answered 500 -
 		// "something went wrong" for an ordinary absent record. It matters more now that absence is also how
