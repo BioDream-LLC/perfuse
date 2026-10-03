@@ -21,12 +21,21 @@ import (
 
 // buildScripts assembles the scripts block.
 func (b *builder) buildScripts() string {
-	if len(b.scriptSteps) == 0 && len(b.scriptFilter) == 0 && !b.hasChannelScripts() {
+	if len(b.scriptSteps) == 0 && len(b.scriptFilter) == 0 && !b.hasChannelScripts() && len(b.opts.Includes) == 0 {
 		return ""
 	}
 
 	var out strings.Builder
 	fmt.Fprintln(&out, "\nscripts:")
+
+	// Mirth's code template libraries, as files every script on this channel can call into. Only the libraries Mirth had enabled for
+	// this channel, because that is what its scripts could see.
+	if len(b.opts.Includes) > 0 {
+		fmt.Fprintln(&out, "  include:")
+		for _, f := range b.opts.Includes {
+			fmt.Fprintf(&out, "    - %s\n", yamlString(f))
+		}
+	}
 
 	if len(b.scriptFilter) > 0 {
 		fmt.Fprintln(&out, "  filter: |")
@@ -74,10 +83,7 @@ func (b *builder) buildScripts() string {
 
 			script := step.Script
 			if step.Kind == mirth.StepMapper {
-				// A mapper carried over as a script is an assignment, which the export
-				// stores as the two halves rather than as code.
-				script = fmt.Sprintf("%s = %s;", step.Variable, strings.TrimSuffix(
-					strings.TrimSpace(step.Mapping), ";"))
+				script = mapperScript(step)
 			}
 			writeIndented(&out, script, "    ")
 			fmt.Fprintln(&out)
@@ -274,4 +280,40 @@ func writeIndented(w *strings.Builder, script, indent string) {
 		}
 		fmt.Fprintf(w, "%s%s\n", indent, line)
 	}
+}
+
+// mapperScript is what Mirth generates for a Mapper step whose target is a variable rather than a field.
+//
+// Mirth puts the value into the map the step's scope names - channelMap by default - and later steps read it back with $('name'). An
+// earlier version of this translator wrote a plain assignment instead, `mrn = ...`, which made a JavaScript global that $('mrn') never
+// sees: a channel calling its library with the mapped value then ran on an empty string. Found by running a channel that Mirth 4.5.2,
+// OIE and BridgeLink had each exported, end to end.
+func mapperScript(step mirth.Step) string {
+	target := strings.TrimSpace(step.Variable)
+	if strings.Contains(target, "[") {
+		// A message path, such as tmp['PID']['PID.5']: an assignment is exactly right.
+		return fmt.Sprintf("%s = %s;", target, strings.TrimSuffix(strings.TrimSpace(step.Mapping), ";"))
+	}
+
+	m := map[string]string{
+		"CONNECTOR":      "connectorMap",
+		"GLOBAL_CHANNEL": "globalChannelMap",
+		"GLOBAL":         "globalMap",
+		"RESPONSE":       "responseMap",
+	}[strings.ToUpper(strings.TrimSpace(step.Scope))]
+	if m == "" {
+		m = "channelMap"
+	}
+
+	expr := strings.TrimSuffix(strings.TrimSpace(step.Mapping), ";")
+	def := strconvQuote(step.DefaultValue)
+	return fmt.Sprintf("var mapping;\ntry { mapping = %s; } catch (e) { mapping = ''; }\n"+
+		"%s.put(%s, (mapping === undefined || mapping === null || String(mapping).length === 0) ? %s : mapping);",
+		expr, m, strconvQuote(target), def)
+}
+
+// strconvQuote writes a JavaScript single-quoted string.
+func strconvQuote(s string) string {
+	r := strings.NewReplacer(`\`, `\\`, `'`, `\'`, "\n", `\n`, "\r", `\r`)
+	return "'" + r.Replace(s) + "'"
 }

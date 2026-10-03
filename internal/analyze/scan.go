@@ -177,39 +177,31 @@ type transportInfo struct {
 // transportSupport records which connectors Perfuse can carry. Anything absent
 // is reported as unrecognised rather than assumed to work.
 var transportSupport = map[string]transportInfo{
-	// Supported.
-	"TcpReceiverProperties":    {},
-	"TcpDispatcherProperties":  {},
-	"HttpReceiverProperties":   {},
-	"HttpDispatcherProperties": {},
-	"FileReceiverProperties":   {},
-	"FileDispatcherProperties": {},
-	"VmReceiverProperties":     {},
-	"VmDispatcherProperties":   {},
+	// Supported: perfuse translate converts each of these. Kept in step with internal/translate, which a test checks against the
+	// corpus Mirth, OIE and BridgeLink wrote; the class names are what those engines write, DICOM in capitals included.
+	"TcpReceiverProperties":          {},
+	"TcpDispatcherProperties":        {},
+	"HttpReceiverProperties":         {},
+	"HttpDispatcherProperties":       {},
+	"FileReceiverProperties":         {},
+	"FileDispatcherProperties":       {},
+	"VmReceiverProperties":           {},
+	"VmDispatcherProperties":         {},
+	"DatabaseReceiverProperties":     {},
+	"DatabaseDispatcherProperties":   {},
+	"SmtpDispatcherProperties":       {},
+	"WebServiceReceiverProperties":   {},
+	"WebServiceDispatcherProperties": {},
+	"DICOMReceiverProperties":        {},
+	"DICOMDispatcherProperties":      {},
+	"JavaScriptReceiverProperties":   {},
+	"JavaScriptDispatcherProperties": {},
 
 	// Not implemented.
-	"DatabaseReceiverProperties": {blocker: true,
-		why: "Polls a database for work. Needs a database connector and a driver decision."},
-	"DatabaseDispatcherProperties": {blocker: true,
-		why: "Writes to a database. Needs a database connector and a driver decision."},
 	"JmsReceiverProperties":   {blocker: true, why: "Needs a JMS client."},
 	"JmsDispatcherProperties": {blocker: true, why: "Needs a JMS client."},
-	"SmtpDispatcherProperties": {blocker: true,
-		why: "Sends email. Straightforward to add, but not present."},
-	"WebServiceSenderProperties": {blocker: true,
-		why: "SOAP. Needs WSDL handling."},
-	"WebServiceReceiverProperties": {blocker: true,
-		why: "SOAP endpoint. Needs WSDL handling."},
-	"DicomReceiverProperties": {blocker: true,
-		why: "DICOM is a different protocol stack entirely."},
-	"DicomDispatcherProperties": {blocker: true,
-		why: "DICOM is a different protocol stack entirely."},
-	"JavaScriptReceiverProperties": {blocker: true,
-		why: "The source is an arbitrary script rather than a transport, so what it connects to is only discoverable by reading the code."},
-	"JavaScriptDispatcherProperties": {blocker: true,
-		why: "The destination is an arbitrary script rather than a transport."},
 	"DocumentDispatcherProperties": {blocker: true,
-		why: "Renders PDF or RTF. Needs a document renderer."},
+		why: "Renders PDF or RTF. Perfuse has a document destination, but the translator does not convert Mirth's templates to it."},
 }
 
 // describeTransport builds a one-line description of where a connector actually
@@ -254,7 +246,7 @@ func endpointOf(c mirth.Connector) string {
 			return "path " + path
 		}
 	case "HttpDispatcherProperties":
-		if u := get("url"); u != "" {
+		if u := get("host", "url"); u != "" {
 			return u
 		}
 	case "FileReceiverProperties":

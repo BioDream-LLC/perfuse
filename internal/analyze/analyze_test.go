@@ -174,24 +174,24 @@ func TestTrivialScriptsAreNotFindings(t *testing.T) {
 
 func TestUnsupportedTransportIsBlocker(t *testing.T) {
 	c := &mirth.Channel{
-		Name: "db poller",
+		Name: "jms consumer",
+		// JMS, because Perfuse has no JMS client. A Database Reader was the example until the translator learnt to convert it.
 		Source: mirth.Connector{
 			Mode:            mirth.ModeSource,
 			Enabled:         true,
-			Transport:       "Database Reader",
-			PropertiesClass: "com.mirth.connect.connectors.jdbc.DatabaseReceiverProperties",
-			Properties:      map[string]string{"url": "jdbc:postgresql://db.invalid/lab"},
+			Transport:       "JMS Listener",
+			PropertiesClass: "com.mirth.connect.connectors.jms.JmsReceiverProperties",
 		},
 		Properties: mirth.ChannelProperties{MessageStorageMode: "DISABLED"},
 	}
 	f, ok := codes(Channel(c))["TRANSPORT_UNSUPPORTED"]
 	if !ok {
-		t.Fatal("missing TRANSPORT_UNSUPPORTED for a Database Reader source")
+		t.Fatal("missing TRANSPORT_UNSUPPORTED for a JMS Listener source")
 	}
 	if f.Severity != Blocker {
 		t.Errorf("severity = %q, want %q", f.Severity, Blocker)
 	}
-	if !strings.Contains(f.What, "Database Reader") {
+	if !strings.Contains(f.What, "JMS Listener") {
 		t.Errorf("finding does not name the transport: %q", f.What)
 	}
 }

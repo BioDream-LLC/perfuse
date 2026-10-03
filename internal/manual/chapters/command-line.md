@@ -40,13 +40,17 @@ These three are the ones to run first, before deciding anything. See [migration]
 
 ### perfuse explain
 
-Reads Mirth channel exports and describes what each channel does and what would block a migration. It changes nothing and needs no Perfuse installation, which makes it the cheapest possible first step: point it at an export of your estate and read what comes back.
+Reads Mirth, Open Integration Engine and BridgeLink exports — a channel, a channel group or a whole server backup — and describes what each channel does and what would block a migration. It changes nothing and needs no Perfuse installation, which makes it the cheapest possible first step: point it at an export of your estate and read what comes back.
 
 `-strict` exits non-zero if anything is blocked, so it can gate a pipeline. `-json` emits the same findings for a machine.
 
 ### perfuse translate
 
-Converts Mirth channel exports into Perfuse channel files.
+Converts Mirth, Open Integration Engine and BridgeLink exports into Perfuse channel files: one channel, a channel group, a code template export or a whole server backup.
+
+    perfuse translate -o ./channels server-backup.xml
+
+Code template libraries are written to `lib/` beside the channels, and each channel Mirth had a library enabled for includes it. See [migration](#migration-from-mirth).
 
 Nothing is silently dropped. Every part of a channel is either translated, carried across as a script that runs unchanged, or reported as needing a human. The third category is the honest one — a translator that produced a clean-looking file for every input would be hiding the decisions you most need to make.
 

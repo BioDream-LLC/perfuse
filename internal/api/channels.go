@@ -147,9 +147,13 @@ func (r *ChannelRepo) RawYAML(name string) ([]byte, error) {
 // Validate parses and checks a definition without saving it, so the front end can
 // tell someone what is wrong before they commit to it.
 func (r *ChannelRepo) Validate(raw []byte) (*config.Channel, error) {
-	c, err := config.Load(strings.NewReader(string(raw)), "(unsaved)")
+	// Named as if it were already in the channel directory, so scripts.include resolves against the files beside the channels rather
+	// than against wherever the server was started.
+	at := filepath.Join(r.Dir, "(unsaved)")
+	c, err := config.Load(strings.NewReader(string(raw)), at)
 	if err != nil {
-		return nil, &ValidationFailure{Problems: splitProblems(err)}
+		// The directory is the server's, not something the person editing needs - or should be shown.
+		return nil, &ValidationFailure{Problems: splitProblems(errors.New(strings.ReplaceAll(err.Error(), at, "(unsaved)")))}
 	}
 	return c, nil
 }
@@ -639,4 +643,32 @@ func splitProblems(err error) []string {
 		out = []string{err.Error()}
 	}
 	return out
+}
+
+// ErrBadLibraryPath means a library file was named outside lib/ or without a .js or .lua extension.
+var ErrBadLibraryPath = errors.New("a script library is written as lib/<name>.js or lib/<name>.lua, beside the channels")
+
+// WriteLibrary writes a shared script file that channels include, such as a Mirth code template library carried across.
+//
+// Only lib/<name>.js or .lua: the caller is an editor, and a path they choose must not reach a channel file, the database or anything
+// outside this directory. Overwriting is allowed, because importing the same backup twice should converge rather than fail.
+func (r *ChannelRepo) WriteLibrary(file string, source []byte) (string, error) {
+	clean := filepath.ToSlash(filepath.Clean(file))
+	dir, base := filepath.Split(clean)
+	ext := strings.ToLower(filepath.Ext(base))
+	if dir != "lib/" || (ext != ".js" && ext != ".lua") || strings.TrimSuffix(base, ext) == "" ||
+		strings.ContainsAny(base, `\:`) || strings.HasPrefix(base, ".") {
+		return "", ErrBadLibraryPath
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if err := os.MkdirAll(filepath.Join(r.Dir, "lib"), 0o750); err != nil {
+		return "", err
+	}
+	if err := writeFileAtomic(filepath.Join(r.Dir, "lib", base), source); err != nil {
+		return "", err
+	}
+	return "lib/" + base, nil
 }

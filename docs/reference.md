@@ -28,8 +28,9 @@ installer, no separate asset directory.
 - **Shadow mode** runs a candidate version of a channel beside the live one on real
   traffic and shows exactly where they differ, without delivering anything. See
   [Shadow mode](#shadow-mode).
-- **`perfuse translate`** converts Mirth channels into Perfuse channels, not just a
-  report on them. **`perfuse test`** runs tests against a channel. **`perfuse
+- **`perfuse translate`** converts Mirth, Open Integration Engine and BridgeLink
+  exports into Perfuse channels, not just a report on them: a channel, a channel
+  group, a code template export or a whole server backup. **`perfuse test`** runs tests against a channel. **`perfuse
   generate`** makes synthetic traffic to point one at.
 - **`perfuse run`** runs channels headless. **`perfuse check`** validates them.
   **`perfuse explain`** reads Mirth channel exports and says what blocks a
@@ -186,7 +187,24 @@ perfuse explain path/to/channel.xml       # one channel
 perfuse explain path/to/channels/         # a directory, walked for *.xml
 perfuse explain -json channels/           # machine-readable
 perfuse explain -strict -quiet channels/  # summary only, exit 1 if anything is blocked
+perfuse explain server-backup.xml         # a whole server backup, a channel group or a channel
 ```
+
+Every export kind Mirth, the Open Integration Engine and BridgeLink write is read: `<channel>`, a `<list>` of
+channels, `<channelGroup>`, a code template library export, and `<serverConfiguration>` (Backup Config).
+
+### translate
+
+```sh
+perfuse translate -o channels/ server-backup.xml
+```
+
+Writes one YAML file per channel, plus `lib/<library>.js` for each code template library. Each channel the library
+was enabled for in Mirth gets `scripts.include: [lib/<library>.js]`; drag-and-drop snippets are not written. Channels
+keep their group, and a Channel Writer becomes a `channel` destination naming its target when the target is in the
+same export. In the browser, **Administer → Migrate** does the same, and `POST /api/mirth/libraries`
+(`{"file": "lib/x.js", "source": "..."}`, editor) saves a library beside the channels; only `lib/<name>.js` or `.lua`
+is accepted.
 
 Real output, from the synthetic channel in `internal/mirth/testdata`:
 

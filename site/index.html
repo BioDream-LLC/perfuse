@@ -280,8 +280,9 @@
 <h2>Try it against your own traffic without asking anyone</h2>
 
 <p>
-  Coming from Mirth? <a href="mirth-connect-alternative/">The migration guide covers E4X, what converts and
-  what refuses</a>.
+  Coming from Mirth, the Open Integration Engine or BridgeLink? <a href="mirth-connect-alternative/">The migration guide
+  covers E4X, what converts and what refuses</a>. A whole server backup comes across at once, code template libraries and
+  channel groups included.
 </p>
 
 <p>
@@ -292,10 +293,10 @@
 </p>
 
 <pre><code><span class="c"># 1. What would stop you, before you commit to anything</span>
-perfuse explain mirth-channel-export.xml
+perfuse explain server-backup.xml
 
-<span class="c"># 2. Convert it</span>
-perfuse translate mirth-channel-export.xml -o channels/
+<span class="c"># 2. Convert it: a channel, a group or a whole backup, code template libraries included</span>
+perfuse translate server-backup.xml -o channels/
 
 <span class="c"># 3. Run it beside Mirth on real traffic, delivering nothing to anyone</span>
 perfuse run channels/labs.yaml
@@ -392,7 +393,8 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
 
 <p>
   Interoperability claims are cheap. Perfuse's SAML was tested against real Keycloak and real Microsoft Entra,
-  its Mirth import against a real Mirth Connect export, its FHIR output against HAPI, and its DICOM against
+  its Mirth import against exports that Mirth 4.5.2, the Open Integration Engine 4.5.2 and 4.6.0 and BridgeLink
+  26.9.0 each wrote themselves, its FHIR output against HAPI, and its DICOM against
   Orthanc. Two of those found defects in the other party.
 </p>
 

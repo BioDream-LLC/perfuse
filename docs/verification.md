@@ -124,6 +124,26 @@ contracts, shadow comparisons, attachment extraction and mapping tables have now
 format, and each is listed before the file is offered. A destination type that cannot be honoured is
 refused by name rather than replaced with something close.
 
+## The Mirth family: Mirth 4.5.2, OIE 4.5.2 and 4.6.0, BridgeLink 26.9.0
+
+**What was found: four defects in the importer, and three whole document kinds it could not read at all.**
+
+Mirth Connect went commercial-only at 4.6 (March 2025). A site leaving it starts from Mirth 4.5.2, the Open Integration Engine (the Eclipse-hosted fork) or BridgeLink (Innovar's fork), so the importer and exporter were run against all of them: Mirth 4.5.2 (`nextgenhealthcare/connect`), OIE 4.5.2 (`openintegrationengine/engine`), OIE 4.6.0 (built from the project's signed release tarball, checksum verified, since it publishes no 4.6 image) and BridgeLink 26.9.0 (`innovarhealthcare/bridgelink`).
+
+The corpus is written by the engines, not here. `scripts/mirth-engine-corpus.sh` compiles `BuildCorpus.java` against each engine's own jars and has its own `ObjectXMLSerializer` write three channels (MLLP with a mapper, a script calling a code template library, a rule-builder filter and two destinations; HTTP into a database; a file poll out over MLLP), a code template library and a channel group. It loads them into the running engine, checks none was stored as invalid, and downloads the engine's own server backup. The four sets are committed under `internal/mirth/testdata/engines/` and checked on every build without any engine running.
+
+Found:
+
+- **Server backups, channel group exports and code template exports could not be read** — the importer accepted only `<channel>` and a list of them. A channel calling a site library imported cleanly and would have failed on its first message with an undefined function. All three are now read, and each library becomes `lib/<name>.js`, included by exactly the channels Mirth had it enabled for.
+- **HTTP Listener and File Reader sources were refused** as "only MLLP listeners are supported", long after Perfuse had both. JavaScript, DICOM, Web Service and raw TCP sources, and SMTP, JavaScript, DICOM, Web Service, raw TCP and Channel Writer destinations, translate now too. `perfuse explain` had its own stale table calling the Database and DICOM connectors unsupported; a test now holds it to agree with `translate` on every engine's channels.
+- **An HTTP Sender's URL was read from `url`**, a field none of the four engines writes; they all use `host`.
+- **Mirth's socket `bufferSize` (65536) was translated as `max_message_size`**, so every message over 64 KB would have been refused.
+- **A Mapper step's variable became a JavaScript global.** Mirth puts it into `channelMap`, where `$('mrn')` reads it; the translated script ran the library on an empty string. Found only by running the translated channel: `TestEveryEnginesADTChannelRunsWithItsLibrary` sends an ADT and an ORU to each engine's translated channel and checks the record number was padded by the library and the ORU filtered.
+
+The other direction: every live test of Perfuse's Mirth export now runs once per engine (`internal/mirth/mirthlive`). Channels Perfuse exports, ten transport pairs among them, load in all four without being marked invalid. BridgeLink stamps its own version (`26.9.0`) on everything it writes; nothing in Perfuse depended on the version being 4.x.
+
+What this does not show: channels authored by hand in each Administrator, which may use settings the corpus does not; and plugins beyond those the images ship.
+
 ## FHIR, against HAPI FHIR
 
 **What was found: the converter was fabricating an identifier system, and HAPI did not object to it.**

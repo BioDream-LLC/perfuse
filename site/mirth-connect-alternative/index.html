@@ -210,10 +210,10 @@
 <h2>Migrating a channel</h2>
 
 <pre><code><span class="c"># 1. What would stop you, before you commit to anything</span>
-perfuse explain mirth-channel-export.xml
+perfuse explain server-backup.xml
 
-<span class="c"># 2. Convert it</span>
-perfuse translate mirth-channel-export.xml -o channels/
+<span class="c"># 2. Convert it: a channel, a group or a whole backup, code template libraries included</span>
+perfuse translate server-backup.xml -o channels/
 
 <span class="c"># 3. Test it against sample messages</span>
 perfuse test channels/labs.yaml
@@ -277,12 +277,33 @@ destinations:
   <code>-strict</code> exits non-zero unless the two are identical, which makes it usable in a pipeline.
 </p>
 
+<h3>Whole servers, and the forks</h3>
+
+<p>
+  A migration rarely starts from one channel. <code>perfuse translate</code> reads every export these engines write:
+  a channel, a channel group, a code template export, and the whole-server backup. Each <b>code template library</b>
+  becomes one script file, and every channel Mirth had it enabled for includes it, so a transformer calling your site's
+  shared functions still finds them. Channels keep their groups.
+</p>
+
+<p>
+  Sites that moved to the <b>Open Integration Engine</b> or <b>BridgeLink</b> instead of paying for Mirth 4.6 come
+  across the same way. Mirth 4.5.2, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0 each wrote their own test exports, and
+  every build of Perfuse translates them, loads them and runs them. Channels Perfuse exports load in all four.
+</p>
+
 <h2>Questions</h2>
 
 <details>
   <summary>Is it a drop-in replacement?</summary>
   <p>No, and nothing honestly is. It converts your channel exports, runs your JavaScript including E4X, and
     tells you by name what it cannot carry across. That is as close as an honest answer gets.</p>
+</details>
+
+<details>
+  <summary>We moved to the Open Integration Engine or BridgeLink. Does this still apply?</summary>
+  <p>Yes. Both are forks of Mirth 4.5.2 and write the same export formats. Perfuse is tested against OIE 4.5.2 and
+    4.6.0 and BridgeLink 26.9.0 in both directions: their exports import here, and Perfuse's exports load there.</p>
 </details>
 
 <details>

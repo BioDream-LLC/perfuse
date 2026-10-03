@@ -77,6 +77,28 @@ start keycloak -p 8080:8080 \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
   quay.io/keycloak/keycloak:26.0 start-dev
 
+# The Mirth family: where a site leaving Mirth goes. Mirth 4.5.2 is the last open-source release; the Open Integration Engine (the
+# Eclipse fork) and BridgeLink (Innovar's fork) continue it. OIE publishes images only up to 4.5.2, so 4.6.0 is built locally from
+# the project's signed release tarball, with its checksum verified first. OIE's image is amd64 only and runs emulated on Apple silicon.
+echo "== the Mirth family"
+start mirth -p 8443:8443 nextgenhealthcare/connect:4.5.2
+start oie452 --platform linux/amd64 -p 8444:8443 openintegrationengine/engine:latest
+start bridgelink -p 8445:8443 innovarhealthcare/bridgelink:latest
+if ! docker image inspect perfuse-local/oie:4.6.0 >/dev/null 2>&1; then
+  oie="$HOME/.cache/perfuse-oie"
+  mkdir -p "$oie"
+  (
+    cd "$oie"
+    curl -sSLO https://github.com/OpenIntegrationEngine/engine/releases/download/v4.6.0/oie_unix_4_6_0.tar.gz
+    curl -sSLO https://github.com/OpenIntegrationEngine/engine/releases/download/v4.6.0/sha256sums
+    grep oie_unix_4_6_0.tar.gz sha256sums | shasum -a 256 -c -
+    rm -rf oie && tar xzf oie_unix_4_6_0.tar.gz
+    printf 'FROM eclipse-temurin:17-jdk\nCOPY oie /opt/oie\nWORKDIR /opt/oie\nENV INSTALL4J_JAVA_HOME_OVERRIDE=/opt/java/openjdk\nEXPOSE 8443\nCMD ["./oieserver"]\n' >Dockerfile
+    docker build -q -t perfuse-local/oie:4.6.0 . >/dev/null
+  )
+fi
+start oie460 -p 8446:8443 perfuse-local/oie:4.6.0
+
 echo
 echo "waiting for HAPI, which is the slow one"
 for _ in $(seq 1 120); do
@@ -94,12 +116,13 @@ Ready. What each one unlocks:
   Orthanc PACS    go test ./internal/engine/ -run 'RealPACS|CalledAE' -v
   PostgreSQL      go test ./internal/engine/ -run 'RealPostgres|Placeholder' -v
   OpenSSH SFTP    go test ./internal/engine/ -run 'OpenSSHServer|SFTPRefusesAWrong' -v
-  Mirth 4.5.2     ./scripts/mirth-author-channel.sh   then   go test ./internal/mirth/ -run RealMirth -v
+  Mirth, OIE,     go test ./internal/mirth/... ./internal/tomirth/ -v    (each test runs once per engine)
+  BridgeLink      ./scripts/mirth-engine-corpus.sh    regenerates internal/mirth/testdata/engines from all four
   Keycloak        scripts/keycloak-saml-setup.sh && scripts/saml-verify-serve.sh
                   then: cd web && npx playwright test --config playwright-saml.config.ts
 
 Every one of those tests skips rather than fails when its container is absent, so `make check` passes on a
 machine with no Docker. That is deliberate: a check that needs Docker is a check people stop running.
 
-Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak
+Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460
 MSG

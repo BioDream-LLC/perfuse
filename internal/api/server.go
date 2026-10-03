@@ -309,6 +309,7 @@ func (s *Server) Handler() http.Handler {
 	// Editor: it compiles the channel to prove the round trip is faithful, exactly as validate does.
 	mux.Handle("POST /api/channels/parse", s.require(store.RoleEditor, s.handleParseChannel))
 	mux.Handle("POST /api/mirth/import", s.require(store.RoleEditor, s.handleImportMirth))
+	mux.Handle("POST /api/mirth/libraries", s.require(store.RoleEditor, s.handleWriteLibrary))
 	mux.Handle("POST /api/mapper/suggest", s.require(store.RoleEditor, s.handleMapperSuggest))
 	mux.Handle("POST /api/profiles/export", s.require(store.RoleViewer, s.handleProfileExport))
 	mux.Handle("POST /api/profiles/import", s.require(store.RoleViewer, s.handleProfileImport))

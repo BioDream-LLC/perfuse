@@ -223,12 +223,13 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/mirth.svg" width="168" height="40" alt="Leaving Mirth"></th><th align="left" valign="middle">Both directions, verified against a real Mirth</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/mirth.svg" width="168" height="40" alt="Leaving Mirth"></th><th align="left" valign="middle">Both directions, verified against Mirth 4.5.2, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>Existing Mirth JavaScript runs unchanged</b> — E4X, <code>msg['PID']['PID.5']['PID.5.1']</code>, <code>for each</code>, XML literals, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, <code>SerializerFactory</code></td></tr>
 <tr><td colspan="2"><code>perfuse explain</code> reads a Mirth channel export and says <b>by name</b> what converts, what converts with caveats, and what does not convert at all — before you commit to anything</td></tr>
-<tr><td colspan="2"><code>perfuse translate</code> converts the export into Perfuse channels, not a report about them</td></tr>
-<tr><td colspan="2"><b>And you can export back.</b> A channel built here can be written as a Mirth channel file, and <b>a real Mirth server accepts it.</b> Ten transport pairs verified by importing into a running Mirth</td></tr>
+<tr><td colspan="2"><code>perfuse translate</code> converts the export into Perfuse channels, not a report about them — <b>a channel, a channel group, a code template export or a whole server backup</b>. Code template libraries come across as script files the channels that used them include</td></tr>
+<tr><td colspan="2">Works the same for the <b>Open Integration Engine</b> and <b>BridgeLink</b>, the open-source forks of Mirth. Each engine wrote its own test corpus, and every build translates and runs it</td></tr>
+<tr><td colspan="2"><b>And you can export back.</b> A channel built here can be written as a Mirth channel file, and <b>Mirth, OIE and BridgeLink all accept it.</b> Ten transport pairs verified by importing into each running engine</td></tr>
 <tr><td colspan="2">What cannot convert is <b>refused by name rather than approximated</b>. Filters, transformations, contracts and shadow comparisons have nowhere to live in Mirth's format, and each is listed before the file is offered</td></tr>
 <tr><td colspan="2">A <b>lock-in audit</b> of Java dependencies in your existing channels, so you know what is holding you in place</td></tr>
 </tbody></table>
@@ -409,7 +410,9 @@ Perfuse is a way out that does not require a rewrite:
 - **Your Mirth JavaScript runs unchanged**, E4X and all — `msg['PID']['PID.5']['PID.5.1']`, `for each`,
   XML literals, `channelMap`, `$()`, `DateUtil`, `SerializerFactory`
 - **`perfuse translate` converts Mirth channel exports into Perfuse channels**, not just a report saying
-  what it found
+  what it found — a whole server backup at once, code template libraries and channel groups included
+- **The same for the forks.** Sites that moved to the Open Integration Engine or BridgeLink rather than
+  pay can come across the same way; both are tested
 - **`perfuse explain`** reads a Mirth export and says plainly what would block a migration, before you
   start
 - **Shadow mode** runs the converted channel beside the original on real traffic and shows exactly where
@@ -432,6 +435,7 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | Verified against | What it proved |
 |---|---|
 | **Mirth Connect 4.5.2** (real server) | Channels Perfuse exports are accepted and deploy. Found four faults the exporter's own nine passing tests could not see — Mirth stores an invalid channel and *returns success* |
+| **Open Integration Engine 4.5.2 and 4.6.0, BridgeLink 26.9.0** (real servers) | Each wrote its own channels, code template library, group and server backup; every one translates, loads and runs. Found four importer defects, among them a Mapper variable that never reached the script reading it |
 | **Keycloak 26** | SAML sign-in end to end. Found a signature-canonicalisation defect a thousand self-written tests had missed |
 | **Microsoft Entra ID** (real tenant) | SAML sign-in with a real Microsoft account, including an interactive browser sign-in. Found five behaviours no reading of the specification predicts |
 | **HAPI FHIR** | FHIR resources Perfuse produces validate in an independent server |
@@ -452,10 +456,10 @@ the specification, the real behaviour won and a fixture recording it was committ
 
 ```sh
 # 1. What would stop you, before you commit to anything
-perfuse explain mirth-channel-export.xml
+perfuse explain server-backup.xml          # Mirth, OIE or BridgeLink; a channel, group or whole backup
 
-# 2. Convert it
-perfuse translate mirth-channel-export.xml -o channels/
+# 2. Convert it, code template libraries included
+perfuse translate server-backup.xml -o channels/
 
 # 3. Test it against sample messages
 perfuse test channels/labs.yaml

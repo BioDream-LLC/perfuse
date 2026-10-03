@@ -117,8 +117,9 @@ func TestChannelsNeedingAttentionComeFirst(t *testing.T) {
         <remoteAddress>10.0.0.5</remoteAddress>
         <remotePort>7001</remotePort>
       </properties>`,
-		`<properties class="com.mirth.connect.connectors.dimse.DICOMDispatcherProperties" version="4.5.2">
-        <host>10.0.0.9</host>
+		// JMS, because the translator does not convert it; DICOM was used here until it did.
+		`<properties class="com.mirth.connect.connectors.jms.JmsDispatcherProperties" version="4.5.2">
+        <template>${message.encodedData}</template>
       </properties>`, 1)
 
 	xml := `<list>` + mirthChannel("aaa-clean") + broken + `</list>`

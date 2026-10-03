@@ -67,10 +67,28 @@ type Summary = {
   scriptedSteps: number
 }
 
+/** A Mirth code template library, carried across as one script file the channels that used it include. */
+type Library = {
+  name: string
+  file: string
+  source: string
+  functions: number
+  skipped: number
+  channels: string[]
+}
+
 type ImportResult = {
   channels: Imported[]
   summary: Summary
   failed: string[]
+  /** What was read: a channel, a server backup, a channel group, code template libraries. */
+  kind: string
+  /** The version of the engine that wrote it: Mirth 4.5.2, OIE 4.6.0, BridgeLink 26.9.0. */
+  version?: string
+  libraries: Library[]
+  groups: string[]
+  /** About the export as a whole, such as server-wide scripts with nowhere to go. */
+  notes: Note[]
 }
 
 /** Colours are shared with the rest of the UI so green means the same thing everywhere. */
@@ -103,6 +121,7 @@ export function MirthMigration() {
   const [open, setOpen] = useState<Record<string, boolean>>({})
 
   const [saved, setSaved] = useState<Record<string, string>>({})
+  const [libsSaved, setLibsSaved] = useState<Record<string, string>>({})
 
   async function analyse(text: string) {
     setBusy(true)
@@ -140,8 +159,27 @@ export function MirthMigration() {
     void analyse(joined)
   }
 
+  /** Writes a library unless it already has been. A channel that includes one is refused until the file exists. */
+  async function saveLibrary(l: Library): Promise<boolean> {
+    if (libsSaved[l.file] === 'saved') return true
+    try {
+      await api.writeMirthLibrary(l.file, l.source)
+      setLibsSaved((s) => ({ ...s, [l.file]: 'saved' }))
+      return true
+    } catch (e) {
+      setLibsSaved((s) => ({ ...s, [l.file]: e instanceof Error ? e.message : String(e) }))
+      return false
+    }
+  }
+
   async function importOne(c: Imported) {
     try {
+      // Its libraries first, so the include it names is there when the channel is validated.
+      for (const l of result?.libraries ?? []) {
+        if (l.channels.includes(c.name) && !(await saveLibrary(l))) {
+          throw new Error(`the library ${l.file} it includes could not be saved`)
+        }
+      }
       await api.createChannel(c.yaml)
       setSaved((s) => ({ ...s, [c.name]: 'imported' }))
     } catch (e) {
@@ -156,8 +194,9 @@ export function MirthMigration() {
     <div className="space-y-6">
       <Section
         title="Come across from Mirth"
-        description="Drop a Mirth or OIE channel export here — one channel or a whole server. Nothing is
-        changed until you import a channel yourself, so this is safe to run on anything."
+        description="Drop an export from Mirth Connect, the Open Integration Engine or BridgeLink here — one channel, a channel
+        group, a code template export or a whole server backup. Nothing is changed until you import a channel yourself, so this is
+        safe to run on anything."
       >
         <div
           onDragOver={(e) => e.preventDefault()}
@@ -167,8 +206,8 @@ export function MirthMigration() {
         >
           <p className="text-slate-300">Drop your channel export here</p>
           <p className="mt-1 text-sm text-slate-500">
-            A <code className="text-slate-400">.xml</code> file from Mirth&nbsp;→&nbsp;Export Channel, or a
-            whole-server export
+            A <code className="text-slate-400">.xml</code> file from Export Channel, Export Group, Export Code Templates or
+            Backup Config
           </p>
 
           <label className="mt-4 inline-block cursor-pointer rounded-lg bg-sky-600 px-4 py-2 text-sm
@@ -224,6 +263,12 @@ export function MirthMigration() {
       {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
 
       {result && <Verdict result={result} />}
+
+      {result && <WhatWasRead result={result} />}
+
+      {result && result.libraries.length > 0 && (
+        <SharedCode libraries={result.libraries} saved={libsSaved} onSave={(l) => void saveLibrary(l)} />
+      )}
 
       {result && (
         <div className="space-y-3">
@@ -541,5 +586,101 @@ function Pill({ label, value, colour }: { label: string; value: number; colour: 
     >
       {value} {label}
     </span>
+  )
+}
+
+const kindLabel: Record<string, string> = {
+  channel: 'a channel export',
+  'channel list': 'a list of channels',
+  'server backup': 'a server backup',
+  'channel group': 'a channel group export',
+  'channel groups': 'channel groups',
+  'code template libraries': 'a code template export',
+}
+
+/** What the export was and what came with it, so a backup is visibly read as a backup and not as three loose channels. */
+function WhatWasRead({ result }: { result: ImportResult }) {
+  const what = kindLabel[result.kind] ?? result.kind
+  const parts = [
+    `${result.channels.length} channel${result.channels.length === 1 ? '' : 's'}`,
+    `${result.libraries.length} code template librar${result.libraries.length === 1 ? 'y' : 'ies'}`,
+    `${result.groups.length} group${result.groups.length === 1 ? '' : 's'}`,
+  ]
+  return (
+    <div data-testid="mirth-what-was-read" className="card space-y-2 p-4 text-sm text-slate-300">
+      <p>
+        Read {what}
+        {result.version ? ` written by version ${result.version}` : ''}: {parts.join(', ')}.
+      </p>
+      {result.groups.length > 0 && (
+        <p className="text-xs text-slate-400">
+          Groups: {result.groups.join(', ')}. Each channel keeps its group.
+        </p>
+      )}
+      {result.notes.map((n) => (
+        <p key={n.message} className={n.severity === 'warning' ? 'text-xs text-amber-300' : 'text-xs text-slate-400'}>
+          {n.message}
+          {n.action ? ` ${n.action}.` : ''}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The code template libraries. Shown before the channels, because a channel that calls a library function cannot be imported
+ * without it - and importing a channel saves the libraries it needs first, so nobody has to remember the order.
+ */
+function SharedCode({
+  libraries,
+  saved,
+  onSave,
+}: {
+  libraries: Library[]
+  saved: Record<string, string>
+  onSave: (l: Library) => void
+}) {
+  return (
+    <Section
+      title="Shared code"
+      description="Mirth's code template libraries, each carried across unchanged as one script file. A channel that had the library
+      enabled includes the file. Drag-and-drop snippets are left out: Mirth only ever pastes those into a step by hand."
+    >
+      <ul className="space-y-3" data-testid="mirth-libraries">
+        {libraries.map((l) => (
+          <li key={l.file} className="rounded-lg border border-slate-800 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium text-slate-200">{l.name}</p>
+                <p className="font-mono text-xs text-slate-400">{l.file}</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  {l.functions} function{l.functions === 1 ? '' : 's'}
+                  {l.skipped > 0 ? `, ${l.skipped} snippet${l.skipped === 1 ? '' : 's'} left out` : ''} · included by{' '}
+                  {l.channels.length > 0 ? l.channels.join(', ') : 'no channel in this export'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {saved[l.file] === 'saved' ? (
+                  <span className="text-xs text-emerald-300">Saved</span>
+                ) : (
+                  <button className="btn py-1 text-sm" onClick={() => onSave(l)}>
+                    Save {l.file}
+                  </button>
+                )}
+              </div>
+            </div>
+            {saved[l.file] && saved[l.file] !== 'saved' && (
+              <p role="alert" className="mt-2 text-xs text-rose-300">
+                {saved[l.file]}
+              </p>
+            )}
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-300">Show the script</summary>
+              <SyntaxBlock language="js" code={l.source} />
+            </details>
+          </li>
+        ))}
+      </ul>
+    </Section>
   )
 }

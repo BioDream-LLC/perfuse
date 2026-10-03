@@ -35,6 +35,11 @@ func ParseChannel(r io.Reader) (*Channel, error) {
 		return nil, fmt.Errorf("mirth: expected root element <channel>, found <%s>", root.Name)
 	}
 
+	return channelFromNode(root), nil
+}
+
+// channelFromNode reads a <channel> element, wherever it sits: the root of a per-channel export, or inside a server backup or a group.
+func channelFromNode(root *node) *Channel {
 	c := &Channel{
 		ID:                   root.str("id"),
 		Name:                 root.str("name"),
@@ -78,7 +83,7 @@ func ParseChannel(r io.Reader) (*Channel, error) {
 	}
 
 	c.Unrecognised = unrecognised(root, knownChannelChildren)
-	return c, nil
+	return c
 }
 
 var knownChannelChildren = set(
@@ -183,6 +188,8 @@ func parseStep(sn *node) Step {
 	case StepMapper:
 		s.Variable = fields.str("variable")
 		s.Mapping = fields.str("mapping")
+		s.Scope = fields.str("scope")
+		s.DefaultValue = fields.str("defaultValue")
 	case StepJavaScript, StepMessageBuilder:
 		s.Script = fields.str("script")
 		if s.Kind == StepMessageBuilder {

@@ -1109,6 +1109,9 @@ export const api = {
 
   /** Translate a Mirth or OIE channel export and report what came across. Writes nothing. */
   importMirth: (xml: string) => request<unknown>('POST', '/api/mirth/import', { xml }),
+  /** Saves a Mirth code template library as lib/<name>.js beside the channels, so the channels that include it can be created. */
+  writeMirthLibrary: (file: string, source: string) =>
+    request<{ file: string }>('POST', '/api/mirth/libraries', { file, source }),
 
   /** Every channel's feed contract and whether it currently holds. */
   contracts: () => request<unknown>('GET', '/api/contracts'),

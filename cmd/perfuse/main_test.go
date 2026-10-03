@@ -172,9 +172,9 @@ func TestUnreadableFileDoesNotStopTheRun(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "good.xml"), src, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	// A channel group export, not a channel: readable XML, wrong root element.
+	// Readable XML that is no kind of Mirth export. A channel group was the example until groups became readable.
 	if err := os.WriteFile(filepath.Join(dir, "bad.xml"),
-		[]byte(`<channelGroup><name>group</name></channelGroup>`), 0o600); err != nil {
+		[]byte(`<html><body>not an export</body></html>`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

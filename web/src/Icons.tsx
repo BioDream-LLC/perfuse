@@ -1761,6 +1761,7 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Start from a message somebody sent you': IconUpload,
   'Delivery time distribution': IconMetrics,
   'Come across from Mirth': IconMigrate,
+  'Shared code': IconScripts,
   'What would this have done?': IconShadow,
   'Machine credentials': IconKey,
   Fleet: IconFleet,

@@ -27,8 +27,11 @@ func cmdTranslate(args []string, stdout, stderr io.Writer) error {
 		fmt.Fprint(stderr, `Usage of translate:
   perfuse translate [flags] <path>...
 
-Converts Mirth channel exports into Perfuse channel files. Paths may be XML
-files or directories, which are searched for *.xml.
+Converts Mirth, Open Integration Engine and BridgeLink exports into Perfuse
+channel files. Paths may be XML files or directories, which are searched for
+*.xml. Any export works: one channel, a channel group, a code template library
+export, or a whole server backup. Code template libraries become script files
+under lib/ that the channels Mirth had them enabled for include.
 
 Nothing is silently dropped. Every part of a channel is either translated,
 carried across as a script that runs unchanged, or reported as needing you.
@@ -68,9 +71,12 @@ Flags:
 
 	var results []*translate.Result
 	var failures []string
+	var libraries []translate.LibraryFile
 
 	for _, file := range files {
-		ch, err := mirth.ParseChannelFile(file)
+		// Any export a Mirth-family engine writes: one channel, a list, a channel group, a code template library export or a whole
+		// server backup. The larger ones carry the code template libraries and groups the channels depend on.
+		b, err := mirth.ParseBundleFile(file)
 		if err != nil {
 			// Reported rather than skipped. A channel that silently did not translate
 			// is one somebody discovers is missing after the migration.
@@ -78,19 +84,42 @@ Flags:
 			continue
 		}
 
-		res := translate.Channel(ch)
-		res.SortNotes()
-		results = append(results, res)
+		bundle := translate.Bundle(b)
+		for _, n := range bundle.Notes {
+			fmt.Fprintf(stderr, "%s: %s: %s\n", file, n.Severity, n.Message)
+		}
 
+		// Libraries first, because a channel that includes one is validated as it is written and refuses a missing file.
 		if *outDir != "" {
-			if err := writeTranslated(*outDir, res, *force); err != nil {
-				failures = append(failures, err.Error())
+			for _, l := range bundle.Libraries {
+				if err := writeLibrary(*outDir, l, *force); err != nil {
+					failures = append(failures, err.Error())
+				}
+			}
+		}
+		libraries = append(libraries, bundle.Libraries...)
+
+		for _, res := range bundle.Channels {
+			results = append(results, res)
+			if *outDir != "" {
+				if err := writeTranslated(*outDir, res, *force); err != nil {
+					failures = append(failures, err.Error())
+				}
 			}
 		}
 	}
 
+	for _, l := range libraries {
+		where := l.File
+		if *outDir != "" {
+			where = filepath.Join(*outDir, l.File)
+		}
+		fmt.Fprintf(stderr, "code template library %q -> %s (%d function template(s), included by %s)\n",
+			l.Name, where, l.Functions, strings.Join(l.Channels, ", "))
+	}
+
 	if *jsonOut {
-		return translateJSON(stdout, results, failures, *strict)
+		return translateJSON(stdout, results, libraries, failures, *strict)
 	}
 
 	// With no output directory and one channel, print the YAML so it can be piped.
@@ -109,6 +138,20 @@ Flags:
 	printTranslateSummary(stderr, results, failures, *outDir)
 
 	return translateExit(results, failures, *strict)
+}
+
+// writeLibrary writes a code template library file beside the channels that include it.
+func writeLibrary(dir string, l translate.LibraryFile, force bool) error {
+	p := filepath.Join(dir, l.File)
+	if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
+		return err
+	}
+	if !force {
+		if _, err := os.Stat(p); err == nil {
+			return fmt.Errorf("%s already exists; use -force to overwrite it", p)
+		}
+	}
+	return os.WriteFile(p, []byte(l.Source), 0o600)
 }
 
 func writeTranslated(dir string, res *translate.Result, force bool) error {
@@ -246,12 +289,14 @@ func translateExit(results []*translate.Result, failures []string, strict bool) 
 	return nil
 }
 
-func translateJSON(w io.Writer, results []*translate.Result, failures []string, strict bool) error {
+func translateJSON(w io.Writer, results []*translate.Result, libraries []translate.LibraryFile, failures []string, strict bool) error {
 	var out struct {
-		Channels []*translate.Result `json:"channels"`
-		Failures []string            `json:"failures,omitempty"`
+		Channels  []*translate.Result     `json:"channels"`
+		Libraries []translate.LibraryFile `json:"libraries,omitempty"`
+		Failures  []string                `json:"failures,omitempty"`
 	}
 	out.Channels = results
+	out.Libraries = libraries
 	out.Failures = failures
 
 	enc := json.NewEncoder(w)

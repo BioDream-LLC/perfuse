@@ -1,0 +1,57 @@
+<list>
+  <codeTemplateLibrary version="4.6.0">
+    <id>c0a1e5d0-0000-4000-8000-0000000000b0</id>
+    <name>Site Helpers</name>
+    <description>Functions every channel calls</description>
+    <includeNewChannels>false</includeNewChannels>
+    <enabledChannelIds>
+      <string>c0a1e5d0-0000-4000-8000-000000000001</string>
+    </enabledChannelIds>
+    <disabledChannelIds/>
+    <codeTemplates>
+      <codeTemplate version="4.6.0">
+        <id>c0a1e5d0-0000-4000-8000-0000000000b1</id>
+        <name>formatMRN</name>
+        <contextSet>
+          <delegate>
+            <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+            <contextType>DESTINATION_DISPATCHER</contextType>
+            <contextType>SOURCE_RECEIVER</contextType>
+            <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+            <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+          </delegate>
+        </contextSet>
+        <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+          <type>FUNCTION</type>
+          <code>/**
+	Pads a medical record number
+*/
+/** Pads a medical record number to ten digits. */
+function formatMRN(mrn) {
+  return (&apos;0000000000&apos; + String(mrn).replace(/\D/g, &apos;&apos;)).slice(-10);
+}</code>
+        </properties>
+      </codeTemplate>
+      <codeTemplate version="4.6.0">
+        <id>c0a1e5d0-0000-4000-8000-0000000000b2</id>
+        <name>Drop test patients</name>
+        <contextSet>
+          <delegate>
+            <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+            <contextType>DESTINATION_DISPATCHER</contextType>
+            <contextType>SOURCE_RECEIVER</contextType>
+            <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+            <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+          </delegate>
+        </contextSet>
+        <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+          <type>DRAG_AND_DROP_CODE</type>
+          <code>/**
+	A snippet, not a function
+*/
+if (msg[&apos;PID&apos;][&apos;PID.5&apos;][&apos;PID.5.1&apos;].toString() == &apos;TEST&apos;) { return false; }</code>
+        </properties>
+      </codeTemplate>
+    </codeTemplates>
+  </codeTemplateLibrary>
+</list>

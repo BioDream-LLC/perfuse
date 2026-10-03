@@ -131,6 +131,10 @@ type Step struct {
 	// Variable and Mapping are used by Mapper steps.
 	Variable string
 	Mapping  string
+	// Scope and DefaultValue are a Mapper step's: which map the variable goes into (CHANNEL, CONNECTOR, GLOBAL_CHANNEL, GLOBAL,
+	// RESPONSE) and what it holds when the expression is empty or throws.
+	Scope        string
+	DefaultValue string
 
 	// Script holds JavaScript for JavaScript steps, the stylesheet for XSLT
 	// steps, or the path for ExternalScript steps.

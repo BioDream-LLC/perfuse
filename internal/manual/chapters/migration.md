@@ -2,9 +2,30 @@
 
 Two things are needed to replace a working engine: the channels have to come across, and somebody has to be able to show that the replacement produces the same output. Perfuse does the first by importing Mirth's own exports, and the second by comparing the two engines on your own traffic.
 
+Everything in this chapter applies equally to the Open Integration Engine and BridgeLink. Mirth Connect stopped being open source at 4.6 in March 2025; OIE (hosted by the Eclipse Foundation) and BridgeLink (Innovar Healthcare) are the forks that continue the open-source line, and both write the same export formats. The importer is tested against all three, below.
+
 ## Importing channels
 
-Perfuse reads Mirth channel XML exports. Point it at a directory of them and it reports, per channel, whether it translated cleanly, translated with warnings, or could not be read.
+Perfuse reads every export these engines write:
+
+| Export | From the Administrator | What comes across |
+|---|---|---|
+| A channel | Export Channel | The channel |
+| A channel group | Export Group | Every channel in it, each keeping the group |
+| Code templates | Export Code Templates | Each library as one script file |
+| A server backup | Backup Config, or `GET /api/server/configuration` | All of the above at once |
+
+Point `perfuse translate` at any of them, or drop one on **Administer → Migrate**:
+
+```sh
+perfuse translate -o ./channels server-backup.xml
+```
+
+A **code template library** becomes `lib/<library>.js` beside the channels, and every channel Mirth had the library enabled for gets `scripts.include: [lib/<library>.js]` — so a transformer calling a site function such as `formatMRN()` still finds it. A channel the library was not enabled for does not include it, because its scripts could not see it in Mirth either. Drag-and-drop snippets are left out: Mirth only ever pastes those into a step by hand, so they are not code that runs on its own. In the browser, importing a channel saves the libraries it includes first.
+
+A **Channel Writer** names the channel it delivers to by id. In a group or a backup the target is in the same document, so it becomes a `channel` destination naming that channel; from a single-channel export it is reported for you to fill in. Server-wide global scripts have no Perfuse equivalent and are reported rather than dropped.
+
+The report says, per channel, whether it translated cleanly, translated with warnings, or could not be read.
 
 The headline is a fraction with its denominator — "37 of 40 ready" — because "37 ready" tells you nothing about what you still have to do.
 
@@ -12,7 +33,9 @@ A channel that could not be **read** is a different problem from one that could 
 
 ## What translates and what needs a decision
 
-Sources, destinations, filters and the ordinary transformer steps translate directly.
+Sources, destinations, filters and the ordinary transformer steps translate directly. The connectors that translate: TCP/MLLP (and raw TCP with its framing), HTTP, File, Database, JavaScript, DICOM, Web Service (SOAP), SMTP and Channel Reader/Writer. JMS and the Document Writer do not, and are reported as blockers.
+
+A Mapper step that sets a variable puts it into the map its scope names — `channelMap` by default — exactly as Mirth does, so later steps reading it with `$('name')` find it.
 
 JavaScript transformers do not, in general. Mirth channels commonly hold substantial code in a transformer, and there is no automatic conversion from arbitrary JavaScript to declarative steps. The importer reports these rather than attempting a translation that might be subtly wrong: a mistranslated transformer is worse than one flagged for a human, because it will run.
 
@@ -20,7 +43,13 @@ Where a script genuinely has to remain a script, Perfuse can run it — see the 
 
 ## What the importer has been tested against
 
-A channel exported by Mirth 4.5.2, authored by Mirth itself rather than written here. That distinction earned its place: the only fixture in this repository used to be hand-written, and a real Mirth **will not load it** — the API accepts the POST and then stores the channel as `This channel is invalid. Verify all required extensions are loaded correctly`, with every destination connector discarded.
+Four engines, each authoring its own documents: Mirth 4.5.2, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0. `scripts/mirth-engine-corpus.sh` compiles a small program against each engine's own jars and has its own serialiser write three ordinary channels — an MLLP feed with a mapper, a script calling a code template library and a filter; an HTTP feed into a database; a file poll out over MLLP — plus the library and a channel group. It loads them into the running engine and downloads the engine's own server backup. The results are committed under `internal/mirth/testdata/engines/`, and the test suite holds the importer to every one of them on every build: each backup is read, translated, loaded, and the ADT channel is run with two messages to check the library pads the record number and the filter drops the result.
+
+Perfuse's own exports go the other way — Perfuse channels imported into each running engine and checked that the engine did not store them as invalid. All four accept every transport Perfuse exports.
+
+The first run against this corpus found four defects, all fixed: the translator refused HTTP and File sources as "only MLLP is supported" long after Perfuse had both; it read an HTTP Sender's address from a field none of the engines writes; it translated Mirth's socket buffer size as a 64 KB message limit; and a Mapper's variable became a JavaScript global that `$('mrn')` never saw, so the library padded an empty string.
+
+The single-channel fixture that started this was also exported by Mirth 4.5.2, authored by Mirth itself rather than written here. That distinction earned its place: the only fixture in this repository used to be hand-written, and a real Mirth **will not load it** — the API accepts the POST and then stores the channel as `This channel is invalid. Verify all required extensions are loaded correctly`, with every destination connector discarded.
 
 Hand-writing one was never going to work, and the reason is worth knowing if you are producing exports of your own. Mirth's serialiser ignores elements it does not recognise, so a wrong element name produces no error whatsoever — the connector simply is not there afterwards. There is nothing to read and nothing to correct against.
 

@@ -106,6 +106,7 @@ func (r *Result) Blocked() bool { return r.Counts.Blockers > 0 }
 // builder accumulates the translation.
 type builder struct {
 	ch     *mirth.Channel
+	opts   Options
 	notes  []Note
 	counts Counts
 
@@ -127,9 +128,26 @@ func (b *builder) note(severity, where, message, action string) {
 	}
 }
 
+// Options carry what a single channel export does not: the rest of the server it came from.
+type Options struct {
+	// ChannelNames maps a Mirth channel id to its name, so a Channel Writer can name the channel it delivers to. Filled when a whole
+	// server backup or channel group is translated together.
+	ChannelNames map[string]string
+
+	// Includes are script library files, relative to the channel file, that this channel should load: the code template libraries
+	// Mirth had enabled for it.
+	Includes []string
+
+	// Group is the channel group the channel belonged to.
+	Group string
+}
+
 // Channel translates one Mirth channel.
-func Channel(ch *mirth.Channel) *Result {
-	b := &builder{ch: ch}
+func Channel(ch *mirth.Channel) *Result { return ChannelWith(ch, Options{}) }
+
+// ChannelWith translates one Mirth channel knowing the server it came from.
+func ChannelWith(ch *mirth.Channel, opts Options) *Result {
+	b := &builder{ch: ch, opts: opts}
 
 	res := &Result{
 		SourceName: ch.Name,

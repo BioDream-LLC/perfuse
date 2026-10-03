@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -69,6 +70,18 @@ type importResponse struct {
 	// Failed names documents that could not be read at all, separately from channels that translated
 	// with blockers. Those are different problems and mixing them makes both look worse.
 	Failed []string `json:"failed"`
+
+	// Kind and Version name the document: a channel, a server backup, a channel group, a code template export, and the version of the
+	// engine that wrote it - Mirth, the Open Integration Engine or BridgeLink.
+	Kind    string `json:"kind"`
+	Version string `json:"version,omitempty"`
+
+	// Libraries are the code template libraries, each as the script file the channels that used it include.
+	Libraries []translate.LibraryFile `json:"libraries"`
+	// Groups are the channel groups the export carried; each translated channel names its own.
+	Groups []string `json:"groups"`
+	// Notes are about the export as a whole, such as server-wide scripts with nowhere to go.
+	Notes []translate.Note `json:"notes"`
 }
 
 type importSummary struct {
@@ -107,20 +120,34 @@ func (s *Server) handleImportMirth(w http.ResponseWriter, r *http.Request, sess 
 		return
 	}
 
-	channels, failures := readMirthDocuments(text)
-	if len(channels) == 0 {
+	// A single document of any kind a Mirth-family engine exports - a channel, a server backup, a channel group, a code template
+	// export - is read whole, with its libraries and groups. Several documents pasted one after another are split and read as channels.
+	var (
+		bundle   *translate.BundleResult
+		channels []*mirth.Channel
+		failures []string
+	)
+	if b, err := mirth.ParseBundle(strings.NewReader(text)); err == nil {
+		bundle = translate.Bundle(b)
+		channels = b.Channels
+	} else {
+		channels, failures = readMirthDocuments(text)
+		bundle = translate.Bundle(&mirth.Bundle{Kind: "channel list", Channels: channels})
+	}
+	if len(channels) == 0 && len(bundle.Libraries) == 0 {
 		// Deliberately a 400 with an explanation rather than an empty success. An empty list rendered
 		// as "0 channels, all clean" would be a lie of exactly the kind this codebase avoids.
 		s.fail(w, r, http.StatusBadRequest,
 			"no Mirth channel was found in that XML",
-			"a channel export starts with a <channel> element; a whole-server export contains several")
+			"paste a channel export, a channel group, a code template export or a whole server backup")
 		return
 	}
 
-	resp := importResponse{Failed: failures}
+	resp := importResponse{Failed: failures, Kind: bundle.Kind, Version: bundle.Version, Libraries: bundle.Libraries,
+		Groups: bundle.Groups, Notes: bundle.Notes, Channels: []importedChannel{}}
 
-	for _, ch := range channels {
-		result := translate.Channel(ch)
+	for i, ch := range channels {
+		result := bundle.Channels[i]
 		portability := ch.ScanJava().Portability()
 
 		resp.Channels = append(resp.Channels, importedChannel{
@@ -281,4 +308,42 @@ func nameFromXML(part string) string {
 		return ""
 	}
 	return strings.TrimSpace(rest[:end])
+}
+
+type libraryRequest struct {
+	File   string `json:"file"`
+	Source string `json:"source"`
+}
+
+// handleWriteLibrary saves a code template library carried across from Mirth, so the channels that include it can be created.
+//
+// Editor, like creating a channel: a library is code every including channel runs, so it needs the same permission as writing one.
+func (s *Server) handleWriteLibrary(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	channels, ok := s.channelsFor(w, r, sess)
+	if !ok {
+		return
+	}
+	var req libraryRequest
+	if !s.decode(w, r, &req) {
+		return
+	}
+	if len(req.Source) > maxImportBytes {
+		s.fail(w, r, http.StatusRequestEntityTooLarge, "that library is larger than this endpoint accepts")
+		return
+	}
+	file, err := channels.WriteLibrary(req.File, []byte(req.Source))
+	if err != nil {
+		if errors.Is(err, ErrBadLibraryPath) {
+			s.fail(w, r, http.StatusBadRequest, err.Error())
+			return
+		}
+		s.failErr(w, r, err)
+		return
+	}
+
+	s.log().Info("script library written", "file", file, "user", sess.Username)
+	_ = s.Store.Audit(r.Context(), store.AuditEntry{
+		Username: sess.Username, Action: "library.write", Target: file, IP: clientIP(r),
+	})
+	s.ok(w, map[string]string{"file": file})
 }

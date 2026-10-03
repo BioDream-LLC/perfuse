@@ -39,6 +39,9 @@ func (b *builder) build() string {
 	fmt.Fprintln(&out)
 
 	fmt.Fprintf(&out, "name: %s\n", yamlString(name))
+	if b.opts.Group != "" {
+		fmt.Fprintf(&out, "group: %s\n", yamlString(b.opts.Group))
+	}
 	if desc := strings.TrimSpace(b.ch.Description); desc != "" {
 		fmt.Fprintf(&out, "description: %s\n", yamlString(collapse(desc)))
 	}
@@ -72,17 +75,28 @@ func (b *builder) buildSource() string {
 		return out.String()
 	}
 
+	if block, ok := b.buildOtherSource(src); ok {
+		out.WriteString(block)
+		// Only a connection-oriented source answers its sender. A file, a script or a DICOM association has nobody to acknowledge.
+		if isHTTPListener(src) || isMLLPListener(src) || isWebServiceListener(src) {
+			out.WriteString(b.buildAck(src))
+		}
+		if filter := b.buildFilter(src.Filter, "source"); filter != "" {
+			fmt.Fprintf(&out, "\nfilter: %s\n", filter)
+		}
+		return out.String()
+	}
+
 	listen, ok := b.listenAddress(src)
 	if !ok {
 		// Everything else can be translated and reviewed; a source we cannot host is
 		// the one thing that stops the channel existing at all.
 		b.note("blocker", "source", fmt.Sprintf(
-			"the source is a %s, which Perfuse does not implement. Only MLLP listeners "+
-				"are supported today", describeTransport(src)),
+			"the source is a %s, which the translator cannot convert", describeTransport(src)),
 			"Either point the sending system at an MLLP listener, or keep this channel "+
 				"in Mirth until the connector exists here")
 		fmt.Fprintln(&out, "  # REVIEW: the original source was a "+describeTransport(src))
-		fmt.Fprintln(&out, "  #         Perfuse only listens for MLLP today.")
+		fmt.Fprintln(&out, "  #         It could not be translated; this placeholder listens for MLLP.")
 		fmt.Fprintln(&out, "  type: mllp")
 		fmt.Fprintf(&out, "  listen: %s\n", yamlString("127.0.0.1:6661"))
 	} else {
@@ -100,11 +114,8 @@ func (b *builder) buildSource() string {
 			fmt.Fprintf(&out, "  max_connections: %d\n", n)
 		}
 	}
-	if v := src.Properties["bufferSize"]; v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			fmt.Fprintf(&out, "  max_message_size: %d\n", n)
-		}
-	}
+	// bufferSize is not carried across. It is Mirth's socket read buffer, 65536 by default in every engine tested, not a limit on a
+	// message: translating it as max_message_size refused every message over 64 KB, which is any result with an embedded report.
 
 	out.WriteString(b.buildAck(src))
 
@@ -140,6 +151,12 @@ func (b *builder) buildAck(src mirth.Connector) string {
 				"queue on the destinations so nothing is lost")
 	case strings.Contains(strings.ToLower(response), "auto"), response == "":
 		when = "on_delivery"
+	case strings.EqualFold(response, "None"):
+		// Mirth's "None" sends no response at all. Perfuse always acknowledges, because an MLLP sender that never hears back retries
+		// or stops; the sender evidently coped without one, so it is worth a look rather than a warning about text.
+		b.note("info", "source",
+			"the original sent no response to the sender (response: None). Perfuse sends an acknowledgement after delivery",
+			"Check the sending system ignores an acknowledgement it did not expect; nearly all do")
 	default:
 		// A named response variable means a script or a destination produced the
 		// acknowledgement, which Perfuse does not do.
@@ -159,7 +176,7 @@ func (b *builder) buildAck(src mirth.Connector) string {
 
 // listenAddress works out where a source should listen.
 func (b *builder) listenAddress(src mirth.Connector) (string, bool) {
-	if !isMLLPListener(src) {
+	if !isMLLPListener(src) || !isMLLPFraming(src) {
 		return "", false
 	}
 
@@ -226,6 +243,11 @@ func (b *builder) buildDestination(d mirth.Connector, where string) (string, boo
 		name = "destination"
 	}
 
+	if block, ok := b.buildOtherDestination(d, name, where); ok {
+		out.WriteString(block)
+		return b.finishDestination(&out, d, where), true
+	}
+
 	switch {
 	case isMLLPSender(d):
 		host := d.Properties["remoteAddress"]
@@ -278,7 +300,8 @@ func (b *builder) buildDestination(d mirth.Connector, where string) (string, boo
 		fmt.Fprintf(&out, "    dir: %s\n", yamlString(dir))
 
 	case isHTTPSender(d):
-		url := d.Properties["url"]
+		// Every engine tested - Mirth 4.5.2, OIE, BridgeLink - writes the address to <host>. "url" is kept for older exports.
+		url := firstNonEmpty(d.Properties["host"], d.Properties["url"])
 		if url == "" {
 			b.note("warning", where,
 				"the destination posts over HTTP but no URL was recorded",
@@ -346,13 +369,18 @@ func (b *builder) buildDestination(d mirth.Connector, where string) (string, boo
 		fmt.Fprintf(&out, "    dir: %s\n", yamlString("./"+name))
 	}
 
+	return b.finishDestination(&out, d, where), true
+}
+
+// finishDestination adds what every destination carries: enabled, timeout, queue, filter, and the note about a destination transformer.
+func (b *builder) finishDestination(out *strings.Builder, d mirth.Connector, where string) string {
 	if !d.Enabled {
-		fmt.Fprintln(&out, "    enabled: false")
+		fmt.Fprintln(out, "    enabled: false")
 	}
 
 	if v := d.Properties["sendTimeout"]; v != "" {
 		if dur, ok := millisToDuration(v); ok {
-			fmt.Fprintf(&out, "    timeout: %s\n", dur)
+			fmt.Fprintf(out, "    timeout: %s\n", dur)
 		}
 	}
 
@@ -360,16 +388,16 @@ func (b *builder) buildDestination(d mirth.Connector, where string) (string, boo
 	// be worth carrying, because a destination that was queued in Mirth and is not
 	// queued here loses messages during an outage that previously survived one.
 	if queued := d.Properties["destinationConnectorProperties.queueEnabled"]; queued == "true" {
-		fmt.Fprintln(&out, "    queue:")
-		fmt.Fprintln(&out, "      enabled: true")
+		fmt.Fprintln(out, "    queue:")
+		fmt.Fprintln(out, "      enabled: true")
 		if v := d.Properties["destinationConnectorProperties.retryCount"]; v != "" {
 			if n, err := strconv.Atoi(v); err == nil && n > 0 {
-				fmt.Fprintf(&out, "      max_attempts: %d\n", n)
+				fmt.Fprintf(out, "      max_attempts: %d\n", n)
 			}
 		}
 		if v := d.Properties["destinationConnectorProperties.retryIntervalMillis"]; v != "" {
 			if dur, ok := millisToDuration(v); ok {
-				fmt.Fprintf(&out, "      backoff: %s\n", dur)
+				fmt.Fprintf(out, "      backoff: %s\n", dur)
 			}
 		}
 		if threads := d.Properties["destinationConnectorProperties.threadCount"]; threads != "" {
@@ -391,7 +419,7 @@ func (b *builder) buildDestination(d mirth.Connector, where string) (string, boo
 	}
 
 	if filter := b.buildFilter(d.Filter, where); filter != "" {
-		fmt.Fprintf(&out, "    filter: %s\n", filter)
+		fmt.Fprintf(out, "    filter: %s\n", filter)
 	}
 
 	// A destination transformer has nowhere to go: Perfuse transforms once, before
@@ -406,7 +434,7 @@ func (b *builder) buildDestination(d mirth.Connector, where string) (string, boo
 				"destination, move them to the channel transformations")
 	}
 
-	return out.String(), true
+	return out.String()
 }
 
 // --- transport identification ----------------------------------------------

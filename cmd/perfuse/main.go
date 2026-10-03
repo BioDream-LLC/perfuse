@@ -204,17 +204,20 @@ func cmdExplain(args []string, stdout, stderr io.Writer) error {
 		blocking int
 	)
 	for _, path := range files {
-		c, err := mirth.ParseChannelFile(path)
+		// Any export: a channel, a server backup, a channel group. A code template export has no channels and adds none.
+		b, err := mirth.ParseBundleFile(path)
 		if err != nil {
 			// One unreadable file must not stop a run over a whole directory.
 			fmt.Fprintf(stderr, "skipped %s: %v\n", path, err)
 			failed++
 			continue
 		}
-		r := analyze.Channel(c)
-		reports = append(reports, r)
-		if !r.Translatable() {
-			blocking++
+		for _, c := range b.Channels {
+			r := analyze.Channel(c)
+			reports = append(reports, r)
+			if !r.Translatable() {
+				blocking++
+			}
 		}
 	}
 
