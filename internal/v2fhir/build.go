@@ -249,6 +249,13 @@ func (c *converter) authoritySystem(source, authority string) (string, string) {
 			return c.opts.AssigningAuthoritySystems[key], ""
 		}
 	}
+	// The national identifiers have FHIR systems of their own, which every US receiver expects in place of the OID.
+	if sys, ok := wellKnownAuthorities[hd2]; ok && hd2 != "" {
+		return sys, ""
+	}
+	if sys, ok := wellKnownAuthorities[strings.ToUpper(hd1)]; ok && hd2 == "" {
+		return sys, ""
+	}
 	switch {
 	case hd3 == "ISO" && isOID(hd2):
 		return "urn:oid:" + hd2, fmt.Sprintf("assigning authority %q carries the OID %s, so urn:oid:%s was used; the V2-to-FHIR IG would use HD.1 (%q) verbatim, which is not a URI", authority, hd2, hd2, hd1)
@@ -264,6 +271,14 @@ func (c *converter) authoritySystem(source, authority string) (string, string) {
 		"assigning authority %q has no configured system URI, so %s was used; configure a real namespace before sending this anywhere",
 		authority, system)
 	return system, ""
+}
+
+// wellKnownAuthorities are the US national identifier namespaces, by OID and by the HD.1 name senders commonly use for them.
+var wellKnownAuthorities = map[string]string{
+	"2.16.840.1.113883.4.6": "http://hl7.org/fhir/sid/us-npi",
+	"NPI":                   "http://hl7.org/fhir/sid/us-npi",
+	"2.16.840.1.113883.4.1": "http://hl7.org/fhir/sid/us-ssn",
+	"SSA":                   "http://hl7.org/fhir/sid/us-ssn",
 }
 
 func isOID(s string) bool {
@@ -408,6 +423,13 @@ func (c *converter) buildEncounter(patient *fhir.Patient) *fhir.Encounter {
 	}
 	e.SetResourceID(c.deterministicID("Encounter", idKey))
 	e.Subject = fhir.Ref("Patient", patient.ID)
+
+	// PV2-3, the admit reason, is the V2-to-FHIR IG's Encounter.reasonCode: why the patient came, in the clinician's words.
+	if c.get("PV2-3.1") != "" || c.get("PV2-3.2") != "" {
+		if cc := c.codedValue("PV2-3", "PV2-3"); cc != nil {
+			e.Reason = []fhir.EncounterReason{{Value: []fhir.CodeableReference{{Concept: cc}}}}
+		}
+	}
 
 	// Status comes from the trigger event, not from a status field: v2 has no
 	// encounter status, only a description of what just happened.
@@ -590,11 +612,17 @@ func (c *converter) buildPractitioner(path string) *fhir.Practitioner {
 	p.SetResourceID(c.deterministicID("Practitioner", id+"|"+family+"|"+given))
 
 	if id != "" {
+		// XCN.9 is the assigning authority and XCN.13 the identifier type; either can say the number is an NPI.
 		system := c.opts.DefaultIdentifierSystem
 		if authority := c.get(path + ".9"); authority != "" {
-			if configured := c.opts.AssigningAuthoritySystems[authority]; configured != "" {
-				system = configured
+			if sys, how := c.authoritySystem(path+".9", authority); sys != "" {
+				system = sys
+				if how != "" {
+					c.note("info", path+".9", "Practitioner.identifier.system", "%s", how)
+				}
 			}
+		} else if strings.EqualFold(c.get(path+".13"), "NPI") {
+			system = "http://hl7.org/fhir/sid/us-npi"
 		}
 		p.Identifier = []fhir.Identifier{{System: system, Value: id}}
 	}
@@ -931,18 +959,20 @@ func (c *converter) setStructuredNumeric(o *fhir.Observation, prefix, rawValue, 
 		// A range, such as a titre range.
 		high, _, ok := parseDecimal(num2)
 		if ok {
+			// One note for the range, not one per end: it is one result missing one unit.
 			o.ValueRange = &fhir.Range{
 				Low:  c.quantity(value, "", unit, prefix),
-				High: c.quantity(high, "", unit, prefix),
+				High: c.unitlessQuantity(high, unit),
 			}
 			return
 		}
 	case ":", "/":
 		den, _, ok := parseDecimal(num2)
 		if ok {
+			// A titre or ratio has no unit by nature (1:64), so its parts carry none and need no note saying so.
 			o.ValueRatio = &fhir.Ratio{
-				Numerator:   c.quantity(value, "", "", prefix),
-				Denominator: c.quantity(den, "", "", prefix),
+				Numerator:   c.unitlessQuantity(value, ""),
+				Denominator: c.unitlessQuantity(den, ""),
 			}
 			return
 		}
@@ -963,6 +993,16 @@ func (c *converter) setStructuredNumeric(o *fhir.Observation, prefix, rawValue, 
 		return
 	}
 	o.ValueQuantity = c.quantity(value, comparator, unit, prefix)
+}
+
+// unitlessQuantity is quantity without the missing-unit note, for a value whose note is already given or not wanted.
+func (c *converter) unitlessQuantity(value float64, unit string) *fhir.Quantity {
+	q := &fhir.Quantity{Value: fhir.Float(value), Unit: unit}
+	if code, ok := mapUCUM(unit); ok && unit != "" {
+		q.System = fhir.SystemUCUM
+		q.Code = code
+	}
+	return q
 }
 
 // quantity builds a quantity, coding the unit only when the mapping is certain.

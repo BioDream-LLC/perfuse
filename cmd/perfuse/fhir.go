@@ -21,6 +21,7 @@ import (
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/fhir"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
+	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/v2fhir"
 )
@@ -30,6 +31,7 @@ const fhirUsage = `perfuse fhir - convert HL7 v2 to FHIR and serve it
 Usage:
   perfuse fhir convert  [flags] <path>...   convert v2 messages to FHIR
   perfuse fhir validate [flags] <path>...   validate FHIR resources
+  perfuse fhir eicr     [flags] <path>...   build eCR case reports (eICR) from v2 messages
   perfuse fhir serve    [flags]             run a FHIR REST server
   perfuse fhir versions                     list supported FHIR releases
 
@@ -58,6 +60,8 @@ func cmdFHIR(args []string, stdout, stderr io.Writer) error {
 		return cmdFHIRConvert(args[1:], stdout, stderr)
 	case "validate":
 		return cmdFHIRValidate(args[1:], stdout, stderr)
+	case "eicr":
+		return cmdFHIREICR(args[1:], stdout, stderr)
 	case "serve":
 		return cmdFHIRServe(args[1:], stdout, stderr)
 	case "versions":
@@ -695,4 +699,112 @@ func parseTokenFlag(value string) (map[string]string, error) {
 	}
 
 	return out, nil
+}
+
+// cmdFHIREICR builds an eICR for each message that carries a trigger code, and says why for each that does not.
+func cmdFHIREICR(args []string, stdout, stderr io.Writer) error {
+	fset := flag.NewFlagSet("fhir eicr", flag.ContinueOnError)
+	fset.SetOutput(stderr)
+	rctc := fset.String("rctc", "", "trigger codes: a FHIR ValueSet or Bundle of them, such as the eRSD (default: the built-in sample)")
+	tz := fset.String("tz", "", "timezone for v2 timestamps with no offset (default: the sender's MSH-7 offset, else UTC)")
+	outDir := fset.String("out", "", "write reports to this directory instead of stdout")
+	facilityFile := fset.String("facility", "", "JSON file with the reporting facility: name, npi, phone, line, city, state, postalCode")
+	destination := fset.String("destination", "", "wrap each report in an eCR message for this public health endpoint (needs -source)")
+	sourceURL := fset.String("source", "", "this sender's endpoint, where the Reportability Response is sent")
+	system := fset.String("system", "", "default identifier system URI")
+	authorities := &authorityMap{}
+	fset.Var(authorities, "authority", "map an HL7 assigning authority to a system URI, as NAME=URI (repeatable)")
+	if err := fset.Parse(args); err != nil {
+		return err
+	}
+	var facility publichealth.Facility
+	if *facilityFile != "" {
+		var err error
+		if facility, err = publichealth.LoadFacility(*facilityFile); err != nil {
+			return err
+		}
+	}
+	if fset.NArg() == 0 {
+		return errors.New("eicr needs at least one file, or - for stdin")
+	}
+	triggers := publichealth.BuiltinTriggers()
+	if *rctc != "" {
+		var err error
+		if triggers, err = publichealth.LoadTriggers(*rctc); err != nil {
+			return err
+		}
+	}
+	var location *time.Location
+	if *tz != "" {
+		var err error
+		if location, err = time.LoadLocation(*tz); err != nil {
+			return fmt.Errorf("-tz: %w", err)
+		}
+	}
+	if *outDir != "" {
+		if err := os.MkdirAll(*outDir, 0o750); err != nil {
+			return err
+		}
+		fmt.Fprintf(stderr, "warning: case reports contain PHI and are being written to %s\n", *outDir)
+	}
+	var reported, skipped, failed int
+	for _, path := range fset.Args() {
+		raw, err := readInput(path)
+		if err != nil {
+			return err
+		}
+		for i, chunk := range splitMessages(raw) {
+			m, err := hl7.Parse(chunk)
+			if err != nil {
+				failed++
+				fmt.Fprintf(stderr, "%s message %d: %v\n", path, i+1, err)
+				continue
+			}
+			report, err := publichealth.FromV2(m, triggers, v2fhir.Options{Timezone: location, DefaultIdentifierSystem: *system, AssigningAuthoritySystems: authorities.values}, publichealth.EICROptions{Now: time.Now(), Facility: facility})
+			if err != nil {
+				if report != nil && len(report.Triggers) == 0 {
+					skipped++
+				} else {
+					failed++
+				}
+				fmt.Fprintf(stderr, "%s message %d: %v\n", path, i+1, err)
+				continue
+			}
+			reported++
+			for _, t := range report.Triggers {
+				fmt.Fprintf(stderr, "%s message %d: trigger %s %s (%s) on %s\n", path, i+1, t.System, t.Code, t.Condition, t.Resource)
+			}
+			for _, n := range report.Notes {
+				fmt.Fprintf(stderr, "  note: %s\n", n)
+			}
+			var doc any = report.Bundle
+			if *destination != "" {
+				_, event, _ := m.Type()
+				msg, err := publichealth.ReportingBundle(report, publichealth.ReportingOptions{
+					Destination: *destination, Source: *sourceURL, Event: publichealth.EventFor(event, report.Triggers),
+				})
+				if err != nil {
+					return err
+				}
+				doc = msg
+			}
+			body, err := json.MarshalIndent(doc, "", "  ")
+			if err != nil {
+				return err
+			}
+			if *outDir != "" {
+				name := fmt.Sprintf("eicr-%s.json", sanitise(m.ControlID()))
+				if err := os.WriteFile(filepath.Join(*outDir, name), body, 0o600); err != nil {
+					return err
+				}
+			} else {
+				fmt.Fprintf(stdout, "%s\n", body)
+			}
+		}
+	}
+	fmt.Fprintf(stderr, "%d reported, %d with nothing reportable, %d failed\n", reported, skipped, failed)
+	if failed > 0 {
+		return errBlocking
+	}
+	return nil
 }

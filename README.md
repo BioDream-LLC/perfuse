@@ -49,7 +49,7 @@ twenty-two destination types, in both directions.
 restart. **Shadow mode**, so a channel can be changed against real traffic while delivering nothing.
 **Feed contracts** that tell you when a sender quietly changes something. **TEFCA and UDAP** for exchanging
 records with organisations you have no direct connection to. **The four CMS-0057 payer APIs**, with claims
-as CARIN Blue Button, prior authorisations as Da Vinci PDex and the yearly metrics page. **eCR and ELR** public health reporting. **SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual
+as CARIN Blue Button, prior authorisations as Da Vinci PDex and the yearly metrics page. **eCR** public health case reporting. **SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual
 TLS** for sign-on. Metrics, alerting, tracing, an audit log, and a searchable message store.
 
 **And it is one file.** Written in Go, licensed under **Apache 2.0**, running on **Linux, macOS and Windows**
@@ -195,14 +195,15 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2">The exports apply the rule's exclusions on the way out: <b>no cost-sharing or provider remittances</b> to providers or other payers, and <b>no denied prior authorizations</b> to another payer</td></tr>
 <tr><td colspan="2"><b>The yearly prior authorization metrics page</b>, in the layout of CMS's own template — approvals, denials, extensions, appeals, mean and median turnaround with the unit always written — as a self-contained public page, CSV or JSON</td></tr>
 <tr><td colspan="2">Submits prior authorization requests to payer FHIR APIs, and <b>maps Da Vinci PAS to and from the X12 278</b>, so a payer on either side is reachable</td></tr>
-<tr><td colspan="2">Drugs are out of scope, as they are in the rule. CRD and DTR are not provided, and the Prior Authorization card says so</td></tr>
+<tr><td colspan="2">Da Vinci <b>CRD 2.2.1</b> over CDS Hooks and <b>DTR 2.2.0</b> questionnaire packages, so the order, its documentation and the request all have an answer. Drugs are out of scope, as they are in the rule</td></tr>
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health reporting"></th><th align="left" valign="middle">eCR and ELR</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health reporting"></th><th align="left" valign="middle">eCR</th></tr></thead>
 <tbody>
-<tr><td colspan="2"><b>Electronic case reporting (eCR)</b> and <b>electronic lab reporting (ELR)</b></td></tr>
-<tr><td colspan="2">Reportable-condition triggering, so a message is submitted because it met a rule rather than because somebody remembered</td></tr>
+<tr><td colspan="2"><b>Electronic case reporting (eCR)</b>: a FHIR destination that sends an HL7 eCR 2.1.2 eICR for each message carrying a reportable-condition trigger code, and nothing for the rest</td></tr>
+<tr><td colspan="2">Triggers from the RCTC you load (or a built-in sample for testing), so a report goes because a code matched rather than because somebody remembered. Validated against the eCR guide with the HL7 validator</td></tr>
+<tr><td colspan="2">ELR, lab reporting in HL7 2.5.1, is not provided yet</td></tr>
 </tbody></table>
 
 <table width="100%">

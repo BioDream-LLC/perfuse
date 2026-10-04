@@ -890,6 +890,25 @@ type buildFHIRDest struct {
 
 	// Auth is the hosted-service preset: aws (HealthLake), azure (Health Data Services) or client_credentials.
 	Auth *buildFHIRAuth `json:"auth,omitempty" yaml:"auth,omitempty"`
+
+	// ECR turns the destination into public health case reporting: eICRs for reportable messages, to url's $process-message.
+	ECR *buildECR `json:"ecr,omitempty" yaml:"ecr,omitempty"`
+}
+
+type buildECR struct {
+	RCTC     string           `json:"rctc,omitempty" yaml:"rctc,omitempty"`
+	Source   string           `json:"source,omitempty" yaml:"source,omitempty"`
+	Facility buildECRFacility `json:"facility" yaml:"facility"`
+}
+
+type buildECRFacility struct {
+	Name       string `json:"name,omitempty" yaml:"name,omitempty"`
+	NPI        string `json:"npi,omitempty" yaml:"npi,omitempty"`
+	Phone      string `json:"phone,omitempty" yaml:"phone,omitempty"`
+	Line       string `json:"line,omitempty" yaml:"line,omitempty"`
+	City       string `json:"city,omitempty" yaml:"city,omitempty"`
+	State      string `json:"state,omitempty" yaml:"state,omitempty"`
+	PostalCode string `json:"postalCode,omitempty" yaml:"postal_code,omitempty"`
 }
 
 type buildFHIRAuth struct {

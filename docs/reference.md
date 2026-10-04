@@ -374,6 +374,50 @@ Configuration validation refuses a `fhir.url` that uses plain HTTP to a remote
 host, and warns when no identifier system is configured, which is the single most
 common cause of unmatchable patients downstream.
 
+### Public health case reporting (eCR)
+
+An `ecr` block makes a `fhir` destination report to public health. Each message is
+converted and checked for reportable-condition trigger codes in its diagnoses (`DG1`),
+results (`OBX` code and coded value) and orders. A message with one is sent as an
+HL7 eCR 2.1.2 eICR, wrapped in an eCR message, to the URL's `$process-message`. A
+message with none is not sent, and that is not a failure.
+
+```yaml
+destinations:
+  - name: public-health
+    type: fhir
+    fhir:
+      url: https://ecr.agency.example/fhir
+      identifier_systems:
+        SPRINGFIELD: http://springfield-general.example/mrn
+      ecr:
+        rctc: /etc/perfuse/rctc.json      # the RCTC, as a FHIR ValueSet or the eRSD Bundle
+        source: https://fhir.springfield-general.example/fhir   # where the Reportability Response goes
+        facility: {name: Springfield General Hospital, npi: "1234567893", phone: +1-217-555-0100,
+                   line: 100 Main St, city: Springfield, state: IL, postal_code: "62701"}
+```
+
+The trigger codes should be the RCTC (Reportable Conditions Trigger Codes), which is
+published through the eRSD and needs a UMLS licence, so it cannot ship with Perfuse.
+Without `rctc`, a short built-in sample is used. It is for testing, and every report
+built from it says so.
+
+The facility is configured because eCR requires its phone and address, and a v2
+message carries neither. What the message lacks is not invented:
+
+- a missing race or ethnicity is sent as the text "Unknown";
+- a missing language is sent as BCP 47 `und`;
+- with no visit number, the encounter is identified by its id in the report;
+- with no `PID-30`, the patient is reported as living.
+
+Each of these is logged as a note. Practitioners are named through
+PractitionerRoles, as eCR requires. An NPI in `XCN.9` (by OID or as `NPI`) gets the
+`us-npi` system.
+
+`perfuse fhir eicr [-facility f.json] [-rctc rctc.json] [-destination URL -source URL] <messages>`
+builds the same reports from files. The FHIR lab's **Public health case report** panel
+builds one from a pasted message.
+
 ## CMS-0057 for payers
 
 The four APIs the CMS Interoperability and Prior Authorization rule requires of payers from 1 January 2027, and the data behind them. The full account is the [CMS-0057 chapter of the manual](https://perfuse.health/manual/#s16-cms-0057-for-payers); the commands and flags:
@@ -391,6 +435,7 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `POST /fhir/Questionnaire/$log-questionnaire-errors` | DTR 2.2.0: problems a DTR app met with a questionnaire, written to the server log |
 | `POST /fhir/Questionnaire/$next-question` | DTR 2.2.0: refused with an explanation, since only standard (non-adaptive) questionnaires are served |
 | `POST /api/crd/ask` | From the console: an order sent to this server's CRD rules or to a payer's CDS service URL |
+| `POST /api/dtr/package` | From the console: the DTR questionnaire package for an order CRD answered, from this server or a payer's FHIR base URL |
 | `perfuse token create -label <name> -fhir-groups <id>[,<id>]` | A provider's Provider Access token: on the FHIR endpoint it can read those Groups, export them and fetch the export, and nothing else. Also under Users → Machine credentials, or `fhirGroups` on `POST /api/tokens` |
 
 Provider Access and Payer-to-Payer exports leave out cost-sharing and provider remittances, Payer-to-Payer leaves out denied prior authorisations, and members with an active Provider Access opt-out are left out of a provider export. Drugs are out of scope throughout.

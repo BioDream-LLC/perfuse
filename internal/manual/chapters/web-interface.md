@@ -100,7 +100,9 @@ Runs traffic through a candidate configuration alongside the live one and report
 
 ### FHIR lab
 
-Convert HL7 v2 to FHIR, validate a resource, and inspect the result. The samples cover admissions, lab results, appointments, clinical notes and immunizations. The validation includes US Core, which is the profile American regulation is written against, so this answers "is what they sent us actually conformant" without adopting anything.
+Convert HL7 v2 to FHIR, validate a resource, and inspect the result. The samples cover admissions, lab results, appointments, clinical notes, immunizations and a reportable visit. The validation includes US Core, which is the profile American regulation is written against, so this answers "is what they sent us actually conformant" without adopting anything.
+
+**Public health case report** builds the eCR eICR a case reporting destination would send for the message. It shows which trigger code made the visit reportable, what the report had to mark as missing, and the document itself. A message with nothing reportable gets the reason instead. Nothing is sent from here.
 
 ### Subscriptions
 

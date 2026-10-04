@@ -160,6 +160,29 @@ Contributor role - with the FHIR service URL as its audience. `client_credential
 Tokens are reused until a minute before they expire. The same choices are under the destination's **Hosted service sign-in** in the
 channel builder.
 
+### Public health case reporting
+
+Tick **Report reportable conditions to public health** on a FHIR destination and it sends case reports rather than bundles. Each
+message is checked for a reportable-condition trigger code: a diagnosis, a lab test or a coded result. If it has one, the message
+becomes an HL7 eCR 2.1.2 eICR, wrapped in an eCR message and posted to the URL's `$process-message`. If it has none, nothing is
+sent and nothing fails; the destination counts it as not reportable.
+
+```yaml
+fhir:
+  url: https://ecr.agency.example/fhir
+  ecr:
+    rctc: /etc/perfuse/rctc.json
+    source: https://fhir.springfield-general.example/fhir
+    facility: {name: Springfield General Hospital, phone: +1-217-555-0100, city: Springfield, state: IL}
+```
+
+`rctc` is the Reportable Conditions Trigger Codes, as a FHIR ValueSet or the eRSD Bundle. It needs a UMLS licence, so it is not
+included; without it a short built-in sample is used, for testing only. `source` is where the agency sends its Reportability
+Response. The facility is required because eCR asks for its phone and address, and a v2 message has neither.
+
+A report says what the message lacked rather than inventing it, and each gap is logged. Try a message in the FHIR lab's **Public
+health case report** panel before pointing a live feed at an agency.
+
 ## When the transport says yes and the message did not arrive
 
 "Did this arrive" is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.

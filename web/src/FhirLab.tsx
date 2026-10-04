@@ -6,6 +6,7 @@ import { SyntaxBlock } from './SyntaxHighlight'
 import { ParsedMessage } from './Messages'
 import { ErrorBox, Field, Section, Spinner, Toggle } from './ui'
 import { useCopy } from './useCopy'
+import { CaseReport, sampleReportable } from './CaseReport'
 
 /**
  * The FHIR lab.
@@ -152,6 +153,9 @@ export function FhirLab() {
                 </button>
                 <button className="btn-ghost py-1 text-xs" onClick={() => setMessage(sampleVXU)}>
                   Sample immunization
+                </button>
+                <button className="btn-ghost py-1 text-xs" onClick={() => setMessage(sampleReportable)}>
+                  Sample reportable visit
                 </button>
               </div>
             }
@@ -419,6 +423,8 @@ export function FhirLab() {
           )}
         </div>
       </div>
+
+      <CaseReport message={message} system={system} />
     </div>
   )
 }

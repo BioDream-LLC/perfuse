@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
+	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -216,6 +217,10 @@ type Server struct {
 
 	// SHLAllowHTTP lets a received SMART Health Link point at plain HTTP. Off: only tests and a laboratory want it.
 	SHLAllowHTTP bool
+
+	// ECRTriggers are the trigger codes the case report preview uses: the RCTC when the server was given one (-rctc), else nil
+	// for the built-in sample.
+	ECRTriggers *publichealth.TriggerSet
 
 	// CRD is the Da Vinci Coverage Requirements Discovery rules, when the payer's CDS service is on.
 	CRD *crd.Rules
@@ -421,6 +426,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/inspect/hl7", s.require(store.RoleViewer, s.handleInspectHL7))
 	mux.Handle("POST /api/inspect/fhir", s.require(store.RoleViewer, s.handleConvertToFHIR))
 	mux.Handle("GET /api/fhir/versions", s.require(store.RoleViewer, s.handleFHIRVersions))
+	mux.Handle("POST /api/publichealth/eicr", s.require(store.RoleViewer, s.handleEICR))
 
 	// Subscriptions and their delivery state. Viewer: it shows where notifications go and whether they arrive, which is
 	// what anybody asked "did the ED get told?" needs, and it withholds the credentials subscribers configured.

@@ -634,6 +634,41 @@ type FHIRDestination struct {
 	// Auth signs or authorises each request for a hosted FHIR service: AWS HealthLake, Azure Health Data Services, or any server
 	// taking an OAuth 2.0 client-credentials token.
 	Auth *FHIRAuth `yaml:"auth,omitempty"`
+
+	// ECR makes this a public health case reporting destination. Each message is checked for trigger codes; one that has any
+	// is sent as an eCR 2.1 eICR, wrapped in an eCR message, to url's $process-message, and one with none is not sent at all.
+	ECR *ECRDestination `yaml:"ecr,omitempty"`
+}
+
+// ECRDestination configures electronic case reporting.
+type ECRDestination struct {
+	// RCTC is a FHIR ValueSet, or a Bundle of them such as the eRSD, holding the trigger codes. Without it Perfuse's short
+	// built-in sample is used, which is for testing: agencies expect the RCTC.
+	RCTC string `yaml:"rctc,omitempty"`
+
+	// Source is this sender's FHIR endpoint, where the agency's Reportability Response is sent back.
+	Source string `yaml:"source"`
+
+	// Facility is the reporting facility as the agency knows it; eCR requires its phone and address.
+	Facility ECRFacility `yaml:"facility"`
+}
+
+// ECRFacility is the organisation sending case reports.
+type ECRFacility struct {
+	// Name is the facility as the agency knows it, the custodian of every report.
+	Name string `yaml:"name"`
+	// NPI is the facility's National Provider Identifier.
+	NPI string `yaml:"npi,omitempty"`
+	// Phone is how the agency reaches the facility about a report; eCR requires it.
+	Phone string `yaml:"phone"`
+	// Line is the facility's street address.
+	Line string `yaml:"line,omitempty"`
+	// City is the facility's city; eCR requires it.
+	City string `yaml:"city"`
+	// State is the facility's state, as its two-letter code; eCR requires it.
+	State string `yaml:"state"`
+	// PostalCode is the facility's ZIP code.
+	PostalCode string `yaml:"postal_code,omitempty"`
 }
 
 // ShouldValidate reports whether a bundle is validated before sending.

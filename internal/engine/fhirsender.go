@@ -40,6 +40,9 @@ type FHIRSender struct {
 	// is a mapping gap and the other is a network or server fault.
 	auth *fhirAuthorizer
 
+	// ecr, when set, makes this a case reporting destination: only messages with a trigger code are sent, as eICRs.
+	ecr *ecrSender
+
 	converted    atomic.Int64
 	convertFails atomic.Int64
 	rejected     atomic.Int64
@@ -107,6 +110,14 @@ func NewFHIRSender(d config.Destination, log *slog.Logger) (*FHIRSender, error) 
 		},
 	}
 	s.auth = newFHIRAuthorizer(d.FHIR.Auth, d.FHIR.URL, &http.Client{Timeout: 30 * time.Second})
+	if d.FHIR.ECR != nil {
+		e, err := newECRSender(d.FHIR.ECR)
+		if err != nil {
+			return nil, fmt.Errorf("destination %q: %w", d.Name, err)
+		}
+		s.ecr = e
+		s.opts.Version = fhir.R4
+	}
 	return s, nil
 }
 
@@ -136,6 +147,10 @@ func (s *FHIRSender) Send(ctx context.Context, raw []byte) error {
 	if err != nil {
 		s.convertFails.Add(1)
 		return fmt.Errorf("the message could not be parsed as HL7 v2: %w", err)
+	}
+
+	if s.ecr != nil {
+		return s.sendCaseReport(ctx, m)
 	}
 
 	result, err := v2fhir.Convert(m, s.opts)
@@ -199,8 +214,11 @@ func (s *FHIRSender) Send(ctx context.Context, raw []byte) error {
 }
 
 func (s *FHIRSender) post(ctx context.Context, body []byte) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		strings.TrimRight(s.cfg.URL, "/")+"/", bytes.NewReader(body))
+	return s.postTo(ctx, strings.TrimRight(s.cfg.URL, "/")+"/", body)
+}
+
+func (s *FHIRSender) postTo(ctx context.Context, target string, body []byte) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

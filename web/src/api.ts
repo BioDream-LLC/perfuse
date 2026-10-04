@@ -1367,6 +1367,10 @@ export const api = {
     timezone?: string
   }) => request<ConversionResult>('POST', '/api/inspect/fhir', input),
 
+  /** buildEICR builds the eCR case report a v2 message triggers, or says why it triggers none. Nothing is stored or sent. */
+  buildEICR: (input: { message: string; system?: string; facility: ECRFacility }) =>
+    request<EICRResult>('POST', '/api/publichealth/eicr', input),
+
   /** fhirSubscriptions lists topic subscriptions and whether their notifications are arriving. Credentials are withheld. */
   fhirSubscriptions: () => request<SubscriptionsView>('GET', '/api/fhir/subscriptions'),
 
@@ -2792,6 +2796,29 @@ export interface CRDCard {
 export interface DTRPackageResult {
   resourceType: 'Parameters'
   parameter?: { name: string; resource?: { resourceType: string; entry?: { resource: Record<string, unknown> }[]; issue?: { severity: string; diagnostics?: string }[] } }[]
+}
+
+/** ECRFacility is the reporting facility; eCR requires its phone and address, which a v2 message does not carry. */
+export interface ECRFacility {
+  name: string
+  npi: string
+  phone: string
+  line: string
+  city: string
+  state: string
+  postalCode: string
+}
+
+/** EICRResult is a built case report: the trigger codes found, what the report had to mark as missing, and the document. */
+export interface EICRResult {
+  reportable: boolean
+  triggers: { resource: string; system: string; code: string; display?: string; condition?: string; valueSet: string; valueSetVersion: string }[]
+  notes: string[]
+  triggerSource: string
+  triggerCodes: number
+  facilityMissing: string[] | null
+  reason?: string
+  bundle?: Record<string, unknown>
 }
 
 export interface CRDResponse {

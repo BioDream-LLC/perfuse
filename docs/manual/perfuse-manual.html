@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 4b11cdf</p>
+<p class="version">version 0.1 · c0c89c5</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -494,6 +494,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s10-7-naming-and-pruning-an-archive-folder"><span class="num">10.7</span> Naming and pruning an archive folder</a></div>
 <div class="toc-d2"><a href="#s10-8-sending-to-a-fhir-server"><span class="num">10.8</span> Sending to a FHIR server</a></div>
 <div class="toc-d3"><a href="#s10-8-1-hosted-fhir-services"><span class="num">10.8.1</span> Hosted FHIR services</a></div>
+<div class="toc-d3"><a href="#s10-8-2-public-health-case-reporting"><span class="num">10.8.2</span> Public health case reporting</a></div>
 <div class="toc-d2"><a href="#s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</a></div>
 <div class="toc-d2"><a href="#s10-10-what-a-delivery-outcome-means"><span class="num">10.10</span> What a delivery outcome means</a></div>
 <div class="toc-d2"><a href="#s10-11-slow-delivery"><span class="num">10.11</span> Slow delivery</a></div>
@@ -830,84 +831,87 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s22-9-3-font-size"><span class="num">22.9.3</span> font_size</a></div>
 <div class="toc-d3"><a href="#s22-9-4-temp-suffix"><span class="num">22.9.4</span> temp_suffix</a></div>
 <div class="toc-d3"><a href="#s22-9-5-timeout"><span class="num">22.9.5</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-10-fhir-destination"><span class="num">22.10</span> FHIR Destination</a></div>
-<div class="toc-d3"><a href="#s22-10-1-url"><span class="num">22.10.1</span> url</a></div>
-<div class="toc-d3"><a href="#s22-10-2-version"><span class="num">22.10.2</span> version</a></div>
-<div class="toc-d3"><a href="#s22-10-3-timezone"><span class="num">22.10.3</span> timezone</a></div>
-<div class="toc-d3"><a href="#s22-10-4-default-identifier-system"><span class="num">22.10.4</span> default_identifier_system</a></div>
-<div class="toc-d3"><a href="#s22-10-5-claim-us-core"><span class="num">22.10.5</span> claim_us_core</a></div>
-<div class="toc-d3"><a href="#s22-10-6-validate-before-send"><span class="num">22.10.6</span> validate_before_send</a></div>
-<div class="toc-d3"><a href="#s22-10-7-reject-on-warning"><span class="num">22.10.7</span> reject_on_warning</a></div>
-<div class="toc-d3"><a href="#s22-10-8-bearer-token"><span class="num">22.10.8</span> bearer_token</a></div>
-<div class="toc-d2"><a href="#s22-11-ftp-destination"><span class="num">22.11</span> FTP Destination</a></div>
-<div class="toc-d3"><a href="#s22-11-1-host"><span class="num">22.11.1</span> host</a></div>
-<div class="toc-d3"><a href="#s22-11-2-user"><span class="num">22.11.2</span> user</a></div>
-<div class="toc-d3"><a href="#s22-11-3-password"><span class="num">22.11.3</span> password</a></div>
-<div class="toc-d3"><a href="#s22-11-4-security"><span class="num">22.11.4</span> security</a></div>
-<div class="toc-d3"><a href="#s22-11-5-insecure-skip-verify"><span class="num">22.11.5</span> insecure_skip_verify</a></div>
-<div class="toc-d3"><a href="#s22-11-6-allow-clear-password"><span class="num">22.11.6</span> allow_clear_password</a></div>
-<div class="toc-d3"><a href="#s22-11-7-temp-suffix"><span class="num">22.11.7</span> temp_suffix</a></div>
-<div class="toc-d3"><a href="#s22-11-8-timeout"><span class="num">22.11.8</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-12-http-destination"><span class="num">22.12</span> HTTP Destination</a></div>
-<div class="toc-d3"><a href="#s22-12-1-url"><span class="num">22.12.1</span> url</a></div>
-<div class="toc-d3"><a href="#s22-12-2-method"><span class="num">22.12.2</span> method</a></div>
-<div class="toc-d3"><a href="#s22-12-3-content-type"><span class="num">22.12.3</span> content_type</a></div>
-<div class="toc-d3"><a href="#s22-12-4-bearer-token"><span class="num">22.12.4</span> bearer_token</a></div>
-<div class="toc-d3"><a href="#s22-12-5-success-status"><span class="num">22.12.5</span> success_status</a></div>
-<div class="toc-d3"><a href="#s22-12-6-fail-on-body"><span class="num">22.12.6</span> fail_on_body</a></div>
-<div class="toc-d3"><a href="#s22-12-7-follow-redirects"><span class="num">22.12.7</span> follow_redirects</a></div>
-<div class="toc-d2"><a href="#s22-13-java-script-destination"><span class="num">22.13</span> Java Script Destination</a></div>
-<div class="toc-d3"><a href="#s22-13-1-script"><span class="num">22.13.1</span> script</a></div>
-<div class="toc-d3"><a href="#s22-13-2-timeout"><span class="num">22.13.2</span> timeout</a></div>
-<div class="toc-d3"><a href="#s22-13-3-success-on-undefined"><span class="num">22.13.3</span> success_on_undefined</a></div>
-<div class="toc-d2"><a href="#s22-14-kafka-destination"><span class="num">22.14</span> Kafka Destination</a></div>
-<div class="toc-d3"><a href="#s22-14-1-brokers"><span class="num">22.14.1</span> brokers</a></div>
-<div class="toc-d3"><a href="#s22-14-2-topic"><span class="num">22.14.2</span> topic</a></div>
-<div class="toc-d3"><a href="#s22-14-3-key"><span class="num">22.14.3</span> key</a></div>
-<div class="toc-d3"><a href="#s22-14-4-acks"><span class="num">22.14.4</span> acks</a></div>
-<div class="toc-d3"><a href="#s22-14-5-compression"><span class="num">22.14.5</span> compression</a></div>
-<div class="toc-d3"><a href="#s22-14-6-headers"><span class="num">22.14.6</span> headers</a></div>
-<div class="toc-d3"><a href="#s22-14-7-timeout"><span class="num">22.14.7</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-15-s3-destination"><span class="num">22.15</span> S3 Destination</a></div>
-<div class="toc-d3"><a href="#s22-15-1-key"><span class="num">22.15.1</span> key</a></div>
-<div class="toc-d3"><a href="#s22-15-2-access-key-id"><span class="num">22.15.2</span> access_key_id</a></div>
-<div class="toc-d3"><a href="#s22-15-3-secret-access-key"><span class="num">22.15.3</span> secret_access_key</a></div>
-<div class="toc-d3"><a href="#s22-15-4-path-style"><span class="num">22.15.4</span> path_style</a></div>
-<div class="toc-d3"><a href="#s22-15-5-content-type"><span class="num">22.15.5</span> content_type</a></div>
-<div class="toc-d3"><a href="#s22-15-6-timeout"><span class="num">22.15.6</span> timeout</a></div>
-<div class="toc-d3"><a href="#s22-15-7-storage-class"><span class="num">22.15.7</span> storage_class</a></div>
-<div class="toc-d3"><a href="#s22-15-8-format"><span class="num">22.15.8</span> format</a></div>
-<div class="toc-d2"><a href="#s22-16-sftp-destination"><span class="num">22.16</span> SFTP Destination</a></div>
-<div class="toc-d3"><a href="#s22-16-1-host"><span class="num">22.16.1</span> host</a></div>
-<div class="toc-d3"><a href="#s22-16-2-password"><span class="num">22.16.2</span> password</a></div>
-<div class="toc-d3"><a href="#s22-16-3-file-name"><span class="num">22.16.3</span> file_name</a></div>
-<div class="toc-d3"><a href="#s22-16-4-temp-suffix"><span class="num">22.16.4</span> temp_suffix</a></div>
-<div class="toc-d3"><a href="#s22-16-5-timeout"><span class="num">22.16.5</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-17-smtp-destination"><span class="num">22.17</span> SMTP Destination</a></div>
+<div class="toc-d2"><a href="#s22-10-ecr-destination"><span class="num">22.10</span> ECR Destination</a></div>
+<div class="toc-d3"><a href="#s22-10-1-rctc"><span class="num">22.10.1</span> rctc</a></div>
+<div class="toc-d2"><a href="#s22-11-fhir-destination"><span class="num">22.11</span> FHIR Destination</a></div>
+<div class="toc-d3"><a href="#s22-11-1-url"><span class="num">22.11.1</span> url</a></div>
+<div class="toc-d3"><a href="#s22-11-2-version"><span class="num">22.11.2</span> version</a></div>
+<div class="toc-d3"><a href="#s22-11-3-timezone"><span class="num">22.11.3</span> timezone</a></div>
+<div class="toc-d3"><a href="#s22-11-4-default-identifier-system"><span class="num">22.11.4</span> default_identifier_system</a></div>
+<div class="toc-d3"><a href="#s22-11-5-claim-us-core"><span class="num">22.11.5</span> claim_us_core</a></div>
+<div class="toc-d3"><a href="#s22-11-6-validate-before-send"><span class="num">22.11.6</span> validate_before_send</a></div>
+<div class="toc-d3"><a href="#s22-11-7-reject-on-warning"><span class="num">22.11.7</span> reject_on_warning</a></div>
+<div class="toc-d3"><a href="#s22-11-8-bearer-token"><span class="num">22.11.8</span> bearer_token</a></div>
+<div class="toc-d3"><a href="#s22-11-9-ecr"><span class="num">22.11.9</span> ecr</a></div>
+<div class="toc-d2"><a href="#s22-12-ftp-destination"><span class="num">22.12</span> FTP Destination</a></div>
+<div class="toc-d3"><a href="#s22-12-1-host"><span class="num">22.12.1</span> host</a></div>
+<div class="toc-d3"><a href="#s22-12-2-user"><span class="num">22.12.2</span> user</a></div>
+<div class="toc-d3"><a href="#s22-12-3-password"><span class="num">22.12.3</span> password</a></div>
+<div class="toc-d3"><a href="#s22-12-4-security"><span class="num">22.12.4</span> security</a></div>
+<div class="toc-d3"><a href="#s22-12-5-insecure-skip-verify"><span class="num">22.12.5</span> insecure_skip_verify</a></div>
+<div class="toc-d3"><a href="#s22-12-6-allow-clear-password"><span class="num">22.12.6</span> allow_clear_password</a></div>
+<div class="toc-d3"><a href="#s22-12-7-temp-suffix"><span class="num">22.12.7</span> temp_suffix</a></div>
+<div class="toc-d3"><a href="#s22-12-8-timeout"><span class="num">22.12.8</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-13-http-destination"><span class="num">22.13</span> HTTP Destination</a></div>
+<div class="toc-d3"><a href="#s22-13-1-url"><span class="num">22.13.1</span> url</a></div>
+<div class="toc-d3"><a href="#s22-13-2-method"><span class="num">22.13.2</span> method</a></div>
+<div class="toc-d3"><a href="#s22-13-3-content-type"><span class="num">22.13.3</span> content_type</a></div>
+<div class="toc-d3"><a href="#s22-13-4-bearer-token"><span class="num">22.13.4</span> bearer_token</a></div>
+<div class="toc-d3"><a href="#s22-13-5-success-status"><span class="num">22.13.5</span> success_status</a></div>
+<div class="toc-d3"><a href="#s22-13-6-fail-on-body"><span class="num">22.13.6</span> fail_on_body</a></div>
+<div class="toc-d3"><a href="#s22-13-7-follow-redirects"><span class="num">22.13.7</span> follow_redirects</a></div>
+<div class="toc-d2"><a href="#s22-14-java-script-destination"><span class="num">22.14</span> Java Script Destination</a></div>
+<div class="toc-d3"><a href="#s22-14-1-script"><span class="num">22.14.1</span> script</a></div>
+<div class="toc-d3"><a href="#s22-14-2-timeout"><span class="num">22.14.2</span> timeout</a></div>
+<div class="toc-d3"><a href="#s22-14-3-success-on-undefined"><span class="num">22.14.3</span> success_on_undefined</a></div>
+<div class="toc-d2"><a href="#s22-15-kafka-destination"><span class="num">22.15</span> Kafka Destination</a></div>
+<div class="toc-d3"><a href="#s22-15-1-brokers"><span class="num">22.15.1</span> brokers</a></div>
+<div class="toc-d3"><a href="#s22-15-2-topic"><span class="num">22.15.2</span> topic</a></div>
+<div class="toc-d3"><a href="#s22-15-3-key"><span class="num">22.15.3</span> key</a></div>
+<div class="toc-d3"><a href="#s22-15-4-acks"><span class="num">22.15.4</span> acks</a></div>
+<div class="toc-d3"><a href="#s22-15-5-compression"><span class="num">22.15.5</span> compression</a></div>
+<div class="toc-d3"><a href="#s22-15-6-headers"><span class="num">22.15.6</span> headers</a></div>
+<div class="toc-d3"><a href="#s22-15-7-timeout"><span class="num">22.15.7</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-16-s3-destination"><span class="num">22.16</span> S3 Destination</a></div>
+<div class="toc-d3"><a href="#s22-16-1-key"><span class="num">22.16.1</span> key</a></div>
+<div class="toc-d3"><a href="#s22-16-2-access-key-id"><span class="num">22.16.2</span> access_key_id</a></div>
+<div class="toc-d3"><a href="#s22-16-3-secret-access-key"><span class="num">22.16.3</span> secret_access_key</a></div>
+<div class="toc-d3"><a href="#s22-16-4-path-style"><span class="num">22.16.4</span> path_style</a></div>
+<div class="toc-d3"><a href="#s22-16-5-content-type"><span class="num">22.16.5</span> content_type</a></div>
+<div class="toc-d3"><a href="#s22-16-6-timeout"><span class="num">22.16.6</span> timeout</a></div>
+<div class="toc-d3"><a href="#s22-16-7-storage-class"><span class="num">22.16.7</span> storage_class</a></div>
+<div class="toc-d3"><a href="#s22-16-8-format"><span class="num">22.16.8</span> format</a></div>
+<div class="toc-d2"><a href="#s22-17-sftp-destination"><span class="num">22.17</span> SFTP Destination</a></div>
 <div class="toc-d3"><a href="#s22-17-1-host"><span class="num">22.17.1</span> host</a></div>
-<div class="toc-d3"><a href="#s22-17-2-from"><span class="num">22.17.2</span> from</a></div>
-<div class="toc-d3"><a href="#s22-17-3-to"><span class="num">22.17.3</span> to</a></div>
-<div class="toc-d3"><a href="#s22-17-4-cc"><span class="num">22.17.4</span> cc</a></div>
-<div class="toc-d3"><a href="#s22-17-5-bcc"><span class="num">22.17.5</span> bcc</a></div>
-<div class="toc-d3"><a href="#s22-17-6-body"><span class="num">22.17.6</span> body</a></div>
-<div class="toc-d3"><a href="#s22-17-7-attach-name"><span class="num">22.17.7</span> attach_name</a></div>
-<div class="toc-d3"><a href="#s22-17-8-username"><span class="num">22.17.8</span> username</a></div>
-<div class="toc-d3"><a href="#s22-17-9-password"><span class="num">22.17.9</span> password</a></div>
-<div class="toc-d3"><a href="#s22-17-10-starttls"><span class="num">22.17.10</span> starttls</a></div>
-<div class="toc-d3"><a href="#s22-17-11-insecure-skip-verify"><span class="num">22.17.11</span> insecure_skip_verify</a></div>
-<div class="toc-d2"><a href="#s22-18-sns-destination"><span class="num">22.18</span> SNS Destination</a></div>
-<div class="toc-d3"><a href="#s22-18-1-subject"><span class="num">22.18.1</span> subject</a></div>
-<div class="toc-d2"><a href="#s22-19-soap-destination"><span class="num">22.19</span> SOAP Destination</a></div>
-<div class="toc-d3"><a href="#s22-19-1-action"><span class="num">22.19.1</span> action</a></div>
-<div class="toc-d3"><a href="#s22-19-2-body"><span class="num">22.19.2</span> body</a></div>
-<div class="toc-d3"><a href="#s22-19-3-header"><span class="num">22.19.3</span> header</a></div>
-<div class="toc-d3"><a href="#s22-19-4-fault-is-success"><span class="num">22.19.4</span> fault_is_success</a></div>
-<div class="toc-d3"><a href="#s22-19-5-timeout"><span class="num">22.19.5</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-20-sqs-destination"><span class="num">22.20</span> SQS Destination</a></div>
-<div class="toc-d3"><a href="#s22-20-1-queue-url"><span class="num">22.20.1</span> queue_url</a></div>
-<div class="toc-d2"><a href="#s22-21-tcp-dest"><span class="num">22.21</span> TCP Dest</a></div>
-<div class="toc-d3"><a href="#s22-21-1-expect-reply"><span class="num">22.21.1</span> expect_reply</a></div>
-<div class="toc-d3"><a href="#s22-21-2-keep-alive"><span class="num">22.21.2</span> keep_alive</a></div>
+<div class="toc-d3"><a href="#s22-17-2-password"><span class="num">22.17.2</span> password</a></div>
+<div class="toc-d3"><a href="#s22-17-3-file-name"><span class="num">22.17.3</span> file_name</a></div>
+<div class="toc-d3"><a href="#s22-17-4-temp-suffix"><span class="num">22.17.4</span> temp_suffix</a></div>
+<div class="toc-d3"><a href="#s22-17-5-timeout"><span class="num">22.17.5</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-18-smtp-destination"><span class="num">22.18</span> SMTP Destination</a></div>
+<div class="toc-d3"><a href="#s22-18-1-host"><span class="num">22.18.1</span> host</a></div>
+<div class="toc-d3"><a href="#s22-18-2-from"><span class="num">22.18.2</span> from</a></div>
+<div class="toc-d3"><a href="#s22-18-3-to"><span class="num">22.18.3</span> to</a></div>
+<div class="toc-d3"><a href="#s22-18-4-cc"><span class="num">22.18.4</span> cc</a></div>
+<div class="toc-d3"><a href="#s22-18-5-bcc"><span class="num">22.18.5</span> bcc</a></div>
+<div class="toc-d3"><a href="#s22-18-6-body"><span class="num">22.18.6</span> body</a></div>
+<div class="toc-d3"><a href="#s22-18-7-attach-name"><span class="num">22.18.7</span> attach_name</a></div>
+<div class="toc-d3"><a href="#s22-18-8-username"><span class="num">22.18.8</span> username</a></div>
+<div class="toc-d3"><a href="#s22-18-9-password"><span class="num">22.18.9</span> password</a></div>
+<div class="toc-d3"><a href="#s22-18-10-starttls"><span class="num">22.18.10</span> starttls</a></div>
+<div class="toc-d3"><a href="#s22-18-11-insecure-skip-verify"><span class="num">22.18.11</span> insecure_skip_verify</a></div>
+<div class="toc-d2"><a href="#s22-19-sns-destination"><span class="num">22.19</span> SNS Destination</a></div>
+<div class="toc-d3"><a href="#s22-19-1-subject"><span class="num">22.19.1</span> subject</a></div>
+<div class="toc-d2"><a href="#s22-20-soap-destination"><span class="num">22.20</span> SOAP Destination</a></div>
+<div class="toc-d3"><a href="#s22-20-1-action"><span class="num">22.20.1</span> action</a></div>
+<div class="toc-d3"><a href="#s22-20-2-body"><span class="num">22.20.2</span> body</a></div>
+<div class="toc-d3"><a href="#s22-20-3-header"><span class="num">22.20.3</span> header</a></div>
+<div class="toc-d3"><a href="#s22-20-4-fault-is-success"><span class="num">22.20.4</span> fault_is_success</a></div>
+<div class="toc-d3"><a href="#s22-20-5-timeout"><span class="num">22.20.5</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-21-sqs-destination"><span class="num">22.21</span> SQS Destination</a></div>
+<div class="toc-d3"><a href="#s22-21-1-queue-url"><span class="num">22.21.1</span> queue_url</a></div>
+<div class="toc-d2"><a href="#s22-22-tcp-dest"><span class="num">22.22</span> TCP Dest</a></div>
+<div class="toc-d3"><a href="#s22-22-1-expect-reply"><span class="num">22.22.1</span> expect_reply</a></div>
+<div class="toc-d3"><a href="#s22-22-2-keep-alive"><span class="num">22.22.2</span> keep_alive</a></div>
 <div class="toc-d1"><a href="#s23-format-reference"><span class="num">23</span> Format Reference</a></div>
 <div class="toc-d2"><a href="#s23-1-attachments"><span class="num">23.1</span> Attachments</a></div>
 <div class="toc-d3"><a href="#s23-1-1-reassemble"><span class="num">23.1.1</span> reassemble</a></div>
@@ -954,52 +958,53 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s24-5-1-check-every"><span class="num">24.5.1</span> check_every</a></div>
 <div class="toc-d3"><a href="#s24-5-2-over"><span class="num">24.5.2</span> over</a></div>
 <div class="toc-d2"><a href="#s24-6-dicom-options"><span class="num">24.6</span> DICOM Options</a></div>
-<div class="toc-d2"><a href="#s24-7-fhir-auth"><span class="num">24.7</span> FHIR Auth</a></div>
-<div class="toc-d3"><a href="#s24-7-1-region"><span class="num">24.7.1</span> region</a></div>
-<div class="toc-d3"><a href="#s24-7-2-token-url"><span class="num">24.7.2</span> token_url</a></div>
-<div class="toc-d3"><a href="#s24-7-3-client-id"><span class="num">24.7.3</span> client_id</a></div>
-<div class="toc-d3"><a href="#s24-7-4-client-secret"><span class="num">24.7.4</span> client_secret</a></div>
-<div class="toc-d3"><a href="#s24-7-5-scope"><span class="num">24.7.5</span> scope</a></div>
-<div class="toc-d2"><a href="#s24-8-file-poll"><span class="num">24.8</span> File Poll</a></div>
-<div class="toc-d3"><a href="#s24-8-1-pattern"><span class="num">24.8.1</span> pattern</a></div>
-<div class="toc-d3"><a href="#s24-8-2-error-dir"><span class="num">24.8.2</span> error_dir</a></div>
-<div class="toc-d3"><a href="#s24-8-3-raw"><span class="num">24.8.3</span> raw</a></div>
-<div class="toc-d3"><a href="#s24-8-4-batch-size"><span class="num">24.8.4</span> batch_size</a></div>
-<div class="toc-d3"><a href="#s24-8-5-sort-by"><span class="num">24.8.5</span> sort_by</a></div>
-<div class="toc-d2"><a href="#s24-9-kafka-sasl"><span class="num">24.9</span> Kafka SASL</a></div>
-<div class="toc-d3"><a href="#s24-9-1-mechanism"><span class="num">24.9.1</span> mechanism</a></div>
-<div class="toc-d3"><a href="#s24-9-2-password"><span class="num">24.9.2</span> password</a></div>
-<div class="toc-d2"><a href="#s24-10-ncpdp-options"><span class="num">24.10</span> NCPDP Options</a></div>
-<div class="toc-d3"><a href="#s24-10-1-transformations"><span class="num">24.10.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s24-11-queue-config"><span class="num">24.11</span> Queue Config</a></div>
-<div class="toc-d3"><a href="#s24-11-1-max-attempts"><span class="num">24.11.1</span> max_attempts</a></div>
-<div class="toc-d3"><a href="#s24-11-2-max-backoff"><span class="num">24.11.2</span> max_backoff</a></div>
-<div class="toc-d3"><a href="#s24-11-3-max-depth"><span class="num">24.11.3</span> max_depth</a></div>
-<div class="toc-d3"><a href="#s24-11-4-retain-hours"><span class="num">24.11.4</span> retain_hours</a></div>
-<div class="toc-d2"><a href="#s24-12-retry"><span class="num">24.12</span> Retry</a></div>
-<div class="toc-d3"><a href="#s24-12-1-attempts"><span class="num">24.12.1</span> attempts</a></div>
-<div class="toc-d3"><a href="#s24-12-2-backoff"><span class="num">24.12.2</span> backoff</a></div>
-<div class="toc-d2"><a href="#s24-13-script-options"><span class="num">24.13</span> Script Options</a></div>
-<div class="toc-d3"><a href="#s24-13-1-transformations"><span class="num">24.13.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s24-14-scripts"><span class="num">24.14</span> Scripts</a></div>
-<div class="toc-d3"><a href="#s24-14-1-filter"><span class="num">24.14.1</span> filter</a></div>
-<div class="toc-d3"><a href="#s24-14-2-transformer"><span class="num">24.14.2</span> transformer</a></div>
-<div class="toc-d3"><a href="#s24-14-3-preprocessor"><span class="num">24.14.3</span> preprocessor</a></div>
-<div class="toc-d3"><a href="#s24-14-4-deploy"><span class="num">24.14.4</span> deploy</a></div>
-<div class="toc-d3"><a href="#s24-14-5-undeploy"><span class="num">24.14.5</span> undeploy</a></div>
-<div class="toc-d3"><a href="#s24-14-6-postprocessor"><span class="num">24.14.6</span> postprocessor</a></div>
-<div class="toc-d3"><a href="#s24-14-7-language"><span class="num">24.14.7</span> language</a></div>
-<div class="toc-d3"><a href="#s24-14-8-timeout"><span class="num">24.14.8</span> timeout</a></div>
-<div class="toc-d3"><a href="#s24-14-9-include"><span class="num">24.14.9</span> include</a></div>
-<div class="toc-d3"><a href="#s24-14-10-file-roots"><span class="num">24.14.10</span> file_roots</a></div>
-<div class="toc-d3"><a href="#s24-14-11-allow"><span class="num">24.14.11</span> allow</a></div>
-<div class="toc-d2"><a href="#s24-15-shadow"><span class="num">24.15</span> Shadow</a></div>
-<div class="toc-d3"><a href="#s24-15-1-channel"><span class="num">24.15.1</span> channel</a></div>
-<div class="toc-d3"><a href="#s24-15-2-sample"><span class="num">24.15.2</span> sample</a></div>
-<div class="toc-d3"><a href="#s24-15-3-compare"><span class="num">24.15.3</span> compare</a></div>
-<div class="toc-d3"><a href="#s24-15-4-ignore"><span class="num">24.15.4</span> ignore</a></div>
-<div class="toc-d3"><a href="#s24-15-5-max-differences"><span class="num">24.15.5</span> max_differences</a></div>
-<div class="toc-d3"><a href="#s24-15-6-timeout"><span class="num">24.15.6</span> timeout</a></div>
+<div class="toc-d2"><a href="#s24-7-ecr-facility"><span class="num">24.7</span> ECR Facility</a></div>
+<div class="toc-d2"><a href="#s24-8-fhir-auth"><span class="num">24.8</span> FHIR Auth</a></div>
+<div class="toc-d3"><a href="#s24-8-1-region"><span class="num">24.8.1</span> region</a></div>
+<div class="toc-d3"><a href="#s24-8-2-token-url"><span class="num">24.8.2</span> token_url</a></div>
+<div class="toc-d3"><a href="#s24-8-3-client-id"><span class="num">24.8.3</span> client_id</a></div>
+<div class="toc-d3"><a href="#s24-8-4-client-secret"><span class="num">24.8.4</span> client_secret</a></div>
+<div class="toc-d3"><a href="#s24-8-5-scope"><span class="num">24.8.5</span> scope</a></div>
+<div class="toc-d2"><a href="#s24-9-file-poll"><span class="num">24.9</span> File Poll</a></div>
+<div class="toc-d3"><a href="#s24-9-1-pattern"><span class="num">24.9.1</span> pattern</a></div>
+<div class="toc-d3"><a href="#s24-9-2-error-dir"><span class="num">24.9.2</span> error_dir</a></div>
+<div class="toc-d3"><a href="#s24-9-3-raw"><span class="num">24.9.3</span> raw</a></div>
+<div class="toc-d3"><a href="#s24-9-4-batch-size"><span class="num">24.9.4</span> batch_size</a></div>
+<div class="toc-d3"><a href="#s24-9-5-sort-by"><span class="num">24.9.5</span> sort_by</a></div>
+<div class="toc-d2"><a href="#s24-10-kafka-sasl"><span class="num">24.10</span> Kafka SASL</a></div>
+<div class="toc-d3"><a href="#s24-10-1-mechanism"><span class="num">24.10.1</span> mechanism</a></div>
+<div class="toc-d3"><a href="#s24-10-2-password"><span class="num">24.10.2</span> password</a></div>
+<div class="toc-d2"><a href="#s24-11-ncpdp-options"><span class="num">24.11</span> NCPDP Options</a></div>
+<div class="toc-d3"><a href="#s24-11-1-transformations"><span class="num">24.11.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s24-12-queue-config"><span class="num">24.12</span> Queue Config</a></div>
+<div class="toc-d3"><a href="#s24-12-1-max-attempts"><span class="num">24.12.1</span> max_attempts</a></div>
+<div class="toc-d3"><a href="#s24-12-2-max-backoff"><span class="num">24.12.2</span> max_backoff</a></div>
+<div class="toc-d3"><a href="#s24-12-3-max-depth"><span class="num">24.12.3</span> max_depth</a></div>
+<div class="toc-d3"><a href="#s24-12-4-retain-hours"><span class="num">24.12.4</span> retain_hours</a></div>
+<div class="toc-d2"><a href="#s24-13-retry"><span class="num">24.13</span> Retry</a></div>
+<div class="toc-d3"><a href="#s24-13-1-attempts"><span class="num">24.13.1</span> attempts</a></div>
+<div class="toc-d3"><a href="#s24-13-2-backoff"><span class="num">24.13.2</span> backoff</a></div>
+<div class="toc-d2"><a href="#s24-14-script-options"><span class="num">24.14</span> Script Options</a></div>
+<div class="toc-d3"><a href="#s24-14-1-transformations"><span class="num">24.14.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s24-15-scripts"><span class="num">24.15</span> Scripts</a></div>
+<div class="toc-d3"><a href="#s24-15-1-filter"><span class="num">24.15.1</span> filter</a></div>
+<div class="toc-d3"><a href="#s24-15-2-transformer"><span class="num">24.15.2</span> transformer</a></div>
+<div class="toc-d3"><a href="#s24-15-3-preprocessor"><span class="num">24.15.3</span> preprocessor</a></div>
+<div class="toc-d3"><a href="#s24-15-4-deploy"><span class="num">24.15.4</span> deploy</a></div>
+<div class="toc-d3"><a href="#s24-15-5-undeploy"><span class="num">24.15.5</span> undeploy</a></div>
+<div class="toc-d3"><a href="#s24-15-6-postprocessor"><span class="num">24.15.6</span> postprocessor</a></div>
+<div class="toc-d3"><a href="#s24-15-7-language"><span class="num">24.15.7</span> language</a></div>
+<div class="toc-d3"><a href="#s24-15-8-timeout"><span class="num">24.15.8</span> timeout</a></div>
+<div class="toc-d3"><a href="#s24-15-9-include"><span class="num">24.15.9</span> include</a></div>
+<div class="toc-d3"><a href="#s24-15-10-file-roots"><span class="num">24.15.10</span> file_roots</a></div>
+<div class="toc-d3"><a href="#s24-15-11-allow"><span class="num">24.15.11</span> allow</a></div>
+<div class="toc-d2"><a href="#s24-16-shadow"><span class="num">24.16</span> Shadow</a></div>
+<div class="toc-d3"><a href="#s24-16-1-channel"><span class="num">24.16.1</span> channel</a></div>
+<div class="toc-d3"><a href="#s24-16-2-sample"><span class="num">24.16.2</span> sample</a></div>
+<div class="toc-d3"><a href="#s24-16-3-compare"><span class="num">24.16.3</span> compare</a></div>
+<div class="toc-d3"><a href="#s24-16-4-ignore"><span class="num">24.16.4</span> ignore</a></div>
+<div class="toc-d3"><a href="#s24-16-5-max-differences"><span class="num">24.16.5</span> max_differences</a></div>
+<div class="toc-d3"><a href="#s24-16-6-timeout"><span class="num">24.16.6</span> timeout</a></div>
 <div class="toc-d1"><a href="#s25-how-each-component-works"><span class="num">25</span> How Each Component Works</a></div>
 <div class="toc-d2"><a href="#s25-1-hl7"><span class="num">25.1</span> hl7</a></div>
 <div class="toc-d2"><a href="#s25-2-admit"><span class="num">25.2</span> admit</a></div>
@@ -1219,7 +1224,8 @@ destinations:
 <p>Runs traffic through a candidate configuration alongside the live one and reports the differences, so a change can be evidenced before it is trusted. The same idea as <code>perfuse compare</code>, applied to a change rather than to a migration. See <a href="#s14-testing">testing</a>.</p>
 <h3 id="s3-4-exchange--other-formats-and-other-organisations"><span class="num">3.4</span> Exchange — other formats and other organisations</h3>
 <h4 id="s3-4-1-fhir-lab"><span class="num">3.4.1</span> FHIR lab</h4>
-<p>Convert HL7 v2 to FHIR, validate a resource, and inspect the result. The samples cover admissions, lab results, appointments, clinical notes and immunizations. The validation includes US Core, which is the profile American regulation is written against, so this answers &#34;is what they sent us actually conformant&#34; without adopting anything.</p>
+<p>Convert HL7 v2 to FHIR, validate a resource, and inspect the result. The samples cover admissions, lab results, appointments, clinical notes, immunizations and a reportable visit. The validation includes US Core, which is the profile American regulation is written against, so this answers &#34;is what they sent us actually conformant&#34; without adopting anything.</p>
+<p><strong>Public health case report</strong> builds the eCR eICR a case reporting destination would send for the message. It shows which trigger code made the visit reportable, what the report had to mark as missing, and the document itself. A message with nothing reportable gets the reason instead. Nothing is sent from here.</p>
 <h4 id="s3-4-2-subscriptions"><span class="num">3.4.2</span> Subscriptions</h4>
 <p>FHIR subscriptions and whether their notifications are arriving: events, accepted, waiting, and the last reason one was refused. Subscriptions are created by FHIR clients through the FHIR API, not from this page, and the credentials they gave the server are never shown. See <a href="#s8-message-formats">message formats</a>.</p>
 <h4 id="s3-4-3-documents"><span class="num">3.4.3</span> Documents</h4>
@@ -2068,6 +2074,16 @@ destinations:
   url: https://healthlake.us-east-1.amazonaws.com/datastore/&lt;id&gt;/r4/
   auth: {type: aws, access_key_id: ${AWS_ACCESS_KEY_ID}, secret_access_key: ${AWS_SECRET_ACCESS_KEY}}</code></pre>
 <p><code>aws</code> signs each request for AWS HealthLake with Signature Version 4, with the region read from the URL. <code>azure</code> gets a Microsoft Entra ID token for Azure Health Data Services from <code>tenant_id</code>, <code>client_id</code> and <code>client_secret</code> - an app registration holding the FHIR Data Contributor role - with the FHIR service URL as its audience. <code>client_credentials</code> does the same against any OAuth 2.0 <code>token_url</code>. Tokens are reused until a minute before they expire. The same choices are under the destination&#39;s <strong>Hosted service sign-in</strong> in the channel builder.</p>
+<h4 id="s10-8-2-public-health-case-reporting"><span class="num">10.8.2</span> Public health case reporting</h4>
+<p>Tick <strong>Report reportable conditions to public health</strong> on a FHIR destination and it sends case reports rather than bundles. Each message is checked for a reportable-condition trigger code: a diagnosis, a lab test or a coded result. If it has one, the message becomes an HL7 eCR 2.1.2 eICR, wrapped in an eCR message and posted to the URL&#39;s <code>$process-message</code>. If it has none, nothing is sent and nothing fails; the destination counts it as not reportable.</p>
+<pre class="code lang-yaml"><code>fhir:
+  url: https://ecr.agency.example/fhir
+  ecr:
+    rctc: /etc/perfuse/rctc.json
+    source: https://fhir.springfield-general.example/fhir
+    facility: {name: Springfield General Hospital, phone: +1-217-555-0100, city: Springfield, state: IL}</code></pre>
+<p><code>rctc</code> is the Reportable Conditions Trigger Codes, as a FHIR ValueSet or the eRSD Bundle. It needs a UMLS licence, so it is not included; without it a short built-in sample is used, for testing only. <code>source</code> is where the agency sends its Reportability Response. The facility is required because eCR asks for its phone and address, and a v2 message has neither.</p>
+<p>A report says what the message lacked rather than inventing it, and each gap is logged. Try a message in the FHIR lab&#39;s <strong>Public health case report</strong> panel before pointing a live feed at an agency.</p>
 <h3 id="s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</h3>
 <p>&#34;Did this arrive&#34; is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.</p>
 <p><strong>Inspect the reply</strong> on a destination takes a script given the receiver&#39;s response. Return false, or throw, and the delivery is marked failed — which means it retries, queues, and appears in the failure count instead of being silently counted as delivered.</p>
@@ -3992,7 +4008,21 @@ rules:
 <h4 id="s22-9-5-timeout"><span class="num">22.9.5</span> timeout</h4>
 <p>Timeout bounds one write.</p>
 <p>Defaults to 30s.</p>
-<h3 id="s22-10-fhir-destination"><span class="num">22.10</span> FHIR Destination</h3>
+<h3 id="s22-10-ecr-destination"><span class="num">22.10</span> ECR Destination</h3>
+<p>ECRDestination configures electronic case reporting.</p>
+<p>Defined as <code>ECRDestination</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>rctc</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>source</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>facility</code></td><td>ECRFacility</td><td>yes</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s22-10-1-rctc"><span class="num">22.10.1</span> rctc</h4>
+<p>RCTC is a FHIR ValueSet, or a Bundle of them such as the eRSD, holding the trigger codes.</p>
+<p>Without it Perfuse&#39;s short built-in sample is used, which is for testing: agencies expect the RCTC.</p>
+<h3 id="s22-11-fhir-destination"><span class="num">22.11</span> FHIR Destination</h3>
 <p>FHIRDestination configures conversion to FHIR and delivery to a FHIR server.</p>
 <p>Defined as <code>FHIRDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4009,33 +4039,37 @@ rules:
 <tr><td><code>headers</code></td><td>mapping of text to text</td><td>no</td><td>—</td></tr>
 <tr><td><code>bearer_token</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>auth</code></td><td>FHIRAuth (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>ecr</code></td><td>ECRDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-10-1-url"><span class="num">22.10.1</span> url</h4>
+<h4 id="s22-11-1-url"><span class="num">22.11.1</span> url</h4>
 <p>URL is the base URL of the FHIR server, for example &#34;https://fhir.example.org/fhir&#34;.</p>
 <p>The bundle is posted to it directly.</p>
-<h4 id="s22-10-2-version"><span class="num">22.10.2</span> version</h4>
+<h4 id="s22-11-2-version"><span class="num">22.11.2</span> version</h4>
 <p>Version is the FHIR release to produce: R4, R4B or R5. Defaults to R5, the latest published release.</p>
 <p>A deployment talking to an EHR almost always wants R4 and should say so, because silently downgrading would hide a real interoperability decision.</p>
-<h4 id="s22-10-3-timezone"><span class="num">22.10.3</span> timezone</h4>
+<h4 id="s22-11-3-timezone"><span class="num">22.11.3</span> timezone</h4>
 <p>Timezone is applied to HL7 v2 timestamps that carry no offset. v2 permits a bare local time and FHIR does not, so something has to supply one.</p>
 <p>When unset, the offset the sender put on MSH-7 is used, since v2 presumes a bare time is the sender&#39;s local time; a message whose MSH-7 has no offset either falls back to UTC.</p>
-<h4 id="s22-10-4-default-identifier-system"><span class="num">22.10.4</span> default_identifier_system</h4>
+<h4 id="s22-11-4-default-identifier-system"><span class="num">22.11.4</span> default_identifier_system</h4>
 <p>DefaultIdentifierSystem namespaces identifiers whose assigning authority has no configured URI.</p>
 <p>Without a system, an MRN is ambiguous between facilities.</p>
-<h4 id="s22-10-5-claim-us-core"><span class="num">22.10.5</span> claim_us_core</h4>
+<h4 id="s22-11-5-claim-us-core"><span class="num">22.11.5</span> claim_us_core</h4>
 <p>ClaimUSCore adds the US Core 9.0.0 profile to each resource produced that has been checked against it and conforms.</p>
 <p>A resource that falls short is sent without the claim, with a note saying why.</p>
-<h4 id="s22-10-6-validate-before-send"><span class="num">22.10.6</span> validate_before_send</h4>
+<h4 id="s22-11-6-validate-before-send"><span class="num">22.11.6</span> validate_before_send</h4>
 <p>ValidateBeforeSend refuses to post a bundle that fails validation.</p>
 <p>Defaults to true: sending a resource a server will reject wastes a retry budget and hides the real problem behind a transport error.</p>
-<h4 id="s22-10-7-reject-on-warning"><span class="num">22.10.7</span> reject_on_warning</h4>
+<h4 id="s22-11-7-reject-on-warning"><span class="num">22.11.7</span> reject_on_warning</h4>
 <p>RejectOnWarning also refuses on warnings, such as a missing US Core identifier.</p>
 <p>Off by default, because a warning is a judgement about profile conformance rather than about validity.</p>
-<h4 id="s22-10-8-bearer-token"><span class="num">22.10.8</span> bearer_token</h4>
+<h4 id="s22-11-8-bearer-token"><span class="num">22.11.8</span> bearer_token</h4>
 <p>BearerToken is sent as an Authorization header.</p>
 <p>Prefer an environment variable reference over a literal in a file that goes into git.</p>
-<h3 id="s22-11-ftp-destination"><span class="num">22.11</span> FTP Destination</h3>
+<h4 id="s22-11-9-ecr"><span class="num">22.11.9</span> ecr</h4>
+<p>ECR makes this a public health case reporting destination.</p>
+<p>Each message is checked for trigger codes; one that has any is sent as an eCR 2.1 eICR, wrapped in an eCR message, to url&#39;s $process-message, and one with none is not sent at all.</p>
+<h3 id="s22-12-ftp-destination"><span class="num">22.12</span> FTP Destination</h3>
 <p>FTPDestination uploads a file per message.</p>
 <p>Defined as <code>FTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4054,32 +4088,32 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>60s</td></tr>
 </tbody>
 </table>
-<h4 id="s22-11-1-host"><span class="num">22.11.1</span> host</h4>
+<h4 id="s22-12-1-host"><span class="num">22.12.1</span> host</h4>
 <p>Host is the server, with an optional port.</p>
 <p>Defaults to 21, or 990 for implicit TLS.</p>
-<h4 id="s22-11-2-user"><span class="num">22.11.2</span> user</h4>
+<h4 id="s22-12-2-user"><span class="num">22.12.2</span> user</h4>
 <p>User and Password authenticate.</p>
 <p>An empty user means anonymous.</p>
-<h4 id="s22-11-3-password"><span class="num">22.11.3</span> password</h4>
+<h4 id="s22-12-3-password"><span class="num">22.12.3</span> password</h4>
 <p>User and Password authenticate.</p>
 <p>An empty user means anonymous.</p>
-<h4 id="s22-11-4-security"><span class="num">22.11.4</span> security</h4>
+<h4 id="s22-12-4-security"><span class="num">22.12.4</span> security</h4>
 <p>Security selects TLS: explicit, implicit or none.</p>
 <p>Defaults to explicit rather than none, because defaulting to plain FTP would make the insecure choice the quiet one, and a site that genuinely has no TLS should have to write that down.</p>
-<h4 id="s22-11-5-insecure-skip-verify"><span class="num">22.11.5</span> insecure_skip_verify</h4>
+<h4 id="s22-12-5-insecure-skip-verify"><span class="num">22.12.5</span> insecure_skip_verify</h4>
 <p>InsecureSkipVerify accepts any certificate.</p>
 <p>Needed more often than anybody would like: these servers frequently have a self-signed certificate generated years ago that nobody can reissue. Named separately so choosing it is deliberate and visible in the file rather than hidden inside a &#34;security: relaxed&#34; mode.</p>
-<h4 id="s22-11-6-allow-clear-password"><span class="num">22.11.6</span> allow_clear_password</h4>
+<h4 id="s22-12-6-allow-clear-password"><span class="num">22.12.6</span> allow_clear_password</h4>
 <p>AllowClearPassword permits a password over plain FTP.</p>
 <p>Refused by default, because that sends a credential across the network in clear text on every single delivery. Some analysers genuinely have no TLS, so it has to be possible - but it has to be written down, so that it is a decision somebody made rather than a default they inherited. The name is deliberately uncomfortable to type.</p>
-<h4 id="s22-11-7-temp-suffix"><span class="num">22.11.7</span> temp_suffix</h4>
+<h4 id="s22-12-7-temp-suffix"><span class="num">22.12.7</span> temp_suffix</h4>
 <p>TempSuffix is appended while the file is being written and removed by a rename once it is complete.</p>
 <p>Defaults to &#34;.part&#34;.</p>
 <p>Whoever collects these files is usually a scheduled job that takes whatever it finds, and without the rename it eventually takes half a message.</p>
-<h4 id="s22-11-8-timeout"><span class="num">22.11.8</span> timeout</h4>
+<h4 id="s22-12-8-timeout"><span class="num">22.12.8</span> timeout</h4>
 <p>Timeout bounds one transfer.</p>
 <p>Defaults to 60s.</p>
-<h3 id="s22-12-http-destination"><span class="num">22.12</span> HTTP Destination</h3>
+<h3 id="s22-13-http-destination"><span class="num">22.13</span> HTTP Destination</h3>
 <p>HTTPDestination posts messages to an HTTP endpoint.</p>
 <p>The commonest thing a Mirth channel does that Perfuse could not, and the commonest blocker the translator reports. Most uses are unglamorous: post the message to an internal API, post it to a web service that wraps a legacy system, post it to something somebody wrote in an afternoon.</p>
 <p>Defined as <code>HTTPDestination</code> in <code>internal/config</code>.</p>
@@ -4099,30 +4133,30 @@ rules:
 <tr><td><code>follow_redirects</code></td><td>true or false</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-12-1-url"><span class="num">22.12.1</span> url</h4>
+<h4 id="s22-13-1-url"><span class="num">22.13.1</span> url</h4>
 <p>URL is where to post.</p>
 <p>Required.</p>
-<h4 id="s22-12-2-method"><span class="num">22.12.2</span> method</h4>
+<h4 id="s22-13-2-method"><span class="num">22.13.2</span> method</h4>
 <p>Method defaults to POST.</p>
 <p>PUT is allowed for an endpoint that wants it.</p>
 <p>GET and DELETE are refused: this sends a message body, and a transport that silently dropped the message because of a method choice would be a very quiet way to lose data.</p>
-<h4 id="s22-12-3-content-type"><span class="num">22.12.3</span> content_type</h4>
+<h4 id="s22-13-3-content-type"><span class="num">22.13.3</span> content_type</h4>
 <p>ContentType defaults to application/hl7-v2+er7, which is the registered type for a pipe-delimited HL7 v2 message.</p>
 <p>Many endpoints want text/plain instead.</p>
-<h4 id="s22-12-4-bearer-token"><span class="num">22.12.4</span> bearer_token</h4>
+<h4 id="s22-13-4-bearer-token"><span class="num">22.13.4</span> bearer_token</h4>
 <p>BearerToken is sent as an Authorization header.</p>
 <p>Prefer an environment variable reference over a literal in a file that goes into git.</p>
-<h4 id="s22-12-5-success-status"><span class="num">22.12.5</span> success_status</h4>
+<h4 id="s22-13-5-success-status"><span class="num">22.13.5</span> success_status</h4>
 <p>SuccessStatus lists the status codes that count as delivered.</p>
 <p>Defaults to any 2xx.</p>
 <p>Configurable because endpoints disagree about what success looks like: some answer 200 with an error in the body, and some answer 202 for a queue they have accepted the message into.</p>
-<h4 id="s22-12-6-fail-on-body"><span class="num">22.12.6</span> fail_on_body</h4>
+<h4 id="s22-13-6-fail-on-body"><span class="num">22.13.6</span> fail_on_body</h4>
 <p>FailOnBody treats a response containing any of these strings as a failure, whatever the status code.</p>
 <p>This exists because an endpoint answering 200 with &#34;ERROR: patient not found&#34; in the body is common, and treating it as delivered means the message is gone and nobody knows.</p>
-<h4 id="s22-12-7-follow-redirects"><span class="num">22.12.7</span> follow_redirects</h4>
+<h4 id="s22-13-7-follow-redirects"><span class="num">22.13.7</span> follow_redirects</h4>
 <p>FollowRedirects allows the request to be redirected.</p>
 <p>Off by default: a redirect on a write would repost clinical data somewhere the configuration never named.</p>
-<h3 id="s22-13-java-script-destination"><span class="num">22.13</span> Java Script Destination</h3>
+<h3 id="s22-14-java-script-destination"><span class="num">22.14</span> Java Script Destination</h3>
 <p>JavaScriptDestination runs a script instead of sending anywhere.</p>
 <p>Mirth&#39;s JavaScript Writer, and it is used far more than its position in a feature list suggests. It is the escape hatch: when a site needs to talk to something no connector covers, or apply logic no transformation expresses, they write a JavaScript Writer. A migration that cannot run those cannot move the channels that have them, which in a mature Mirth installation is a large fraction.</p>
 <p>Deliberately not a general scripting host. The script gets the message and the same helpers a transformer gets; what it does not get is a way to reach the filesystem or the network, because that is what the other destinations are for and a script that opens its own socket is invisible to every retry, queue and metric in the engine.</p>
@@ -4135,18 +4169,18 @@ rules:
 <tr><td><code>success_on_undefined</code></td><td>true or false (a block, omit to leave off)</td><td>no</td><td>true</td></tr>
 </tbody>
 </table>
-<h4 id="s22-13-1-script"><span class="num">22.13.1</span> script</h4>
+<h4 id="s22-14-1-script"><span class="num">22.14.1</span> script</h4>
 <p>Script is the code to run.</p>
 <p>Required.</p>
-<h4 id="s22-13-2-timeout"><span class="num">22.13.2</span> timeout</h4>
+<h4 id="s22-14-2-timeout"><span class="num">22.14.2</span> timeout</h4>
 <p>Timeout bounds one execution.</p>
 <p>Zero applies a default.</p>
 <p>Bounded because a destination script is on the delivery path: an infinite loop in one does not merely fail a message, it holds the queue behind it.</p>
-<h4 id="s22-13-3-success-on-undefined"><span class="num">22.13.3</span> success_on_undefined</h4>
+<h4 id="s22-14-3-success-on-undefined"><span class="num">22.14.3</span> success_on_undefined</h4>
 <p>SuccessOnUndefined treats a script that returns nothing as success.</p>
 <p>Defaults to true.</p>
 <p>True is the right default and worth explaining. Mirth&#39;s JavaScript Writers overwhelmingly do their work and return nothing, so requiring an explicit return would break every one of them on import. Setting it false is for a site that wants a script to be explicit about whether it worked.</p>
-<h3 id="s22-14-kafka-destination"><span class="num">22.14</span> Kafka Destination</h3>
+<h3 id="s22-15-kafka-destination"><span class="num">22.15</span> Kafka Destination</h3>
 <p>KafkaDestination publishes messages to a Kafka topic.</p>
 <p>Defined as <code>KafkaDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4163,31 +4197,31 @@ rules:
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-14-1-brokers"><span class="num">22.14.1</span> brokers</h4>
+<h4 id="s22-15-1-brokers"><span class="num">22.15.1</span> brokers</h4>
 <p>Brokers is the bootstrap server list.</p>
 <p>Required.</p>
-<h4 id="s22-14-2-topic"><span class="num">22.14.2</span> topic</h4>
+<h4 id="s22-15-2-topic"><span class="num">22.15.2</span> topic</h4>
 <p>Topic is where to publish.</p>
 <p>Required.</p>
-<h4 id="s22-14-3-key"><span class="num">22.14.3</span> key</h4>
+<h4 id="s22-15-3-key"><span class="num">22.15.3</span> key</h4>
 <p>Key is a template for the record key, which decides the partition.</p>
 <p>This is the field that makes Kafka safe for a clinical feed, and it is worth being precise about why. Kafka guarantees order within a partition and nowhere else. Records with the same key always land in the same partition, so keying on the patient identifier keeps that patient&#39;s events in order while letting different patients go in parallel.</p>
 <p>Without a key there is no such guarantee. Measured against a real broker, thirty unkeyed records went to one partition rather than spreading: the client keeps a batch together and picks a new partition between batches. So the ordering holds by accident and breaks at a boundary nobody can see, which is worse than breaking consistently - an A03 discharge read before its A01 admission, intermittently, under load.</p>
 <p>An HL7 path, evaluated against the outgoing message: PID-3.1 keys by patient.</p>
-<h4 id="s22-14-4-acks"><span class="num">22.14.4</span> acks</h4>
+<h4 id="s22-15-4-acks"><span class="num">22.15.4</span> acks</h4>
 <p>Acks is how many brokers must confirm a write: &#34;all&#34;, &#34;leader&#34; or &#34;none&#34;.</p>
 <p>Defaults to all, which is the only setting that survives a broker failing between the write and the replication. &#34;none&#34; is fire-and-forget and will lose messages; it exists because somebody moving non-clinical telemetry may legitimately want it, and refusing it outright would mean they wrote their own producer instead.</p>
-<h4 id="s22-14-5-compression"><span class="num">22.14.5</span> compression</h4>
+<h4 id="s22-15-5-compression"><span class="num">22.15.5</span> compression</h4>
 <p>Compression is &#34;none&#34;, &#34;gzip&#34;, &#34;snappy&#34;, &#34;lz4&#34; or &#34;zstd&#34;.</p>
 <p>Defaults to snappy.</p>
 <p>On by default because HL7 is highly compressible text and the wire is usually the constraint. Snappy rather than zstd as the default: it is the cheapest in CPU, and a connector on the delivery path should not be the thing that saturates a core.</p>
-<h4 id="s22-14-6-headers"><span class="num">22.14.6</span> headers</h4>
+<h4 id="s22-15-6-headers"><span class="num">22.15.6</span> headers</h4>
 <p>Headers are record headers to set.</p>
 <p>Values are templates evaluated per message.</p>
-<h4 id="s22-14-7-timeout"><span class="num">22.14.7</span> timeout</h4>
+<h4 id="s22-15-7-timeout"><span class="num">22.15.7</span> timeout</h4>
 <p>Timeout bounds one publish.</p>
 <p>Defaults to thirty seconds.</p>
-<h3 id="s22-15-s3-destination"><span class="num">22.15</span> S3 Destination</h3>
+<h3 id="s22-16-s3-destination"><span class="num">22.16</span> S3 Destination</h3>
 <p>S3Destination writes each message as an object.</p>
 <p>Defined as <code>S3Destination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4209,32 +4243,32 @@ rules:
 <tr><td><code>format</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-15-1-key"><span class="num">22.15.1</span> key</h4>
+<h4 id="s22-16-1-key"><span class="num">22.16.1</span> key</h4>
 <p>Key templates the object key, using the same ${date}, ${timestamp}, ${control_id}, ${message_type} and ${channel} placeholders as the file and SFTP destinations.</p>
 <p>Defaults to a date-partitioned path plus the control id.</p>
 <p>Date partitioning by default because the alternative - every object in one flat prefix - makes a bucket that is slow to list and impossible to lifecycle by age, and nobody discovers that until there are four million objects in it.</p>
-<h4 id="s22-15-2-access-key-id"><span class="num">22.15.2</span> access_key_id</h4>
+<h4 id="s22-16-2-access-key-id"><span class="num">22.16.2</span> access_key_id</h4>
 <p>AccessKeyID and SecretAccessKey authenticate.</p>
 <p>Either may name an environment variable instead of holding the value, using the form ${NAME}.</p>
-<h4 id="s22-15-3-secret-access-key"><span class="num">22.15.3</span> secret_access_key</h4>
+<h4 id="s22-16-3-secret-access-key"><span class="num">22.16.3</span> secret_access_key</h4>
 <p>AccessKeyID and SecretAccessKey authenticate.</p>
 <p>Either may name an environment variable instead of holding the value, using the form ${NAME}.</p>
-<h4 id="s22-15-4-path-style"><span class="num">22.15.4</span> path_style</h4>
+<h4 id="s22-16-4-path-style"><span class="num">22.16.4</span> path_style</h4>
 <p>PathStyle addresses the bucket as a path rather than a subdomain.</p>
 <p>Most S3-compatible stores need this.</p>
-<h4 id="s22-15-5-content-type"><span class="num">22.15.5</span> content_type</h4>
+<h4 id="s22-16-5-content-type"><span class="num">22.16.5</span> content_type</h4>
 <p>ContentType labels the object.</p>
 <p>Defaults to application/hl7-v2 for HL7 and text/plain otherwise.</p>
-<h4 id="s22-15-6-timeout"><span class="num">22.15.6</span> timeout</h4>
+<h4 id="s22-16-6-timeout"><span class="num">22.16.6</span> timeout</h4>
 <p>Timeout bounds one upload.</p>
 <p>Defaults to 60s.</p>
-<h4 id="s22-15-7-storage-class"><span class="num">22.15.7</span> storage_class</h4>
+<h4 id="s22-16-7-storage-class"><span class="num">22.16.7</span> storage_class</h4>
 <p>StorageClass is the S3 storage class each object is written with: STANDARD_IA, INTELLIGENT_TIERING, GLACIER_IR, GLACIER, DEEP_ARCHIVE and so on.</p>
 <p>This is how an archive goes straight to Glacier - S3 has no separate Glacier API to call.</p>
-<h4 id="s22-15-8-format"><span class="num">22.15.8</span> format</h4>
+<h4 id="s22-16-8-format"><span class="num">22.16.8</span> format</h4>
 <p>Format is hl7 (the default: each object is the message) or ndjson: each object is one JSON line with the message and the fields worth querying, under date-partitioned keys, so Amazon Athena can query the archive.</p>
 <p>See perfuse athena.</p>
-<h3 id="s22-16-sftp-destination"><span class="num">22.16</span> SFTP Destination</h3>
+<h3 id="s22-17-sftp-destination"><span class="num">22.17</span> SFTP Destination</h3>
 <p>SFTPDestination writes each message to a file on an SFTP server.</p>
 <p>Defined as <code>SFTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4255,23 +4289,23 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>60s</td></tr>
 </tbody>
 </table>
-<h4 id="s22-16-1-host"><span class="num">22.16.1</span> host</h4>
+<h4 id="s22-17-1-host"><span class="num">22.17.1</span> host</h4>
 <p>Host is the server, with an optional port.</p>
 <p>Defaults to 22.</p>
-<h4 id="s22-16-2-password"><span class="num">22.16.2</span> password</h4>
+<h4 id="s22-17-2-password"><span class="num">22.17.2</span> password</h4>
 <p>Password authenticates with a password.</p>
 <p>Prefer KeyFile.</p>
-<h4 id="s22-16-3-file-name"><span class="num">22.16.3</span> file_name</h4>
+<h4 id="s22-17-3-file-name"><span class="num">22.17.3</span> file_name</h4>
 <p>FileName templates the name.</p>
 <p>Defaults to a timestamp plus the control ID.</p>
-<h4 id="s22-16-4-temp-suffix"><span class="num">22.16.4</span> temp_suffix</h4>
+<h4 id="s22-17-4-temp-suffix"><span class="num">22.17.4</span> temp_suffix</h4>
 <p>TempSuffix is appended while a file is being written, and removed by a rename once it is complete.</p>
 <p>Defaults to &#34;.part&#34;.</p>
 <p>The same courtesy this connector needs on the way in. Whoever collects these files has the identical problem, and a rename within a directory is atomic on every server worth using.</p>
-<h4 id="s22-16-5-timeout"><span class="num">22.16.5</span> timeout</h4>
+<h4 id="s22-17-5-timeout"><span class="num">22.17.5</span> timeout</h4>
 <p>Timeout bounds a single connection.</p>
 <p>Defaults to 60s.</p>
-<h3 id="s22-17-smtp-destination"><span class="num">22.17</span> SMTP Destination</h3>
+<h3 id="s22-18-smtp-destination"><span class="num">22.18</span> SMTP Destination</h3>
 <p>SMTPDestination configures delivery by email.</p>
 <p>Defined as <code>SMTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4293,40 +4327,40 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-17-1-host"><span class="num">22.17.1</span> host</h4>
+<h4 id="s22-18-1-host"><span class="num">22.18.1</span> host</h4>
 <p>Host is the mail server, with an optional port.</p>
 <p>Port 587 is assumed, which is submission with STARTTLS - the port a modern server expects a client on. Port 25 is server-to-server and is usually either blocked or unauthenticated.</p>
-<h4 id="s22-17-2-from"><span class="num">22.17.2</span> from</h4>
+<h4 id="s22-18-2-from"><span class="num">22.18.2</span> from</h4>
 <p>From is the envelope sender.</p>
 <p>Required, because a message with no sender is discarded silently by a great deal of mail infrastructure, which makes it the hardest possible failure to diagnose.</p>
-<h4 id="s22-17-3-to"><span class="num">22.17.3</span> to</h4>
+<h4 id="s22-18-3-to"><span class="num">22.18.3</span> to</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s22-17-4-cc"><span class="num">22.17.4</span> cc</h4>
+<h4 id="s22-18-4-cc"><span class="num">22.18.4</span> cc</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s22-17-5-bcc"><span class="num">22.17.5</span> bcc</h4>
+<h4 id="s22-18-5-bcc"><span class="num">22.18.5</span> bcc</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s22-17-6-body"><span class="num">22.17.6</span> body</h4>
+<h4 id="s22-18-6-body"><span class="num">22.18.6</span> body</h4>
 <p>Body is the message text.</p>
 <p>Field references are substituted, as in Subject. When it is empty the message itself is the body.</p>
-<h4 id="s22-17-7-attach-name"><span class="num">22.17.7</span> attach_name</h4>
+<h4 id="s22-18-7-attach-name"><span class="num">22.18.7</span> attach_name</h4>
 <p>AttachName names the attachment.</p>
 <p>Defaults to the control ID with a .hl7 suffix.</p>
-<h4 id="s22-17-8-username"><span class="num">22.17.8</span> username</h4>
+<h4 id="s22-18-8-username"><span class="num">22.18.8</span> username</h4>
 <p>Username and Password authenticate to the server.</p>
 <p>Both or neither.</p>
-<h4 id="s22-17-9-password"><span class="num">22.17.9</span> password</h4>
+<h4 id="s22-18-9-password"><span class="num">22.18.9</span> password</h4>
 <p>Username and Password authenticate to the server.</p>
 <p>Both or neither.</p>
-<h4 id="s22-17-10-starttls"><span class="num">22.17.10</span> starttls</h4>
+<h4 id="s22-18-10-starttls"><span class="num">22.18.10</span> starttls</h4>
 <p>StartTLS upgrades the connection before authenticating.</p>
 <p>It defaults to on, and turning it off with a username set is refused rather than allowed: sending a password over an unencrypted connection is not a trade-off worth offering.</p>
-<h4 id="s22-17-11-insecure-skip-verify"><span class="num">22.17.11</span> insecure_skip_verify</h4>
+<h4 id="s22-18-11-insecure-skip-verify"><span class="num">22.18.11</span> insecure_skip_verify</h4>
 <p>InsecureSkipVerify accepts any certificate.</p>
 <p>Named unambiguously because that is what it does.</p>
-<h3 id="s22-18-sns-destination"><span class="num">22.18</span> SNS Destination</h3>
+<h3 id="s22-19-sns-destination"><span class="num">22.19</span> SNS Destination</h3>
 <p>SNSDestination publishes each message to an SNS topic.</p>
 <p>Defined as <code>SNSDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4337,10 +4371,10 @@ rules:
 <tr><td><code>group_by</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-18-1-subject"><span class="num">22.18.1</span> subject</h4>
+<h4 id="s22-19-1-subject"><span class="num">22.19.1</span> subject</h4>
 <p>Subject is sent with email subscriptions.</p>
 <p>Optional; ${message_type} and ${control_id} are filled in.</p>
-<h3 id="s22-19-soap-destination"><span class="num">22.19</span> SOAP Destination</h3>
+<h3 id="s22-20-soap-destination"><span class="num">22.20</span> SOAP Destination</h3>
 <p>SOAPDestination posts a SOAP request per message.</p>
 <p>Defined as <code>SOAPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4359,22 +4393,22 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>30s</td></tr>
 </tbody>
 </table>
-<h4 id="s22-19-1-action"><span class="num">22.19.1</span> action</h4>
+<h4 id="s22-20-1-action"><span class="num">22.20.1</span> action</h4>
 <p>Action is the SOAPAction.</p>
 <p>Required by most 1.1 services.</p>
-<h4 id="s22-19-2-body"><span class="num">22.19.2</span> body</h4>
+<h4 id="s22-20-2-body"><span class="num">22.20.2</span> body</h4>
 <p>Body is the XML that goes inside the envelope, with ${PID-5.1} style references to message paths.</p>
 <p>Required. There is no useful default: the element names come from the service&#39;s own schema and no engine can guess them.</p>
-<h4 id="s22-19-3-header"><span class="num">22.19.3</span> header</h4>
+<h4 id="s22-20-3-header"><span class="num">22.20.3</span> header</h4>
 <p>Header is XML for the envelope&#39;s Header element.</p>
 <p>Omitted entirely when empty, because some services reject an empty one.</p>
-<h4 id="s22-19-4-fault-is-success"><span class="num">22.19.4</span> fault_is_success</h4>
+<h4 id="s22-20-4-fault-is-success"><span class="num">22.20.4</span> fault_is_success</h4>
 <p>FaultIsSuccess lists fault codes that count as delivered.</p>
 <p>Needed more often than it should be. A service that answers a resend with &#34;already submitted&#34; is telling you the message arrived, and without this a site has to write a response transformer to say so - or worse, watches a queue retry forever against a receiver that already has the message.</p>
-<h4 id="s22-19-5-timeout"><span class="num">22.19.5</span> timeout</h4>
+<h4 id="s22-20-5-timeout"><span class="num">22.20.5</span> timeout</h4>
 <p>Timeout bounds one call.</p>
 <p>Defaults to 30s.</p>
-<h3 id="s22-20-sqs-destination"><span class="num">22.20</span> SQS Destination</h3>
+<h3 id="s22-21-sqs-destination"><span class="num">22.21</span> SQS Destination</h3>
 <p>SQSDestination sends each message to an SQS queue.</p>
 <p>Defined as <code>SQSDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4384,10 +4418,10 @@ rules:
 <tr><td><code>group_by</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-20-1-queue-url"><span class="num">22.20.1</span> queue_url</h4>
+<h4 id="s22-21-1-queue-url"><span class="num">22.21.1</span> queue_url</h4>
 <p>QueueURL names the queue.</p>
 <p>One ending .fifo is a FIFO queue, and is grouped and deduplicated.</p>
-<h3 id="s22-21-tcp-dest"><span class="num">22.21</span> TCP Dest</h3>
+<h3 id="s22-22-tcp-dest"><span class="num">22.22</span> TCP Dest</h3>
 <p>TCPDest sends messages to a socket with configurable framing.</p>
 <p>Defined as <code>TCPDest</code> in <code>internal/config</code>.</p>
 <table>
@@ -4401,10 +4435,10 @@ rules:
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-21-1-expect-reply"><span class="num">22.21.1</span> expect_reply</h4>
+<h4 id="s22-22-1-expect-reply"><span class="num">22.22.1</span> expect_reply</h4>
 <p>ExpectReply waits for bytes back before reporting success.</p>
 <p>Off by default, and worth thinking about. With it off, &#34;delivered&#34; means the bytes reached the operating system&#39;s send buffer, which a peer that crashed a moment later never read. With it on, a peer that never replies makes every message time out.</p>
-<h4 id="s22-21-2-keep-alive"><span class="num">22.21.2</span> keep_alive</h4>
+<h4 id="s22-22-2-keep-alive"><span class="num">22.22.2</span> keep_alive</h4>
 <p>KeepAlive holds one connection open across messages rather than dialling per message.</p>
 <p>Most device endpoints expect this; some refuse a second message on the same connection. Off by default because a connection per message is the behaviour that works everywhere, at the cost of a handshake each time.</p>
 </section>
@@ -4682,7 +4716,22 @@ rules:
 <tr><td><code>transformations</code></td><td>list of dicom.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h3 id="s24-7-fhir-auth"><span class="num">24.7</span> FHIR Auth</h3>
+<h3 id="s24-7-ecr-facility"><span class="num">24.7</span> ECR Facility</h3>
+<p>ECRFacility is the organisation sending case reports.</p>
+<p>Defined as <code>ECRFacility</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>npi</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>phone</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>line</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>city</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>state</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>postal_code</code></td><td>text</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h3 id="s24-8-fhir-auth"><span class="num">24.8</span> FHIR Auth</h3>
 <p>FHIRAuth is how a fhir destination authenticates to a hosted FHIR service.</p>
 <p>Three presets, because the hosted services are where a bearer token pasted into a file stops working within the hour:</p>
 <ul>
@@ -4705,22 +4754,22 @@ rules:
 <tr><td><code>scope</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-7-1-region"><span class="num">24.7.1</span> region</h4>
+<h4 id="s24-8-1-region"><span class="num">24.8.1</span> region</h4>
 <p>Region is the AWS region.</p>
 <p>Read from a HealthLake URL when it is not given.</p>
-<h4 id="s24-7-2-token-url"><span class="num">24.7.2</span> token_url</h4>
+<h4 id="s24-8-2-token-url"><span class="num">24.8.2</span> token_url</h4>
 <p>TokenURL is the OAuth token endpoint, for client_credentials.</p>
 <p>For azure it is derived from the tenant.</p>
-<h4 id="s24-7-3-client-id"><span class="num">24.7.3</span> client_id</h4>
+<h4 id="s24-8-3-client-id"><span class="num">24.8.3</span> client_id</h4>
 <p>ClientID and ClientSecret identify the application.</p>
 <p>The secret may be a ${ENV} reference, which is how it should be given.</p>
-<h4 id="s24-7-4-client-secret"><span class="num">24.7.4</span> client_secret</h4>
+<h4 id="s24-8-4-client-secret"><span class="num">24.8.4</span> client_secret</h4>
 <p>ClientID and ClientSecret identify the application.</p>
 <p>The secret may be a ${ENV} reference, which is how it should be given.</p>
-<h4 id="s24-7-5-scope"><span class="num">24.7.5</span> scope</h4>
+<h4 id="s24-8-5-scope"><span class="num">24.8.5</span> scope</h4>
 <p>Scope is requested with the token.</p>
 <p>For azure it defaults to the FHIR service URL followed by /.default, which is its audience.</p>
-<h3 id="s24-8-file-poll"><span class="num">24.8</span> File Poll</h3>
+<h3 id="s24-9-file-poll"><span class="num">24.9</span> File Poll</h3>
 <p>FilePoll is the part of a file-collecting source that has nothing to do with the transport.</p>
 <p>Shared by the local, FTP, SMB and WebDAV sources, and by SFTP. Every one of these settings exists because of a way files go wrong rather than a way transports differ, which is why they belong together: a site that has worked out the right stable_for for its analyser should not have to work it out again when the analyser moves to a share.</p>
 <p>Defined as <code>FilePoll</code> in <code>internal/config</code>.</p>
@@ -4741,23 +4790,23 @@ rules:
 <tr><td><code>sort_by</code></td><td>text</td><td>no</td><td>name</td></tr>
 </tbody>
 </table>
-<h4 id="s24-8-1-pattern"><span class="num">24.8.1</span> pattern</h4>
+<h4 id="s24-9-1-pattern"><span class="num">24.9.1</span> pattern</h4>
 <p>Pattern selects files by glob.</p>
 <p>Empty means every file.</p>
-<h4 id="s24-8-2-error-dir"><span class="num">24.8.2</span> error_dir</h4>
+<h4 id="s24-9-2-error-dir"><span class="num">24.9.2</span> error_dir</h4>
 <p>ErrorDir is where a file that could not be processed goes.</p>
 <p>Separate from MoveTo deliberately. A directory holding nothing but failures is one somebody can watch, and mixing failures into the archive means the only way to find them is to read every file.</p>
-<h4 id="s24-8-3-raw"><span class="num">24.8.3</span> raw</h4>
+<h4 id="s24-9-3-raw"><span class="num">24.9.3</span> raw</h4>
 <p>Raw treats the whole file as one message regardless of content.</p>
 <p>The setting that makes this connector useful for anything other than HL7. Without it a CSV batch, an X12 claim file or a PDF is split on lines beginning MSH and produces nothing, and the error says the file is not HL7 - true but not the point, since the file was never meant to be.</p>
-<h4 id="s24-8-4-batch-size"><span class="num">24.8.4</span> batch_size</h4>
+<h4 id="s24-9-4-batch-size"><span class="num">24.9.4</span> batch_size</h4>
 <p>BatchSize bounds how many files one poll will read.</p>
 <p>Zero means no limit.</p>
 <p>Exists for the first poll after an outage. A directory holding forty thousand files that accumulated overnight will otherwise be read in one pass, which holds the poll loop for as long as it takes and makes the channel look hung. Reading a bounded number per poll keeps the channel responsive and the queue draining visibly.</p>
-<h4 id="s24-8-5-sort-by"><span class="num">24.8.5</span> sort_by</h4>
+<h4 id="s24-9-5-sort-by"><span class="num">24.9.5</span> sort_by</h4>
 <p>SortBy orders the files within a poll: name, modified or none.</p>
 <p>Defaults to name. Ordering matters more than it looks: an ADT stream where A08 updates arrive before the A01 admission produces patients that do not exist yet. Directory listing order is arbitrary on most filesystems, so leaving it unsorted means the order changes between polls for no visible reason.</p>
-<h3 id="s24-9-kafka-sasl"><span class="num">24.9</span> Kafka SASL</h3>
+<h3 id="s24-10-kafka-sasl"><span class="num">24.10</span> Kafka SASL</h3>
 <p>KafkaSASL authenticates to a Kafka cluster.</p>
 <p>Defined as <code>KafkaSASL</code> in <code>internal/config</code>.</p>
 <table>
@@ -4768,13 +4817,13 @@ rules:
 <tr><td><code>password</code></td><td>text</td><td>yes</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-9-1-mechanism"><span class="num">24.9.1</span> mechanism</h4>
+<h4 id="s24-10-1-mechanism"><span class="num">24.10.1</span> mechanism</h4>
 <p>Mechanism is &#34;plain&#34;, &#34;scram-sha-256&#34; or &#34;scram-sha-512&#34;.</p>
 <p>PLAIN sends the password readable on the wire, so it belongs with TLS. SCRAM does not, which is why it is worth naming the difference here rather than treating the three as interchangeable.</p>
-<h4 id="s24-9-2-password"><span class="num">24.9.2</span> password</h4>
+<h4 id="s24-10-2-password"><span class="num">24.10.2</span> password</h4>
 <p>Password is the SASL password.</p>
 <p>Supports ${ENV} references like every other secret here, so a cluster credential need not be written into the channel file.</p>
-<h3 id="s24-10-ncpdp-options"><span class="num">24.10</span> NCPDP Options</h3>
+<h3 id="s24-11-ncpdp-options"><span class="num">24.11</span> NCPDP Options</h3>
 <p>NCPDPOptions are the settings that only apply to a pharmacy claim channel.</p>
 <p>Defined as <code>NCPDPOptions</code> in <code>internal/config</code>.</p>
 <table>
@@ -4783,10 +4832,10 @@ rules:
 <tr><td><code>transformations</code></td><td>list of ncpdp.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-10-1-transformations"><span class="num">24.10.1</span> transformations</h4>
+<h4 id="s24-11-1-transformations"><span class="num">24.11.1</span> transformations</h4>
 <p>Transformations are declarative changes applied to each transmission before delivery.</p>
 <p>The same vocabulary as every other format - set, copy, clear, map, replace, trim, case, each with an optional condition - because the step engine in internal/steps is generic. What differs is the notation: a path is written D1 or 07-D7, using the standard&#39;s own two-character field identifiers.</p>
-<h3 id="s24-11-queue-config"><span class="num">24.11</span> Queue Config</h3>
+<h3 id="s24-12-queue-config"><span class="num">24.12</span> Queue Config</h3>
 <p>QueueConfig turns on durable queueing for a destination.</p>
 <p>Without it, a destination that is down for two minutes loses everything sent during those two minutes: retries happen in memory and when they run out the message is recorded as failed and gone. With it, the message is on disk and keeps its place until the receiver comes back.</p>
 <p>It is off by default, which is a deliberate choice rather than caution. A queue changes what an acknowledgement means and it changes ordering behaviour during an outage, and both of those are things an operator should opt into knowingly rather than discover.</p>
@@ -4802,20 +4851,20 @@ rules:
 <tr><td><code>retain_hours</code></td><td>whole number</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-11-1-max-attempts"><span class="num">24.11.1</span> max_attempts</h4>
+<h4 id="s24-12-1-max-attempts"><span class="num">24.12.1</span> max_attempts</h4>
 <p>MaxAttempts is how many times the queue tries before marking a message failed and moving on to the next one.</p>
 <p>Zero means keep trying indefinitely, which is legitimate for a feed that must not lose anything but should be chosen rather than inherited.</p>
-<h4 id="s24-11-2-max-backoff"><span class="num">24.11.2</span> max_backoff</h4>
+<h4 id="s24-12-2-max-backoff"><span class="num">24.12.2</span> max_backoff</h4>
 <p>MaxBackoff caps the growing delay.</p>
 <p>The default is a minute rather than something larger because a receiver that comes back after a brief outage should be found quickly: an hour-long ceiling turns a two-minute blip into an hour of backlog.</p>
-<h4 id="s24-11-3-max-depth"><span class="num">24.11.3</span> max_depth</h4>
+<h4 id="s24-12-3-max-depth"><span class="num">24.12.3</span> max_depth</h4>
 <p>MaxDepth refuses new messages once this many are waiting, so a receiver that has been down for a week cannot fill the disk.</p>
 <p>Zero means no limit.</p>
 <p>When the limit is reached the message is failed rather than queued, and the sender is told so — which is the honest answer, because we are no longer promising to deliver it.</p>
-<h4 id="s24-11-4-retain-hours"><span class="num">24.11.4</span> retain_hours</h4>
+<h4 id="s24-12-4-retain-hours"><span class="num">24.12.4</span> retain_hours</h4>
 <p>RetainHours is how long delivered and abandoned items are kept before being purged.</p>
 <p>They are kept at all so somebody watching a backlog drain can see it happening, and so an abandoned message can be found afterwards.</p>
-<h3 id="s24-12-retry"><span class="num">24.12</span> Retry</h3>
+<h3 id="s24-13-retry"><span class="num">24.13</span> Retry</h3>
 <p>Retry controls redelivery after a failure.</p>
 <p>Defined as <code>Retry</code> in <code>internal/config</code>.</p>
 <table>
@@ -4826,13 +4875,13 @@ rules:
 <tr><td><code>max_backoff</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-12-1-attempts"><span class="num">24.12.1</span> attempts</h4>
+<h4 id="s24-13-1-attempts"><span class="num">24.13.1</span> attempts</h4>
 <p>Attempts is the total number of tries, including the first.</p>
 <p>Zero means the default.</p>
-<h4 id="s24-12-2-backoff"><span class="num">24.12.2</span> backoff</h4>
+<h4 id="s24-13-2-backoff"><span class="num">24.13.2</span> backoff</h4>
 <p>Backoff is the wait before the second attempt.</p>
 <p>It doubles each time, up to MaxBackoff.</p>
-<h3 id="s24-13-script-options"><span class="num">24.13</span> Script Options</h3>
+<h3 id="s24-14-script-options"><span class="num">24.14</span> Script Options</h3>
 <p>ScriptOptions configures an NCPDP SCRIPT channel.</p>
 <h1 id="why-script-gets-a-block-when-its-filter-is-top-level">Why SCRIPT gets a block when its filter is top-level</h1>
 <p>The channel filter for every data type is the top-level filter key, because internal/expr is generic over the message type: one key, compiled against whichever tree or claim the channel carries. Steps cannot be arranged that way. A v2 step addresses a segment and a field, an X12 step addresses a fixed-width element, and the types are different, so one yaml key would have to hold whichever the data type implied - which is a field that means different things depending on another field, and the failure mode is a step that silently does nothing.</p>
@@ -4844,11 +4893,11 @@ rules:
 <tr><td><code>transformations</code></td><td>list of hl7v3.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-13-1-transformations"><span class="num">24.13.1</span> transformations</h4>
+<h4 id="s24-14-1-transformations"><span class="num">24.14.1</span> transformations</h4>
 <p>Transformations are the declarative steps, addressing the prescription as an XML tree.</p>
 <p>hl7v3.Step rather than a type of its own, and that is not laziness. A prescription and a v3 document are both XML, the path grammar is the same one, and internal/eprescribe already borrows hl7v3.Path for its filter with a comment saying so - v3 and CDA already use it, and a third copy would be a third set of answers to what //a/b[2]@c means.</p>
 <p>The steps that carry v3-only meaning are refused at load rather than being silently available. nullflavor is the one: it writes the v3 attribute stating why a value is absent, which a prescription has no equivalent of, and a step that wrote it would produce a document the receiver does not understand.</p>
-<h3 id="s24-14-scripts"><span class="num">24.14</span> Scripts</h3>
+<h3 id="s24-15-scripts"><span class="num">24.15</span> Scripts</h3>
 <p>Scripts holds the JavaScript attached to a channel.</p>
 <p>Defined as <code>Scripts</code> in <code>internal/config</code>.</p>
 <table>
@@ -4867,47 +4916,47 @@ rules:
 <tr><td><code>allow</code></td><td>list of text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s24-14-1-filter"><span class="num">24.14.1</span> filter</h4>
+<h4 id="s24-15-1-filter"><span class="num">24.15.1</span> filter</h4>
 <p>Filter runs after the expression filter, if any, and must return a boolean.</p>
 <p>A Mirth filter script drops in here unchanged.</p>
-<h4 id="s24-14-2-transformer"><span class="num">24.14.2</span> transformer</h4>
+<h4 id="s24-15-2-transformer"><span class="num">24.15.2</span> transformer</h4>
 <p>Transformer runs after the declarative steps and may modify the message.</p>
 <p>A Mirth transformer script drops in here unchanged.</p>
-<h4 id="s24-14-3-preprocessor"><span class="num">24.14.3</span> preprocessor</h4>
+<h4 id="s24-15-3-preprocessor"><span class="num">24.15.3</span> preprocessor</h4>
 <p>Preprocessor runs before the message is parsed, reads the text as &#34;message&#34; and returns the text to parse.</p>
 <p>A Mirth preprocessor drops in here unchanged.</p>
 <p>This is the only place a message that does not parse can be repaired. Sites use it for a stray character from a serial gateway, a segment terminator that arrived as a line feed, or a vendor padding a field with something illegal for its position. Without it, Perfuse rejects traffic that Mirth accepts today.</p>
-<h4 id="s24-14-4-deploy"><span class="num">24.14.4</span> deploy</h4>
+<h4 id="s24-15-4-deploy"><span class="num">24.15.4</span> deploy</h4>
 <p>Deploy runs once when the channel starts, before it accepts anything.</p>
 <p>This is where sites warm a lookup cache or check that something they depend on is reachable. It runs before the source binds, so a deploy script that fails stops the channel from starting rather than letting it accept messages it cannot handle.</p>
-<h4 id="s24-14-5-undeploy"><span class="num">24.14.5</span> undeploy</h4>
+<h4 id="s24-15-5-undeploy"><span class="num">24.15.5</span> undeploy</h4>
 <p>Undeploy runs once when the channel stops.</p>
 <p>After the source has stopped accepting and after in-flight messages have finished, so it sees a channel that is genuinely idle. Its failure cannot stop a stop: a channel that could not be shut down because a cleanup script threw would be worse than one that logged and closed.</p>
-<h4 id="s24-14-6-postprocessor"><span class="num">24.14.6</span> postprocessor</h4>
+<h4 id="s24-15-6-postprocessor"><span class="num">24.15.6</span> postprocessor</h4>
 <p>Postprocessor runs after the message has been handled and cannot change it.</p>
 <p>The message and what happened to it are visible, so it can notify, count or record. It cannot alter what was sent: by the time it runs the sending has happened, and a script that appeared to change a delivered message would be lying about it.</p>
-<h4 id="s24-14-7-language"><span class="num">24.14.7</span> language</h4>
+<h4 id="s24-15-7-language"><span class="num">24.15.7</span> language</h4>
 <p>Language is which scripting language these scripts are written in: javascript or lua.</p>
 <h1 id="why-one-setting-for-the-whole-block-rather-than-one-per-script">Why one setting for the whole block rather than one per script</h1>
 <p>A channel&#39;s scripts share the channel map and the connector map, and they are read together by whoever maintains them. A filter in Lua beside a transformer in JavaScript would mean two languages in one review, sharing state through a map whose values would have to mean the same in both. Sites that want that can split the channel.</p>
 <h1 id="why-the-default-is-javascript">Why the default is javascript</h1>
 <p>Every script written before this setting existed is JavaScript and says nothing about its language. Making lua the default would silently reinterpret all of them; requiring the field would refuse them. Neither is acceptable for a setting added later.</p>
-<h4 id="s24-14-8-timeout"><span class="num">24.14.8</span> timeout</h4>
+<h4 id="s24-15-8-timeout"><span class="num">24.15.8</span> timeout</h4>
 <p>Timeout bounds each script.</p>
 <p>Zero means five seconds.</p>
 <p>There is deliberately no way to disable it. Mirth allows a transformer to loop forever, which stops the channel, and an interface that stops accepting admissions because of a typo is not something to offer as an option.</p>
-<h4 id="s24-14-9-include"><span class="num">24.14.9</span> include</h4>
+<h4 id="s24-15-9-include"><span class="num">24.15.9</span> include</h4>
 <p>Include names files of shared script source made available to every script on this channel, in whichever language scripts.language names.</p>
 <p>This is Mirth&#39;s code templates. A site with forty channels usually has one library every channel calls, and without it a migration means copying that library into forty files - forty places to fix the next time it changes.</p>
 <p>Paths are relative to the channel file, so a library beside the channels travels with them. It is a list because the alternative is one enormous file, and libraries tend to divide by subject.</p>
 <p>The files have to be in the channel&#39;s language. This was JavaScript-only for a while, and not by refusal: a Lua channel read the files, refused a missing one, and then the runtime installed none of it, so every call into the library failed on the first message with a nil global - the exact error the refusal above exists to avoid. Both languages install it now, and a library that does not parse is refused at load naming the file.</p>
-<h4 id="s24-14-10-file-roots"><span class="num">24.14.10</span> file_roots</h4>
+<h4 id="s24-15-10-file-roots"><span class="num">24.15.10</span> file_roots</h4>
 <p>FileRoots are the directories FileUtil may read and write.</p>
 <p>Required whenever &#34;file&#34; is allowed. Granting file access without naming directories used to mean the whole filesystem: a script could read Perfuse&#39;s own database, which holds password hashes, the LDAP service account password and the OIDC client secret. Creating a channel needs only the editor role, so the escalation completed the moment an administrator started it.</p>
-<h4 id="s24-14-11-allow"><span class="num">24.14.11</span> allow</h4>
+<h4 id="s24-15-11-allow"><span class="num">24.15.11</span> allow</h4>
 <p>Allow grants capabilities a script would otherwise be refused: &#34;file&#34;, &#34;database&#34;, &#34;route&#34;.</p>
 <p>Mirth grants all of these to every script; requiring them to be named means a transformer cannot quietly start reading the filesystem after a copy-paste.</p>
-<h3 id="s24-15-shadow"><span class="num">24.15</span> Shadow</h3>
+<h3 id="s24-16-shadow"><span class="num">24.16</span> Shadow</h3>
 <p>Shadow runs a candidate version of a channel beside the live one and reports where they differ.</p>
 <p>This is the answer to the question that makes interface work frightening: how do you know a change is safe? Not by reading it. A transformation is a program operating on messages whose variety nobody has catalogued, and the case that breaks is always the one nobody thought of - the patient with two identifiers, the result with an empty units field, the A08 that arrives before its A01.</p>
 <p>A channel test proves the cases somebody thought of. Shadow mode proves the cases that actually arrive, against real traffic, before the change carries any of it.</p>
@@ -4927,22 +4976,22 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>5s</td></tr>
 </tbody>
 </table>
-<h4 id="s24-15-1-channel"><span class="num">24.15.1</span> channel</h4>
+<h4 id="s24-16-1-channel"><span class="num">24.16.1</span> channel</h4>
 <p>Channel is the path to the candidate channel file.</p>
 <p>A separate file rather than an inline block, on purpose: the candidate is meant to become the live channel, so it should be the artefact that gets reviewed, committed and promoted, not a fragment that has to be extracted.</p>
-<h4 id="s24-15-2-sample"><span class="num">24.15.2</span> sample</h4>
+<h4 id="s24-16-2-sample"><span class="num">24.16.2</span> sample</h4>
 <p>Sample is the fraction of messages to shadow, from 0 to 1. Defaults to 1.</p>
 <p>Worth lowering only on a busy feed, and worth understanding before doing so: sampling reduces cost and reduces confidence in exactly the same proportion, and the message that would have shown the difference is the unusual one.</p>
-<h4 id="s24-15-3-compare"><span class="num">24.15.3</span> compare</h4>
+<h4 id="s24-16-3-compare"><span class="num">24.16.3</span> compare</h4>
 <p>Compare limits the comparison to these field paths.</p>
 <p>Empty compares everything.</p>
-<h4 id="s24-15-4-ignore"><span class="num">24.15.4</span> ignore</h4>
+<h4 id="s24-16-4-ignore"><span class="num">24.16.4</span> ignore</h4>
 <p>Ignore excludes field paths from the comparison.</p>
 <p>Needed in practice, because a channel that stamps a timestamp or a sequence number differs on every single message and would report a difference rate of 100% while telling you nothing.</p>
-<h4 id="s24-15-5-max-differences"><span class="num">24.15.5</span> max_differences</h4>
+<h4 id="s24-16-5-max-differences"><span class="num">24.16.5</span> max_differences</h4>
 <p>MaxDifferences bounds how many differing messages are kept for inspection.</p>
 <p>Defaults to 100.</p>
-<h4 id="s24-15-6-timeout"><span class="num">24.15.6</span> timeout</h4>
+<h4 id="s24-16-6-timeout"><span class="num">24.16.6</span> timeout</h4>
 <p>Timeout bounds one shadow run.</p>
 <p>Defaults to 5s.</p>
 <p>Separate from the channel&#39;s own timeout, and shorter. A candidate with a runaway script must not accumulate goroutines behind the live traffic.</p>
@@ -5638,6 +5687,7 @@ rules:
 <tr><td><code>cda</code></td><td>Destination</td></tr>
 <tr><td><code>channel</code></td><td>Destination, Shadow</td></tr>
 <tr><td><code>check_every</code></td><td>Contract Ref</td></tr>
+<tr><td><code>city</code></td><td>ECR Facility</td></tr>
 <tr><td><code>claim_us_core</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>client_id</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>client_secret</code></td><td>FHIR Auth</td></tr>
@@ -5667,6 +5717,7 @@ rules:
 <tr><td><code>domain</code></td><td>SMB Source</td></tr>
 <tr><td><code>driver</code></td><td>Database Destination, Database Source</td></tr>
 <tr><td><code>dsn</code></td><td>Database Destination, Database Source</td></tr>
+<tr><td><code>ecr</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>element</code></td><td>SOAP Source</td></tr>
 <tr><td><code>emit_on_first_poll</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>enabled</code></td><td>Channel, Destination, Queue Config</td></tr>
@@ -5676,7 +5727,7 @@ rules:
 <tr><td><code>error_prefix</code></td><td>Azure Blob Source, S3 Source</td></tr>
 <tr><td><code>expect_reply</code></td><td>TCP Dest</td></tr>
 <tr><td><code>extract</code></td><td>Attachments</td></tr>
-<tr><td><code>facility</code></td><td>Ack</td></tr>
+<tr><td><code>facility</code></td><td>Ack, ECR Destination</td></tr>
 <tr><td><code>fail_on_body</code></td><td>HTTP Destination</td></tr>
 <tr><td><code>fault_is_success</code></td><td>SOAP Destination</td></tr>
 <tr><td><code>fault_on_nak</code></td><td>SOAP Source</td></tr>
@@ -5729,6 +5780,7 @@ rules:
 <tr><td><code>length_includes_header</code></td><td>TCP Framing</td></tr>
 <tr><td><code>level</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>limit</code></td><td>DICOM Query Source</td></tr>
+<tr><td><code>line</code></td><td>ECR Facility</td></tr>
 <tr><td><code>listen</code></td><td>DICOM Source, HTTP Source, SOAP Source, Source, TCP Source</td></tr>
 <tr><td><code>login</code></td><td>Broker Destination, Broker Source</td></tr>
 <tr><td><code>match</code></td><td>DICOM Query Source</td></tr>
@@ -5746,8 +5798,9 @@ rules:
 <tr><td><code>mechanism</code></td><td>Kafka SASL</td></tr>
 <tr><td><code>method</code></td><td>HTTP Destination</td></tr>
 <tr><td><code>move_to</code></td><td>Azure Blob Source, File Poll, S3 Source, SFTP Source</td></tr>
-<tr><td><code>name</code></td><td>Channel, Channel Destination, Destination</td></tr>
+<tr><td><code>name</code></td><td>Channel, Channel Destination, Destination, ECR Facility</td></tr>
 <tr><td><code>ncpdp</code></td><td>Channel</td></tr>
+<tr><td><code>npi</code></td><td>ECR Facility</td></tr>
 <tr><td><code>on_no_document</code></td><td>CDA Destination</td></tr>
 <tr><td><code>over</code></td><td>Contract Ref</td></tr>
 <tr><td><code>overlap</code></td><td>DICOM Query Source</td></tr>
@@ -5760,8 +5813,10 @@ rules:
 <tr><td><code>patient_root</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>pattern</code></td><td>File Poll, SFTP Source</td></tr>
 <tr><td><code>persistent</code></td><td>Broker Destination</td></tr>
+<tr><td><code>phone</code></td><td>ECR Facility</td></tr>
 <tr><td><code>poll_interval</code></td><td>Azure Blob Source, Database Source, File Poll, Java Script Source, S3 Source, SFTP Source</td></tr>
 <tr><td><code>port</code></td><td>Serial Source</td></tr>
+<tr><td><code>postal_code</code></td><td>ECR Facility</td></tr>
 <tr><td><code>postprocessor</code></td><td>Scripts</td></tr>
 <tr><td><code>prefetch</code></td><td>AMQP Source</td></tr>
 <tr><td><code>prefix</code></td><td>Azure Blob Source, S3 Source</td></tr>
@@ -5773,6 +5828,7 @@ rules:
 <tr><td><code>quiet_after</code></td><td>Serial Source</td></tr>
 <tr><td><code>quote</code></td><td>Delimited</td></tr>
 <tr><td><code>raw</code></td><td>File Poll</td></tr>
+<tr><td><code>rctc</code></td><td>ECR Destination</td></tr>
 <tr><td><code>read_timeout</code></td><td>HTTP Source, SOAP Source</td></tr>
 <tr><td><code>reassemble</code></td><td>Attachments</td></tr>
 <tr><td><code>reconnect</code></td><td>AMQP Source, Broker Source</td></tr>
@@ -5816,12 +5872,13 @@ rules:
 <tr><td><code>soap</code></td><td>Destination, Source</td></tr>
 <tr><td><code>sop_classes</code></td><td>DICOM Source</td></tr>
 <tr><td><code>sort_by</code></td><td>File Poll</td></tr>
-<tr><td><code>source</code></td><td>Channel</td></tr>
+<tr><td><code>source</code></td><td>Channel, ECR Destination</td></tr>
 <tr><td><code>split</code></td><td>Delimited, X12 Options</td></tr>
 <tr><td><code>sqs</code></td><td>Destination, Source</td></tr>
 <tr><td><code>stable_for</code></td><td>File Poll, SFTP Source</td></tr>
 <tr><td><code>start_block</code></td><td>TCP Framing</td></tr>
 <tr><td><code>starttls</code></td><td>SMTP Destination</td></tr>
+<tr><td><code>state</code></td><td>ECR Facility</td></tr>
 <tr><td><code>statement</code></td><td>Database Destination</td></tr>
 <tr><td><code>stop_bits</code></td><td>Serial Source</td></tr>
 <tr><td><code>storage_class</code></td><td>S3 Destination</td></tr>

@@ -280,6 +280,31 @@ func downgradeToR4(tree map[string]any, resourceType string) {
 		// R4 calls it hospitalization, R5 admission.
 		rename(tree, "admission", "hospitalization")
 
+		// R5's reason holds CodeableReferences; R4's reasonCode is the concepts, and reasonReference the references.
+		if reasons, ok := tree["reason"].([]any); ok {
+			var codes, refs []any
+			for _, r := range reasons {
+				rm, _ := r.(map[string]any)
+				vals, _ := rm["value"].([]any)
+				for _, v := range vals {
+					vm, _ := v.(map[string]any)
+					if c, ok := vm["concept"]; ok {
+						codes = append(codes, c)
+					}
+					if ref, ok := vm["reference"]; ok {
+						refs = append(refs, ref)
+					}
+				}
+			}
+			delete(tree, "reason")
+			if len(codes) > 0 {
+				tree["reasonCode"] = codes
+			}
+			if len(refs) > 0 {
+				tree["reasonReference"] = refs
+			}
+		}
+
 		// R4's class is a single Coding; R5's is a list of CodeableConcept.
 		if classes, ok := tree["class"].([]any); ok && len(classes) > 0 {
 			if first, ok := classes[0].(map[string]any); ok {
@@ -662,6 +687,15 @@ func upgradeShapes(tree map[string]any, resourceType string) bool {
 	case "Encounter":
 		move(tree, "period", "actualPeriod")
 		move(tree, "hospitalization", "admission")
+		if codes, ok := tree["reasonCode"].([]any); ok {
+			var vals []any
+			for _, c := range codes {
+				vals = append(vals, map[string]any{"concept": c})
+			}
+			tree["reason"] = []any{map[string]any{"value": vals}}
+			delete(tree, "reasonCode")
+			changed = true
+		}
 		if class, ok := tree["class"].(map[string]any); ok {
 			if _, hasCode := class["code"]; !hasCode && class["display"] != nil && class["system"] == nil {
 				tree["class"] = []any{map[string]any{"text": class["display"]}}

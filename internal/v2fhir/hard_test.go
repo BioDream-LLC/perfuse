@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
@@ -226,4 +227,32 @@ func TestA40MergeLinksTheRetiredRecord(t *testing.T) {
 func strOf(v any) string {
 	s, _ := v.(string)
 	return s
+}
+
+func TestATitreIsNotWarnedForHavingNoUnit(t *testing.T) {
+	// A titre is a ratio and has no unit by nature, and a range missing its unit is one result missing one unit: both used to
+	// warn twice, once per number, which buried real warnings in a feed of serology results.
+	for _, tc := range []struct {
+		value string
+		want  int
+	}{{"^1^:^64", 0}, {"^5^-^10", 1}} {
+		msg := "MSH|^~\\&|LAB|F|EHR|F|20260101120000||ORU^R01^ORU_R01|T1|P|2.5.1\rPID|1||1^^^F^MR||TEST^A\rOBR|1||L1|5196-1^HBsAg^LN\rOBX|1|SN|5196-1^HBsAg^LN||" + tc.value + "||||||F\r"
+		m, err := hl7.Parse([]byte(msg))
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, err := Convert(m, Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		n := 0
+		for _, note := range res.Notes {
+			if strings.Contains(note.Message, "no unit") {
+				n++
+			}
+		}
+		if n != tc.want {
+			t.Errorf("%s: %d missing-unit notes, want %d: %+v", tc.value, n, tc.want, res.Notes)
+		}
+	}
 }

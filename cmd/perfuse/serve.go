@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
+	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"github.com/biodream-llc/perfuse/internal/trace"
 	"io"
 	"log/slog"
@@ -90,6 +91,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"SMART Health Links it hosts (default: the listen address)")
 	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
 	crdRules := fset.String("crd-rules", "", "a Da Vinci CRD rules file: serve coverage requirements over CDS Hooks at /cds-services")
+	rctc := fset.String("rctc", "", "eCR trigger codes for the case report preview: a FHIR ValueSet or Bundle of them, such as the eRSD")
 	cdsClients := fset.String("cds-clients", "", "the EHRs trusted to call the CDS services with signed JWTs (issuer and jwks_url)")
 
 	runEngine := fset.Bool("engine", true,
@@ -883,6 +885,14 @@ oidcDone:
 			}
 			srv.CRD = rules
 			log.Info("serving Da Vinci CRD over CDS Hooks", "discovery", srv.SelfURL+"/cds-services", "rules", len(rules.Rules))
+		}
+		if *rctc != "" {
+			triggers, err := publichealth.LoadTriggers(*rctc)
+			if err != nil {
+				return fmt.Errorf("-rctc: %w", err)
+			}
+			srv.ECRTriggers = triggers
+			log.Info("eCR trigger codes loaded", "codes", triggers.Len(), "from", *rctc)
 		}
 		if *cdsClients != "" {
 			clients, err := api.LoadCDSClients(*cdsClients)

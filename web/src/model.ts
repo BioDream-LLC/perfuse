@@ -482,6 +482,17 @@ export interface Destination {
   fhirAuthClientId: string
   fhirAuthClientSecret: string
   fhirAuthScope: string
+  /** fhirEcr makes the destination public health case reporting: eICRs for reportable messages, to the URL's $process-message. */
+  fhirEcr: boolean
+  fhirEcrRctc: string
+  fhirEcrSource: string
+  fhirEcrFacilityName: string
+  fhirEcrFacilityNpi: string
+  fhirEcrFacilityPhone: string
+  fhirEcrFacilityLine: string
+  fhirEcrFacilityCity: string
+  fhirEcrFacilityState: string
+  fhirEcrFacilityPostalCode: string
 
   // AMQP 1.0.
   destAmqpAddr: string
@@ -2022,6 +2033,21 @@ function destinationToWire(d: Destination): unknown {
                   scope: d.fhirAuthScope || undefined,
                 }
               : undefined,
+        ecr: d.fhirEcr
+          ? {
+              rctc: d.fhirEcrRctc || undefined,
+              source: d.fhirEcrSource || undefined,
+              facility: {
+                name: d.fhirEcrFacilityName || undefined,
+                npi: d.fhirEcrFacilityNpi || undefined,
+                phone: d.fhirEcrFacilityPhone || undefined,
+                line: d.fhirEcrFacilityLine || undefined,
+                city: d.fhirEcrFacilityCity || undefined,
+                state: d.fhirEcrFacilityState || undefined,
+                postalCode: d.fhirEcrFacilityPostalCode || undefined,
+              },
+            }
+          : undefined,
       }
       break
     case 'cda':
@@ -2359,6 +2385,16 @@ export function newDestination(): Destination {
     fhirAuthClientId: '',
     fhirAuthClientSecret: '',
     fhirAuthScope: '',
+    fhirEcr: false,
+    fhirEcrRctc: '',
+    fhirEcrSource: '',
+    fhirEcrFacilityName: '',
+    fhirEcrFacilityNpi: '',
+    fhirEcrFacilityPhone: '',
+    fhirEcrFacilityLine: '',
+    fhirEcrFacilityCity: '',
+    fhirEcrFacilityState: '',
+    fhirEcrFacilityPostalCode: '',
     destAmqpAddr: '',
     destAmqpAddress: '',
     destAmqpUsername: '',

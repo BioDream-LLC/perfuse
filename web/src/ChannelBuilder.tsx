@@ -2591,6 +2591,47 @@ function DestinationCard({
                 Refuse a resource that only produces warnings
               </label>
             </Field>
+
+            <Field
+              label="Public health case reporting (eCR)"
+              hint="Sends an HL7 eCR 2.1 eICR to the URL's $process-message for each message carrying a reportable-condition trigger code, and nothing for the rest. Try a message in the FHIR lab first."
+            >
+              <label className="flex items-center gap-2 text-sm text-slate-300">
+                <input type="checkbox" className="checkbox" checked={dest.fhirEcr} onChange={(e) => onChange({ fhirEcr: e.target.checked })} />
+                Report reportable conditions to public health
+              </label>
+            </Field>
+            {dest.fhirEcr && (
+              <>
+                <Field label="Trigger codes (RCTC)" hint="A FHIR ValueSet or eRSD Bundle on the server. Left empty, Perfuse's short built-in sample is used, which is for testing only.">
+                  <input className="input font-mono text-xs" value={dest.fhirEcrRctc} onChange={(e) => onChange({ fhirEcrRctc: e.target.value })} placeholder="/etc/perfuse/rctc.json" />
+                </Field>
+                <Field label="Response endpoint" hint="This sender's https endpoint, where the agency sends the Reportability Response.">
+                  <input className="input font-mono text-xs" value={dest.fhirEcrSource} onChange={(e) => onChange({ fhirEcrSource: e.target.value })} placeholder="https://fhir.example-hospital.org/fhir" />
+                </Field>
+                <Field label="Reporting facility name">
+                  <input className="input" value={dest.fhirEcrFacilityName} onChange={(e) => onChange({ fhirEcrFacilityName: e.target.value })} />
+                </Field>
+                <Field label="Reporting facility NPI">
+                  <input className="input font-mono text-xs" value={dest.fhirEcrFacilityNpi} onChange={(e) => onChange({ fhirEcrFacilityNpi: e.target.value })} />
+                </Field>
+                <Field label="Reporting facility phone" hint="eCR requires the facility's phone and address; a v2 message does not carry them.">
+                  <input className="input" value={dest.fhirEcrFacilityPhone} onChange={(e) => onChange({ fhirEcrFacilityPhone: e.target.value })} />
+                </Field>
+                <Field label="Reporting facility street">
+                  <input className="input" value={dest.fhirEcrFacilityLine} onChange={(e) => onChange({ fhirEcrFacilityLine: e.target.value })} />
+                </Field>
+                <Field label="Reporting facility city">
+                  <input className="input" value={dest.fhirEcrFacilityCity} onChange={(e) => onChange({ fhirEcrFacilityCity: e.target.value })} />
+                </Field>
+                <Field label="Reporting facility state">
+                  <input className="input" value={dest.fhirEcrFacilityState} onChange={(e) => onChange({ fhirEcrFacilityState: e.target.value })} />
+                </Field>
+                <Field label="Reporting facility ZIP">
+                  <input className="input" value={dest.fhirEcrFacilityPostalCode} onChange={(e) => onChange({ fhirEcrFacilityPostalCode: e.target.value })} />
+                </Field>
+              </>
+            )}
           </>
         )}
 

@@ -722,6 +722,19 @@ function readDestination(d: WireDest): Destination {
         dest.s3SecretAccessKey = a.secretAccessKey ?? ''
         dest.s3SessionToken = a.sessionToken ?? ''
       }
+      if (d.fhir?.ecr) {
+        const e = d.fhir.ecr
+        dest.fhirEcr = true
+        dest.fhirEcrRctc = e.rctc ?? ''
+        dest.fhirEcrSource = e.source ?? ''
+        dest.fhirEcrFacilityName = e.facility?.name ?? ''
+        dest.fhirEcrFacilityNpi = e.facility?.npi ?? ''
+        dest.fhirEcrFacilityPhone = e.facility?.phone ?? ''
+        dest.fhirEcrFacilityLine = e.facility?.line ?? ''
+        dest.fhirEcrFacilityCity = e.facility?.city ?? ''
+        dest.fhirEcrFacilityState = e.facility?.state ?? ''
+        dest.fhirEcrFacilityPostalCode = e.facility?.postalCode ?? ''
+      }
       break
     case 'cda':
       dest.url = d.cda?.url ?? ''
@@ -1255,6 +1268,11 @@ interface WireDest {
       clientId?: string
       clientSecret?: string
       scope?: string
+    }
+    ecr?: {
+      rctc?: string
+      source?: string
+      facility?: { name?: string; npi?: string; phone?: string; line?: string; city?: string; state?: string; postalCode?: string }
     }
   }
   cda?: {

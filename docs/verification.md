@@ -468,6 +468,39 @@ in `internal/v2fhir/testdata/hard`, with tests holding each fix.
 The five US Core messages above were then validated again as whole bundles, with `-ig` US Core 9.0.0: all five pass. Doing so also
 caught a mistake in one of our own fixtures, an appointment reason labelled as HL7 table 0277 (appointment type), now corrected.
 
+## Public health case reports, against the HL7 validator and HAPI FHIR
+
+The eICR builder had been in the repository for months, reachable from nowhere, and was wrong in every way the validator could
+see:
+
+- fullUrls like `urn:uuid:patient-1`, which are not UUIDs;
+- references that matched no entry;
+- no Bundle identifier or timestamp;
+- a Composition with none of the seven sections `eicr-composition` requires;
+- a "Reportable Condition" section coded as Social history.
+
+The README listed eCR and ELR as features. Nothing reached either one.
+
+It was rebuilt to work from what a converted v2 message holds. An admission with a COVID-19 diagnosis, a lab result for SARS-CoV-2
+RNA, and the same result with no visit number were each checked with validator 6.10.4 against `hl7.fhir.us.ecr#2.1.2`, with
+tx.fhir.org for terminology. All three eICRs, and the eCR message wrapping one, have 0 errors. The runs found:
+
+- **Displays that LOINC rejects.** Two section codes used the older "Narrative" wording. The trigger flags copied the sender's text
+  as the code's display, the same mistake US Core validation found earlier. A trigger now carries a display only when the value set
+  gives one.
+- **eCR's absent-reason rule.** eCR fixes the data-absent reason to `masked`, which would say the facility withheld data it never
+  had. A missing race is sent as the text "Unknown" instead, and a missing language as BCP 47 `und`.
+- **Facility details.** eCR requires the facility's phone and address and the clinician's PractitionerRole, which no v2 message
+  carries, so the facility is configuration.
+- **An NPI in `XCN.9` was dropped.** That covers both `NPI&2.16.840.1.113883.4.6&ISO` and a plain `NPI`. The practitioner identifier
+  ignored the OID handling patient identifiers had, so the US Core and eCR practitioner profiles both failed. It now gets
+  `http://hl7.org/fhir/sid/us-npi`. The SSA OID likewise maps to `us-ssn`.
+- **`PV2-3`, the admit reason, was never mapped.** The Encounter struct had no reason field it serialised. That field is now there,
+  and R5 output carries it as `reason`.
+
+HAPI FHIR (latest) stores each eICR as a document Bundle. HAPI does not implement `$process-message`, so the eCR message itself
+was checked by the validator and by a test receiver, not by an agency's endpoint.
+
 ## Mutual TLS, against OpenSSL
 
 Verified against OpenSSL rather than against Perfuse's own client. Certificate requirements, rejection of
@@ -627,6 +660,8 @@ checked.
   answers a JSON 404 for unknown API paths.
 - **No container image has been published**, though the build file and the README both name one.
 - **No payer or clearinghouse has received a 275 built here**, and it was built from published companion guides rather than the X12 technical report. See above.
+- **No public health agency, or AIMS, has received a case report from here.** The eICR and the eCR message validate, and the trigger
+  codes were the built-in sample, not the RCTC. ELR (HL7 2.5.1 lab reports to public health) is not provided.
 - **No third-party FHIR subscriber has received a notification from here.** Delivery was tested against receivers written for the tests.
 - **No site has run production clinical traffic through any of this.** The engine, transports, queue and
   web interface are tested, and the parts that talk to other software are verified as described above.

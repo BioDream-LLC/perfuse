@@ -1713,6 +1713,7 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Electronic signature (HL7 DSDR)': IconCheck,
   'Coverage information on the order': IconCheck,
   'Documentation (DTR)': IconDocuments,
+  'Public health case report (eICR)': IconDocuments,
   'X12 278 response': IconX12,
   'Claims and remittance': IconX12,
   'CARIN Blue Button bundle': IconFhir,

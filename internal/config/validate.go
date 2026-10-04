@@ -9,6 +9,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/x12"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -874,6 +875,24 @@ func (f *FHIRDestination) validate() []error {
 	if f.Timezone != "" {
 		if _, err := time.LoadLocation(f.Timezone); err != nil {
 			errs = append(errs, fmt.Errorf("fhir.timezone %q is not a known location", f.Timezone))
+		}
+	}
+
+	if e := f.ECR; e != nil {
+		if strings.TrimSpace(e.Source) == "" {
+			errs = append(errs, errors.New("fhir.ecr.source is required: it is where the agency sends the Reportability Response"))
+		} else if u, err := url.Parse(e.Source); err != nil || u.Scheme != "https" || u.Host == "" {
+			errs = append(errs, fmt.Errorf("fhir.ecr.source %q must be an absolute https URL", e.Source))
+		}
+		for _, x := range []struct{ v, name string }{{e.Facility.Name, "name"}, {e.Facility.Phone, "phone"}, {e.Facility.City, "city"}, {e.Facility.State, "state"}} {
+			if strings.TrimSpace(x.v) == "" {
+				errs = append(errs, fmt.Errorf("fhir.ecr.facility.%s is required: eCR requires the reporting facility's", x.name))
+			}
+		}
+		if e.RCTC != "" {
+			if _, err := os.Stat(e.RCTC); err != nil {
+				errs = append(errs, fmt.Errorf("fhir.ecr.rctc: %w", err))
+			}
 		}
 	}
 

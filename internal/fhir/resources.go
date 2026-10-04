@@ -143,10 +143,18 @@ type Encounter struct {
 	// CareTeam and other R5 additions are omitted until something populates them.
 	ServiceProvider *Reference        `json:"serviceProvider,omitempty"`
 	ReasonCode      []CodeableConcept `json:"-"`
-	Extension       []Extension       `json:"extension,omitempty"`
+	// Reason is R5's shape (a list of uses and values); R4 has reasonCode, a list of CodeableConcept, made from the concepts.
+	Reason    []EncounterReason `json:"reason,omitempty"`
+	Extension []Extension       `json:"extension,omitempty"`
 
 	// Hospitalization is R4's name; R5 calls it admission.
 	Admission *EncounterAdmission `json:"admission,omitempty"`
+}
+
+// EncounterReason is why an encounter happened, in R5's form.
+type EncounterReason struct {
+	Use   []CodeableConcept   `json:"use,omitempty"`
+	Value []CodeableReference `json:"value,omitempty"`
 }
 
 // EncounterParticipant is a person involved in an encounter.

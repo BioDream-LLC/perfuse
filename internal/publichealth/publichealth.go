@@ -106,6 +106,10 @@ var ReportableConditions = []reportableEntry{
 	// COVID-19
 	{"840539006", "SNOMED", "COVID-19", "CDC", "immediate"},
 	{"U07.1", "ICD-10", "COVID-19", "CDC", "immediate"},
+	// Lab tests whose result is the trigger, as the RCTC lists them for ELR and eCR.
+	{"94500-6", "LOINC", "COVID-19", "CDC", "immediate"},
+	{"94309-2", "LOINC", "COVID-19", "CDC", "immediate"},
+	{"840533007", "SNOMED", "COVID-19", "CDC", "immediate"}, // SARS-CoV-2 (organism), as a coded result
 	// Gonorrhea
 	{"15628003", "SNOMED", "Gonorrhea", "state", "routine"},
 	{"A54", "ICD-10", "Gonorrhea", "state", "routine"},
@@ -323,164 +327,6 @@ func BuildORU(msg ELRMessage) ([]byte, error) {
 	}
 
 	return []byte(b.String()), nil
-}
-
-// ---------------------------------------------------------------------------
-// Electronic Case Reporting (eCR) — FHIR eICR Bundle
-// ---------------------------------------------------------------------------
-
-// CaseReport holds the data needed to generate a FHIR eICR bundle.
-type CaseReport struct {
-	PatientID         string
-	Condition         string // SNOMED or ICD-10 code
-	DiagnosisDate     string // YYYY-MM-DD
-	Jurisdiction      string
-	ReportingFacility string
-	Encounter         string // encounter ID
-	Provider          string // provider name
-}
-
-// ValidateECR checks a CaseReport for completeness and returns any errors found.
-func ValidateECR(report CaseReport) []string {
-	var errs []string
-	if report.PatientID == "" {
-		errs = append(errs, "PatientID is required")
-	}
-	if report.Condition == "" {
-		errs = append(errs, "Condition is required")
-	}
-	if report.DiagnosisDate == "" {
-		errs = append(errs, "DiagnosisDate is required")
-	}
-	if report.ReportingFacility == "" {
-		errs = append(errs, "ReportingFacility is required")
-	}
-	if report.Encounter == "" {
-		errs = append(errs, "Encounter is required")
-	}
-	if report.Provider == "" {
-		errs = append(errs, "Provider is required")
-	}
-	return errs
-}
-
-// BuildECR generates a FHIR Bundle (type=document) representing an electronic
-// initial case report (eICR). The bundle contains Patient, Condition,
-// Encounter, Practitioner, and Organization resources.
-func BuildECR(report CaseReport) (map[string]interface{}, error) {
-	if errs := ValidateECR(report); len(errs) > 0 {
-		return nil, fmt.Errorf("validation failed: %s", strings.Join(errs, "; "))
-	}
-
-	patient := map[string]interface{}{
-		"resourceType": "Patient",
-		"id":           report.PatientID,
-	}
-
-	condition := map[string]interface{}{
-		"resourceType": "Condition",
-		"id":           "condition-1",
-		"code": map[string]interface{}{
-			"coding": []map[string]interface{}{
-				{
-					"system": "http://snomed.info/sct",
-					"code":   report.Condition,
-				},
-			},
-		},
-		"subject": map[string]interface{}{
-			"reference": "Patient/" + report.PatientID,
-		},
-		"onsetDateTime": report.DiagnosisDate,
-	}
-
-	encounter := map[string]interface{}{
-		"resourceType": "Encounter",
-		"id":           report.Encounter,
-		"status":       "finished",
-		"subject": map[string]interface{}{
-			"reference": "Patient/" + report.PatientID,
-		},
-	}
-
-	practitioner := map[string]interface{}{
-		"resourceType": "Practitioner",
-		"id":           "practitioner-1",
-		"name": []map[string]interface{}{
-			{"text": report.Provider},
-		},
-	}
-
-	organization := map[string]interface{}{
-		"resourceType": "Organization",
-		"id":           "reporting-facility",
-		"name":         report.ReportingFacility,
-	}
-
-	composition := map[string]interface{}{
-		"resourceType": "Composition",
-		"id":           "eicr-composition",
-		"meta": map[string]interface{}{
-			"profile": []string{
-				"http://hl7.org/fhir/us/ecr/StructureDefinition/eicr-composition",
-			},
-		},
-		"status": "final",
-		"type": map[string]interface{}{
-			"coding": []map[string]interface{}{
-				{
-					"system":  "http://loinc.org",
-					"code":    "55751-2",
-					"display": "Public Health Case Report",
-				},
-			},
-		},
-		"subject": map[string]interface{}{
-			"reference": "Patient/" + report.PatientID,
-		},
-		"encounter": map[string]interface{}{
-			"reference": "Encounter/" + report.Encounter,
-		},
-		"author": []map[string]interface{}{
-			{"reference": "Practitioner/practitioner-1"},
-		},
-		"custodian": map[string]interface{}{
-			"reference": "Organization/reporting-facility",
-		},
-		"date": report.DiagnosisDate,
-		"section": []map[string]interface{}{
-			{
-				"title": "Reportable Condition",
-				"code": map[string]interface{}{
-					"coding": []map[string]interface{}{
-						{
-							"system":  "http://loinc.org",
-							"code":    "29762-2",
-							"display": "Social history",
-						},
-					},
-				},
-				"entry": []map[string]interface{}{
-					{"reference": "Condition/condition-1"},
-				},
-			},
-		},
-	}
-
-	bundle := map[string]interface{}{
-		"resourceType": "Bundle",
-		"type":         "document",
-		"entry": []map[string]interface{}{
-			{"fullUrl": "urn:uuid:composition-1", "resource": composition},
-			{"fullUrl": "urn:uuid:patient-1", "resource": patient},
-			{"fullUrl": "urn:uuid:condition-1", "resource": condition},
-			{"fullUrl": "urn:uuid:encounter-1", "resource": encounter},
-			{"fullUrl": "urn:uuid:practitioner-1", "resource": practitioner},
-			{"fullUrl": "urn:uuid:organization-1", "resource": organization},
-		},
-	}
-
-	return bundle, nil
 }
 
 // ---------------------------------------------------------------------------

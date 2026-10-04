@@ -295,6 +295,22 @@ test("the FHIR destination's validation settings reach the generated file", asyn
   await fileContains(page, "reject_on_warning", "refusing on warnings was switched on and the file does not say so");
 });
 
+test("a FHIR destination becomes public health case reporting, with the facility eCR requires", async ({ page }) => {
+  await page.goto("/");
+  await openBuilderWithTemplate(page);
+  const type = page.locator('select[id^="dest-"][id$="-type"]').first();
+  await type.selectOption("fhir");
+  await page.getByRole("checkbox", { name: /Report reportable conditions to public health/ }).check();
+  await page.getByRole("textbox", { name: "Response endpoint" }).fill("https://fhir.springfield-general.test/fhir");
+  await page.getByRole("textbox", { name: "Reporting facility name" }).fill("Springfield General Hospital");
+  await page.getByRole("textbox", { name: "Reporting facility phone" }).fill("+1-217-555-0100");
+  await page.getByRole("textbox", { name: "Reporting facility city" }).fill("Springfield");
+  await page.getByRole("textbox", { name: "Reporting facility state" }).fill("IL");
+  await fileContains(page, "ecr:", "case reporting was switched on and the file does not say so");
+  await fileContains(page, "source: https://fhir.springfield-general.test/fhir", "the response endpoint never reached the file");
+  await fileContains(page, "phone: +1-217-555-0100", "the facility phone never reached the file");
+});
+
 test("the file destination's naming and retention reach the generated file", async ({ page }) => {
   // The model's own comment says the file name is the difference between a folder somebody can find a message in and one they
   // cannot, and the form offered only the folder.
