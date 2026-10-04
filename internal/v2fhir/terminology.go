@@ -233,6 +233,27 @@ var ucumUnits = map[string]string{
 	"/uL":       "/uL",
 	"/mm3":      "/mm3",
 	"copies/mL": "{copies}/mL",
+	// Further units that are already valid UCUM as written. "ug/L" (troponin, among others) was reported as having no
+	// UCUM code, so the quantity went out as text only.
+	"ug/L":     "ug/L",
+	"mcg/L":    "ug/L",
+	"ng/L":     "ng/L",
+	"mg/L":     "mg/L",
+	"ug/dL":    "ug/dL",
+	"mcg/dL":   "ug/dL",
+	"ng/dL":    "ng/dL",
+	"nmol/L":   "nmol/L",
+	"pmol/L":   "pmol/L",
+	"mmol/mol": "mmol/mol",
+	"mIU/L":    "m[IU]/L",
+	"mIU/mL":   "m[IU]/mL",
+	"uIU/mL":   "u[IU]/mL",
+	"U/mL":     "U/mL",
+	"mL":       "mL",
+	"L":        "L",
+	"mg/g":     "mg/g",
+	"/HPF":     "/[HPF]",
+	"/LPF":     "/[LPF]",
 }
 
 // mapUCUM returns the UCUM code for a unit string, and whether it was recognised.
@@ -416,7 +437,14 @@ func (c *converter) v2DateTime(value, source string) string {
 		// v2 permits a local time with no offset; FHIR does not. Something has to
 		// supply one, and saying which was supplied is the difference between a
 		// conversion a clinician can trust and one they cannot.
-		zone := c.opts.location()
+		//
+		// v2 presumes such a time is the sender's local time. With no timezone configured, the offset the sender put on
+		// MSH-7 is the best evidence of what that is, so it is used before falling back to UTC: an Australian feed
+		// sending MSH-7 with +1000 and a birth time without one used to be read ten hours out.
+		zone, why := c.opts.location(), ""
+		if c.opts.Timezone == nil && c.senderZone != nil {
+			zone, why = c.senderZone, " (the sender's offset on MSH-7)"
+		}
 		t, err := time.ParseInLocation("20060102150405",
 			year+month+day+hour+minute+second, zone)
 		if err != nil {
@@ -424,7 +452,7 @@ func (c *converter) v2DateTime(value, source string) string {
 			return ""
 		}
 		c.note("info", source, "",
-			"timestamp %q had no timezone; %s was applied", value, zone.String())
+			"timestamp %q had no timezone; %s%s was applied", value, zone.String(), why)
 		return t.Format(time.RFC3339)
 	}
 

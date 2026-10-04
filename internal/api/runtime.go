@@ -969,7 +969,8 @@ func (s *Server) handleConvertToFHIR(w http.ResponseWriter, r *http.Request, ses
 		version = parsed
 	}
 
-	location := time.UTC
+	// Unset means the converter uses the sender's MSH-7 offset, then UTC.
+	var location *time.Location
 	if req.Timezone != "" {
 		loc, err := time.LoadLocation(req.Timezone)
 		if err != nil {

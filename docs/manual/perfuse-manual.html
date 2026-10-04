@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 6ea281f</p>
+<p class="version">version 0.1 · 20f3a7f</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -1778,6 +1778,30 @@ destinations:
 <li><strong>Historical records.</strong> A record transcribed from somewhere else (<code>RXA-9</code> other than <code>00</code>) is not a primary source.</li>
 <li><strong>Unknown amounts.</strong> An amount of <code>999</code> means unknown, not 999.</li>
 <li><strong>Routes and sites.</strong> Each dose takes the route and site from the <code>RXR</code> after it, so a message with two doses does not give the second one the first one&#39;s route.</li>
+</ul>
+<p><strong>Awkward input.</strong> Each of these is reported in the notes rather than decided silently:</p>
+<ul>
+<li><strong>Identifiers.</strong> <code>PID-2</code> and <code>PID-4</code>, withdrawn after v2.7 but still sent, are kept like <code>PID-3</code>. <code>CX.7</code> and <code>CX.8</code> become</li>
+</ul>
+<p>  <code>Identifier.period</code>. An assigning authority carrying an ISO OID (<code>AUSHIC&amp;2.16.840.1.113883.3.879&amp;ISO</code>) becomes <code>urn:oid:</code>. A   type code outside HL7 table 0203 is kept as text, not labelled as one.</p>
+<ul>
+<li><strong>Merges.</strong> <code>MRG</code> on a merge event (<code>A40</code> and its kin) sends the retired record too, inactive, with <code>Patient.link</code> both ways. On any</li>
+</ul>
+<p>  other event, such as an <code>A08</code>, nothing is merged and a warning says the prior identifier is still live.</p>
+<ul>
+<li><strong>Times.</strong> A time of birth in <code>PID-7</code> goes to the <code>patient-birthTime</code> extension. A timestamp with no offset takes the configured</li>
+</ul>
+<p>  timezone, otherwise the offset on <code>MSH-7</code> (v2 presumes the sender&#39;s local time), otherwise UTC.</p>
+<ul>
+<li><strong>Results.</strong> Repeats of a text result are joined with line breaks. An <code>ED</code> result, or a coded one whose value is plainly Base64, becomes a</li>
+</ul>
+<p>  DocumentReference that the Observation points to in <code>derivedFrom</code>, since an R4 Observation has no attachment value. An <code>SN</code>   comparator of <code>=</code> is dropped as redundant; <code>&lt;&gt;</code> keeps the text, because no quantity can say &#34;not equal&#34;.</p>
+<ul>
+<li><strong>Visits.</strong> An <code>A08</code> with a discharge date (<code>PV1-45</code>) is a finished encounter. A missing or unknown patient class is the null</li>
+</ul>
+<p>  flavor <code>UNK</code>, because R4 requires a class.</p>
+<ul>
+<li><strong>Z segments</strong> are named in a warning, since there is no standard map for them.</li>
 </ul>
 <h4 id="s8-4-2-us-core-900-and-uscdi-v6"><span class="num">8.4.2</span> US Core 9.0.0 and USCDI v6</h4>
 <p><code>-us-core</code> (and <code>claim_us_core</code> on a <code>fhir</code> destination) puts a US Core profile in <code>meta.profile</code>, but only on a resource that has been checked against that profile and found to conform. One that falls short is still converted and sent without the claim, and a note gives the reason, such as &#34;US Core requires an encounter type, and this Encounter has none&#34;. The checks are transcribed from US Core 9.0.0, the version ONC&#39;s 2026 Standards Version Advancement Process approves for USCDI v6. They cover Patient, Encounter, the laboratory Observation and DiagnosticReport, Specimen, Practitioner, Organization, Location, Immunization, DocumentReference, the encounter-diagnosis Condition and AllergyIntolerance.</p>
@@ -3974,7 +3998,7 @@ rules:
 <tbody>
 <tr><td><code>url</code></td><td>text</td><td>yes</td><td>—</td></tr>
 <tr><td><code>version</code></td><td>text</td><td>no</td><td>R5</td></tr>
-<tr><td><code>timezone</code></td><td>text</td><td>no</td><td>UTC</td></tr>
+<tr><td><code>timezone</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>default_identifier_system</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>identifier_systems</code></td><td>mapping of text to text</td><td>no</td><td>—</td></tr>
 <tr><td><code>claim_us_core</code></td><td>true or false</td><td>no</td><td>—</td></tr>
@@ -3993,7 +4017,7 @@ rules:
 <p>A deployment talking to an EHR almost always wants R4 and should say so, because silently downgrading would hide a real interoperability decision.</p>
 <h4 id="s22-10-3-timezone"><span class="num">22.10.3</span> timezone</h4>
 <p>Timezone is applied to HL7 v2 timestamps that carry no offset. v2 permits a bare local time and FHIR does not, so something has to supply one.</p>
-<p>Defaults to UTC, which is at least explicit.</p>
+<p>When unset, the offset the sender put on MSH-7 is used, since v2 presumes a bare time is the sender&#39;s local time; a message whose MSH-7 has no offset either falls back to UTC.</p>
 <h4 id="s22-10-4-default-identifier-system"><span class="num">22.10.4</span> default_identifier_system</h4>
 <p>DefaultIdentifierSystem namespaces identifiers whose assigning authority has no configured URI.</p>
 <p>Without a system, an MRN is ambiguous between facilities.</p>

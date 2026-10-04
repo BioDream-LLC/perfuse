@@ -302,7 +302,9 @@ What follows from that:
 - **Timestamps are converted, not copied.** HL7 v2 permits a local time with no
   offset and FHIR does not, so when one has to be supplied the conversion says so.
   Copying a v2 timestamp straight through is the most common reason a converted
-  resource is rejected.
+  resource is rejected. The offset supplied is `-tz` (or `timezone` on a `fhir`
+  destination) when set, otherwise the one the sender put on `MSH-7`, since v2
+  presumes a bare time is the sender's local time, otherwise UTC.
 - **Encounter status comes from the trigger event**, since v2 has no status field.
   An A13 cancels a discharge, so the visit is in progress again — treating it as
   finished would leave a discharged patient still in a bed.
@@ -313,6 +315,13 @@ What follows from that:
 Measured against 299 real ADT messages: all 299 converted with zero validation
 errors in either R4 or R5, producing 1,257 resources, with 96 distinct patient
 identifiers each mapping to exactly one resource id.
+
+That count used Perfuse's own validator. The official HL7 validator, run later on
+whole bundles, found that every `fullUrl` was malformed (a resource id, not a
+UUID, after `urn:uuid:`), which Perfuse's checker did not look at. On the 70
+messages of the public nw-gmsa test set it then passed 43; after the fixes it
+passes 64, and the other 6 fail only on codes the senders sent that are not in
+the code system. The details are in `docs/verification.md`.
 
 ### The FHIR server
 

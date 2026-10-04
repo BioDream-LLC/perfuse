@@ -26,3 +26,26 @@ test("the FHIR lab shows which resources claim US Core, after checking each", as
   // PV1 here has no admission or patient type, so the Encounter has no type, and US Core requires one.
   await expect(claims).toContainText(/Encounter\/\S+: no claim; see the notes/);
 });
+
+// An awkward update posted on chat.fhir.org: an A08 carrying MRG (which the ADT_A01 structure has no place for), a time of birth
+// and a Z segment. Each used to vanish without a note; the Decisions tab now says what was and was not done.
+test("the FHIR lab reports what it could not map in an awkward message", async ({ page }) => {
+  await page.goto("/");
+  await openTab(page, "FHIR lab");
+  const a08 = [
+    "MSH|^~\\&|PAS|RIVERLAND|GW|RCVFAC|20260918060000+1000||ADT^A08^ADT_A01|TEST002|P|2.5",
+    "EVN|A08|20260918055900+1000|||OP12345",
+    "PID|1||441122^^^RIVERLAND^MR~3950000000^^^AUSHIC&2.16.840.1.113883.3.879&ISO^MC||TESTPATIENT^ALEX^^^MS^^L~NGUYEN^ALEX^^^^^B||19800101120000|F",
+    "MRG|998877^^^RIVERLAND^MR",
+    "PV1|1|I|WARD3^BED2^RAH||||||||||||||||VN0099|||||||||||||||||||||||||20260910080000+1000|20260917",
+    "ZPD|1|INTERPRETER|AUSLAN|REQUIRED",
+  ].join("\n");
+  await page.getByLabel("HL7 v2 message to convert").fill(a08);
+  await page.getByRole("button", { name: "Convert to FHIR" }).click();
+  await expect(page.getByText('"resourceType": "Patient"').first()).toBeVisible();
+  await page.getByRole("button", { name: /^Decisions/ }).click();
+  await expect(page.getByText(/prior identifier "998877" is still live/)).toBeVisible();
+  await expect(page.getByText(/ZPD is a site-defined Z segment/)).toBeVisible();
+  await expect(page.getByText(/patient-birthTime extension/)).toBeVisible();
+  await expect(page.getByText(/urn:oid:2\.16\.840\.1\.113883\.3\.879 was used/)).toBeVisible();
+});

@@ -420,6 +420,38 @@ than at three in the morning.
 Verified against OpenSSH, which is a different implementation from the one used on both ends of the
 existing tests. A client and server from the same library agreeing tells you they agree with each other.
 
+## Hard v2 cases from the FHIR community, against the official HL7 validator
+
+Two deliberately awkward messages posted on chat.fhir.org (`#v2 to FHIR`, September 2026) as tests for v2 converters, and the 70
+messages of the public [nw-gmsa/Testing](https://github.com/nw-gmsa/Testing) set (NHS lab, genomics, order and Epic messages),
+converted to R4 with the CLI defaults and checked as whole bundles by the HL7 validator against base R4 with the live terminology
+server. The first run passed 43 of the 70.
+
+What it found, all fixed:
+
+- **Every `fullUrl` was malformed**: `urn:uuid:` followed by a resource id, not a UUID. Every earlier validator run had checked the
+  resources taken out of the bundle, so none of them saw it, and Perfuse's own checker did not look. CDA-to-FHIR bundles had the
+  same fault. They now carry a UUID derived from the resource, so they stay deterministic.
+- **The same resource added twice** (one practitioner on several results) broke bdl-7 in 13 bundles.
+- **Encounters with no class**, which R4 requires; **coding-system placeholder URIs with spaces in them**; and **site identifier
+  types labelled as HL7 table 0203**.
+- **PDFs read as codes.** Three messages send a Base64 PDF under `OBX-2` `CE`; it went into `Coding.display`, past FHIR's 1 MB string
+  limit. A coded value shaped like `ED` is now read as `ED`, and `ED` becomes a DocumentReference the Observation points to.
+
+What the two community messages exposed besides, which the validator cannot see because each was dropped or decided without a
+note: `PID-4` and `CX.7`/`CX.8` dropped; an ISO OID in the assigning authority ignored; repeats of a text result joined with the raw
+`~`; Z segments skipped without a word; `MRG` on an `A08` ignored, and on an `A40` too, so no merge was ever expressed; a time of
+birth in `PID-7` dropped; a name type with no FHIR equivalent turned into `old`; an `A08` with a discharge date called in progress;
+a bare time read as UTC when `MSH-7` said +10:00; `ug/L` not recognised as UCUM; and `SN` `<>` (not equal) turned into the number.
+
+After the fixes, 64 of the 70 pass. The other 6 fail only on codes the senders sent that the validator cannot find: a UK-edition
+SNOMED code checked against the International edition, LOINC answer codes with a typo, and the made-up LOINC codes of a test
+message. Those are the sender's codes, and a converter that dropped or changed them would be worse. The two community messages are
+in `internal/v2fhir/testdata/hard`, with tests holding each fix.
+
+The five US Core messages above were then validated again as whole bundles, with `-ig` US Core 9.0.0: all five pass. Doing so also
+caught a mistake in one of our own fixtures, an appointment reason labelled as HL7 table 0277 (appointment type), now corrected.
+
 ## Mutual TLS, against OpenSSL
 
 Verified against OpenSSL rather than against Perfuse's own client. Certificate requirements, rejection of

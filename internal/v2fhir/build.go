@@ -1,7 +1,9 @@
 package v2fhir
 
 import (
+	"encoding/base64"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/biodream-llc/perfuse/hl7"
@@ -41,8 +43,9 @@ func (c *converter) buildPatient() *fhir.Patient {
 	for i := 1; i <= c.repeatCount("PID-5"); i++ {
 		if name := c.humanName(fmt.Sprintf("PID-5(%d)", i)); name != nil {
 			if i > 1 {
-				// Later repetitions are aliases unless the sender said otherwise.
-				if name.Use == "" {
+				// Later repetitions are aliases unless the sender said otherwise. A type the sender did give, even one
+				// with no FHIR equivalent, is not overridden.
+				if name.Use == "" && c.get(fmt.Sprintf("PID-5(%d).7", i)) == "" {
 					name.Use = "old"
 				}
 			} else if name.Use == "" {
@@ -68,6 +71,18 @@ func (c *converter) buildPatient() *fhir.Patient {
 	}
 
 	p.BirthDate = c.v2Date(c.get("PID-7"), "PID-7")
+	// birthDate is a date, so a time of birth in PID-7 used to vanish without a note. The core patient-birthTime extension on
+	// birthDate is where FHIR puts it.
+	if raw := c.get("PID-7"); len(digitsOnly(strings.FieldsFunc(raw+" ", func(r rune) bool { return r == '+' || r == '-' })[0])) > 8 && p.BirthDate != "" {
+		if dt := c.v2DateTime(raw, "PID-7"); dt != "" && strings.Contains(dt, "T") {
+			p.BirthDateElement = &fhir.Element{Extension: []fhir.Extension{{
+				URL:           "http://hl7.org/fhir/StructureDefinition/patient-birthTime",
+				ValueDateTime: &dt,
+			}}}
+			c.note("info", "PID-7", "Patient.birthDate.extension(patient-birthTime)",
+				"PID-7 carries a time of birth; birthDate is a date, so the time went to the patient-birthTime extension")
+		}
+	}
 
 	// PID-11 repeats for home, business and mailing addresses.
 	for i := 1; i <= c.repeatCount("PID-11"); i++ {
@@ -136,69 +151,159 @@ func (c *converter) buildPatient() *fhir.Patient {
 
 func (c *converter) patientIdentifiers() []fhir.Identifier {
 	var out []fhir.Identifier
-
-	count := c.repeatCount("PID-3")
-	for i := 1; i <= count; i++ {
-		prefix := fmt.Sprintf("PID-3(%d)", i)
-		value := c.get(prefix + ".1")
-		if value == "" {
-			continue
+	for i := 1; i <= c.repeatCount("PID-3"); i++ {
+		if id, ok := c.cxIdentifier(fmt.Sprintf("PID-3(%d)", i), "PID-3"); ok {
+			out = append(out, id)
 		}
+	}
 
-		authority := c.get(prefix + ".4")
-		typeCode := c.get(prefix + ".5")
-
-		id := fhir.Identifier{Value: value}
-
-		// The system is what makes an identifier unambiguous. A bare MRN means
-		// nothing outside the facility that issued it.
-		switch {
-		case authority != "" && c.opts.AssigningAuthoritySystems[authority] != "":
-			id.System = c.opts.AssigningAuthoritySystems[authority]
-		case authority != "":
-			id.System = placeholderSystem(authority)
-			c.note("warning", prefix+".4", "Patient.identifier.system",
-				"assigning authority %q has no configured system URI, so %s was used; configure a real namespace before sending this anywhere",
-				authority, id.System)
-		case c.opts.DefaultIdentifierSystem != "":
-			id.System = c.opts.DefaultIdentifierSystem
-		default:
-			c.note("warning", prefix, "Patient.identifier.system",
-				"identifier %q has no assigning authority and no default system, so it is ambiguous between facilities", value)
-		}
-
-		if typeCode != "" {
-			id.Type = fhir.NewCodeableConcept(fhir.SystemIdentifierType, typeCode,
-				identifierTypeDisplay(typeCode))
-			if typeCode == "MR" {
-				id.Use = "usual"
+	// PID-2 (external id) and PID-4 (alternate id) were withdrawn after v2.7, but real senders still fill them. They are
+	// CX like PID-3 and are read the same way. PID-4 used to be dropped without a note, and PID-2 was labelled an MRN, which
+	// it need not be.
+	for _, field := range []string{"PID-2", "PID-4"} {
+		for i := 1; i <= c.repeatCount(field); i++ {
+			prefix := fmt.Sprintf("%s(%d)", field, i)
+			if id, ok := c.cxIdentifier(prefix, field); ok && !containsIdentifierExact(out, id) {
+				out = append(out, id)
+				c.note("info", prefix, "Patient.identifier",
+					"%s is withdrawn after v2.7 but was populated, so it was kept as an identifier", field)
 			}
 		}
+	}
+	return out
+}
 
-		// A social security number is an identifier a system may be obliged not to
-		// store. Flagging it lets a deployment decide rather than discover it.
+// cxIdentifier reads one CX: value (.1), assigning authority (.4), type (.5) and validity (.7, .8).
+func (c *converter) cxIdentifier(prefix, field string) (fhir.Identifier, bool) {
+	value := c.get(prefix + ".1")
+	if value == "" {
+		return fhir.Identifier{}, false
+	}
+	id := fhir.Identifier{Value: value}
+
+	// The system is what makes an identifier unambiguous. A bare MRN means nothing outside the facility that issued it.
+	authority := c.get(prefix + ".4")
+	switch system, how := c.authoritySystem(prefix+".4", authority); {
+	case system != "":
+		id.System = system
+		if how != "" {
+			c.note("info", prefix+".4", "Patient.identifier.system", "%s", how)
+		}
+	case c.opts.DefaultIdentifierSystem != "":
+		id.System = c.opts.DefaultIdentifierSystem
+	default:
+		c.note("warning", prefix, "Patient.identifier.system",
+			"identifier %q has no assigning authority and no default system, so it is ambiguous between facilities", value)
+	}
+
+	if typeCode := c.get(prefix + ".5"); typeCode != "" {
+		if isTable0203(typeCode) {
+			id.Type = fhir.NewCodeableConcept(fhir.SystemIdentifierType, typeCode, identifierTypeDisplay(typeCode))
+		} else {
+			// A site's own type code ("PATNUMBER") was labelled as HL7 table 0203, which the validator rejects as an
+			// unknown code. It is kept as text.
+			id.Type = fhir.TextOnly(typeCode)
+			c.note("warning", prefix+".5", "Identifier.type",
+				"identifier type %q is not in HL7 table 0203, so it was kept as text", typeCode)
+		}
+		if typeCode == "MR" && field == "PID-3" {
+			id.Use = "usual"
+		}
+		// A social security number is an identifier a system may be obliged not to store. Flagging it lets a deployment
+		// decide rather than discover it.
 		if typeCode == "SS" || typeCode == "SSN" {
 			c.note("warning", prefix, "Patient.identifier",
 				"this identifier is a social security number; confirm it should be transmitted and stored")
 		}
-
-		out = append(out, id)
 	}
 
-	// PID-2 and PID-4 are older single-identifier fields still used by some
-	// senders.
-	if v := c.get("PID-2.1"); v != "" && !containsIdentifier(out, v) {
-		out = append(out, fhir.Identifier{
-			Value:  v,
-			System: c.opts.DefaultIdentifierSystem,
-			Type: fhir.NewCodeableConcept(fhir.SystemIdentifierType, "MR",
-				"Medical record number"),
-		})
-		c.note("info", "PID-2", "Patient.identifier",
-			"PID-2 is deprecated but was populated, so it was kept as an identifier")
+	// CX.7 and CX.8 bound when the identifier is valid. They matter for an MRN retired by a merge, and were dropped.
+	start, end := c.v2Date(c.get(prefix+".7"), prefix+".7"), c.v2Date(c.get(prefix+".8"), prefix+".8")
+	if start != "" || end != "" {
+		id.Period = &fhir.Period{Start: start, End: end}
 	}
+	return id, true
+}
 
-	return out
+// authoritySystem turns an HD assigning authority into an identifier system. The second result, when not empty, says how
+// a system was derived when it was not configured.
+//
+// A configured mapping wins, looked up by the whole HD, then HD.1, then HD.2. Without one, an HD that carries an ISO OID or
+// a UUID in HD.2/HD.3 becomes urn:oid: or urn:uuid:, because that names the authority globally. The V2-to-FHIR IG's
+// ConceptMaps would put HD.1 into the system verbatim instead, which is not a URI; that deviation is stated in the note.
+// Anything else gets a placeholder that says it needs configuring.
+func (c *converter) authoritySystem(source, authority string) (string, string) {
+	if authority == "" {
+		return "", ""
+	}
+	parts := strings.Split(authority, string(c.msg.Separators().Subcomponent))
+	hd1, hd2, hd3 := parts[0], "", ""
+	if len(parts) > 1 {
+		hd2 = parts[1]
+	}
+	if len(parts) > 2 {
+		hd3 = strings.ToUpper(parts[2])
+	}
+	for _, key := range []string{authority, hd1, hd2} {
+		if key != "" && c.opts.AssigningAuthoritySystems[key] != "" {
+			return c.opts.AssigningAuthoritySystems[key], ""
+		}
+	}
+	switch {
+	case hd3 == "ISO" && isOID(hd2):
+		return "urn:oid:" + hd2, fmt.Sprintf("assigning authority %q carries the OID %s, so urn:oid:%s was used; the V2-to-FHIR IG would use HD.1 (%q) verbatim, which is not a URI", authority, hd2, hd2, hd1)
+	case hd3 == "UUID" && isUUID(hd2):
+		return "urn:uuid:" + strings.ToLower(hd2), fmt.Sprintf("assigning authority %q carries a UUID, so urn:uuid:%s was used", authority, strings.ToLower(hd2))
+	}
+	name := hd1
+	if name == "" {
+		name = hd2
+	}
+	system := placeholderSystem(name)
+	c.note("warning", source, "Patient.identifier.system",
+		"assigning authority %q has no configured system URI, so %s was used; configure a real namespace before sending this anywhere",
+		authority, system)
+	return system, ""
+}
+
+func isOID(s string) bool {
+	if s == "" || s[0] == '.' || s[len(s)-1] == '.' || strings.Contains(s, "..") {
+		return false
+	}
+	for _, r := range s {
+		if (r < '0' || r > '9') && r != '.' {
+			return false
+		}
+	}
+	return strings.Contains(s, ".")
+}
+
+func isUUID(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i, r := range strings.ToLower(s) {
+		switch i {
+		case 8, 13, 18, 23:
+			if r != '-' {
+				return false
+			}
+		default:
+			if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func containsIdentifierExact(ids []fhir.Identifier, id fhir.Identifier) bool {
+	for _, x := range ids {
+		if x.Value == id.Value && x.System == id.System {
+			return true
+		}
+	}
+	return false
 }
 
 func containsIdentifier(ids []fhir.Identifier, value string) bool {
@@ -208,6 +313,14 @@ func containsIdentifier(ids []fhir.Identifier, value string) bool {
 		}
 	}
 	return false
+}
+
+// unknownClass is an Encounter.class for a patient class that is absent or has no ActCode equivalent: the v3 null flavor
+// UNK, which an R4 Coding can carry, with the sender's code kept as text where R5's CodeableConcept can hold it.
+func unknownClass(text string) fhir.CodeableConcept {
+	cc := fhir.NewCodeableConcept("http://terminology.hl7.org/CodeSystem/v3-NullFlavor", "UNK", "unknown")
+	cc.Text = text
+	return *cc
 }
 
 func identifierTypeDisplay(code string) string {
@@ -276,11 +389,7 @@ func (c *converter) buildEncounter(patient *fhir.Patient) *fhir.Encounter {
 	if visitNumber != "" {
 		system := c.opts.DefaultIdentifierSystem
 		if authority := c.get("PV1-19.4"); authority != "" {
-			if configured := c.opts.AssigningAuthoritySystems[authority]; configured != "" {
-				system = configured
-			} else {
-				system = placeholderSystem(authority)
-			}
+			system, _ = c.authoritySystem("PV1-19.4", authority)
 		}
 		e.Identifier = []fhir.Identifier{{
 			System: system,
@@ -311,6 +420,14 @@ func (c *converter) buildEncounter(patient *fhir.Patient) *fhir.Encounter {
 			"trigger event %q has no defined encounter status, so \"unknown\" was used rather than a guess", event)
 	}
 
+	// An update can describe a visit that has already ended. Taking the status from the event alone said "in-progress" for
+	// an A08 carrying a discharge date in PV1-45, which contradicts the period the same Encounter carries.
+	if e.Status == "in-progress" && event != "A13" && c.get("PV1-45") != "" {
+		e.Status = "completed"
+		c.note("info", "PV1-45", "Encounter.status",
+			"PV1-45 has a discharge date, so the encounter is completed although %s alone would mean in progress", event)
+	}
+
 	// Class is patient class, and it is what tells a receiver whether this is an
 	// inpatient stay or a clinic visit.
 	if pc := strings.ToUpper(c.get("PV1-2")); pc != "" {
@@ -318,12 +435,16 @@ func (c *converter) buildEncounter(patient *fhir.Patient) *fhir.Encounter {
 			e.Class = []fhir.CodeableConcept{*fhir.NewCodeableConcept(
 				fhir.SystemActCode, mapped.Code, mapped.Display)}
 		} else {
-			e.Class = []fhir.CodeableConcept{*fhir.TextOnly(pc)}
+			e.Class = []fhir.CodeableConcept{unknownClass(pc)}
 			c.note("warning", "PV1-2", "Encounter.class",
-				"patient class %q has no v3 ActCode equivalent, so it was kept as text", pc)
+				"patient class %q has no v3 ActCode equivalent, so the class is the null flavor UNK with the sender's code as text", pc)
 		}
 	} else {
-		c.note("warning", "PV1-2", "Encounter.class", "no patient class")
+		// R4 Encounter.class is 1..1 and a Coding, so an absent class cannot simply be left out: three of the 70 messages
+		// in a public test set produced Encounters the HL7 validator rejected for exactly that. The null flavor says
+		// "unknown" without inventing a class.
+		e.Class = []fhir.CodeableConcept{unknownClass("")}
+		c.note("warning", "PV1-2", "Encounter.class", "no patient class was sent, so the class is the null flavor UNK")
 	}
 
 	if t := c.codedValue("PV1-4", "PV1-4"); t != nil {
@@ -680,6 +801,15 @@ func (c *converter) setObservationValue(o *fhir.Observation, prefix, valueType, 
 		c.setStructuredNumeric(o, prefix, rawValue, unit)
 
 	case "CE", "CWE", "CNE", "ID", "IS":
+		// A coded type whose OBX-5 is shaped like ED (Base64 in the fourth component) is an embedded document labelled
+		// wrongly. Read as a code, a PDF went into Coding.display - over a megabyte, past FHIR's string limit.
+		if strings.EqualFold(c.get(prefix+"-5.4"), "Base64") && len(c.get(prefix+"-5.5")) > 64 {
+			c.note("warning", prefix+"-2", "Observation.value[x]",
+				"OBX-2 says %s but OBX-5 is encapsulated Base64 data, so it was read as ED", valueType)
+			if c.encapsulatedData(o, prefix) {
+				return
+			}
+		}
 		if concept := c.codedValue(prefix+"-5", prefix+"-5"); concept != nil {
 			o.ValueCodeableConcept = concept
 		} else {
@@ -689,6 +819,16 @@ func (c *converter) setObservationValue(o *fhir.Observation, prefix, valueType, 
 	case "ST", "TX", "FT", "":
 		// Free text. A numeric-looking string stays a string, because OBX-2 is the
 		// sender's statement about the type and second-guessing it changes meaning.
+		//
+		// OBX-5 repeats, and a multi-line TX result is sent as one repeat per line. The raw field used to be copied, so
+		// "Line one~Line two" arrived with the repeat separator in the text. The repeats are joined with line breaks.
+		if n := c.repeatCount(prefix + "-5"); n > 1 {
+			lines := make([]string, 0, n)
+			for i := 1; i <= n; i++ {
+				lines = append(lines, c.get(fmt.Sprintf("%s-5(%d)", prefix, i)))
+			}
+			rawValue = strings.Join(lines, "\n")
+		}
 		o.ValueString = fhir.Str(rawValue)
 		if valueType == "" {
 			c.note("warning", prefix+"-2", "Observation.value[x]",
@@ -705,11 +845,67 @@ func (c *converter) setObservationValue(o *fhir.Observation, prefix, valueType, 
 			o.ValueDateTime = converted
 		}
 
+	case "ED":
+		if c.encapsulatedData(o, prefix) {
+			return
+		}
+		o.ValueString = fhir.Str(rawValue)
+
 	default:
 		o.ValueString = fhir.Str(rawValue)
 		c.note("warning", prefix+"-2", "Observation.valueString",
 			"value type %q is not mapped, so the value was kept as text", valueType)
 	}
+}
+
+// encapsulatedData maps an OBX-5 of type ED (an embedded document such as a PDF report) to a DocumentReference, which the
+// V2-to-FHIR IG's OBX-to-DocumentReference map allows and which is where consumers look for documents. R4
+// Observation.value[x] has no Attachment, so the Observation keeps no value and points at the document through derivedFrom.
+// It used to keep the raw field as text, delimiters included, with the PDF's Base64 inside it.
+//
+// It reports false, leaving the caller to keep the text, when the data is not Base64: hex and other encodings are rare
+// and are not decoded here.
+func (c *converter) encapsulatedData(o *fhir.Observation, prefix string) bool {
+	kind, subtype := strings.ToLower(c.get(prefix+"-5.2")), strings.ToLower(c.get(prefix+"-5.3"))
+	encoding, data := c.get(prefix+"-5.4"), c.get(prefix+"-5.5")
+	if !strings.EqualFold(encoding, "Base64") || data == "" {
+		c.note("warning", prefix+"-5", "Observation.valueString",
+			"encapsulated data with encoding %q is not decoded, so it was kept as text", encoding)
+		return false
+	}
+	if _, err := base64.StdEncoding.DecodeString(data); err != nil {
+		c.note("warning", prefix+"-5.5", "Observation.valueString", "encapsulated data is marked Base64 but does not decode, so it was kept as text")
+		return false
+	}
+	contentType := "application/octet-stream"
+	switch {
+	case strings.Contains(subtype, "/"):
+		// Some senders put the whole MIME type in ED.3 ("application/pdf") and something else in ED.2.
+		contentType = subtype
+	case strings.Contains(kind, "/"):
+		contentType = kind
+	case subtype != "":
+		switch kind {
+		case "application", "audio", "image", "text", "video", "multipart", "model", "font":
+			contentType = kind + "/" + subtype
+		}
+	}
+	if contentType == "application/octet-stream" {
+		c.note("warning", prefix+"-5.2", "DocumentReference.content.attachment.contentType",
+			"type of data %q / %q is not a MIME type, so application/octet-stream was used", kind, subtype)
+	}
+	doc := &fhir.DocumentReference{
+		Status:  "current",
+		Type:    o.Code,
+		Subject: o.Subject,
+		Content: []fhir.DocumentContent{{Attachment: &fhir.Attachment{ContentType: contentType, Data: data}}},
+	}
+	doc.SetResourceID(c.deterministicID("DocumentReference", o.ID))
+	c.addEntry(doc, "DocumentReference", "")
+	o.DerivedFrom = append(o.DerivedFrom, *fhir.Ref("DocumentReference", doc.ID))
+	c.note("info", prefix+"-5", "DocumentReference",
+		"OBX-2 is ED: R4 Observation.value[x] has no Attachment, so the %s document went to a DocumentReference that the Observation references in derivedFrom", contentType)
+	return true
 }
 
 func (c *converter) setStructuredNumeric(o *fhir.Observation, prefix, rawValue, unit string) {
@@ -752,6 +948,20 @@ func (c *converter) setStructuredNumeric(o *fhir.Observation, prefix, rawValue, 
 		}
 	}
 
+	// R4 Quantity.comparator admits only <, <=, >= and >. "=" says the value is exact, which a bare quantity already means,
+	// so it is dropped with a note. "<>" means "not equal to", which no quantity can say; turning it into the number would
+	// state the opposite, so the text is kept.
+	switch comparator {
+	case "=":
+		comparator = ""
+		c.note("info", prefix+"-5.1", "Observation.valueQuantity.comparator",
+			"comparator \"=\" is not an R4 comparator; it means the value is exact, so the quantity carries none")
+	case "<>":
+		o.ValueString = fhir.Str(rawValue)
+		c.note("warning", prefix+"-5.1", "Observation.valueString",
+			"comparator \"<>\" (not equal) has no FHIR Quantity equivalent, so the result was kept as text")
+		return
+	}
 	o.ValueQuantity = c.quantity(value, comparator, unit, prefix)
 }
 
@@ -1009,6 +1219,13 @@ func (c *converter) humanName(path string) *fhir.HumanName {
 		name.Use = "anonymous"
 	case "D":
 		name.Use = "usual"
+	case "":
+	default:
+		// B (birth name), C (adopted), U (unspecified) and site codes have no counterpart in FHIR name-use. Use is left
+		// empty rather than guessed, and the note says so, because an empty use, a dropped name and an invented "maiden"
+		// otherwise look the same in the output.
+		c.note("info", path+".7", "HumanName.use",
+			"name type %q has no FHIR name-use equivalent, so use was left empty and the name was kept", use)
 	}
 
 	return name
@@ -1146,6 +1363,9 @@ var _ = hl7.DefaultSeparators
 //
 // The .invalid domain is reserved by RFC 2606 for exactly this: it is a valid URI, it can never resolve, and it cannot collide with
 // somebody's real namespace. Which also makes it obvious in a message that it needs configuring.
+//
+// The name is escaped. A coding system sent as "PANEL: R112.1 - Factor II deficiency v1.0" made a URI with spaces in it,
+// which the validator rejects.
 func placeholderSystem(authority string) string {
-	return "http://unmapped.invalid/authority/" + strings.ToLower(authority)
+	return "http://unmapped.invalid/authority/" + url.PathEscape(strings.ToLower(authority))
 }

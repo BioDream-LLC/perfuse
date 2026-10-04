@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // Conversion to FHIR.
@@ -1025,7 +1027,7 @@ func upsert(resourceType, id string, resource map[string]any, match string) map[
 		request = map[string]any{"method": "PUT", "url": resourceType + "?" + match}
 	}
 	return map[string]any{
-		"fullUrl":  "urn:uuid:" + id,
+		"fullUrl":  "urn:uuid:" + fhir.DeterministicUUID(resourceType, id),
 		"resource": resource,
 		"request":  request,
 	}

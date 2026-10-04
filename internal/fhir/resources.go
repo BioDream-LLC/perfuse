@@ -53,18 +53,20 @@ func (b *base) setUnmodelledMembers(m map[string]any) { b.unmodelled = m }
 type Patient struct {
 	base
 
-	Identifier    []Identifier           `json:"identifier,omitempty"`
-	Active        *bool                  `json:"active,omitempty"`
-	Name          []HumanName            `json:"name,omitempty"`
-	Telecom       []ContactPoint         `json:"telecom,omitempty"`
-	Gender        string                 `json:"gender,omitempty"`
-	BirthDate     string                 `json:"birthDate,omitempty"`
-	Address       []Address              `json:"address,omitempty"`
-	MaritalStatus *CodeableConcept       `json:"maritalStatus,omitempty"`
-	Communication []PatientCommunication `json:"communication,omitempty"`
-	Contact       []PatientContact       `json:"contact,omitempty"`
-	ManagingOrg   *Reference             `json:"managingOrganization,omitempty"`
-	Extension     []Extension            `json:"extension,omitempty"`
+	Identifier []Identifier   `json:"identifier,omitempty"`
+	Active     *bool          `json:"active,omitempty"`
+	Name       []HumanName    `json:"name,omitempty"`
+	Telecom    []ContactPoint `json:"telecom,omitempty"`
+	Gender     string         `json:"gender,omitempty"`
+	BirthDate  string         `json:"birthDate,omitempty"`
+	// BirthDateElement carries extensions on birthDate, which is where a time of birth goes (patient-birthTime).
+	BirthDateElement *Element               `json:"_birthDate,omitempty"`
+	Address          []Address              `json:"address,omitempty"`
+	MaritalStatus    *CodeableConcept       `json:"maritalStatus,omitempty"`
+	Communication    []PatientCommunication `json:"communication,omitempty"`
+	Contact          []PatientContact       `json:"contact,omitempty"`
+	ManagingOrg      *Reference             `json:"managingOrganization,omitempty"`
+	Extension        []Extension            `json:"extension,omitempty"`
 
 	// DeceasedBoolean and DeceasedDateTime are the two halves of deceased[x].
 	// Only one may be set; the marshaller enforces that rather than emitting an
@@ -75,6 +77,16 @@ type Patient struct {
 	// MultipleBirthBoolean and MultipleBirthInteger are multipleBirth[x].
 	MultipleBirthBoolean *bool `json:"multipleBirthBoolean,omitempty"`
 	MultipleBirthInteger *int  `json:"multipleBirthInteger,omitempty"`
+
+	// Link ties records of the same person together, which is how a merge is expressed.
+	Link []PatientLink `json:"link,omitempty"`
+}
+
+// PatientLink is one Patient.link: another record of the same person, and how the two relate (replaced-by, replaces,
+// refer or seealso).
+type PatientLink struct {
+	Other *Reference `json:"other"`
+	Type  string     `json:"type"`
 }
 
 // PatientCommunication is a language a patient can use.

@@ -597,7 +597,8 @@ type FHIRDestination struct {
 
 	// Timezone is applied to HL7 v2 timestamps that carry no offset. v2 permits a
 	// bare local time and FHIR does not, so something has to supply one.
-	// Defaults to UTC, which is at least explicit.
+	// When unset, the offset the sender put on MSH-7 is used, since v2 presumes a bare time is the sender's local time;
+	// a message whose MSH-7 has no offset either falls back to UTC.
 	Timezone string `yaml:"timezone,omitempty"`
 
 	// DefaultIdentifierSystem namespaces identifiers whose assigning authority

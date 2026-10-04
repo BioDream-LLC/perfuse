@@ -149,6 +149,9 @@ type converter struct {
 	// the same message twice produces the same ids and a receiving server sees an
 	// update rather than a duplicate.
 	idSeed string
+
+	// senderZone is the fixed offset MSH-7 carried, used for timestamps that have none when no timezone was configured.
+	senderZone *time.Location
 }
 
 // Convert maps an HL7 v2 message to FHIR.
@@ -174,6 +177,7 @@ func Convert(m *hl7.Message, opts Options) (*Result, error) {
 	}
 
 	c := &converter{msg: m, opts: opts, res: res, idSeed: seedFor(m)}
+	c.senderZone = offsetZone(c.get("MSH-7"))
 
 	bundle := &fhir.Bundle{
 		Type:      fhir.BundleTransaction,
@@ -186,7 +190,7 @@ func Convert(m *hl7.Message, opts Options) (*Result, error) {
 		// asks during an incident.
 		bundle.Identifier = &fhir.Identifier{
 			System: "urn:ietf:rfc:3986",
-			Value:  "urn:uuid:" + c.deterministicID("msg", id),
+			Value:  "urn:uuid:" + fhir.DeterministicUUID("msg", id),
 		}
 	}
 	res.Bundle = bundle
@@ -216,6 +220,16 @@ func Convert(m *hl7.Message, opts Options) (*Result, error) {
 		}
 	}
 
+	// Z segments are site-defined, so there is no standard map for them. They used to be skipped without a word, which reads
+	// as "nothing was lost". Each one is named so an operator can decide whether it needs a channel transform.
+	seen := map[string]bool{}
+	for _, name := range m.SegmentNames() {
+		if strings.HasPrefix(strings.ToUpper(name), "Z") && !seen[name] {
+			seen[name] = true
+			c.note("warning", name, "", "%s is a site-defined Z segment with no standard mapping, so it was not converted; map it in a channel transform if its content matters", name)
+		}
+	}
+
 	return res, nil
 }
 
@@ -225,6 +239,7 @@ func (c *converter) convertADT() {
 		c.note("error", "PID", "Patient", "no PID segment, so no patient could be built")
 		return
 	}
+	c.mergePatients(patient)
 	c.addEntry(patient, "Patient", patientConditionalURL(patient))
 	patRef := fhir.Ref("Patient", patient.ID)
 	// Allergies belong to the person, so a person-level message carries them too.
@@ -247,6 +262,49 @@ func (c *converter) convertADT() {
 		c.note("info", "PV1", "Encounter", "no PV1 segment, so no Encounter was created")
 	}
 	c.buildDiagnoses(patRef, encRef)
+}
+
+// mergeEvents are the patient-level merges, which carry the record being retired in MRG.
+var mergeEvents = map[string]bool{"A18": true, "A30": true, "A34": true, "A36": true, "A39": true, "A40": true}
+
+// mergePatients reads MRG.
+//
+// MRG used to be ignored everywhere, so a merge (A40) converted to an update of the surviving patient and nothing else:
+// the retired MRN stayed live, and a receiver had no way to know the two records were one person. On a merge event the
+// retired record is now sent too, inactive and linked: replaced-by from it, replaces from the survivor. The receiver
+// still decides how to merge its own data, which a Patient resource cannot do for it.
+//
+// MRG on any other event is not a merge - A08, for one, uses the ADT_A01 structure, which has no MRG - so it is not
+// treated as one, and the note says the prior identifier is still live.
+func (c *converter) mergePatients(survivor *fhir.Patient) {
+	if _, ok := c.msg.Segment("MRG", 1); !ok {
+		return
+	}
+	event := strings.ToUpper(c.res.TriggerEvent)
+	var prior []fhir.Identifier
+	for i := 1; i <= c.repeatCount("MRG-1"); i++ {
+		if id, ok := c.cxIdentifier(fmt.Sprintf("MRG-1(%d)", i), "MRG-1"); ok {
+			id.Use = "old"
+			prior = append(prior, id)
+		}
+	}
+	if len(prior) == 0 {
+		c.note("warning", "MRG-1", "Patient.link", "MRG is present but MRG-1 has no prior identifier, so nothing could be merged")
+		return
+	}
+	if !mergeEvents[event] {
+		c.note("warning", "MRG", "Patient.link",
+			"MRG is present on %s, which is not a merge event, so no merge was done and prior identifier %q is still live; a merge is sent as A40",
+			event, prior[0].Value)
+		return
+	}
+	retired := &fhir.Patient{Identifier: prior, Active: fhir.Bool(false)}
+	retired.SetResourceID(c.deterministicID("Patient", prior[0].System+"|"+prior[0].Value))
+	retired.Link = []fhir.PatientLink{{Other: fhir.Ref("Patient", survivor.ID), Type: "replaced-by"}}
+	survivor.Link = append(survivor.Link, fhir.PatientLink{Other: fhir.Ref("Patient", retired.ID), Type: "replaces"})
+	c.addEntry(retired, "Patient", "")
+	c.note("info", "MRG-1", "Patient.link",
+		"%s merges %q into this patient: the retired record is sent inactive with replaced-by, and the survivor carries replaces", event, prior[0].Value)
 }
 
 func (c *converter) convertORU() {
@@ -399,8 +457,18 @@ func (c *converter) addEntry(r fhir.Resource, resourceType, conditional string) 
 		}
 	}
 
+	// The same resource can be reached twice - one practitioner responsible for several results, say - and its id is
+	// deterministic, so the second copy had the same fullUrl. bdl-7 forbids that, and the validator failed 13 of 70 bundles
+	// from a public test set on it. The first copy is kept.
+	full := c.fullURL(resourceType, r.ResourceID())
+	for _, e := range c.res.Bundle.Entry {
+		if e.FullURL == full {
+			return
+		}
+	}
+
 	entry := fhir.BundleEntry{
-		FullURL:  c.fullURL(resourceType, r.ResourceID()),
+		FullURL:  full,
 		Resource: r,
 		Request: &fhir.BundleRequest{
 			Method: "PUT",
@@ -420,7 +488,8 @@ func (c *converter) fullURL(resourceType, id string) string {
 	if c.opts.BaseURL != "" {
 		return strings.TrimRight(c.opts.BaseURL, "/") + "/" + resourceType + "/" + id
 	}
-	return "urn:uuid:" + id
+	// A urn:uuid: has to hold a real UUID, derived from the id so the bundle is the same each time the message is converted.
+	return "urn:uuid:" + fhir.DeterministicUUID(resourceType, id)
 }
 
 func (c *converter) note(severity, source, target, format string, args ...any) {
@@ -527,4 +596,27 @@ func parseDecimal(s string) (value float64, comparator string, ok bool) {
 		return 0, "", false
 	}
 	return f, comparator, true
+}
+
+// offsetZone returns a fixed zone for the UTC offset at the end of a v2 timestamp, or nil when it has none.
+func offsetZone(ts string) *time.Location {
+	for i := 1; i < len(ts); i++ {
+		if ts[i] != '+' && ts[i] != '-' {
+			continue
+		}
+		off := ts[i+1:]
+		if len(off) != 4 || digitsOnly(off) != off {
+			return nil
+		}
+		h, m := int(off[0]-'0')*10+int(off[1]-'0'), int(off[2]-'0')*10+int(off[3]-'0')
+		if h > 14 || m > 59 {
+			return nil
+		}
+		secs := (h*60 + m) * 60
+		if ts[i] == '-' {
+			secs = -secs
+		}
+		return time.FixedZone(normaliseOffset(ts[i:]), secs)
+	}
+	return nil
 }

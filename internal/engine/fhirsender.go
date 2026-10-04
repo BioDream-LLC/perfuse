@@ -74,7 +74,8 @@ func NewFHIRSender(d config.Destination, log *slog.Logger) (*FHIRSender, error) 
 		version = parsed
 	}
 
-	location := time.UTC
+	// Unset means the converter uses the sender's MSH-7 offset, then UTC.
+	var location *time.Location
 	if d.FHIR.Timezone != "" {
 		loc, err := time.LoadLocation(d.FHIR.Timezone)
 		if err != nil {

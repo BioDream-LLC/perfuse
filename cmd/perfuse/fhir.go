@@ -93,7 +93,7 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 	fset := flag.NewFlagSet("fhir convert", flag.ContinueOnError)
 	fset.SetOutput(stderr)
 	versionFlag := fset.String("version", string(fhir.ResourceShapeVersion), "FHIR release to produce")
-	tz := fset.String("tz", "UTC", "timezone for v2 timestamps with no offset")
+	tz := fset.String("tz", "", "timezone for v2 timestamps with no offset (default: the sender's MSH-7 offset, else UTC)")
 	system := fset.String("system", "", "default identifier system URI")
 	authorities := &authorityMap{}
 	fset.Var(authorities, "authority",
@@ -113,9 +113,11 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	location, err := time.LoadLocation(*tz)
-	if err != nil {
-		return fmt.Errorf("-tz: %w", err)
+	var location *time.Location
+	if *tz != "" {
+		if location, err = time.LoadLocation(*tz); err != nil {
+			return fmt.Errorf("-tz: %w", err)
+		}
 	}
 
 	if *outDir != "" {

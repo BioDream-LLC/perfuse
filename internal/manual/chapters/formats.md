@@ -265,6 +265,22 @@ This is what CMS Interoperability Framework criterion 14 asks for: chart notes a
 - **Unknown amounts.** An amount of `999` means unknown, not 999.
 - **Routes and sites.** Each dose takes the route and site from the `RXR` after it, so a message with two doses does not give the second one the first one's route.
 
+**Awkward input.** Each of these is reported in the notes rather than decided silently:
+
+- **Identifiers.** `PID-2` and `PID-4`, withdrawn after v2.7 but still sent, are kept like `PID-3`. `CX.7` and `CX.8` become
+  `Identifier.period`. An assigning authority carrying an ISO OID (`AUSHIC&2.16.840.1.113883.3.879&ISO`) becomes `urn:oid:`. A
+  type code outside HL7 table 0203 is kept as text, not labelled as one.
+- **Merges.** `MRG` on a merge event (`A40` and its kin) sends the retired record too, inactive, with `Patient.link` both ways. On any
+  other event, such as an `A08`, nothing is merged and a warning says the prior identifier is still live.
+- **Times.** A time of birth in `PID-7` goes to the `patient-birthTime` extension. A timestamp with no offset takes the configured
+  timezone, otherwise the offset on `MSH-7` (v2 presumes the sender's local time), otherwise UTC.
+- **Results.** Repeats of a text result are joined with line breaks. An `ED` result, or a coded one whose value is plainly Base64, becomes a
+  DocumentReference that the Observation points to in `derivedFrom`, since an R4 Observation has no attachment value. An `SN`
+  comparator of `=` is dropped as redundant; `<>` keeps the text, because no quantity can say "not equal".
+- **Visits.** An `A08` with a discharge date (`PV1-45`) is a finished encounter. A missing or unknown patient class is the null
+  flavor `UNK`, because R4 requires a class.
+- **Z segments** are named in a warning, since there is no standard map for them.
+
 ### US Core 9.0.0 and USCDI v6
 
 `-us-core` (and `claim_us_core` on a `fhir` destination) puts a US Core profile in `meta.profile`, but only on a resource that has
