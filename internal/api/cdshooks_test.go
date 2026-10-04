@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -69,5 +70,25 @@ func TestAskingThisServersCRDFromTheConsole(t *testing.T) {
 	})
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Cosmetic procedure: not covered") {
 		t.Errorf("%d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAskingForADTRPackageFromTheConsole(t *testing.T) {
+	h := newHarness(t)
+	rec := h.do("viewer", http.MethodPost, "/api/dtr/package", map[string]any{"order": map[string]any{"resourceType": "DeviceRequest"}})
+	if rec.Code != http.StatusConflict {
+		t.Errorf("no FHIR endpoint: %d %s", rec.Code, rec.Body.String())
+	}
+	var got []byte
+	h.server.DTRPackage = func(_ context.Context, params []byte) (int, []byte) {
+		got = params
+		return http.StatusOK, []byte(`{"resourceType":"Parameters","parameter":[]}`)
+	}
+	rec = h.do("viewer", http.MethodPost, "/api/dtr/package", map[string]any{
+		"order":    map[string]any{"resourceType": "DeviceRequest", "id": "o"},
+		"coverage": map[string]any{"resourceType": "Coverage", "id": "c"},
+	})
+	if rec.Code != http.StatusOK || !strings.Contains(string(got), `"name":"coverage"`) || !strings.Contains(string(got), `"name":"order"`) {
+		t.Errorf("%d %s; sent %s", rec.Code, rec.Body.String(), got)
 	}
 }

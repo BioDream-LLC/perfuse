@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -69,6 +70,11 @@ type Rules struct {
 	// URL is the payer's site, on every card's source.
 	URL   string `yaml:"url,omitempty" json:"url,omitempty"`
 	Rules []Rule `yaml:"rules" json:"rules"`
+
+	// The coverage assertions made, by id, for DTR's context parameter.
+	mu         sync.Mutex
+	assertions map[string]string
+	order      []string
 }
 
 var (
@@ -116,6 +122,27 @@ func (r *Rules) Validate() error {
 		}
 		if len(rule.Documentation) > 0 && rule.Questionnaire == "" {
 			problems = append(problems, where+" asks for documentation and names no questionnaire to gather it")
+		}
+		// CRD's own invariants on coverage-information, refused here rather than sent: the HL7 validator rejects a response
+		// that breaks them, and a rules file is where each one is decided.
+		if rule.Questionnaire != "" && len(rule.Documentation) == 0 {
+			problems = append(problems, where+" names a questionnaire but no documentation; CRD allows a questionnaire only with doc-needed (crd-ci-q1)")
+		}
+		if rule.Covered == "not-covered" && rule.PA != "" {
+			problems = append(problems, where+" is not-covered and also says pa; CRD forbids pa-needed on a service that is not covered (crd-ci-q2)")
+		}
+		if rule.PA == "satisfied" {
+			problems = append(problems, where+": pa satisfied needs the authorisation's own id (crd-ci-q5), which belongs to one patient's case, not a rule")
+		}
+		conditional := rule.Covered == "conditional" || rule.PA == "conditional"
+		for _, d := range rule.Documentation {
+			conditional = conditional || d == "conditional"
+		}
+		if conditional && strings.TrimSpace(rule.Reason) == "" {
+			problems = append(problems, where+" is conditional and gives no reason; CRD requires one to say what information is needed (crd-ci-q3, crd-ci-q6)")
+		}
+		if rule.PA == "auth-needed" && len(rule.Documentation) > 0 && strings.TrimSpace(rule.Reason) == "" {
+			problems = append(problems, where+" needs documentation for prior authorization and gives no reason (crd-ci-q8)")
 		}
 	}
 	if len(problems) > 0 {
@@ -304,17 +331,69 @@ func (r *Rules) coverageInformation(rule Rule, matched bool, coverage string, no
 	for _, d := range rule.Documentation {
 		ext = append(ext, map[string]any{"url": "doc-needed", "valueCode": d})
 	}
+	// doc-purpose is not sent. "withpa" is the one value a rules file implies, but CRD 2.2.1's invariant crd-ci-q4 fails
+	// every instance carrying it, whatever pa-needed is: its left side is a where() with no exists(), which is empty when
+	// pa-needed is auth-needed, and "empty implies false" is not true. The element is optional, so leaving it out is
+	// conformant; DTR derives the same purpose from pa-needed.
 	if rule.Questionnaire != "" {
 		ext = append(ext, map[string]any{"url": "questionnaire", "valueCanonical": rule.Questionnaire})
 	}
+	conditional := rule.Covered == "conditional" || pa == "conditional"
+	for _, d := range rule.Documentation {
+		conditional = conditional || d == "conditional"
+	}
+	reason := strings.TrimSpace(rule.Reason)
 	if !matched {
+		// crd-ci-q6: info-needed OTH must carry a reason. Without one, the HL7 validator rejected every answer for an order
+		// the rules did not recognise.
+		reason = "No coverage rule matches this order's codes, so " + r.Payer + " could not determine coverage or prior authorization from it."
+	}
+	if conditional {
 		ext = append(ext, map[string]any{"url": "info-needed", "valueCode": "OTH"})
 	}
+	if reason != "" {
+		ext = append(ext, map[string]any{"url": "reason", "valueCodeableConcept": map[string]any{"text": reason}})
+	}
+	id := newUUID()
 	ext = append(ext,
 		map[string]any{"url": "date", "valueDate": now.UTC().Format("2006-01-02")},
-		map[string]any{"url": "coverage-assertion-id", "valueString": newUUID()},
+		map[string]any{"url": "coverage-assertion-id", "valueString": id},
 	)
+	if rule.Questionnaire != "" {
+		r.remember(id, rule.Questionnaire)
+	}
 	return map[string]any{"url": ExtCoverageInformation, "extension": ext}
+}
+
+// maxAssertions bounds the coverage assertions remembered for DTR. Oldest go first.
+const maxAssertions = 10000
+
+// remember records which questionnaire a coverage assertion asked for, so DTR's $questionnaire-package can answer from
+// the assertion id alone (its context parameter). Kept in memory: a restart forgets them, and the client can still name
+// the questionnaire or send the order, which DTR also accepts.
+func (r *Rules) remember(id, questionnaire string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.assertions == nil {
+		r.assertions = map[string]string{}
+	}
+	r.assertions[id] = questionnaire
+	r.order = append(r.order, id)
+	for len(r.order) > maxAssertions {
+		delete(r.assertions, r.order[0])
+		r.order = r.order[1:]
+	}
+}
+
+// QuestionnairesFor returns the questionnaires a coverage assertion this service made asked for, for DTR's context
+// parameter.
+func (r *Rules) QuestionnairesFor(assertionID string) []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if q, ok := r.assertions[assertionID]; ok {
+		return []string{q}
+	}
+	return nil
 }
 
 func cloneWith(o map[string]any, ext map[string]any) map[string]any {

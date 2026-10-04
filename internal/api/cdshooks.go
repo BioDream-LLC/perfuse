@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -217,4 +218,72 @@ func (s *Server) handleCRDAsk(w http.ResponseWriter, r *http.Request, sess *stor
 func mustJSON(v any) json.RawMessage {
 	b, _ := json.Marshal(v)
 	return b
+}
+
+// dtrAsk is the console's request for a DTR questionnaire package: the order CRD answered (carrying its coverage-information) and the
+// coverage, sent to this server's own DTR or to a payer's FHIR base URL.
+type dtrAsk struct {
+	URL      string          `json:"url"`
+	Token    string          `json:"token"`
+	Order    json.RawMessage `json:"order"`
+	Coverage json.RawMessage `json:"coverage"`
+}
+
+func (s *Server) handleDTRPackage(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	var ask dtrAsk
+	if !s.decode(w, r, &ask) {
+		return
+	}
+	params := []map[string]json.RawMessage{}
+	if len(ask.Coverage) > 0 {
+		params = append(params, map[string]json.RawMessage{"name": mustJSON("coverage"), "resource": ask.Coverage})
+	}
+	if len(ask.Order) > 0 {
+		params = append(params, map[string]json.RawMessage{"name": mustJSON("order"), "resource": ask.Order})
+	}
+	body, _ := json.Marshal(map[string]any{"resourceType": "Parameters", "parameter": params})
+
+	var status int
+	var out []byte
+	if ask.URL == "" {
+		if s.DTRPackage == nil {
+			s.fail(w, r, http.StatusConflict, "this server has no FHIR endpoint, so it serves no DTR; start it with -fhir, or name a payer's FHIR base URL")
+			return
+		}
+		status, out = s.DTRPackage(r.Context(), body)
+	} else {
+		if !strings.HasPrefix(ask.URL, "https://") && !s.SHLAllowHTTP {
+			s.fail(w, r, http.StatusBadRequest, "a payer's DTR is called over https: the request carries the patient's coverage")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+		defer cancel()
+		hreq, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(ask.URL, "/")+"/Questionnaire/$questionnaire-package", strings.NewReader(string(body)))
+		if err != nil {
+			s.fail(w, r, http.StatusBadRequest, err.Error())
+			return
+		}
+		hreq.Header.Set("Content-Type", "application/fhir+json")
+		if ask.Token != "" {
+			hreq.Header.Set("Authorization", "Bearer "+ask.Token)
+		}
+		res, err := s.shlClient().Do(hreq)
+		if err != nil {
+			s.fail(w, r, http.StatusBadGateway, "the payer's DTR could not be reached: "+err.Error())
+			return
+		}
+		defer func() { _ = res.Body.Close() }()
+		status = res.StatusCode
+		out, _ = io.ReadAll(io.LimitReader(res.Body, 16<<20))
+	}
+	var v any
+	if json.Unmarshal(out, &v) != nil {
+		s.fail(w, r, http.StatusBadGateway, fmt.Sprintf("the DTR service answered %d with something that is not JSON", status))
+		return
+	}
+	if status >= 300 {
+		s.fail(w, r, http.StatusBadGateway, fmt.Sprintf("the DTR service answered %d: %s", status, string(out)))
+		return
+	}
+	s.ok(w, v)
 }

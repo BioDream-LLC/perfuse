@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · a166a4b</p>
+<p class="version">version 0.1 · 4b11cdf</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2576,7 +2576,7 @@ destinations:
 <tr><td>Patient Access</td><td>A member&#39;s claims, clinical data and prior authorisations, to an app they choose</td><td>CARIN Blue Button 2.2.0, PDex 2.2.0, US Core, SMART App Launch</td><td><code>-fhir</code> and a SMART issuer (<code>-smart-issuer</code>)</td></tr>
 <tr><td>Provider Access</td><td>The same for a provider&#39;s attributed members, in bulk</td><td>PDex 2.2.0, Da Vinci ATR 2.1.0, Bulk Data</td><td><code>-fhir-payer-apis</code> and <code>-fhir-bulk-export</code></td></tr>
 <tr><td>Payer-to-Payer</td><td>A member&#39;s record to another payer, after matching them</td><td>HRex 1.2.0 <code>$member-match</code>, PDex 2.2.0</td><td><code>-fhir-payer-apis</code></td></tr>
-<tr><td>Prior Authorization</td><td>What an order needs, the documentation, then the request and decision</td><td>Da Vinci CRD 2.2.1, DTR 2.1.0, PAS 2.2.1 with X12 278 translation</td><td><code>-fhir</code>, writable, and <code>-crd-rules</code></td></tr>
+<tr><td>Prior Authorization</td><td>What an order needs, the documentation, then the request and decision</td><td>Da Vinci CRD 2.2.1, DTR 2.2.0, PAS 2.2.1 with X12 278 translation</td><td><code>-fhir</code>, writable, and <code>-crd-rules</code></td></tr>
 </tbody>
 </table>
 <p>The Patient Access API needs no operation of its own: it is the FHIR endpoint&#39;s ordinary read and search, protected by SMART, with CARIN and PDex resources in the store. Searching <code>ExplanationOfBenefit</code> supports the parameters CARIN names — <code>patient</code>, <code>identifier</code>, <code>type</code>, <code>service-date</code>, <code>billable-period-start</code>, <code>provider</code>, <code>insurer</code>, <code>coverage</code> — and <code>Coverage</code> supports <code>subscriber-id</code>, <code>identifier</code> and <code>payor</code>.</p>
@@ -2630,7 +2630,9 @@ rules:
 <h3 id="s16-7-what-was-checked-and-against-what"><span class="num">16.7</span> What was checked, and against what</h3>
 <p>The CARIN and PDex outputs were validated with the official HL7 FHIR validator, loaded with the published packages (<code>hl7.fhir.us.carin-bb#2.2.0</code>, <code>hl7.fhir.us.davinci-pdex#2.2.0</code>): professional, inpatient and outpatient claims and two PAS decisions, with no errors. The PDex inputs were the PAS guide&#39;s own examples rather than shapes written here to agree with the converter. The validator found five defects on the first run — among them that CARIN requires the profile version in <code>meta.profile</code> and the claim-type code system version on institutional claims — and each is fixed and covered by a test.</p>
 <p>Building this found a defect older than it: the FHIR store dropped every element its internal model did not declare, so an ExplanationOfBenefit lost its items, diagnoses, adjudication and payment on the way in. The store now keeps whatever a resource carries, and a test loads a CARIN claim through the server and reads it back whole.</p>
-<p>CRD&#39;s output - the updated order, and the CDS Hooks response against CRD&#39;s own logical model - and DTR&#39;s package output validate in the official HL7 validator against CRD 2.2.1 and DTR 2.1.0 with no errors.</p>
+<p>CRD&#39;s output - the updated order, and the CDS Hooks response against CRD&#39;s own logical model - and DTR&#39;s package output validate in the official HL7 validator against CRD 2.2.1 and DTR 2.2.0 with no errors.</p>
+<p>DTR here is the payer&#39;s side of 2.2.0. <code>$questionnaire-package</code> takes the questionnaires named, those CRD named on an order, or the coverage assertion id CRD returned (<code>context</code>, while the same process is serving CRD), and returns each as a package bundle with a QuestionnaireResponse to fill in, the Libraries its CQL needs and their dependencies. A questionnaire&#39;s own answer value sets go contained in it, because value sets on this server are views of the mapping tables. <code>$log-questionnaire-errors</code> writes what a DTR app reports to the server log, and <code>$next-question</code> answers that only standard, non-adaptive questionnaires are served.</p>
+<p>A rules file is checked against CRD&#39;s own invariants when it loads: a questionnaire needs documentation, a service that is not covered cannot need authorisation, <code>satisfied</code> belongs to one case and not a rule, and anything conditional must give a reason.</p>
 <p>Not verified: the exports and member matching against another payer&#39;s implementation, the metrics against a payer&#39;s published figures, and CRD against a real EHR&#39;s CDS Hooks client.</p>
 </section>
 <section class="chapter">

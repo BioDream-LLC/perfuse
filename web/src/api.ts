@@ -1409,6 +1409,9 @@ export const api = {
   /** askCRD sends an order to a coverage requirements service - this server's rules, or a payer's CDS service URL. */
   askCRD: (input: { url?: string; token?: string; hook?: string; order: unknown; coverage: unknown; patientId: string }) =>
     request<CRDResponse>('POST', '/api/crd/ask', input),
+  /** dtrPackage asks a DTR service - this server's, or a payer's FHIR base URL - for the questionnaire package an order needs. */
+  dtrPackage: (input: { url?: string; token?: string; order: unknown; coverage: unknown }) =>
+    request<DTRPackageResult>('POST', '/api/dtr/package', input),
   /** buildEligibility renders a 005010X279A1 270. Nothing is sent. */
   buildEligibility: (input: EligibilityRequest) => request<BuiltX12>('POST', '/api/x12/eligibility/build', input),
   /** readEligibility assembles a 271 and checks it against the CAQH CORE data content rule. */
@@ -2783,6 +2786,12 @@ export interface CRDCard {
   indicator: 'info' | 'warning' | 'critical'
   source: { label: string; url?: string }
   links?: { label: string; url: string }[]
+}
+
+/** The Parameters a DTR $questionnaire-package answers with: a packagebundle per questionnaire, and an outcome. */
+export interface DTRPackageResult {
+  resourceType: 'Parameters'
+  parameter?: { name: string; resource?: { resourceType: string; entry?: { resource: Record<string, unknown> }[]; issue?: { severity: string; diagnostics?: string }[] } }[]
 }
 
 export interface CRDResponse {

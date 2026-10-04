@@ -6,6 +6,7 @@ import type {
   AttachmentView,
   BuiltX12,
   CRDResponse,
+  DTRPackageResult,
   EligibilityRead,
   Enrollment,
   PriorAuthResult,
@@ -818,6 +819,25 @@ function CoverageRequirements() {
     }
   }
 
+  const [pkg, setPkg] = useState<DTRPackageResult | null>(null)
+  const [pkgError, setPkgError] = useState<UiError | null>(null)
+  // The order as CRD returned it, carrying the coverage-information that names the questionnaire.
+  const updatedOrder = resp?.systemActions?.[0]?.resource
+  async function fetchPackage() {
+    setPkgError(null)
+    setPkg(null)
+    try {
+      setPkg(
+        await api.dtrPackage({
+          order: updatedOrder,
+          coverage: { resourceType: 'Coverage', id: f.coverage, status: 'active', beneficiary: { reference: `Patient/${f.patient}` } },
+        }),
+      )
+    } catch (e) {
+      setPkgError(toError(e))
+    }
+  }
+
   const info = (resp?.systemActions ?? []).flatMap((a) =>
     ((a.resource.extension as { url: string; extension?: { url: string; valueCode?: string; valueCanonical?: string }[] }[]) ?? [])
       .filter((e) => e.url.endsWith('ext-coverage-information'))
@@ -872,8 +892,53 @@ function CoverageRequirements() {
               </ul>
             </Section>
           ))}
+          {info.some((ext) => ext.some((x) => x.url === 'questionnaire')) && (
+            <Section title="Documentation (DTR)" description="The questionnaire package a documentation app gets for this order, from this server's DTR.">
+              {pkgError && <ErrorBox error={pkgError} onDismiss={() => setPkgError(null)} />}
+              <button className="btn-secondary w-full" onClick={() => void fetchPackage()}>
+                Get the questionnaire package
+              </button>
+              {pkg && <PackageSummary pkg={pkg} />}
+            </Section>
+          )}
         </div>
       )}
+    </div>
+  )
+}
+
+/** PackageSummary lists what each DTR package bundle holds: the questionnaire and its questions, the response to fill in, libraries. */
+function PackageSummary({ pkg }: { pkg: DTRPackageResult }) {
+  const params = pkg.parameter ?? []
+  const bundles = params.filter((p) => p.name === 'packagebundle')
+  const issues = params.filter((p) => p.name === 'outcome').flatMap((p) => p.resource?.issue ?? [])
+  return (
+    <div className="mt-3 space-y-2 text-xs" data-testid="dtr-package">
+      {bundles.length === 0 && <p className="text-amber-300">No questionnaire was returned.</p>}
+      {bundles.map((b, i) => {
+        const res = (b.resource?.entry ?? []).map((e) => e.resource)
+        const q = res.find((r) => r.resourceType === 'Questionnaire') as { title?: string; url?: string; item?: { text?: string }[] } | undefined
+        const qr = res.find((r) => r.resourceType === 'QuestionnaireResponse') as { status?: string } | undefined
+        const libs = res.filter((r) => r.resourceType === 'Library').length
+        return (
+          <div key={i} className="rounded-lg border border-slate-800 p-3">
+            <p className="font-medium text-slate-100">{q?.title ?? q?.url}</p>
+            <ul className="mt-1 list-inside list-disc text-slate-300">
+              {(q?.item ?? []).map((it, j) => (
+                <li key={j}>{it.text}</li>
+              ))}
+            </ul>
+            <p className="mt-1 text-slate-500">
+              Response to fill in: {qr ? qr.status : 'none'} · Libraries: {libs}
+            </p>
+          </div>
+        )
+      })}
+      {issues.map((is, i) => (
+        <p key={i} className={is.severity === 'error' ? 'text-rose-300' : 'text-slate-400'}>
+          {is.severity}: {is.diagnostics}
+        </p>
+      ))}
     </div>
   )
 }

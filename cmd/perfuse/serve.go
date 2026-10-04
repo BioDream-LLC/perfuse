@@ -1023,6 +1023,10 @@ oidcDone:
 
 		// The CMS-0057 payer operations are off unless asked for. $member-match tells a caller whether someone is this payer's
 		// member, and the Group export hands over many members' records at once.
+		if srv.CRD != nil {
+			// CRD and DTR in one process: an assertion CRD made can be answered by DTR from its id alone.
+			fhirSrv.DTRContext = srv.CRD.QuestionnairesFor
+		}
 		if *fhirMatchWithoutConsent && !*fhirPayerAPIs {
 			return fmt.Errorf("-fhir-member-match-without-consent has no effect without -fhir-payer-apis")
 		}
@@ -1117,6 +1121,7 @@ oidcDone:
 		// clients are machines with tokens, not browsers, and pretending otherwise
 		// would mean every EHR integration had to hold a login cookie.
 		mux.Handle("/fhir/", http.StripPrefix("/fhir", fhirSrv.Handler()))
+		srv.DTRPackage = fhirSrv.QuestionnairePackage
 
 		// Reports the scheme actually in use rather than asserting one. The previous line claimed the endpoint
 		// was unauthenticated whatever was configured, which is the kind of log entry that gets believed.

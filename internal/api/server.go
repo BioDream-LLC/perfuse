@@ -8,6 +8,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -218,6 +219,10 @@ type Server struct {
 
 	// CRD is the Da Vinci Coverage Requirements Discovery rules, when the payer's CDS service is on.
 	CRD *crd.Rules
+
+	// DTRPackage runs this server's own DTR $questionnaire-package on a Parameters body, for the console. Nil when no FHIR endpoint
+	// is served.
+	DTRPackage func(ctx context.Context, params []byte) (status int, body []byte)
 
 	// CDSClients are the EHRs trusted to call it with signed JWTs.
 	CDSClients []*CDSClient
@@ -431,6 +436,7 @@ func (s *Server) Handler() http.Handler {
 	// Receiving is an editor's: it fetches from an address in a stranger's QR code and can deliver into a channel.
 	mux.Handle("POST /api/shl/resolve", s.require(store.RoleEditor, s.handleResolveSHL))
 	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))
+	mux.Handle("POST /api/dtr/package", s.require(store.RoleViewer, s.handleDTRPackage))
 	mux.Handle("POST /api/shc/verify", s.require(store.RoleViewer, s.handleVerifySHC))
 	mux.Handle("POST /api/x12/eligibility/build", s.require(store.RoleViewer, s.handleBuildEligibility))
 	mux.Handle("POST /api/x12/eligibility/read", s.require(store.RoleViewer, s.handleReadEligibility))

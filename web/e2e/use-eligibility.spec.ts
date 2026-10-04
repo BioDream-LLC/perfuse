@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { openTab } from "./nav";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 // Eligibility, claim status and enrolment on the claims page, driven as a billing office would. Each test checks what the server
 // computed - the built interchange, the assembled answer, the CORE findings - not merely that a panel rendered.
@@ -50,6 +55,19 @@ test("a 276 is built and an 834 is read into members", async ({ page }) => {
 
 test("an order is asked about at order-sign, and the payer's rules answer with coverage information", async ({ page }) => {
   await page.goto("/");
+  // The payer loads its DTR questionnaire into the FHIR endpoint, as a payer would.
+  const mutating = { "X-Perfuse-Request": "1" };
+  const tok = await page.request.post("/api/tokens", { headers: mutating, data: { label: "e2e-dtr", role: "editor" } });
+  expect(tok.ok(), await tok.text()).toBeTruthy();
+  const token = (await tok.json()).token as string;
+  const questionnaire = JSON.parse(readFileSync(join(here, "..", "..", "examples", "crd", "questionnaire-home-oxygen.json"), "utf8"));
+  const put = await page.request.put("/fhir/Questionnaire/home-oxygen", {
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/fhir+json" },
+    data: questionnaire,
+  });
+  expect(put.ok(), await put.text()).toBeTruthy();
+  await page.request.delete("/api/tokens/e2e-dtr", { headers: mutating });
+
   await openTab(page, "Claims & auth");
   await page.getByRole("button", { name: "Coverage requirements (CRD)" }).click();
   await page.getByRole("button", { name: "Ask for coverage requirements" }).click();
@@ -59,6 +77,14 @@ test("an order is asked about at order-sign, and the payer's rules answer with c
   const info = page.getByTestId("crd-coverage-info");
   await expect(info).toContainText("pa-needed: auth-needed");
   await expect(info).toContainText("questionnaire: https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen");
+
+  // DTR: the questionnaire that coverage-information names, packaged with the response the documentation app fills in. The setup loads
+  // the example questionnaire into the FHIR endpoint.
+  await page.getByRole("button", { name: "Get the questionnaire package" }).click();
+  const pkg = page.getByTestId("dtr-package");
+  await expect(pkg).toContainText("Home oxygen therapy: documentation for prior authorization");
+  await expect(pkg).toContainText("Oxygen saturation at rest on room air (%)");
+  await expect(pkg).toContainText("Response to fill in: in-progress");
 
   // And the discovery document is published for EHRs.
   const discovery = await page.request.get("/cds-services");

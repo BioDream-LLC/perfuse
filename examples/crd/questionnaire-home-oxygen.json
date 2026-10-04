@@ -2,6 +2,8 @@
   "resourceType": "Questionnaire",
   "id": "home-oxygen",
   "meta": {"profile": ["http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire"]},
+  "extension": [{"url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm",
+    "valueCoding": {"system": "http://hl7.org/fhir/version-algorithm", "code": "semver"}}],
   "text": {"status": "generated", "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Home oxygen therapy: documentation for prior authorization</div>"},
   "url": "https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen",
   "version": "1.0.0",

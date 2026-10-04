@@ -32,6 +32,10 @@ type Server struct {
 	// Payer turns on the CMS-0057 payer operations: $member-match and the Group exports. Nil leaves them off.
 	Payer *PayerAPIs
 
+	// DTRContext resolves a CRD coverage assertion id - DTR's context parameter - to the questionnaires that assertion asked for.
+	// Nil when no CRD service runs in this process; $questionnaire-package then needs the order or the questionnaire named.
+	DTRContext func(assertionID string) []string
+
 	// Export runs bulk exports. Nil disables the operation, which is why it is a pointer rather than a value.
 	//
 	// Off unless something sets it, because an export produces a file holding every record this server has and that is

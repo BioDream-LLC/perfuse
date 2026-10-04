@@ -1712,6 +1712,7 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Ask: an order at order-sign': IconX12,
   'Electronic signature (HL7 DSDR)': IconCheck,
   'Coverage information on the order': IconCheck,
+  'Documentation (DTR)': IconDocuments,
   'X12 278 response': IconX12,
   'Claims and remittance': IconX12,
   'CARIN Blue Button bundle': IconFhir,

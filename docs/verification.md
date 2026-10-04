@@ -303,7 +303,7 @@ sets, and an inactive RxNorm code in the test data.
 
 What this does not show: conversions of messages from a real EHR feed, or an ONC certification test (Inferno) run.
 
-## Da Vinci CRD 2.2.1 and DTR 2.1.0, against the official HL7 validator
+## Da Vinci CRD 2.2.1 and DTR 2.2.0, against the official HL7 validator
 
 The order CRD updates (a DeviceRequest carrying the coverage-information extension), the whole CDS Hooks response validated against
 CRD's `CRDHooksResponse` logical model, the example questionnaire against DTR's `dtr-std-questionnaire`, and the server's own
@@ -314,6 +314,22 @@ The first run found that cards named their topic in CRD's temporary code system,
 include; they now use the CDS Hooks card-type system. Building the package found that the FHIR store's Questionnaire model declares no
 `item`, and the package was written through a path that did not restore undeclared members - so every questionnaire went out with no
 questions. It now uses the serialiser that does.
+
+**Rechecked in October 2026, after reading implementers' questions in chat.fhir.org's Da Vinci channels.**
+
+- DTR had been built to 2.1.0 while CRD and PAS here are 2.2.1, the releases meant to be used together. Against DTR 2.2.0 the
+  package was not conformant: its parameters were `PackageBundle` and `Outcome` where 2.2.0 says `packagebundle` and `outcome`, each
+  bundle lacked the QuestionnaireResponse 2.2.0 requires, a Library's own `depends-on` Libraries were left out (the question raised
+  about the reference implementation omitting FHIRHelpers), a version-specific canonical returned whichever version was found first,
+  `context` was ignored, and `$log-questionnaire-errors` and `$next-question`, which 2.2.0's payer capability statement requires, did
+  not exist. All fixed; the output validates against `dtr-qpackage-output-parameters` 2.2.0 with no errors.
+- CRD answered an order no rule matched with `info-needed` `OTH` and no reason, which breaks crd-ci-q6: the validator rejected every
+  such answer. The earlier check had only validated a matched order. Rules files are now checked against crd-ci-q1, q2, q3, q5, q6
+  and q8 when they load.
+- CRD 2.2.1's own invariant crd-ci-q4 rejects every coverage-information carrying `doc-purpose` `withpa`, even with `pa-needed`
+  `auth-needed`: its left side is a `where()` with no `exists()`, so it is empty, and "empty implies false" is not true. It also tests
+  for `noauth` where the code is `no-auth`. Perfuse does not send `doc-purpose` (it is optional), so its output stays valid; the fault
+  is reported to the guide's authors.
 
 What this does not show: CRD against a real EHR's CDS Hooks client, and DTR against a real SMART on FHIR documentation app.
 

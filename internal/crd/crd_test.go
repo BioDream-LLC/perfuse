@@ -81,3 +81,42 @@ func TestRulesWithWrongCodesAreRefused(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 }
+
+func TestAnUnmatchedOrderSaysWhyInformationIsNeeded(t *testing.T) {
+	// crd-ci-q6: info-needed OTH must carry a reason. The HL7 validator rejected every answer for an unrecognised order without one.
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	resp, _ := rules.Evaluate(request(t, strings.Replace(order, "E0424", "Z9999", 1)), time.Now())
+	ext, _ := json.Marshal(resp.SystemActions[0].Resource["extension"])
+	if !strings.Contains(string(ext), `"info-needed","valueCode":"OTH"`) || !strings.Contains(string(ext), `"url":"reason","valueCodeableConcept":{"text":"No coverage rule matches`) {
+		t.Errorf("%s", ext)
+	}
+}
+
+func TestRulesBreakingCRDsInvariantsAreRefused(t *testing.T) {
+	for name, rule := range map[string]Rule{
+		"q1": {Codes: []string{"1"}, Covered: "covered", Questionnaire: "https://p.example/Questionnaire/q"},
+		"q2": {Codes: []string{"1"}, Covered: "not-covered", PA: "no-auth"},
+		"q5": {Codes: []string{"1"}, Covered: "covered", PA: "satisfied"},
+		"q3": {Codes: []string{"1"}, Covered: "conditional"},
+		"q8": {Codes: []string{"1"}, Covered: "covered", PA: "auth-needed", Documentation: []string{"clinical"}, Questionnaire: "https://p.example/Questionnaire/q"},
+	} {
+		r := &Rules{Payer: "P", Rules: []Rule{rule}}
+		if err := r.Validate(); err == nil || !strings.Contains(err.Error(), "crd-ci-"+name) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+func TestAnAssertionIsRememberedForDTR(t *testing.T) {
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	resp, _ := rules.Evaluate(request(t, order), time.Now())
+	var id string
+	for _, e := range resp.SystemActions[0].Resource["extension"].([]any)[0].(map[string]any)["extension"].([]any) {
+		if m := e.(map[string]any); m["url"] == "coverage-assertion-id" {
+			id = m["valueString"].(string)
+		}
+	}
+	if got := rules.QuestionnairesFor(id); len(got) != 1 || !strings.HasSuffix(got[0], "/Questionnaire/home-oxygen") {
+		t.Errorf("assertion %s: %v", id, got)
+	}
+}
