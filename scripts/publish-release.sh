@@ -81,6 +81,11 @@ trap 'rm -f "$askpass"' EXIT
 printf '#!/bin/sh\ncase "$1" in Username*) echo x-access-token;; *) printf %%s "$GITHUB_TOKEN";; esac\n' > "$askpass"
 chmod 700 "$askpass"
 GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 git push -q origin main "$NEW"
+# origin may be a local mirror. The release below is created from a tag, and a tag GitHub has never seen is cut from
+# whatever its main is at that moment, so GitHub gets the commit and the tag first.
+if git remote get-url github >/dev/null 2>&1; then
+  GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 git push -q github main "$NEW"
+fi
 
 # ---- 5. The GitHub release and its assets -----------------------------------------------------------------
 auth="Authorization: Bearer $GITHUB_TOKEN"
