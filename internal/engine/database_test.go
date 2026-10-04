@@ -151,13 +151,15 @@ func TestDatabaseSourceMarksRowsSoTheyAreNotResent(t *testing.T) {
 
 	waitFor(t, "the row to be sent", func() bool { return len(capture.messages()) == 1 })
 
-	var marked sql.NullString
-	if err := db.QueryRow(`SELECT sent_at FROM outbound WHERE id = 1`).Scan(&marked); err != nil {
-		t.Fatal(err)
-	}
-	if !marked.Valid {
-		t.Fatal("after_query did not mark the row")
-	}
+	// The row is marked after the message is delivered, so the capture can see the message a moment before the update
+	// lands. Read once, this failed on a loaded CI runner although the row was marked; it is waited for instead.
+	waitFor(t, "after_query to mark the row", func() bool {
+		var marked sql.NullString
+		if err := db.QueryRow(`SELECT sent_at FROM outbound WHERE id = 1`).Scan(&marked); err != nil {
+			t.Fatal(err)
+		}
+		return marked.Valid
+	})
 
 	// Three polls' worth. The failure this guards against is a duplicate storm, and
 	// it only appears on the second poll.
