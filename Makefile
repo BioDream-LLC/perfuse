@@ -9,7 +9,7 @@ PKG     := ./cmd/perfuse
 # somebody reports a bug against a version that does not exist.
 #
 # Override it for a local build: make build VERSION=mine
-VERSION ?= v0.1.4
+VERSION ?= v0.1.5
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
 .PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs site screens publish
@@ -157,7 +157,7 @@ wasm:
 # re-downloaded to prove them, and perfuse.health rebuilt and deployed. It refuses a tag that already exists, because a
 # version must name one set of bytes. See scripts/publish-release.sh.
 #
-#   GITHUB_TOKEN=... make publish VERSION=v0.1.4 NOTES=relnotes.md
+#   GITHUB_TOKEN=... make publish VERSION=v0.1.5 NOTES=relnotes.md
 publish:
 	@./scripts/publish-release.sh "$(VERSION)" "$(NOTES)"
 
