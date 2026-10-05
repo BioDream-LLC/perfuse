@@ -8,6 +8,7 @@ import { ChannelBuilder } from './ChannelBuilder'
 import { Dashboard } from './Dashboard'
 import { DocumentLab } from './DocumentLab'
 import { FhirLab } from './FhirLab'
+import { TeamDashboards } from './TeamDashboards'
 import { PayerLab } from './PayerLab'
 import { CMS0057 } from './CMS0057'
 import { Subscriptions } from './Subscriptions'
@@ -57,6 +58,7 @@ const FlowMap = lazy(() => import('./FlowMap'))
 
 export type Tab =
   | 'dashboard'
+  | 'teams'
   | 'channels'
   | 'messages'
   | 'queue'
@@ -85,7 +87,7 @@ export type Tab =
 
 // Every view's id, for reading one out of the URL. A string from the address bar is only trusted once it is in here.
 const TAB_IDS = [
-  'dashboard', 'channels', 'messages', 'queue', 'alerts', 'metrics', 'fhir', 'subscriptions', 'documents', 'payer',
+  'dashboard', 'teams', 'channels', 'messages', 'queue', 'alerts', 'metrics', 'fhir', 'subscriptions', 'documents', 'payer',
   'cms0057', 'shl', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
   'mapper', 'users', 'audit', 'settings',
 ] as const satisfies readonly Tab[]
@@ -487,6 +489,12 @@ function Console() {
       about: 'Whether everything is running, and what has gone wrong recently',
     },
     {
+      id: 'teams',
+      label: 'Team dashboards',
+      minRole: 'viewer',
+      about: 'A dashboard for each kind of person who watches the interfaces, from connections to department managers',
+    },
+    {
       id: 'channels',
       label: 'Channels',
       minRole: 'viewer',
@@ -863,6 +871,7 @@ function Console() {
         className="mx-auto max-w-7xl px-6 py-6"
       >
         {tab === 'dashboard' && <Dashboard onBuildChannel={() => setTab('channels')} />}
+        {tab === 'teams' && <TeamDashboards />}
         {tab === 'channels' && <Channels />}
         {tab === 'messages' && <Messages />}
         {tab === 'queue' && <Queue role={me.role as 'viewer' | 'editor' | 'admin'} />}

@@ -1619,6 +1619,7 @@ export function IconStethoscope(props: IconProps) {
 
 export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Dashboard': IconDashboard,
+  'Team dashboards': IconDashboard,
   'Channels': IconChannels,
   'Messages': IconMessages,
   'Queue': IconQueue,
@@ -1808,6 +1809,16 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
 
   // Headings built from a table rather than written inline. The lookup happens on the real string at run time, so these work the
   // same way - the static test simply cannot see them, which is why they are grouped and labelled here.
+  // The team dashboards' tiles, whose titles come from the server's tile registry.
+  'Failures by channel, 24h': IconAlerts,
+  'Rejected by sender, 24h': IconAlerts,
+  'Queues': IconQueue,
+  'Connections': IconSend,
+  'Inbound connections': IconChannels,
+  'FHIR validation': IconCheck,
+  'Sign-ins and changes': IconUsers,
+  'In plain words': IconDocuments,
+  'Not measured yet': IconMetrics,
   Contradictions: IconError,
   'Worth checking': IconWarning,
   Notes: IconInfo,

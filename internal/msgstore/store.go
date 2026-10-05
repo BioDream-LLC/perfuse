@@ -666,21 +666,28 @@ func (q Query) build() (string, []any) {
 
 // Stats summarises activity for a dashboard.
 type Stats struct {
-	Total       int64            `json:"total"`
-	ByOutcome   map[string]int64 `json:"byOutcome"`
-	ByChannel   map[string]int64 `json:"byChannel"`
-	ByType      map[string]int64 `json:"byType"`
-	OldestKept  *time.Time       `json:"oldestKept,omitempty"`
-	NewestKept  *time.Time       `json:"newestKept,omitempty"`
-	StoredBytes int64            `json:"storedBytes"`
+	Total     int64            `json:"total"`
+	ByOutcome map[string]int64 `json:"byOutcome"`
+	ByChannel map[string]int64 `json:"byChannel"`
+	ByType    map[string]int64 `json:"byType"`
+	// FailedByChannel counts the failed and unparseable messages per channel, for the interface analyst's worst-first list.
+	FailedByChannel map[string]int64 `json:"failedByChannel"`
+	// RejectedBySender counts the messages this server answered with a negative acknowledgement (AE, AR, CE, CR), per
+	// sending application, so a partner sending bad messages shows as one.
+	RejectedBySender map[string]int64 `json:"rejectedBySender"`
+	OldestKept       *time.Time       `json:"oldestKept,omitempty"`
+	NewestKept       *time.Time       `json:"newestKept,omitempty"`
+	StoredBytes      int64            `json:"storedBytes"`
 }
 
 // Stats returns aggregate counts since a time.
 func (s *Store) Stats(ctx context.Context, tenantID string, since time.Time) (*Stats, error) {
 	out := &Stats{
-		ByOutcome: map[string]int64{},
-		ByChannel: map[string]int64{},
-		ByType:    map[string]int64{},
+		ByOutcome:        map[string]int64{},
+		ByChannel:        map[string]int64{},
+		ByType:           map[string]int64{},
+		FailedByChannel:  map[string]int64{},
+		RejectedBySender: map[string]int64{},
 	}
 
 	// Unconditional and first, like every other scoped query here. A count is a disclosure too: telling a tenant
@@ -723,6 +730,33 @@ func (s *Store) Stats(ctx context.Context, tenantID string, since time.Time) (*S
 				return nil, err
 			}
 			g.target[key] = n
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, q := range []struct {
+		sql    string
+		target map[string]int64
+	}{
+		{`SELECT channel, COUNT(*) FROM messages WHERE ` + where + ` AND outcome IN ('failed','unparseable') GROUP BY channel`, out.FailedByChannel},
+		{`SELECT COALESCE(NULLIF(sender,''),'(unnamed sender)'), COUNT(*) FROM messages WHERE ` + where +
+			` AND ack_code IN ('AE','AR','CE','CR') GROUP BY 1`, out.RejectedBySender},
+	} {
+		rows, err := s.querier().QueryContext(ctx, q.sql, args...)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var key string
+			var n int64
+			if err := rows.Scan(&key, &n); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			q.target[key] = n
 		}
 		rows.Close()
 		if err := rows.Err(); err != nil {

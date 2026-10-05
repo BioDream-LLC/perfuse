@@ -277,6 +277,7 @@ func (s *Server) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 		// Stated rather than derived. A SAML issuer is an https URL and so is an OIDC one, so the store cannot tell them apart and recorded
 		// every SAML account as OIDC until this was passed.
 		Source: store.AuthSAML,
+		Groups: groups,
 	}
 
 	token, user, created, err := s.Store.SignInExternal(r.Context(), identity, s.SAML.CreateUsers,

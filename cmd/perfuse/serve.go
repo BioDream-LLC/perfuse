@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
+	"github.com/biodream-llc/perfuse/internal/dashboards"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"github.com/biodream-llc/perfuse/internal/trace"
 	"io"
@@ -91,6 +92,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"SMART Health Links it hosts (default: the listen address)")
 	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
 	crdRules := fset.String("crd-rules", "", "a Da Vinci CRD rules file: serve coverage requirements over CDS Hooks at /cds-services")
+	dashboardsFile := fset.String("dashboards", "", "a file mapping directory groups and roles to the dashboard each opens on")
 	rctc := fset.String("rctc", "", "eCR trigger codes for the case report preview: a FHIR ValueSet or Bundle of them, such as the eRSD")
 	cdsClients := fset.String("cds-clients", "", "the EHRs trusted to call the CDS services with signed JWTs (issuer and jwks_url)")
 
@@ -886,6 +888,13 @@ oidcDone:
 			srv.CRD = rules
 			rules.Client = srv.OutboundClient()
 			log.Info("serving Da Vinci CRD over CDS Hooks", "discovery", srv.SelfURL+"/cds-services", "rules", len(rules.Rules))
+		}
+		if *dashboardsFile != "" {
+			a, err := dashboards.LoadAssignments(*dashboardsFile)
+			if err != nil {
+				return fmt.Errorf("-dashboards: %w", err)
+			}
+			srv.Dashboards = a
 		}
 		if *rctc != "" {
 			triggers, err := publichealth.LoadTriggers(*rctc)

@@ -282,6 +282,7 @@ func (s *Server) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 		DisplayName: claims.Name,
 		Username:    federatedUsername(claims),
 		Role:        store.Role(role),
+		Groups:      claims.Groups,
 	}
 
 	token, user, created, err := s.Store.SignInExternal(r.Context(), identity, cfg.CreateUsers,

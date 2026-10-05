@@ -418,6 +418,22 @@ var migrations = []migration{
 			`CREATE INDEX IF NOT EXISTS shl_links_tenant ON shl_links(tenant_id, created_at)`,
 		},
 	},
+	{
+		// Dashboards: the directory groups a federated user was last seen in, which the dashboards file can map to a dashboard,
+		// and each person's saved view of theirs - which tiles, in what order, with which filters.
+		name:       "dashboard-groups",
+		addColumns: []columnAdd{{"users", "directory_groups", "TEXT NOT NULL DEFAULT ''"}},
+	},
+	{
+		name: "dashboard-views",
+		stmts: []string{
+			`CREATE TABLE IF NOT EXISTS dashboard_views (
+				user_id    INTEGER PRIMARY KEY,
+				view       TEXT NOT NULL,
+				updated_at TEXT NOT NULL
+			)`,
+		},
+	},
 }
 
 // applyMigrations runs whatever has not run yet.

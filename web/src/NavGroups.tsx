@@ -63,7 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
       dot: 'bg-sky-400',
     },
     // Messages before Queue before Alerts: the order somebody follows when a feed is reported broken.
-    members: ['messages', 'queue', 'alerts', 'metrics', 'flow'],
+    members: ['messages', 'queue', 'alerts', 'metrics', 'flow', 'teams'],
   },
   {
     name: 'Build',

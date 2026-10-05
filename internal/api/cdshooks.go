@@ -304,8 +304,14 @@ func (s *Server) handleDTRPackage(w http.ResponseWriter, r *http.Request, sess *
 		s.fail(w, r, http.StatusBadGateway, fmt.Sprintf("the DTR service answered %d with something that is not JSON", status))
 		return
 	}
+	if status >= 400 && status < 500 {
+		// The request was refused as asked: that is the caller's to fix, not a failure upstream. A 502 here was what the
+		// hostile-input sweep caught for an empty order.
+		s.fail(w, r, http.StatusBadRequest, fmt.Sprintf("the DTR service refused the request (%d): %s", status, outcomeText(out)))
+		return
+	}
 	if status >= 300 {
-		s.fail(w, r, http.StatusBadGateway, fmt.Sprintf("the DTR service answered %d: %s", status, string(out)))
+		s.fail(w, r, http.StatusBadGateway, fmt.Sprintf("the DTR service answered %d: %s", status, outcomeText(out)))
 		return
 	}
 	s.ok(w, v)
@@ -337,4 +343,28 @@ func (c *jtiCache) first(id string, expires time.Time) bool {
 	}
 	c.seen[id] = expires
 	return true
+}
+
+// outcomeText is an OperationOutcome's diagnostics joined, or the body when it is not one.
+func outcomeText(body []byte) string {
+	var oo struct {
+		Issue []struct {
+			Diagnostics string `json:"diagnostics"`
+		} `json:"issue"`
+	}
+	if json.Unmarshal(body, &oo) == nil && len(oo.Issue) > 0 {
+		var parts []string
+		for _, i := range oo.Issue {
+			if i.Diagnostics != "" {
+				parts = append(parts, i.Diagnostics)
+			}
+		}
+		if len(parts) > 0 {
+			return strings.Join(parts, "; ")
+		}
+	}
+	if len(body) > 500 {
+		body = body[:500]
+	}
+	return string(body)
 }

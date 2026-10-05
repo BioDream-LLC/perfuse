@@ -244,6 +244,10 @@ export interface MessageStats {
   byChannel: Record<string, number>
   byType: Record<string, number>
   storedBytes: number
+  /** Failed and unparseable messages per channel. */
+  failedByChannel?: Record<string, number>
+  /** Messages answered with a negative acknowledgement, per sending application. */
+  rejectedBySender?: Record<string, number>
   oldestKept?: string
   newestKept?: string
 }
@@ -1370,6 +1374,20 @@ export const api = {
   /** buildEICR builds the eCR case report a v2 message triggers, or says why it triggers none. Nothing is stored or sent. */
   buildEICR: (input: { message: string; system?: string; facility: ECRFacility }) =>
     request<EICRResult>('POST', '/api/publichealth/eicr', input),
+
+  /** connections checks every destination's connection, layer by layer, without sending anything. */
+  connections: (channel?: string) =>
+    request<{ connections: ConnectionCheck[]; checkedAt: string }>('GET', `/api/connections${channel ? `?channel=${encodeURIComponent(channel)}` : ''}`),
+
+  /** dashboards lists the persona dashboards, which one this person is given and why, and their saved view. */
+  dashboards: () => request<DashboardsResponse>('GET', '/api/dashboards'),
+
+  /** saveDashboardView stores this person's view; an empty dashboard clears it. */
+  saveDashboardView: (view: DashboardView) => request<DashboardView>('PUT', '/api/dashboards/view', view),
+
+  /** grafanaDashboard is the dashboard as Grafana JSON over /metrics. */
+  grafanaDashboard: (id: string, tiles: string[]) =>
+    request<Record<string, unknown>>('GET', `/api/dashboards/${encodeURIComponent(id)}/grafana?tiles=${encodeURIComponent(tiles.join(','))}`),
 
   /** fhirSubscriptions lists topic subscriptions and whether their notifications are arriving. Credentials are withheld. */
   fhirSubscriptions: () => request<SubscriptionsView>('GET', '/api/fhir/subscriptions'),
@@ -2819,6 +2837,62 @@ export interface EICRResult {
   facilityMissing: string[] | null
   reason?: string
   bundle?: Record<string, unknown>
+}
+
+/** One layer of a connection check. */
+export interface ConnectionLayer {
+  state: 'ok' | 'failed' | 'skipped'
+  detail?: string
+  ms?: number
+}
+
+/** ConnectionCheck is a destination checked layer by layer: name, network, TLS, and its own deliveries. Nothing is sent. */
+export interface ConnectionCheck {
+  channel: string
+  destination: string
+  type: string
+  target: string
+  tls: boolean
+  dns: ConnectionLayer
+  tcp: ConnectionLayer
+  tlsHandshake: ConnectionLayer
+  application: ConnectionLayer
+  verdict: 'ok' | 'degraded' | 'down'
+  reason: string
+  certificateExpires?: string
+  lastDelivered?: string
+  lastFailed?: string
+}
+
+export interface DashboardTile {
+  id: string
+  title: string
+  description: string
+  source: string
+  query?: string
+}
+
+export interface DashboardDef {
+  id: string
+  title: string
+  audience: string
+  description: string
+  tiles: string[]
+  planned?: string[]
+}
+
+export interface DashboardView {
+  dashboard: string
+  tiles?: string[]
+  channel?: string
+}
+
+export interface DashboardsResponse {
+  dashboards: DashboardDef[]
+  tiles: DashboardTile[]
+  assigned: string
+  assignedBy: string
+  saved: DashboardView | null
 }
 
 export interface CRDResponse {

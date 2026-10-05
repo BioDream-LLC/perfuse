@@ -343,13 +343,13 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 				uri, known = "", false
 			}
 		}
-				// CVX codes below ten are two digits ("03", MMR). A sender writing "3" means the same code, and CVX has no "3", so the
+		// CVX codes below ten are two digits ("03", MMR). A sender writing "3" means the same code, and CVX has no "3", so the
 		// HL7 validator rejected it; it is padded, and the note says so.
 		if uri == "http://hl7.org/fhir/sid/cvx" && len(code) == 1 && code[0] >= '0' && code[0] <= '9' {
 			c.note("info", sourceLabel, "code.coding.code", "CVX code %q was written as 0%s, the form CVX defines", code, code)
 			code = "0" + code
 		}
-				// The sender's text is not the code system's display. For a standard system - LOINC, SNOMED, CVX, RxNorm, ICD - a
+		// The sender's text is not the code system's display. For a standard system - LOINC, SNOMED, CVX, RxNorm, ICD - a
 		// display that differs from the system's own is an error to a terminology-aware validator, and a v2 sender's text
 		// usually does differ ("Comprehensive metabolic panel" for LOINC's "Comprehensive metabolic 2000 panel - Serum or
 		// Plasma"). The text is kept as the concept's text, which is what it is. A local code keeps it as the display too,

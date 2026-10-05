@@ -50,7 +50,7 @@ func (c *converter) omb(field, url string, categories map[string]string) *fhir.E
 				continue
 			}
 		}
-				display, isOMB := categories[code]
+		display, isOMB := categories[code]
 		if text == "" {
 			text = display
 		}

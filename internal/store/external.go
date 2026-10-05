@@ -58,6 +58,10 @@ type ExternalIdentity struct {
 	// Role is the role decided from the provider's claims.
 	Role Role
 
+	// Groups are the directory groups the provider says the person is in, kept so a dashboard can follow a group (the
+	// dashboards file maps groups to dashboards). Refreshed on every sign-in, like the role.
+	Groups []string
+
 	// Source says which protocol vouched for this identity, when the caller knows.
 	//
 	// Empty falls back to derivation from the issuer, which is what LDAP relies on. SAML has to state it: a SAML issuer and an OIDC issuer are
@@ -134,6 +138,9 @@ func (s *Store) SignInExternal(ctx context.Context, id ExternalIdentity, allowCr
 			return "", nil, false, err
 		}
 		created = true
+		if err := s.refreshExternalProfile(ctx, u.ID, id); err != nil {
+			return "", nil, false, err
+		}
 
 	default:
 		return "", nil, false, err
@@ -230,7 +237,8 @@ func (s *Store) createExternalUser(ctx context.Context, id ExternalIdentity) (*U
 
 // refreshExternalProfile updates the display fields from the provider.
 func (s *Store) refreshExternalProfile(ctx context.Context, userID int64, id ExternalIdentity) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE users SET email = ? WHERE id = ?`, id.Email, userID)
+	_, err := s.db.ExecContext(ctx, `UPDATE users SET email = ?, directory_groups = ? WHERE id = ?`,
+		id.Email, strings.Join(id.Groups, "\n"), userID)
 	return err
 }
 

@@ -444,6 +444,9 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `POST /fhir/Questionnaire/$log-questionnaire-errors` | DTR 2.2.0: problems a DTR app met with a questionnaire, written to the server log |
 | `POST /fhir/Questionnaire/$next-question` | DTR 2.2.0: refused with an explanation, since only standard (non-adaptive) questionnaires are served |
 | `POST /api/crd/ask` | From the console: an order sent to this server's CRD rules or to a payer's CDS service URL |
+| `serve -dashboards <file>` | Which team dashboard each directory group (`groups:`) and role (`roles:`) opens on |
+| `GET /api/dashboards`, `PUT /api/dashboards/view`, `GET /api/dashboards/{id}/grafana` | The team dashboards, a person's saved view, and a dashboard as Grafana JSON |
+| `GET /api/connections` | Every networked destination checked by DNS, TCP, TLS and its last delivery, with the reason in words; nothing is sent |
 | `POST /api/dtr/package` | From the console: the DTR questionnaire package for an order CRD answered, from this server or a payer's FHIR base URL |
 | `perfuse token create -label <name> -fhir-groups <id>[,<id>]` | A provider's Provider Access token: on the FHIR endpoint it can read those Groups, export them and fetch the export, and nothing else. Also under Users → Machine credentials, or `fhirGroups` on `POST /api/tokens` |
 

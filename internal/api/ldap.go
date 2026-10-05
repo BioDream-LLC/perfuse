@@ -64,6 +64,7 @@ func (s *Server) signInWithDirectory(r *http.Request, tid tenant.ID, username, p
 		DisplayName: id.DisplayName,
 		Username:    username,
 		Role:        store.Role(role),
+		Groups:      id.Groups,
 	}
 
 	token, u, created, err := s.Store.SignInExternal(

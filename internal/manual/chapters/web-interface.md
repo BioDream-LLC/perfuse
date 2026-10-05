@@ -98,6 +98,33 @@ Runs traffic through a candidate configuration alongside the live one and report
 
 ## Exchange — other formats and other organisations
 
+### Team dashboards
+
+A dashboard for each kind of person who watches the interfaces: Operations, Connections, Interface analyst, Prior authorization,
+Imaging, Revenue cycle, Laboratory, Privacy and security, and a plain-words Department summary. Tiles show counts, states and times,
+never a message or a patient, so a dashboard can go to a manager or a wall screen without widening who sees patient data.
+
+Each person opens on the dashboard their directory group or role is given. `-dashboards dashboards.yaml` maps them:
+
+```yaml
+groups: {PACS-Admins: imaging, Network-Team: connections}
+roles: {viewer: manager}
+```
+
+A group wins over a role, and anyone unmatched opens on Operations. **Arrange tiles** hides and reorders tiles, the channel picker
+filters them, and **Save as my view** keeps that as your own dashboard until **Reset**.
+
+**Export to Grafana** downloads the dashboard as Grafana JSON over `/metrics`, with a data source variable and a channel filter,
+for anyone who needs more than light configuration. Tiles with no metric behind them are left out, and the export's description
+names them.
+
+The **Connections** tile checks every networked destination in layers. It looks the name up, opens a TCP connection, completes TLS
+where it is used, and reads the destination's last delivery and failure from real traffic. Each failure says what it means, for
+example "refused: the partner's engine is probably stopped", "timed out: a firewall or a VPN tunnel that is down", or "a
+certificate from an authority this server does not trust". Nothing is sent to the partner. Figures a dashboard needs that are not
+recorded yet are listed under **Not measured yet** instead of being drawn as empty tiles; VPN tunnel state and PAS turnaround are
+two of them.
+
 ### FHIR lab
 
 Convert HL7 v2 to FHIR, validate a resource, and inspect the result. The samples cover admissions, lab results, appointments, clinical notes, immunizations and a reportable visit. The validation includes US Core, which is the profile American regulation is written against, so this answers "is what they sent us actually conformant" without adopting anything.

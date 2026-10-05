@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
+	"github.com/biodream-llc/perfuse/internal/dashboards"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"log/slog"
 	"net/http"
@@ -217,6 +218,9 @@ type Server struct {
 
 	// SHLAllowHTTP lets a received SMART Health Link point at plain HTTP. Off: only tests and a laboratory want it.
 	SHLAllowHTTP bool
+
+	// Dashboards says which dashboard each role and directory group opens on (-dashboards). Nil: everyone opens on operations.
+	Dashboards *dashboards.Assignments
 
 	// ECRTriggers are the trigger codes the case report preview uses: the RCTC when the server was given one (-rctc), else nil
 	// for the built-in sample.
@@ -435,6 +439,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/inspect/fhir", s.require(store.RoleViewer, s.handleConvertToFHIR))
 	mux.Handle("GET /api/fhir/versions", s.require(store.RoleViewer, s.handleFHIRVersions))
 	mux.Handle("POST /api/publichealth/eicr", s.require(store.RoleViewer, s.handleEICR))
+	mux.Handle("GET /api/connections", s.require(store.RoleViewer, s.handleConnections))
+	mux.Handle("GET /api/dashboards", s.require(store.RoleViewer, s.handleDashboards))
+	mux.Handle("PUT /api/dashboards/view", s.require(store.RoleViewer, s.handleSaveDashboardView))
+	mux.Handle("GET /api/dashboards/{id}/grafana", s.require(store.RoleViewer, s.handleGrafanaExport))
 
 	// Subscriptions and their delivery state. Viewer: it shows where notifications go and whether they arrive, which is
 	// what anybody asked "did the ED get told?" needs, and it withholds the credentials subscribers configured.
