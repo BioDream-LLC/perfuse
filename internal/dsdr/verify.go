@@ -400,7 +400,10 @@ func verifyOne(doc []byte, st signatureText, opts VerifyOptions) Report {
 			if !r.SigningTime.IsZero() && t.Before(r.SigningTime.Add(-5*time.Minute)) {
 				problem("the time-stamp is earlier than the claimed signing time")
 			}
-			note("the time-stamping authority's own signature on its time-stamp is not checked by Perfuse")
+			if _, err := verifyTimestampSignature(tok, opts.Roots, t); err != nil {
+				problem("the signature time-stamp is not valid evidence: %v", err)
+				r.TimeStamped = nil
+			}
 		}
 	}
 

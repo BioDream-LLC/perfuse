@@ -70,6 +70,35 @@ func (o *Options) longTerm(id, sigValue string, now time.Time) (string, string, 
 		revs = append(revs, rv)
 	}
 
+	// X-L carries everything a verifier needs, and that includes the time-stamping authority's own certificate and its
+	// revocation status. Only the signer's path was carried before, so the EU DSS validator could take the signature no further
+	// than XAdES-X.
+	var tsaCerts []*x509.Certificate
+	if sigTS != nil {
+		known := map[string]bool{}
+		for _, c := range o.Chain {
+			known[string(c.Raw)] = true
+		}
+		all := tsaCertificates(sigTS)
+		for _, c := range all {
+			if known[string(c.Raw)] {
+				continue
+			}
+			tsaCerts = append(tsaCerts, c)
+			issuer := issuerOf(c, append(append([]*x509.Certificate{}, o.Chain...), all...))
+			if issuer == nil {
+				missing = append(missing, fmt.Sprintf("the issuer of the time-stamping authority's certificate (%s) is not known, so its revocation status is not carried", c.Subject.CommonName))
+				continue
+			}
+			rv, err := o.revocationFor(c, issuer, now)
+			if err != nil {
+				missing = append(missing, fmt.Sprintf("no revocation status for the time-stamping authority %s: %v", c.Subject.CommonName, err))
+				continue
+			}
+			revs = append(revs, rv)
+		}
+	}
+
 	if revOK {
 		certRefsXML = completeCertificateRefs(id, o.Chain[1:])
 		revRefsXML = completeRevocationRefs(id, revs)
@@ -102,7 +131,7 @@ func (o *Options) longTerm(id, sigValue string, now time.Time) (string, string, 
 	b.WriteString(sigAndRefsXML)
 	if len(o.Chain) > 0 {
 		b.WriteString(`<xades:CertificateValues>`)
-		for _, c := range o.Chain {
+		for _, c := range append(append([]*x509.Certificate{}, o.Chain...), tsaCerts...) {
 			fmt.Fprintf(&b, `<xades:EncapsulatedX509Certificate>%s</xades:EncapsulatedX509Certificate>`, b64(c.Raw))
 		}
 		b.WriteString(`</xades:CertificateValues>`)
@@ -401,4 +430,14 @@ func sequenceItems(der []byte) ([]asn1.RawValue, error) {
 		rest = next
 	}
 	return out, nil
+}
+
+// issuerOf finds the certificate that issued c among candidates.
+func issuerOf(c *x509.Certificate, candidates []*x509.Certificate) *x509.Certificate {
+	for _, k := range candidates {
+		if bytes.Equal(k.RawSubject, c.RawIssuer) && c.CheckSignatureFrom(k) == nil {
+			return k
+		}
+	}
+	return nil
 }

@@ -493,6 +493,24 @@ in `internal/v2fhir/testdata/hard`, with tests holding each fix.
 The five US Core messages above were then validated again as whole bundles, with `-ig` US Core 9.0.0: all five pass. Doing so also
 caught a mistake in one of our own fixtures, an appointment reason labelled as HL7 table 0277 (appointment type), now corrected.
 
+## DSDR signatures, against the EU Digital Signature Service
+
+DSDR signatures were checked with the European Commission's DSS demonstration webapp, built from esig/dss-demonstrations and run
+in Docker, through its REST validation service. The signature was put back in place of the `sdtc:signatureText` that carries it,
+as xmlsec1 is given it. With RSA and ECDSA signers, DSS reports **XAdES-XL**: every layer is recognised and verifies. The
+indication is INDETERMINATE / NO_CERTIFICATE_CHAIN_FOUND only because the test CA is on no trusted list. Getting there took
+three fixes:
+
+- **Perfuse never checked the time-stamping authority's signature on a time-stamp.** The test TSA did not sign at all, and the
+  verifier counted its stamps as XAdES-T evidence, so a forged time would have passed. DSS refused those stamps ("signed by 0
+  signers"). The verifier now checks the CMS signature, the messageDigest and the ESS signing certificate, and that the TSA's
+  certificate is critically marked for time-stamping and chains to a trusted root. The test TSA now signs as RFC 3161 says.
+- **X-L stopped at X.** CertificateValues and RevocationValues carried the signer's path only. They now carry the TSA's certificate
+  and its OCSP or CRL as well, and DSS moved from XAdES-X to XAdES-XL.
+- **DSS's one remaining warning is a known choice.** The DSDR guide's own `SignaturePurpose` element sits in
+  SignedSignatureProperties, where XAdES's schema wildcard is strict. The guide gives the element no namespace, so it is in
+  urn:hl7-org:sdtc. The same purpose is also sent as a XAdES CommitmentTypeIndication, which DSS reads.
+
 ## The FHIR server, against the Inferno US Core 6.1.0 server suite
 
 The 179 US Core 6.1.0 example resources were loaded into Perfuse's FHIR endpoint. The US Core FHIR API group of ONC's Inferno test kit
@@ -709,6 +727,7 @@ checked.
 - **No container image has been published**, though the build file and the README both name one.
 - **No payer or clearinghouse has received a 275 built here**, and it was built from published companion guides rather than the X12 technical report. See above.
 - **The Inferno US Core SMART groups (standalone and EHR launch, granular scopes) have not been run.** Only the FHIR API group was.
+- **No payer has verified a DSDR signature made here.** The EU DSS validator has, as above, with a test CA.
 - **No public health agency, or AIMS, has received a case report from here.** The eICR and the eCR message validate, and the trigger
   codes were the built-in sample, not the RCTC. ELR (HL7 2.5.1 lab reports to public health) is not provided.
 - **No third-party FHIR subscriber has received a notification from here.** Delivery was tested against receivers written for the tests.
