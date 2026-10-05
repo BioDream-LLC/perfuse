@@ -40,6 +40,40 @@ var documentTypeLOINC = map[string][2]string{
 	"TS": {"18761-7", "Transfer summary note"},
 }
 
+// table0270 is HL7 table 0270, Document Type.
+var table0270 = map[string]bool{"AR": true, "CD": true, "CN": true, "DI": true, "DS": true, "ED": true, "HP": true, "OP": true,
+	"PC": true, "PH": true, "PN": true, "PR": true, "SP": true, "TS": true}
+
+// validLOINC reports whether s has the form of a LOINC code (digits, a hyphen, a check digit) with a correct mod-10 check
+// digit, LOINC's own rule.
+func validLOINC(s string) bool {
+	i := strings.LastIndexByte(s, '-')
+	if i < 1 || i != len(s)-2 {
+		return false
+	}
+	body, check := s[:i], s[i+1]
+	if check < '0' || check > '9' {
+		return false
+	}
+	sum := 0
+	double := true
+	for j := len(body) - 1; j >= 0; j-- {
+		d := int(body[j] - '0')
+		if d < 0 || d > 9 {
+			return false
+		}
+		if double {
+			d *= 2
+			if d > 9 {
+				d = d/10 + d%10
+			}
+		}
+		sum += d
+		double = !double
+	}
+	return (10-sum%10)%10 == int(check-'0')
+}
+
 // edContentTypes maps the ED data subtype (OBX-5.3) to a MIME type. PDF, TIFF and JPEG are the formats the CMS
 // framework names for scanned and faxed documents.
 var edContentTypes = map[string]string{
@@ -114,6 +148,16 @@ func (c *converter) buildDocumentReference(patient, encounter *fhir.Reference) *
 		// A LOINC document code sent as such, which is what a US Core document type needs. Not a table 0270 code, so it is not
 		// labelled as one.
 		doc.Type = &fhir.CodeableConcept{Coding: []fhir.Coding{{System: fhir.SystemLOINC, Code: c.get("TXA-2.1")}}, Text: c.get("TXA-2.2")}
+	} else if docType != "" && c.get("TXA-2.3") == "" && validLOINC(docType) {
+		// A LOINC code with no coding system named, as in one NHS Wales sample ("TXA|1|18748-4|TEXT"). It was labelled as
+		// HL7 table 0270, which it is not in, and the HL7 validator rejected it. The LOINC check digit makes the reading safe.
+		doc.Type = &fhir.CodeableConcept{Coding: []fhir.Coding{{System: fhir.SystemLOINC, Code: docType}}, Text: c.get("TXA-2.2")}
+		c.note("info", "TXA-2", "DocumentReference.type",
+			"document type %q names no coding system; it has the form and check digit of a LOINC code, so it was read as LOINC", docType)
+	} else if docType != "" && !table0270[docType] {
+		doc.Type = &fhir.CodeableConcept{Coding: []fhir.Coding{{Code: c.get("TXA-2.1")}}, Text: c.get("TXA-2.2")}
+		c.note("warning", "TXA-2", "DocumentReference.type",
+			"document type %q is not in HL7 table 0270 and names no coding system, so it is kept without one", docType)
 	} else if docType != "" {
 		cc := &fhir.CodeableConcept{}
 		if l, ok := documentTypeLOINC[docType]; ok {

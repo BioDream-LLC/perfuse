@@ -256,3 +256,62 @@ func TestATitreIsNotWarnedForHavingNoUnit(t *testing.T) {
 		}
 	}
 }
+
+func TestLOINCCheckDigits(t *testing.T) {
+	for code, want := range map[string]bool{"18748-4": true, "11502-2": true, "34117-2": true, "18748-5": false, "ABC-1": false, "187484": false} {
+		if validLOINC(code) != want {
+			t.Errorf("%s: want %v", code, want)
+		}
+	}
+}
+
+func TestADateThatIsNotAV2DateIsDropped(t *testing.T) {
+	// From the NHS Wales sample set: a slashed date and a nine-digit one, which became 0110-19-48 and 1962-03-52.
+	for _, dob := range []string{"01/10/1948", "196203520", "19620352"} {
+		msg := "MSH|^~\\&|A|B|C|D|20260101120000||ADT^A04^ADT_A01|T1|P|2.5.1\rPID|1||1^^^F^MR||TEST^A||" + dob + "|F\r"
+		m, _ := hl7.Parse([]byte(msg))
+		res, err := Convert(m, Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, _ := res.JSON()
+		if strings.Contains(string(body), "birthDate") {
+			t.Errorf("%s became a birth date: %s", dob, body)
+		}
+	}
+}
+
+func TestWhatTheNHSWalesSamplesExposed(t *testing.T) {
+	msg := "MSH|^~\\&|A|B|C|D|20260101120000||VXU^V04^VXU_V04|T1|P|2.5.1\r" +
+		"PID|1||1^^^F^MR||TEST^A||19800101|F||2106-3^White^CDCREC||||||||||||N^Not Hispanic or Latino^HL70189\r" +
+		"NK1|1|TEST^B|SPOUSE^^HL70063\r" +
+		"RXA|0|1|20250101||3^MMR^CVX|0.5|mL\r"
+	m, _ := hl7.Parse([]byte(msg))
+	res, err := Convert(m, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := res.JSON()
+	s := string(body)
+	for _, want := range []string{`"code": "2186-5"`, `"code": "03"`} {
+		if !strings.Contains(s, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	if strings.Contains(s, "v2-0063") {
+		t.Error("SPOUSE is not in table 0063 and must not be labelled with it")
+	}
+}
+
+func TestAnAppointmentWithAStartAndADurationGetsAnEnd(t *testing.T) {
+	msg := "MSH|^~\\&|A|B|C|D|20110601120000||SIU^S12^SIU_S12|T1|P|2.3\r" +
+		"SCH|1|1|||1|OFFICE^Office visit|reason|OFFICE|60|m|||||||||||||||||Booked\r" +
+		"PID|1||1^^^F^MR||TEST^A||19800101|F\r" +
+		"AIL|1|A|OFFICE^^^OFFICE|^Main Office||20110614084500|||45|m^Minutes||Booked\r"
+	m, _ := hl7.Parse([]byte(msg))
+	res, _ := Convert(m, Options{})
+	body, _ := res.JSON()
+	if !strings.Contains(string(body), `"end": "2011-06-14T09:30:00Z"`) {
+		t.Errorf("%s", body)
+	}
+}

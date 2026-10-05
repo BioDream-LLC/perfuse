@@ -333,7 +333,23 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 					"coding system %q is not a standard system; recorded as %s", systemID, uri)
 			}
 		}
-		// The sender's text is not the code system's display. For a standard system - LOINC, SNOMED, CVX, RxNorm, ICD - a
+		// A code claimed to be from an HL7 table it is not in. An NHS Wales sample sends "SPOUSE^^HL70063" where table 0063
+		// says SPO; labelling it 0063 states something false, which the HL7 validator rejects. It is kept, without the
+		// table, and the note says why.
+		if known {
+			if members, ok := checkedTables[uri]; ok && !members[strings.ToUpper(code)] {
+				c.note("warning", sourceLabel, "code.coding.system",
+					"code %q is not in %s, which the sender named, so it is recorded without a coding system", code, systemID)
+				uri, known = "", false
+			}
+		}
+				// CVX codes below ten are two digits ("03", MMR). A sender writing "3" means the same code, and CVX has no "3", so the
+		// HL7 validator rejected it; it is padded, and the note says so.
+		if uri == "http://hl7.org/fhir/sid/cvx" && len(code) == 1 && code[0] >= '0' && code[0] <= '9' {
+			c.note("info", sourceLabel, "code.coding.code", "CVX code %q was written as 0%s, the form CVX defines", code, code)
+			code = "0" + code
+		}
+				// The sender's text is not the code system's display. For a standard system - LOINC, SNOMED, CVX, RxNorm, ICD - a
 		// display that differs from the system's own is an error to a terminology-aware validator, and a v2 sender's text
 		// usually does differ ("Comprehensive metabolic panel" for LOINC's "Comprehensive metabolic 2000 panel - Serum or
 		// Plasma"). The text is kept as the concept's text, which is what it is. A local code keeps it as the display too,
@@ -358,6 +374,21 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 	return concept
 }
 
+// checkedTables are the HL7 tables whose codes are checked before a coding is labelled with one.
+var checkedTables = map[string]map[string]bool{
+	fhir.SystemV2Table + "0063": setOf(`ASC BRO CGV CHD DEP DOM EMC EME EMR EXF FCH FND FTH GCH GRD GRP LIF MGR MTH NCH NON OAD OTH
+		OWN PAR SCH SEL SIB SIS SPO TRA UNK WRD`),
+	fhir.SystemV2Table + "0131": setOf(`BP C CP E EP F I N O PR S U`),
+}
+
+func setOf(words string) map[string]bool {
+	out := map[string]bool{}
+	for _, w := range strings.Fields(words) {
+		out[w] = true
+	}
+	return out
+}
+
 // v2 timestamp conversion.
 //
 // HL7 v2 timestamps are YYYYMMDDHHMMSS[.S...][+/-ZZZZ] with any suffix optional,
@@ -373,6 +404,10 @@ func (c *converter) v2Date(value, source string) string {
 		return ""
 	}
 	digits := digitsOnly(value)
+	if bad := badV2Date(value, digits); bad != "" {
+		c.note("warning", source, "", "%q is not a v2 date (%s) and was dropped rather than guessed at", value, bad)
+		return ""
+	}
 	switch {
 	case len(digits) >= 8:
 		return fmt.Sprintf("%s-%s-%s", digits[0:4], digits[4:6], digits[6:8])
@@ -384,6 +419,37 @@ func (c *converter) v2Date(value, source string) string {
 		c.note("warning", source, "", "%q is not a usable date and was dropped", value)
 		return ""
 	}
+}
+
+// badV2Date says why a v2 DT or DTM is not one, or "" when it is. Two senders in the NHS Wales sample set sent
+// "01/10/1948" and "196203520"; the digits were taken anyway and became the FHIR dates 0110-19-48 and 1962-03-52, which the
+// HL7 validator rejects and which no reader should be shown. A v2 date is YYYY[MM[DD[HH[MM[SS[.S...]]]]]], digits only.
+func badV2Date(raw, digits string) string {
+	for _, r := range raw {
+		if (r < '0' || r > '9') && r != '.' {
+			return "only digits belong in it"
+		}
+	}
+	n := len(strings.SplitN(raw, ".", 2)[0])
+	if n != 4 && n != 6 && n != 8 && n != 10 && n != 12 && n != 14 {
+		return fmt.Sprintf("%d digits fit none of its precisions", n)
+	}
+	if len(digits) >= 6 {
+		if m := digits[4:6]; m < "01" || m > "12" {
+			return "there is no month " + m
+		}
+	}
+	if len(digits) >= 8 {
+		if _, err := time.Parse("20060102", digits[:8]); err != nil {
+			return "there is no day " + digits[6:8] + " in that month"
+		}
+	}
+	if len(digits) >= 12 {
+		if _, err := time.Parse("200601021504", digits[:12]); err != nil {
+			return "the time is not a time of day"
+		}
+	}
+	return ""
 }
 
 // v2DateTime converts a v2 timestamp to a FHIR dateTime.
@@ -407,6 +473,10 @@ func (c *converter) v2DateTime(value, source string) string {
 	digits := digitsOnly(body)
 	if len(digits) < 4 {
 		c.note("warning", source, "", "%q is not a usable timestamp and was dropped", value)
+		return ""
+	}
+	if bad := badV2Date(body, digits); bad != "" {
+		c.note("warning", source, "", "%q is not a v2 timestamp (%s) and was dropped rather than guessed at", value, bad)
 		return ""
 	}
 

@@ -37,7 +37,20 @@ func (c *converter) omb(field, url string, categories map[string]string) *fhir.E
 				url[strings.LastIndex(url, "/")+1:])
 			continue
 		}
-		display, isOMB := categories[code]
+		// HL7 table 0189's own letters are not CDC codes: "N^Not Hispanic or Latino^HL70189", from an NHS Wales sample, became
+		// CDCREC code N, which does not exist. They are mapped to the CDC codes they mean; U says nothing, so it is not carried.
+		if system == "HL70189" {
+			switch strings.ToUpper(code) {
+			case "H":
+				code = "2135-2"
+			case "N":
+				code = "2186-5"
+			case "U":
+				c.note("info", p, "Patient.extension", "ethnicity is unknown (HL7 0189 U), so no ethnicity code is carried")
+				continue
+			}
+		}
+				display, isOMB := categories[code]
 		if text == "" {
 			text = display
 		}

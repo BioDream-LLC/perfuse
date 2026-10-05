@@ -3,6 +3,7 @@ package v2fhir
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/biodream-llc/perfuse/internal/fhir"
 )
@@ -228,6 +229,22 @@ func (c *converter) appointmentTiming(appt *fhir.Appointment) {
 		if mins, ok := c.minutes(c.get("SCH-9"), c.get("SCH-10.1"), "SCH-9"); ok {
 			appt.MinutesDuration = &mins
 		}
+	}
+
+	// FHIR's app-4: start and end come together. v2 often gives a start and a duration and no end (an NHS Wales SIU did,
+	// and the HL7 validator rejected the Appointment), so the end is the start plus the duration - stated, not invented.
+	if appt.Start != "" && appt.End == "" {
+		if t, err := time.Parse(time.RFC3339, appt.Start); err == nil && appt.MinutesDuration != nil {
+			appt.End = t.Add(time.Duration(*appt.MinutesDuration) * time.Minute).Format(time.RFC3339)
+			c.note("info", "AIS-7/SCH-9", "Appointment.end", "no end time was sent, so the end is the start plus the %d-minute duration", *appt.MinutesDuration)
+		} else {
+			c.note("warning", "SCH-11.5", "Appointment.end",
+				"the appointment has a start but no end or duration, and FHIR requires the two together (app-4)")
+		}
+	}
+	if appt.End != "" && appt.Start == "" {
+		appt.End = ""
+		c.note("warning", "SCH-11.5", "Appointment.end", "an end time without a start was dropped: FHIR requires the two together (app-4)")
 	}
 
 	// FHIR's app-3 invariant: only proposed, cancelled and waitlisted appointments may omit a start.

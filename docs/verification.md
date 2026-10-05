@@ -567,6 +567,26 @@ tx.fhir.org for terminology. All three eICRs, and the eCR message wrapping one, 
 HAPI FHIR (latest) stores each eICR as a document Bundle. HAPI does not implement `$process-message`, so the eCR message itself
 was checked by the validator and by a test receiver, not by an agency's endpoint.
 
+## Vendor-shaped v2 from two national programmes, against the HL7 validator
+
+These are not a live EHR feed; no site has run one through Perfuse. They are the nearest public equivalent: 81 messages from the
+French national agency's IHE PAM-FR and document-exchange examples (ansforge/hl7V2-exemples) and the NHS Wales v2 examples
+(GIG-Cymru-NHS-Wales/hl7-v2-examples), covering ADT, ORU, MDM, SIU and VXU in v2.3 to v2.5.1. All 81 converted, and the HL7
+validator found 34 errors in the bundles. The fixes:
+
+- **Dates that are not dates.** `01/10/1948` and `196203520` became the FHIR dates 0110-19-48 and 1962-03-52. A value that is
+  not a v2 DT/DTM, or has no such month or day, is now dropped with a note.
+- **Codes labelled with HL7 tables they are not in.** `SPOUSE^^HL70063` was sent where table 0063 says SPO. Codes claiming tables
+  0063 and 0131 are now checked against them, as table 0203 already was.
+- **Table 0189's letters read as CDC codes.** `N^Not Hispanic or Latino^HL70189` became CDCREC code N, which does not exist. H and
+  N now map to 2135-2 and 2186-5.
+- **An unsystemed LOINC document type was labelled table 0270.** `TXA|1|18748-4` is now read as LOINC when the code has LOINC's
+  form and a valid check digit, and kept with no system otherwise.
+- **An appointment with a start and a duration but no end** broke app-4. The end is now the start plus the duration.
+- **CVX `3` for `03`** is padded to the form CVX defines.
+
+What remains is one US Core extension the base-R4 run could not resolve, because that run was made without the US Core package.
+
 ## Mutual TLS, against OpenSSL
 
 Verified against OpenSSL rather than against Perfuse's own client. Certificate requirements, rejection of
