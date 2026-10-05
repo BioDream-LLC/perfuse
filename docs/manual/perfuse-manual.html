@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · b4fd15c</p>
+<p class="version">version 0.1 · 7413a67</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -1807,7 +1807,7 @@ roles: {viewer: manager}</code></pre>
 <ul>
 <li><strong>Times.</strong> A time of birth in <code>PID-7</code> goes to the <code>patient-birthTime</code> extension. A timestamp with no offset takes the configured</li>
 </ul>
-<p>  timezone, otherwise the offset on <code>MSH-7</code> (v2 presumes the sender&#39;s local time), otherwise UTC.</p>
+<p>  timezone, otherwise the offset on <code>MSH-7</code> (v2 presumes the sender&#39;s local time), otherwise UTC. A time of birth is the exception: with   no offset from any of the three it is left out rather than labelled UTC, because a wrong offset can move a birth to another day.   <code>birthDate</code> is kept, and a warning says the time was dropped and that setting a timezone for the feed keeps it.</p>
 <ul>
 <li><strong>Results.</strong> Repeats of a text result are joined with line breaks. An <code>ED</code> result, or a coded one whose value is plainly Base64, becomes a</li>
 </ul>

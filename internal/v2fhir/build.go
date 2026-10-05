@@ -73,8 +73,16 @@ func (c *converter) buildPatient() *fhir.Patient {
 	p.BirthDate = c.v2Date(c.get("PID-7"), "PID-7")
 	// birthDate is a date, so a time of birth in PID-7 used to vanish without a note. The core patient-birthTime extension on
 	// birthDate is where FHIR puts it.
+	//
+	// A time of birth with no offset anywhere - not on PID-7, not on MSH-7, and no -timezone configured - is not written. A
+	// dateTime with a time must carry an offset, and UTC would state one the message never gave: 01:00 local on 1 January
+	// labelled Z is ten hours out for an Australian sender. birthDate is kept, and the dropped time is a warning.
 	if raw := c.get("PID-7"); len(digitsOnly(strings.FieldsFunc(raw+" ", func(r rune) bool { return r == '+' || r == '-' })[0])) > 8 && p.BirthDate != "" {
-		if dt := c.v2DateTime(raw, "PID-7"); dt != "" && strings.Contains(dt, "T") {
+		if !hasV2Offset(raw) && c.opts.Timezone == nil && c.senderZone == nil {
+			c.note("warning", "PID-7", "Patient.birthDate.extension(patient-birthTime)",
+				"PID-7 carries a time of birth with no timezone, and neither MSH-7 nor the configuration gives one, so the time "+
+					"was not written (birthDate %s is kept). Set a timezone for this feed to keep it", p.BirthDate)
+		} else if dt := c.v2DateTime(raw, "PID-7"); dt != "" && strings.Contains(dt, "T") {
 			p.BirthDateElement = &fhir.Element{Extension: []fhir.Extension{{
 				URL:           "http://hl7.org/fhir/StructureDefinition/patient-birthTime",
 				ValueDateTime: &dt,
@@ -1408,4 +1416,10 @@ var _ = hl7.DefaultSeparators
 // which the validator rejects.
 func placeholderSystem(authority string) string {
 	return "http://unmapped.invalid/authority/" + url.PathEscape(strings.ToLower(authority))
+}
+
+// hasV2Offset reports whether a v2 timestamp carries its own +hhmm or -hhmm offset.
+func hasV2Offset(value string) bool {
+	value = strings.TrimSpace(value)
+	return strings.IndexAny(value[min(1, len(value)):], "+-") >= 0
 }

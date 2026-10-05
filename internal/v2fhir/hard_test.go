@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/fhir"
@@ -313,5 +314,41 @@ func TestAnAppointmentWithAStartAndADurationGetsAnEnd(t *testing.T) {
 	body, _ := res.JSON()
 	if !strings.Contains(string(body), `"end": "2011-06-14T09:30:00Z"`) {
 		t.Errorf("%s", body)
+	}
+}
+
+// A time of birth with no offset on PID-7 or MSH-7, and none configured. Each answer is checked against the same input,
+// 01:00 on 1 January, where a wrong offset moves the birth to another day and year.
+func TestATimeOfBirthWithNoOffsetAnywhere(t *testing.T) {
+	const msg = "MSH|^~\\&|A|B|C|D|20260916120000||ADT^A08^ADT_A01|1|P|2.5\rPID|1||123^^^H^MR||DOE^JANE||19800101010000|F\rPV1|1|O\r"
+	pat := func(opts Options) (*Result, map[string]any) {
+		res, err := Convert(mustParse(t, msg), opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, _ := res.JSON()
+		var b map[string]any
+		_ = json.Unmarshal(out, &b)
+		return res, resourcesOf(b, "Patient")[0]
+	}
+
+	// Nothing says what zone 01:00 is in, so no time is written, birthDate stays, and the loss is a warning.
+	res, p := pat(Options{})
+	if p["birthDate"] != "1980-01-01" || p["_birthDate"] != nil {
+		t.Errorf("birthDate %v, birthTime %v: a time with no known offset should not be labelled", p["birthDate"], p["_birthDate"])
+	}
+	if !noteWith(res, "PID-7", "neither MSH-7 nor the configuration gives one") {
+		t.Errorf("the dropped time of birth is not reported: %v", res.Notes)
+	}
+
+	// A configured timezone is evidence, and is used.
+	syd, err := time.LoadLocation("Australia/Sydney")
+	if err != nil {
+		t.Skip(err)
+	}
+	_, p = pat(Options{Timezone: syd})
+	ext := p["_birthDate"].(map[string]any)["extension"].([]any)[0].(map[string]any)
+	if ext["valueDateTime"] != "1980-01-01T01:00:00+11:00" || p["birthDate"] != "1980-01-01" {
+		t.Errorf("with a configured zone: %v, birthDate %v", ext, p["birthDate"])
 	}
 }

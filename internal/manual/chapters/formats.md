@@ -273,7 +273,9 @@ This is what CMS Interoperability Framework criterion 14 asks for: chart notes a
 - **Merges.** `MRG` on a merge event (`A40` and its kin) sends the retired record too, inactive, with `Patient.link` both ways. On any
   other event, such as an `A08`, nothing is merged and a warning says the prior identifier is still live.
 - **Times.** A time of birth in `PID-7` goes to the `patient-birthTime` extension. A timestamp with no offset takes the configured
-  timezone, otherwise the offset on `MSH-7` (v2 presumes the sender's local time), otherwise UTC.
+  timezone, otherwise the offset on `MSH-7` (v2 presumes the sender's local time), otherwise UTC. A time of birth is the exception: with
+  no offset from any of the three it is left out rather than labelled UTC, because a wrong offset can move a birth to another day.
+  `birthDate` is kept, and a warning says the time was dropped and that setting a timezone for the feed keeps it.
 - **Results.** Repeats of a text result are joined with line breaks. An `ED` result, or a coded one whose value is plainly Base64, becomes a
   DocumentReference that the Observation points to in `derivedFrom`, since an R4 Observation has no attachment value. An `SN`
   comparator of `=` is dropped as redundant; `<>` keeps the text, because no quantity can say "not equal".
