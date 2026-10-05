@@ -131,8 +131,8 @@ func (s *Server) valueSetCapability() map[string]any {
 
 	return map[string]any{
 		"type": "ValueSet",
-		// No read and no search, which is the truth. Claiming them would be a promise answered by a 404.
-		"interaction": []any{},
+		// No read and no search, which is the truth. Claiming them would be a promise answered by a 404. The element is left
+		// out rather than empty: FHIR forbids an empty array, and the HL7 validator (in the Inferno US Core suite) rejected it.
 		"operation": []any{
 			map[string]any{
 				"name":       "expand",

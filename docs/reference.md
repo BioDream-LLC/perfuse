@@ -346,6 +346,13 @@ Decisions worth knowing:
   implemented one.
 - **A deleted resource reads as 410, not 404**, because a client resending it needs
   the difference.
+- **Search follows FHIR's AND and OR.** Commas OR (`status=final,amended`) and a repeated
+  parameter ANDs (`date=ge2020&date=le2021`). `POST [type]/_search` takes a form body.
+  The US Core 6.1 server search parameters, `_revinclude=Provenance:target` and
+  `_include=MedicationRequest:medication` are supported. The Inferno US Core 6.1.0 FHIR
+  API tests pass except where the published examples fail current terminology.
+- **The capability statement is public**: clients read it before they hold a token, and it
+  lists US Core's `supportedProfile`s. Everything else needs a token.
 - **Validation on write is on by default.** A store that accepts anything is
   convenient until somebody queries it and finds half the data unusable, by which
   point it is thousands of records old.

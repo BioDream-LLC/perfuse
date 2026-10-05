@@ -2,6 +2,7 @@ package fhirserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -44,9 +45,11 @@ var SearchParams = map[string][]string{
 	"Patient": {
 		"_id", "_lastUpdated", "identifier", "family", "given", "name",
 		"birthdate", "gender",
+		"death-date",
 	},
 	"Encounter": {
 		"_id", "_lastUpdated", "identifier", "patient", "subject", "status", "class", "date",
+		"location", "type", "discharge-disposition",
 	},
 	"Observation": {
 		"_id", "_lastUpdated", "identifier", "patient", "subject", "encounter",
@@ -57,10 +60,10 @@ var SearchParams = map[string][]string{
 		"code", "category", "status", "date",
 	},
 	"Practitioner":   {"_id", "_lastUpdated", "identifier", "family", "given", "name"},
-	"Organization":   {"_id", "_lastUpdated", "identifier", "name"},
-	"Location":       {"_id", "_lastUpdated", "identifier", "name", "status"},
+	"Organization":   {"_id", "_lastUpdated", "identifier", "name", "address"},
+	"Location":       {"_id", "_lastUpdated", "identifier", "name", "status", "address", "address-city", "address-state", "address-postalcode"},
 	"Specimen":       {"_id", "_lastUpdated", "identifier", "patient", "subject", "status", "type"},
-	"ServiceRequest": {"_id", "_lastUpdated", "identifier", "patient", "subject", "status", "code"},
+	"ServiceRequest": {"_id", "_lastUpdated", "identifier", "patient", "subject", "status", "code", "category", "authored"},
 
 	// US Core. Each list is the parameters US Core marks as mandatory for that resource, plus the ones this server can
 	// support without a new index shape - a parameter advertised and not implemented is worse than one absent, because a
@@ -68,10 +71,11 @@ var SearchParams = map[string][]string{
 	"Condition": {
 		"_id", "_lastUpdated", "identifier", "patient", "subject", "encounter",
 		"category", "code", "clinical-status", "onset-date", "recorded-date",
+		"asserted-date", "abatement-date",
 	},
 	"MedicationRequest": {
 		"_id", "_lastUpdated", "identifier", "patient", "subject", "encounter",
-		"status", "intent", "authoredon",
+		"status", "intent", "authoredon", "medication",
 	},
 	"AllergyIntolerance": {
 		"_id", "_lastUpdated", "identifier", "patient", "encounter",
@@ -88,20 +92,21 @@ var SearchParams = map[string][]string{
 	"DocumentReference": {
 		"_id", "_lastUpdated", "identifier", "patient", "subject",
 		"status", "type", "category", "date",
+		"period",
 	},
 
 	// Additional resource types.
 	"Medication":               {"_id", "_lastUpdated", "code", "status"},
 	"MedicationStatement":      {"_id", "_lastUpdated", "patient", "subject", "status"},
-	"MedicationDispense":       {"_id", "_lastUpdated", "patient", "subject", "status"},
+	"MedicationDispense":       {"_id", "_lastUpdated", "patient", "subject", "status", "type"},
 	"MedicationAdministration": {"_id", "_lastUpdated", "patient", "subject", "status"},
 	"Coverage":                 {"_id", "_lastUpdated", "identifier", "patient", "beneficiary", "status", "subscriber-id", "payor"},
 	"Claim":                    {"_id", "_lastUpdated", "patient", "status", "use", "created"},
 	"ExplanationOfBenefit": {"_id", "_lastUpdated", "identifier", "patient", "status", "use", "created", "type",
 		"provider", "insurer", "coverage", "service-date", "billable-period-start"},
-	"CarePlan":              {"_id", "_lastUpdated", "patient", "subject", "encounter", "status", "category"},
-	"CareTeam":              {"_id", "_lastUpdated", "patient", "subject", "encounter", "status"},
-	"Goal":                  {"_id", "_lastUpdated", "patient", "subject", "lifecycle-status"},
+	"CarePlan":              {"_id", "_lastUpdated", "patient", "subject", "encounter", "status", "category", "date"},
+	"CareTeam":              {"_id", "_lastUpdated", "patient", "subject", "encounter", "status", "role"},
+	"Goal":                  {"_id", "_lastUpdated", "patient", "subject", "lifecycle-status", "target-date", "description"},
 	"Device":                {"_id", "_lastUpdated", "identifier", "patient", "type", "status"},
 	"RelatedPerson":         {"_id", "_lastUpdated", "identifier", "patient", "name"},
 	"PractitionerRole":      {"_id", "_lastUpdated", "identifier", "practitioner", "organization", "specialty"},
@@ -406,6 +411,8 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		add("status", v.Status, "")
 		add("intent", v.Intent, "")
 		add("authoredon", v.AuthoredOn, "")
+		// US Core asks for _include=MedicationRequest:medication, so a client gets the drug with the order.
+		addRef("medication", v.MedicationReference)
 
 	case *fhir.AllergyIntolerance:
 		addIdentifiers(v.Identifier)
@@ -1111,7 +1118,7 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		// Minimal search fields.
 	}
 
-	return out
+	return append(out, pathEntries(r)...)
 }
 
 // SearchQuery is a parsed search request.
@@ -1359,77 +1366,81 @@ func (s *Store) Search(ctx context.Context, q *SearchQuery) (*SearchResult, erro
 			}
 
 		default:
-			// Each parameter becomes an EXISTS against the index. Separate
-			// subqueries are what makes repeated parameters AND together while
-			// values within one parameter OR.
-			var clause strings.Builder
-			clause.WriteString(` AND EXISTS (SELECT 1 FROM fhir_search x
+			// Each occurrence of a parameter becomes an EXISTS against the index, so repeated parameters AND together
+			// (date=ge2020&date=le2021), and the comma-separated values within one occurrence OR (status=final,amended),
+			// as FHIR defines. Both used to be wrong: occurrences ORed, and a comma list was one literal value, so a
+			// multiple-or search matched nothing; the Inferno US Core suite failed every one.
+			for _, occurrence := range values {
+				ors := splitOr(occurrence)
+				var clause strings.Builder
+				clause.WriteString(` AND EXISTS (SELECT 1 FROM fhir_search x
 				WHERE x.resource_type = fhir_resources.resource_type
 				  AND x.resource_id = fhir_resources.resource_id
 				  AND x.param = ? AND (`)
-			args = append(args, param)
+				args = append(args, param)
 
-			for i, v := range values {
-				if i > 0 {
-					clause.WriteString(" OR ")
-				}
-				system, value := splitToken(v)
-				if isDateParam(param) {
-					op, normalised, err := parseDatePrefix(v)
-					if err != nil {
-						return nil, err
+				for i, v := range ors {
+					if i > 0 {
+						clause.WriteString(" OR ")
 					}
-					clause.WriteString("x.value " + op + " ?")
-					args = append(args, normalised)
-					continue
-				}
-				if isReferenceParam(param) {
-					// A type-qualified reference matches the type as well as the id.
-					//
-					// Patient/123 and Group/123 were previously the same query, because the index held a
-					// bare id and this compared bare ids. A reference search that returns another
-					// resource's records as the requested one's is the worst answer available here, so
-					// the type is compared when the client gave one.
-					//
-					// When the client gave no type the id alone is matched, which is what FHIR means by
-					// the unqualified form and is what a client sending ?patient=123 expects.
-					clause.WriteString("x.value = ?")
-					args = append(args, refIDFromString(v))
-
-					if refType := refTypeFromString(v); refType != "" {
-						// An index row with no recorded type is not matched here. It cannot be:
-						// admitting it would restore exactly the ambiguity this removes. Rows are
-						// re-derived on migration so there are none, and a resource written since
-						// carries its type.
-						clause.WriteString(" AND x.ref_type = ?")
-						args = append(args, refType)
+					system, value := splitToken(v)
+					if isDateParam(param) {
+						op, normalised, err := parseDatePrefix(v)
+						if err != nil {
+							return nil, err
+						}
+						clause.WriteString("x.value " + op + " ?")
+						args = append(args, normalised)
+						continue
 					}
-
-					continue
-				}
-				if system != "" {
-					if value == "" {
-						// system| means "any code in this system". Match the system alone.
-						clause.WriteString("x.system = ?")
-						args = append(args, system)
-					} else {
-						clause.WriteString("(x.system = ? AND x.value = ?)")
-						args = append(args, system, value)
-					}
-				} else {
-					// Name-ish parameters are matched as prefixes, which is how
-					// FHIR defines string search, and are indexed lowercase.
-					if isStringParam(param) {
-						clause.WriteString("x.value LIKE ?")
-						args = append(args, strings.ToLower(value)+"%")
-					} else {
+					if isReferenceParam(param) {
+						// A type-qualified reference matches the type as well as the id.
+						//
+						// Patient/123 and Group/123 were previously the same query, because the index held a
+						// bare id and this compared bare ids. A reference search that returns another
+						// resource's records as the requested one's is the worst answer available here, so
+						// the type is compared when the client gave one.
+						//
+						// When the client gave no type the id alone is matched, which is what FHIR means by
+						// the unqualified form and is what a client sending ?patient=123 expects.
 						clause.WriteString("x.value = ?")
-						args = append(args, value)
+						args = append(args, refIDFromString(v))
+
+						if refType := refTypeFromString(v); refType != "" {
+							// An index row with no recorded type is not matched here. It cannot be:
+							// admitting it would restore exactly the ambiguity this removes. Rows are
+							// re-derived on migration so there are none, and a resource written since
+							// carries its type.
+							clause.WriteString(" AND x.ref_type = ?")
+							args = append(args, refType)
+						}
+
+						continue
+					}
+					if system != "" {
+						if value == "" {
+							// system| means "any code in this system". Match the system alone.
+							clause.WriteString("x.system = ?")
+							args = append(args, system)
+						} else {
+							clause.WriteString("(x.system = ? AND x.value = ?)")
+							args = append(args, system, value)
+						}
+					} else {
+						// Name-ish parameters are matched as prefixes, which is how
+						// FHIR defines string search, and are indexed lowercase.
+						if isStringParam(param) {
+							clause.WriteString("x.value LIKE ?")
+							args = append(args, strings.ToLower(value)+"%")
+						} else {
+							clause.WriteString("x.value = ?")
+							args = append(args, value)
+						}
 					}
 				}
+				clause.WriteString("))")
+				where.WriteString(clause.String())
 			}
-			clause.WriteString("))")
-			where.WriteString(clause.String())
 		}
 	}
 
@@ -1566,7 +1577,7 @@ func parseDatePrefix(v string) (op, value string, err error) {
 
 func isDateParam(param string) bool {
 	switch param {
-	case "date", "birthdate", "_lastUpdated",
+	case "date", "birthdate", "_lastUpdated", "asserted-date", "abatement-date", "period", "target-date", "death-date",
 		"onset-date", "recorded-date", "authoredon", "authored-on",
 		"datetime", "datewritten", "created", "authored",
 		"started", "recorded", "service-date", "billable-period-start":
@@ -1577,7 +1588,7 @@ func isDateParam(param string) bool {
 
 func isStringParam(param string) bool {
 	switch param {
-	case "name", "family", "given":
+	case "name", "family", "given", "address", "address-city", "address-state", "address-postalcode":
 		return true
 	}
 	return false
@@ -1600,7 +1611,7 @@ func isReferenceParam(param string) bool {
 		"individual", "study", "target",
 		"source", "device", "insurer", "request", "provider",
 		"schedule", "appointment", "actor",
-		"primary-organization", "For", "coverage", "payor", "member":
+		"primary-organization", "For", "coverage", "payor", "member", "location", "medication":
 		return true
 	}
 
@@ -1695,4 +1706,147 @@ func refTypeFromString(ref string) string {
 	}
 
 	return candidate
+}
+
+// pathParam is a search parameter read from the resource's JSON by path, for the parameters the typed indexer above does not
+// cover. Added for the US Core 6.1 server parameters the Inferno US Core suite searches on, which answered 400 before.
+type pathParam struct {
+	param string
+	kind  string // token, date, string, reference
+	paths []string
+}
+
+var pathParams = map[string][]pathParam{
+	"CarePlan":           {{"date", "date", []string{"period.start", "period.end"}}},
+	"CareTeam":           {{"role", "token", []string{"participant.role"}}},
+	"Condition":          {{"asserted-date", "date", []string{"extension[http://hl7.org/fhir/StructureDefinition/condition-assertedDate].valueDateTime"}}, {"abatement-date", "date", []string{"abatementDateTime", "abatementPeriod.start", "abatementPeriod.end"}}},
+	"DocumentReference":  {{"period", "date", []string{"context.period.start", "context.period.end"}}},
+	"Encounter":          {{"location", "reference", []string{"location.location"}}, {"type", "token", []string{"type"}}, {"discharge-disposition", "token", []string{"hospitalization.dischargeDisposition"}}},
+	"Goal":               {{"target-date", "date", []string{"target.dueDate"}}, {"description", "token", []string{"description"}}},
+	"Location":           {{"address", "string", []string{"address.line", "address.city", "address.state", "address.postalCode", "address.country", "address.text"}}, {"address-city", "string", []string{"address.city"}}, {"address-state", "string", []string{"address.state"}}, {"address-postalcode", "string", []string{"address.postalCode"}}},
+	"MedicationDispense": {{"type", "token", []string{"type"}}},
+	"Organization":       {{"address", "string", []string{"address.line", "address.city", "address.state", "address.postalCode", "address.country", "address.text"}}},
+	"Patient":            {{"death-date", "date", []string{"deceasedDateTime"}}},
+	"ServiceRequest":     {{"category", "token", []string{"category"}}, {"authored", "date", []string{"authoredOn"}}},
+}
+
+func pathEntries(r fhir.Resource) []indexEntry {
+	defs := pathParams[r.ResourceTypeName()]
+	if len(defs) == 0 {
+		return nil
+	}
+	raw, err := fhir.Marshal(r, fhir.R4)
+	if err != nil {
+		return nil
+	}
+	var tree any
+	if json.Unmarshal(raw, &tree) != nil {
+		return nil
+	}
+	var out []indexEntry
+	for _, d := range defs {
+		for _, path := range d.paths {
+			for _, v := range walkPath(tree, strings.Split(path, ".")) {
+				switch d.kind {
+				case "token":
+					cc, _ := v.(map[string]any)
+					codings, _ := cc["coding"].([]any)
+					for _, c := range codings {
+						cm, _ := c.(map[string]any)
+						code, _ := cm["code"].(string)
+						sys, _ := cm["system"].(string)
+						if code != "" {
+							out = append(out, indexEntry{param: d.param, value: code, system: sys, valueRaw: code})
+						}
+					}
+					if t, _ := cc["text"].(string); t != "" {
+						out = append(out, indexEntry{param: d.param, value: t, valueRaw: t})
+					}
+				case "reference":
+					ref, _ := v.(map[string]any)
+					s, _ := ref["reference"].(string)
+					if i := strings.LastIndexByte(s, '/'); i > 0 {
+						t := s[:i]
+						if j := strings.LastIndexByte(t, '/'); j >= 0 {
+							t = t[j+1:]
+						}
+						out = append(out, indexEntry{param: d.param, value: s[i+1:], refType: t})
+					}
+				default:
+					if str, ok := v.(string); ok && strings.TrimSpace(str) != "" {
+						e := indexEntry{param: d.param, value: str, valueRaw: str}
+						if d.kind == "string" {
+							e.value = strings.ToLower(str)
+						}
+						out = append(out, e)
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+
+// walkPath follows a dotted path through FHIR JSON, fanning out over arrays. A segment "extension[url]" picks the extensions
+// with that url.
+func walkPath(v any, path []string) []any {
+	if len(path) == 0 {
+		if list, ok := v.([]any); ok {
+			return list
+		}
+		return []any{v}
+	}
+	switch t := v.(type) {
+	case []any:
+		var out []any
+		for _, e := range t {
+			out = append(out, walkPath(e, path)...)
+		}
+		return out
+	case map[string]any:
+		seg := path[0]
+		if i := strings.IndexByte(seg, '['); i > 0 && strings.HasSuffix(seg, "]") {
+			url := seg[i+1 : len(seg)-1]
+			list, _ := t[seg[:i]].([]any)
+			var out []any
+			for _, e := range list {
+				if m, ok := e.(map[string]any); ok && m["url"] == url {
+					out = append(out, walkPath(m, path[1:])...)
+				}
+			}
+			return out
+		}
+		next, ok := t[seg]
+		if !ok {
+			return nil
+		}
+		return walkPath(next, path[1:])
+	}
+	return nil
+}
+
+// splitOr splits a search value on the commas that separate OR'd values, leaving an escaped comma (\,) in the value.
+func splitOr(v string) []string {
+	var out []string
+	var cur strings.Builder
+	for i := 0; i < len(v); i++ {
+		switch {
+		case v[i] == '\\' && i+1 < len(v) && v[i+1] == ',':
+			cur.WriteByte(',')
+			i++
+		case v[i] == ',':
+			out = append(out, cur.String())
+			cur.Reset()
+		default:
+			cur.WriteByte(v[i])
+		}
+	}
+	out = append(out, cur.String())
+	kept := out[:0]
+	for _, o := range out {
+		if strings.TrimSpace(o) != "" {
+			kept = append(kept, o)
+		}
+	}
+	return kept
 }

@@ -347,10 +347,13 @@ func TestTheDiscoveryDocumentIsReadableWithoutATokenAndTellsTheTruth(t *testing.
 		}
 	}
 
-	// And the capability statement must still need a token, since it lists every resource type held here.
-	if rec := get(t, h, "/metadata", ""); rec.Code == http.StatusOK {
-		t.Error("the capability statement is readable without a token; it lists every resource type and " +
-			"search parameter, which tells an unauthenticated caller what is worth asking for")
+	// The capability statement is public too: clients read it before holding a token, and certification tests fetch it with
+	// none. Patient data still needs one.
+	if rec := get(t, h, "/metadata", ""); rec.Code != http.StatusOK {
+		t.Errorf("the capability statement needs a token: %d", rec.Code)
+	}
+	if rec := get(t, h, "/Patient", ""); rec.Code == http.StatusOK {
+		t.Error("a search is readable without a token")
 	}
 }
 

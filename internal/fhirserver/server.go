@@ -137,6 +137,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PUT /{type}/{id}", s.handleUpdate)
 	mux.HandleFunc("DELETE /{type}/{id}", s.handleDelete)
 	mux.HandleFunc("POST /{type}/$validate", s.handleValidate)
+	// Search by POST, which FHIR requires servers to support: the parameters arrive as a form body (and may also be in the
+	// URL). It answered 415 before, which failed every POST search in the Inferno US Core suite.
+	mux.HandleFunc("POST /{type}/_search", s.handleSearchPost)
 
 	// Registered before the generic /{type}/{id} routes so "$everything" is never mistaken for a resource id.
 	s.registerTerminology(mux)
@@ -193,6 +196,11 @@ func (s *Server) Handler() http.Handler {
 	// the authentication check, and that is exactly where an exemption grows to cover more than it should.
 	outer := http.NewServeMux()
 	outer.HandleFunc("GET /.well-known/smart-configuration", s.handleSMARTConfiguration)
+	// The capability statement is public as well. It was behind authentication, on the reasoning that it lists every
+	// resource type and search parameter; but clients read it before they hold a token (the Inferno US Core and ONC
+	// g(10) tests fetch it with none and fail when refused), and what it lists is what this software supports, which
+	// is published anyway. It holds no patient data.
+	outer.HandleFunc("GET /metadata", s.handleCapability)
 	outer.Handle("/", protected)
 
 	return outer
@@ -208,6 +216,42 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 // It advertises only what is actually implemented, including which search
 // parameters work. A capability statement that overstates the server is worse than
 // none, because a client trusts it.
+// usCoreProfiles are the US Core 6.1 profiles by resource type.
+var usCoreProfiles = map[string][]string{
+	"AllergyIntolerance": {"us-core-allergyintolerance"},
+	"CarePlan":           {"us-core-careplan"},
+	"CareTeam":           {"us-core-careteam"},
+	"Condition":          {"us-core-condition-encounter-diagnosis", "us-core-condition-problems-health-concerns"},
+	"Coverage":           {"us-core-coverage"},
+	"Device":             {"us-core-implantable-device"},
+	"DiagnosticReport":   {"us-core-diagnosticreport-note", "us-core-diagnosticreport-lab"},
+	"DocumentReference":  {"us-core-documentreference"},
+	"Encounter":          {"us-core-encounter"},
+	"Goal":               {"us-core-goal"},
+	"Immunization":       {"us-core-immunization"},
+	"Location":           {"us-core-location"},
+	"Medication":         {"us-core-medication"},
+	"MedicationDispense": {"us-core-medicationdispense"},
+	"MedicationRequest":  {"us-core-medicationrequest"},
+	"Observation": {"us-core-observation-lab", "us-core-observation-pregnancystatus", "us-core-observation-pregnancyintent",
+		"us-core-observation-occupation", "us-core-respiratory-rate", "us-core-simple-observation", "us-core-heart-rate",
+		"us-core-body-temperature", "pediatric-weight-for-height", "us-core-pulse-oximetry", "us-core-smokingstatus",
+		"us-core-observation-sexual-orientation", "head-occipital-frontal-circumference-percentile", "us-core-head-circumference",
+		"us-core-body-height", "us-core-bmi", "us-core-observation-screening-assessment", "us-core-blood-pressure",
+		"us-core-observation-clinical-result", "pediatric-bmi-for-age", "us-core-body-weight", "us-core-vital-signs"},
+	"Organization":          {"us-core-organization"},
+	"Patient":               {"us-core-patient"},
+	"Practitioner":          {"us-core-practitioner"},
+	"PractitionerRole":      {"us-core-practitionerrole"},
+	"Procedure":             {"us-core-procedure"},
+	"Provenance":            {"us-core-provenance"},
+	"Questionnaire":         {"http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire"},
+	"QuestionnaireResponse": {"us-core-questionnaireresponse"},
+	"RelatedPerson":         {"us-core-relatedperson"},
+	"ServiceRequest":        {"us-core-servicerequest"},
+	"Specimen":              {"us-core-specimen"},
+}
+
 func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 	version := s.resolveVersion(r)
 
@@ -302,6 +346,18 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		if rev := revIncludeOptions(t); len(rev) > 0 {
 			entry["searchRevInclude"] = rev
 		}
+		// The US Core profiles this server stores and searches as US Core asks. Listed because US Core requires a server to
+		// say which profiles it supports, and the Inferno US Core suite fails a server that does not.
+		if profiles := usCoreProfiles[t]; len(profiles) > 0 {
+			sp := make([]any, 0, len(profiles))
+			for _, p := range profiles {
+				if !strings.HasPrefix(p, "http") {
+					p = "http://hl7.org/fhir/us/core/StructureDefinition/" + p
+				}
+				sp = append(sp, p)
+			}
+			entry["supportedProfile"] = sp
+		}
 
 		resources = append(resources, entry)
 	}
@@ -331,8 +387,9 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 			"description": "Perfuse FHIR store",
 			"url":         s.BaseURL,
 		},
-		"fhirVersion": string(version),
-		"format":      []string{"json", "application/fhir+json"},
+		"fhirVersion":  string(version),
+		"instantiates": []string{"http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server"},
+		"format":       []string{"json", "application/fhir+json"},
 		"rest": []any{map[string]any{
 			"mode":     "server",
 			"resource": resources,
@@ -892,6 +949,28 @@ func (s *Server) refuseWrite(w http.ResponseWriter, r *http.Request) bool {
 // maxBody bounds a request. An unbounded FHIR body is a way to ask a server to
 // allocate until it dies.
 const maxBody = 8 << 20
+
+// handleSearchPost answers POST [type]/_search: the form body's parameters, with any in the URL, as a GET search.
+func (s *Server) handleSearchPost(w http.ResponseWriter, r *http.Request) {
+	ct := r.Header.Get("Content-Type")
+	if ct != "" && !strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
+		s.writeOutcome(w, r, http.StatusUnsupportedMediaType, fhir.SeverityError, "not-supported",
+			fmt.Sprintf("a POST search takes application/x-www-form-urlencoded parameters, not %q", ct))
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+	if err := r.ParseForm(); err != nil {
+		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "invalid", "the search parameters could not be read: "+err.Error())
+		return
+	}
+	get := r.Clone(r.Context())
+	get.Method = http.MethodGet
+	u := *r.URL
+	u.RawQuery = r.Form.Encode()
+	get.URL = &u
+	get.RequestURI = u.RequestURI()
+	s.handleSearch(w, get)
+}
 
 func (s *Server) readBody(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
 	if ct := r.Header.Get("Content-Type"); ct != "" &&

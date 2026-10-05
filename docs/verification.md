@@ -493,6 +493,29 @@ in `internal/v2fhir/testdata/hard`, with tests holding each fix.
 The five US Core messages above were then validated again as whole bundles, with `-ig` US Core 9.0.0: all five pass. Doing so also
 caught a mistake in one of our own fixtures, an appointment reason labelled as HL7 table 0277 (appointment type), now corrected.
 
+## The FHIR server, against the Inferno US Core 6.1.0 server suite
+
+The 179 US Core 6.1.0 example resources were loaded into Perfuse's FHIR endpoint. The US Core FHIR API group of ONC's Inferno test kit
+(run locally in Docker) was then run against it, with a Perfuse API token. The first run passed 225 tests and failed 121; the last
+passed 323. What it found, all fixed:
+
+- **Every multiple-or search matched nothing.** A comma list (`status=final,amended`) was read as one literal value, and a repeated
+  parameter was ORed. FHIR defines the reverse, and a test said otherwise, so it was asserting the bug. Commas now OR and repeats AND.
+- **POST `_search` answered 415.** FHIR requires search by POST with a form body.
+- **The capability statement needed a token.** Clients and certification tests read it before they have one. It is now public; it
+  holds no patient data. It also gained `instantiates` us-core-server and each type's US Core `supportedProfile`, and lost an empty
+  `interaction` array on ValueSet, which FHIR forbids.
+- **`_revinclude=Provenance:target`** was refused on every type, and **`_include=MedicationRequest:medication`** was not offered.
+- **Seventeen US Core search parameters answered 400**, among them Condition `asserted-date` and `abatement-date`, Encounter
+  `location`, `type` and `discharge-disposition`, CareTeam `role`, DocumentReference `period`, Goal `target-date`, the Location
+  address parameters and Patient `death-date`.
+
+The 19 failures left are in the data, not the server. Most are the examples themselves failing current terminology: example.org
+URLs, LOINC and CVX displays that have since changed, and a CPT code (99201) that was deleted. The rest are elements no example
+carries (PractitionerRole, a data-absent-reason), and an Inferno multiple-or check that looks for values held only by resources
+outside the encounter it searched. The SMART launch and granular-scope groups were not run, because they need a SMART authorization
+server in front of Perfuse.
+
 ## Public health case reports, against the HL7 validator and HAPI FHIR
 
 The eICR builder had been in the repository for months, reachable from nowhere, and was wrong in every way the validator could
@@ -685,6 +708,7 @@ checked.
   answers a JSON 404 for unknown API paths.
 - **No container image has been published**, though the build file and the README both name one.
 - **No payer or clearinghouse has received a 275 built here**, and it was built from published companion guides rather than the X12 technical report. See above.
+- **The Inferno US Core SMART groups (standalone and EHR launch, granular scopes) have not been run.** Only the FHIR API group was.
 - **No public health agency, or AIMS, has received a case report from here.** The eICR and the eCR message validate, and the trigger
   codes were the built-in sample, not the RCTC. ELR (HL7 2.5.1 lab reports to public health) is not provided.
 - **No third-party FHIR subscriber has received a notification from here.** Delivery was tested against receivers written for the tests.

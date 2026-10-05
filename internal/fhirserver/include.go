@@ -82,9 +82,10 @@ var referenceTargets = map[string]map[string][]string{
 		"encounter": {"Encounter"},
 	},
 	"MedicationRequest": {
-		"patient":   {"Patient"},
-		"subject":   {"Patient", "Group"},
-		"encounter": {"Encounter"},
+		"patient":    {"Patient"},
+		"subject":    {"Patient", "Group"},
+		"encounter":  {"Encounter"},
+		"medication": {"Medication"},
 	},
 	"AllergyIntolerance": {
 		"patient":   {"Patient"},
@@ -102,6 +103,13 @@ var referenceTargets = map[string]map[string][]string{
 	"DocumentReference": {
 		"patient": {"Patient"},
 		"subject": {"Patient", "Group"},
+	},
+	// US Core asks for _revinclude=Provenance:target on every type it covers: who recorded this, and from where.
+	"Provenance": {
+		"target": {"Patient", "AllergyIntolerance", "CarePlan", "CareTeam", "Condition", "Coverage", "Device", "DiagnosticReport",
+			"DocumentReference", "Encounter", "Goal", "Immunization", "Location", "Medication", "MedicationDispense", "MedicationRequest",
+			"Observation", "Organization", "Practitioner", "PractitionerRole", "Procedure", "QuestionnaireResponse", "RelatedPerson",
+			"ServiceRequest", "Specimen"},
 	},
 }
 

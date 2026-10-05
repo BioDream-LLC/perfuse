@@ -156,20 +156,21 @@ func TestAnUnsupportedChainedParameterIsRefusedWhenTheQueryIsRead(t *testing.T) 
 // FHIR ORs repeated values within one parameter, so a client sending both a chain and a direct reference on the same parameter gets the union.
 // Assigning rather than appending would make one silently replace the other, and which one won would depend on map iteration order.
 func TestAChainAndAnExplicitReferenceBothApply(t *testing.T) {
+	// Two parameters AND, as FHIR defines: the chain and the direct reference must both hold.
 	store := chainFixture(t)
-
-	res := searchWith(t, store, "Observation", map[string][]string{
-		"patient.family": {"Dubois"},
-		"patient":        {"Patient/p2"},
-	})
-
-	found := map[string]bool{}
-	for _, r := range res.Resources {
-		found[r.ResourceID()] = true
+	both := func(ref string) map[string]bool {
+		res := searchWith(t, store, "Observation", map[string][]string{"patient.family": {"Dubois"}, "patient": {ref}})
+		found := map[string]bool{}
+		for _, r := range res.Resources {
+			found[r.ResourceID()] = true
+		}
+		return found
 	}
-
-	if !found["obs1"] || !found["obs2"] {
-		t.Errorf("the chain and the direct reference did not both apply; found %v", describe(res.Resources))
+	if f := both("Patient/p1"); !f["obs1"] || f["obs2"] {
+		t.Errorf("Dubois and p1: %v", f)
+	}
+	if f := both("Patient/p2"); len(f) != 0 {
+		t.Errorf("Dubois and p2 contradict, yet found %v", f)
 	}
 }
 

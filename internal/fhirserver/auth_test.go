@@ -354,8 +354,8 @@ func TestHandlerItselfEnforcesAuth(t *testing.T) {
 		method string
 		path   string
 	}{
-		{http.MethodGet, "/metadata"},
 		{http.MethodGet, "/Patient"},
+		{http.MethodPost, "/Patient/_search"},
 		{http.MethodPost, "/Patient"},
 		{http.MethodGet, "/Patient/123"},
 		{http.MethodPut, "/Patient/123"},

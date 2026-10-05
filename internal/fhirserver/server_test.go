@@ -381,10 +381,15 @@ func TestSearchCombinesParametersWithAnd(t *testing.T) {
 		t.Errorf("contradictory AND search total = %v, want 0", total)
 	}
 
-	// Repeating one parameter ORs its values.
-	rec = do(t, h, http.MethodGet, "/Patient?family=Doe&family=Smith", nil)
+	// Comma-separated values OR, and repeating a parameter ANDs, as FHIR defines (search 3.1.1.5.3). This test used to assert
+	// that a repeat ORs, which is what the server did, and which made every multiple-or search in the Inferno US Core suite fail.
+	rec = do(t, h, http.MethodGet, "/Patient?family=Doe,Smith", nil)
 	if total := tree(t, rec)["total"].(float64); total != 2 {
 		t.Errorf("OR search total = %v, want 2", total)
+	}
+	rec = do(t, h, http.MethodGet, "/Patient?family=Doe&family=Smith", nil)
+	if total := tree(t, rec)["total"].(float64); total != 0 {
+		t.Errorf("a repeated parameter must AND: total = %v, want 0", total)
 	}
 }
 
@@ -749,4 +754,22 @@ func TestTheConfiguredPageSizeAppliesOnlyWhenTheClientDidNotAsk(t *testing.T) {
 				"client asked for, which breaks its paging silently", got)
 		}
 	})
+}
+
+func TestSearchByPOST(t *testing.T) {
+	_, h := newTestServer(t)
+	put := httptest.NewRequest(http.MethodPut, "/Patient/p1", strings.NewReader(`{"resourceType":"Patient","id":"p1","name":[{"family":"Frost"}]}`))
+	put.Header.Set("Content-Type", "application/fhir+json")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, put)
+	if rec.Code >= 300 {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/Patient/_search", strings.NewReader("family=Frost"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"p1"`) {
+		t.Errorf("%d %s", rec.Code, rec.Body)
+	}
 }
