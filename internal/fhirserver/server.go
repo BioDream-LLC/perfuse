@@ -330,6 +330,13 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 			}
 			entry["operation"] = ops
 		}
+		// Stored value sets expand and validate here; so do the views of the mapping tables (urn:perfuse:codeset:...).
+		if t == "ValueSet" {
+			entry["operation"] = []any{
+				map[string]any{"name": "expand", "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-expand"},
+				map[string]any{"name": "validate-code", "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-validate-code"},
+			}
+		}
 		// Listed only when they would answer: the Group exports need both the payer operations and bulk export.
 		if t == "Group" && s.Payer != nil && s.Export != nil {
 			entry["operation"] = []any{
@@ -366,9 +373,6 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 	// it is projected from files - so it does not appear in the resource registry the loop walks.
 	if term := s.terminologyCapability(); term != nil {
 		resources = append(resources, term)
-	}
-	if vs := s.valueSetCapability(); vs != nil {
-		resources = append(resources, vs)
 	}
 	if subs := s.Store.Subscriptions(); subs != nil {
 		resources = subscriptionCapability(resources)
@@ -414,7 +418,7 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRead(w http.ResponseWriter, r *http.Request) {
 	resourceType := r.PathValue("type")
 
-	if s.conceptMapIntercept(w, r, resourceType) || s.valueSetIntercept(w, r, resourceType) {
+	if s.conceptMapIntercept(w, r, resourceType) {
 		return
 	}
 	id := r.PathValue("id")
@@ -473,7 +477,7 @@ func (s *Server) handleRead(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	resourceType := r.PathValue("type")
 
-	if s.conceptMapIntercept(w, r, resourceType) || s.valueSetIntercept(w, r, resourceType) {
+	if s.conceptMapIntercept(w, r, resourceType) {
 		return
 	}
 
@@ -529,7 +533,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request) {
-	if s.conceptMapIntercept(w, r, r.PathValue("type")) || s.valueSetIntercept(w, r, r.PathValue("type")) {
+	if s.conceptMapIntercept(w, r, r.PathValue("type")) {
 		return
 	}
 
@@ -553,7 +557,7 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	if s.conceptMapIntercept(w, r, r.PathValue("type")) || s.valueSetIntercept(w, r, r.PathValue("type")) {
+	if s.conceptMapIntercept(w, r, r.PathValue("type")) {
 		return
 	}
 
@@ -683,7 +687,7 @@ func (s *Server) write(w http.ResponseWriter, r *http.Request, resource fhir.Res
 }
 
 func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
-	if s.conceptMapIntercept(w, r, r.PathValue("type")) || s.valueSetIntercept(w, r, r.PathValue("type")) {
+	if s.conceptMapIntercept(w, r, r.PathValue("type")) {
 		return
 	}
 
@@ -826,6 +830,10 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 		if dup := duplicateContainedID(entry.Resource); dup != "" {
 			s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "invariant",
 				fmt.Sprintf("entry %d: two contained resources share the id %q", i, dup))
+			return
+		}
+		if msg := tableViewWrite(resource.ResourceTypeName(), canonicalURL(entry.Resource)); msg != "" {
+			s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "business-rule", fmt.Sprintf("entry %d: %s", i, msg))
 			return
 		}
 
@@ -1032,6 +1040,11 @@ func (s *Server) decodeResource(w http.ResponseWriter, r *http.Request, expected
 		return nil, false
 	}
 
+	if msg := tableViewWrite(resource.ResourceTypeName(), canonicalURL(body)); msg != "" {
+		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "business-rule", msg)
+		return nil, false
+	}
+
 	// A Patient posted to /Observation is a client bug, and storing it under the
 	// requested type would corrupt the data quietly.
 	if expectedType != "" && resource.ResourceTypeName() != expectedType {
@@ -1210,4 +1223,13 @@ func duplicateContainedID(body []byte) string {
 		seen[c.ID] = true
 	}
 	return ""
+}
+
+// canonicalURL reads a resource's url element.
+func canonicalURL(body []byte) string {
+	var probe struct {
+		URL string `json:"url"`
+	}
+	_ = json.Unmarshal(body, &probe)
+	return probe.URL
 }

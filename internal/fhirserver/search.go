@@ -192,6 +192,7 @@ var SearchParams = map[string][]string{
 	"ActivityDefinition":  {"_id", "_lastUpdated", "identifier", "url", "name", "status", "date"},
 	"EventDefinition":     {"_id", "_lastUpdated", "url", "name", "status"},
 	"Questionnaire":       {"_id", "_lastUpdated", "identifier", "url", "name", "title", "status", "date"},
+	"ValueSet":            {"_id", "_lastUpdated", "identifier", "url", "name", "title", "status", "date"},
 
 	// Research & evidence
 	"ResearchStudy":           {"_id", "_lastUpdated", "identifier", "title", "status"},
@@ -961,6 +962,14 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		add("url", v.URL, "")
 		add("name", v.Name, "")
 		add("status", v.Status, "")
+
+	case *fhir.ValueSet:
+		addIdentifiers(v.Identifier)
+		add("url", v.URL, "")
+		add("name", v.Name, "")
+		add("title", v.Title, "")
+		add("status", v.Status, "")
+		add("date", v.Date, "")
 
 	case *fhir.Questionnaire:
 		addIdentifiers(v.Identifier)

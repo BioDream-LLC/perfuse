@@ -54,8 +54,7 @@ var r4ResourceTypes = []string{
 // Each needs a reason, because this map is the only way for a resource to be absent from the registry and still pass. An entry
 // added without a reason turns a completeness test back into the list of excuses it replaced.
 var notStoredButImplemented = map[string]string{
-	"ValueSet":   "projected from the channel mapping tables rather than stored, so it has operation routes and no storage - see TestTheProjectedTerminologyTypesAreNotStored",
-	"ConceptMap": "projected from the channel mapping tables rather than stored, for the same reason as ValueSet",
+	"ConceptMap": "projected from the channel mapping tables rather than stored, so a $translate and a read cannot disagree",
 	"Parameters": "the input and output wrapper for FHIR operations, never itself persisted - a POST of one is a call, not a create",
 }
 
@@ -104,7 +103,6 @@ func TestEveryR4ResourceTypeIsAccountedFor(t *testing.T) {
 // the exemption means "implemented but not stored" and cannot come to mean "not implemented".
 func TestNothingIsExemptedThatDoesNotExist(t *testing.T) {
 	exempt := map[string]Resource{
-		"ValueSet":   &ValueSet{},
 		"ConceptMap": &ConceptMap{},
 		"Parameters": &Parameters{},
 	}

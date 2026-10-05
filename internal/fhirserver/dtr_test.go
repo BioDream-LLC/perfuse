@@ -120,10 +120,32 @@ func TestAPackageCarriesLibraryDependenciesAndAnswerValueSets(t *testing.T) {
 	if len(got["Library"]) != 2 {
 		t.Errorf("the Library and the FHIRHelpers it depends on should both be packaged; got %d (%v)", len(got["Library"]), oo)
 	}
-	// ValueSets cannot be stored here (they are views of the mapping tables), so a questionnaire's own value sets go contained in
-	// it. One named by URL is reported, so the app knows to expand it.
+	// A fullUrl may equal the canonical url only when that url ends in Type/id; .../Library/Prepop does not end in Library/prepop.
+	for _, e := range bundles[0]["entry"].([]any) {
+		em := e.(map[string]any)
+		res := em["resource"].(map[string]any)
+		if res["id"] == "prepop" && (em["fullUrl"] == res["url"] || !strings.HasSuffix(em["fullUrl"].(string), "Library/prepop")) {
+			t.Errorf("the Library's fullUrl %v contradicts its id", em["fullUrl"])
+		}
+	}
+	// One named by URL but not loaded is reported, so the app knows to expand it.
 	if !strings.Contains(toJSON(oo), "https://payer.example/ValueSet/devices, which is not loaded") {
 		t.Errorf("an answer value set the server does not hold is not reported: %v", oo)
+	}
+
+	// Once the payer loads it, it travels in the package.
+	if rec := payerDo(t, h, "PUT", "/ValueSet/devices", `{"resourceType":"ValueSet","id":"devices","url":"https://payer.example/ValueSet/devices",
+		"status":"active","compose":{"include":[{"system":"http://snomed.info/sct","concept":[{"code":"426160001","display":"Oxygen concentrator"}]}]}}`, nil); rec.Code >= 300 {
+		t.Fatal(rec.Body)
+	}
+	rec = payerDo(t, h, "POST", "/Questionnaire/$questionnaire-package",
+		`{"resourceType":"Parameters","parameter":[`+coverageParam+`,{"name":"questionnaire","valueCanonical":"https://payer.example/Questionnaire/q"}]}`, nil)
+	bundles, oo = packageOf(t, rec.Body.String())
+	if len(bundles) != 1 || len(entriesOf(bundles[0])["ValueSet"]) != 1 {
+		t.Errorf("a loaded answer value set is not packaged: %s", rec.Body)
+	}
+	if strings.Contains(toJSON(oo), "ValueSet/devices") {
+		t.Errorf("a loaded value set is still reported missing: %v", oo)
 	}
 }
 
@@ -166,8 +188,8 @@ func TestQuestionnaireErrorsAreAcceptedAndPaired(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("unequal counts cannot be paired: %d %s", rec.Code, rec.Body)
 	}
-	if rec := payerDo(t, h, "POST", "/Questionnaire/$next-question", `{"resourceType":"Parameters"}`, nil); rec.Code != http.StatusUnprocessableEntity {
-		t.Errorf("$next-question: %d", rec.Code)
+	if rec := payerDo(t, h, "POST", "/Questionnaire/$next-question", `{"resourceType":"Parameters"}`, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("$next-question with no questionnaire-response: %d", rec.Code)
 	}
 }
 

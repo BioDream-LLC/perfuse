@@ -55,7 +55,7 @@ const bundleUnimplementedEntry = `{
   "id": "skipme",
   "type": "collection",
   "entry": [
-    {"resource": {"resourceType": "ValueSet", "id": "vs1", "status": "active"}}
+    {"resource": {"resourceType": "ConceptMap", "id": "cm1", "status": "active"}}
   ]
 }`
 

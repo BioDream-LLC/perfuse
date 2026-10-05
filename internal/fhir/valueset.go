@@ -11,13 +11,15 @@ package fhir
 type ValueSet struct {
 	base
 
-	URL         string `json:"url,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Title       string `json:"title,omitempty"`
-	Status      string `json:"status,omitempty"`
-	Date        string `json:"date,omitempty"`
-	Publisher   string `json:"publisher,omitempty"`
-	Description string `json:"description,omitempty"`
+	URL         string       `json:"url,omitempty"`
+	Identifier  []Identifier `json:"identifier,omitempty"`
+	Version     string       `json:"version,omitempty"`
+	Name        string       `json:"name,omitempty"`
+	Title       string       `json:"title,omitempty"`
+	Status      string       `json:"status,omitempty"`
+	Date        string       `json:"date,omitempty"`
+	Publisher   string       `json:"publisher,omitempty"`
+	Description string       `json:"description,omitempty"`
 
 	// Expansion is the resolved membership.
 	Expansion *ValueSetExpansion `json:"expansion,omitempty"`
@@ -27,6 +29,9 @@ type ValueSet struct {
 type ValueSetExpansion struct {
 	// Identifier says which value set this expansion is of, so an expansion separated from its request can still be placed.
 	Identifier string `json:"identifier,omitempty"`
+
+	// Timestamp is when the expansion was made; FHIR requires it.
+	Timestamp string `json:"timestamp,omitempty"`
 
 	// Total is how many codes the set contains.
 	//

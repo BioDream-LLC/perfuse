@@ -139,18 +139,19 @@ func TestTheClinicallyEssentialTypesArePresent(t *testing.T) {
 	t.Logf("%d resource types stored in total; all %d essential ones present", len(resourceConstructors), len(essential))
 }
 
-// TestTheProjectedTerminologyTypesAreNotStored records the arrangement, so that changing it is a decision.
+// TestOnlyConceptMapIsProjectedRatherThanStored records the arrangement, so that changing it is a decision.
 //
-// ValueSet and ConceptMap are views of the channel mapping tables. If somebody later adds either to resourceConstructors -
-// which is the obvious thing to do on noticing they are absent - they become storable, and then there are two sources for the
-// same resource: the files a channel maps against, and whatever a client POSTed. A $translate answered from one while a read
-// returns the other is a hard bug to see, because both answers look reasonable in isolation.
+// ConceptMap is a view of the channel mapping tables. If somebody adds it to resourceConstructors - the obvious thing to do on
+// noticing it is absent - it becomes storable, and there are two sources for one resource: the files a channel maps against, and
+// whatever a client POSTed. A $translate answered from one while a read returns the other is a hard bug to see.
 //
-// This does not forbid making them storable. It forbids doing so by accident, which is how it would happen.
-func TestTheProjectedTerminologyTypesAreNotStored(t *testing.T) {
-	for _, name := range []string{"ValueSet", "ConceptMap"} {
-		if _, ok := resourceConstructors[name]; ok {
-			t.Errorf("%s is now in the resource registry. It is served as a projection of the mapping tables, so storing it too creates two sources for one resource - a $translate answered from the tables while a read returns a POSTed copy. If this is intended, the capability statement's empty interaction array has to change with it.", name)
-		}
+// ValueSet was the same until payers needed to load DTR answer lists. It is stored now, and the table views keep a namespace of
+// their own (urn:perfuse:codeset:) that a write is refused into - see TestAValueSetCannotBeWrittenIntoTheTableNamespace.
+func TestOnlyConceptMapIsProjectedRatherThanStored(t *testing.T) {
+	if _, ok := resourceConstructors["ConceptMap"]; ok {
+		t.Errorf("ConceptMap is now in the resource registry. It is served as a projection of the mapping tables, so storing it too creates two sources for one resource")
+	}
+	if _, ok := resourceConstructors["ValueSet"]; !ok {
+		t.Errorf("ValueSet is no longer stored, so DTR answer value sets cannot be loaded")
 	}
 }

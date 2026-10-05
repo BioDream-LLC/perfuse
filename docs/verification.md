@@ -315,6 +315,15 @@ include; they now use the CDS Hooks card-type system. Building the package found
 `item`, and the package was written through a path that did not restore undeclared members - so every questionnaire went out with no
 questions. It now uses the serialiser that does.
 
+**DTR value sets and adaptive questionnaires, October 2026.** Every ValueSet in DTR 2.2.0 and US Core 6.1.0 (44) was loaded and
+expanded. The 16 that list their codes expand, and their expansions validate with no errors; the 28 that need VSAC or a whole code
+system are refused by name with 422, none expanded partly. Building it found that table-view expansions carried no `timestamp`, which
+FHIR requires. `$next-question` was run on DTR's own example input and on a three-step branch, and its output validates against
+`dtr-next-question-output-parameters`, the package against `dtr-qpackage-output-parameters`. That run found a package defect older
+than this work: a bundle entry's `fullUrl` was the questionnaire's canonical url even when the url did not end in `Questionnaire/{id}`,
+which FHIR forbids; it is now the resource's address on this server. Not verified: a real DTR app (such as a SMART DTR client) driving
+the adaptive flow.
+
 **The Inferno Da Vinci CRD test kit, October 2026.** The official CRD Server v2.2.1 suite (davinci-crd-test-kit, run locally in
 Docker) passes as a whole: discovery, the four hooks, the cross-hook and must-support checks, and the technical issues, no member
 found, coverage not found and no active coverage responses. It took these fixes:

@@ -923,6 +923,9 @@ var resourceConstructors = map[string]func() Resource{
 	"ActivityDefinition":  func() Resource { return &ActivityDefinition{} },
 	"EventDefinition":     func() Resource { return &EventDefinition{} },
 	"Questionnaire":       func() Resource { return &Questionnaire{} },
+	// Stored so a payer's DTR answer lists can be loaded; the mapping-table views keep their own namespace. See
+	// TestOnlyConceptMapIsProjectedRatherThanStored.
+	"ValueSet": func() Resource { return &ValueSet{} },
 
 	// Research & evidence
 	"ResearchStudy":           func() Resource { return &ResearchStudy{} },

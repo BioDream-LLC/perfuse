@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/biodream-llc/perfuse/internal/codeset"
 	"github.com/biodream-llc/perfuse/internal/fhir"
@@ -295,6 +296,7 @@ func TableAsValueSet(t *codeset.Table, req *ValueSetRequest, codes []string, tot
 	vs.Expansion = &fhir.ValueSetExpansion{
 		Total:      fhir.Int(total),
 		Identifier: vs.URL,
+		Timestamp:  time.Now().UTC().Format(time.RFC3339),
 	}
 
 	for _, code := range codes {

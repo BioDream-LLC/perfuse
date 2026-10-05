@@ -16,7 +16,7 @@ import (
 func (s *Server) handleTypeHistory(w http.ResponseWriter, r *http.Request) {
 	resourceType := r.PathValue("type")
 
-	if s.conceptMapIntercept(w, r, resourceType) || s.valueSetIntercept(w, r, resourceType) {
+	if s.conceptMapIntercept(w, r, resourceType) {
 		return
 	}
 
@@ -58,7 +58,7 @@ func (s *Server) handleTypeHistory(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleInstanceHistory(w http.ResponseWriter, r *http.Request) {
 	resourceType := r.PathValue("type")
 
-	if s.conceptMapIntercept(w, r, resourceType) || s.valueSetIntercept(w, r, resourceType) {
+	if s.conceptMapIntercept(w, r, resourceType) {
 		return
 	}
 	id := r.PathValue("id")

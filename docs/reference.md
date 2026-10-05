@@ -448,7 +448,9 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `serve -cds-clients <file>` | EHRs trusted to call it with signed JWTs: `clients: [{issuer, jwks_url}]`. A Perfuse API token is also accepted |
 | `POST /fhir/Questionnaire/$questionnaire-package` | Da Vinci DTR 2.2.0: the questionnaires named, named on the order's coverage-information, or asked for by CRD's coverage assertion id (`context`), each as a package bundle with a QuestionnaireResponse and the Libraries it needs |
 | `POST /fhir/Questionnaire/$log-questionnaire-errors` | DTR 2.2.0: problems a DTR app met with a questionnaire, written to the server log |
-| `POST /fhir/Questionnaire/$next-question` | DTR 2.2.0: refused with an explanation, since only standard (non-adaptive) questionnaires are served |
+| `POST /fhir/Questionnaire/$next-question` | DTR 2.2.0 adaptive questionnaires: a stored Questionnaire with SDC's `questionnaireAdaptive` extension is packaged as an empty shell, and each call appends the next top-level item whose `enableWhen` the answers satisfy, or marks the response `completed`. A required question already asked must be answered first |
+| `PUT /fhir/ValueSet/{id}`, `GET /fhir/ValueSet?url=` | Stored value sets, such as a payer's DTR answer lists; they travel in the questionnaire package. A url under `urn:perfuse:codeset:` is refused, since those are the mapping tables' views |
+| `GET /fhir/ValueSet/$expand?url=`, `$validate-code` | For a stored value set: listed concepts, included value sets and enumerated excludes, with `filter` and `count`. A rule over a whole code system (a filter, or a system with no concepts) is refused with 422 rather than expanded partly |
 | `POST /api/crd/ask` | From the console: an order sent to this server's CRD rules or to a payer's CDS service URL |
 | `serve -dashboards <file>` | Which team dashboard each directory group (`groups:`) and role (`roles:`) opens on |
 | `GET /api/dashboards`, `PUT /api/dashboards/view`, `GET /api/dashboards/{id}/grafana` | The team dashboards, a person's saved view, and a dashboard as Grafana JSON |
@@ -2296,6 +2298,8 @@ Not a single resource was validated incorrectly. Every failure is an explicit re
 naming the type it cannot read — 672 `ValueSet`, 80 `ConceptMap` and one `Parameters`.
 That is the intended behaviour: a validator that quietly passes what it does not
 understand is worse than one that says so.
+ValueSet has since become a stored type (October 2026, for DTR answer lists), so the
+672 value sets in that corpus are now read rather than refused.
 
 The corpus found a real defect, which is the reason for running it. Validating a bundle
 printed "Bundle validation from a file is not supported yet" and carried on. That was

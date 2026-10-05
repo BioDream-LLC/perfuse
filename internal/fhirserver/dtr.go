@@ -159,14 +159,20 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 				"diagnostics": "no Questionnaire with url " + canonical + " is loaded on this server"})
 			continue
 		}
-		entries := []any{map[string]any{"fullUrl": fullURLOf(q), "resource": q}}
+		// An adaptive questionnaire goes out as an empty shell; $next-question supplies its questions one at a time.
+		adaptive := isAdaptive(q)
+		packaged := q
+		if adaptive {
+			packaged = adaptiveShell(q, "dtr-questionnaire-adapt-search")
+		}
+		entries := []any{map[string]any{"fullUrl": s.entryURL(q), "resource": packaged}}
 		newest := lastUpdated(q)
 
 		// The CQL the questionnaire pre-fills itself with, named by cqf-library, and every Library those depend on in turn. The
 		// dependencies were left out, so an engine given the package could not run the logic without fetching FHIRHelpers itself.
 		libs, missing := s.libraryClosure(r, questionnaireLibraries(q))
 		for _, l := range libs {
-			entries = append(entries, map[string]any{"fullUrl": fullURLOf(l), "resource": l})
+			entries = append(entries, map[string]any{"fullUrl": s.entryURL(l), "resource": l})
 			if t := lastUpdated(l); t.After(newest) {
 				newest = t
 			}
@@ -178,7 +184,7 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 		// The value sets the answers are chosen from, so the app can render them without a terminology call.
 		for _, vsURL := range answerValueSets(q) {
 			if vs := s.byCanonical(r, "ValueSet", vsURL); vs != nil {
-				entries = append(entries, map[string]any{"fullUrl": fullURLOf(vs), "resource": vs})
+				entries = append(entries, map[string]any{"fullUrl": s.entryURL(vs), "resource": vs})
 				if t := lastUpdated(vs); t.After(newest) {
 					newest = t
 				}
@@ -191,6 +197,14 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 			continue // changedsince: nothing in this package changed
 		}
 		qr := seedResponse(q, coverage, orders)
+		if adaptive {
+			shell := adaptiveShell(q, "dtr-questionnaire-adapt")
+			id, _ := q["id"].(string)
+			shell["id"] = id
+			qr["contained"] = []any{shell}
+			qr["questionnaire"] = "#" + id
+			qr["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse-adapt|" + dtrVersion}}
+		}
 		entries = append(entries[:1], append([]any{map[string]any{"fullUrl": "urn:uuid:" + fhir.DeterministicUUID("QuestionnaireResponse", fullURLOf(q), refOf(coverage)), "resource": qr}}, entries[1:]...)...)
 		bundle := map[string]any{"resourceType": "Bundle", "type": "collection",
 			"meta":  map[string]any{"profile": []string{dtrBase + "DTR-QPackageBundle|" + dtrVersion}},
@@ -404,15 +418,9 @@ func (s *Server) handleLogQuestionnaireErrors(w http.ResponseWriter, r *http.Req
 		fmt.Sprintf("recorded %d issue(s) for %d questionnaire(s)", issues, len(qs)))
 }
 
-// handleNextQuestion is $next-question, for adaptive questionnaires. DTR 2.2.0's payer capability statement requires the operation, and
-// this server serves standard questionnaires only, so it says so rather than answering 404 as though the operation did not exist.
-func (s *Server) handleNextQuestion(w http.ResponseWriter, r *http.Request) {
-	s.writeOutcome(w, r, http.StatusUnprocessableEntity, fhir.SeverityError, "not-supported",
-		"this payer serves standard (non-adaptive) DTR questionnaires only; use $questionnaire-package")
-}
-
 func listOf(v any) []any { l, _ := v.([]any); return l }
 
+// fullURLOf is a resource's canonical url, or Type/id when it has none.
 func fullURLOf(res map[string]any) string {
 	if u, _ := res["url"].(string); u != "" {
 		return u
@@ -421,6 +429,22 @@ func fullURLOf(res map[string]any) string {
 		return ref
 	}
 	return ""
+}
+
+// entryURL is a bundle entry's fullUrl. FHIR lets it equal the canonical url only when that url ends in Type/id (the validator
+// refused a package whose questionnaire's url did not); otherwise it is the resource's address on this server.
+func (s *Server) entryURL(res map[string]any) string {
+	ref := refOf(res)
+	if u, _ := res["url"].(string); u != "" && (ref == "" || strings.HasSuffix(u, "/"+ref)) {
+		return u
+	}
+	if ref == "" {
+		return fullURLOf(res)
+	}
+	if base := strings.TrimRight(s.BaseURL, "/"); base != "" {
+		return base + "/" + ref
+	}
+	return "urn:uuid:" + fhir.DeterministicUUID(ref)
 }
 
 func refOf(res map[string]any) string {
