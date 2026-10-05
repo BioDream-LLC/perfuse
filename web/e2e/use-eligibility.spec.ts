@@ -77,6 +77,12 @@ test("an order is asked about at order-sign, and the payer's rules answer with c
   const info = page.getByTestId("crd-coverage-info");
   await expect(info).toContainText("pa-needed: auth-needed");
   await expect(info).toContainText("questionnaire: https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen");
+  // The rest of the payer's answer, each part on screen: why, the billing code, the limit, who to call and when it lapses.
+  await expect(info).toContainText("reason: Prior authorization is required for home oxygen");
+  await expect(info).toContainText("billingCode: E0424 Stationary compressed gas 02");
+  await expect(info).toContainText("detail: allowed-period: Rental for up to 36 months");
+  await expect(info).toContainText("contact: Springfield Health Plan utilization management, +1-217-555-0199");
+  await expect(info).toContainText(/expiry-date: \d{4}-\d{2}-\d{2}/);
 
   // DTR: the questionnaire that coverage-information names, packaged with the response the documentation app fills in. The setup loads
   // the example questionnaire into the FHIR endpoint.

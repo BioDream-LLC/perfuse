@@ -1,7 +1,10 @@
 package crd
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -68,7 +71,7 @@ func TestNoCoverageIsSaidRatherThanGuessed(t *testing.T) {
 	req := request(t, order)
 	delete(req.Prefetch, "coverage")
 	resp, _ := rules.Evaluate(req, time.Now())
-	if len(resp.SystemActions) != 0 || len(resp.Cards) != 1 || !strings.Contains(resp.Cards[0].Summary, "No active coverage") {
+	if len(resp.SystemActions) != 0 || len(resp.Cards) != 1 || !strings.Contains(resp.Cards[0].Summary, "No coverage was sent") {
 		t.Errorf("%+v", resp)
 	}
 }
@@ -118,5 +121,80 @@ func TestAnAssertionIsRememberedForDTR(t *testing.T) {
 	}
 	if got := rules.QuestionnairesFor(id); len(got) != 1 || !strings.HasSuffix(got[0], "/Questionnaire/home-oxygen") {
 		t.Errorf("assertion %s: %v", id, got)
+	}
+}
+
+func TestTurningCoverageInfoOffReturnsNothing(t *testing.T) {
+	// dev-5: setting a response type's option to false means no cards of that type. Coverage information is all this service
+	// returns, so the answer is empty.
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	req := request(t, order)
+	req.Extension = map[string]json.RawMessage{"davinci-crd.configuration": json.RawMessage(`{"coverage-info":false}`)}
+	resp, err := rules.Evaluate(req, time.Now())
+	if err != nil || len(resp.Cards) != 0 || len(resp.SystemActions) != 0 {
+		t.Errorf("%v %+v", err, resp)
+	}
+}
+
+func TestCoverageThatIsNotInForceIsNotCovered(t *testing.T) {
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	req := request(t, order)
+	req.Prefetch["coverage"] = json.RawMessage(`{"resourceType":"Coverage","id":"c1","status":"active","period":{"end":"2020-12-31"}}`)
+	resp, _ := rules.Evaluate(req, time.Now())
+	ext, _ := json.Marshal(resp.SystemActions[0].Resource["extension"])
+	if !strings.Contains(string(ext), `"valueCode":"not-covered"`) || !strings.Contains(string(ext), `"code":"no-active-coverage"`) {
+		t.Errorf("%s", ext)
+	}
+}
+
+func TestAMemberThePayerDoesNotKnowIsNotFound(t *testing.T) {
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	rules.Check = func(_ context.Context, cov, _ map[string]any, _ time.Time) (Membership, string, error) {
+		return NoMemberFound, "No member of Springfield Health Plan matches this patient.", nil
+	}
+	resp, _ := rules.Evaluate(request(t, order), time.Now())
+	ext, _ := json.Marshal(resp.SystemActions[0].Resource["extension"])
+	if !strings.Contains(string(ext), `"code":"no-member-found"`) || !strings.Contains(string(ext), "No member of") {
+		t.Errorf("%s", ext)
+	}
+}
+
+func TestAnEHRServerThatFailsIsATechnicalProblem(t *testing.T) {
+	// CRD's technical reason: the coverage could not be read, so the answer is indeterminate, with what went wrong.
+	ehr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusInternalServerError) }))
+	defer ehr.Close()
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	req := request(t, order)
+	delete(req.Prefetch, "coverage")
+	req.FHIRServer = ehr.URL
+	resp, _ := rules.Evaluate(req, time.Now())
+	if len(resp.SystemActions) != 1 {
+		t.Fatalf("%+v", resp)
+	}
+	ext, _ := json.Marshal(resp.SystemActions[0].Resource["extension"])
+	if !strings.Contains(string(ext), `"valueCode":"indeterminate"`) || !strings.Contains(string(ext), `"code":"technical"`) || !strings.Contains(string(ext), "answered 500") {
+		t.Errorf("%s", ext)
+	}
+}
+
+func TestTheUpdatedOrderKeepsTheEHRsKeyOrder(t *testing.T) {
+	ext := map[string]any{"url": ExtCoverageInformation}
+	got := string(withExtension(json.RawMessage(`{"resourceType":"DeviceRequest","status":"draft","id":"o","extension":[{"url":"x"},{"url":"`+ExtCoverageInformation+`","old":1}],"subject":{"reference":"Patient/p","display":"P"}}`), ext))
+	want := `{"resourceType":"DeviceRequest","status":"draft","id":"o","extension":[{"url":"x"},{"url":"` + ExtCoverageInformation + `"}],"subject":{"reference":"Patient/p","display":"P"}}`
+	if got != want {
+		t.Errorf("\n got %s\nwant %s", got, want)
+	}
+}
+
+func TestAnApprovedAuthorizationMakesTheRequirementSatisfied(t *testing.T) {
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	rules.Authorized = func(_ context.Context, _, _ map[string]any, codes []string, _ time.Time) (string, error) {
+		return "AUTH-778", nil
+	}
+	resp, _ := rules.Evaluate(request(t, order), time.Now())
+	ext, _ := json.Marshal(resp.SystemActions[0].Resource["extension"])
+	if !strings.Contains(string(ext), `"pa-needed","valueCode":"satisfied"`) || !strings.Contains(string(ext), `"satisfied-pa-id","valueString":"AUTH-778"`) ||
+		!strings.Contains(resp.Cards[0].Summary, "already approved") {
+		t.Errorf("%s %s", ext, resp.Cards[0].Summary)
 	}
 }

@@ -50,6 +50,9 @@ type Claims struct {
 	// Encounter is the SMART encounter launch context.
 	Encounter string
 
+	// JTI is the token's unique id, which a System token must carry.
+	JTI string
+
 	// Scope is the space-separated scope claim, present on an access token and normally absent on an ID token.
 	//
 	// Carried through verification rather than parsed separately by the caller, so that whatever reads the scopes is
@@ -74,6 +77,7 @@ type claimSet struct {
 	Scope             string          `json:"scope"`
 	Patient           string          `json:"patient"`
 	Encounter         string          `json:"encounter"`
+	JTI               string          `json:"jti"`
 }
 
 // VerifyOptions is what an ID token is checked against.
@@ -101,6 +105,10 @@ type VerifyOptions struct {
 
 	// Leeway tolerates clock difference between here and the provider. Defaults to a minute.
 	Leeway time.Duration
+
+	// System says the token authenticates a system, not a person: a CDS Hooks client's JWT, whose claims are iss, aud, exp,
+	// iat and jti, with no sub. A subject is then not required, and a jti is, so the caller can refuse a replay.
+	System bool
 }
 
 // Verify checks an ID token and returns what it says.
@@ -178,7 +186,11 @@ func Verify(ctx context.Context, keys *KeySet, token string, opts VerifyOptions)
 		return nil, fmt.Errorf("oidc: the token is from issuer %q, not %q", cs.Issuer, opts.Issuer)
 	}
 
-	if cs.Subject == "" {
+	if opts.System {
+		if cs.JTI == "" {
+			return nil, fmt.Errorf("oidc: the token has no jti, so a replay of it could not be told apart")
+		}
+	} else if cs.Subject == "" {
 		// Without a subject there is nothing to key an account on, and falling back to email would key identity on a
 		// value that gets reassigned when people leave.
 		return nil, fmt.Errorf("oidc: the token has no subject, so there is no stable identifier for this person")
@@ -234,6 +246,7 @@ func Verify(ctx context.Context, keys *KeySet, token string, opts VerifyOptions)
 		Scope:             cs.Scope,
 		Patient:           cs.Patient,
 		Encounter:         cs.Encounter,
+		JTI:               cs.JTI,
 		ExpiresAt:         expiry,
 		IssuedAt:          issued,
 	}, nil

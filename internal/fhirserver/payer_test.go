@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/cms0057"
+	"github.com/biodream-llc/perfuse/internal/crd"
 )
 
 // payerFixture is a server with the payer operations and bulk export on, holding a member's CARIN claim loaded through the
@@ -198,5 +199,51 @@ func TestGroupLimitedTokenReachesOnlyItsGroup(t *testing.T) {
 	}
 	if rec := payerDo(t, h, "POST", "/Patient/$member-match", matchBody, nil); rec.Code != http.StatusForbidden {
 		t.Errorf("member-match answered %d for a provider's token", rec.Code)
+	}
+}
+
+func TestCRDResolvesTheMemberAgainstThePayersRecords(t *testing.T) {
+	srv, _ := payerFixture(t)
+	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	member := map[string]any{"resourceType": "Patient", "name": []any{map[string]any{"family": "Sampleson", "given": []any{"Bravo"}}},
+		"birthDate": "1980-02-15", "gender": "female"}
+	stranger := map[string]any{"resourceType": "Patient", "name": []any{map[string]any{"family": "Nobody"}}, "birthDate": "1990-01-01"}
+	for _, tc := range []struct {
+		name     string
+		coverage map[string]any
+		patient  map[string]any
+		want     crd.Membership
+	}{
+		{"the member and coverage", map[string]any{"subscriberId": "MBR123456"}, member, crd.MemberActive},
+		{"a member with a coverage that is not theirs", map[string]any{"subscriberId": "NOPE"}, member, crd.CoverageNotFound},
+		{"somebody who is not a member", map[string]any{"subscriberId": "NOPE"}, stranger, crd.NoMemberFound},
+	} {
+		got, why, err := srv.ResolveMember(t.Context(), tc.coverage, tc.patient, now)
+		if err != nil || got != tc.want {
+			t.Errorf("%s: %q (%s) %v", tc.name, got, why, err)
+		}
+	}
+}
+
+func TestAnApprovedAuthorizationSatisfiesCRD(t *testing.T) {
+	srv, h := payerFixture(t)
+	cr := `{"resourceType":"ClaimResponse","id":"pa1","status":"active","type":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/claim-type","code":"professional"}]},
+	  "use":"preauthorization","patient":{"reference":"Patient/pt-MBR123456"},"created":"2026-02-01","insurer":{"display":"Example Health Plan"},
+	  "outcome":"complete","preAuthRef":"AUTH-778","preAuthPeriod":{"start":"2026-02-01","end":"2026-08-01"},
+	  "addItem":[{"productOrService":{"coding":[{"system":"https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets","code":"E0424"}]}}]}`
+	if rec := payerDo(t, h, "PUT", "/ClaimResponse/pa1", cr, nil); rec.Code >= 300 {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	member := map[string]any{"name": []any{map[string]any{"family": "Sampleson"}}, "birthDate": "1980-02-15"}
+	cov := map[string]any{"subscriberId": "MBR123456"}
+	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	if id, err := srv.SatisfiedAuthorization(t.Context(), cov, member, []string{"E0424"}, now); err != nil || id != "AUTH-778" {
+		t.Errorf("approved: %q %v", id, err)
+	}
+	if id, _ := srv.SatisfiedAuthorization(t.Context(), cov, member, []string{"E0431"}, now); id != "" {
+		t.Errorf("another service: %q", id)
+	}
+	if id, _ := srv.SatisfiedAuthorization(t.Context(), cov, member, []string{"E0424"}, now.AddDate(1, 0, 0)); id != "" {
+		t.Errorf("after the authorization period: %q", id)
 	}
 }

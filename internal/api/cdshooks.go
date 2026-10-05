@@ -6,9 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -50,11 +53,26 @@ func LoadCDSClients(path string) ([]*CDSClient, error) {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 	for i, c := range doc.Clients {
-		if !strings.HasPrefix(c.Issuer, "http") || !strings.HasPrefix(c.JWKSURL, "https://") {
+		if !strings.HasPrefix(c.Issuer, "http") || !(strings.HasPrefix(c.JWKSURL, "https://") || loopbackHTTP(c.JWKSURL)) {
 			return nil, fmt.Errorf("%s: client %d needs an issuer and an https jwks_url", path, i+1)
 		}
 	}
 	return doc.Clients, nil
+}
+
+// loopbackHTTP allows a JWKS on this machine over plain HTTP, as a test harness such as Inferno serves one: keys fetched over loopback
+// cross no network, so https adds nothing there.
+func loopbackHTTP(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "http" {
+		return false
+	}
+	h := u.Hostname()
+	if h == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(h)
+	return ip != nil && ip.IsLoopback()
 }
 
 func (s *Server) handleCDSDiscovery(w http.ResponseWriter, r *http.Request) {
@@ -85,9 +103,14 @@ func (s *Server) cdsAuthorised(r *http.Request, serviceID string) (string, error
 		if c.keys == nil {
 			c.keys = oidc.NewKeySet(c.JWKSURL, s.shlClient())
 		}
+		// A CDS Hooks JWT authenticates the EHR, not a person: iss, aud, exp, iat and jti, and no sub. Requiring a subject, as
+		// sign-in rightly does, refused every call from the Inferno CRD test kit.
 		claims, err := oidc.Verify(r.Context(), c.keys, token, oidc.VerifyOptions{Issuer: c.Issuer, ClientID: audience,
-			Algorithms: []string{"RS384", "ES384", "RS256", "ES256"}})
+			Algorithms: []string{"RS384", "ES384", "RS256", "ES256"}, System: true})
 		if err == nil {
+			if !s.cdsJTIs.first(claims.Issuer+"|"+claims.JTI, claims.ExpiresAt) {
+				return "", errors.New("this JWT has been used before (its jti repeats), so it may be a replay")
+			}
 			return "ehr:" + claims.Issuer, nil
 		}
 		last = err
@@ -126,7 +149,7 @@ func (s *Server) handleCDSService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("this service answers %s, and the request is %s", hook, req.Hook)})
 		return
 	}
-	resp, err := s.CRD.Evaluate(&req, time.Now())
+	resp, err := s.CRD.EvaluateContext(r.Context(), &req, time.Now())
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
@@ -177,7 +200,7 @@ func (s *Server) handleCRDAsk(w http.ResponseWriter, r *http.Request, sess *stor
 			s.fail(w, r, http.StatusConflict, "this server has no CRD rules; start it with -crd-rules, or name a payer's service URL")
 			return
 		}
-		resp, err := s.CRD.Evaluate(&req, time.Now())
+		resp, err := s.CRD.EvaluateContext(r.Context(), &req, time.Now())
 		if err != nil {
 			s.fail(w, r, http.StatusBadRequest, err.Error())
 			return
@@ -286,4 +309,32 @@ func (s *Server) handleDTRPackage(w http.ResponseWriter, r *http.Request, sess *
 		return
 	}
 	s.ok(w, v)
+}
+
+// jtiCache remembers the JWT ids seen until each token expires, so a captured CDS Hooks call cannot be replayed.
+type jtiCache struct {
+	mu   sync.Mutex
+	seen map[string]time.Time
+}
+
+// first records a jti and reports whether it is new.
+func (c *jtiCache) first(id string, expires time.Time) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	now := time.Now()
+	if c.seen == nil {
+		c.seen = map[string]time.Time{}
+	}
+	if len(c.seen) > 10000 {
+		for k, exp := range c.seen {
+			if exp.Before(now) {
+				delete(c.seen, k)
+			}
+		}
+	}
+	if exp, ok := c.seen[id]; ok && exp.After(now) {
+		return false
+	}
+	c.seen[id] = expires
+	return true
 }

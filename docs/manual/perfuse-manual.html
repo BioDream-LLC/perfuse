@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · c0c89c5</p>
+<p class="version">version 0.1 · ef923d5</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2607,7 +2607,26 @@ rules:
     pa: auth-needed             # no-auth, auth-needed, satisfied, performpa, conditional
     documentation: [clinical]
     questionnaire: https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen</code></pre>
-<p>Each order gets a <code>systemActions</code> update carrying CRD&#39;s coverage-information extension - which the EHR stores on the order and later sends on with the prior authorisation - and a card the clinician reads. An order whose code has no rule is answered <code>conditional</code>, never assumed covered; a request with no Coverage in the prefetch gets a card saying so. <code>examples/crd/</code> has a rules file and a matching questionnaire.</p>
+<p>Each order gets a <code>systemActions</code> update carrying CRD&#39;s coverage-information extension - which the EHR stores on the order and later sends on with the prior authorisation - and a card the clinician reads. An order whose code has no rule is answered <code>conditional</code>, never assumed covered; a request with no Coverage at all gets a card saying so. <code>examples/crd/</code> has a rules file and a matching questionnaire.</p>
+<p>A rule can also carry the rest of what CRD lets a payer say:</p>
+<ul>
+<li><code>billing_codes</code>: the codes to bill under.</li>
+<li><code>details</code>: limits and costs, such as <code>allowed-period</code> or <code>in-network-copay</code>.</li>
+<li><code>contact</code>: who to call.</li>
+<li><code>expiry_days</code>: how long the answer holds.</li>
+<li><code>depends_on</code>: codes of other orders the answer depends on, so the EHR asks again if they change.</li>
+<li><code>doc_purpose</code>: what the documentation is for (<code>withclaim</code>, <code>withorder</code>, <code>retain-doc</code>). <code>withpa</code> is refused, because CRD 2.2.1&#39;s</li>
+</ul>
+<p>  own invariant crd-ci-q4 rejects it.</p>
+<p>What the EHR did not prefetch, Perfuse reads from the EHR&#39;s <code>fhirServer</code> with the token it sent. If that fails, the answer is <code>indeterminate</code> with CRD&#39;s <code>technical</code> reason, never a guess. A Coverage that has ended or is not active is answered <code>not-covered</code>, <code>no-active-coverage</code>.</p>
+<p><code>members: fhir</code> in the rules file resolves the coverage against the payer&#39;s own records in this server&#39;s FHIR store (start it with <code>-fhir</code>), the same records <code>$member-match</code> reads:</p>
+<ul>
+<li>a patient who is not a member is answered <code>no-member-found</code>;</li>
+<li>a member whose coverage does not match is answered <code>coverage-not-found</code>;</li>
+<li>a prior authorisation already approved there for the service (a ClaimResponse with a <code>preAuthRef</code>) makes the answer <code>satisfied</code>,</li>
+</ul>
+<p>  with that number.</p>
+<p>Discovery declares <code>davinci-crd.version</code> and a <code>coverage-info</code> configuration option. When a client turns the option off, the answer is empty. EHR JWTs are checked as CDS Hooks defines them, with <code>iss</code>, <code>aud</code>, <code>exp</code>, <code>iat</code> and <code>jti</code> and no <code>sub</code>, and a repeated <code>jti</code> is refused.</p>
 <p>Calls authenticate with the JWT an EHR signs for each call, from an issuer named in <code>-cds-clients</code> with its JWKS URL - which is how CDS Hooks describes it - or with a Perfuse API token. Discovery is open, as CDS Hooks requires.</p>
 <p><strong>DTR</strong>: load the questionnaires into the FHIR endpoint, and <code>POST /fhir/Questionnaire/$questionnaire-package</code> returns them as DTR package bundles, with the CQL Libraries they name. The request can name the questionnaire, or send the order and let its coverage-information say which.</p>
 <p><strong>Trying it</strong>: Exchange → Claims &amp; auth → Coverage requirements (CRD) sends an order to this server&#39;s rules, or to a payer&#39;s CDS service URL, and shows the cards and the coverage information.</p>

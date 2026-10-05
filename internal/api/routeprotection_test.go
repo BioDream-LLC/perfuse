@@ -50,6 +50,7 @@ var publicRoutes = map[string]string{
 	"OPTIONS /shl/{id}":                "CORS preflight for the manifest, which browser-based SHL viewers send",
 	"GET /cds-services":                "CDS Hooks discovery, which the specification requires be open",
 	"POST /cds-services/{id}":          "a CDS Hooks call, authenticated in the handler by an EHR's signed JWT or an API token",
+	"GET /cds-services/{path...}":      "answers a GET under CDS Hooks with a JSON 405, and serves nothing",
 	"GET /shl/file/{ticket}":           "a one-time, one-minute file location handed out by an authorised manifest request",
 	"GET /livez":                       "liveness probe",
 	"GET /readyz":                      "readiness probe",

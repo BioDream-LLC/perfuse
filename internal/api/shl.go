@@ -256,6 +256,10 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 
 // shlClient fetches a stranger's link. The URL comes from a QR code, so the dial is held to the egress policy at connect time - after
 // DNS, so a name that resolves to a metadata address is caught - and plain HTTP is refused unless the server was told otherwise.
+// OutboundClient is the client this server uses to reach other systems on a user's or EHR's behalf: egress rules apply, and
+// redirects are limited.
+func (s *Server) OutboundClient() *http.Client { return s.shlClient() }
+
 func (s *Server) shlClient() *http.Client {
 	dialer := &net.Dialer{Timeout: 10 * time.Second, Control: func(_, address string, _ syscall.RawConn) error {
 		host, _, err := net.SplitHostPort(address)

@@ -315,6 +315,31 @@ include; they now use the CDS Hooks card-type system. Building the package found
 `item`, and the package was written through a path that did not restore undeclared members - so every questionnaire went out with no
 questions. It now uses the serialiser that does.
 
+**The Inferno Da Vinci CRD test kit, October 2026.** The official CRD Server v2.2.1 suite (davinci-crd-test-kit, run locally in
+Docker) passes as a whole: discovery, the four hooks, the cross-hook and must-support checks, and the technical issues, no member
+found, coverage not found and no active coverage responses. It took these fixes:
+
+- **Every signed call was refused.** The CDS Hooks JWT has `iss`, `aud`, `exp`, `iat` and `jti` and no `sub`, and the verifier
+  required a subject, as sign-in does. A JWT no longer needs a subject, and a repeated `jti` is now refused.
+- **Discovery was wrong.** There was no `davinci-crd.version`, and the configuration options had the request-side name and were empty.
+  Discovery now declares `2.2` and a `coverage-info` boolean, and turning it off returns no cards.
+- **order-dispatch answered nothing.** Only a prefetch key called `order` was read. Orders are now found from `dispatchedOrders` in
+  any prefetch, or read from the EHR.
+- **Nothing was ever fetched.** When prefetch lacked the Coverage, the answer was a card. The Coverage is now read from the EHR's
+  `fhirServer`. A failure gives `indeterminate` with `technical`, and an inactive or ended coverage gives `not-covered` with
+  `no-active-coverage`.
+- **Every patient was treated as a member.** With `members: fhir`, the coverage is checked against the payer's records:
+  `no-member-found`, `coverage-not-found`, or `satisfied` with the number of an approved authorisation.
+- **The updated order changed.** Re-encoding sorted its keys, and Inferno's comparison, which sorts arrays by their JSON text, saw
+  an Appointment's participants as modified. The order is now returned byte for byte, plus the extension.
+- **A GET of an unknown `/cds-services/...` path answered with the console's HTML.** It now answers with JSON.
+- **The example rules used a display that HCPCS rejects.** The HCPCS URI is also inconsistent: HL7 Terminology prefers
+  `http://www.cms.gov/...`, while CRD 2.2.1 and CARIN BB 2.2.0 use `https://`. Rules now match either.
+
+The run also turned up two problems in the kit. Its own sample order-select request fails its context check, because CommunicationRequest
+is listed in `selections`. Its sample appointment has neither `start` nor `requestedPeriod`, which crd-apt1 requires. Both were
+adjusted for the run. encounter-start and encounter-discharge are not served.
+
 **Rechecked in October 2026, after reading implementers' questions in chat.fhir.org's Da Vinci channels.**
 
 - DTR had been built to 2.1.0 while CRD and PAS here are 2.2.1, the releases meant to be used together. Against DTR 2.2.0 the
@@ -331,7 +356,7 @@ questions. It now uses the serialiser that does.
   for `noauth` where the code is `no-auth`. Perfuse does not send `doc-purpose` (it is optional), so its output stays valid; the fault
   is reported to the guide's authors.
 
-What this does not show: CRD against a real EHR's CDS Hooks client, and DTR against a real SMART on FHIR documentation app.
+What this does not show: CRD against a production EHR (Inferno's simulated CRD client is the stand-in), and DTR against a real SMART on FHIR documentation app.
 
 ## HL7 DSDR signatures, against OpenSSL and xmlsec1
 

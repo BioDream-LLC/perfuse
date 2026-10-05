@@ -884,6 +884,7 @@ oidcDone:
 				return fmt.Errorf("-crd-rules: %w", err)
 			}
 			srv.CRD = rules
+			rules.Client = srv.OutboundClient()
 			log.Info("serving Da Vinci CRD over CDS Hooks", "discovery", srv.SelfURL+"/cds-services", "rules", len(rules.Rules))
 		}
 		if *rctc != "" {
@@ -999,6 +1000,10 @@ oidcDone:
 	mux := http.NewServeMux()
 	mux.Handle("/", srv.Handler())
 
+	if fhirStore == nil && srv.CRD != nil && srv.CRD.Members == "fhir" {
+		return fmt.Errorf("-crd-rules says members: fhir, so the payer's member records are this server's FHIR store, which is off; pass -fhir as well")
+	}
+
 	// Refused rather than ignored: an operator who asked for notifications and got none has no way to know why.
 	if fhirStore == nil && (*fhirSubscriptions || *fhirSubscriptionsHTTP) {
 		return fmt.Errorf("-fhir-subscriptions needs the FHIR endpoint, which is off; pass -fhir as well")
@@ -1036,6 +1041,12 @@ oidcDone:
 		if srv.CRD != nil {
 			// CRD and DTR in one process: an assertion CRD made can be answered by DTR from its id alone.
 			fhirSrv.DTRContext = srv.CRD.QuestionnairesFor
+			if srv.CRD.Members == "fhir" {
+				// The payer's member records are this store, so CRD can say no-member-found, coverage-not-found or
+				// no-active-coverage rather than answering as though every patient were a member.
+				srv.CRD.Check = fhirSrv.ResolveMember
+				srv.CRD.Authorized = fhirSrv.SatisfiedAuthorization
+			}
 		}
 		if *fhirMatchWithoutConsent && !*fhirPayerAPIs {
 			return fmt.Errorf("-fhir-member-match-without-consent has no effect without -fhir-payer-apis")

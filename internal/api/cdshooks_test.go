@@ -2,10 +2,17 @@ package api
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha512"
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/biodream-llc/perfuse/internal/crd"
 	"github.com/biodream-llc/perfuse/internal/store"
@@ -90,5 +97,68 @@ func TestAskingForADTRPackageFromTheConsole(t *testing.T) {
 	})
 	if rec.Code != http.StatusOK || !strings.Contains(string(got), `"name":"coverage"`) || !strings.Contains(string(got), `"name":"order"`) {
 		t.Errorf("%d %s; sent %s", rec.Code, rec.Body.String(), got)
+	}
+}
+
+func TestAnUnknownCDSServicePathAnswersInJSON(t *testing.T) {
+	h := newHarness(t)
+	rec := h.do("", http.MethodGet, "/cds-services/cds-services", nil)
+	if rec.Code != http.StatusMethodNotAllowed || !strings.HasPrefix(rec.Header().Get("Content-Type"), "application/json") {
+		t.Errorf("%d %s %s", rec.Code, rec.Header().Get("Content-Type"), rec.Body.String())
+	}
+}
+
+func TestDiscoveryDeclaresTheCRDVersionAndConfigurationOptions(t *testing.T) {
+	h := newHarness(t)
+	h.server.CRD, _ = crd.LoadRules("../../examples/crd/rules.yaml")
+	rec := h.do("", http.MethodGet, "/cds-services", nil)
+	body := rec.Body.String()
+	if !strings.Contains(body, `"davinci-crd.version":["2.2"]`) || !strings.Contains(body, `"code":"coverage-info"`) || !strings.Contains(body, `"type":"boolean"`) {
+		t.Errorf("%s", body)
+	}
+}
+
+// TestAnEHRsJWTWithoutASubjectIsAcceptedOnce is the CDS Hooks client JWT as the specification defines it and as the Inferno CRD
+// test kit sends it: iss, aud, exp, iat and jti, and no sub. Every such call used to be refused for having no subject. Its jti
+// is remembered, so the same token is refused a second time.
+func TestAnEHRsJWTWithoutASubjectIsAcceptedOnce(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b64 := func(b []byte) string { return base64.RawURLEncoding.EncodeToString(b) }
+	pad := func(b []byte) []byte { return append(make([]byte, 48-len(b)), b...) }
+	jwks := fmt.Sprintf(`{"keys":[{"kty":"EC","crv":"P-384","kid":"k1","alg":"ES384","use":"sig","x":%q,"y":%q}]}`,
+		b64(pad(key.X.Bytes())), b64(pad(key.Y.Bytes())))
+	keys := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(jwks)) }))
+	defer keys.Close()
+
+	h := newHarness(t)
+	h.server.CRD, _ = crd.LoadRules("../../examples/crd/rules.yaml")
+	h.server.CDSClients = []*CDSClient{{Issuer: "https://ehr.test", JWKSURL: keys.URL + "/jwks.json"}}
+
+	header := b64([]byte(`{"alg":"ES384","typ":"JWT","kid":"k1"}`))
+	now := time.Now().Unix()
+	payload := b64([]byte(fmt.Sprintf(`{"iss":"https://ehr.test","aud":%q,"exp":%d,"iat":%d,"jti":"once-only"}`,
+		h.server.publicBase()+"/cds-services/crd-order-sign", now+300, now)))
+	digest := sha512.Sum384([]byte(header + "." + payload))
+	r, s, err := ecdsa.Sign(rand.Reader, key, digest[:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	jwt := header + "." + payload + "." + b64(append(pad(r.Bytes()), pad(s.Bytes())...))
+
+	call := func() *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/cds-services/crd-order-sign", strings.NewReader(cdsCall))
+		req.Header.Set("Authorization", "Bearer "+jwt)
+		rec := httptest.NewRecorder()
+		h.handler.ServeHTTP(rec, req)
+		return rec
+	}
+	if rec := call(); rec.Code != http.StatusOK {
+		t.Fatalf("a JWT with no sub: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := call(); rec.Code != http.StatusUnauthorized || !strings.Contains(rec.Body.String(), "replay") {
+		t.Errorf("the same jti again: %d %s", rec.Code, rec.Body.String())
 	}
 }

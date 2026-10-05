@@ -229,6 +229,8 @@ type Server struct {
 	// is served.
 	DTRPackage func(ctx context.Context, params []byte) (status int, body []byte)
 
+	cdsJTIs jtiCache
+
 	// CDSClients are the EHRs trusted to call it with signed JWTs.
 	CDSClients []*CDSClient
 
@@ -315,6 +317,12 @@ func (s *Server) Handler() http.Handler {
 	// signed JWT or an API token - because neither is a Perfuse session.
 	mux.HandleFunc("GET /cds-services", s.handleCDSDiscovery)
 	mux.HandleFunc("POST /cds-services/{id}", s.handleCDSService)
+	// A GET under /cds-services is an API path, so it answers in JSON. It used to fall through to the web interface, which
+	// answered 200 with the console's HTML: the Inferno CRD test kit, given the base one level too deep, read that as invalid JSON.
+	mux.HandleFunc("GET /cds-services/{path...}", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Allow", http.MethodPost)
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "a CDS service is called with POST; discovery is GET /cds-services"})
+	})
 
 	// Probes are unauthenticated. A kubelet has no credentials, and issuing it
 	// some would be a worse trade than disclosing that a process is running.

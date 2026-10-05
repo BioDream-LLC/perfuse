@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/crd"
 	"net/http"
 	"strings"
 	"time"
@@ -474,4 +475,140 @@ func groupLimitedPath(r *http.Request) bool {
 	}
 
 	return false
+}
+
+// ResolveMember resolves an EHR's Coverage and Patient against this payer's member records - the Coverages and Patients in
+// this store, the same ones $member-match reads - for CRD's not-covered reasons.
+//
+//   - the coverage's subscriber id or identifier finds no Coverage here, and no Patient matches: no-member-found
+//   - a Patient matches but no Coverage does, or several do: coverage-not-found
+//   - the one Coverage found is not active, or not in force now: no-active-coverage
+func (s *Server) ResolveMember(ctx context.Context, coverage, patient map[string]any, now time.Time) (crd.Membership, string, error) {
+	req := &cms0057.MatchRequest{Patient: patient, CoverageToMatch: coverage}
+	candidates, err := s.matchCandidates(ctx, req)
+	if err != nil {
+		return "", "", err
+	}
+	var same []cms0057.MatchCandidate
+	if len(patient) > 0 {
+		for _, c := range candidates {
+			if found, _ := cms0057.Match(&cms0057.MatchRequest{Patient: patient}, []cms0057.MatchCandidate{c}); found != nil {
+				same = append(same, c)
+			}
+		}
+	} else {
+		same = candidates
+	}
+	switch {
+	case len(same) == 1:
+		st, _ := same[0].Coverage["status"].(string)
+		if st != "" && st != "active" {
+			return crd.NoActiveCoverage, "The member's coverage with this plan is " + st + ".", nil
+		}
+		p, _ := same[0].Coverage["period"].(map[string]any)
+		today := now.UTC().Format("2006-01-02")
+		if e, _ := p["end"].(string); e != "" && e[:min(10, len(e))] < today {
+			return crd.NoActiveCoverage, "The member's coverage with this plan ended on " + e[:min(10, len(e))] + ".", nil
+		}
+		if b, _ := p["start"].(string); b != "" && b[:min(10, len(b))] > today {
+			return crd.NoActiveCoverage, "The member's coverage with this plan does not start until " + b[:min(10, len(b))] + ".", nil
+		}
+		return crd.MemberActive, "", nil
+	case len(same) > 1:
+		return crd.CoverageNotFound, fmt.Sprintf("%d of this plan's coverages match, so the coverage cannot be resolved to one.", len(same)), nil
+	}
+	// No coverage matched. Whether the person is a member decides which reason: a known member with an unknown coverage is
+	// coverage-not-found.
+	if len(patient) > 0 {
+		family, birth := patientKeys(patient)
+		if family != "" && birth != "" {
+			q, err := ParseSearch("Patient", map[string][]string{"family": {family}, "birthdate": {birth}, "_count": {"5"}})
+			if err != nil {
+				return "", "", err
+			}
+			res, err := s.Store.Search(ctx, q)
+			if err != nil {
+				return "", "", err
+			}
+			if len(res.Resources) > 0 {
+				return crd.CoverageNotFound, "The patient is a member, but the coverage sent does not match any of their coverages with this plan.", nil
+			}
+		}
+	}
+	return crd.NoMemberFound, "No member of this plan matches the patient and coverage sent.", nil
+}
+
+func patientKeys(p map[string]any) (family, birth string) {
+	birth, _ = p["birthDate"].(string)
+	if names, ok := p["name"].([]any); ok && len(names) > 0 {
+		if n, ok := names[0].(map[string]any); ok {
+			family, _ = n["family"].(string)
+		}
+	}
+	return family, birth
+}
+
+// SatisfiedAuthorization finds a prior authorization this payer has approved for the patient and one of the codes, and
+// returns its number, for CRD's satisfied. It reads the ClaimResponses in this store - where PAS decisions are kept - whose
+// outcome is complete or partial, that carry a preAuthRef, whose preAuthPeriod (if any) covers now, and whose claim or
+// added items name one of the codes.
+func (s *Server) SatisfiedAuthorization(ctx context.Context, coverage, patient map[string]any, codes []string, now time.Time) (string, error) {
+	candidates, err := s.matchCandidates(ctx, &cms0057.MatchRequest{Patient: patient, CoverageToMatch: coverage})
+	if err != nil || len(candidates) == 0 {
+		return "", err
+	}
+	want := map[string]bool{}
+	for _, c := range codes {
+		want[c] = true
+	}
+	today := now.UTC().Format("2006-01-02")
+	for _, cand := range candidates {
+		pid, _ := cand.Patient["id"].(string)
+		if pid == "" {
+			continue
+		}
+		q, err := ParseSearch("ClaimResponse", map[string][]string{"patient": {"Patient/" + pid}, "_count": {"100"}})
+		if err != nil {
+			return "", err
+		}
+		res, err := s.Store.Search(ctx, q)
+		if err != nil {
+			return "", err
+		}
+		for _, r := range res.Resources {
+			cr, err := asTree(r)
+			if err != nil {
+				return "", err
+			}
+			ref, _ := cr["preAuthRef"].(string)
+			outcome, _ := cr["outcome"].(string)
+			if ref == "" || (outcome != "complete" && outcome != "partial") || cr["status"] == "cancelled" || cr["status"] == "entered-in-error" {
+				continue
+			}
+			if p := asMapAny(cr["preAuthPeriod"]); len(p) > 0 {
+				if e, _ := p["end"].(string); e != "" && e[:min(10, len(e))] < today {
+					continue
+				}
+				if b, _ := p["start"].(string); b != "" && b[:min(10, len(b))] > today {
+					continue
+				}
+			}
+			items := asSliceAny(cr["addItem"])
+			if req, _ := asMapAny(cr["request"])["reference"].(string); strings.HasPrefix(req, "Claim/") {
+				if c, err := s.Store.Get(ctx, "Claim", strings.TrimPrefix(req, "Claim/")); err == nil && c != nil {
+					if ct, err := asTree(c); err == nil {
+						items = append(items, asSliceAny(ct["item"])...)
+					}
+				}
+			}
+			for _, it := range items {
+				for _, cd := range asSliceAny(asMapAny(asMapAny(it)["productOrService"])["coding"]) {
+					if code, _ := asMapAny(cd)["code"].(string); want[code] {
+						return ref, nil
+					}
+				}
+			}
+		}
+	}
+	return "", nil
 }

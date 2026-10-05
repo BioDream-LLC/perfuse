@@ -839,7 +839,7 @@ function CoverageRequirements() {
   }
 
   const info = (resp?.systemActions ?? []).flatMap((a) =>
-    ((a.resource.extension as { url: string; extension?: { url: string; valueCode?: string; valueCanonical?: string }[] }[]) ?? [])
+    ((a.resource.extension as { url: string; extension?: CoverageInfoPart[] }[]) ?? [])
       .filter((e) => e.url.endsWith('ext-coverage-information'))
       .map((e) => e.extension ?? []),
   )
@@ -883,10 +883,11 @@ function CoverageRequirements() {
             <Section key={i} title="Coverage information on the order">
               <ul className="space-y-0.5 font-mono text-xs text-slate-300" data-testid="crd-coverage-info">
                 {ext
-                  .filter((x) => x.valueCode || x.valueCanonical)
-                  .map((x) => (
-                    <li key={x.url + (x.valueCode ?? x.valueCanonical)}>
-                      {x.url}: {x.valueCode ?? x.valueCanonical}
+                  .map((x) => [x.url, partText(x)] as const)
+                  .filter(([, text]) => text)
+                  .map(([url, text], j) => (
+                    <li key={j}>
+                      {url}: {text}
                     </li>
                   ))}
               </ul>
@@ -905,6 +906,35 @@ function CoverageRequirements() {
       )}
     </div>
   )
+}
+
+/** CoverageInfoPart is one element of a coverage-information extension. */
+interface CoverageInfoPart {
+  url: string
+  valueCode?: string
+  valueCanonical?: string
+  valueString?: string
+  valueDate?: string
+  valueCodeableConcept?: { text?: string; coding?: { code?: string }[] }
+  valueCoding?: { code?: string; display?: string }
+  valueReference?: { reference?: string; display?: string }
+  valueContactDetail?: { name?: string; telecom?: { value?: string }[] }
+  extension?: { url: string; valueString?: string; valueBoolean?: boolean; valueCodeableConcept?: { coding?: { code?: string }[] } }[]
+}
+
+/** partText words one coverage-information element, so every part of the payer's answer is on screen. */
+function partText(x: CoverageInfoPart): string {
+  if (x.valueCode || x.valueCanonical || x.valueString || x.valueDate) return (x.valueCode ?? x.valueCanonical ?? x.valueString ?? x.valueDate)!
+  if (x.valueCodeableConcept) return [x.valueCodeableConcept.coding?.[0]?.code, x.valueCodeableConcept.text].filter(Boolean).join(' - ')
+  if (x.valueCoding) return [x.valueCoding.code, x.valueCoding.display].filter(Boolean).join(' ')
+  if (x.valueReference) return x.valueReference.reference ?? x.valueReference.display ?? ''
+  if (x.valueContactDetail) return [x.valueContactDetail.name, ...(x.valueContactDetail.telecom ?? []).map((t) => t.value)].filter(Boolean).join(', ')
+  if (x.url === 'detail' && x.extension) {
+    const code = x.extension.find((e) => e.url === 'code')?.valueCodeableConcept?.coding?.[0]?.code
+    const v = x.extension.find((e) => e.url === 'value')
+    return `${code}: ${v?.valueString ?? String(v?.valueBoolean ?? '')}`
+  }
+  return ''
 }
 
 /** PackageSummary lists what each DTR package bundle holds: the questionnaire and its questions, the response to fill in, libraries. */
