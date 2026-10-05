@@ -790,3 +790,23 @@ func TestNotesAreActionable(t *testing.T) {
 		}
 	}
 }
+
+// A unit the sender marks as UCUM in OBX-6.3 is a UCUM code, even one no lookup table lists. Viral loads are the usual case
+// (chat.fhir.org #V2, "Representing exponential numbers in OBX-5", 2026-04): {copies}/mL, with a value in E notation.
+func TestAUnitMarkedUCUMIsKeptAsUCUM(t *testing.T) {
+	const msg = "MSH|^~\\&|A|B|C|D|20260916120000||ORU^R01^ORU_R01|1|P|2.5.1\r" +
+		"PID|1||123^^^H^MR||DOE^JANE||19800101|F\rOBR|1||F1|25836-8^HIV 1 RNA^LN\r" +
+		"OBX|1|NM|25836-8^HIV 1 RNA^LN||1.2E+05|{copies}/mL^copies per mL^UCUM|||||F\r" +
+		"OBX|2|NM|25836-8^HIV 1 RNA^LN||5|not a unit^^UCUM|||||F\r"
+	obs := findAll[*fhir.Observation](convert(t, msg, Options{}))
+	if len(obs) != 2 {
+		t.Fatalf("%d observations", len(obs))
+	}
+	q := obs[0].ValueQuantity
+	if q == nil || q.System != fhir.SystemUCUM || q.Code != "{copies}/mL" || q.Unit != "copies per mL" || q.Value == nil || *q.Value != 120000 {
+		t.Errorf("viral load: %+v", q)
+	}
+	if q := obs[1].ValueQuantity; q == nil || q.Code != "" || q.System != "" {
+		t.Errorf("a unit with a space is not UCUM whatever OBX-6.3 says: %+v", q)
+	}
+}

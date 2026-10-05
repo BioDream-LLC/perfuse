@@ -37,6 +37,9 @@ type indexEntry struct {
 	// value rather than instead of it, because folding at query time would put LOWER() around every ordinary string search
 	// and turn the common query into a table scan to serve the rare one.
 	valueRaw string
+
+	// valueHi is the last instant of a date parameter's range, whose first instant is value. Empty for every other kind.
+	valueHi string
 }
 
 // SearchParams lists the parameters supported per resource type. This is the same
@@ -266,8 +269,24 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		if isStringParam(param) {
 			entry.value = strings.ToLower(value)
 		}
+		if isDateParam(param) {
+			lo, hi, err := dateRange(value)
+			if err != nil {
+				return
+			}
+			entry.value, entry.valueHi = lo, hi
+		}
 
 		out = append(out, entry)
+	}
+	// addPeriod indexes a Period as the one interval it is, rather than its start alone.
+	addPeriod := func(param string, p *fhir.Period) {
+		if p == nil {
+			return
+		}
+		if lo, hi, ok := periodRange(p.Start, p.End); ok {
+			out = append(out, indexEntry{param: param, value: lo, valueHi: hi, valueRaw: p.Start + "/" + p.End})
+		}
 	}
 
 	// addRef indexes a reference with the type it points at.
@@ -328,9 +347,7 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		for i := range v.Class {
 			addCodeable("class", &v.Class[i])
 		}
-		if v.ActualPeriod != nil {
-			add("date", v.ActualPeriod.Start, "")
-		}
+		addPeriod("date", v.ActualPeriod)
 
 	case *fhir.Observation:
 		addIdentifiers(v.Identifier)
@@ -446,9 +463,7 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		// The period start when there is no single instant, so a procedure recorded as a range is still findable
 		// by date rather than falling out of every date search.
 		add("date", v.PerformedDateTime, "")
-		if v.PerformedPeriod != nil {
-			add("date", v.PerformedPeriod.Start, "")
-		}
+		addPeriod("date", v.PerformedPeriod)
 
 	case *fhir.DocumentReference:
 		addIdentifiers(v.Identifier)
@@ -511,7 +526,7 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		// CARIN's service-date and billable-period-start both search the start of the billable period, which is the date
 		// of service a member recognises.
 		if v.BillablePeriod != nil {
-			add("service-date", v.BillablePeriod.Start, "")
+			addPeriod("service-date", v.BillablePeriod)
 			add("billable-period-start", v.BillablePeriod.Start, "")
 		}
 
@@ -1310,6 +1325,15 @@ func ParseSearch(resourceType string, values map[string][]string) (*SearchQuery,
 
 		for _, v := range vals {
 			if v != "" {
+				// A date that cannot be read is refused here, with the parameter named, rather than failing the query later
+				// as a server error.
+				if isDateParam(key) && key != "_lastUpdated" {
+					for _, one := range splitOr(v) {
+						if _, _, err := dateClause(one); err != nil {
+							return nil, fmt.Errorf("%s: %w", key, err)
+						}
+					}
+				}
 				q.Criteria[key] = append(q.Criteria[key], v)
 			}
 		}
@@ -1385,12 +1409,12 @@ func (s *Store) Search(ctx context.Context, q *SearchQuery) (*SearchResult, erro
 					}
 					system, value := splitToken(v)
 					if isDateParam(param) {
-						op, normalised, err := parseDatePrefix(v)
+						cond, cargs, err := dateClause(v)
 						if err != nil {
 							return nil, err
 						}
-						clause.WriteString("x.value " + op + " ?")
-						args = append(args, normalised)
+						clause.WriteString(cond)
+						args = append(args, cargs...)
 						continue
 					}
 					if isReferenceParam(param) {
@@ -1540,13 +1564,34 @@ func token(system, value string) string {
 	return system + "|" + value
 }
 
-// splitToken separates a token search value into its system and code halves.
+// splitToken separates a token search value into its system and code halves, at the first pipe that is not escaped. FHIR escapes
+// a literal | in a value as \|, so an identifier like MR0909981\|936\|UNIV is one code with no system: splitting at the last
+// pipe, as this used to, read it as system "MR0909981\|936\" and code "UNIV", and it matched nothing.
 func splitToken(v string) (system, value string) {
-	i := strings.LastIndex(v, "|")
-	if i < 0 {
-		return "", v
+	for i := 0; i < len(v); i++ {
+		switch v[i] {
+		case '\\':
+			i++
+		case '|':
+			return unescapeSearch(v[:i]), unescapeSearch(v[i+1:])
+		}
 	}
-	return v[:i], v[i+1:]
+	return "", unescapeSearch(v)
+}
+
+// unescapeSearch undoes FHIR search escaping: \| \, \$ and \\ stand for the character itself.
+func unescapeSearch(v string) string {
+	if !strings.Contains(v, "\\") {
+		return v
+	}
+	var b strings.Builder
+	for i := 0; i < len(v); i++ {
+		if v[i] == '\\' && i+1 < len(v) && strings.IndexByte(`|,$\`, v[i+1]) >= 0 {
+			i++
+		}
+		b.WriteByte(v[i])
+	}
+	return b.String()
 }
 
 // parseDatePrefix handles the comparison prefixes FHIR uses on date searches.
@@ -1717,10 +1762,10 @@ type pathParam struct {
 }
 
 var pathParams = map[string][]pathParam{
-	"CarePlan":           {{"date", "date", []string{"period.start", "period.end"}}},
+	"CarePlan":           {{"date", "date", []string{"period"}}},
 	"CareTeam":           {{"role", "token", []string{"participant.role"}}},
-	"Condition":          {{"asserted-date", "date", []string{"extension[http://hl7.org/fhir/StructureDefinition/condition-assertedDate].valueDateTime"}}, {"abatement-date", "date", []string{"abatementDateTime", "abatementPeriod.start", "abatementPeriod.end"}}},
-	"DocumentReference":  {{"period", "date", []string{"context.period.start", "context.period.end"}}},
+	"Condition":          {{"asserted-date", "date", []string{"extension[http://hl7.org/fhir/StructureDefinition/condition-assertedDate].valueDateTime"}}, {"abatement-date", "date", []string{"abatementDateTime", "abatementPeriod"}}},
+	"DocumentReference":  {{"period", "date", []string{"context.period"}}},
 	"Encounter":          {{"location", "reference", []string{"location.location"}}, {"type", "token", []string{"type"}}, {"discharge-disposition", "token", []string{"hospitalization.dischargeDisposition"}}},
 	"Goal":               {{"target-date", "date", []string{"target.dueDate"}}, {"description", "token", []string{"description"}}},
 	"Location":           {{"address", "string", []string{"address.line", "address.city", "address.state", "address.postalCode", "address.country", "address.text"}}, {"address-city", "string", []string{"address.city"}}, {"address-state", "string", []string{"address.state"}}, {"address-postalcode", "string", []string{"address.postalCode"}}},
@@ -1771,6 +1816,18 @@ func pathEntries(r fhir.Resource) []indexEntry {
 							t = t[j+1:]
 						}
 						out = append(out, indexEntry{param: d.param, value: s[i+1:], refType: t})
+					}
+				case "date":
+					if str, ok := v.(string); ok {
+						if lo, hi, err := dateRange(str); err == nil {
+							out = append(out, indexEntry{param: d.param, value: lo, valueHi: hi, valueRaw: str})
+						}
+					} else if p, ok := v.(map[string]any); ok {
+						start, _ := p["start"].(string)
+						end, _ := p["end"].(string)
+						if lo, hi, ok := periodRange(start, end); ok {
+							out = append(out, indexEntry{param: d.param, value: lo, valueHi: hi, valueRaw: start + "/" + end})
+						}
 					}
 				default:
 					if str, ok := v.(string); ok && strings.TrimSpace(str) != "" {
@@ -1833,6 +1890,12 @@ func splitOr(v string) []string {
 		switch {
 		case v[i] == '\\' && i+1 < len(v) && v[i+1] == ',':
 			cur.WriteByte(',')
+			i++
+		case v[i] == '\\' && i+1 < len(v):
+			// Any other escape is kept whole for the type's own parsing (a token's \| is not a system separator), and an escaped
+			// backslash before a comma does not escape the comma.
+			cur.WriteByte(v[i])
+			cur.WriteByte(v[i+1])
 			i++
 		case v[i] == ',':
 			out = append(out, cur.String())

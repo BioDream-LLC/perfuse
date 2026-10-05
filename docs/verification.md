@@ -733,6 +733,31 @@ It also found three defects in the tests themselves. Each one made the suite rep
 
 The complete itemised list is in the commit message of `36118b7`.
 
+## Defects found by reading chat.fhir.org
+
+Six months of #implementers, #inferno, #V2, #v2 to FHIR, the Da Vinci streams and others were read for threads where the
+behaviour being discussed is something Perfuse does. Each candidate was tested against Perfuse before it was called a defect.
+Four were real, and each now has a test that failed before the fix:
+
+- **Date search compared strings, against a Period's start alone** (#implementers, "Period Search"). An Encounter from 29 July to
+  2 August was not found by `date=ge1950-08-01`, a time with an offset compared wrongly with one in UTC, and `date=2026` was a
+  prefix match. Dates are now indexed as ranges in UTC, Periods whole, and every prefix follows R4. Inferno US Core 6.1.0 FHIR API
+  was rerun afterwards: 323 pass, 19 fail and 111 skip, the same as before, with the failures all in the published example data.
+- **A pipe escaped in a search value split the value** (#inferno, "Search by identifier containing pipe characters").
+  `identifier=MR0909981\|936\|UNIV OF CA` was read as a system and a code and matched nothing.
+- **Two contained resources could share an id** (#implementers, "uniqueness of contained resource id"). The resource was stored,
+  and `#id` then meant either. Such a resource is now refused, on create, update and in a transaction.
+- **A CRD card summary could exceed CDS Hooks' 140-character limit** (#Da Vinci CRD, "CDS / CRD logical model potential gaps").
+  The summary includes the payer's rule description. A long one is now cut at a word, and the full text starts the detail.
+
+One more turned up while testing a thread's example (#V2, "Representing exponential numbers in OBX-5"): a unit marked UCUM in
+OBX-6.3, such as `{copies}/mL`, was reported as having no UCUM code because it was not in Perfuse's table of common spellings. It is
+now kept as a UCUM code, unless it cannot be one (a space outside braces, unpaired brackets).
+
+Checked and found correct: subscription notification Bundles carry `request` and `response` on every entry, history entries'
+`request.url` is the interaction rather than the history URL, `$log-questionnaire-errors` pairs questionnaires and outcomes by
+position, DTR accepts `referenced`, and bulk export says `requiresAccessToken: true`.
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was

@@ -101,7 +101,8 @@ var schema = []string{
 		value         TEXT NOT NULL,
 		system        TEXT,
 		ref_type      TEXT,
-		value_raw     TEXT
+		value_raw     TEXT,
+		value_hi      TEXT
 	)`,
 
 	`CREATE INDEX IF NOT EXISTS fhir_search_lookup
@@ -149,6 +150,17 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err := s.addValueRaw(ctx); err != nil {
 		return err
 	}
+	// value_hi: the end of a date parameter's range. Added empty; the index version below rebuilds every row with it.
+	var hasHi int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM pragma_table_info('fhir_search') WHERE name = 'value_hi'`).Scan(&hasHi); err != nil {
+		return fmt.Errorf("fhirserver: checking for the value_hi column: %w", err)
+	}
+	if hasHi == 0 {
+		if _, err := s.db.ExecContext(ctx, `ALTER TABLE fhir_search ADD COLUMN value_hi TEXT`); err != nil {
+			return fmt.Errorf("fhirserver: adding the value_hi column: %w", err)
+		}
+	}
 
 	return s.ensureIndexVersion(ctx)
 }
@@ -157,8 +169,8 @@ func (s *Store) migrate(ctx context.Context) error {
 //
 // A new search parameter only covers resources written after it exists unless the stored ones are indexed again, and a search
 // that silently misses every older record reads as "there are none". 2: the CARIN and PDex parameters on ExplanationOfBenefit,
-// Coverage and Group.
-const indexVersion = "2"
+// Coverage and Group. 3: dates as ranges, in UTC, with Periods whole (value_hi).
+const indexVersion = "3"
 
 // ensureIndexVersion re-indexes the store once when the index definition has changed since it was last built.
 func (s *Store) ensureIndexVersion(ctx context.Context) error {
@@ -666,10 +678,10 @@ func (s *Store) reindexAll(ctx context.Context) error {
 func insertIndexEntries(ctx context.Context, tx *sql.Tx, r fhir.Resource) error {
 	for _, entry := range indexEntries(r) {
 		if _, err := tx.ExecContext(ctx,
-			`INSERT INTO fhir_search (resource_type, resource_id, param, value, system, ref_type, value_raw)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO fhir_search (resource_type, resource_id, param, value, system, ref_type, value_raw, value_hi)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			r.ResourceTypeName(), r.ResourceID(), entry.param,
-			entry.value, entry.system, entry.refType, entry.valueRaw); err != nil {
+			entry.value, entry.system, entry.refType, entry.valueRaw, nullIfEmpty(entry.valueHi)); err != nil {
 			return err
 		}
 	}
@@ -718,4 +730,11 @@ func referenceType(ref *fhir.Reference) string {
 	}
 
 	return candidate
+}
+
+func nullIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }

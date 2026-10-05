@@ -773,3 +773,24 @@ func TestSearchByPOST(t *testing.T) {
 		t.Errorf("%d %s", rec.Code, rec.Body)
 	}
 }
+
+// An identifier value with pipes in it, escaped as FHIR requires. Inferno's US Core kit hit this with
+// "MR0909981|936|1730329319|UNIV OF CA" (chat.fhir.org #inferno, 2026-05).
+func TestSearchByAnIdentifierWithEscapedPipes(t *testing.T) {
+	_, h := newTestServer(t)
+	do(t, h, http.MethodPost, "/Patient",
+		`{"resourceType":"Patient","identifier":[{"system":"http://example.org/mrn","value":"MR0909981|936|UNIV OF CA"}]}`)
+	do(t, h, http.MethodPost, "/Patient",
+		`{"resourceType":"Patient","identifier":[{"system":"http://example.org/mrn","value":"a,b"}]}`)
+	for q, want := range map[string]float64{
+		`identifier=MR0909981%5C%7C936%5C%7CUNIV%20OF%20CA`:                          1,
+		`identifier=http://example.org/mrn%7CMR0909981%5C%7C936%5C%7CUNIV%20OF%20CA`: 1,
+		`identifier=http://wrong%7CMR0909981%5C%7C936%5C%7CUNIV%20OF%20CA`:           0,
+		`identifier=a%5C,b`: 1,
+		`identifier=a%5C,b,MR0909981%5C%7C936%5C%7CUNIV%20OF%20CA`: 2,
+	} {
+		if total := tree(t, do(t, h, http.MethodGet, "/Patient?"+q, nil))["total"].(float64); total != want {
+			t.Errorf("%s: total %v, want %v", q, total, want)
+		}
+	}
+}

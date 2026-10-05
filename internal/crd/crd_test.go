@@ -198,3 +198,23 @@ func TestAnApprovedAuthorizationMakesTheRequirementSatisfied(t *testing.T) {
 		t.Errorf("%s %s", ext, resp.Cards[0].Summary)
 	}
 }
+
+// CDS Hooks limits a card summary to under 140 characters, and the summary carries the payer's own rule description.
+func TestACardSummaryStaysUnder140Characters(t *testing.T) {
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	long := strings.Repeat("Home oxygen concentrator with portable cylinders ", 4)
+	for i := range rules.Rules {
+		rules.Rules[i].Description = long
+	}
+	resp, err := rules.Evaluate(request(t, order), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := resp.Cards[0]
+	if n := len([]rune(c.Summary)); n >= 140 {
+		t.Errorf("summary is %d characters: %q", n, c.Summary)
+	}
+	if !strings.HasPrefix(c.Detail, strings.TrimSpace(long)) || !strings.Contains(c.Detail, "prior authorization required") {
+		t.Errorf("the full summary did not move to the detail: %q", c.Detail)
+	}
+}

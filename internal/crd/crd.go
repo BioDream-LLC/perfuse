@@ -757,7 +757,22 @@ func (r *Rules) card(rule Rule, matched bool, ref string, source map[string]any)
 			c.Links[i].Type = "absolute"
 		}
 	}
+	c.Summary, c.Detail = clipSummary(c.Summary, c.Detail)
 	return c
+}
+
+// clipSummary keeps a card summary under the 140 characters CDS Hooks allows. The summary includes the rule's description,
+// which a payer writes and can make as long as it likes; the full text moves to the start of the detail, so nothing is lost.
+func clipSummary(summary, detail string) (string, string) {
+	r := []rune(summary)
+	if len(r) < 140 {
+		return summary, detail
+	}
+	cut := string(r[:138])
+	if i := strings.LastIndex(cut, " "); i > 100 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,;:") + "…", strings.TrimSpace(summary + ". " + detail)
 }
 
 // sameSystem compares code systems, treating HCPCS's two URIs as one. HL7 Terminology prefers http://, while CRD 2.2.1 and
@@ -1039,6 +1054,7 @@ func (r *Rules) coverageExplained(coverage, covered, reason, text string, now ti
 }
 
 func (r *Rules) explainedCard(ref string, source map[string]any, summary, detail string) Card {
+	summary, detail = clipSummary(summary, detail)
 	return Card{UUID: newUUID(), Source: source, Indicator: "warning", Summary: summary, Detail: detail,
 		Extension: map[string]any{"davinci-crd.associated-resource": []any{map[string]string{"reference": ref}}}}
 }

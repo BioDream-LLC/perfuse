@@ -823,6 +823,11 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 				fmt.Sprintf("entry %d: %s", i, err.Error()))
 			return
 		}
+		if dup := duplicateContainedID(entry.Resource); dup != "" {
+			s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "invariant",
+				fmt.Sprintf("entry %d: two contained resources share the id %q", i, dup))
+			return
+		}
 
 		method := "PUT"
 		url := ""
@@ -1021,6 +1026,12 @@ func (s *Server) decodeResource(w http.ResponseWriter, r *http.Request, expected
 		return nil, false
 	}
 
+	if dup := duplicateContainedID(body); dup != "" {
+		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "invariant", fmt.Sprintf(
+			"two contained resources share the id %q; a reference to #%s could mean either, so ids must be unique within contained", dup, dup))
+		return nil, false
+	}
+
 	// A Patient posted to /Observation is a client bug, and storing it under the
 	// requested type would corrupt the data quietly.
 	if expectedType != "" && resource.ResourceTypeName() != expectedType {
@@ -1175,3 +1186,28 @@ func sortStrings(s []string) {
 
 // ensure context is used for the imports above.
 var _ = context.Background
+
+// duplicateContainedID returns an id that two contained resources share, or "". FHIR requires contained ids to be unique within
+// the resource whatever their type, since #id names no type, but no invariant says so in R4, and other servers keep the first and
+// silently drop the second (chat.fhir.org #implementers, "uniqueness of contained resource id", 2026-07).
+func duplicateContainedID(body []byte) string {
+	var r struct {
+		Contained []struct {
+			ID string `json:"id"`
+		} `json:"contained"`
+	}
+	if json.Unmarshal(body, &r) != nil {
+		return ""
+	}
+	seen := map[string]bool{}
+	for _, c := range r.Contained {
+		if c.ID == "" {
+			continue
+		}
+		if seen[c.ID] {
+			return c.ID
+		}
+		seen[c.ID] = true
+	}
+	return ""
+}

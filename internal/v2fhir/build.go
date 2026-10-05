@@ -1032,6 +1032,15 @@ func (c *converter) quantity(value float64, comparator, unit, prefix string) *fh
 	if code, ok := mapUCUM(unit); ok {
 		q.System = fhir.SystemUCUM
 		q.Code = code
+	} else if declared := strings.ToUpper(strings.TrimSpace(c.get(prefix + "-6.3"))); (declared == "UCUM" || declared == "UCUM:1.9" ||
+		declared == "UCUM 1.9") && plausibleUCUM(unit) {
+		// OBX-6.3 says the unit is UCUM, so OBX-6.1 is a UCUM code as sent - {copies}/mL, 10*3/uL, [IU]/L - and is kept as
+		// one. It used to be looked up in a table of common spellings and, when absent, reported as having no UCUM code at all.
+		q.System = fhir.SystemUCUM
+		q.Code = unit
+		if text := strings.TrimSpace(c.get(prefix + "-6.2")); text != "" {
+			q.Unit = text
+		}
 	} else {
 		// Leaving the code out is the safe failure. Guessing a UCUM code can turn
 		// a normal result into an alarming one.
@@ -1422,4 +1431,28 @@ func placeholderSystem(authority string) string {
 func hasV2Offset(value string) bool {
 	value = strings.TrimSpace(value)
 	return strings.IndexAny(value[min(1, len(value)):], "+-") >= 0
+}
+
+// plausibleUCUM rejects what cannot be a UCUM code whatever OBX-6.3 says: UCUM has no spaces outside annotations, and its
+// brackets and braces pair.
+func plausibleUCUM(code string) bool {
+	depth := map[rune]int{}
+	inBrace := false
+	for _, r := range code {
+		switch r {
+		case '{':
+			inBrace = true
+		case '}':
+			inBrace = false
+		case ' ':
+			if !inBrace {
+				return false
+			}
+		case '[', ']', '(', ')':
+			if !inBrace {
+				depth[r]++
+			}
+		}
+	}
+	return !inBrace && depth['['] == depth[']'] && depth['('] == depth[')']
 }

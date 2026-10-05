@@ -351,6 +351,12 @@ Decisions worth knowing:
   The US Core 6.1 server search parameters, `_revinclude=Provenance:target` and
   `_include=MedicationRequest:medication` are supported. The Inferno US Core 6.1.0 FHIR
   API tests pass except where the published examples fail current terminology.
+- **Dates search as ranges.** `2026` is the whole year and a Period runs from its start to its end, open at a missing end, so
+  `Encounter?date=ge2026-08-01` finds a stay that began in July. Offsets are honoured, and `eq ge le gt lt sa eb ap ne` follow
+  R4's definitions. An unreadable date is a 400 naming the parameter.
+- **Escapes in search values are honoured.** `identifier=MR1\|936` is one value with a pipe in it, not a system and a code, and
+  `\,` is a comma rather than an OR.
+- **Contained ids must be unique.** Two contained resources with one id are refused with a 400, since `#id` names no type.
 - **The capability statement is public**: clients read it before they hold a token, and it
   lists US Core's `supportedProfile`s. Everything else needs a token.
 - **Validation on write is on by default.** A store that accepts anything is
