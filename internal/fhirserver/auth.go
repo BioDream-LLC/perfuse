@@ -416,6 +416,9 @@ func (s *Server) authFailure(w http.ResponseWriter, r *http.Request, status int,
 type ScopeGrant struct {
 	Read  bool
 	Write bool
+	// Filters are the search parameters of granular read scopes (category=laboratory), each a query string. A resource type
+	// with filters and no unfiltered read may be read only where one of them matches.
+	Filters []string
 }
 
 // parseSMARTScopes turns a scope string into per-resource grants.
@@ -442,6 +445,13 @@ func parseSMARTScopes(scopes []string) map[string]ScopeGrant {
 		}
 
 		rest := scope[slash+1:]
+		// A SMART 2 granular scope narrows a grant with search parameters after a question mark:
+		// patient/Observation.rs?category=laboratory. The query is not part of the permission letters - read as letters, the
+		// c and d of "category" granted writes.
+		var filter string
+		if q := strings.IndexByte(rest, '?'); q >= 0 {
+			rest, filter = rest[:q], rest[q+1:]
+		}
 		dot := strings.LastIndex(rest, ".")
 		if dot < 0 {
 			continue
@@ -451,6 +461,14 @@ func parseSMARTScopes(scopes []string) map[string]ScopeGrant {
 		actions := rest[dot+1:]
 
 		grant := out[resource]
+		if filter != "" {
+			// Recorded, and limited to reading: a filtered grant to change data is not something SMART defines.
+			if strings.ContainsAny(actions, "rs") {
+				grant.Filters = append(grant.Filters, filter)
+			}
+			out[resource] = grant
+			continue
+		}
 
 		switch actions {
 		case "read":
