@@ -881,8 +881,10 @@ func (f *FHIRDestination) validate() []error {
 	if e := f.ECR; e != nil {
 		if strings.TrimSpace(e.Source) == "" {
 			errs = append(errs, errors.New("fhir.ecr.source is required: it is where the agency sends the Reportability Response"))
-		} else if u, err := url.Parse(e.Source); err != nil || u.Scheme != "https" || u.Host == "" {
-			errs = append(errs, fmt.Errorf("fhir.ecr.source %q must be an absolute https URL", e.Source))
+		} else if u, err := url.Parse(e.Source); err != nil || u.Host == "" ||
+			!(u.Scheme == "https" || u.Scheme == "http" && isLocalHost(u.Hostname())) {
+			// Plain http only on this machine, as for fhir.url: a test agency on loopback, never a real one.
+			errs = append(errs, fmt.Errorf("fhir.ecr.source %q must be an absolute https URL (http only to this machine)", e.Source))
 		}
 		for _, x := range []struct{ v, name string }{{e.Facility.Name, "name"}, {e.Facility.Phone, "phone"}, {e.Facility.City, "city"}, {e.Facility.State, "state"}} {
 			if strings.TrimSpace(x.v) == "" {

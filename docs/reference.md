@@ -427,6 +427,43 @@ Each of these is logged as a note. Practitioners are named through
 PractitionerRoles, as eCR requires. An NPI in `XCN.9` (by OID or as `NPI`) gets the
 `us-npi` system.
 
+#### The Reportability Response
+
+The agency answers an eICR with a Reportability Response (RR): whether the eICR was
+processed and, per condition, whether it is reportable, to which agency, and how soon.
+It comes back as an eCR message to `source`'s `$process-message`.
+
+`serve -ecr-responses` takes them there. Each RR is stored, exactly as received, as a
+DocumentReference (LOINC 88085-6 Reportability response) whose attachment is the RR
+document, at an id derived from the identifier of the eICR it answers. That address is
+logged when the report is sent (`case report sent ... eicr=urn:uuid:... response_at=
+.../DocumentReference/<id>`), so a report and its response are linked by the eICR
+identifier alone. Receipt is logged with the processing status and each condition's
+determination; the description says the same in one line.
+
+`serve -ecr-agency agency.yaml` plays the agency, to test the exchange without one. It
+answers each eICR posted to `$process-message` with an eCR 2.1.2 RR, keeps the eICR it
+received, and with `reply: true` also posts the RR to the eICR's source endpoint:
+
+```yaml
+name: Illinois Department of Public Health
+phone: +1-217-555-0199
+line: 535 W Jefferson St
+city: Springfield
+state: IL
+postalCode: "62761"
+endpoint: https://ph.test.example/fhir   # named as the RR's source
+rctc: rctc.json                          # optional; the built-in sample otherwise
+reply: true
+reply_bearer_token: ${HOSPITAL_TOKEN}    # read from the environment
+```
+
+Its decisions are a stand-in's, not a jurisdiction's: every condition its trigger codes
+find is reportable to it, within 24 hours for one the built-in list marks immediate and
+72 hours otherwise. A real agency decides with the RCKMS rules. Both flags need a
+writable FHIR endpoint; a hospital refuses case reports and the agency refuses RRs, with
+422. `source` may be plain `http` only to this machine.
+
 `perfuse fhir eicr [-facility f.json] [-rctc rctc.json] [-destination URL -source URL] <messages>`
 builds the same reports from files. The FHIR lab's **Public health case report** panel
 builds one from a pasted message.
@@ -458,6 +495,8 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `POST /fhir/Questionnaire/$questionnaire-package` | Da Vinci DTR 2.2.0: the questionnaires named, named on the order's coverage-information, or asked for by CRD's coverage assertion id (`context`), each as a package bundle with a QuestionnaireResponse and the Libraries it needs |
 | `POST /fhir/Questionnaire/$log-questionnaire-errors` | DTR 2.2.0: problems a DTR app met with a questionnaire, written to the server log |
 | `POST /fhir/Questionnaire/$next-question` | DTR 2.2.0 adaptive questionnaires: a stored Questionnaire with SDC's `questionnaireAdaptive` extension is packaged as an empty shell, and each call appends the next top-level item whose `enableWhen` the answers satisfy, or marks the response `completed`. A required question already asked must be answered first |
+| `serve -ecr-responses` | Accept eCR Reportability Responses at `POST /fhir/$process-message`; each is stored as `DocumentReference/<id>` derived from the eICR it answers (see eCR above) |
+| `serve -ecr-agency <file>` | Play a public health agency for testing: answer eICRs at `$process-message` with a Reportability Response, and with `reply: true` post it to the eICR's source |
 | `serve -pas` | Da Vinci PAS 2.2.1 on the FHIR endpoint (needs `-fhir`, writable): `POST /fhir/Claim/$submit`, `$inquire` (a read) and `$decide` (a reviewer's decision on a pended request). Decisions come from `-crd-rules`; with none, every service is pended |
 | PAS rule fields | `pa_decision` (approve, deny, pend), `pa_alternative` (a coding approved instead), `pa_attachments` and `pa_attachment_modifiers` (LOINC), `details` `allowed-quantity`, and `questionnaire`, asked for when pended |
 | `$decide` parameters | `claimResponse` (id), `decision` (approve, deny), `item` (sequences, repeatable), `reason`, `reviewer` (NPI). 409 when nothing is pended |

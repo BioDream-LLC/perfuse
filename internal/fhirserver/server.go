@@ -38,9 +38,13 @@ type Server struct {
 	DTRContext func(assertionID string) []string
 
 	// PAS turns on Da Vinci PAS: Claim/$submit, Claim/$inquire and Claim/$decide. Nil leaves them off.
-	PAS     *PAS
-	pasOnce sync.Once
-	pasErr  error
+	PAS *PAS
+
+	// Messages handles $process-message (eCR's Reportability Responses, or case reports for a test agency). Nil leaves the
+	// operation answering that it is not enabled.
+	Messages MessageHandler
+	pasOnce  sync.Once
+	pasErr   error
 
 	// Export runs bulk exports. Nil disables the operation, which is why it is a pointer rather than a value.
 	//
@@ -153,6 +157,7 @@ func (s *Server) Handler() http.Handler {
 
 	s.registerPayerAPIs(mux)
 	s.registerPAS(mux)
+	mux.HandleFunc("POST /$process-message", s.handleProcessMessage)
 	s.registerDTR(mux)
 
 	mux.HandleFunc("GET /Patient/{id}/$everything", s.handleEverything)
@@ -418,6 +423,27 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		resources = subscriptionCapability(resources, subs.topics())
 	}
 
+	rest := map[string]any{
+		"mode":     "server",
+		"resource": resources,
+		"interaction": []any{
+			map[string]any{"code": "transaction"},
+			map[string]any{"code": "batch"},
+		},
+		// Stated plainly so nobody has to find out by trying.
+		"documentation": "Implemented: read, search, create, update, delete, transaction, batch, " +
+			"$validate, _include, _revinclude, _history, versioned reads, If-Match. " +
+			"chained search, _include:iterate, " + modifierDocumentation() +
+			exportDocumentation(s.Export != nil) + ". " +
+			"Not implemented: search modifiers other than those listed, " +
+			"If-Match with several versions, chains through an ambiguous reference " +
+			"unless written as param:Type.chained.",
+	}
+	if s.Messages != nil {
+		rest["operation"] = []any{map[string]any{"name": "process-message",
+			"definition": "http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message"}}
+	}
+
 	statement := map[string]any{
 		"resourceType": "CapabilityStatement",
 		"status":       "active",
@@ -434,22 +460,7 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		"fhirVersion":  string(version),
 		"instantiates": []string{"http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server"},
 		"format":       []string{"json", "application/fhir+json"},
-		"rest": []any{map[string]any{
-			"mode":     "server",
-			"resource": resources,
-			"interaction": []any{
-				map[string]any{"code": "transaction"},
-				map[string]any{"code": "batch"},
-			},
-			// Stated plainly so nobody has to find out by trying.
-			"documentation": "Implemented: read, search, create, update, delete, transaction, batch, " +
-				"$validate, _include, _revinclude, _history, versioned reads, If-Match. " +
-				"chained search, _include:iterate, " + modifierDocumentation() +
-				exportDocumentation(s.Export != nil) + ". " +
-				"Not implemented: search modifiers other than those listed, " +
-				"If-Match with several versions, chains through an ambiguous reference " +
-				"unless written as param:Type.chained.",
-		}},
+		"rest":         []any{rest},
 	}
 
 	s.writeJSON(w, http.StatusOK, statement)

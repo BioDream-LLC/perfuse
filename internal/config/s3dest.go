@@ -190,3 +190,15 @@ func (s *S3Destination) ResolvedSecretAccessKey() string { return resolveSecret(
 
 // ResolvedSessionToken returns the session token, expanding an environment reference.
 func (s *S3Destination) ResolvedSessionToken() string { return resolveSecret(s.SessionToken) }
+
+// ResolvedBearerToken returns the FHIR destination's token, expanding a ${NAME} reference from the environment.
+func (f *FHIRDestination) ResolvedBearerToken() string { return resolveSecret(f.BearerToken) }
+
+// ResolvedBearerToken returns the CDA destination's token, expanding a ${NAME} reference from the environment.
+func (c *CDADestination) ResolvedBearerToken() string { return resolveSecret(c.BearerToken) }
+
+// ResolvedBearerToken returns the HTTP destination's token, expanding a ${NAME} reference from the environment.
+func (h *HTTPDestination) ResolvedBearerToken() string { return resolveSecret(h.BearerToken) }
+
+// ResolvedPassword returns the HTTP destination's password, expanding a ${NAME} reference from the environment.
+func (h *HTTPDestination) ResolvedPassword() string { return resolveSecret(h.Password) }

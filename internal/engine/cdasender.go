@@ -312,7 +312,7 @@ func (s *CDASender) post(ctx context.Context, body []byte) error {
 		req.Header.Set(k, v)
 	}
 	if s.cfg.BearerToken != "" {
-		req.Header.Set("Authorization", "Bearer "+s.cfg.BearerToken)
+		req.Header.Set("Authorization", "Bearer "+s.cfg.ResolvedBearerToken())
 	}
 
 	resp, err := s.client.Do(req)

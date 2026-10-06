@@ -123,9 +123,9 @@ func (s *HTTPSender) Send(ctx context.Context, raw []byte) error {
 	}
 	switch {
 	case s.cfg.BearerToken != "":
-		req.Header.Set("Authorization", "Bearer "+s.cfg.BearerToken)
+		req.Header.Set("Authorization", "Bearer "+s.cfg.ResolvedBearerToken())
 	case s.cfg.Username != "":
-		req.SetBasicAuth(s.cfg.Username, s.cfg.Password)
+		req.SetBasicAuth(s.cfg.Username, s.cfg.ResolvedPassword())
 	}
 
 	resp, err := s.client.Do(req)

@@ -661,6 +661,26 @@ tx.fhir.org for terminology. All three eICRs, and the eCR message wrapping one, 
 HAPI FHIR (latest) stores each eICR as a document Bundle. HAPI does not implement `$process-message`, so the eCR message itself
 was checked by the validator and by a test receiver, not by an agency's endpoint.
 
+### The Reportability Response, October 2026
+
+The other half of the exchange: the agency's answer. Perfuse now reads Reportability Responses (`serve -ecr-responses`) and can
+play an agency that writes them (`serve -ecr-agency`). Checked three ways:
+
+- **The IG's own example.** The eCR 2.1.2 RR example (one condition, one agency) reads back as the IG describes it: processed
+  with a warning, Zika reportable on the patient's home address within 24 hours, immediate action required.
+- **The HL7 validator.** The RR the test agency writes, and the eCR message carrying it, have 0 errors against
+  hl7.fhir.us.ecr#2.1.2. The first attempt had four: no Composition.encounter, which the RR composition requires, and then the
+  eicr-encounter profile's required location, which the copied encounter must keep along with the resources it points to.
+- **Two Perfuse servers.** An ADT with a COVID-19 diagnosis went over MLLP to a hospital server whose `ecr` destination sent the
+  eICR to a second server playing the agency. The agency answered and posted the RR back; the hospital stored it at the address
+  it had logged when the report went, and the stored RR validated with 0 errors.
+
+The two-server run found a defect unrelated to eCR: **`bearer_token: ${VAR}` on FHIR, CDA and HTTP destinations was sent as the
+literal text**, though the configuration's own comment recommends that form; only the S3, AMQP and cloud credentials expanded it.
+The agency refused the hospital with 401. Those tokens, and the HTTP destination's password, are now read from the environment.
+
+What this does not show is an agency's endpoint accepting Perfuse's eICR. AIMS onboarding is through APHL and a jurisdiction.
+
 ## Vendor-shaped v2 from two national programmes, against the HL7 validator
 
 These are not a live EHR feed; no site has run one through Perfuse. They are the nearest public equivalent: 81 messages from the

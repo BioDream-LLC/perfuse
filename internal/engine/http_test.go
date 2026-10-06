@@ -579,3 +579,16 @@ func TestAnHTTPBlockOnAnMLLPSourceIsRefused(t *testing.T) {
 		t.Skip("an http block on an mllp source is currently tolerated")
 	}
 }
+
+// A ${NAME} bearer token is read from the environment, as the configuration advises, not sent as the literal text.
+func TestABearerTokenReferenceIsReadFromTheEnvironment(t *testing.T) {
+	t.Setenv("PERFUSE_TEST_HTTP_TOKEN", "from-env")
+	cfg := config.HTTPDestination{BearerToken: "${PERFUSE_TEST_HTTP_TOKEN}"}
+	if v := cfg.ResolvedBearerToken(); v != "from-env" {
+		t.Fatalf("resolved %q", v)
+	}
+	fcfg := config.FHIRDestination{BearerToken: "${PERFUSE_TEST_HTTP_TOKEN}"}
+	if v := fcfg.ResolvedBearerToken(); v != "from-env" {
+		t.Fatalf("fhir resolved %q", v)
+	}
+}

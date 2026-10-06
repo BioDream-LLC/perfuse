@@ -94,6 +94,10 @@ func (s *FHIRSender) sendCaseReport(ctx context.Context, m *hl7.Message) error {
 		codes = append(codes, t.Code)
 	}
 	// The trigger codes are logged, not the patient: they say why a report went, which is what an audit asks.
-	s.log.Info("case report sent", "triggers", strings.Join(codes, ","), "control_id", m.ControlID())
+	// Where the agency's Reportability Response will be, when this server takes them (serve -ecr-responses): it is stored under
+	// an id derived from the eICR's identifier, so the report and its response are linked by that identifier alone.
+	eicrID, _ := report.Bundle["identifier"].(map[string]any)["value"].(string)
+	s.log.Info("case report sent", "triggers", strings.Join(codes, ","), "control_id", m.ControlID(), "eicr", eicrID,
+		"response_at", strings.TrimRight(s.ecr.source, "/")+"/DocumentReference/"+publichealth.RRStorageID(eicrID))
 	return nil
 }

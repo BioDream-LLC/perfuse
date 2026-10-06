@@ -179,6 +179,12 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	pasOn := fset.Bool("pas", false,
 		"serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what "+
 			"no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result")
+	ecrResponses := fset.Bool("ecr-responses", false,
+		"accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived "+
+			"from the eICR it answers")
+	ecrAgency := fset.String("ecr-agency", "",
+		"play a public health agency for testing eCR: answer case reports at $process-message with a Reportability Response, "+
+			"using the agency YAML file given (name, phone, address, endpoint; optional rctc, reply)")
 	fhirSubscriptions := fset.Bool("fhir-subscriptions", false,
 		"enable topic-based subscriptions, which send encounter and appointment notifications to URLs FHIR clients choose")
 	fhirSubscriptionsHTTP := fset.Bool("fhir-subscriptions-allow-http", false,
@@ -1087,6 +1093,25 @@ oidcDone:
 				rules = *crdRules
 			}
 			log.Info("serving Da Vinci PAS", "submit", baseURL+"/Claim/$submit", "rules", rules)
+		}
+		if *ecrResponses || *ecrAgency != "" {
+			if *fhirReadOnly {
+				return fmt.Errorf("-ecr-responses and -ecr-agency need a writable FHIR endpoint: they store what they receive")
+			}
+			h := &ecrMessages{store: fhirStore, receive: *ecrResponses, log: log, now: time.Now,
+				client: &http.Client{Timeout: 30 * time.Second}}
+			if *ecrAgency != "" {
+				agency, triggers, err := loadAgency(*ecrAgency)
+				if err != nil {
+					return fmt.Errorf("-ecr-agency: %w", err)
+				}
+				h.agency, h.triggers = agency, triggers
+				log.Warn("playing a public health agency for testing: case reports are answered by Perfuse's test rules, "+
+					"not a jurisdiction's", "agency", agency.Name, "triggers", triggers.Source)
+			}
+			fhirSrv.Messages = h.handle
+			log.Info("serving eCR $process-message", "url", baseURL+"/$process-message",
+				"reportability_responses", *ecrResponses, "test_agency", *ecrAgency != "")
 		}
 		if srv.CRD != nil {
 			// CRD and DTR in one process: an assertion CRD made can be answered by DTR from its id alone.

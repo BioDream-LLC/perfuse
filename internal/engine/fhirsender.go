@@ -229,7 +229,7 @@ func (s *FHIRSender) postTo(ctx context.Context, target string, body []byte) err
 		req.Header.Set(k, v)
 	}
 	if s.cfg.BearerToken != "" {
-		req.Header.Set("Authorization", "Bearer "+s.cfg.BearerToken)
+		req.Header.Set("Authorization", "Bearer "+s.cfg.ResolvedBearerToken())
 	}
 	if err := s.auth.authorize(ctx, req, body); err != nil {
 		return err
