@@ -572,6 +572,12 @@ What it found, all fixed:
   types labelled as HL7 table 0203**.
 - **PDFs read as codes.** Three messages send a Base64 PDF under `OBX-2` `CE`; it went into `Coding.display`, past FHIR's 1 MB string
   limit. A coded value shaped like `ED` is now read as `ED`, and `ED` becomes a DocumentReference the Observation points to.
+- **That fix reached 9 of the 28 such messages** (found October 2026, answering a question on the same thread). In 18 the Base64
+  holds a space, which MIME Base64 ignores and Go's decoder does not, so a complete PDF was refused as undecodable and then still
+  emitted as a Coding with code `Base64` and the PDF as its display. Whitespace is now dropped before decoding: 27 become
+  DocumentReferences, and the one whose data is cut short stays text, never a code. The bundles validate with 0 errors.
+- **An event that disagrees with `MSH-9`.** A case from the same thread: `MSH-9` A01, `EVN-1` A08, as an engine that remaps A08 to
+  A01 leaves it. `MSH-9` decides, and the IG maps no `EVN-1` row, so the disagreement vanished. It is now a warning.
 
 What the two community messages exposed besides, which the validator cannot see because each was dropped or decided without a
 note: `PID-4` and `CX.7`/`CX.8` dropped; an ISO OID in the assigning authority ignored; repeats of a text result joined with the raw

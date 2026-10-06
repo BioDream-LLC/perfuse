@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 515d4fc</p>
+<p class="version">version 0.1 · f60d1fc</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -4144,7 +4144,7 @@ rules:
 <p>Off by default, because a warning is a judgement about profile conformance rather than about validity.</p>
 <h4 id="s22-11-8-bearer-token"><span class="num">22.11.8</span> bearer_token</h4>
 <p>BearerToken is sent as an Authorization header.</p>
-<p>Prefer an environment variable reference over a literal in a file that goes into git.</p>
+<p>Prefer an environment variable reference, ${NAME}, over a literal in a file that goes into git.</p>
 <h4 id="s22-11-9-ecr"><span class="num">22.11.9</span> ecr</h4>
 <p>ECR makes this a public health case reporting destination.</p>
 <p>Each message is checked for trigger codes; one that has any is sent as an eCR 2.1 eICR, wrapped in an eCR message, to url&#39;s $process-message, and one with none is not sent at all.</p>

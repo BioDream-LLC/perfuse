@@ -865,6 +865,9 @@ func (c *converter) setObservationValue(o *fhir.Observation, prefix, valueType, 
 			if c.encapsulatedData(o, prefix) {
 				return
 			}
+			// Data that does not decode is still not a code: kept as text, as a declared ED would be, never as a Coding.
+			o.ValueString = fhir.Str(rawValue)
+			return
 		}
 		if concept := c.codedValue(prefix+"-5", prefix+"-5"); concept != nil {
 			o.ValueCodeableConcept = concept
@@ -929,6 +932,14 @@ func (c *converter) encapsulatedData(o *fhir.Observation, prefix string) bool {
 			"encapsulated data with encoding %q is not decoded, so it was kept as text", encoding)
 		return false
 	}
+	// Base64 is MIME's, which ignores whitespace: senders wrap it with line breaks and, in the NHS genomics feeds, spaces. Go skips
+	// only CR and LF, so a complete PDF with a space in it was refused as undecodable. The attachment gets it without any.
+	data = strings.Map(func(r rune) rune {
+		if r == ' ' || r == '\t' || r == '\r' || r == '\n' || r == '\f' || r == '\v' {
+			return -1
+		}
+		return r
+	}, data)
 	if _, err := base64.StdEncoding.DecodeString(data); err != nil {
 		c.note("warning", prefix+"-5.5", "Observation.valueString", "encapsulated data is marked Base64 but does not decode, so it was kept as text")
 		return false

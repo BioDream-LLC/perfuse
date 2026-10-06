@@ -324,3 +324,59 @@ func TestEachRXAGetsItsOwnRoute(t *testing.T) {
 	}
 	validationErrors(t, res)
 }
+
+// An embedded PDF labelled CE whose Base64 is cut short (nw-gmsa's ORU_R01_PDF.txt) was noted as read as ED, then emitted as a
+// Coding with code "Base64" and the PDF text as its display. It is not a code either way: it stays text, and no document is made.
+func TestACodedResultHoldingBrokenBase64IsTextNotACode(t *testing.T) {
+	pdf := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte("%PDF-1.4 report body "), 10))
+	res := convert(t, oruWithFirstOBX(map[int]string{1: "1", 2: "CE", 3: "SANGER^Sanger Sequencing^IGENE",
+		5: "^IGene^application/pdf^Base64^" + pdf[:len(pdf)-3], 11: "F"}), Options{})
+	if got := findAll[*fhir.DocumentReference](res); len(got) != 0 {
+		t.Fatalf("a document was made from data that does not decode")
+	}
+	o := find[*fhir.Observation](t, res)
+	if o.ValueCodeableConcept != nil {
+		t.Fatalf("broken Base64 became a code: %+v", o.ValueCodeableConcept)
+	}
+	if o.ValueString == nil || !strings.Contains(*o.ValueString, pdf[:20]) {
+		t.Fatalf("the value was not kept as text: %v", o.ValueString)
+	}
+}
+
+// MIME Base64 ignores whitespace. A complete PDF whose Base64 had a space in it (nw-gmsa's R125.1 genomics reports) was refused.
+func TestBase64WithSpacesInItIsStillTheDocument(t *testing.T) {
+	pdf := []byte("%PDF-1.4\n1 0 obj\n<</Type /Catalog /Pages 2 0 R>>\nendobj\n2 0 obj\n<<>>\nendobj\n%%EOF\n")
+	enc := base64.StdEncoding.EncodeToString(pdf)
+	res := convert(t, oruWithFirstOBX(map[int]string{1: "1", 2: "CE", 3: "R125^Thoracic aortic aneurysm^IGENE",
+		5: "^IGene^application/pdf^Base64^" + enc[:16] + " " + enc[16:32] + "\t" + enc[32:], 11: "F"}), Options{})
+	doc := find[*fhir.DocumentReference](t, res)
+	if got := decoded(t, doc); !bytes.Equal(got, pdf) {
+		t.Fatalf("PDF bytes changed: %q", got)
+	}
+	if strings.ContainsAny(doc.Content[0].Attachment.Data, " \t\r\n") {
+		t.Errorf("whitespace kept in the attachment")
+	}
+}
+
+// MSH-9 decides the event, but a disagreeing EVN-1 is the only sign an engine upstream remapped it, so it is reported.
+func TestAnEventThatDisagreesWithMSH9IsReported(t *testing.T) {
+	msg := "MSH|^~\\&|PAS|RIVERLAND|GW|RCVFAC|20260929091500+1000||ADT^A01^ADT_A01|TEST003|P|2.5\r" +
+		"EVN|A08|20260929091400+1000\r" +
+		"PID|1||441122^^^RIVERLAND^MR||TESTPATIENT^ALEX||19800101|F\r" +
+		"PV1|1|I|WARD3^BED2^RAH||||||||||||||||VN0100\r"
+	res := convert(t, msg, Options{})
+	found := false
+	for _, n := range res.Notes {
+		found = found || n.Source == "EVN-1" && strings.Contains(n.Message, "EVN-1 says A08 but MSH-9 says A01")
+	}
+	if !found {
+		t.Fatalf("the disagreement was not reported: %+v", res.Notes)
+	}
+	if got := convert(t, strings.Replace(msg, "EVN|A08", "EVN|A01", 1), Options{}); len(got.Notes) > 0 {
+		for _, n := range got.Notes {
+			if n.Source == "EVN-1" {
+				t.Fatalf("an agreeing EVN-1 was reported: %+v", n)
+			}
+		}
+	}
+}

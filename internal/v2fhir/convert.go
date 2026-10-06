@@ -242,6 +242,16 @@ func (c *converter) convertADT() {
 	c.mergePatients(patient)
 	c.addEntry(patient, "Patient", patientConditionalURL(patient))
 	patRef := fhir.Ref("Patient", patient.ID)
+
+	// MSH-9.2 decides; EVN-1 is kept only for backward compatibility and the IG maps no EVN-1 row. But when they disagree (an
+	// engine upstream remapped A08 to A01 and left EVN alone, say), following MSH-9 silently drops the only evidence of it, and a
+	// receiver acting on the "admit" meets an existing visit. Case from #v2 to FHIR, chat.fhir.org.
+	if evn := strings.ToUpper(strings.TrimSpace(c.get("EVN-1"))); evn != "" && c.res.TriggerEvent != "" &&
+		evn != strings.ToUpper(c.res.TriggerEvent) {
+		c.note("warning", "EVN-1", "",
+			"EVN-1 says %s but MSH-9 says %s: converted as %s, which MSH-9 decides; something upstream may have remapped the event",
+			evn, strings.ToUpper(c.res.TriggerEvent), strings.ToUpper(c.res.TriggerEvent))
+	}
 	// Allergies belong to the person, so a person-level message carries them too.
 	c.buildAllergies(patRef)
 
