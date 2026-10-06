@@ -1,14 +1,19 @@
 package fhirserver
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // handleExpand serves ValueSet/$expand.
 func (s *Server) handleExpand(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err == nil && storedValueSetURL(r.Form.Get("url")) {
+	if err := operationForm(r); err == nil && storedValueSetURL(r.Form.Get("url")) {
 		s.handleExpandStored(w, r, r.Form.Get("url"))
 		return
 	}
@@ -19,7 +24,7 @@ func (s *Server) handleExpand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
+	if err := operationForm(r); err != nil {
 		s.writeOutcome(w, r, http.StatusBadRequest, "error", "invalid",
 			"the parameters could not be read: "+err.Error())
 
@@ -47,7 +52,7 @@ func (s *Server) handleExpand(w http.ResponseWriter, r *http.Request) {
 
 // handleValidateCode serves ValueSet/$validate-code.
 func (s *Server) handleValidateCode(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err == nil && storedValueSetURL(r.Form.Get("url")) {
+	if err := operationForm(r); err == nil && storedValueSetURL(r.Form.Get("url")) {
 		s.handleValidateStored(w, r, r.Form.Get("url"))
 		return
 	}
@@ -58,7 +63,7 @@ func (s *Server) handleValidateCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
+	if err := operationForm(r); err != nil {
 		s.writeOutcome(w, r, http.StatusBadRequest, "error", "invalid",
 			"the parameters could not be read: "+err.Error())
 
@@ -101,4 +106,43 @@ func (s *Server) registerValueSets(mux *http.ServeMux) {
 	mux.HandleFunc("POST /ValueSet/$expand", s.handleExpand)
 	mux.HandleFunc("GET /ValueSet/$validate-code", s.handleValidateCode)
 	mux.HandleFunc("POST /ValueSet/$validate-code", s.handleValidateCode)
+}
+
+// operationForm reads an operation's parameters into r.Form, from the query, a form body, or - as FHIR clients usually send
+// them - a Parameters resource. The Inferno DTR suite POSTs a Parameters body to $expand, which was refused as unreadable.
+func operationForm(r *http.Request) error {
+	if r.Form != nil {
+		return nil
+	}
+	ct := r.Header.Get("Content-Type")
+	if r.Method != http.MethodPost || !(strings.Contains(ct, "json") || ct == "") {
+		return r.ParseForm()
+	}
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		return err
+	}
+	r.Form = url.Values{}
+	for k, v := range r.URL.Query() {
+		r.Form[k] = v
+	}
+	if len(strings.TrimSpace(string(body))) == 0 {
+		return nil
+	}
+	var params struct {
+		ResourceType string           `json:"resourceType"`
+		Parameter    []map[string]any `json:"parameter"`
+	}
+	if err := json.Unmarshal(body, &params); err != nil || params.ResourceType != "Parameters" {
+		return fmt.Errorf("the body must be a Parameters resource")
+	}
+	for _, p := range params.Parameter {
+		name, _ := p["name"].(string)
+		for k, v := range p {
+			if strings.HasPrefix(k, "value") {
+				r.Form.Add(name, fmt.Sprint(v))
+			}
+		}
+	}
+	return nil
 }

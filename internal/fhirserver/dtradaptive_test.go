@@ -73,6 +73,9 @@ func TestAnAdaptiveQuestionnaireAsksOnlyTheQuestionsThatApply(t *testing.T) {
 	if qr["questionnaire"] != "#o2a" || askedIDs(qr) != "" {
 		t.Fatalf("the seeded response should point at its contained shell: %v", qr)
 	}
+	if !strings.Contains(toJSON(containedQuestionnaire(qr)["derivedFrom"]), "https://payer.example/Questionnaire/o2a|1") {
+		t.Errorf("the contained questionnaire should be derived from the packaged one: %v", containedQuestionnaire(qr)["derivedFrom"])
+	}
 
 	// Replacement, saturation 92: 1, 2, sat, and 3 is skipped.
 	steps := []struct {
@@ -80,9 +83,9 @@ func TestAnAdaptiveQuestionnaireAsksOnlyTheQuestionsThatApply(t *testing.T) {
 		value  map[string]any
 		asked  string
 	}{
-		{"", nil, "1"},
-		{"1", map[string]any{"valueCoding": map[string]any{"system": "http://example.org", "code": "replacement"}}, "1,2"},
-		{"2", map[string]any{"valueString": "worn out"}, "1,2,sat"},
+		{"", nil, "1"}, // 2 depends on 1, so the walk stops there
+		{"1", map[string]any{"valueCoding": map[string]any{"system": "http://example.org", "code": "replacement"}}, "1,2,sat"},
+		{"2", map[string]any{"valueString": "worn out"}, "1,2,sat"}, // 3 waits on sat
 		{"sat", map[string]any{"valueInteger": 92}, "1,2,sat"},
 	}
 	for _, st := range steps {
@@ -103,19 +106,22 @@ func TestAnAdaptiveQuestionnaireAsksOnlyTheQuestionsThatApply(t *testing.T) {
 	}
 }
 
-func TestTheNextQuestionWaitsForARequiredAnswer(t *testing.T) {
+func TestTheNextQuestionWaitsForTheAnswerItDependsOn(t *testing.T) {
 	srv, _ := payerFixture(t)
 	h := srv.Handler()
 	payerDo(t, h, "PUT", "/Questionnaire/o2a", adaptiveQ, nil)
 	shell := map[string]any{"resourceType": "Questionnaire", "id": "o2a", "url": "https://payer.example/Questionnaire/o2a", "version": "1", "status": "active"}
 	qr := map[string]any{"resourceType": "QuestionnaireResponse", "status": "in-progress", "questionnaire": "#o2a", "contained": []any{shell}}
 	qr, _, _ = nextQ(t, h, qr)
-	if _, code, body := nextQ(t, h, qr); code != http.StatusUnprocessableEntity || !strings.Contains(body, "Order reason") {
-		t.Errorf("an unanswered required question: %d %s", code, body)
+	if again, _, _ := nextQ(t, h, qr); askedIDs(again) != "1" || again["status"] != "in-progress" {
+		t.Errorf("with 1 unanswered, nothing more can be decided: %s %v", askedIDs(again), again["status"])
 	}
 	// Under 89, the qualifying-test date is asked.
 	answer(qr, "1", map[string]any{"valueCoding": map[string]any{"system": "http://example.org", "code": "initial"}})
 	qr, _, _ = nextQ(t, h, qr)
+	if askedIDs(qr) != "1,sat" {
+		t.Errorf("an initial order skips 2: %s", askedIDs(qr))
+	}
 	answer(qr, "sat", map[string]any{"valueInteger": 85})
 	if qr, _, _ = nextQ(t, h, qr); askedIDs(qr) != "1,sat,3" {
 		t.Errorf("a low saturation should bring in 3: %s", askedIDs(qr))
@@ -135,5 +141,27 @@ func TestAStandardOrUnknownQuestionnaireIsNotAnsweredAdaptively(t *testing.T) {
 	}
 	if _, code, _ := nextQ(t, h, map[string]any{"resourceType": "QuestionnaireResponse", "status": "in-progress"}); code != http.StatusBadRequest {
 		t.Errorf("no contained questionnaire: %d", code)
+	}
+}
+
+func TestAResponseThatBreaksItsQuestionnaireIsA400(t *testing.T) {
+	srv, _ := payerFixture(t)
+	h := srv.Handler()
+	payerDo(t, h, "PUT", "/Questionnaire/o2a", adaptiveQ, nil)
+	var src map[string]any
+	_ = json.Unmarshal([]byte(adaptiveQ), &src)
+	for name, item := range map[string]map[string]any{
+		"unknown question": {"linkId": "nope", "answer": []any{map[string]any{"valueString": "x"}}},
+		"wrong type":       {"linkId": "sat", "answer": []any{map[string]any{"valueString": "92"}}},
+		"not an option":    {"linkId": "1", "answer": []any{map[string]any{"valueCoding": map[string]any{"system": "http://example.org", "code": "other"}}}},
+	} {
+		qr := map[string]any{"resourceType": "QuestionnaireResponse", "status": "in-progress", "questionnaire": "#o2a",
+			"contained": []any{src}, "item": []any{item}}
+		b, _ := json.Marshal(qr)
+		// The bare QuestionnaireResponse, which FHIR allows for an operation with a single resource input.
+		rec := payerDo(t, h, "POST", "/Questionnaire/$next-question", string(b), nil)
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "OperationOutcome") {
+			t.Errorf("%s: want 400 with an OperationOutcome, got %d %s", name, rec.Code, rec.Body)
+		}
 	}
 }

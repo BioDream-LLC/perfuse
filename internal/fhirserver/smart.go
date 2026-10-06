@@ -266,6 +266,9 @@ type smartConfiguration struct {
 	JWKSURI               string   `json:"jwks_uri,omitempty"`
 	AuthorizationEndpoint string   `json:"authorization_endpoint,omitempty"`
 	TokenEndpoint         string   `json:"token_endpoint,omitempty"`
+	GrantTypesSupported   []string `json:"grant_types_supported"`
+	TokenAuthMethods      []string `json:"token_endpoint_auth_methods_supported,omitempty"`
+	TokenAuthSigningAlgs  []string `json:"token_endpoint_auth_signing_alg_values_supported,omitempty"`
 	Capabilities          []string `json:"capabilities"`
 	ScopesSupported       []string `json:"scopes_supported,omitempty"`
 	CodeChallengeMethods  []string `json:"code_challenge_methods_supported,omitempty"`
@@ -285,6 +288,10 @@ type SMARTDiscovery struct {
 	AuthorizationEndpoint string
 	TokenEndpoint         string
 	JWKSURI               string
+
+	// BackendServices says the authorization server issues client_credentials tokens to clients that sign a JWT assertion
+	// (SMART Backend Services): a payer's DTR, PAS or bulk client. Only the operator knows this about their server.
+	BackendServices bool
 }
 
 // HasEndpoints reports whether enough is configured to publish anything useful.
@@ -330,10 +337,28 @@ func (s *Server) handleSMARTConfiguration(w http.ResponseWriter, r *http.Request
 		"permission-patient",
 		"permission-v1",
 		"permission-v2",
-		"sso-openid-connect",
+	}
+	// OpenID Connect sign-in needs the key set to check an ID token against; SMART requires jwks_uri with it, and claiming the
+	// capability without one sends an app to verify against nothing.
+	if strings.TrimSpace(d.JWKSURI) != "" {
+		caps = append(caps, "sso-openid-connect")
+	}
+
+	// The grants the authorization server offers: authorization_code for the app launch above, and client_credentials with
+	// a signed assertion when the operator says it does backend services.
+	grants := []string{"authorization_code"}
+	var methods, algs []string
+	if d.BackendServices {
+		grants = append(grants, "client_credentials")
+		caps = append(caps, "client-confidential-asymmetric")
+		methods = []string{"private_key_jwt"}
+		algs = []string{"RS384", "ES384"}
 	}
 
 	body := smartConfiguration{
+		GrantTypesSupported:   grants,
+		TokenAuthMethods:      methods,
+		TokenAuthSigningAlgs:  algs,
 		Issuer:                d.Issuer,
 		JWKSURI:               d.JWKSURI,
 		AuthorizationEndpoint: d.AuthorizationEndpoint,

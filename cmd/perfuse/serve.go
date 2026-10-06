@@ -184,12 +184,18 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"serve the FHIR endpoint with no authentication at all, exposing every stored record")
 	smartIssuer := fset.String("smart-issuer", "",
 		"accept SMART on FHIR access tokens from this authorization server")
+	smartJWKS := fset.String("smart-jwks", "",
+		"where to fetch the SMART issuer's signing keys, when not from its published metadata (split DNS, a private address)")
 	smartAudience := fset.String("smart-audience", "",
 		"the audience a SMART token must be issued for, normally the FHIR base URL")
 	smartAuthorize := fset.String("smart-authorize", "",
 		"the authorization endpoint to advertise to SMART apps")
 	smartToken := fset.String("smart-token", "",
 		"the token endpoint to advertise to SMART apps")
+	smartJWKSURI := fset.String("smart-jwks-uri", "",
+		"the authorization server's public key set URL, advertised to SMART apps (needed to claim OpenID Connect sign-in)")
+	smartBackend := fset.Bool("smart-backend-services", false,
+		"advertise that the SMART authorization server issues backend-services (client_credentials, signed JWT) tokens")
 	// Zero by default, because outside an orchestrator a drain delay is just a
 	// slower Ctrl-C. Set it to slightly more than the load balancer's probe
 	// interval so the instance is out of rotation before it stops listening.
@@ -1020,6 +1026,11 @@ oidcDone:
 
 	if fhirStore != nil {
 		baseURL := fmt.Sprintf("%s://%s/fhir", schemeFor(useTLS), *addr)
+		// The address clients reach, when one is given: bundle links, fullUrls and the SMART audience all carry it, and a
+		// listen address such as 0.0.0.0 is not somewhere a client can follow a link to.
+		if pub := strings.TrimRight(strings.TrimSpace(*publicURL), "/"); pub != "" {
+			baseURL = pub + "/fhir"
+		}
 		fhirSrv := fhirserver.NewServer(fhirStore, baseURL, log)
 		fhirSrv.ReadOnly = *fhirReadOnly
 
@@ -1108,6 +1119,7 @@ oidcDone:
 		fhirAuth, err := fhirAuthenticator(fhirAuthOptions{
 			SMARTIssuer:   strings.TrimSpace(*smartIssuer),
 			SMARTAudience: strings.TrimSpace(*smartAudience),
+			SMARTJWKS:     strings.TrimSpace(*smartJWKS),
 			BaseURL:       baseURL,
 			Open:          *fhirOpen,
 			ReadOnly:      *fhirReadOnly,
@@ -1125,6 +1137,8 @@ oidcDone:
 			Issuer:                strings.TrimSpace(*smartIssuer),
 			AuthorizationEndpoint: strings.TrimSpace(*smartAuthorize),
 			TokenEndpoint:         strings.TrimSpace(*smartToken),
+			BackendServices:       *smartBackend,
+			JWKSURI:               strings.TrimSpace(*smartJWKSURI),
 		}
 
 		// Read per request, so changing the page size in the interface applies to the next search rather

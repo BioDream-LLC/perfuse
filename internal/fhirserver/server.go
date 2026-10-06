@@ -331,6 +331,15 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 			entry["operation"] = ops
 		}
 		// Stored value sets expand and validate here; so do the views of the mapping tables (urn:perfuse:codeset:...).
+		// DTR's payer operations, on the type they are invoked on. They were served but not declared, and the Inferno DTR suite
+		// reads the declaration to decide what a payer offers.
+		if t == "Questionnaire" {
+			entry["operation"] = []any{
+				map[string]any{"name": "questionnaire-package", "definition": "http://hl7.org/fhir/us/davinci-dtr/OperationDefinition/questionnaire-package"},
+				map[string]any{"name": "next-question", "definition": "http://hl7.org/fhir/us/davinci-dtr/OperationDefinition/DTR-Questionnaire-next-question"},
+				map[string]any{"name": "log-questionnaire-errors", "definition": "http://hl7.org/fhir/us/davinci-dtr/OperationDefinition/log-questionnaire-errors"},
+			}
+		}
 		if t == "ValueSet" {
 			entry["operation"] = []any{
 				map[string]any{"name": "expand", "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-expand"},

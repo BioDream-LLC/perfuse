@@ -129,3 +129,17 @@ func TestAValueSetCannotBeWrittenIntoTheTableNamespace(t *testing.T) {
 		t.Errorf("searching stored value sets: %d %s", rec.Code, rec.Body)
 	}
 }
+
+func TestExpandReadsAParametersBody(t *testing.T) {
+	srv, _ := payerFixture(t)
+	h := srv.Handler()
+	loadValueSets(t, h, map[string]string{"oxygen": `"compose":{"include":[{` + snomed + `,"concept":[{"code":"426160001"},{"code":"706172005"}]}]}`})
+	rec := payerDo(t, h, "POST", "/ValueSet/$expand",
+		`{"resourceType":"Parameters","parameter":[{"name":"url","valueUri":"`+vsBase+`oxygen"},{"name":"count","valueInteger":1}]}`, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	if codes, total := expansionCodes(t, rec.Body.String()); len(codes) != 1 || total != 2 {
+		t.Errorf("%v %v", codes, total)
+	}
+}

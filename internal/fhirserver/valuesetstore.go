@@ -322,3 +322,34 @@ func (s *Server) handleValidateStored(w http.ResponseWriter, r *http.Request, ur
 	}
 	s.writeJSON(w, http.StatusOK, map[string]any{"resourceType": "Parameters", "parameter": params})
 }
+
+// smallExpansionLimit is DTR's line (oper-15): a value set with fewer codes than this goes in the package already expanded, so
+// an app can show its answers without a terminology call.
+const smallExpansionLimit = 40
+
+// packagedValueSet is a stored value set as $questionnaire-package carries it: with today's expansion when it is small and can be
+// expanded here, and as stored otherwise (the app expands it, and the package's outcome already says so when it cannot be found).
+func (s *Server) packagedValueSet(r *http.Request, vs map[string]any) map[string]any {
+	if _, has := vs["expansion"]; has {
+		return vs
+	}
+	members, err := s.expandStored(r, vs, 0)
+	if err != nil || len(members) >= smallExpansionLimit {
+		return vs
+	}
+	out := map[string]any{}
+	for k, v := range vs {
+		out[k] = v
+	}
+	sort.SliceStable(members, func(i, j int) bool { return conceptKey(members[i]) < conceptKey(members[j]) })
+	contains := make([]any, 0, len(members))
+	for _, c := range members {
+		contains = append(contains, c)
+	}
+	exp := map[string]any{"identifier": "urn:uuid:" + newUUID(), "timestamp": time.Now().UTC().Format(time.RFC3339), "total": len(members)}
+	if len(contains) > 0 {
+		exp["contains"] = contains
+	}
+	out["expansion"] = exp
+	return out
+}

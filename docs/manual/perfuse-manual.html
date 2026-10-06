@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · f206e62</p>
+<p class="version">version 0.1 · 7e0eef9</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2678,6 +2678,7 @@ rules:
 <p>CRD&#39;s output - the updated order, and the CDS Hooks response against CRD&#39;s own logical model - and DTR&#39;s package output validate in the official HL7 validator against CRD 2.2.1 and DTR 2.2.0 with no errors.</p>
 <p>DTR here is the payer&#39;s side of 2.2.0. <code>$questionnaire-package</code> takes the questionnaires named, those CRD named on an order, or the coverage assertion id CRD returned (<code>context</code>, while the same process is serving CRD), and returns each as a package bundle with a QuestionnaireResponse to fill in, the Libraries its CQL needs and their dependencies. The value sets its answers use travel in the package when they are loaded (<code>PUT /fhir/ValueSet/{id}</code>), and <code>$expand</code> lists their codes. <code>$log-questionnaire-errors</code> writes what a DTR app reports to the server log.</p>
 <p><strong>Adaptive questionnaires</strong>: write the whole questionnaire once, with SDC&#39;s <code>questionnaireAdaptive</code> extension and <code>enableWhen</code> on the questions that only apply sometimes. The package hands the app an empty shell, and each <code>$next-question</code> call adds the next question that applies to the answers so far, until there is nothing left to ask and the response is marked completed. The order and the branching are the payer&#39;s own rules; questions that do not apply are never shown.</p>
+<p><strong>Signing in as a client</strong>: DTR and PAS clients reach the payer with SMART Backend Services - a signed JWT exchanged for a token at the payer&#39;s authorization server. Point Perfuse at that server with <code>-smart-issuer</code> (and <code>-smart-jwks</code> if its address does not resolve from Perfuse), and pass <code>-smart-backend-services</code> so the discovery document says so. The Inferno DTR suite passes this way with Keycloak as the authorization server.</p>
 <p>A rules file is checked against CRD&#39;s own invariants when it loads: a questionnaire needs documentation, a service that is not covered cannot need authorisation, <code>satisfied</code> belongs to one case and not a rule, and anything conditional must give a reason.</p>
 <p>Not verified: the exports and member matching against another payer&#39;s implementation, the metrics against a payer&#39;s published figures, and CRD against a real EHR&#39;s CDS Hooks client.</p>
 </section>

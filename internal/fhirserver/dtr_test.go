@@ -120,6 +120,11 @@ func TestAPackageCarriesLibraryDependenciesAndAnswerValueSets(t *testing.T) {
 	if len(got["Library"]) != 2 {
 		t.Errorf("the Library and the FHIRHelpers it depends on should both be packaged; got %d (%v)", len(got["Library"]), oo)
 	}
+	// The questionnaire names the Library version packaged with it (DTR requires version-specific references); FHIRHelpers is
+	// 4.0.1, and Prepop carries none, so its reference stays as written.
+	if q := toJSON(got["Questionnaire"][0]); !strings.Contains(q, `"https://payer.example/Library/Prepop"`) {
+		t.Errorf("an unversioned library was pinned to a version it does not have: %s", q)
+	}
 	// A fullUrl may equal the canonical url only when that url ends in Type/id; .../Library/Prepop does not end in Library/prepop.
 	for _, e := range bundles[0]["entry"].([]any) {
 		em := e.(map[string]any)
@@ -144,6 +149,10 @@ func TestAPackageCarriesLibraryDependenciesAndAnswerValueSets(t *testing.T) {
 	if len(bundles) != 1 || len(entriesOf(bundles[0])["ValueSet"]) != 1 {
 		t.Errorf("a loaded answer value set is not packaged: %s", rec.Body)
 	}
+	// One code, under DTR's 40: it arrives expanded (oper-15).
+	if vs := entriesOf(bundles[0])["ValueSet"]; len(vs) == 1 && !strings.Contains(toJSON(vs[0]["expansion"]), "426160001") {
+		t.Errorf("a small value set should be packaged expanded: %v", vs[0])
+	}
 	if strings.Contains(toJSON(oo), "ValueSet/devices") {
 		t.Errorf("a loaded value set is still reported missing: %v", oo)
 	}
@@ -166,10 +175,11 @@ func TestAPackageCanBeAskedForByCRDsAssertionID(t *testing.T) {
 	if bundles, _ := packageOf(t, rec.Body.String()); len(bundles) != 1 {
 		t.Errorf("by context: %d %s", rec.Code, rec.Body)
 	}
-	// An unknown context still answers 200 with an explanation (oper-8), not an empty package or an error.
+	// A context this server never issued is source data it cannot resolve: a 4xx with an OperationOutcome saying what to send
+	// instead (spec-130). oper-8's explanation is kept in it.
 	rec = payerDo(t, h, "POST", "/Questionnaire/$questionnaire-package",
 		`{"resourceType":"Parameters","parameter":[`+coverageParam+`,{"name":"context","valueString":"nope"}]}`, nil)
-	if _, oo := packageOf(t, rec.Body.String()); rec.Code != http.StatusOK || !strings.Contains(toJSON(oo), "not a coverage assertion") {
+	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), "OperationOutcome") || !strings.Contains(rec.Body.String(), "not a coverage assertion") {
 		t.Errorf("unknown context: %d %s", rec.Code, rec.Body)
 	}
 }
@@ -196,4 +206,19 @@ func TestQuestionnaireErrorsAreAcceptedAndPaired(t *testing.T) {
 func toJSON(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
+}
+
+func TestPackagedReferencesNameTheVersionPackaged(t *testing.T) {
+	q := map[string]any{"resourceType": "Questionnaire",
+		"extension": []any{map[string]any{"url": "http://hl7.org/fhir/StructureDefinition/cqf-library", "valueCanonical": "https://payer.example/Library/L"}},
+		"item":      []any{map[string]any{"linkId": "g", "item": []any{map[string]any{"linkId": "1", "answerValueSet": "https://payer.example/ValueSet/V"}}}}}
+	got := toJSON(pinCanonicals(q, map[string]string{"https://payer.example/Library/L": "0.3.000", "https://payer.example/ValueSet/V": "2"}))
+	for _, want := range []string{`"https://payer.example/Library/L|0.3.000"`, `"https://payer.example/ValueSet/V|2"`} {
+		if !strings.Contains(got, want) {
+			t.Errorf("want %s in %s", want, got)
+		}
+	}
+	if strings.Contains(toJSON(q), "|") {
+		t.Error("the stored questionnaire was changed, not a copy")
+	}
 }

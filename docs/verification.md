@@ -324,6 +324,27 @@ than this work: a bundle entry's `fullUrl` was the questionnaire's canonical url
 which FHIR forbids; it is now the resource's address on this server. Not verified: a real DTR app (such as a SMART DTR client) driving
 the adaptive flow.
 
+**The Inferno Da Vinci DTR test kit, October 2026.** The official DTR Payer Server v2.2.0 suite (davinci-dtr-test-kit v0.18.0,
+run locally in Docker) against Perfuse with Keycloak as the authorization server for SMART Backend Services: 43 pass, 1 omitted (no
+Binary attachments in the data), 2 fail. The two that fail cannot pass for any server: they require
+`Questionnaire.extension:assemble-expectation`, which DTR's base questionnaire profile allows at most 0 times, and `item` in the
+adaptive search profile, which also has a maximum of 0. The payer data was Inferno's own dinner-order fixtures, an adaptive version of
+it written with standard `enableWhen`, and one questionnaire using every element DTR marks must-support.
+
+The suite found these defects, each fixed and covered by a test:
+
+- The FHIR base ignored `-public-url`, so bundle links and the SMART audience named the listen address (`0.0.0.0`).
+- A token with read scopes was refused `$questionnaire-package`, `$next-question` and `$expand`, because every POST counted as a write.
+- The capability statement did not declare the three DTR operations, though they were served.
+- `/.well-known/smart-configuration` lacked `grant_types_supported`, and claimed OpenID Connect sign-in with no `jwks_uri`.
+- `$expand` refused a Parameters body, which is how FHIR clients send it.
+- Small value sets went into the package unexpanded (DTR oper-15 wants those under 40 codes expanded).
+- Library and value set references in the packaged questionnaire were unversioned; they now name the version packaged.
+- An unknown CRD context answered 200; DTR requires a 4xx with an OperationOutcome.
+- `$next-question` accepted answers its questionnaire does not have, of the wrong type or outside the options; these are now 400.
+  It also asked one question per call where the answers already decided more, and its contained questionnaire did not say it was
+  derived from the packaged one.
+
 **The Inferno Da Vinci CRD test kit, October 2026.** The official CRD Server v2.2.1 suite (davinci-crd-test-kit, run locally in
 Docker) passes as a whole: discovery, the four hooks, the cross-hook and must-support checks, and the technical issues, no member
 found, coverage not found and no active coverage responses. It took these fixes:

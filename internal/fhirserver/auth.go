@@ -279,7 +279,7 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		}
 
 		// Writes are refused for a read-only caller before the request body is even parsed.
-		if !caller.Write && isWrite(r.Method) {
+		if !caller.Write && isWriteRequest(r) {
 			s.authFailure(w, r, http.StatusForbidden, "forbidden",
 				"this token may read but not change data")
 			return
@@ -296,9 +296,9 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		// Enforced here rather than in each handler for the reason the whole mux is wrapped: a route added later
 		// is covered by default. Doing it per handler is how one gets forgotten, and the one that gets forgotten
 		// is the one nobody tests.
-		if rt := resourceTypeOf(r); rt != "" && !caller.Allows(rt, isWrite(r.Method)) {
+		if rt := resourceTypeOf(r); rt != "" && !caller.Allows(rt, isWriteRequest(r)) {
 			verb := "read"
-			if isWrite(r.Method) {
+			if isWriteRequest(r) {
 				verb = "change"
 			}
 			// The refusal names the resource type and what was attempted, and does not list the scopes the
@@ -344,6 +344,25 @@ func resourceTypeOf(r *http.Request) string {
 }
 
 // isWrite reports whether a method changes data.
+// readOperations are operations invoked by POST that change no stored resource: they compute an answer from what is stored
+// (a package, the next question, an expansion) or only write the server log. A token that may read may call them; refusing
+// them would make a read-only DTR client unable to fetch a questionnaire at all.
+var readOperations = map[string]bool{
+	"$questionnaire-package": true, "$next-question": true, "$log-questionnaire-errors": true,
+	"$expand": true, "$validate-code": true, "$translate": true, "$lookup": true, "$everything": true,
+}
+
+// isWriteRequest is isWrite, except that a POST to one of readOperations is a read.
+func isWriteRequest(r *http.Request) bool {
+	if r.Method == http.MethodPost {
+		path := strings.TrimSuffix(r.URL.Path, "/")
+		if i := strings.LastIndex(path, "/"); i >= 0 && readOperations[path[i+1:]] {
+			return false
+		}
+	}
+	return isWrite(r.Method)
+}
+
 func isWrite(method string) bool {
 	switch method {
 	case http.MethodGet, http.MethodHead, http.MethodOptions:

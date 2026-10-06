@@ -141,9 +141,9 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 	}
 	if len(canonicals) == 0 {
 		if contextID != "" {
-			// oper-8: a context that came with documentation required must not answer with nothing and no explanation.
-			s.writeJSON(w, http.StatusOK, map[string]any{"resourceType": "Parameters", "parameter": []any{
-				map[string]any{"name": "outcome", "resource": map[string]any{"resourceType": "OperationOutcome", "issue": issues}}}})
+			// A context this server cannot resolve is source data it cannot use, which DTR answers with a 4xx and an
+			// OperationOutcome (spec-130), not an empty package.
+			s.writeJSON(w, http.StatusNotFound, map[string]any{"resourceType": "OperationOutcome", "issue": issues})
 			return
 		}
 		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "required",
@@ -163,7 +163,7 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 		adaptive := isAdaptive(q)
 		packaged := q
 		if adaptive {
-			packaged = adaptiveShell(q, "dtr-questionnaire-adapt-search")
+			packaged = s.adaptiveShell(q, "dtr-questionnaire-adapt-search")
 		}
 		entries := []any{map[string]any{"fullUrl": s.entryURL(q), "resource": packaged}}
 		newest := lastUpdated(q)
@@ -184,7 +184,7 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 		// The value sets the answers are chosen from, so the app can render them without a terminology call.
 		for _, vsURL := range answerValueSets(q) {
 			if vs := s.byCanonical(r, "ValueSet", vsURL); vs != nil {
-				entries = append(entries, map[string]any{"fullUrl": s.entryURL(vs), "resource": vs})
+				entries = append(entries, map[string]any{"fullUrl": s.entryURL(vs), "resource": s.packagedValueSet(r, vs)})
 				if t := lastUpdated(vs); t.After(newest) {
 					newest = t
 				}
@@ -197,10 +197,26 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 			continue // changedsince: nothing in this package changed
 		}
 		qr := seedResponse(q, coverage, orders)
+		// Pin the questionnaire's library and value set references to the versions packaged with it.
+		versions := map[string]string{}
+		for _, e := range entries[1:] {
+			res, _ := e.(map[string]any)["resource"].(map[string]any)
+			u, _ := res["url"].(string)
+			if v, _ := res["version"].(string); u != "" && v != "" {
+				versions[u] = v
+			}
+		}
+		entries[0].(map[string]any)["resource"] = pinCanonicals(entries[0].(map[string]any)["resource"].(map[string]any), versions)
 		if adaptive {
-			shell := adaptiveShell(q, "dtr-questionnaire-adapt")
+			shell := s.adaptiveShell(q, "dtr-questionnaire-adapt")
 			id, _ := q["id"].(string)
 			shell["id"] = id
+			// The questionnaire the app fills in is derived from the one in the package; DTR names that by canonical.
+			canonical, _ := q["url"].(string)
+			if v, _ := q["version"].(string); v != "" {
+				canonical += "|" + v
+			}
+			shell["derivedFrom"] = append(append([]any{}, listOf(q["derivedFrom"])...), canonical)
 			qr["contained"] = []any{shell}
 			qr["questionnaire"] = "#" + id
 			qr["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse-adapt|" + dtrVersion}}
@@ -497,4 +513,40 @@ func (s *Server) byCanonical(r *http.Request, resourceType, canonical string) ma
 		}
 	}
 	return best
+}
+
+// pinCanonicals returns a copy of a questionnaire whose cqf-library and answerValueSet references name the exact version this
+// package carries. DTR requires version-specific references, so an app runs the logic and lists the answers it was packaged
+// with even after the payer publishes a newer version; the payer's stored questionnaire is left as written.
+func pinCanonicals(q map[string]any, versions map[string]string) map[string]any {
+	raw, _ := json.Marshal(q)
+	var out map[string]any
+	_ = json.Unmarshal(raw, &out)
+	pin := func(v any) any {
+		c, _ := v.(string)
+		if c == "" || strings.Contains(c, "|") || versions[c] == "" {
+			return v
+		}
+		return c + "|" + versions[c]
+	}
+	for _, e := range listOf(out["extension"]) {
+		if em, _ := e.(map[string]any); em["url"] == "http://hl7.org/fhir/StructureDefinition/cqf-library" {
+			em["valueCanonical"] = pin(em["valueCanonical"])
+		}
+	}
+	var walk func([]any)
+	walk = func(items []any) {
+		for _, it := range items {
+			im, _ := it.(map[string]any)
+			if im == nil {
+				continue
+			}
+			if v, ok := im["answerValueSet"]; ok {
+				im["answerValueSet"] = pin(v)
+			}
+			walk(listOf(im["item"]))
+		}
+	}
+	walk(listOf(out["item"]))
+	return out
 }

@@ -20,6 +20,8 @@ import (
 type fhirAuthOptions struct {
 	SMARTIssuer   string
 	SMARTAudience string
+	// SMARTJWKS is the issuer's key set URL, for when the issuer's own address does not resolve from here.
+	SMARTJWKS string
 
 	// BaseURL is this server's FHIR base, used as the SMART audience when none is given.
 	BaseURL string
@@ -67,6 +69,7 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 		auth, err := fhirserver.NewSMARTAuth(fhirserver.SMARTConfig{
 			Issuer:   opts.SMARTIssuer,
 			Audience: audience,
+			JWKSURL:  opts.SMARTJWKS,
 		})
 		if err != nil {
 			return nil, err
