@@ -369,7 +369,8 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
   <li><b>Kill the Clipboard:</b> SMART Health Links and Cards read from a patient's QR code at check-in, verified, and delivered to a channel; visit records shared back as links</li>
   <li><b>US Core 9.0.0 (USCDI v6):</b> v2 to FHIR output that passes the HL7 validator, claimed only when checked</li>
   <li><b>Signed claims attachments:</b> X12 275 with C-CDAs signed to HL7 DSDR, the CMS-0053 signature standard</li>
-  <li><b>Prior authorization, all of it:</b> Da Vinci CRD over CDS Hooks, DTR questionnaires, and PAS with X12 278 translation</li>
+  <li><b>Prior authorization, all of it:</b> Da Vinci CRD over CDS Hooks, DTR questionnaires, and PAS with X12 278 translation, on either side: a PAS 2.2.1 payer server with <code>$submit</code>, <code>$inquire</code> and a reviewer's <code>$decide</code></li>
+  <li><b>A built-in SMART on FHIR authorization server:</b> standalone and EHR launch, Backend Services, granular scopes, introspection and revocation</li>
   <li><b>Payer transactions:</b> 270/271 eligibility with a CAQH CORE check, 276 claim status, 834 enrolment, 275 attachments, 278 prior auth</li>
   <li><b>Connections:</b> MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, <b>Kafka</b>, message brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ), Azure Blob, and AWS (S3, SQS, SNS) — twenty source types and twenty-two destination types</li>
   <li><b>A durable on-disk queue</b> that keeps ordering and survives a restart</li>
@@ -381,7 +382,7 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
   <li><b>Claims attachments</b> for CMS-0053-F: the 006020 X12 275 built from a C-CDA or a PDF and read back byte for byte</li>
   <li><b>FHIR subscriptions</b> for encounter and appointment notifications, recorded with the change itself so none is lost across a restart</li>
   <li><b>HL7 v2 to FHIR</b> for admissions, results, orders, appointments, clinical notes and immunizations</li>
-  <li><b>eCR</b> public health case reporting, validated against the eCR guide</li>
+  <li><b>eCR</b> public health case reporting, validated against the eCR guide, with Reportability Responses received and linked back, and <b>ELR</b> 2.5.1 lab reporting</li>
   <li><b>SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual TLS</b> for sign-on</li>
   <li><b>Kafka</b> as a source and a destination, keyed so one patient's events stay in order while different patients go in parallel — Kafka orders records within a partition and nowhere else</li>
   <li><b>Find a patient's messages by typing what you know</b> — an MRN, a name, a date of birth, an accession or a claim number — across HL7 v2, FHIR, DICOM and X12 at once, without naming a field in any of them</li>
@@ -422,6 +423,13 @@ perfuse compare -left-name Mirth -right-name Perfuse mirth-out/ perfuse-out/</co
   authorisation output was run through the <b>official HL7 validator with the Da Vinci PAS 2.2.1 package</b>: the
   first version failed with six to eight errors per response, and the current one passes with none. What has not
   happened yet is a payer or clearinghouse receiving any of it.
+</p>
+
+<p>
+  And against the certification test kits. Run locally against Perfuse, <b>ONC's Inferno</b> reports: SMART App
+  Launch STU2.2 <b>80 of 80</b>; the Da Vinci CRD Server 2.2.1 suite <b>passing</b>; PAS Server 2.2.1 <b>82 of 84</b>;
+  DTR Payer Server 2.2.0 <b>43 of 45</b>; US Core 6.1.0 FHIR API from 225 to <b>323</b> passing. Each failure left is
+  written down with its reason, and none of this is a certification.
 </p>
 
 <p><a href="https://github.com/BioDream-LLC/perfuse/blob/main/docs/verification.md">What was tested, what it found, and what was never run →</a></p>

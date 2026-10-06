@@ -166,6 +166,7 @@ depends on something outside this software that is stated too.
 <tbody>
 <tr><td colspan="2"><b>SAML 2.0</b>, verified end to end against <b>a real Keycloak 26 and a real Microsoft Entra tenant</b>. Configure it by pasting the provider's metadata — no hunting for a certificate in XML and stripping its line breaks</td></tr>
 <tr><td colspan="2"><b>OpenID Connect</b>, with discovery, and <b>LDAP / Active Directory</b></td></tr>
+<tr><td colspan="2"><b>A built-in SMART on FHIR authorization server</b>: standalone and EHR launch with PKCE, consent, refresh and ID tokens, Backend Services, granular scopes enforced, token introspection and revocation. Passes <b>Inferno's SMART App Launch STU2.2 suite, 80 of 80</b></td></tr>
 <tr><td colspan="2"><b>Passkeys (WebAuthn)</b> — fingerprint, face or a security key, and nothing a fake login page can capture</td></tr>
 <tr><td colspan="2"><b>SCIM 2.0</b>, so an identity provider can provision and deprovision accounts directly</td></tr>
 <tr><td colspan="2"><b>Mutual TLS</b>, verified against <b>OpenSSL</b> rather than against our own client</td></tr>
@@ -195,7 +196,9 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2">The exports apply the rule's exclusions on the way out: <b>no cost-sharing or provider remittances</b> to providers or other payers, and <b>no denied prior authorizations</b> to another payer</td></tr>
 <tr><td colspan="2"><b>The yearly prior authorization metrics page</b>, in the layout of CMS's own template — approvals, denials, extensions, appeals, mean and median turnaround with the unit always written — as a self-contained public page, CSV or JSON</td></tr>
 <tr><td colspan="2">Submits prior authorization requests to payer FHIR APIs, and <b>maps Da Vinci PAS to and from the X12 278</b>, so a payer on either side is reachable</td></tr>
+<tr><td colspan="2">Or be the payer: a <b>Da Vinci PAS 2.2.1 server</b> with <code>Claim/$submit</code>, <code>$inquire</code> and a reviewer's <code>$decide</code>, pended decisions delivered by subscription. <b>Inferno PAS Server suite 82 of 84</b>; the two left are must-support elements PAS's own extension contexts forbid there</td></tr>
 <tr><td colspan="2">Da Vinci <b>CRD 2.2.1</b> over CDS Hooks and <b>DTR 2.2.0</b> questionnaire packages, so the order, its documentation and the request all have an answer. Drugs are out of scope, as they are in the rule</td></tr>
+<tr><td colspan="2">Inferno's <b>CRD Server 2.2.1 suite passes</b>, and the <b>DTR Payer Server 2.2.0 suite 43 of 45</b>; the two left require an extension DTR's base profile allows zero times</td></tr>
 </tbody></table>
 
 <table width="100%">
@@ -203,6 +206,7 @@ depends on something outside this software that is stated too.
 <tbody>
 <tr><td colspan="2"><b>Electronic case reporting (eCR)</b>: a FHIR destination that sends an HL7 eCR 2.1.2 eICR for each message carrying a reportable-condition trigger code, and nothing for the rest</td></tr>
 <tr><td colspan="2">Triggers from the RCTC you load (or a built-in sample for testing), so a report goes because a code matched rather than because somebody remembered. Validated against the eCR guide with the HL7 validator</td></tr>
+<tr><td colspan="2">The answer comes back: <b>Reportability Responses</b> are received at <code>$process-message</code> and stored where the sent report said to look, and a <b>test agency</b> answers eICRs so the round trip can be tried without one. Proven between two Perfuse servers; the RR validates with 0 errors</td></tr>
 <tr><td colspan="2"><b>Electronic lab reporting (ELR)</b>: <code>perfuse elr</code> reshapes a lab's ORU^R01 into an HL7 2.5.1 ELR message carrying only the reportable orders, and says what the lab left out. Checked with NIST's HL7 v2 validator</td></tr>
 </tbody></table>
 
@@ -452,6 +456,8 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | **The FHIR R4 specification's own examples** | All 2,912 example files the standard's authors published. 13,723 resources validated, none reported wrongly. Found a bundle whose invalid content was being reported as a missing feature, exiting zero under `-strict` |
 | **The HAPI HL7 v2 test corpus** | 59 of the reference Java implementation's own awkward messages — uuencoded payloads, escaped delimiters, repeating groups — all parsed |
 | **SIGKILL, mid-batch** | 255 messages acknowledged across five hard kills, 255 present downstream, none lost and none duplicated. The numbers for the weaker acknowledgement mode are published too |
+| **Inferno, ONC's test kits** (run locally) | SMART App Launch STU2.2 80/80 · Da Vinci CRD Server 2.2.1 passes · PAS Server 2.2.1 82/84 · DTR Payer Server 2.2.0 43/45 · US Core 6.1.0 FHIR API 225 → 323 passing. Every failure left is explained in the record |
+| **The HL7 validator, on other people's v2** | Microsoft FHIR-Converter's 139 samples, 81 French national and NHS Wales samples, the NHS nw-gmsa set and messages posted on chat.fhir.org, converted and validated as whole bundles. What is left are codes the senders sent |
 
 Interoperability tests run against containers, not stubs. Where a real product's behaviour contradicted
 the specification, the real behaviour won and a fixture recording it was committed.
