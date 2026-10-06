@@ -349,6 +349,12 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 			c.note("info", sourceLabel, "code.coding.code", "CVX code %q was written as 0%s, the form CVX defines", code, code)
 			code = "0" + code
 		}
+		// ICD-9-CM and ICD-10-CM codes have a dot after the category (715.96, E11.9). v2 feeds commonly leave it out
+		// ("71596^...^I9"); the undotted form is not a code in either system, and the HL7 validator rejects it.
+		if dotted, ok := dotICD(uri, code); ok {
+			c.note("info", sourceLabel, "code.coding.code", "ICD code %q was written as %s, the form the code system defines", code, dotted)
+			code = dotted
+		}
 		// The sender's text is not the code system's display. For a standard system - LOINC, SNOMED, CVX, RxNorm, ICD - a
 		// display that differs from the system's own is an error to a terminology-aware validator, and a v2 sender's text
 		// usually does differ ("Comprehensive metabolic panel" for LOINC's "Comprehensive metabolic 2000 panel - Serum or
@@ -571,4 +577,38 @@ func digitsOnly(s string) string {
 		}
 	}
 	return string(out)
+}
+
+// dotICD puts the dot into an ICD-9-CM or ICD-10-CM code sent without one. It changes nothing else: a code that already has a
+// dot, is too short to need one, or is not shaped like the system's codes is left alone.
+func dotICD(system, code string) (string, bool) {
+	if strings.Contains(code, ".") {
+		return "", false
+	}
+	alnum := func(s string) bool {
+		for _, r := range s {
+			if !(r >= '0' && r <= '9' || r >= 'A' && r <= 'Z') {
+				return false
+			}
+		}
+		return s != ""
+	}
+	digits := func(s string) bool { return s != "" && strings.Trim(s, "0123456789") == "" }
+	code = strings.ToUpper(code)
+	switch system {
+	case "http://hl7.org/fhir/sid/icd-9-cm":
+		switch {
+		case len(code) > 3 && digits(code):
+			return code[:3] + "." + code[3:], true
+		case len(code) > 3 && code[0] == 'V' && digits(code[1:]):
+			return code[:3] + "." + code[3:], true
+		case len(code) > 4 && code[0] == 'E' && digits(code[1:]):
+			return code[:4] + "." + code[4:], true
+		}
+	case "http://hl7.org/fhir/sid/icd-10-cm":
+		if len(code) > 3 && code[0] >= 'A' && code[0] <= 'Z' && alnum(code) && digits(code[1:2]) {
+			return code[:3] + "." + code[3:], true
+		}
+	}
+	return "", false
 }

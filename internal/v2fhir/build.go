@@ -739,8 +739,15 @@ func (c *converter) buildObservation(obxIndex int, patient, encounter, specimen 
 	o.SetResourceID(c.deterministicID("Observation",
 		c.msg.ControlID()+"|"+setID+"|"+subID+"|"+codeKey(code)))
 
-	o.Category = []fhir.CodeableConcept{*fhir.NewCodeableConcept(
-		fhir.SystemObservationCategory, "laboratory", "Laboratory")}
+	// Results are laboratory unless the code is a vital sign. An ORU from an EHR carries flowsheet vitals as often as lab
+	// results; a heart rate labelled laboratory is wrong, and FHIR's vital-signs profiles require the vital-signs category.
+	if isVitalSign(code) {
+		o.Category = []fhir.CodeableConcept{*fhir.NewCodeableConcept(
+			fhir.SystemObservationCategory, "vital-signs", "Vital Signs")}
+	} else {
+		o.Category = []fhir.CodeableConcept{*fhir.NewCodeableConcept(
+			fhir.SystemObservationCategory, "laboratory", "Laboratory")}
+	}
 
 	// OBX-11 is the observation result status.
 	if rs := strings.ToUpper(c.get(prefix + "-11")); rs != "" {
@@ -816,6 +823,19 @@ func (c *converter) setObservationValue(o *fhir.Observation, prefix, valueType, 
 			fhir.SystemDataAbsentReason, "unknown", "Unknown")
 		c.note("info", prefix+"-5", "Observation.dataAbsentReason",
 			"no value was sent, so dataAbsentReason records that rather than leaving the result silently empty")
+		return
+	}
+
+	// One Observation holds one numeric value. A numeric OBX-5 that repeats ("27~25" from an EHR sample) used to become the
+	// text "27~25", repeat separator included. The values are kept as text, separated as a person would write them.
+	if n := c.repeatCount(prefix + "-5"); n > 1 && (valueType == "NM" || valueType == "SN") {
+		values := make([]string, 0, n)
+		for i := 1; i <= n; i++ {
+			values = append(values, c.get(fmt.Sprintf("%s-5(%d)", prefix, i)))
+		}
+		o.ValueString = fhir.Str(strings.Join(values, "; "))
+		c.note("warning", prefix+"-5", "Observation.valueString",
+			"OBX-5 repeats %d numeric values and an Observation holds one, so they were kept as text", n)
 		return
 	}
 
@@ -1455,4 +1475,17 @@ func plausibleUCUM(code string) bool {
 		}
 	}
 	return !inBrace && depth['['] == depth[']'] && depth['('] == depth[')']
+}
+
+// vitalSignCodes are the LOINC codes of FHIR R4's vital-signs profiles and US Core's.
+var vitalSignCodes = setOf(`85353-1 9279-1 8867-4 2708-6 59408-5 8310-5 8302-2 9843-4 29463-7 39156-5 85354-9 8480-6 8462-4
+	8289-1 59576-9 77606-2 3150-0 3151-8`)
+
+func isVitalSign(code *fhir.CodeableConcept) bool {
+	for _, c := range code.Coding {
+		if c.System == "http://loinc.org" && vitalSignCodes[c.Code] {
+			return true
+		}
+	}
+	return false
 }

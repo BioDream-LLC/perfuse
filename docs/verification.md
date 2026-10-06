@@ -679,7 +679,32 @@ validator found 34 errors in the bundles. The fixes:
 - **An appointment with a start and a duration but no end** broke app-4. The end is now the start plus the duration.
 - **CVX `3` for `03`** is padded to the form CVX defines.
 
-What remains is one US Core extension the base-R4 run could not resolve, because that run was made without the US Core package.
+The one error left was a US Core extension the base-R4 run could not resolve, because that run was made without the US Core
+package (see below).
+
+A third set followed: the 139 v2 samples Microsoft ships with its FHIR Converter (microsoft/FHIR-Converter at 70fd328e,
+`data/SampleData/Hl7v2`, MIT), written in the shape of US EHR feeds: ADT A01 to A60, BAR, MDM, ORU, OUL, OML, OMG, REF, RRI,
+SIU, VXU and LRI lab messages, v2.3 to v2.8. All 139 converted. The validator, this time with US Core 6.1.0 loaded, found 8
+errors, and three were Perfuse's:
+
+- **ICD codes without the dot.** `DG1|1|I9|71596^...^I9` is how feeds commonly send ICD-9-CM 715.96; the undotted form is not a
+  code in either ICD system. ICD-9-CM and ICD-10-CM codes sent without the dot now get it, with a note.
+- **Vital signs labelled laboratory.** Every OBX became category `laboratory`, heart rates included. Results coded with the
+  LOINC codes of FHIR's vital-signs profiles are now category `vital-signs`.
+- **A repeated numeric value kept with the repeat separator.** `27~25` in a numeric OBX-5 became the text "27~25". One
+  Observation holds one value, so the repeats are kept as text, "27; 25", with a warning.
+
+The other five are the samples' own: a practitioner's assigning authority `&2.8&ISO`, which the validator does not accept as an
+OID (twice), and a "Bacteria identified" result sent with the LOINC heart-rate code, two numbers and no time, which the R4
+heart-rate profile then rejects three ways. Perfuse passes such data through with notes rather than rewriting it.
+
+The bundles also draw one warning per in-bundle reference: entries have `urn:uuid` fullUrls while references are `Patient/id`,
+which bundle resolution rules cannot follow inside the file. That is how a transaction is meant to be read (each entry is a PUT
+to `Patient/id`, so the reference resolves on the server). The library's `Options.BaseURL` gives absolute fullUrls that also
+resolve in the file; `perfuse fhir convert` has no flag for it.
+
+Re-run with US Core loaded, the French and Welsh set is now free of validator errors as well: the US Core race extension the
+base-R4 run could not resolve validates.
 
 ## Mutual TLS, against OpenSSL
 

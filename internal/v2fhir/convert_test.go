@@ -810,3 +810,47 @@ func TestAUnitMarkedUCUMIsKeptAsUCUM(t *testing.T) {
 		t.Errorf("a unit with a space is not UCUM whatever OBX-6.3 says: %+v", q)
 	}
 }
+
+func TestICDCodesSentWithoutTheDotGetIt(t *testing.T) {
+	for _, tc := range []struct{ system, in, want string }{
+		{"http://hl7.org/fhir/sid/icd-9-cm", "71596", "715.96"},
+		{"http://hl7.org/fhir/sid/icd-9-cm", "V7231", "V72.31"},
+		{"http://hl7.org/fhir/sid/icd-9-cm", "E8889", "E888.9"},
+		{"http://hl7.org/fhir/sid/icd-9-cm", "250", ""},
+		{"http://hl7.org/fhir/sid/icd-9-cm", "715.96", ""},
+		{"http://hl7.org/fhir/sid/icd-10-cm", "E119", "E11.9"},
+		{"http://hl7.org/fhir/sid/icd-10-cm", "S72001A", "S72.001A"},
+		{"http://hl7.org/fhir/sid/icd-10-cm", "I10", ""},
+		{"http://loinc.org", "12345", ""},
+	} {
+		got, ok := dotICD(tc.system, tc.in)
+		if (tc.want == "") == ok || got != tc.want {
+			t.Errorf("%s %q: got %q %v, want %q", tc.system, tc.in, got, ok, tc.want)
+		}
+	}
+}
+
+// A heart rate is a vital sign, not a laboratory result; and a numeric OBX-5 that repeats is kept as text without the
+// repeat separator, since one Observation holds one value.
+func TestVitalSignsAndRepeatedNumbers(t *testing.T) {
+	raw := message(
+		segment("MSH", mshFields("ORU^R01^ORU_R01", "CTRL9", "20260818130000-0500")),
+		segment("PID", map[int]string{1: "1", 3: "MRN1^^^SITEA^MR", 5: "Doe^Jane"}),
+		segment("OBR", map[int]string{1: "1", 4: "VITALS^Vitals^L", 7: "20260818113000-0500"}),
+		segment("OBX", map[int]string{1: "1", 2: "NM", 3: "8867-4^Heart rate^LN", 5: "72", 6: "/min", 11: "F"}),
+		segment("OBX", map[int]string{1: "2", 2: "NM", 3: "718-7^Hemoglobin^LN", 5: "27~25", 11: "F"}),
+	)
+	obs := findAll[*fhir.Observation](convert(t, raw, Options{}))
+	if len(obs) != 2 {
+		t.Fatalf("got %d observations", len(obs))
+	}
+	if got := obs[0].Category[0].Coding[0].Code; got != "vital-signs" {
+		t.Errorf("heart rate category = %q", got)
+	}
+	if got := obs[1].Category[0].Coding[0].Code; got != "laboratory" {
+		t.Errorf("hemoglobin category = %q", got)
+	}
+	if obs[1].ValueString == nil || *obs[1].ValueString != "27; 25" {
+		t.Errorf("repeated numeric value = %v", obs[1].ValueString)
+	}
+}
