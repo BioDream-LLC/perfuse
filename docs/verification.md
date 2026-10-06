@@ -356,6 +356,9 @@ item and addItem adjudications), `extension:authorizedProvider` and `item.extens
 validator reject every response, so they are left out. The rest are `request.extension:DataAbsentReason` (Perfuse always knows the
 request) and `addItem.extension:productOrServiceCodeEnd`.
 
+Run again with Perfuse's own authorization server (`-smart-clients`) in place of Keycloak, the kit's backend client registered with
+its own public keys and its token from `/auth/token`: the same 82 of 84.
+
 The request bundles were the kit's own, for its client simulation. They are identical for approval, denial and pending, because
 Inferno's simulated payer is told what to answer; for a payer that decides from what is asked, the denial asked for dialysis and the
 pended request for surgery, and three more requests exercised a quantity limit, an alternative, a request for documents and a line
