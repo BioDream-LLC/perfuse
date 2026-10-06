@@ -1147,6 +1147,10 @@ func indexEntries(r fhir.Resource) []indexEntry {
 
 // SearchQuery is a parsed search request.
 type SearchQuery struct {
+	// ScopeFilters, when set, limit results to resources matching at least one of them: the search parameters of the caller's
+	// granular SMART scopes, set by the server and never by the client.
+	ScopeFilters []map[string][]string
+
 	ResourceType string
 	// Criteria maps a parameter to the values it must match. Repeating a parameter
 	// means OR within that parameter and AND between parameters, which is what
@@ -1399,82 +1403,34 @@ func (s *Store) Search(ctx context.Context, q *SearchQuery) (*SearchResult, erro
 			}
 
 		default:
-			// Each occurrence of a parameter becomes an EXISTS against the index, so repeated parameters AND together
-			// (date=ge2020&date=le2021), and the comma-separated values within one occurrence OR (status=final,amended),
-			// as FHIR defines. Both used to be wrong: occurrences ORed, and a comma list was one literal value, so a
-			// multiple-or search matched nothing; the Inferno US Core suite failed every one.
-			for _, occurrence := range values {
-				ors := splitOr(occurrence)
-				var clause strings.Builder
-				clause.WriteString(` AND EXISTS (SELECT 1 FROM fhir_search x
-				WHERE x.resource_type = fhir_resources.resource_type
-				  AND x.resource_id = fhir_resources.resource_id
-				  AND x.param = ? AND (`)
-				args = append(args, param)
-
-				for i, v := range ors {
-					if i > 0 {
-						clause.WriteString(" OR ")
-					}
-					system, value := splitToken(v)
-					if isDateParam(param) {
-						cond, cargs, err := dateClause(v)
-						if err != nil {
-							return nil, err
-						}
-						clause.WriteString(cond)
-						args = append(args, cargs...)
-						continue
-					}
-					if isReferenceParam(param) {
-						// A type-qualified reference matches the type as well as the id.
-						//
-						// Patient/123 and Group/123 were previously the same query, because the index held a
-						// bare id and this compared bare ids. A reference search that returns another
-						// resource's records as the requested one's is the worst answer available here, so
-						// the type is compared when the client gave one.
-						//
-						// When the client gave no type the id alone is matched, which is what FHIR means by
-						// the unqualified form and is what a client sending ?patient=123 expects.
-						clause.WriteString("x.value = ?")
-						args = append(args, refIDFromString(v))
-
-						if refType := refTypeFromString(v); refType != "" {
-							// An index row with no recorded type is not matched here. It cannot be:
-							// admitting it would restore exactly the ambiguity this removes. Rows are
-							// re-derived on migration so there are none, and a resource written since
-							// carries its type.
-							clause.WriteString(" AND x.ref_type = ?")
-							args = append(args, refType)
-						}
-
-						continue
-					}
-					if system != "" {
-						if value == "" {
-							// system| means "any code in this system". Match the system alone.
-							clause.WriteString("x.system = ?")
-							args = append(args, system)
-						} else {
-							clause.WriteString("(x.system = ? AND x.value = ?)")
-							args = append(args, system, value)
-						}
-					} else {
-						// Name-ish parameters are matched as prefixes, which is how
-						// FHIR defines string search, and are indexed lowercase.
-						if isStringParam(param) {
-							clause.WriteString("x.value LIKE ?")
-							args = append(args, strings.ToLower(value)+"%")
-						} else {
-							clause.WriteString("x.value = ?")
-							args = append(args, value)
-						}
-					}
-				}
-				clause.WriteString("))")
-				where.WriteString(clause.String())
+			clause, extra, err := indexClause(param, values)
+			if err != nil {
+				return nil, err
 			}
+			where.WriteString(clause)
+			args = append(args, extra...)
 		}
+	}
+
+	// Granular SMART scopes: a resource must match at least one of the caller's filters, each a set of ordinary criteria.
+	if len(q.ScopeFilters) > 0 {
+		where.WriteString(" AND (")
+		for i, f := range q.ScopeFilters {
+			if i > 0 {
+				where.WriteString(" OR ")
+			}
+			where.WriteString("(1 = 1")
+			for param, values := range f {
+				clause, extra, err := indexClause(param, values)
+				if err != nil {
+					return nil, err
+				}
+				where.WriteString(clause)
+				args = append(args, extra...)
+			}
+			where.WriteString(")")
+		}
+		where.WriteString(")")
 	}
 
 	// Modified criteria, each its own EXISTS or NOT EXISTS against the index.
@@ -1542,6 +1498,88 @@ func (s *Store) Search(ctx context.Context, q *SearchQuery) (*SearchResult, erro
 	}
 
 	return result, nil
+}
+
+// indexClause is the SQL for one parameter's occurrences against the search index: each occurrence an EXISTS, so repeated
+// parameters AND together (date=ge2020&date=le2021), and the comma-separated values within one occurrence OR
+// (status=final,amended), as FHIR defines. Both used to be wrong: occurrences ORed, and a comma list was one literal value, so a
+// multiple-or search matched nothing; the Inferno US Core suite failed every one.
+func indexClause(param string, values []string) (string, []any, error) {
+	var where strings.Builder
+	var args []any
+	for _, occurrence := range values {
+		ors := splitOr(occurrence)
+		var clause strings.Builder
+		clause.WriteString(` AND EXISTS (SELECT 1 FROM fhir_search x
+			WHERE x.resource_type = fhir_resources.resource_type
+			  AND x.resource_id = fhir_resources.resource_id
+			  AND x.param = ? AND (`)
+		args = append(args, param)
+
+		for i, v := range ors {
+			if i > 0 {
+				clause.WriteString(" OR ")
+			}
+			system, value := splitToken(v)
+			if isDateParam(param) {
+				cond, cargs, err := dateClause(v)
+				if err != nil {
+					return "", nil, err
+				}
+				clause.WriteString(cond)
+				args = append(args, cargs...)
+				continue
+			}
+			if isReferenceParam(param) {
+				// A type-qualified reference matches the type as well as the id.
+				//
+				// Patient/123 and Group/123 were previously the same query, because the index held a
+				// bare id and this compared bare ids. A reference search that returns another
+				// resource's records as the requested one's is the worst answer available here, so
+				// the type is compared when the client gave one.
+				//
+				// When the client gave no type the id alone is matched, which is what FHIR means by
+				// the unqualified form and is what a client sending ?patient=123 expects.
+				clause.WriteString("x.value = ?")
+				args = append(args, refIDFromString(v))
+
+				if refType := refTypeFromString(v); refType != "" {
+					// An index row with no recorded type is not matched here. It cannot be:
+					// admitting it would restore exactly the ambiguity this removes. Rows are
+					// re-derived on migration so there are none, and a resource written since
+					// carries its type.
+					clause.WriteString(" AND x.ref_type = ?")
+					args = append(args, refType)
+				}
+
+				continue
+			}
+			if system != "" {
+				if value == "" {
+					// system| means "any code in this system". Match the system alone.
+					clause.WriteString("x.system = ?")
+					args = append(args, system)
+				} else {
+					clause.WriteString("(x.system = ? AND x.value = ?)")
+					args = append(args, system, value)
+				}
+			} else {
+				// Name-ish parameters are matched as prefixes, which is how
+				// FHIR defines string search, and are indexed lowercase.
+				if isStringParam(param) {
+					clause.WriteString("x.value LIKE ?")
+					args = append(args, strings.ToLower(value)+"%")
+				} else {
+					clause.WriteString("x.value = ?")
+					args = append(args, value)
+				}
+			}
+		}
+		clause.WriteString("))")
+		where.WriteString(clause.String())
+	}
+
+	return where.String(), args, nil
 }
 
 // FindByIdentifier resolves a conditional reference, such as the ifNoneExist on a

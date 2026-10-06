@@ -518,7 +518,8 @@ func (c *Caller) Allows(resourceType string, write bool) bool {
 		if write && g.Write {
 			return true
 		}
-		if !write && g.Read {
+		if !write && (g.Read || len(g.Filters) > 0) {
+			// A filtered read passes here and is narrowed to its filters on every search and read.
 			return true
 		}
 	}

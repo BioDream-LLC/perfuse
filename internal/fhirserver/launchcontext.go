@@ -138,6 +138,7 @@ func (s *Server) enforceSearchContext(caller *Caller, q *SearchQuery) error {
 	if err := narrowSearchToEncounter(caller, q); err != nil {
 		return err
 	}
+	narrowSearchToScopes(caller, q)
 
 	if caller.Patient == "" {
 		return nil
@@ -224,7 +225,7 @@ func permitsResource(caller *Caller, r fhir.Resource) bool {
 		return false
 	}
 
-	return true
+	return permitsScopes(caller, r)
 }
 
 // permitsEncounter reports whether a resource belongs to the encounter a token was launched from.

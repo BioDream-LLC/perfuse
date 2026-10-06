@@ -614,8 +614,7 @@ func TestABundleEntryIsScopeChecked(t *testing.T) {
 	})
 }
 
-// A granular scope's query is not permission letters: the c and d of "category" once granted writes. Until filtered reads
-// are enforced on the results, a filtered grant alone reads nothing rather than everything.
+// A granular scope's query is not permission letters: the c and d of "category" once granted writes.
 func TestAGranularScopeNeverGrantsWrites(t *testing.T) {
 	c := &Caller{Scopes: []string{"patient/Observation.rs?category=http://terminology.hl7.org/CodeSystem/observation-category|laboratory",
 		"patient/Condition.rs?category=problem-list-item", "patient/Patient.rs"}}
@@ -630,8 +629,5 @@ func TestAGranularScopeNeverGrantsWrites(t *testing.T) {
 	g := parseSMARTScopes(c.Scopes)
 	if len(g["Observation"].Filters) != 1 || g["Observation"].Read || g["Observation"].Write {
 		t.Errorf("Observation grant = %+v, want one filter and no unfiltered access", g["Observation"])
-	}
-	if c.Allows("Observation", false) {
-		t.Error("a filtered grant alone must not read every Observation")
 	}
 }

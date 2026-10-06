@@ -550,8 +550,24 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	result.Included = permittedIncludes(CallerFrom(r.Context()), result.Included)
 	bundle := s.Store.SearchBundle(result, s.BaseURL, resourceType, r.URL.RawQuery)
 	s.writeBundle(w, r, http.StatusOK, bundle)
+}
+
+// permittedIncludes drops the _include and _revinclude results the caller could not have read directly: another patient's,
+// a type its scopes do not grant, or outside a granular scope. An include is a read by another route, and was not checked.
+func permittedIncludes(caller *Caller, included []fhir.Resource) []fhir.Resource {
+	if caller == nil {
+		return included
+	}
+	out := included[:0]
+	for _, r := range included {
+		if caller.Allows(r.ResourceTypeName(), false) && permitsResource(caller, r) {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request) {
