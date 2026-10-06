@@ -140,8 +140,9 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/transform.svg" width="168" height="40" alt="Transformation"></th><th align="left" valign="middle">Eleven declarative steps, or full JavaScript when you need it</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/transform.svg" width="168" height="40" alt="Transformation"></th><th align="left" valign="middle">Eleven declarative steps, or full JavaScript or Lua when you need it</th></tr></thead>
 <tbody>
+<tr><td colspan="2"><b>Lua</b> as well as JavaScript: <code>scripts.language: lua</code> runs a channel's filter, transformer and other scripts in a sandboxed Lua 5.1 - no files, no shell, no environment, no code loading, a deadline that cannot be switched off - with the same message tree, maps and logger JavaScript has</td></tr>
 <tr><td colspan="2">Declarative steps that need no code: <b>set, copy, remove, clear, default, case, date, pad, trim, replace, map</b> — each with an optional <code>when</code> condition</td></tr>
 <tr><td colspan="2"><b>Shared mapping tables</b> that outlive the channel that first needed one, with a record of who decided each mapping and why</td></tr>
 <tr><td colspan="2"><b>Code sets</b> and value-set lookups</td></tr>

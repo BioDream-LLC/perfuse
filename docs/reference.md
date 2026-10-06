@@ -1059,6 +1059,57 @@ every channel becomes a puzzle.
 Steps are compiled during validation, so a broken one stops the channel from
 starting rather than failing on the first message.
 
+## Lua scripts
+
+Scripts are JavaScript unless the channel says otherwise. `scripts.language: lua`
+runs every script on the channel in Lua 5.1 instead: filter, transformer,
+preprocessor, postprocessor, deploy and undeploy, and the libraries named in
+`include` (`lib/<name>.lua`). One language per channel, because its scripts share
+the channel map and are reviewed together.
+
+```yaml
+scripts:
+  language: lua
+  filter: |
+    return msg.child("MSH").child("MSH.9").child("MSH.9.1").text() == "ADT"
+  transformer: |
+    local name = msg.child("PID").child("PID.5").child("PID.5.1")
+    name.setText(string.upper(name.text()))
+    channelMap.put("mrn", msg.child("PID").child("PID.3").child("PID.3.1").text())
+    logger.info("normalised " .. channelMap.get("mrn"))
+```
+
+What a Lua script sees:
+
+| Global | What it is |
+|---|---|
+| `msg` | The message. HL7 v2 and v3 as the same tree JavaScript sees (`PID` > `PID.5` > `PID.5.1`): `name()`, `text()`, `setText()`, `attr()`, `setAttr()`, `removeAttr()`, `child(name [, n])` (n is one-based), `children()`, `ensure(name)`, `append()`. X12, NCPDP and delimited by path instead: `get("CLM01")`, `has()`, `set()` |
+| `message` | The raw text; `nil` when there is none |
+| `tmp` | The outbound tree, when the channel has one |
+| `channelName` | The channel's name |
+| `logger` | `debug`, `info`, `warn`, `error` |
+| `channelMap`, `connectorMap`, `responseMap`, `sourceMap` | `get`, `put`, `remove` |
+
+Accessors are functions, not fields, so `node.txet` is an error rather than a
+quiet `nil`, and a value read after a write is the value written.
+
+The limits, all deliberate:
+
+- **Libraries:** `string`, `table`, `math` and the base functions only. `os`, `io`,
+  `package`/`require`, `debug` and `coroutine` are absent, and so are `load`,
+  `loadstring`, `dofile`, `loadfile`, `print` and `collectgarbage`. A Lua script
+  cannot read a file, run a command, read the environment or load code.
+- **No Mirth helpers.** `DateUtil`, `FileUtil`, `router`, database connections,
+  serializers, `UUIDGenerator`, E4X and Java are JavaScript's, for migrated Mirth
+  channels. Lua is for scripts written here.
+- **A filter must return `true` or `false`.** Lua counts `0` and `""` as true; a
+  filter written in either language has to mean the same thing, so anything else
+  is an error, as is returning nothing.
+- **A deadline** (`scripts.timeout`, five seconds by default), which cannot be
+  switched off; an endless loop is stopped, not waited for.
+- **A call depth of 256** and a registry of 20,480 slots, so runaway recursion
+  fails the message instead of the process.
+
 ## Mirth scripts
 
 Existing Mirth transformers and filters run as written. This is the whole
