@@ -56,6 +56,10 @@ type SMARTConfig struct {
 
 	// Now overrides the clock, for tests.
 	Now func() time.Time
+
+	// Keys, when set, are the issuer's keys given directly: Perfuse's own authorization server, whose tokens are checked
+	// without fetching its key set over the network.
+	Keys *oidc.KeySet
 }
 
 // SMARTAuth authenticates a SMART on FHIR access token.
@@ -176,6 +180,9 @@ func (a *SMARTAuth) Authenticate(r *http.Request) (*Caller, error) {
 
 // keySet resolves the JWKS location once and caches the key set.
 func (a *SMARTAuth) keySet(ctx context.Context) (*oidc.KeySet, error) {
+	if a.cfg.Keys != nil {
+		return a.cfg.Keys, nil
+	}
 	a.discoverOnce.Do(func() {
 		if a.cfg.JWKSURL != "" {
 			a.resolved = a.cfg.JWKSURL
@@ -296,8 +303,14 @@ type SMARTDiscovery struct {
 
 // HasEndpoints reports whether enough is configured to publish anything useful.
 func (d SMARTDiscovery) HasEndpoints() bool {
-	return strings.TrimSpace(d.AuthorizationEndpoint) != "" && strings.TrimSpace(d.TokenEndpoint) != ""
+	if strings.TrimSpace(d.TokenEndpoint) == "" {
+		return false
+	}
+	return strings.TrimSpace(d.AuthorizationEndpoint) != "" || d.BackendServices
 }
+
+// launches reports whether apps can sign people in here, not only backend clients get tokens.
+func (d SMARTDiscovery) launches() bool { return strings.TrimSpace(d.AuthorizationEndpoint) != "" }
 
 // handleSMARTConfiguration serves .well-known/smart-configuration.
 func (s *Server) handleSMARTConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -354,6 +367,17 @@ func (s *Server) handleSMARTConfiguration(w http.ResponseWriter, r *http.Request
 		methods = []string{"private_key_jwt"}
 		algs = []string{"RS384", "ES384"}
 	}
+	scopes := []string{"openid", "fhirUser", "offline_access",
+		"patient/*.read", "user/*.read", "system/*.read",
+		"patient/*.rs", "user/*.rs", "system/*.rs"}
+	challenge := []string{"S256"}
+	if !d.launches() {
+		// Backend services only: nobody signs in, so no launch, patient context, ID token or PKCE is offered.
+		caps = []string{"client-confidential-asymmetric", "permission-v1", "permission-v2"}
+		grants = []string{"client_credentials"}
+		scopes = []string{"system/*.read", "system/*.rs"}
+		challenge = nil
+	}
 
 	body := smartConfiguration{
 		GrantTypesSupported:   grants,
@@ -367,14 +391,10 @@ func (s *Server) handleSMARTConfiguration(w http.ResponseWriter, r *http.Request
 		// Both spellings, because version 1 and version 2 of the specification differ and an authorization
 		// server may ask for either. Wildcards rather than a per-resource list: the resource types this server
 		// holds are in the capability statement, which is behind authentication on purpose.
-		ScopesSupported: []string{
-			"openid", "fhirUser", "offline_access",
-			"patient/*.read", "user/*.read", "system/*.read",
-			"patient/*.rs", "user/*.rs", "system/*.rs",
-		},
+		ScopesSupported: scopes,
 		// S256 only. The plain method exists in the specification and offers no protection worth having, so it
 		// is not advertised - an app that would have used plain will use S256 instead.
-		CodeChallengeMethods: []string{"S256"},
+		CodeChallengeMethods: challenge,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -197,6 +197,10 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"the token endpoint to advertise to SMART apps")
 	smartJWKSURI := fset.String("smart-jwks-uri", "",
 		"the authorization server's public key set URL, advertised to SMART apps (needed to claim OpenID Connect sign-in)")
+	smartClients := fset.String("smart-clients", "",
+		"run Perfuse's own SMART authorization server at /auth for the apps registered in this YAML file")
+	smartKey := fset.String("smart-key", "smart-signing.key",
+		"the built-in authorization server's RSA signing key (PEM, mode 0600), created if missing")
 	smartBackend := fset.Bool("smart-backend-services", false,
 		"advertise that the SMART authorization server issues backend-services (client_credentials, signed JWT) tokens")
 	// Zero by default, because outside an orchestrator a drain delay is just a
@@ -1140,10 +1144,29 @@ oidcDone:
 		// Both halves were wrong in opposite directions, which is why it survived: the log described an open
 		// endpoint that was actually shut, so nobody testing security found a hole and nobody testing the
 		// feature got far enough to file it.
+		// Perfuse's own authorization server: it issues the tokens this endpoint accepts, so it is also the SMART issuer.
+		var smartKeys *oidc.KeySet
+		if *smartClients != "" {
+			if *smartIssuer != "" {
+				return errors.New("-smart-clients runs Perfuse's own authorization server, and -smart-issuer names another; choose one")
+			}
+			as, err := builtinAuthServer(*smartClients, *smartKey, baseURL)
+			if err != nil {
+				return err
+			}
+			if smartKeys, err = oidc.NewStaticKeySet(as.Key.JWKS()); err != nil {
+				return err
+			}
+			mux.Handle("/auth/", http.StripPrefix("/auth", as.Handler()))
+			*smartIssuer, *smartToken, *smartJWKSURI, *smartBackend = as.Issuer, as.TokenURL(), as.Issuer+"/jwks", true
+			log.Info("SMART authorization server", "issuer", as.Issuer, "clients", len(as.Clients), "key", as.Key.ID)
+		}
+
 		fhirAuth, err := fhirAuthenticator(fhirAuthOptions{
 			SMARTIssuer:   strings.TrimSpace(*smartIssuer),
 			SMARTAudience: strings.TrimSpace(*smartAudience),
 			SMARTJWKS:     strings.TrimSpace(*smartJWKS),
+			SMARTKeys:     smartKeys,
 			BaseURL:       baseURL,
 			Open:          *fhirOpen,
 			ReadOnly:      *fhirReadOnly,
@@ -1204,7 +1227,7 @@ oidcDone:
 
 		// Said when SMART tokens are accepted but no endpoints are advertised, because the app-side symptom is
 		// confusing: the token works when an app is configured by hand, and automatic discovery returns 404.
-		if *smartIssuer != "" && !smartConfigured(*smartAuthorize, *smartToken) {
+		if *smartIssuer != "" && !smartConfigured(*smartAuthorize, *smartToken) && !(*smartBackend && *smartToken != "") {
 			log.Warn("SMART tokens will be accepted but no endpoints are advertised, so an app cannot "+
 				"discover where to authenticate",
 				"fix", "pass -smart-authorize and -smart-token")

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
+	"github.com/biodream-llc/perfuse/internal/oidc"
 	"github.com/biodream-llc/perfuse/internal/store"
 )
 
@@ -22,6 +23,8 @@ type fhirAuthOptions struct {
 	SMARTAudience string
 	// SMARTJWKS is the issuer's key set URL, for when the issuer's own address does not resolve from here.
 	SMARTJWKS string
+	// SMARTKeys are the issuer's keys given directly, when the issuer is Perfuse's own authorization server.
+	SMARTKeys *oidc.KeySet
 
 	// BaseURL is this server's FHIR base, used as the SMART audience when none is given.
 	BaseURL string
@@ -70,6 +73,7 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 			Issuer:   opts.SMARTIssuer,
 			Audience: audience,
 			JWKSURL:  opts.SMARTJWKS,
+			Keys:     opts.SMARTKeys,
 		})
 		if err != nil {
 			return nil, err

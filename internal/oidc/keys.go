@@ -77,6 +77,11 @@ func (s *KeySet) Key(ctx context.Context, kid string) (crypto.PublicKey, error) 
 		return key, nil
 	}
 
+	if s.url == "" {
+		// A static set, given rather than fetched: there is nowhere to look again.
+		return nil, fmt.Errorf("oidc: the token was signed with key %q, which is not among the %d key(s) given", kid, len(s.keys))
+	}
+
 	if !last.IsZero() && time.Since(last) < minRefetchInterval {
 		// Refused rather than fetched. A token naming a key the provider does not publish is either very stale or forged,
 		// and either way refetching on demand would let anyone drive traffic at the identity provider.
@@ -121,11 +126,34 @@ func (s *KeySet) fetch(ctx context.Context) error {
 		return err
 	}
 
+	parsed, err := parseJWKS(body)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	s.keys = parsed
+	s.fetched = time.Now()
+	s.mu.Unlock()
+
+	return nil
+}
+
+// NewStaticKeySet is a key set given as a JWKS document rather than fetched: a client's keys registered inline, or a server's own.
+func NewStaticKeySet(jwks []byte) (*KeySet, error) {
+	parsed, err := parseJWKS(jwks)
+	if err != nil {
+		return nil, err
+	}
+	return &KeySet{keys: parsed, fetched: time.Now()}, nil
+}
+
+func parseJWKS(body []byte) (map[string]crypto.PublicKey, error) {
 	var doc struct {
 		Keys []jwk `json:"keys"`
 	}
 	if err := json.Unmarshal(body, &doc); err != nil {
-		return fmt.Errorf("oidc: the signing key document could not be read: %w", err)
+		return nil, fmt.Errorf("oidc: the signing key document could not be read: %w", err)
 	}
 
 	parsed := make(map[string]crypto.PublicKey, len(doc.Keys))
@@ -152,16 +180,11 @@ func (s *KeySet) fetch(ctx context.Context) error {
 	}
 
 	if len(parsed) == 0 {
-		return fmt.Errorf("oidc: the identity provider published no signing keys this can use; it may be using an " +
+		return nil, fmt.Errorf("oidc: the key set holds no signing keys this can use; it may be using an " +
 			"algorithm other than RS256, RS384, RS512, ES256, ES384 or ES512")
 	}
 
-	s.mu.Lock()
-	s.keys = parsed
-	s.fetched = time.Now()
-	s.mu.Unlock()
-
-	return nil
+	return parsed, nil
 }
 
 // publicKey converts a JWK to a public key.

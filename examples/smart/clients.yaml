@@ -1,0 +1,8 @@
+# perfuse serve -fhir -smart-clients examples/smart/clients.yaml
+# Each app that may get tokens from Perfuse's authorization server at /auth. Unknown keys are refused.
+clients:
+  - id: payer-dtr-client
+    name: DTR app (backend services)
+    kind: backend                    # SMART Backend Services: a signed JWT assertion, client_credentials, system scopes
+    jwks_uri: https://dtr.example.org/.well-known/jwks.json   # or jwks: {keys: [...]} inline
+    scopes: ["system/*.rs", "system/Claim.c"]                 # the most it may be granted; "system/*" would cover all
