@@ -199,6 +199,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"the authorization server's public key set URL, advertised to SMART apps (needed to claim OpenID Connect sign-in)")
 	smartClients := fset.String("smart-clients", "",
 		"run Perfuse's own SMART authorization server at /auth for the apps registered in this YAML file")
+	smartUsers := fset.String("smart-users", "",
+		"with -smart-clients, the people who may sign in to authorize apps (YAML: username, password_hash, fhir_user)")
 	smartKey := fset.String("smart-key", "smart-signing.key",
 		"the built-in authorization server's RSA signing key (PEM, mode 0600), created if missing")
 	smartBackend := fset.Bool("smart-backend-services", false,
@@ -1146,11 +1148,15 @@ oidcDone:
 		// feature got far enough to file it.
 		// Perfuse's own authorization server: it issues the tokens this endpoint accepts, so it is also the SMART issuer.
 		var smartKeys *oidc.KeySet
+		var smartExtraCaps []string
+		if *smartUsers != "" && *smartClients == "" {
+			return errors.New("-smart-users needs -smart-clients: people sign in to authorize the apps registered there")
+		}
 		if *smartClients != "" {
 			if *smartIssuer != "" {
 				return errors.New("-smart-clients runs Perfuse's own authorization server, and -smart-issuer names another; choose one")
 			}
-			as, err := builtinAuthServer(*smartClients, *smartKey, baseURL)
+			as, err := builtinAuthServer(*smartClients, *smartUsers, *smartKey, baseURL, fhirSrv.Store)
 			if err != nil {
 				return err
 			}
@@ -1159,6 +1165,10 @@ oidcDone:
 			}
 			mux.Handle("/auth/", http.StripPrefix("/auth", as.Handler()))
 			*smartIssuer, *smartToken, *smartJWKSURI, *smartBackend = as.Issuer, as.TokenURL(), as.Issuer+"/jwks", true
+			*smartAuthorize = as.AuthorizeURL()
+			if *smartAuthorize != "" {
+				smartExtraCaps = []string{"permission-offline", "permission-online", "permission-user", "context-banner"}
+			}
 			log.Info("SMART authorization server", "issuer", as.Issuer, "clients", len(as.Clients), "key", as.Key.ID)
 		}
 
@@ -1186,6 +1196,7 @@ oidcDone:
 			TokenEndpoint:         strings.TrimSpace(*smartToken),
 			BackendServices:       *smartBackend,
 			JWKSURI:               strings.TrimSpace(*smartJWKSURI),
+			ExtraCapabilities:     smartExtraCaps,
 		}
 
 		// Read per request, so changing the page size in the interface applies to the next search rather

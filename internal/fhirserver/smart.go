@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -299,6 +300,10 @@ type SMARTDiscovery struct {
 	// BackendServices says the authorization server issues client_credentials tokens to clients that sign a JWT assertion
 	// (SMART Backend Services): a payer's DTR, PAS or bulk client. Only the operator knows this about their server.
 	BackendServices bool
+
+	// ExtraCapabilities are further capabilities the authorization server has, such as refresh tokens (permission-offline),
+	// that only its operator - or Perfuse, for its own - can vouch for.
+	ExtraCapabilities []string
 }
 
 // HasEndpoints reports whether enough is configured to publish anything useful.
@@ -366,6 +371,10 @@ func (s *Server) handleSMARTConfiguration(w http.ResponseWriter, r *http.Request
 		caps = append(caps, "client-confidential-asymmetric")
 		methods = []string{"private_key_jwt"}
 		algs = []string{"RS384", "ES384"}
+	}
+	caps = append(caps, d.ExtraCapabilities...)
+	if slices.Contains(d.ExtraCapabilities, "permission-offline") || slices.Contains(d.ExtraCapabilities, "permission-online") {
+		grants = append(grants, "refresh_token")
 	}
 	scopes := []string{"openid", "fhirUser", "offline_access",
 		"patient/*.read", "user/*.read", "system/*.read",

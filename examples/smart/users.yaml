@@ -1,0 +1,12 @@
+# perfuse serve -fhir -smart-clients examples/smart/clients.yaml -smart-users examples/smart/users.yaml
+# The people who may sign in at /auth to authorize apps. password_hash is `perfuse smart hash` output; never the password.
+# A Patient user only ever reaches their own record. A clinician picks a patient when the app asks for launch/patient.
+users:
+  - username: amy
+    name: Amy Member
+    password_hash: "pbkdf2-sha256$600000$replace-with-perfuse-smart-hash-output"
+    fhir_user: Patient/example-member
+  - username: drbrown
+    name: Dr Brown
+    password_hash: "pbkdf2-sha256$600000$replace-with-perfuse-smart-hash-output"
+    fhir_user: Practitioner/example-clinician

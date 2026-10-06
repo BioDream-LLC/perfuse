@@ -31,8 +31,26 @@ type Server struct {
 	Clients  Clients
 	Now      func() time.Time
 
-	mu   sync.Mutex
-	used map[string]time.Time // client assertion jti -> its expiry, to refuse a replay
+	// Users sign in to authorize apps; without any, only backend clients get tokens.
+	Users Users
+	// Patients lists patients a clinician may pick, matching a search text; PatientExists checks a pick.
+	Patients      func(ctx context.Context, search string) ([]PatientChoice, error)
+	PatientExists func(ctx context.Context, id string) bool
+
+	mu       sync.Mutex
+	used     map[string]time.Time // client assertion jti -> its expiry, to refuse a replay
+	pending  map[string]*pending
+	codes    map[string]*grantRecord
+	refresh  map[string]*grantRecord
+	launches map[string]launchContext
+}
+
+// AuthorizeURL is where apps send people to sign in, empty when nobody can.
+func (s *Server) AuthorizeURL() string {
+	if len(s.Users) == 0 {
+		return ""
+	}
+	return strings.TrimRight(s.Issuer, "/") + "/authorize"
 }
 
 func (s *Server) now() time.Time {
@@ -49,6 +67,14 @@ func (s *Server) TokenURL() string { return strings.TrimRight(s.Issuer, "/") + "
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /token", s.handleToken)
+	if len(s.Users) > 0 {
+		mux.HandleFunc("GET /authorize", s.handleAuthorize)
+		mux.HandleFunc("POST /authorize", s.handleAuthorize)
+		mux.HandleFunc("POST /signin", s.handleSignIn)
+		mux.HandleFunc("POST /patient", s.handlePatient)
+		mux.HandleFunc("POST /consent", s.handleConsent)
+	}
+	mux.HandleFunc("GET /.well-known/openid-configuration", s.handleOpenIDConfiguration)
 	mux.HandleFunc("GET /jwks", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(s.Key.JWKS())
@@ -76,6 +102,10 @@ func (s *Server) handleToken(w http.ResponseWriter, r *http.Request) {
 	switch gt := r.PostForm.Get("grant_type"); gt {
 	case "client_credentials":
 		s.clientCredentials(w, r)
+	case "authorization_code":
+		s.authorizationCode(w, r)
+	case "refresh_token":
+		s.refreshToken(w, r)
 	case "":
 		tokenError(w, http.StatusBadRequest, "invalid_request", "grant_type is missing")
 	default:
@@ -214,4 +244,22 @@ func unverifiedIssuer(token string) (string, error) {
 		return "", fmt.Errorf("the client assertion names no issuer")
 	}
 	return c.Iss, nil
+}
+
+// handleOpenIDConfiguration is the OpenID Connect discovery document, which an app reads to check an ID token.
+func (s *Server) handleOpenIDConfiguration(w http.ResponseWriter, r *http.Request) {
+	doc := map[string]any{
+		"issuer": s.Issuer, "jwks_uri": strings.TrimRight(s.Issuer, "/") + "/jwks", "token_endpoint": s.TokenURL(),
+		"response_types_supported": []string{"code"}, "subject_types_supported": []string{"public"},
+		"id_token_signing_alg_values_supported": []string{"RS256"},
+		"token_endpoint_auth_methods_supported": []string{"none", "client_secret_basic", "client_secret_post", "private_key_jwt"},
+		"code_challenge_methods_supported":      []string{"S256"},
+		"scopes_supported":                      []string{"openid", "fhirUser", "profile", "launch", "launch/patient", "offline_access", "online_access"},
+		"grant_types_supported":                 []string{"authorization_code", "refresh_token", "client_credentials"},
+	}
+	if a := s.AuthorizeURL(); a != "" {
+		doc["authorization_endpoint"] = a
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(doc)
 }

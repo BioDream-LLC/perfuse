@@ -73,6 +73,7 @@ Usage:
   perfuse cms0057 <subcommand>         CARIN claims, PDex prior auths and CMS-0057 metrics for payers
   perfuse athena  [flags]              print the Amazon Athena table for an S3 ndjson archive
   perfuse elr     -config f <path>...  lab results to public health as HL7 2.5.1 ELR messages
+  perfuse smart   hash < secret        hash a password or client secret for the SMART users or clients file
   perfuse version                      print the version
 
 Run a command with -h for its flags.
@@ -172,6 +173,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdAthena(args[1:], stdout, stderr)
 	case "elr":
 		return cmdELR(args[1:], stdout, stderr)
+	case "smart":
+		return cmdSmart(args[1:], os.Stdin, stdout)
 	case "version", "--version", "-v":
 		fmt.Fprintf(stdout, "perfuse %s\n", buildVersion())
 		return nil

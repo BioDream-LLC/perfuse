@@ -6,3 +6,9 @@ clients:
     kind: backend                    # SMART Backend Services: a signed JWT assertion, client_credentials, system scopes
     jwks_uri: https://dtr.example.org/.well-known/jwks.json   # or jwks: {keys: [...]} inline
     scopes: ["system/*.rs", "system/Claim.c"]                 # the most it may be granted; "system/*" would cover all
+  - id: member-app
+    name: Member health app
+    kind: public                     # a browser or phone app: PKCE, no secret
+    redirect_uris: ["https://app.example.org/callback"]
+    launch_url: https://app.example.org/launch
+    scopes: ["openid", "fhirUser", "launch", "launch/patient", "offline_access", "patient/*.rs"]

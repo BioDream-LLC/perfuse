@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · f953067</p>
+<p class="version">version 0.1 · e84d67e</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2697,6 +2697,7 @@ rules:
 <p><strong>Adaptive questionnaires</strong>: write the whole questionnaire once, with SDC&#39;s <code>questionnaireAdaptive</code> extension and <code>enableWhen</code> on the questions that only apply sometimes. The package hands the app an empty shell, and each <code>$next-question</code> call adds the next question that applies to the answers so far, until there is nothing left to ask and the response is marked completed. The order and the branching are the payer&#39;s own rules; questions that do not apply are never shown.</p>
 <p><strong>Signing in as a client</strong>: DTR and PAS clients reach the payer with SMART Backend Services - a signed JWT exchanged for a token at the payer&#39;s authorization server. Point Perfuse at that server with <code>-smart-issuer</code> (and <code>-smart-jwks</code> if its address does not resolve from Perfuse), and pass <code>-smart-backend-services</code> so the discovery document says so. The Inferno DTR suite passes this way with Keycloak as the authorization server.</p>
 <p>Perfuse can be that authorization server itself: <code>serve -fhir -smart-clients clients.yaml</code> issues Backend Services tokens at <code>/auth/token</code> to the clients listed, each with the public keys it signs its assertions with and the system scopes it may be granted, and the FHIR endpoint accepts them. No separate identity server is needed for a payer&#39;s machine-to-machine clients.</p>
+<p>With <code>-smart-users users.yaml</code> as well, members and clinicians sign in there to authorize apps, which the Patient Access API needs: the app sends the person to <code>/auth/authorize</code>, they sign in, a clinician chooses the patient, and both see what the app asks for and can untick any of it. A member is only ever given their own record, whatever the app asks for. Each person in the file names the FHIR resource they are, <code>Patient/…</code> or <code>Practitioner/…</code>, and a password hash from <code>perfuse smart hash</code>; the password itself is never written down.</p>
 <h3 id="s16-8-deciding-prior-authorisation-requests-pas"><span class="num">16.8</span> Deciding prior authorisation requests: PAS</h3>
 <p><code>serve -fhir -pas -crd-rules rules.yaml</code> answers Da Vinci PAS 2.2.1 at <code>POST /fhir/Claim/$submit</code> and <code>POST /fhir/Claim/$inquire</code>. The decisions come from the same rules file as CRD&#39;s answers, so the order a clinician is told needs authorisation is decided by the rule that said so:</p>
 <pre class="code lang-yaml"><code>  - description: Physical therapy
