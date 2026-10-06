@@ -346,6 +346,24 @@ findings the profile raises against itself:
 
 The ONC ELR tool itself, now hosted at tools.valitheus.com, was not run: it is a web form, and scripting it failed.
 
+**SMART App Launch, October 2026.** Inferno's SMART App Launch STU2.2 suite (smart_app_launch_test_kit 1.0.3) against
+`serve -fhir -smart-clients -smart-users`, Perfuse issuing the tokens itself. A script played the browser: it followed Inferno's
+authorization links, signed in through Perfuse's forms, chose the patient, approved the scopes and returned to Inferno, and for the
+EHR launch opened Inferno's launch URL from Perfuse's `/auth/launch`. With a public client: standalone launch, EHR launch, Backend
+Services and token introspection, 80 of 80. With a confidential-symmetric client: 67 pass and 3 omitted (CORS on the token exchange, which
+SMART requires only for public clients).
+
+The suite found:
+
+- No CORS headers. A SMART app in a browser reads discovery, the capability statement and resources from another origin. The FHIR
+  endpoint and the token, key and discovery endpoints now answer with `Access-Control-Allow-Origin: *`, which is safe because none
+  of them reads a cookie; every request carries its own token.
+- An app launched from a chart could not read its own user. A token limited to a patient refused the Practitioner named in its
+  `fhirUser`. That one resource is now readable; anything else outside the patient is still not.
+- Introspection refused Inferno, which sends no credentials unless told to. It now also accepts an active access token from this
+  server as the caller's proof, besides a confidential client's credentials; a public client's id alone is still refused.
+- A member's `user/` scopes would have reached what a user may see. They are issued as `patient/` scopes instead.
+
 **The Inferno Da Vinci PAS test kit, October 2026.** The official PAS Server v2.2.1 suite (davinci-pas-test-kit v0.15.2, run
 locally in Docker) against `serve -pas -fhir-subscriptions`, with Keycloak issuing the SMART Backend Services token: 82 pass, 2 fail,
 of 84. Approval, denial, a pended request finalised by a reviewer and delivered on the PAS subscription, the four-step claim update
@@ -847,7 +865,8 @@ checked.
   answers a JSON 404 for unknown API paths.
 - **No container image has been published**, though the build file and the README both name one.
 - **No payer or clearinghouse has received a 275 built here**, and it was built from published companion guides rather than the X12 technical report. See above.
-- **The Inferno US Core SMART groups (standalone and EHR launch, granular scopes) have not been run.** Only the FHIR API group was.
+- **The Inferno US Core SMART groups have not been run as US Core groups.** The SMART App Launch STU2.2 suite they are built on
+  has, against Perfuse's own authorization server (below); the US Core kit was not installed, so its granular-scope groups were not.
 - **No payer has verified a DSDR signature made here.** The EU DSS validator has, as above, with a test CA.
 - **No public health agency, or AIMS, has received a case report from here.** The eICR and the eCR message validate, and the trigger
   codes were the built-in sample, not the RCTC. No state has received an ELR message from here; see the ELR section for what the

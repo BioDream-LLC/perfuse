@@ -209,7 +209,10 @@ func permitsResource(caller *Caller, r fhir.Resource) bool {
 	// A token carrying an encounter but no patient is not a licence to read every patient's encounter of that id, and a
 	// token carrying both must satisfy both. Written as two independent narrowings rather than a choice, because
 	// "encounter instead of patient" is the shape that turns a narrower grant into a wider one.
-	if caller.Patient != "" {
+	if caller.Patient != "" && !(caller.FHIRUser != "" && caller.FHIRUser == r.ResourceTypeName()+"/"+r.ResourceID() &&
+		r.ResourceTypeName() != "Patient") {
+		// The one exception to the patient limit is the signed-in person's own Practitioner (or PractitionerRole or
+		// RelatedPerson) record, which SMART expects an app to read; a fhirUser that is a Patient is no exception.
 		subject, ok := subjectOf(r)
 		if !ok {
 			// No subject found. Refused, because the alternative fails open: a resource type this function

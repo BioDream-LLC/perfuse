@@ -290,6 +290,16 @@ func (s *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 			scopes = append(scopes, sc)
 		}
 	}
+	if p.user.patientID() != "" {
+		// A member's user/ scopes mean their own record, which is what patient/ scopes say to the FHIR endpoint; left as
+		// user/ they would reach whatever the endpoint lets a user see.
+		for i, sc := range scopes {
+			if rest, ok := strings.CutPrefix(sc, "user/"); ok {
+				scopes[i] = "patient/" + rest
+			}
+		}
+		scopes = slices.Compact(scopes)
+	}
 	if p.patient == "" {
 		// patient/ scopes with no patient would read every patient's records.
 		scopes = slices.DeleteFunc(scopes, func(sc string) bool { return strings.HasPrefix(sc, "patient/") || sc == "launch/patient" })

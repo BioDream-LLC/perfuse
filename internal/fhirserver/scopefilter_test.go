@@ -98,3 +98,26 @@ func TestIncludesAreLimitedLikeReads(t *testing.T) {
 		t.Errorf("with Patient read the include should be there: %v", ids)
 	}
 }
+
+// A token limited to a patient still reads its user's own Practitioner record, and nothing else outside the patient.
+func TestAPatientLimitedTokenReadsItsOwnUser(t *testing.T) {
+	srv, h := newTestServer(t)
+	for _, body := range []string{`{"resourceType":"Practitioner","id":"d1"}`, `{"resourceType":"Practitioner","id":"d2"}`} {
+		id := body[strings.Index(body, `"id":"`)+6 : strings.LastIndex(body, `"`)]
+		req := httptest.NewRequest(http.MethodPut, "/Practitioner/"+id, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/fhir+json")
+		h.ServeHTTP(httptest.NewRecorder(), req)
+	}
+	read := func(path string) int {
+		srv.Auth = fixedCaller{Caller{Name: "app", Scopes: []string{"user/*.rs"}, Patient: "p1", FHIRUser: "Practitioner/d1"}}
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		return rec.Code
+	}
+	if c := read("/Practitioner/d1"); c != 200 {
+		t.Errorf("own Practitioner: %d", c)
+	}
+	if c := read("/Practitioner/d2"); c != 404 {
+		t.Errorf("another Practitioner under a patient-limited token: %d", c)
+	}
+}

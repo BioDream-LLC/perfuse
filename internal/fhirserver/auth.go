@@ -58,6 +58,10 @@ type Caller struct {
 	// was present.
 	Encounter string
 
+	// FHIRUser is the resource the signed-in person is (Practitioner/123), from a SMART token's fhirUser claim. A token
+	// limited to a patient may still read this one resource: an app launched from a chart reads its own user.
+	FHIRUser string
+
 	// Groups limits the caller to these Group ids for Group operations - the CMS-0057 Provider Access export - and for
 	// reading Groups. Empty means no Group limit. Set from an API token limited to its provider's attribution list.
 	Groups []string

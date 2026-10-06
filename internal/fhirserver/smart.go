@@ -183,6 +183,7 @@ func (a *SMARTAuth) Authenticate(r *http.Request) (*Caller, error) {
 		// Anywhere else and the app would be choosing which patient it is limited to.
 		Patient:   strings.TrimSpace(claims.Patient),
 		Encounter: strings.TrimSpace(claims.Encounter),
+		FHIRUser:  fhirUserRef(claims.FHIRUser),
 	}, nil
 }
 
@@ -425,4 +426,13 @@ func (s *Server) handleSMARTConfiguration(w http.ResponseWriter, r *http.Request
 	// per request. Five minutes so a correction propagates within a coffee break.
 	w.Header().Set("Cache-Control", "public, max-age=300")
 	_ = json.NewEncoder(w).Encode(body)
+}
+
+// fhirUserRef reduces a fhirUser URL to Type/id, the form a stored resource is compared with.
+func fhirUserRef(u string) string {
+	parts := strings.Split(strings.TrimRight(u, "/"), "/")
+	if len(parts) < 2 {
+		return ""
+	}
+	return parts[len(parts)-2] + "/" + parts[len(parts)-1]
 }

@@ -53,6 +53,9 @@ type Claims struct {
 	// JTI is the token's unique id, which a System token must carry.
 	JTI string
 
+	// FHIRUser is the SMART fhirUser claim: the FHIR resource the signed-in person is, as a URL.
+	FHIRUser string
+
 	// Scope is the space-separated scope claim, present on an access token and normally absent on an ID token.
 	//
 	// Carried through verification rather than parsed separately by the caller, so that whatever reads the scopes is
@@ -78,6 +81,7 @@ type claimSet struct {
 	Patient           string          `json:"patient"`
 	Encounter         string          `json:"encounter"`
 	JTI               string          `json:"jti"`
+	FHIRUser          string          `json:"fhirUser"`
 }
 
 // VerifyOptions is what an ID token is checked against.
@@ -247,6 +251,7 @@ func Verify(ctx context.Context, keys *KeySet, token string, opts VerifyOptions)
 		Patient:           cs.Patient,
 		Encounter:         cs.Encounter,
 		JTI:               cs.JTI,
+		FHIRUser:          cs.FHIRUser,
 		ExpiresAt:         expiry,
 		IssuedAt:          issued,
 	}, nil

@@ -210,7 +210,25 @@ func (s *Server) Handler() http.Handler {
 	outer.HandleFunc("GET /metadata", s.handleCapability)
 	outer.Handle("/", protected)
 
-	return outer
+	return fhirCORS(outer)
+}
+
+// fhirCORS lets SMART apps running in a browser on another origin use this endpoint, as SMART App Launch requires. Safe
+// because the endpoint reads no cookies: every request carries its own bearer token, so another site's page cannot act with
+// a person's credentials. A preflight is answered before authentication, since browsers send it without the token.
+func fhirCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Expose-Headers", "Location, ETag, Content-Location, Last-Modified")
+		if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, Prefer, If-Match, If-None-Exist")
+			w.Header().Set("Access-Control-Max-Age", "600")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {

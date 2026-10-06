@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/oidc"
@@ -39,10 +40,20 @@ func (s *Server) handleIntrospect(w http.ResponseWriter, r *http.Request) {
 		tokenError(w, http.StatusBadRequest, "invalid_request", "the request is not a form")
 		return
 	}
-	// Only a client that can authenticate may ask: introspection says whose records a token reaches.
-	client, err := s.authenticatedClient(r)
-	if err == nil && client.Kind == KindPublic {
-		err = errClient("a public client cannot authenticate, so it cannot introspect tokens")
+	// Only a caller that proves itself may ask, since introspection says whose records a token reaches: a client that can
+	// authenticate, or one holding an active access token from this server (SMART 2 allows either). A public client's id
+	// alone is not proof.
+	var err error
+	if bearer, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+		if _, active := s.verifyOwn(r.Context(), strings.TrimSpace(bearer)); !active {
+			err = errClient("the bearer token is not an active access token from this server")
+		}
+	} else {
+		var client *Client
+		client, err = s.authenticatedClient(r)
+		if err == nil && client.Kind == KindPublic {
+			err = errClient("a public client cannot authenticate, so it cannot introspect tokens; present an access token instead")
+		}
 	}
 	if err != nil {
 		tokenError(w, http.StatusUnauthorized, "invalid_client", err.Error())

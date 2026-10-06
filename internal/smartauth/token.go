@@ -87,7 +87,25 @@ func (s *Server) Handler() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(s.Key.JWKS())
 	})
-	return mux
+	return cors(mux)
+}
+
+// cors lets browser apps on other origins call the token, key and discovery endpoints, as SMART asks. Safe because none of
+// them reads a cookie: each request carries its own credentials. The sign-in pages are not covered; they are navigated to.
+func cors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/token", "/jwks", "/introspect", "/revoke", "/.well-known/openid-configuration":
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			if r.Method == http.MethodOptions {
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // tokenError answers as RFC 6749 section 5.2 says.
