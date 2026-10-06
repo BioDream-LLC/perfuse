@@ -1149,6 +1149,8 @@ oidcDone:
 		// Perfuse's own authorization server: it issues the tokens this endpoint accepts, so it is also the SMART issuer.
 		var smartKeys *oidc.KeySet
 		var smartExtraCaps []string
+		var smartRevoked func(string) bool
+		var smartIntrospect, smartRevoke string
 		if *smartUsers != "" && *smartClients == "" {
 			return errors.New("-smart-users needs -smart-clients: people sign in to authorize the apps registered there")
 		}
@@ -1167,8 +1169,11 @@ oidcDone:
 			*smartIssuer, *smartToken, *smartJWKSURI, *smartBackend = as.Issuer, as.TokenURL(), as.Issuer+"/jwks", true
 			*smartAuthorize = as.AuthorizeURL()
 			if *smartAuthorize != "" {
-				smartExtraCaps = []string{"permission-offline", "permission-online", "permission-user", "context-banner"}
+				smartExtraCaps = []string{"permission-offline", "permission-online", "permission-user", "context-banner",
+					"launch-ehr", "context-ehr-patient", "context-ehr-encounter"}
 			}
+			smartRevoked = as.Revoked
+			smartIntrospect, smartRevoke = as.Issuer+"/introspect", as.Issuer+"/revoke"
 			log.Info("SMART authorization server", "issuer", as.Issuer, "clients", len(as.Clients), "key", as.Key.ID)
 		}
 
@@ -1177,6 +1182,7 @@ oidcDone:
 			SMARTAudience: strings.TrimSpace(*smartAudience),
 			SMARTJWKS:     strings.TrimSpace(*smartJWKS),
 			SMARTKeys:     smartKeys,
+			SMARTRevoked:  smartRevoked,
 			BaseURL:       baseURL,
 			Open:          *fhirOpen,
 			ReadOnly:      *fhirReadOnly,
@@ -1197,6 +1203,8 @@ oidcDone:
 			BackendServices:       *smartBackend,
 			JWKSURI:               strings.TrimSpace(*smartJWKSURI),
 			ExtraCapabilities:     smartExtraCaps,
+			IntrospectionEndpoint: smartIntrospect,
+			RevocationEndpoint:    smartRevoke,
 		}
 
 		// Read per request, so changing the page size in the interface applies to the next search rather

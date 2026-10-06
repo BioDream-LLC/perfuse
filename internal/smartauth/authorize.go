@@ -548,6 +548,11 @@ func (s *Server) pruneLocked() {
 			delete(s.refresh, k)
 		}
 	}
+	for k, exp := range s.revoked {
+		if now.After(exp) {
+			delete(s.revoked, k)
+		}
+	}
 }
 
 type launchContext struct {

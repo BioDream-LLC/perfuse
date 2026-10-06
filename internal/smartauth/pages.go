@@ -40,4 +40,26 @@ fieldset{border:1px solid #767676;padding:.5rem 1rem}li{margin:.25rem 0}</style>
 <li><label><input type="checkbox" name="scope" value="{{.Scope}}" checked> {{.Text}}</label></li>{{end}}</ul></fieldset>
 <button type="submit" name="action" value="allow">Allow</button>
 <button type="submit" name="action" value="deny">Deny</button></form>{{template "foot"}}{{end}}
+
+{{define "launch-signin"}}{{template "head" "Launch an app"}}<h1>Launch an app</h1>
+<p>Sign in to open an app with a patient's record, as an EHR would from the chart.</p>
+{{with .Error}}<p class="error" role="alert">{{.}}</p>{{end}}
+<form method="post" action="launch/signin">
+<label for="username">Username</label><input type="text" id="username" name="username" autocomplete="username" required autofocus>
+<label for="password">Password</label><input type="password" id="password" name="password" autocomplete="current-password" required>
+<button type="submit">Sign in</button></form>{{template "foot"}}{{end}}
+
+{{define "launch"}}{{template "head" "Launch an app"}}<h1>Launch an app</h1>
+<form method="post" action="choose"><input type="hidden" name="req" value="{{.Req}}">
+<label for="search">Search patients by name</label><input type="search" id="search" name="search" value="{{.Search}}">
+<button type="submit">Search</button></form>
+<form method="post" action="choose"><input type="hidden" name="req" value="{{.Req}}">
+<fieldset><legend>App</legend>{{range .Apps}}
+<label><input type="radio" name="app" value="{{.ID}}" required> {{if .Name}}{{.Name}}{{else}}{{.ID}}{{end}}</label>
+{{else}}<p>No app has a launch_url registered.</p>{{end}}</fieldset>
+<fieldset><legend>Patient</legend>{{range .Patients}}
+<label><input type="radio" name="patient" value="{{.ID}}" required> {{.Name}}{{with .BirthDate}}, born {{.}}{{end}} ({{.ID}})</label>
+{{else}}<p>No patients found.</p>{{end}}</fieldset>
+<label for="encounter">Encounter id (optional)</label><input type="text" id="encounter" name="encounter">
+<button type="submit">Launch</button></form>{{template "foot"}}{{end}}
 `))

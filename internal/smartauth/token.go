@@ -43,6 +43,9 @@ type Server struct {
 	codes    map[string]*grantRecord
 	refresh  map[string]*grantRecord
 	launches map[string]launchContext
+
+	launchSessions map[string]*launchSession
+	revoked        map[string]time.Time // access token jti -> its expiry
 }
 
 // AuthorizeURL is where apps send people to sign in, empty when nobody can.
@@ -67,12 +70,17 @@ func (s *Server) TokenURL() string { return strings.TrimRight(s.Issuer, "/") + "
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /token", s.handleToken)
+	mux.HandleFunc("POST /introspect", s.handleIntrospect)
+	mux.HandleFunc("POST /revoke", s.handleRevoke)
 	if len(s.Users) > 0 {
 		mux.HandleFunc("GET /authorize", s.handleAuthorize)
 		mux.HandleFunc("POST /authorize", s.handleAuthorize)
 		mux.HandleFunc("POST /signin", s.handleSignIn)
 		mux.HandleFunc("POST /patient", s.handlePatient)
 		mux.HandleFunc("POST /consent", s.handleConsent)
+		mux.HandleFunc("GET /launch", s.handleLaunchPage)
+		mux.HandleFunc("POST /launch/signin", s.handleLaunchSignIn)
+		mux.HandleFunc("POST /launch/choose", s.handleLaunch)
 	}
 	mux.HandleFunc("GET /.well-known/openid-configuration", s.handleOpenIDConfiguration)
 	mux.HandleFunc("GET /jwks", func(w http.ResponseWriter, r *http.Request) {
@@ -262,4 +270,13 @@ func (s *Server) handleOpenIDConfiguration(w http.ResponseWriter, r *http.Reques
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(doc)
+}
+
+// tokenBody decodes a JWT's claims without checking them, for fields oidc.Claims does not carry; only after verifyOwn.
+func tokenBody(token string) ([]byte, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("not a JWT")
+	}
+	return base64.RawURLEncoding.DecodeString(parts[1])
 }

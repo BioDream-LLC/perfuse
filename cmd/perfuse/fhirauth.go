@@ -25,6 +25,8 @@ type fhirAuthOptions struct {
 	SMARTJWKS string
 	// SMARTKeys are the issuer's keys given directly, when the issuer is Perfuse's own authorization server.
 	SMARTKeys *oidc.KeySet
+	// SMARTRevoked reports access tokens the issuer revoked.
+	SMARTRevoked func(jti string) bool
 
 	// BaseURL is this server's FHIR base, used as the SMART audience when none is given.
 	BaseURL string
@@ -74,6 +76,7 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 			Audience: audience,
 			JWKSURL:  opts.SMARTJWKS,
 			Keys:     opts.SMARTKeys,
+			Revoked:  opts.SMARTRevoked,
 		})
 		if err != nil {
 			return nil, err

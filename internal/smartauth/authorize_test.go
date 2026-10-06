@@ -217,3 +217,36 @@ func TestTheFlowRefusesWhatItShould(t *testing.T) {
 		t.Errorf("wrong verifier: %d %v", code, body)
 	}
 }
+
+func TestAnEHRLaunchCarriesThePatientAndEncounterChosen(t *testing.T) {
+	f := userFixture(t)
+	f.srv.Clients["app"].LaunchURL = "https://app.example/launch"
+	f.srv.Clients["app"].Scopes = append(f.srv.Clients["app"].Scopes, "launch")
+	b := browser{t, f.h}
+	rec := b.do(http.MethodPost, "/launch/signin", url.Values{"username": {"drb"}, "password": {"correct horse"}})
+	req := reqOf(t, rec)
+	rec = b.do(http.MethodPost, "/launch/choose", url.Values{"req": {req}, "app": {"app"}, "patient": {"p2"}, "encounter": {"e9"}})
+	if rec.Code != http.StatusFound {
+		t.Fatalf("launch: %d %s", rec.Code, rec.Body)
+	}
+	u, _ := url.Parse(rec.Header().Get("Location"))
+	if u.Host != "app.example" || u.Query().Get("iss") != f.srv.Audience || u.Query().Get("launch") == "" {
+		t.Fatalf("launched to %s", u)
+	}
+	launch := u.Query().Get("launch")
+	query := authorizeQuery(f, "launch openid fhirUser patient/*.rs") + "&launch=" + url.QueryEscape(launch)
+	req = reqOf(t, b.do(http.MethodGet, query, nil))
+	rec = b.do(http.MethodPost, "/signin", url.Values{"req": {req}, "username": {"drb"}, "password": {"correct horse"}})
+	if !strings.Contains(rec.Body.String(), "Allow access") {
+		t.Fatalf("a launch with a patient should not ask for one: %s", rec.Body)
+	}
+	q := codeFrom(t, b.do(http.MethodPost, "/consent", url.Values{"req": {req}, "action": {"allow"}, "scope": {"patient/*.rs"}}))
+	_, body := exchange(f, q.Get("code"), verifier)
+	if body["patient"] != "p2" || body["encounter"] != "e9" || !strings.Contains(body["scope"].(string), "launch") {
+		t.Errorf("token %v", body)
+	}
+	// A launch id works once.
+	if q := codeFrom(t, b.do(http.MethodGet, query, nil)); q.Get("error") != "invalid_request" {
+		t.Errorf("a launch id was used twice: %v", q)
+	}
+}

@@ -61,6 +61,9 @@ type SMARTConfig struct {
 	// Keys, when set, are the issuer's keys given directly: Perfuse's own authorization server, whose tokens are checked
 	// without fetching its key set over the network.
 	Keys *oidc.KeySet
+
+	// Revoked, when set, reports access tokens revoked before they expired, by jti.
+	Revoked func(jti string) bool
 }
 
 // SMARTAuth authenticates a SMART on FHIR access token.
@@ -129,6 +132,10 @@ func (a *SMARTAuth) Authenticate(r *http.Request) (*Caller, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("this SMART token was not accepted: %w", err)
+	}
+
+	if a.cfg.Revoked != nil && a.cfg.Revoked(claims.JTI) {
+		return nil, fmt.Errorf("this SMART token was revoked")
 	}
 
 	scopes := strings.Fields(claims.Scope)
@@ -280,6 +287,8 @@ type smartConfiguration struct {
 	Capabilities          []string `json:"capabilities"`
 	ScopesSupported       []string `json:"scopes_supported,omitempty"`
 	CodeChallengeMethods  []string `json:"code_challenge_methods_supported,omitempty"`
+	IntrospectionEndpoint string   `json:"introspection_endpoint,omitempty"`
+	RevocationEndpoint    string   `json:"revocation_endpoint,omitempty"`
 }
 
 // SMARTDiscovery holds what this server advertises to SMART apps.
@@ -304,6 +313,9 @@ type SMARTDiscovery struct {
 	// ExtraCapabilities are further capabilities the authorization server has, such as refresh tokens (permission-offline),
 	// that only its operator - or Perfuse, for its own - can vouch for.
 	ExtraCapabilities []string
+
+	// IntrospectionEndpoint and RevocationEndpoint are advertised when the authorization server has them.
+	IntrospectionEndpoint, RevocationEndpoint string
 }
 
 // HasEndpoints reports whether enough is configured to publish anything useful.
@@ -403,7 +415,9 @@ func (s *Server) handleSMARTConfiguration(w http.ResponseWriter, r *http.Request
 		ScopesSupported: scopes,
 		// S256 only. The plain method exists in the specification and offers no protection worth having, so it
 		// is not advertised - an app that would have used plain will use S256 instead.
-		CodeChallengeMethods: challenge,
+		CodeChallengeMethods:  challenge,
+		IntrospectionEndpoint: d.IntrospectionEndpoint,
+		RevocationEndpoint:    d.RevocationEndpoint,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
