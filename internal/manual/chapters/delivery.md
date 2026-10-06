@@ -183,6 +183,32 @@ Response. The facility is required because eCR asks for its phone and address, a
 A report says what the message lacked rather than inventing it, and each gap is logged. Try a message in the FHIR lab's **Public
 health case report** panel before pointing a live feed at an agency.
 
+### Lab results to public health: ELR
+
+`perfuse elr -config elr.yaml results.hl7` turns a lab's results into the HL7 2.5.1 ELR messages state health departments receive,
+one for each message with a reportable result, and only the orders that carry one: a complete blood count beside a positive SARS-CoV-2
+test is not public health's business. The trigger codes are the same as case reporting's, the RCTC you load or the built-in sample.
+
+ELR names everybody by OID or CLIA number, which no lab feed carries for the sender and the receiver, so those come from the file:
+
+```yaml
+sending_application: {namespace: Perfuse, id: 2.16.840.1.113883.19.5.9, type: ISO}
+sending_facility: {namespace: Springfield Lab, id: 2.16.840.1.113883.19.5, type: ISO}
+receiving_application: {namespace: ELR, id: 2.16.840.1.113883.19.6.1, type: ISO}
+receiving_facility: {namespace: State DOH, id: 2.16.840.1.113883.19.6, type: ISO}
+processing: T
+ordering_facility: {name: Springfield Clinic, phone: "+1 217 555 0100", line: 1 Main St, city: Springfield, state: IL, postalCode: "62701"}
+performing_lab: {name: Springfield Lab, line: 2 Lab Rd, city: Springfield, state: IL, postalCode: "62701"}
+performing_lab_clia: 14D0000000
+placer_authority: {namespace: SPRINGFIELD-EHR, id: 2.16.840.1.113883.19.5.1, type: ISO}
+filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, type: ISO}
+```
+
+The ordering facility, performing lab and assigning authorities are used only where the lab's message leaves them out, and each use
+is a note. What only the lab knows is never filled in: a result with no specimen type goes with SPM-4 empty and a note saying so,
+because a guessed specimen in a report to public health is worse than a gap the state can ask about. Start with `processing: T`
+while the state's onboarding team tests the feed.
+
 ## When the transport says yes and the message did not arrive
 
 "Did this arrive" is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.

@@ -199,11 +199,11 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health reporting"></th><th align="left" valign="middle">eCR</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health reporting"></th><th align="left" valign="middle">eCR and ELR</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>Electronic case reporting (eCR)</b>: a FHIR destination that sends an HL7 eCR 2.1.2 eICR for each message carrying a reportable-condition trigger code, and nothing for the rest</td></tr>
 <tr><td colspan="2">Triggers from the RCTC you load (or a built-in sample for testing), so a report goes because a code matched rather than because somebody remembered. Validated against the eCR guide with the HL7 validator</td></tr>
-<tr><td colspan="2">ELR, lab reporting in HL7 2.5.1, is not provided yet</td></tr>
+<tr><td colspan="2"><b>Electronic lab reporting (ELR)</b>: <code>perfuse elr</code> reshapes a lab's ORU^R01 into an HL7 2.5.1 ELR message carrying only the reportable orders, and says what the lab left out. Checked with NIST's HL7 v2 validator</td></tr>
 </tbody></table>
 
 <table width="100%">

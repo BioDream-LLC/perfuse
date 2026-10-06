@@ -431,6 +431,15 @@ PractitionerRoles, as eCR requires. An NPI in `XCN.9` (by OID or as `NPI`) gets 
 builds the same reports from files. The FHIR lab's **Public health case report** panel
 builds one from a pasted message.
 
+`perfuse elr -config elr.yaml [-rctc rctc.json] [-out dir] <messages>` turns lab results (ORU^R01) into HL7 2.5.1 ELR
+messages (ELR Release 1, `PHLabReport-NoAck`), one per message with a reportable result, keeping only the orders that carry one.
+The config names the sending and receiving application and facility (by OID, or CLIA), and the ordering facility, performing lab
+and order-number assigning authorities used when the lab's message leaves them out. See `examples/elr/elr.yaml`. What it changes:
+the source's separators become `^~\&`; ORC is built from OBR when missing; SPM from OBR-15, OBR-7 and OBR-14 when missing; CE
+results become CWE; race and ethnicity coded CDCREC are recoded to HL7 tables 0005 and 0189, keeping the sender's coding as the
+alternate; an NPI named only `NPI` gets its OID and identifier type. What the lab did not send (a specimen type, the time the
+specimen was received) stays empty and is printed as a note.
+
 ## CMS-0057 for payers
 
 The four APIs the CMS Interoperability and Prior Authorization rule requires of payers from 1 January 2027, and the data behind them. The full account is the [CMS-0057 chapter of the manual](https://perfuse.health/manual/#s16-cms-0057-for-payers); the commands and flags:

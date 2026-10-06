@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 76e4f86</p>
+<p class="version">version 0.1 · c3cb0ce</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -496,6 +496,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s10-8-sending-to-a-fhir-server"><span class="num">10.8</span> Sending to a FHIR server</a></div>
 <div class="toc-d3"><a href="#s10-8-1-hosted-fhir-services"><span class="num">10.8.1</span> Hosted FHIR services</a></div>
 <div class="toc-d3"><a href="#s10-8-2-public-health-case-reporting"><span class="num">10.8.2</span> Public health case reporting</a></div>
+<div class="toc-d3"><a href="#s10-8-3-lab-results-to-public-health-elr"><span class="num">10.8.3</span> Lab results to public health: ELR</a></div>
 <div class="toc-d2"><a href="#s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</a></div>
 <div class="toc-d2"><a href="#s10-10-what-a-delivery-outcome-means"><span class="num">10.10</span> What a delivery outcome means</a></div>
 <div class="toc-d2"><a href="#s10-11-slow-delivery"><span class="num">10.11</span> Slow delivery</a></div>
@@ -2095,6 +2096,20 @@ roles: {viewer: manager}</code></pre>
     facility: {name: Springfield General Hospital, phone: +1-217-555-0100, city: Springfield, state: IL}</code></pre>
 <p><code>rctc</code> is the Reportable Conditions Trigger Codes, as a FHIR ValueSet or the eRSD Bundle. It needs a UMLS licence, so it is not included; without it a short built-in sample is used, for testing only. <code>source</code> is where the agency sends its Reportability Response. The facility is required because eCR asks for its phone and address, and a v2 message has neither.</p>
 <p>A report says what the message lacked rather than inventing it, and each gap is logged. Try a message in the FHIR lab&#39;s <strong>Public health case report</strong> panel before pointing a live feed at an agency.</p>
+<h4 id="s10-8-3-lab-results-to-public-health-elr"><span class="num">10.8.3</span> Lab results to public health: ELR</h4>
+<p><code>perfuse elr -config elr.yaml results.hl7</code> turns a lab&#39;s results into the HL7 2.5.1 ELR messages state health departments receive, one for each message with a reportable result, and only the orders that carry one: a complete blood count beside a positive SARS-CoV-2 test is not public health&#39;s business. The trigger codes are the same as case reporting&#39;s, the RCTC you load or the built-in sample.</p>
+<p>ELR names everybody by OID or CLIA number, which no lab feed carries for the sender and the receiver, so those come from the file:</p>
+<pre class="code lang-yaml"><code>sending_application: {namespace: Perfuse, id: 2.16.840.1.113883.19.5.9, type: ISO}
+sending_facility: {namespace: Springfield Lab, id: 2.16.840.1.113883.19.5, type: ISO}
+receiving_application: {namespace: ELR, id: 2.16.840.1.113883.19.6.1, type: ISO}
+receiving_facility: {namespace: State DOH, id: 2.16.840.1.113883.19.6, type: ISO}
+processing: T
+ordering_facility: {name: Springfield Clinic, phone: &#34;+1 217 555 0100&#34;, line: 1 Main St, city: Springfield, state: IL, postalCode: &#34;62701&#34;}
+performing_lab: {name: Springfield Lab, line: 2 Lab Rd, city: Springfield, state: IL, postalCode: &#34;62701&#34;}
+performing_lab_clia: 14D0000000
+placer_authority: {namespace: SPRINGFIELD-EHR, id: 2.16.840.1.113883.19.5.1, type: ISO}
+filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, type: ISO}</code></pre>
+<p>The ordering facility, performing lab and assigning authorities are used only where the lab&#39;s message leaves them out, and each use is a note. What only the lab knows is never filled in: a result with no specimen type goes with SPM-4 empty and a note saying so, because a guessed specimen in a report to public health is worse than a gap the state can ask about. Start with <code>processing: T</code> while the state&#39;s onboarding team tests the feed.</p>
 <h3 id="s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</h3>
 <p>&#34;Did this arrive&#34; is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.</p>
 <p><strong>Inspect the reply</strong> on a destination takes a script given the receiver&#39;s response. Return false, or throw, and the delivery is marked failed — which means it retries, queues, and appears in the failure count instead of being silently counted as delivered.</p>
@@ -5451,7 +5466,7 @@ rules:
 <p>Package publichealth implements bidirectional public health reporting: electronic case reporting (eCR), electronic lab reporting (ELR), and immunization registry queries.</p>
 <p>Every hospital is legally required to report certain conditions — tuberculosis, measles, hepatitis, COVID-19, sexually transmitted infections, foodborne illness — to state and local public health agencies. The reporting happens through three distinct interfaces:</p>
 <ul>
-<li>ELR: HL7 2.5.1 ORU^R01 messages carrying lab results to public health labs. - eCR: FHIR-based electronic initial case reports (eICR) when a reportable condition is diagnosed. - Immunization registry: VXU^V04 to report vaccinations administered, and VXQ^V01 to query a patient&#39;s immunization history.</li>
+<li>ELR: HL7 2.5.1 ORU^R01 messages carrying lab results to public health agencies (elr.go). - eCR: FHIR-based electronic initial case reports (eICR) when a reportable condition is diagnosed. - Immunization registry: VXU^V04 to report vaccinations administered, and VXQ^V01 to query a patient&#39;s immunization history.</li>
 </ul>
 <p>The package is bidirectional: it reports outward (ELR, eCR, VXU) and queries back (VXQ/VXR). All operations are real-time rather than nightly batch.</p>
 <p>Thread safety: SubmissionLog is safe for concurrent use. The builder functions are pure and safe to call from any goroutine.</p>

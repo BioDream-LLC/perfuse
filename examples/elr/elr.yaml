@@ -1,0 +1,23 @@
+# perfuse elr -config examples/elr/elr.yaml results.hl7
+# Every identifier here is an example OID (2.16.840.1.113883.19 is HL7's example root); use the ones your state assigns.
+sending_application: {namespace: Perfuse, id: 2.16.840.1.113883.19.5.9, type: ISO}
+sending_facility: {namespace: Springfield Lab, id: 2.16.840.1.113883.19.5, type: ISO}
+receiving_application: {namespace: ELR, id: 2.16.840.1.113883.19.6.1, type: ISO}
+receiving_facility: {namespace: State DOH, id: 2.16.840.1.113883.19.6, type: ISO}
+processing: T                      # P production, T training (testing with the state), D debugging
+ordering_facility:                 # ORC-21 to ORC-23 when an order does not name its facility
+  name: Springfield Clinic
+  phone: "+1 217 555 0100"
+  line: 1 Main St
+  city: Springfield
+  state: IL
+  postalCode: "62701"
+performing_lab:                    # OBX-23 and OBX-24 when a result does not name its lab
+  name: Springfield Lab
+  line: 2 Lab Rd
+  city: Springfield
+  state: IL
+  postalCode: "62701"
+performing_lab_clia: 14D0000000
+placer_authority: {namespace: SPRINGFIELD-EHR, id: 2.16.840.1.113883.19.5.1, type: ISO}
+filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, type: ISO}

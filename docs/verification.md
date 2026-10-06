@@ -324,6 +324,28 @@ than this work: a bundle entry's `fullUrl` was the questionnaire's canonical url
 which FHIR forbids; it is now the resource's address on this server. Not verified: a real DTR app (such as a SMART DTR client) driving
 the adaptive flow.
 
+**ELR, October 2026.** The old ELR builder wrote a message from a handful of fields, with no SFT, ORC or SPM, and nothing used
+it; it was removed. `perfuse elr` was written instead, and its output checked with NIST's HL7 v2 validator (`hl7-v2-validation`
+1.7.2, the engine behind the ONC ELR tool) against the APHL ELR 2.5.1 Foundation profile that NIST publishes with its ELR validation
+plugins. Two sources: a lab message with a CBC and a SARS-CoV-2 result, and a SARS-CoV-2 result with no specimen. The run is
+`ELR_OUT=dir go test ./internal/publichealth -run NIST`, then the validator over `dir`.
+
+The first run found 32 errors. Fixed: placer and filler numbers without an assigning authority, an NPI without its OID and identifier
+type, race and ethnicity in CDC codes where ELR uses HL7's tables, the phone number in a component ELR does not allow, and no
+performing lab on the results. What is left are the lab's own gaps (no specimen type, no time received, both named in the notes) and
+findings the profile raises against itself:
+
+- MSH-15 is declared with a cardinality of exactly two, the field's length put in the wrong place ("no valid length specification").
+- PID-10 and PID-22 must be coded `HL70005` and `HL70189`, and the coding system table they are checked against lists only the
+  placeholder `HL7nnnn`.
+- OBX-5's coding system is bound to HL7's table 0396 without `SCT`, while OBX-3 is bound to the ELR table, which has it; ELR
+  requires SNOMED CT for coded results.
+- SPM-4 is bound to HL7 table 0487 alone, and the specimen was coded in SNOMED CT, which ELR prefers.
+- ELR-037 (ORC-12 must equal OBR-16) fails with the two fields identical, as it does on the profile's own sample message.
+- Two ARLN program checks that do not apply to this program.
+
+The ONC ELR tool itself, now hosted at tools.valitheus.com, was not run: it is a web form, and scripting it failed.
+
 **The Inferno Da Vinci PAS test kit, October 2026.** The official PAS Server v2.2.1 suite (davinci-pas-test-kit v0.15.2, run
 locally in Docker) against `serve -pas -fhir-subscriptions`, with Keycloak issuing the SMART Backend Services token: 82 pass, 2 fail,
 of 84. Approval, denial, a pended request finalised by a reviewer and delivered on the PAS subscription, the four-step claim update
@@ -825,7 +847,8 @@ checked.
 - **The Inferno US Core SMART groups (standalone and EHR launch, granular scopes) have not been run.** Only the FHIR API group was.
 - **No payer has verified a DSDR signature made here.** The EU DSS validator has, as above, with a test CA.
 - **No public health agency, or AIMS, has received a case report from here.** The eICR and the eCR message validate, and the trigger
-  codes were the built-in sample, not the RCTC. ELR (HL7 2.5.1 lab reports to public health) is not provided.
+  codes were the built-in sample, not the RCTC. No state has received an ELR message from here; see the ELR section for what the
+  NIST validator does and does not show.
 - **No third-party FHIR subscriber has received a notification from here.** Delivery was tested against receivers written for the tests.
 - **No site has run production clinical traffic through any of this.** The engine, transports, queue and
   web interface are tested, and the parts that talk to other software are verified as described above.
