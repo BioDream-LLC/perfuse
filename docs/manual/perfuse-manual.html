@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 7e0eef9</p>
+<p class="version">version 0.1 · 76e4f86</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -570,6 +570,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s16-5-the-provider-access-and-payer-to-payer-apis"><span class="num">16.5</span> The Provider Access and Payer-to-Payer APIs</a></div>
 <div class="toc-d2"><a href="#s16-6-prior-authorisation-metrics"><span class="num">16.6</span> Prior authorisation metrics</a></div>
 <div class="toc-d2"><a href="#s16-7-what-was-checked-and-against-what"><span class="num">16.7</span> What was checked, and against what</a></div>
+<div class="toc-d2"><a href="#s16-8-deciding-prior-authorisation-requests-pas"><span class="num">16.8</span> Deciding prior authorisation requests: PAS</a></div>
 <div class="toc-d1"><a href="#s17-security"><span class="num">17</span> Security</a></div>
 <div class="toc-d2"><a href="#s17-1-transport-security"><span class="num">17.1</span> Transport security</a></div>
 <div class="toc-d2"><a href="#s17-2-authentication-and-roles"><span class="num">17.2</span> Authentication and roles</a></div>
@@ -1856,7 +1857,7 @@ roles: {viewer: manager}</code></pre>
 <ul>
 <li><strong>An acknowledged change is never a lost notification.</strong> The notification is recorded in the same database transaction as the change it describes, and delivered from there, so it survives a restart. A test writes an Encounter, starts a new server on the same database, and checks the notification arrives.</li>
 <li><strong>Notifications arrive in order, and gaps are visible.</strong> Event 2 is not sent before event 1 is accepted, and each notification carries the running count, so a receiver can tell when it has missed one.</li>
-<li><strong>The server decides when a subscription is active.</strong> A new subscription is <code>requested</code>, and becomes <code>active</code> only when the endpoint accepts a handshake. A client that asks for <code>active</code> gets <code>requested</code>.</li>
+<li><strong>The server decides when a subscription is active.</strong> A new subscription is <code>requested</code>, and becomes <code>active</code> only when the endpoint accepts a handshake. A client that asks for <code>active</code> gets <code>requested</code>. A refused handshake is tried again four times over about fifteen seconds before the subscription is an <code>error</code>: it goes out the moment the subscription is stored, often before the client that created it is listening.</li>
 <li><strong>A full-resource notification carries the version that changed.</strong> A discharge notification carries the discharge, not whatever the Encounter had become by the time delivery succeeded.</li>
 <li><strong>Failure is bounded.</strong> A refused delivery is retried with a growing delay. After ten consecutive failures the subscription goes to <code>error</code>: later changes are counted but not queued, and updating the subscription resumes delivery from the oldest held notification. The count then shows how many were missed.</li>
 </ul>
@@ -2607,7 +2608,7 @@ roles: {viewer: manager}</code></pre>
 </table>
 <p>The Patient Access API needs no operation of its own: it is the FHIR endpoint&#39;s ordinary read and search, protected by SMART, with CARIN and PDex resources in the store. Searching <code>ExplanationOfBenefit</code> supports the parameters CARIN names — <code>patient</code>, <code>identifier</code>, <code>type</code>, <code>service-date</code>, <code>billable-period-start</code>, <code>provider</code>, <code>insurer</code>, <code>coverage</code> — and <code>Coverage</code> supports <code>subscriber-id</code>, <code>identifier</code> and <code>payor</code>.</p>
 <h3 id="s16-2-coverage-requirements-and-documentation-crd-and-dtr"><span class="num">16.2</span> Coverage requirements and documentation: CRD and DTR</h3>
-<p>The Prior Authorization API is in practice three Da Vinci guides together. <strong>CRD</strong> tells the clinician, while the order is still a draft, whether it is covered, whether it needs prior authorisation and what documentation is wanted. <strong>DTR</strong> hands the EHR the questionnaire that gathers that documentation. <strong>PAS</strong> submits the request. Perfuse provides all three.</p>
+<p>The Prior Authorization API is in practice three Da Vinci guides together. <strong>CRD</strong> tells the clinician, while the order is still a draft, whether it is covered, whether it needs prior authorisation and what documentation is wanted. <strong>DTR</strong> hands the EHR the questionnaire that gathers that documentation. <strong>PAS</strong> submits the request and returns the decision. Perfuse serves all three as the payer.</p>
 <p><code>-crd-rules rules.yaml</code> serves CRD over CDS Hooks at <code>/cds-services</code>: the <code>order-sign</code>, <code>order-select</code>, <code>order-dispatch</code> and <code>appointment-book</code> hooks, each with a prefetch for the patient&#39;s active Coverage. The rules are the payer&#39;s policy, kept in a file because they change without software releases:</p>
 <pre class="code lang-yaml"><code>payer: Springfield Health Plan
 rules:
@@ -2679,6 +2680,35 @@ rules:
 <p>DTR here is the payer&#39;s side of 2.2.0. <code>$questionnaire-package</code> takes the questionnaires named, those CRD named on an order, or the coverage assertion id CRD returned (<code>context</code>, while the same process is serving CRD), and returns each as a package bundle with a QuestionnaireResponse to fill in, the Libraries its CQL needs and their dependencies. The value sets its answers use travel in the package when they are loaded (<code>PUT /fhir/ValueSet/{id}</code>), and <code>$expand</code> lists their codes. <code>$log-questionnaire-errors</code> writes what a DTR app reports to the server log.</p>
 <p><strong>Adaptive questionnaires</strong>: write the whole questionnaire once, with SDC&#39;s <code>questionnaireAdaptive</code> extension and <code>enableWhen</code> on the questions that only apply sometimes. The package hands the app an empty shell, and each <code>$next-question</code> call adds the next question that applies to the answers so far, until there is nothing left to ask and the response is marked completed. The order and the branching are the payer&#39;s own rules; questions that do not apply are never shown.</p>
 <p><strong>Signing in as a client</strong>: DTR and PAS clients reach the payer with SMART Backend Services - a signed JWT exchanged for a token at the payer&#39;s authorization server. Point Perfuse at that server with <code>-smart-issuer</code> (and <code>-smart-jwks</code> if its address does not resolve from Perfuse), and pass <code>-smart-backend-services</code> so the discovery document says so. The Inferno DTR suite passes this way with Keycloak as the authorization server.</p>
+<h3 id="s16-8-deciding-prior-authorisation-requests-pas"><span class="num">16.8</span> Deciding prior authorisation requests: PAS</h3>
+<p><code>serve -fhir -pas -crd-rules rules.yaml</code> answers Da Vinci PAS 2.2.1 at <code>POST /fhir/Claim/$submit</code> and <code>POST /fhir/Claim/$inquire</code>. The decisions come from the same rules file as CRD&#39;s answers, so the order a clinician is told needs authorisation is decided by the rule that said so:</p>
+<pre class="code lang-yaml"><code>  - description: Physical therapy
+    codes: [&#34;PT&#34;]                       # matched on the item&#39;s productOrService, then the code of the order it requests
+    system: https://codesystem.x12.org/005010/1365
+    covered: covered
+    pa: auth-needed
+    pa_decision: approve                # approve, deny or pend; empty: not-covered is denied, no-auth approved, the rest pended
+    details:
+      - {code: allowed-quantity, value: &#34;6&#34;}   # asked for more, it is certified for six (A6, with the authorised detail)
+  - description: MRI
+    codes: [&#34;62&#34;]
+    pa_decision: approve
+    pa_alternative: {system: &#34;https://codesystem.x12.org/005010/1365&#34;, code: &#34;4&#34;}  # approved as an X-ray instead (an added item)
+  - description: Surgery
+    codes: [&#34;2&#34;]
+    pa: auth-needed                     # pended for a reviewer, asking for:
+    questionnaire: https://payer.example.org/Questionnaire/surgery   # a DTR questionnaire
+    pa_attachments: [&#34;18776-5&#34;]         # and documents, by LOINC attachment code</code></pre>
+<p>Each item gets an X12 review action: A1 certified, A3 not certified, A4 pended, A6 modified, C cancelled (certification type 3). A line that names no service is not decided but answered with an error (X12 901 <code>AG</code>, correct and resubmit). The response echoes what a 278 response echoes — item trace numbers, the requested service dates, the encounter&#39;s dates, the transmission identifiers with sender and receiver swapped — and gives each line the payer&#39;s own administration reference number. A service no rule names is pended, never approved: a decision nobody wrote down is a decision for a person.</p>
+<p><strong>Pended requests</strong> wait for a reviewer, who answers with <code>POST /fhir/Claim/$decide</code>:</p>
+<pre class="code lang-json"><code>{&#34;resourceType&#34;: &#34;Parameters&#34;, &#34;parameter&#34;: [
+  {&#34;name&#34;: &#34;claimResponse&#34;, &#34;valueString&#34;: &#34;&lt;the ClaimResponse id&gt;&#34;},
+  {&#34;name&#34;: &#34;decision&#34;, &#34;valueCode&#34;: &#34;approve&#34;},
+  {&#34;name&#34;: &#34;reason&#34;, &#34;valueString&#34;: &#34;Reviewed with the plan of care.&#34;},
+  {&#34;name&#34;: &#34;reviewer&#34;, &#34;valueString&#34;: &#34;&lt;the reviewer&#39;s NPI&gt;&#34;}]}</code></pre>
+<p><code>item</code> (valueInteger, repeatable) limits the decision to some lines. The decision becomes a new version of the response, marked as reviewed by a person, and with <code>-fhir-subscriptions</code> it is delivered on the PAS topic (<code>PASSubscriptionTopic</code>, filtered by <code>org-identifier</code>, the requesting organisation&#39;s identifier) as the full PAS Response Bundle, in the same transaction that records it. <code>$inquire</code> returns the current response to every request that provider made about that member; another provider&#39;s inquiry finds nothing. <code>$decide</code> needs a write scope; <code>$inquire</code> is a read.</p>
+<p>Requests and every version of their responses are kept in <code>pas_requests</code> and <code>pas_responses</code> in the server&#39;s database.</p>
+<p><strong>Verified</strong> with the official Inferno PAS Server v2.2.1 suite (see verification). Not sent, though PAS marks them must-support: <code>ClaimResponse.adjudication</code> with a review action, <code>ClaimResponse.extension:authorizedProvider</code> and <code>ClaimResponse.item.extension:communicatedDiagnosis</code>, because the extensions they need are not allowed there by their own context in PAS 2.2.1 and the validator rejects a response carrying them; and <code>request.extension:DataAbsentReason</code>, because Perfuse always knows the request. Not implemented: forwarding a request to a payer&#39;s utilization management system as an X12 278, and attachments sent back with CDex.</p>
 <p>A rules file is checked against CRD&#39;s own invariants when it loads: a questionnaire needs documentation, a service that is not covered cannot need authorisation, <code>satisfied</code> belongs to one case and not a rule, and anything conditional must give a reason.</p>
 <p>Not verified: the exports and member matching against another payer&#39;s implementation, the metrics against a payer&#39;s published figures, and CRD against a real EHR&#39;s CDS Hooks client.</p>
 </section>

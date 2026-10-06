@@ -176,6 +176,9 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	fhirMatchWithoutConsent := fset.Bool("fhir-member-match-without-consent", false,
 		"let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing")
 	fhirReadOnly := fset.Bool("fhir-read-only", false, "refuse writes to the FHIR endpoint")
+	pasOn := fset.Bool("pas", false,
+		"serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what "+
+			"no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result")
 	fhirSubscriptions := fset.Bool("fhir-subscriptions", false,
 		"enable topic-based subscriptions, which send encounter and appointment notifications to URLs FHIR clients choose")
 	fhirSubscriptionsHTTP := fset.Bool("fhir-subscriptions-allow-http", false,
@@ -1015,6 +1018,9 @@ oidcDone:
 	mux := http.NewServeMux()
 	mux.Handle("/", srv.Handler())
 
+	if fhirStore == nil && *pasOn {
+		return fmt.Errorf("-pas serves Da Vinci PAS on the FHIR endpoint, which is off; pass -fhir as well")
+	}
 	if fhirStore == nil && srv.CRD != nil && srv.CRD.Members == "fhir" {
 		return fmt.Errorf("-crd-rules says members: fhir, so the payer's member records are this server's FHIR store, which is off; pass -fhir as well")
 	}
@@ -1058,6 +1064,24 @@ oidcDone:
 
 		// The CMS-0057 payer operations are off unless asked for. $member-match tells a caller whether someone is this payer's
 		// member, and the Group export hands over many members' records at once.
+		if *pasOn {
+			if *fhirReadOnly {
+				return fmt.Errorf("-pas needs a writable FHIR endpoint: it keeps every request and decision")
+			}
+			fhirSrv.PAS = &fhirserver.PAS{}
+			rules := "none: every service is pended for a reviewer"
+			if srv.CRD != nil {
+				rulesFile := srv.CRD
+				fhirSrv.PAS.Decide = func(codes ...map[string]any) fhirserver.PASAnswer {
+					a := rulesFile.PADecision(codes...)
+					return fhirserver.PASAnswer{Decision: a.Decision, Why: a.Why, AllowedQuantity: a.AllowedQuantity,
+						Questionnaire: a.Questionnaire, Attachments: a.Attachments, AttachmentModifiers: a.AttachmentModifiers,
+						Alternative: a.Alternative}
+				}
+				rules = *crdRules
+			}
+			log.Info("serving Da Vinci PAS", "submit", baseURL+"/Claim/$submit", "rules", rules)
+		}
 		if srv.CRD != nil {
 			// CRD and DTR in one process: an assertion CRD made can be answered by DTR from its id alone.
 			fhirSrv.DTRContext = srv.CRD.QuestionnairesFor
@@ -1093,7 +1117,7 @@ oidcDone:
 					"so no notification could ever be sent, and a subscription could not even be created")
 			}
 			subs, err := fhirStore.EnableSubscriptions(context.Background(), fhirserver.SubscriptionOptions{
-				AllowHTTP: *fhirSubscriptionsHTTP, BaseURL: baseURL, Log: log,
+				AllowHTTP: *fhirSubscriptionsHTTP, BaseURL: baseURL, Log: log, PAS: *pasOn,
 			})
 			if err != nil {
 				return fmt.Errorf("enabling FHIR subscriptions: %w", err)

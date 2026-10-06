@@ -334,7 +334,7 @@ The properties the implementation is built around:
 
 - **An acknowledged change is never a lost notification.** The notification is recorded in the same database transaction as the change it describes, and delivered from there, so it survives a restart. A test writes an Encounter, starts a new server on the same database, and checks the notification arrives.
 - **Notifications arrive in order, and gaps are visible.** Event 2 is not sent before event 1 is accepted, and each notification carries the running count, so a receiver can tell when it has missed one.
-- **The server decides when a subscription is active.** A new subscription is `requested`, and becomes `active` only when the endpoint accepts a handshake. A client that asks for `active` gets `requested`.
+- **The server decides when a subscription is active.** A new subscription is `requested`, and becomes `active` only when the endpoint accepts a handshake. A client that asks for `active` gets `requested`. A refused handshake is tried again four times over about fifteen seconds before the subscription is an `error`: it goes out the moment the subscription is stored, often before the client that created it is listening.
 - **A full-resource notification carries the version that changed.** A discharge notification carries the discharge, not whatever the Encounter had become by the time delivery succeeded.
 - **Failure is bounded.** A refused delivery is retried with a growing delay. After ten consecutive failures the subscription goes to `error`: later changes are counted but not queued, and updating the subscription resumes delivery from the oldest held notification. The count then shows how many were missed.
 

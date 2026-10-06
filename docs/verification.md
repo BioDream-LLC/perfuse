@@ -324,6 +324,27 @@ than this work: a bundle entry's `fullUrl` was the questionnaire's canonical url
 which FHIR forbids; it is now the resource's address on this server. Not verified: a real DTR app (such as a SMART DTR client) driving
 the adaptive flow.
 
+**The Inferno Da Vinci PAS test kit, October 2026.** The official PAS Server v2.2.1 suite (davinci-pas-test-kit v0.15.2, run
+locally in Docker) against `serve -pas -fhir-subscriptions`, with Keycloak issuing the SMART Backend Services token: 82 pass, 2 fail,
+of 84. Approval, denial, a pended request finalised by a reviewer and delivered on the PAS subscription, the four-step claim update
+sequence, inquiries, error handling, and the must-support groups for every profile but ClaimResponse pass. The two failures are the
+ClaimResponse must-support checks for `$submit` and `$inquire`. The elements they want that Perfuse does not send are not allowed
+there by their own extensions' context in PAS 2.2.1: `adjudication.extension:reviewAction` (its `reviewActionCode` may only appear on
+item and addItem adjudications), `extension:authorizedProvider` and `item.extension:communicatedDiagnosis`. Sending them made the
+validator reject every response, so they are left out. The rest are `request.extension:DataAbsentReason` (Perfuse always knows the
+request) and `addItem.extension:productOrServiceCodeEnd`.
+
+The request bundles were the kit's own, for its client simulation. They are identical for approval, denial and pending, because
+Inferno's simulated payer is told what to answer; for a payer that decides from what is asked, the denial asked for dialysis and the
+pended request for surgery, and three more requests exercised a quantity limit, an alternative, a request for documents and a line
+naming no service.
+
+The suite found:
+
+- The handshake was refused because it arrived about a millisecond before Inferno began listening for it. A refused handshake is
+  now retried before the subscription becomes an error.
+- PAS's own example Subscription writes its filter as `org-identifier=...` without a resource type, which Perfuse refused.
+
 **The Inferno Da Vinci DTR test kit, October 2026.** The official DTR Payer Server v2.2.0 suite (davinci-dtr-test-kit v0.18.0,
 run locally in Docker) against Perfuse with Keycloak as the authorization server for SMART Backend Services: 43 pass, 1 omitted (no
 Binary attachments in the data), 2 fail. The two that fail cannot pass for any server: they require

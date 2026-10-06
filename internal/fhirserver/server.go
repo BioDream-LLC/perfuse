@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/fhir"
@@ -35,6 +36,11 @@ type Server struct {
 	// DTRContext resolves a CRD coverage assertion id - DTR's context parameter - to the questionnaires that assertion asked for.
 	// Nil when no CRD service runs in this process; $questionnaire-package then needs the order or the questionnaire named.
 	DTRContext func(assertionID string) []string
+
+	// PAS turns on Da Vinci PAS: Claim/$submit, Claim/$inquire and Claim/$decide. Nil leaves them off.
+	PAS     *PAS
+	pasOnce sync.Once
+	pasErr  error
 
 	// Export runs bulk exports. Nil disables the operation, which is why it is a pointer rather than a value.
 	//
@@ -146,6 +152,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerValueSets(mux)
 
 	s.registerPayerAPIs(mux)
+	s.registerPAS(mux)
 	s.registerDTR(mux)
 
 	mux.HandleFunc("GET /Patient/{id}/$everything", s.handleEverything)
@@ -340,6 +347,12 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 				map[string]any{"name": "log-questionnaire-errors", "definition": "http://hl7.org/fhir/us/davinci-dtr/OperationDefinition/log-questionnaire-errors"},
 			}
 		}
+		if t == "Claim" && s.PAS != nil {
+			entry["operation"] = []any{
+				map[string]any{"name": "submit", "definition": "http://hl7.org/fhir/us/davinci-pas/OperationDefinition/Claim-submit"},
+				map[string]any{"name": "inquire", "definition": "http://hl7.org/fhir/us/davinci-pas/OperationDefinition/Claim-inquiry"},
+			}
+		}
 		if t == "ValueSet" {
 			entry["operation"] = []any{
 				map[string]any{"name": "expand", "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-expand"},
@@ -384,7 +397,7 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		resources = append(resources, term)
 	}
 	if subs := s.Store.Subscriptions(); subs != nil {
-		resources = subscriptionCapability(resources)
+		resources = subscriptionCapability(resources, subs.topics())
 	}
 
 	statement := map[string]any{

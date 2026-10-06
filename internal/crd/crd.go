@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -75,6 +76,20 @@ type Rule struct {
 	// DependsOn are codes of other orders this answer depends on: when one is in the same request, it is named as a
 	// dependency, so the EHR knows to ask again if that order changes.
 	DependsOn []string `yaml:"depends_on,omitempty" json:"dependsOn,omitempty"`
+
+	// PADecision is what a Da Vinci PAS $submit for this service is answered without a reviewer: approve, deny or pend.
+	// Empty derives it from the coverage answer: not-covered is denied, no-auth and satisfied are approved, and anything
+	// else is pended for a person to decide. A service no rule names is always pended.
+	PADecision string `yaml:"pa_decision,omitempty" json:"paDecision,omitempty"`
+	// PAAttachments are the LOINC attachment codes (the valid-hl7-attachment-requests value set) of the documents a pended
+	// PAS request for this service must be supported with. The response asks for them.
+	PAAttachments []string `yaml:"pa_attachments,omitempty" json:"paAttachments,omitempty"`
+	// PAAttachmentModifiers are LOINC attachment modifier codes that narrow what is asked for (a time window, say), sent
+	// with each attachment request as written.
+	PAAttachmentModifiers []string `yaml:"pa_attachment_modifiers,omitempty" json:"paAttachmentModifiers,omitempty"`
+	// PAAlternative is a service the payer approves instead of this one (an X-ray before an MRI): the request is answered
+	// modified, with the alternative as an added item.
+	PAAlternative *Code `yaml:"pa_alternative,omitempty" json:"paAlternative,omitempty"`
 
 	// satisfiedPAID is set per answer, never from the file: the prior authorization already approved for this patient.
 	satisfiedPAID string
@@ -149,6 +164,7 @@ var (
 	coveredCodes = map[string]bool{"covered": true, "not-covered": true, "conditional": true}
 	paCodes      = map[string]bool{"": true, "no-auth": true, "auth-needed": true, "satisfied": true, "performpa": true, "conditional": true}
 	docCodes     = map[string]bool{"clinical": true, "admin": true, "patient": true, "conditional": true}
+	paDecisions  = map[string]bool{"": true, "approve": true, "deny": true, "pend": true}
 )
 
 // Membership is what the payer's records say about the coverage an EHR sent: CRD's reasons for not-covered.
@@ -205,6 +221,12 @@ func (r *Rules) Validate() error {
 		}
 		if !paCodes[rule.PA] {
 			problems = append(problems, fmt.Sprintf("%s: pa %q is not one of CRD's codes", where, rule.PA))
+		}
+		if alt := rule.PAAlternative; alt != nil && (alt.System == "" || alt.Code == "") {
+			problems = append(problems, where+": pa_alternative needs a system and a code")
+		}
+		if !paDecisions[rule.PADecision] {
+			problems = append(problems, fmt.Sprintf("%s: pa_decision %q is not approve, deny or pend", where, rule.PADecision))
 		}
 		for _, d := range rule.Documentation {
 			if !docCodes[d] {
@@ -546,6 +568,64 @@ func (r *Rules) match(o map[string]any) (Rule, bool) {
 		}
 	}
 	return Rule{Covered: "conditional", PA: "conditional"}, false
+}
+
+// PAAnswer is how a prior authorization request for one service is answered without a reviewer.
+type PAAnswer struct {
+	// Decision is "approve", "deny" or "pend".
+	Decision string
+	// Why is the rule's description, or empty when no rule names the service.
+	Why string
+	// AllowedQuantity is the rule's allowed-quantity detail, 0 when it has none: an approval asking for more is certified
+	// for this many.
+	AllowedQuantity float64
+	// Questionnaire and Attachments say what a pended request must be supported with: the DTR questionnaire to fill in,
+	// and the LOINC attachment codes of the documents to send.
+	Questionnaire string
+	Attachments   []string
+	// AttachmentModifiers are LOINC attachment modifier codes for each attachment asked for.
+	AttachmentModifiers []string
+	// Alternative is the service approved instead, as a FHIR Coding; nil when there is none.
+	Alternative map[string]any
+}
+
+// PADecision answers a prior authorization request for one service from the rules CRD answers with. codes are the service's
+// codings, as FHIR CodeableConcepts (an item's productOrService, the requested order's code). A service no rule names is
+// pended.
+func (r *Rules) PADecision(codes ...map[string]any) PAAnswer {
+	for _, cc := range codes {
+		rule, ok := r.match(map[string]any{"code": cc})
+		if !ok {
+			continue
+		}
+		a := PAAnswer{Why: rule.Description, Questionnaire: rule.Questionnaire, Attachments: rule.PAAttachments,
+			AttachmentModifiers: rule.PAAttachmentModifiers}
+		if alt := rule.PAAlternative; alt != nil {
+			a.Alternative = map[string]any{"system": alt.System, "code": alt.Code}
+			if alt.Display != "" {
+				a.Alternative["display"] = alt.Display
+			}
+		}
+		for _, d := range rule.Details {
+			if d.Code == "allowed-quantity" {
+				if q, err := strconv.ParseFloat(strings.TrimSpace(d.Value), 64); err == nil && q > 0 {
+					a.AllowedQuantity = q
+				}
+			}
+		}
+		switch {
+		case rule.PADecision != "":
+			a.Decision = rule.PADecision
+		case rule.Covered == "not-covered":
+			a.Decision = "deny"
+		case rule.PA == "no-auth" || rule.PA == "satisfied":
+			a.Decision = "approve"
+		default:
+			a.Decision = "pend"
+		}
+		return a
+	}
+	return PAAnswer{Decision: "pend"}
 }
 
 type coding struct{ system, code string }

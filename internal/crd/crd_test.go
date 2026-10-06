@@ -218,3 +218,33 @@ func TestACardSummaryStaysUnder140Characters(t *testing.T) {
 		t.Errorf("the full summary did not move to the detail: %q", c.Detail)
 	}
 }
+
+func TestPADecisionFollowsTheRules(t *testing.T) {
+	r := &Rules{Payer: "Plan", Rules: []Rule{
+		{Codes: []string{"3"}, Covered: "covered", PA: "auth-needed", PADecision: "approve", Description: "Consultation"},
+		{Codes: []string{"76"}, Covered: "not-covered", Description: "Dialysis"},
+		{Codes: []string{"BT"}, Covered: "covered", PA: "no-auth", Description: "Gynecological"},
+		{Codes: []string{"2"}, Covered: "covered", PA: "auth-needed", Description: "Surgical"},
+	}}
+	cc := func(code string) map[string]any {
+		return map[string]any{"coding": []any{map[string]any{"system": "https://codesystem.x12.org/005010/1365", "code": code}}}
+	}
+	for code, want := range map[string]string{"3": "approve", "76": "deny", "BT": "approve", "2": "pend", "99": "pend"} {
+		if got := r.PADecision(cc(code)).Decision; got != want {
+			t.Errorf("%s: %s, want %s", code, got, want)
+		}
+	}
+	if a := r.PADecision(cc("99"), cc("76")); a.Decision != "deny" || a.Why != "Dialysis" {
+		t.Errorf("the requested order's code should count too: %+v", a)
+	}
+	r.Rules[3].Details = []Detail{{Code: "allowed-quantity", Value: "10"}}
+	r.Rules[3].PAAttachments = []string{"18776-5"}
+	r.Rules[3].Questionnaire = "https://payer.example/Questionnaire/surgery"
+	if a := r.PADecision(cc("2")); a.AllowedQuantity != 10 || a.Attachments[0] != "18776-5" || a.Questionnaire == "" {
+		t.Errorf("limits and documentation should come with the answer: %+v", a)
+	}
+	r.Rules[0].PADecision = "maybe"
+	if err := r.Validate(); err == nil || !strings.Contains(err.Error(), "pa_decision") {
+		t.Errorf("an unknown pa_decision should be refused: %v", err)
+	}
+}

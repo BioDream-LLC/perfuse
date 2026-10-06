@@ -348,7 +348,7 @@ func resourceTypeOf(r *http.Request) string {
 // (a package, the next question, an expansion) or only write the server log. A token that may read may call them; refusing
 // them would make a read-only DTR client unable to fetch a questionnaire at all.
 var readOperations = map[string]bool{
-	"$questionnaire-package": true, "$next-question": true, "$log-questionnaire-errors": true,
+	"$inquire": true, "$questionnaire-package": true, "$next-question": true, "$log-questionnaire-errors": true,
 	"$expand": true, "$validate-code": true, "$translate": true, "$lookup": true, "$everything": true,
 }
 

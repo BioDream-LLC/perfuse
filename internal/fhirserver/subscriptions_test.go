@@ -339,11 +339,27 @@ func TestRepeatedFailurePutsTheSubscriptionIntoErrorAndCountsWhatWasMissed(t *te
 	}
 }
 
-func TestFailedHandshakeIsAnError(t *testing.T) {
+func TestAHandshakeRefusedOnceIsTriedAgain(t *testing.T) {
+	// The client that created the subscription may not be listening yet when the handshake goes out; Inferno's PAS suite
+	// starts waiting a millisecond after it.
 	f := newSubFixture(t, true)
-	rx := newReceiver(t, 401)
+	rx := newReceiver(t, 500)
 	f.put(t, "/Subscription/s1", subscriptionJSON(rx.srv.URL, "", "id-only"))
 	f.deliver(1)
+	if st := f.status(t, "s1"); st != "requested" {
+		t.Fatalf("after one refused handshake the subscription should still be requested, not %s", st)
+	}
+	f.deliver(1)
+	if st := f.status(t, "s1"); st != "active" || len(rx.received()) != 2 {
+		t.Errorf("the second handshake should have activated it: %s after %d", st, len(rx.received()))
+	}
+}
+
+func TestFailedHandshakeIsAnError(t *testing.T) {
+	f := newSubFixture(t, true)
+	rx := newReceiver(t, 401, 401, 401, 401, 401)
+	f.put(t, "/Subscription/s1", subscriptionJSON(rx.srv.URL, "", "id-only"))
+	f.deliver(handshakeAttempts)
 	rec := tree(t, do(t, f.h, "GET", "/Subscription/s1", nil))
 	if rec["status"] != "error" || !strings.Contains(rec["error"].(string), "HTTP 401") {
 		t.Errorf("status/error = %v / %v", rec["status"], rec["error"])
@@ -353,11 +369,19 @@ func TestFailedHandshakeIsAnError(t *testing.T) {
 // A redirect is a second destination nobody checked.
 func TestRedirectIsNotFollowed(t *testing.T) {
 	f := newSubFixture(t, true)
-	rx := newReceiver(t, http.StatusFound)
+	codes := make([]int, 2*handshakeAttempts)
+	for i := range codes {
+		codes[i] = http.StatusFound
+	}
+	rx := newReceiver(t, codes...)
 	f.put(t, "/Subscription/s1", subscriptionJSON(rx.srv.URL, "", "id-only"))
-	f.deliver(1)
+	f.deliver(handshakeAttempts)
 	if s := f.status(t, "s1"); s != "error" {
 		t.Errorf("a handshake answered with a redirect left the subscription %q", s)
+	}
+	// A followed redirect would be a second request per attempt.
+	if n := len(rx.received()); n != handshakeAttempts {
+		t.Errorf("%d requests for %d attempts: a redirect was followed", n, handshakeAttempts)
 	}
 }
 

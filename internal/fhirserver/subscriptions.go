@@ -68,6 +68,9 @@ const (
 	// maxFailures is how many consecutive failed deliveries put a subscription into error. Retained events are kept, and
 	// delivery resumes from the oldest of them once the subscription is renewed.
 	maxFailures = 10
+	// handshakeAttempts is how many times a handshake is tried, 1, 2, 4 and 8 seconds apart, before the subscription is an
+	// error.
+	handshakeAttempts = 5
 )
 
 // ErrInvalidSubscription means a Subscription was refused. The REST layer answers 400 with the reason.
@@ -79,6 +82,14 @@ type Topic struct {
 	Title        string   `json:"title"`
 	ResourceType string   `json:"resourceType"`
 	Filters      []string `json:"filters"`
+
+	// published topics fire only when Publish is called, never on a FHIR write: their events are not a resource changing in
+	// this store. Da Vinci PAS's result-available is one: a decision on a pended request, kept with the PAS records.
+	published bool
+	// match applies a published topic's filters to what was published. Nil matches every subscription on the topic.
+	match func(tree map[string]any, filters url.Values) bool
+	// payload loads a published event's full resource, for full-resource subscriptions.
+	payload func(ctx context.Context, db *sql.DB, id string, version int) (json.RawMessage, error)
 }
 
 // Topics lists what can be subscribed to.
@@ -90,7 +101,7 @@ var Topics = []Topic{
 }
 
 func topicByURL(u string) (Topic, bool) {
-	for _, t := range Topics {
+	for _, t := range append(Topics, pasTopic) {
 		if t.URL == u {
 			return t, true
 		}
@@ -106,7 +117,9 @@ type SubscriptionOptions struct {
 	Client *http.Client
 	// BaseURL is this server's FHIR base, used in the references a notification carries.
 	BaseURL string
-	Log     *slog.Logger
+	// PAS offers the Da Vinci PAS topic, for the results of pended prior authorization requests.
+	PAS bool
+	Log *slog.Logger
 }
 
 // Subscriptions records and delivers notifications.
@@ -224,9 +237,12 @@ func (m *Subscriptions) parse(sub *fhir.Subscription, checkEgress bool) (*parsed
 		return fmt.Errorf("%w: %s", ErrInvalidSubscription, fmt.Sprintf(format, args...))
 	}
 	topic, ok := topicByURL(strings.TrimSpace(sub.Criteria))
+	if ok && topic.published && !m.opts.PAS {
+		ok = false
+	}
 	if !ok {
-		urls := make([]string, 0, len(Topics))
-		for _, t := range Topics {
+		urls := make([]string, 0, len(Topics)+1)
+		for _, t := range m.topics() {
 			urls = append(urls, t.URL)
 		}
 		return nil, bad("criteria must name a subscription topic this server offers (%s), and %q is not one",
@@ -240,7 +256,12 @@ func (m *Subscriptions) parse(sub *fhir.Subscription, checkEgress bool) (*parsed
 				continue
 			}
 			criteria := *ext.ValueString
-			typ, query, _ := strings.Cut(criteria, "?")
+			typ, query, found := strings.Cut(criteria, "?")
+			if !found && strings.Contains(criteria, "=") {
+				// "org-identifier=123", as the PAS IG's own example writes it: the topic's filters, without naming the
+				// resource type in front.
+				typ, query = topic.ResourceType, criteria
+			}
 			if typ != topic.ResourceType {
 				return nil, bad("filter criteria %q is for %s, and this topic is about %s", criteria, typ, topic.ResourceType)
 			}
@@ -403,6 +424,58 @@ func (m *Subscriptions) record(ctx context.Context, tx *sql.Tx, r fhir.Resource,
 	return nil
 }
 
+// topics are the topics this server offers.
+func (m *Subscriptions) topics() []Topic {
+	if m.opts.PAS {
+		return append(append([]Topic{}, Topics...), pasTopic)
+	}
+	return Topics
+}
+
+// Publish records an event on a published topic inside the caller's transaction, for every subscription to it whose
+// filters match tree: the same guarantee as a FHIR write, that the notification exists if and only if the change does.
+// resourceType, id and version name the focus; the topic's payload loads it. Call Poke after the transaction commits.
+func (m *Subscriptions) Publish(ctx context.Context, tx *sql.Tx, topicURL string, tree map[string]any, resourceType, id string, version int) error {
+	m.mu.Lock()
+	var subs []*parsedSubscription
+	for _, p := range m.active {
+		if p.topic.URL == topicURL && p.status != "off" && (p.topic.match == nil || p.topic.match(tree, p.filters)) {
+			subs = append(subs, p)
+		}
+	}
+	m.mu.Unlock()
+	sort.Slice(subs, func(i, j int) bool { return subs[i].id < subs[j].id })
+	now := m.now().UnixMilli()
+	for _, sub := range subs {
+		var events int
+		if err := tx.QueryRowContext(ctx, `SELECT events FROM fhir_sub_state WHERE sub_id = ?`, sub.id).Scan(&events); err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return err
+			}
+			if _, err := tx.ExecContext(ctx, `INSERT INTO fhir_sub_state (sub_id) VALUES (?)`, sub.id); err != nil {
+				return err
+			}
+		}
+		events++
+		if _, err := tx.ExecContext(ctx, `UPDATE fhir_sub_state SET events = ? WHERE sub_id = ?`, events, sub.id); err != nil {
+			return err
+		}
+		if sub.status == "error" {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO fhir_sub_outbox (sub_id, event_number, kind, resource_type, resource_id, version_id, created, next_attempt)
+			 VALUES (?, ?, 'event-notification', ?, ?, ?, ?, ?)`,
+			sub.id, events, resourceType, id, version, now, now); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Poke wakes delivery, after a Publish has committed.
+func (m *Subscriptions) Poke() { m.poke() }
+
 // committed runs after a write lands.
 func (m *Subscriptions) committed(r fhir.Resource) {
 	if sub, ok := r.(*fhir.Subscription); ok {
@@ -441,7 +514,7 @@ func (m *Subscriptions) matching(r fhir.Resource) []*parsedSubscription {
 	m.mu.Lock()
 	var candidates []*parsedSubscription
 	for _, p := range m.active {
-		if p.topic.ResourceType == r.ResourceTypeName() && p.status != "off" {
+		if !p.topic.published && p.topic.ResourceType == r.ResourceTypeName() && p.status != "off" {
 			candidates = append(candidates, p)
 		}
 	}
@@ -629,14 +702,23 @@ func (m *Subscriptions) deliver(ctx context.Context, o outboxRow) {
 		`UPDATE fhir_sub_state SET failures = failures + 1, last_error = ? WHERE sub_id = ? RETURNING failures`,
 		failure, o.subID).Scan(&failures)
 
+	backoff := time.Duration(1<<min(o.attempts, 8)) * time.Second // 1s doubling to about four minutes
 	if o.kind == "handshake" {
+		if o.attempts+1 < handshakeAttempts {
+			// The handshake goes out the moment the subscription is stored, often before the client that created it has
+			// finished reading the 201 and started listening. A refusal in that first moment says little about the
+			// endpoint, so it is tried again, a few times over about fifteen seconds, before the subscription is an error.
+			_, _ = m.store.db.ExecContext(ctx,
+				`UPDATE fhir_sub_outbox SET attempts = attempts + 1, next_attempt = ? WHERE sub_id = ? AND event_number = 0`,
+				now.Add(backoff).UnixMilli(), o.subID)
+			return
+		}
 		_, _ = m.store.db.ExecContext(ctx,
 			`DELETE FROM fhir_sub_outbox WHERE sub_id = ? AND event_number = 0`, o.subID)
 		m.setStatus(ctx, o.subID, "error", "the handshake was not accepted: "+failure)
 		return
 	}
 
-	backoff := time.Duration(1<<min(o.attempts, 8)) * time.Second // 1s doubling to about four minutes
 	_, _ = m.store.db.ExecContext(ctx,
 		`UPDATE fhir_sub_outbox SET attempts = attempts + 1, next_attempt = ? WHERE sub_id = ? AND event_number = ?`,
 		now.Add(backoff).UnixMilli(), o.subID, o.event)
@@ -728,13 +810,21 @@ func (m *Subscriptions) notification(ctx context.Context, sub *parsedSubscriptio
 		if sub.payload == "full-resource" {
 			// The version the event describes, not whatever is current by the time delivery succeeds. A discharge
 			// notification that arrives carrying the next admission is a notification about the wrong visit.
-			r, err := m.store.GetVersion(ctx, o.resourceType, o.resourceID, o.versionID)
-			if err != nil {
-				return nil, err
-			}
-			raw, err := fhir.MarshalVersioned(r, fhir.R4)
-			if err != nil {
-				return nil, err
+			var raw []byte
+			if sub.topic.payload != nil {
+				loaded, err := sub.topic.payload(ctx, m.store.db, o.resourceID, o.versionID)
+				if err != nil {
+					return nil, err
+				}
+				raw = loaded
+			} else {
+				r, err := m.store.GetVersion(ctx, o.resourceType, o.resourceID, o.versionID)
+				if err != nil {
+					return nil, err
+				}
+				if raw, err = fhir.MarshalVersioned(r, fhir.R4); err != nil {
+					return nil, err
+				}
 			}
 			entries = append(entries, map[string]any{
 				"fullUrl":  focus,
@@ -856,9 +946,9 @@ func (m *Subscriptions) Summaries(ctx context.Context) ([]SubscriptionSummary, e
 
 // subscriptionCapability declares the topics on the Subscription entry, in the form the backport IG defines, so a client
 // discovers what it can subscribe to rather than guessing canonical URLs.
-func subscriptionCapability(resources []any) []any {
-	topics := make([]any, 0, len(Topics))
-	for _, t := range Topics {
+func subscriptionCapability(resources []any, offered []Topic) []any {
+	topics := make([]any, 0, len(offered))
+	for _, t := range offered {
 		topics = append(topics, map[string]any{
 			"url":            backportBase + "capabilitystatement-subscriptiontopic-canonical",
 			"valueCanonical": t.URL,
