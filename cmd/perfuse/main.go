@@ -95,6 +95,18 @@ var errBlocking = errors.New("blocking findings present")
 var errNoArgs = errors.New("no command")
 
 func main() {
+	if len(os.Args) == 1 && launchedByDoubleClick() {
+		err := runLaunch(os.Stdout, os.Stderr, openURL, func(args []string) error {
+			return run(args, os.Stdout, os.Stderr)
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\nperfuse: %v\n", err)
+			holdWindowOpen()
+			os.Exit(2)
+		}
+		return
+	}
+
 	err := run(os.Args[1:], os.Stdout, os.Stderr)
 	switch {
 	case err == nil:

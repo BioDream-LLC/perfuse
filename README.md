@@ -293,6 +293,11 @@ the notice and the full PDF manual.
 | **Linux** | x86-64 | [`perfuse-v0.1.6-linux-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.6/perfuse-v0.1.6-linux-amd64.tar.gz) |
 | **Linux** | ARM64 / aarch64 | [`perfuse-v0.1.6-linux-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.6/perfuse-v0.1.6-linux-arm64.tar.gz) |
 
+**On Windows, unzip and double-click `perfuse.exe`.** It starts the server, keeps its database and channels in
+`%LOCALAPPDATA%\Perfuse`, and opens your browser at the sign-in page. The window it opens shows the administrator's
+password on the first run; keep it open while you use Perfuse, because closing it stops the server. Double-clicking
+again while it runs just opens the browser. From a command prompt, `perfuse` with no arguments still prints the usage.
+
 **Verify what you downloaded** against [`SHA256SUMS`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.6/SHA256SUMS):
 
 ```sh
