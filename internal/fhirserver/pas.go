@@ -113,6 +113,8 @@ func (s *Server) registerPAS(mux *http.ServeMux) {
 	mux.HandleFunc("POST /Claim/$inquire", s.handlePASInquire)
 	mux.HandleFunc("POST /Claim/$decide", s.handlePASDecide)
 	mux.HandleFunc("POST /Claim/$decide-278", s.handlePASDecide278)
+	mux.HandleFunc("POST /Claim/$submit-attachment", s.handleSubmitAttachment)
+	mux.HandleFunc("POST /$submit-attachment", s.handleSubmitAttachment)
 }
 
 func (s *Server) pasReady(ctx context.Context) error {
@@ -129,6 +131,19 @@ func (s *Server) pasReady(ctx context.Context) error {
 				created INTEGER NOT NULL,
 				updated INTEGER NOT NULL,
 				request TEXT NOT NULL)`,
+			`CREATE TABLE IF NOT EXISTS pas_tracking (
+				tracking TEXT PRIMARY KEY,
+				id TEXT NOT NULL)`,
+			`CREATE TABLE IF NOT EXISTS pas_attachments (
+				id TEXT NOT NULL,
+				tracking TEXT NOT NULL,
+				resource_type TEXT NOT NULL,
+				code TEXT NOT NULL,
+				line_items TEXT NOT NULL,
+				final INTEGER NOT NULL,
+				received INTEGER NOT NULL,
+				content TEXT NOT NULL)`,
+			`CREATE INDEX IF NOT EXISTS pas_attachments_id ON pas_attachments (id)`,
 			`CREATE TABLE IF NOT EXISTS pas_um_traces (
 				trace TEXT PRIMARY KEY,
 				id TEXT NOT NULL,
@@ -990,6 +1005,11 @@ func (s *Server) savePAS(ctx context.Context, req *pasRequest, id string, respon
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO pas_responses (id, version, response) VALUES (?, 1, ?)`, id, string(respRaw)); err != nil {
 		return err
+	}
+	for _, tracking := range pasTrackingIDs(response) {
+		if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO pas_tracking (tracking, id) VALUES (?, ?)`, tracking, id); err != nil {
+			return err
+		}
 	}
 	for seq, trace := range req.umTraces {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO pas_um_traces (trace, id, seq) VALUES (?, ?, ?)`, trace, id, seq); err != nil {

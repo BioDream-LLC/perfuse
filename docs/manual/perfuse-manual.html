@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 231b414</p>
+<p class="version">version 0.1 · 8b676da</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -572,7 +572,8 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s16-6-prior-authorisation-metrics"><span class="num">16.6</span> Prior authorisation metrics</a></div>
 <div class="toc-d2"><a href="#s16-7-what-was-checked-and-against-what"><span class="num">16.7</span> What was checked, and against what</a></div>
 <div class="toc-d2"><a href="#s16-8-deciding-prior-authorisation-requests-pas"><span class="num">16.8</span> Deciding prior authorisation requests: PAS</a></div>
-<div class="toc-d3"><a href="#s16-8-1-deciding-in-an-x12-utilization-management-system"><span class="num">16.8.1</span> Deciding in an X12 utilization management system</a></div>
+<div class="toc-d3"><a href="#s16-8-1-receiving-the-documents-a-pended-request-asks-for"><span class="num">16.8.1</span> Receiving the documents a pended request asks for</a></div>
+<div class="toc-d3"><a href="#s16-8-2-deciding-in-an-x12-utilization-management-system"><span class="num">16.8.2</span> Deciding in an X12 utilization management system</a></div>
 <div class="toc-d1"><a href="#s17-security"><span class="num">17</span> Security</a></div>
 <div class="toc-d2"><a href="#s17-1-transport-security"><span class="num">17.1</span> Transport security</a></div>
 <div class="toc-d2"><a href="#s17-2-authentication-and-roles"><span class="num">17.2</span> Authentication and roles</a></div>
@@ -2727,7 +2728,9 @@ rules:
   {&#34;name&#34;: &#34;reviewer&#34;, &#34;valueString&#34;: &#34;&lt;the reviewer&#39;s NPI&gt;&#34;}]}</code></pre>
 <p><code>decision</code> may also be <code>modify</code>: certified, but not as asked, with <code>quantity</code> (valueDecimal, the units certified) and/or <code>alternative</code> (valueCoding, the service approved instead). The response then says A6 Modified, with the certified detail or the alternative as an added item, and an authorization number. <code>item</code> (valueInteger, repeatable) limits the decision to some lines. The decision becomes a new version of the response, marked as reviewed by a person, and with <code>-fhir-subscriptions</code> it is delivered on the PAS topic (<code>PASSubscriptionTopic</code>, filtered by <code>org-identifier</code>, the requesting organisation&#39;s identifier) as the full PAS Response Bundle, in the same transaction that records it. <code>$inquire</code> returns the current response to every request that provider made about that member; another provider&#39;s inquiry finds nothing. <code>$decide</code> needs a write scope; <code>$inquire</code> is a read.</p>
 <p>Requests and every version of their responses are kept in <code>pas_requests</code> and <code>pas_responses</code> in the server&#39;s database.</p>
-<h4 id="s16-8-1-deciding-in-an-x12-utilization-management-system"><span class="num">16.8.1</span> Deciding in an X12 utilization management system</h4>
+<h4 id="s16-8-1-receiving-the-documents-a-pended-request-asks-for"><span class="num">16.8.1</span> Receiving the documents a pended request asks for</h4>
+<p>A pended response asks for documents with a Task and one CommunicationRequest per document. The provider sends them with Da Vinci CDex <code>$submit-attachment</code> (<code>POST /fhir/$submit-attachment</code>): the <code>TrackingId</code> is the CommunicationRequest&#39;s identifier, the attachment control number (the Task&#39;s identifier is accepted too), <code>AttachTo</code> is <code>preauthorization</code>, and <code>MemberId</code> must be the request&#39;s member. Each attachment&#39;s DocumentReference or QuestionnaireResponse is kept with the request and shown to its reviewer; a document arriving decides nothing.</p>
+<h4 id="s16-8-2-deciding-in-an-x12-utilization-management-system"><span class="num">16.8.2</span> Deciding in an X12 utilization management system</h4>
 <p>Most payers decide prior authorizations in a UM system that speaks X12 278. With <code>-pas-278-url</code>, Perfuse is the FHIR front of that system: each <code>$submit</code> is sent as one 278 request (005010X217), every item a patient event carrying its service type, procedure code, diagnoses, date and quantity, and the 278 response&#39;s action code and authorization number become the item&#39;s review action. Local rules are not consulted.</p>
 <pre class="code lang-sh"><code>perfuse serve -fhir -pas -pas-278-url https://um.example/x12/278 -pas-278-receiver ACMEUM \
   -pas-278-token-env UM_TOKEN</code></pre>

@@ -374,6 +374,7 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 			entry["operation"] = []any{
 				map[string]any{"name": "submit", "definition": "http://hl7.org/fhir/us/davinci-pas/OperationDefinition/Claim-submit"},
 				map[string]any{"name": "inquire", "definition": "http://hl7.org/fhir/us/davinci-pas/OperationDefinition/Claim-inquiry"},
+				map[string]any{"name": "submit-attachment", "definition": cdexSubmitAttachment},
 			}
 		}
 		if t == "ValueSet" {
