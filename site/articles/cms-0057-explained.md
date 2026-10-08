@@ -1,5 +1,7 @@
 # CMS-0057-F explained: the Interoperability and Prior Authorization rule, in plain terms
 
+![CMS-0057-F, the Interoperability and Prior Authorization rule](docs/assets/articles/hero-cms-0057.svg)
+
 CMS-0057-F, the **Interoperability and Prior Authorization Final Rule**, is the biggest change to how US payers exchange data since the original Patient Access rule. It sets firm deadlines for faster prior authorization decisions and for four FHIR APIs that payers must run.
 
 This guide explains who it applies to, what it requires, when, and how to meet it without building everything from scratch.
@@ -17,6 +19,8 @@ Providers are affected too. From the 2027 performance period, the **"Electronic 
 
 ## What it requires, and when
 
+![CMS-0057-F timeline: decision timeframes and metrics from 2026, four FHIR APIs from 2027](docs/assets/articles/cms-0057-timeline.svg)
+
 ### From 1 January 2026: faster, clearer decisions
 
 - **Decision timeframes**: 72 hours for expedited (urgent) requests and 7 calendar days for standard requests.
@@ -24,6 +28,8 @@ Providers are affected too. From the 2027 performance period, the **"Electronic 
 - **Public prior authorization metrics**, posted every year on the payer's website: approvals, denials, approvals after appeal, extensions, and average and median decision times.
 
 ### From 1 January 2027: four FHIR APIs
+
+![The four CMS-0057 APIs connecting a payer to members, providers, other payers and clinicians](docs/assets/articles/cms-0057-apis.svg)
 
 1. **Patient Access API**: the existing API, extended so members can also see their prior authorization requests and decisions.
 2. **Provider Access API**: in-network providers can retrieve their patients' claims, encounter data, clinical data and prior authorizations, with a member opt-out.
@@ -56,6 +62,8 @@ Meeting the rule means running, securing and connecting a lot of moving parts:
 - The yearly metrics page
 
 ## How Perfuse does it
+
+![CRD, DTR and PAS between the EHR and the payer](docs/assets/articles/da-vinci-flow.svg)
 
 **[Perfuse](https://github.com/biodream-llc/perfuse)** is a free, Apache-2.0 healthcare integration engine with the whole CMS-0057 stack built in. It is one file to download, with nothing else to install.
 

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460" width="1200" height="460" role="img" aria-label="Timeline. From 1 January 2026: decisions within 72 hours for expedited and 7 days for standard requests, a specific reason for every denial, and public prior authorization metrics. From 1 January 2027: four FHIR APIs, Patient Access, Provider Access, Payer-to-Payer and Prior Authorization.">
+  <title>CMS-0057-F timeline</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="flowLine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1200" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.45"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3b82f6"/>
+    </marker>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#1e293b" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="460" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="460" rx="18" fill="url(#grid)" opacity="0.55"/>
+  <text x="64" y="64" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="700" fill="#f1f5f9" text-anchor="start" opacity="1">What CMS-0057-F requires, and when</text>
+  <line x1="100" y1="140" x2="1100" y2="140" stroke="url(#flowLine)" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="250" cy="140" r="16" fill="#fbbf24" stroke="none" stroke-width="0" filter="url(#glow)"/>
+  <text x="250" y="110" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="700" fill="#fbbf24" text-anchor="middle" opacity="1">1 January 2026</text>
+  <circle cx="850" cy="140" r="16" fill="#2dd4bf" stroke="none" stroke-width="0" filter="url(#glow)"/>
+  <text x="850" y="110" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="700" fill="#2dd4bf" text-anchor="middle" opacity="1">1 January 2027</text>
+  <rect x="80" y="180" width="480" height="250" rx="14" fill="#1e293b" stroke="#334155" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="108" y="220" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="700" fill="#fbbf24" text-anchor="start" opacity="1">Faster, clearer decisions</text>
+  <text x="108" y="264" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="800" fill="#f1f5f9" text-anchor="start" opacity="1">72 hours</text>
+  <text x="240" y="264" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">expedited requests</text>
+  <text x="108" y="306" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="800" fill="#f1f5f9" text-anchor="start" opacity="1">7 days</text>
+  <text x="240" y="306" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">standard requests</text>
+  <text x="108" y="348" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="800" fill="#f1f5f9" text-anchor="start" opacity="1">A reason</text>
+  <text x="240" y="348" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">for every denial</text>
+  <text x="108" y="390" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="800" fill="#f1f5f9" text-anchor="start" opacity="1">Metrics</text>
+  <text x="240" y="390" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">published every year</text>
+  <rect x="640" y="180" width="480" height="250" rx="14" fill="#1e293b" stroke="#334155" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="668" y="220" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="700" fill="#2dd4bf" text-anchor="start" opacity="1">Four FHIR APIs</text>
+  <rect x="668" y="240" width="424" height="36" rx="10" fill="#273449" stroke="#334155" stroke-width="1.5" />
+  <circle cx="690" cy="258" r="6" fill="#2dd4bf" stroke="none" stroke-width="0" />
+  <text x="708" y="264" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#f1f5f9" text-anchor="start" opacity="1">Patient Access</text>
+  <rect x="668" y="284" width="424" height="36" rx="10" fill="#273449" stroke="#334155" stroke-width="1.5" />
+  <circle cx="690" cy="302" r="6" fill="#2dd4bf" stroke="none" stroke-width="0" />
+  <text x="708" y="308" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#f1f5f9" text-anchor="start" opacity="1">Provider Access</text>
+  <rect x="668" y="328" width="424" height="36" rx="10" fill="#273449" stroke="#334155" stroke-width="1.5" />
+  <circle cx="690" cy="346" r="6" fill="#2dd4bf" stroke="none" stroke-width="0" />
+  <text x="708" y="352" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#f1f5f9" text-anchor="start" opacity="1">Payer-to-Payer</text>
+  <rect x="668" y="372" width="424" height="36" rx="10" fill="#273449" stroke="#334155" stroke-width="1.5" />
+  <circle cx="690" cy="390" r="6" fill="#2dd4bf" stroke="none" stroke-width="0" />
+  <text x="708" y="396" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#f1f5f9" text-anchor="start" opacity="1">Prior Authorization</text>
+</svg>

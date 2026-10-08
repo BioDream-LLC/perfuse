@@ -1,5 +1,7 @@
 # Mirth Connect 4.6 licence change: your options, and the fastest way forward
 
+![Four paths after the Mirth Connect 4.6 licence change, with moving forward highlighted](docs/assets/articles/hero-mirth-licence.svg)
+
 In March 2025 NextGen Healthcare moved Mirth Connect to a commercial licence. From version 4.6 onwards a paid
 licence is required, and the open-source line stays at 4.5.2.
 
@@ -31,6 +33,8 @@ And it is **one file**. Download it, run it, open your browser.
 
 ### One file, twelve times lighter
 
+![Perfuse uses 31 MB of memory at rest against Mirth Connect 4.5.2's 383 MB](docs/assets/articles/memory-at-rest.svg)
+
 | | Perfuse | Mirth Connect 4.5.2 |
 |---|---|---|
 | Memory at rest | **31 MB** | 383 MB |
@@ -47,6 +51,8 @@ unit, a launchd service or a Windows service. On Windows you simply double-click
 static, so it runs in a `scratch` container with nothing else inside.
 
 ## Your Mirth channels, running in minutes
+
+![Six migration steps from Mirth to Perfuse: export, explain, translate, check and test, compare, switch](docs/assets/articles/mirth-migration-steps.svg)
 
 Perfuse was built for this migration from the first line of code.
 

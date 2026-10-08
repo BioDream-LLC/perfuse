@@ -1,5 +1,7 @@
 # Da Vinci CRD, DTR and PAS explained: electronic prior authorization from order to decision
 
+![CRD, DTR and PAS as three linked steps from order to decision](docs/assets/articles/hero-da-vinci.svg)
+
 Prior authorization has long meant phone calls, faxes and portals. The HL7 **Da Vinci Project** replaces that with three FHIR implementation guides that work together inside the clinician's normal workflow:
 
 - **CRD**, Coverage Requirements Discovery: does this order need prior authorization, and what is needed?
@@ -35,12 +37,16 @@ The payer answers with a **ClaimResponse**: approved, denied, modified or pended
 
 ## How the three fit together
 
+![CRD, DTR and PAS between the EHR and the payer: coverage, documentation, decision](docs/assets/articles/da-vinci-flow.svg)
+
 1. The clinician signs an order. **CRD** says prior authorization is needed and names the questionnaire.
 2. **DTR** fetches the questionnaire, pre-fills it, and the clinician completes it.
 3. **PAS** submits the request with the completed documentation.
 4. The payer decides. Many requests can be approved in real time, because the documentation the payer needs is already there.
 
 ## How Perfuse does it
+
+![The four CMS-0057 APIs a payer serves with Perfuse](docs/assets/articles/cms-0057-apis.svg)
 
 **[Perfuse](https://github.com/biodream-llc/perfuse)** is a free, Apache-2.0 healthcare integration engine that implements all three guides, for payers and for the systems that talk to them.
 

@@ -1,10 +1,14 @@
 # HL7 v2 to FHIR: a practical guide to converting real feeds
 
+![HL7 v2 segments flowing into FHIR resources](docs/assets/articles/hero-v2-fhir.svg)
+
 Most clinical data in the US still moves as **HL7 v2**: admissions as ADT, lab results as ORU, orders as ORM, schedules as SIU. Most new applications, and every API that CMS and ONC now require, expect **FHIR**. Converting between them is one of the most common jobs in health IT, and one of the easiest to get subtly wrong.
 
 This guide covers what maps to what, the details that matter, and how to do it well.
 
 ## What maps to what
+
+![HL7 v2 segments PID, PV1, OBR, OBX, AL1 and DG1 mapped to Patient, Encounter, DiagnosticReport, Observation, AllergyIntolerance and Condition](docs/assets/articles/v2-fhir-mapping.svg)
 
 The HL7 **v2-to-FHIR implementation guide** sets out the standard mappings. The core of them:
 

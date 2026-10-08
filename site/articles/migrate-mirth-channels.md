@@ -1,10 +1,14 @@
 # How to migrate Mirth Connect channels, step by step
 
+![Six numbered steps rising towards a finished migration](docs/assets/articles/hero-migrate-mirth.svg)
+
 Moving off Mirth Connect is usually pictured as a rewrite: every channel rebuilt, every transformer retested, a long cut-over weekend. It does not have to be. With **[Perfuse](https://github.com/biodream-llc/perfuse)**, a free Apache-2.0 integration engine, your channels convert automatically, your JavaScript runs as it is, and you prove the result on your own traffic before you switch.
 
 This guide walks through a migration from start to finish. It works the same for **Mirth Connect**, the **Open Integration Engine (OIE)** and **BridgeLink**.
 
 ## Step 1: Export from Mirth
+
+![Six migration steps from Mirth to Perfuse: export, explain, translate, check and test, compare, switch](docs/assets/articles/mirth-migration-steps.svg)
 
 In the Mirth Administrator, export what you want to move. Any of these works:
 
@@ -76,6 +80,8 @@ Open http://127.0.0.1:8080 to see every channel, message and queue in the web co
 Perfuse exports too. Any channel built or changed in Perfuse can be written as a Mirth channel file, and **Mirth, OIE and BridgeLink all accept it**, verified across ten transport pairs. You are never locked in.
 
 ## Why teams move to Perfuse
+
+![Perfuse uses 31 MB of memory at rest against Mirth Connect 4.5.2's 383 MB](docs/assets/articles/memory-at-rest.svg)
 
 - **One file, no Java.** 31 MB of memory at rest against Mirth's 383 MB on the same machine, and no JVM to install, patch or tune.
 - **Everything in the browser**, and every channel is also a plain file you can keep in git.
