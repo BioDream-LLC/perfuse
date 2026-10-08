@@ -1,6 +1,7 @@
 package v2fhir
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"net/url"
@@ -940,9 +941,16 @@ func (c *converter) encapsulatedData(o *fhir.Observation, prefix string) bool {
 		}
 		return r
 	}, data)
-	if _, err := base64.StdEncoding.DecodeString(data); err != nil {
+	// Padding is optional in practice: a sender that strips the trailing "=" still sent the whole document. Whether the data is
+	// complete is decided below from the document's own frame, not from the padding, which a cut-short PDF can happen to have.
+	data = strings.TrimRight(data, "=")
+	raw, err := base64.RawStdEncoding.DecodeString(data)
+	if err != nil {
 		c.note("warning", prefix+"-5.5", "Observation.valueString", "encapsulated data is marked Base64 but does not decode, so it was kept as text")
 		return false
+	}
+	if pad := len(data) % 4; pad != 0 {
+		data += strings.Repeat("=", 4-pad)
 	}
 	contentType := "application/octet-stream"
 	switch {
@@ -960,6 +968,17 @@ func (c *converter) encapsulatedData(o *fhir.Observation, prefix string) bool {
 	if contentType == "application/octet-stream" {
 		c.note("warning", prefix+"-5.2", "DocumentReference.content.attachment.contentType",
 			"type of data %q / %q is not a MIME type, so application/octet-stream was used", kind, subtype)
+	}
+	// A PDF opens with %PDF- and ends with %%EOF (possibly followed by a line end). Without the end, the document was cut short
+	// in transit, and a reader would get a file that will not open: it stays text, with the reason, rather than becoming a
+	// DocumentReference that looks complete.
+	if contentType == "application/pdf" || bytes.HasPrefix(raw, []byte("%PDF-")) {
+		tail := bytes.TrimRight(raw, " \t\r\n\x00")
+		if !bytes.HasPrefix(raw, []byte("%PDF-")) || !bytes.HasSuffix(tail, []byte("%%EOF")) {
+			c.note("warning", prefix+"-5.5", "Observation.valueString",
+				"the embedded PDF (%d bytes) does not run from %%PDF- to %%%%EOF, so it is incomplete and was kept as text", len(raw))
+			return false
+		}
 	}
 	doc := &fhir.DocumentReference{
 		Status:  "current",

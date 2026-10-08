@@ -380,3 +380,38 @@ func TestAnEventThatDisagreesWithMSH9IsReported(t *testing.T) {
 		}
 	}
 }
+
+// A PDF cut short in transit can still be valid Base64: 2815 characters leave a remainder of 3, which decodes. The length
+// says nothing; the document's own frame does. Without %%EOF the reader would get a file that will not open.
+func TestAPDFWithoutItsEndIsIncompleteEvenWhenTheBase64Decodes(t *testing.T) {
+	pdf := []byte("%PDF-1.4\n1 0 obj\n<</Type /Catalog /Pages 2 0 R>>\nendobj\n2 0 obj\n<<>>\nendobj\n%%EOF\n")
+	cut := base64.StdEncoding.EncodeToString(pdf[:40]) // a whole number of bytes, so the Base64 itself is well formed
+	res := convert(t, oruWithFirstOBX(map[int]string{1: "1", 2: "ED", 3: "R125^Report^IGENE",
+		5: "^IGene^application/pdf^Base64^" + cut, 11: "F"}), Options{})
+	if got := findAll[*fhir.DocumentReference](res); len(got) != 0 {
+		t.Fatalf("a document was made from a PDF with no %%%%EOF")
+	}
+	found := false
+	for _, n := range res.Notes {
+		found = found || strings.Contains(n.Message, "does not run from %PDF- to %%EOF")
+	}
+	if !found {
+		t.Fatalf("the reason was not reported: %+v", res.Notes)
+	}
+}
+
+// Senders that drop the "=" padding still sent the whole document.
+func TestAPDFWhoseBase64HasNoPaddingIsStillTheDocument(t *testing.T) {
+	pdf := []byte("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n")
+	enc := strings.TrimRight(base64.StdEncoding.EncodeToString(pdf), "=")
+	if len(enc)%4 == 0 {
+		t.Fatalf("test data needs padding to remove")
+	}
+	res := convert(t, oruWithFirstOBX(map[int]string{1: "1", 2: "ED", 3: "R125^Report^IGENE",
+		5: "^IGene^application/pdf^Base64^" + enc, 11: "F"}), Options{})
+	doc := find[*fhir.DocumentReference](t, res)
+	if got := decoded(t, doc); !bytes.Equal(got, pdf) {
+		t.Fatalf("PDF bytes changed: %q", got)
+	}
+	validationErrors(t, res)
+}

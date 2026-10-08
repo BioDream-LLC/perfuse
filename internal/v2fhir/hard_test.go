@@ -144,7 +144,7 @@ func TestAwkwardORUValues(t *testing.T) {
 		t.Fatalf("want one DocumentReference for the ED result, got %d", len(docs))
 	}
 	att := docs[0]["content"].([]any)[0].(map[string]any)["attachment"].(map[string]any)
-	if att["contentType"] != "application/pdf" || att["data"] != "JVBERi0xLjQK" {
+	if att["contentType"] != "application/pdf" || att["data"] != "JVBERi0xLjQKJSVFT0YK" {
 		t.Errorf("attachment: %v", att)
 	}
 	if ref := ed["derivedFrom"].([]any)[0].(map[string]any)["reference"]; ref != "DocumentReference/"+docs[0]["id"].(string) {
