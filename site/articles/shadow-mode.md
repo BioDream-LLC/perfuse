@@ -58,3 +58,11 @@ Shadow mode is part of a complete integration engine: HL7 v2, FHIR, X12, DICOM a
 3. Watch the Shadow tab. Read the [manual](https://perfuse.health/manual/) for every option.
 
 Related: [Feed contracts](https://perfuse.health/feed-contracts/) · [How to migrate Mirth Connect channels](https://perfuse.health/migrate-mirth-channels/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)

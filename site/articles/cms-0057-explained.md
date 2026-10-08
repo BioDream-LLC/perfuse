@@ -89,3 +89,11 @@ Perfuse also does everything an integration engine does: HL7 v2, FHIR, X12, DICO
 3. Read the [manual](https://perfuse.health/manual/) for the CMS-0057 setup.
 
 Related: [Da Vinci CRD, DTR and PAS explained](https://perfuse.health/da-vinci-prior-authorization/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)

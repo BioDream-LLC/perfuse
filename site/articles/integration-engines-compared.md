@@ -14,7 +14,7 @@ Since Mirth Connect moved to a commercial licence from version 4.6, many teams h
 
 **BridgeLink.** Another fork of the Mirth 4.5.2 code base, continuing its line of releases.
 
-**Perfuse.** A new engine, written from the ground up in Go and licensed under **Apache 2.0**. It reads and writes Mirth's channel format, so it works alongside all three of the above, and adds a modern set of standards and safety features on top.
+**[Perfuse](https://github.com/biodream-llc/perfuse).** A new engine, written from the ground up in Go and licensed under **Apache 2.0**. It reads and writes Mirth's channel format, so it works alongside all three of the above, and adds a modern set of standards and safety features on top.
 
 ## At a glance
 
@@ -60,5 +60,13 @@ Mirth 4.5.2, OIE and BridgeLink come from one code base, so they share a great d
 3. Run `perfuse serve` and open http://127.0.0.1:8080.
 
 Related: [The Mirth 4.6 licence change](https://perfuse.health/mirth-licence-change/) · [How to migrate Mirth Connect channels](https://perfuse.health/migrate-mirth-channels/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)
 
 Mirth and Mirth Connect are trademarks of their respective owners, used here only to describe compatibility. Open Integration Engine and BridgeLink are the names of their respective projects.

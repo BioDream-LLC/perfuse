@@ -56,3 +56,11 @@ perfuse serve -smart-clients examples/smart/clients.yaml -smart-users examples/s
 Then point a SMART app, or Inferno's SMART test kit, at the FHIR endpoint. The [manual](https://perfuse.health/manual/) covers every option.
 
 Related: [CMS-0057-F explained](https://perfuse.health/cms-0057-explained/) · [TEFCA and UDAP explained](https://perfuse.health/tefca-udap/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)

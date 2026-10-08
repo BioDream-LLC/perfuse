@@ -64,3 +64,11 @@ perfuse serve -pas -crd-rules examples/crd/rules.yaml
 Send a PAS bundle to `/fhir/Claim/$submit`, or route X12 278 files through a channel. The [manual](https://perfuse.health/manual/) shows both.
 
 Related: [Da Vinci CRD, DTR and PAS explained](https://perfuse.health/da-vinci-prior-authorization/) · [CMS-0057-F explained](https://perfuse.health/cms-0057-explained/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)

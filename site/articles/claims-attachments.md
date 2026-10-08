@@ -44,3 +44,11 @@ Attachments are part of a complete payer and provider toolkit in the same engine
 3. Read the [manual](https://perfuse.health/manual/) for the attachment API.
 
 Related: [X12 278 and FHIR PAS](https://perfuse.health/x12-278-vs-pas/) · [CMS-0057-F explained](https://perfuse.health/cms-0057-explained/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)

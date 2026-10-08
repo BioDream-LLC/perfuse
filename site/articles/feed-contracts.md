@@ -86,3 +86,11 @@ All in one engine: HL7 v2, FHIR, X12, DICOM and CDA over twenty connector types,
 3. Read the [manual](https://perfuse.health/manual/) for every contract rule.
 
 Related: [Shadow mode](https://perfuse.health/shadow-mode/) · [HL7 v2 to FHIR](https://perfuse.health/hl7-v2-to-fhir/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)

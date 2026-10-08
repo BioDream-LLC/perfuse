@@ -75,3 +75,11 @@ And it is part of a complete integration engine: HL7 v2, FHIR, X12, DICOM and CD
 3. Open the FHIR lab, paste an HL7 v2 message, and read the FHIR.
 
 Related: [CMS-0057-F explained](https://perfuse.health/cms-0057-explained/) · [How to migrate Mirth Connect channels](https://perfuse.health/migrate-mirth-channels/).
+
+## Perfuse on GitHub
+
+Perfuse is free and open source under Apache 2.0. The source, every release, the issue tracker and the full documentation are on GitHub: **[github.com/biodream-llc/perfuse](https://github.com/biodream-llc/perfuse)**.
+
+- [Download the latest release](https://github.com/biodream-llc/perfuse/releases/latest) for Linux, macOS or Windows
+- [Read the source](https://github.com/biodream-llc/perfuse)
+- [Report an issue or ask a question](https://github.com/biodream-llc/perfuse/issues)
