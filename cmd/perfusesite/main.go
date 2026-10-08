@@ -42,6 +42,13 @@ type page struct {
 // link that resolves on GitHub and 404s on the website is worse than no link.
 var pages = []page{
 	{
+		src:         "site/articles/mirth-licence-change.md",
+		dir:         "mirth-licence-change",
+		title:       "Mirth Connect 4.6 licence change: your options, and the fastest way forward",
+		description: "Mirth Connect now needs a paid licence from version 4.6. Your options, and how Perfuse, a free Apache-2.0 engine, runs your existing Mirth channels from a single download.",
+		priority:    "0.9",
+	},
+	{
 		src:         "README.md",
 		dir:         "overview",
 		title:       "Perfuse — a healthcare integration engine",
