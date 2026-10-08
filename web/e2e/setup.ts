@@ -324,6 +324,8 @@ export default async function globalSetup() {
       // Da Vinci CRD, with the example rules, so the coverage requirements tab answers from a real rules file.
       "-crd-rules", join(REPO, "examples", "crd", "rules.yaml"),
       "-fhir-bulk-export",
+      // Da Vinci PAS, decided by the same example rules, so the reviewer queue has pended requests to show and decide.
+      "-pas",
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
   );

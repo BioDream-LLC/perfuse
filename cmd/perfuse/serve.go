@@ -1113,6 +1113,7 @@ oidcDone:
 					PayerID: *pas278Payer, Production: *pas278Production, Log: log}
 				rules = "the utilization management system at " + *pas278URL + ", over X12 278"
 			}
+			srv.PAS = fhirSrv
 			log.Info("serving Da Vinci PAS", "submit", baseURL+"/Claim/$submit", "rules", rules)
 		}
 		if *ecrResponses || *ecrAgency != "" {

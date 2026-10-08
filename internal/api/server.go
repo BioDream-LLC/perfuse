@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
 	"github.com/biodream-llc/perfuse/internal/dashboards"
+	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"log/slog"
 	"net/http"
@@ -228,6 +229,8 @@ type Server struct {
 
 	// CRD is the Da Vinci Coverage Requirements Discovery rules, when the payer's CDS service is on.
 	CRD *crd.Rules
+	// PAS is the FHIR server answering Da Vinci PAS, for the reviewer queue; nil or without PAS, the queue says it is off.
+	PAS *fhirserver.Server
 
 	// DTRPackage runs this server's own DTR $questionnaire-package on a Parameters body, for the console. Nil when no FHIR endpoint
 	// is served.
@@ -471,6 +474,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/cms0057/carinbb", s.require(store.RoleViewer, s.handleCARIN))
 	mux.Handle("POST /api/cms0057/priorauth", s.require(store.RoleViewer, s.handlePDexPriorAuth))
 	mux.Handle("POST /api/cms0057/metrics", s.require(store.RoleViewer, s.handlePAMetrics))
+	mux.Handle("GET /api/pas/cases", s.require(store.RoleViewer, s.handlePASCases))
+	mux.Handle("GET /api/pas/cases/{id}", s.require(store.RoleViewer, s.handlePASCase))
+	mux.Handle("POST /api/pas/cases/{id}/decide", s.require(store.RoleEditor, s.handlePASDecide))
 	mux.Handle("GET /api/dictionary", s.require(store.RoleViewer, s.handleDictionary))
 
 	// Metrics. The JSON form is for the dashboard; the Prometheus form is

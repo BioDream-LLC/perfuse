@@ -1414,6 +1414,16 @@ export const api = {
     expeditedHours: number
   }) => request<PAMetricsResult>('POST', '/api/cms0057/metrics', input),
 
+  /** pasCases lists Da Vinci PAS requests: the pended ones, soonest due first, or every one with all. */
+  pasCases: (all = false) => request<{ cases: PASCase[] }>('GET', `/api/pas/cases${all ? '?all=1' : ''}`),
+
+  /** pasCase reads one PAS request whole: both Bundles and the documents received for it. */
+  pasCase: (id: string) => request<PASCase>('GET', `/api/pas/cases/${encodeURIComponent(id)}`),
+
+  /** pasDecide records a reviewer's decision, exactly as Claim/$decide does. */
+  pasDecide: (id: string, review: PASReview) =>
+    request<{ response: unknown }>('POST', `/api/pas/cases/${encodeURIComponent(id)}/decide`, review),
+
   /** buildAttachment renders a 006020X314 275 and reads it back. Nothing is sent anywhere. */
   buildAttachment: (input: AttachmentBuildInput) =>
     request<AttachmentBuildResult>('POST', '/api/x12/attachment/build', input),
@@ -2654,6 +2664,45 @@ export interface PASection {
   deniedAfterAppeal: PACount
   turnaround: { meanHours: number; medianHours: number; mean: string; median: string }
   deadlineLabel: string
+}
+
+/** A Da Vinci PAS request as its reviewer sees it. */
+export interface PASCase {
+  id: string
+  trace: string
+  member: string
+  memberId: string
+  provider: string
+  pended: boolean
+  version: number
+  created: string
+  updated: string
+  expedited: boolean
+  due: string
+  items: { sequence: number; service: string; quantity?: number; code: string; display: string; note?: string }[]
+  asked?: string[]
+  attachments: {
+    id: number
+    tracking: string
+    resourceType: string
+    code?: string
+    lineItems?: string[]
+    final: boolean
+    received: string
+    content?: Record<string, unknown>
+  }[]
+  request?: Record<string, unknown>
+  response?: Record<string, unknown>
+}
+
+/** A reviewer's decision on a pended PAS request. */
+export interface PASReview {
+  decision: 'approve' | 'deny' | 'modify'
+  items?: number[]
+  reason?: string
+  reviewerNpi?: string
+  quantity?: number
+  alternative?: { system: string; code: string; display?: string }
 }
 
 export interface PAMetricsResult {

@@ -1175,30 +1175,11 @@ func (s *Server) handlePASDecide(w http.ResponseWriter, r *http.Request) {
 			items[int(n)] = true
 		}
 	}
-	var d itemDecision
-	switch decision {
-	case "approve":
-		d = pasApproved
-	case "deny":
-		d = pasDenied
-	case "modify":
-		// Certified, but not as asked: for fewer units, or with another service approved instead.
-		if quantity <= 0 && alternative == nil {
-			s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "required",
-				"decision modify needs quantity (the units certified) or alternative (the service approved instead), or both")
-			return
-		}
-		d = pasModified
-		d.answer = PASAnswer{Decision: "approve", AllowedQuantity: quantity, Alternative: alternative}
-	default:
-		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", "decision must be approve, deny or modify")
+	d, err := reviewDecision(PASReview{Decision: decision, Reason: reason, Quantity: quantity, Alternative: alternative})
+	if err != nil {
+		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", err.Error())
 		return
 	}
-	if (quantity > 0 || alternative != nil) && decision != "modify" {
-		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", "quantity and alternative go with decision modify")
-		return
-	}
-	d.why = reason
 	if id == "" {
 		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "required", "claimResponse names the request decided")
 		return
