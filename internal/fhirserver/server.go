@@ -474,6 +474,10 @@ func (s *Server) handleRead(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 
+	if s.pasRead(w, r, resourceType, id, 0) {
+		return
+	}
+
 	if !supportedType(resourceType) {
 		s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityError, "not-supported",
 			fmt.Sprintf("resource type %q is not supported", resourceType))

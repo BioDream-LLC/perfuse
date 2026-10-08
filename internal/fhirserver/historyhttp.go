@@ -107,6 +107,10 @@ func (s *Server) handleVersionRead(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	raw := r.PathValue("vid")
 
+	if v := pasVersionOf(raw); v > 0 && s.pasRead(w, r, resourceType, id, v) {
+		return
+	}
+
 	if !supportedType(resourceType) {
 		s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityError, "not-supported",
 			fmt.Sprintf("resource type %q is not supported", resourceType))

@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 1a420a5</p>
+<p class="version">version 0.1 · 4493e39</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2726,6 +2726,7 @@ rules:
   {&#34;name&#34;: &#34;reviewer&#34;, &#34;valueString&#34;: &#34;&lt;the reviewer&#39;s NPI&gt;&#34;}]}</code></pre>
 <p><code>item</code> (valueInteger, repeatable) limits the decision to some lines. The decision becomes a new version of the response, marked as reviewed by a person, and with <code>-fhir-subscriptions</code> it is delivered on the PAS topic (<code>PASSubscriptionTopic</code>, filtered by <code>org-identifier</code>, the requesting organisation&#39;s identifier) as the full PAS Response Bundle, in the same transaction that records it. <code>$inquire</code> returns the current response to every request that provider made about that member; another provider&#39;s inquiry finds nothing. <code>$decide</code> needs a write scope; <code>$inquire</code> is a read.</p>
 <p>Requests and every version of their responses are kept in <code>pas_requests</code> and <code>pas_responses</code> in the server&#39;s database.</p>
+<p>A subscription with <code>id-only</code> content tells the provider which answer changed without saying what it is: the notification&#39;s focus is <code>Bundle/&lt;id&gt;</code>. <code>GET /fhir/Bundle/&lt;id&gt;</code> returns the latest PAS Response Bundle, <code>GET /fhir/Bundle/&lt;id&gt;/_history/&lt;n&gt;</code> the version a notification sent, and <code>GET /fhir/ClaimResponse/&lt;id&gt;</code> the ClaimResponse alone. A token bound to one patient is told they do not exist, as for any record outside its patient.</p>
 <p><strong>Verified</strong> with the official Inferno PAS Server v2.2.1 suite (see verification). Not sent, though PAS marks them must-support: <code>ClaimResponse.adjudication</code> with a review action, <code>ClaimResponse.extension:authorizedProvider</code> and <code>ClaimResponse.item.extension:communicatedDiagnosis</code>, because the extensions they need are not allowed there by their own context in PAS 2.2.1 and the validator rejects a response carrying them; and <code>request.extension:DataAbsentReason</code>, because Perfuse always knows the request. Not implemented: forwarding a request to a payer&#39;s utilization management system as an X12 278, and attachments sent back with CDex.</p>
 <p>A rules file is checked against CRD&#39;s own invariants when it loads: a questionnaire needs documentation, a service that is not covered cannot need authorisation, <code>satisfied</code> belongs to one case and not a rule, and anything conditional must give a reason.</p>
 <p>Not verified: the exports and member matching against another payer&#39;s implementation, the metrics against a payer&#39;s published figures, and CRD against a real EHR&#39;s CDS Hooks client.</p>
