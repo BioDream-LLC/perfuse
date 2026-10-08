@@ -2,6 +2,8 @@
 
 ![A public health cross with eICR, RR and ELR labels](docs/assets/articles/hero-ecr.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 Every US state requires providers and labs to report certain conditions to public health: measles, tuberculosis, hepatitis, COVID-19 and dozens more. For decades that meant faxes and phone calls. Today it is done electronically, through two standards: **electronic case reporting (eCR)** and **electronic laboratory reporting (ELR)**.
 
 This guide explains both, how they work, and how to automate them.

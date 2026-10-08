@@ -42,6 +42,48 @@ type page struct {
 // link that resolves on GitHub and 404s on the website is worse than no link.
 var pages = []page{
 	{
+		src:         "site/articles/dicom-routing.md",
+		dir:         "dicom-routing",
+		title:       "DICOM routing and de-identification: moving medical images safely",
+		description: "The DICOM services, imaging routing and de-identification explained, and how Perfuse routes and de-identifies studies in one pipeline.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/claims-attachments.md",
+		dir:         "claims-attachments",
+		title:       "Claims attachments and CMS-0053: signed C-CDAs in the X12 275",
+		description: "The X12 275, C-CDA attachments and HL7 DSDR signatures explained, and how Perfuse builds and verifies signed attachments.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/prior-auth-metrics.md",
+		dir:         "prior-auth-metrics",
+		title:       "Prior authorization metrics under CMS-0057-F: what payers must publish, and how",
+		description: "What the CMS-0057-F prior authorization metrics page must show, and how Perfuse produces it from a utilization management export.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/integration-engines-compared.md",
+		dir:         "integration-engines-compared",
+		title:       "Open-source healthcare integration engines compared: Mirth 4.5.2, OIE, BridgeLink and Perfuse",
+		description: "Mirth Connect 4.5.2, Open Integration Engine, BridgeLink and Perfuse side by side: origin, runtime, licence, channels and features.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/shadow-mode.md",
+		dir:         "shadow-mode",
+		title:       "Shadow mode: how to change a live interface without guessing",
+		description: "Run a new version of a channel on real traffic with nothing delivered, and see field by field what changes.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/feed-contracts.md",
+		dir:         "feed-contracts",
+		title:       "Feed contracts: catch upstream changes before they break an interface",
+		description: "Profile what a feed really contains, turn it into a contract, and be told the day a sender changes something.",
+		priority:    "0.8",
+	},
+	{
 		src:         "site/articles/ecr-elr.md",
 		dir:         "ecr-elr",
 		title:       "eCR and ELR explained: automatic public health reporting from clinical data",

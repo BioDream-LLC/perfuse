@@ -2,6 +2,8 @@
 
 ![Four paths after the Mirth Connect 4.6 licence change, with moving forward highlighted](docs/assets/articles/hero-mirth-licence.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 In March 2025 NextGen Healthcare moved Mirth Connect to a commercial licence. From version 4.6 onwards a paid
 licence is required, and the open-source line stays at 4.5.2.
 

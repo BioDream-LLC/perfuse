@@ -2,6 +2,8 @@
 
 ![A network of organisations connected through a QHIN hub](docs/assets/articles/hero-tefca.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 For years, sharing records between two US healthcare organisations meant setting up a separate connection, contract and trust arrangement with each one. **TEFCA**, the **Trusted Exchange Framework and Common Agreement**, changes that: join once, and you can exchange records with organisations across the country.
 
 This guide explains how TEFCA works, where FHIR and UDAP fit in, and how to take part.

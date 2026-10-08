@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-label="Flow: a C-CDA document is signed to the HL7 Digital Signatures guide with XAdES-X-L, OCSP and an RFC 3161 time-stamp, placed in an X12 275 attachment, and sent to the payer. On the way in, every signature is checked.">
+  <title>Signed claims attachments</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="flowLine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1200" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.45"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3b82f6"/>
+    </marker>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#1e293b" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="440" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="440" rx="18" fill="url(#grid)" opacity="0.55"/>
+  <text x="64" y="64" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="700" fill="#f1f5f9" text-anchor="start" opacity="1">From clinical document to signed attachment</text>
+  <rect x="64" y="140" width="230" height="170" rx="14" fill="#1e293b" stroke="#2dd4bf" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="88" y="190" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="800" fill="#2dd4bf" text-anchor="start" opacity="1">C-CDA</text>
+  <text x="88" y="226" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">the clinical document</text>
+  <line x1="300" y1="225" x2="336" y2="225" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round" marker-end="url(#tip)"/>
+  <rect x="344" y="140" width="230" height="170" rx="14" fill="url(#hero)" stroke="none" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="368" y="190" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="800" fill="#fff" text-anchor="start" opacity="1">Sign</text>
+  <text x="368" y="226" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#e0f2fe" text-anchor="start" opacity="1">XAdES-X-L, OCSP,</text>
+  <text x="368" y="250" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#e0f2fe" text-anchor="start" opacity="1">RFC 3161 time-stamp</text>
+  <line x1="580" y1="225" x2="616" y2="225" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round" marker-end="url(#tip)"/>
+  <rect x="624" y="140" width="230" height="170" rx="14" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="648" y="190" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="800" fill="#fbbf24" text-anchor="start" opacity="1">X12 275</text>
+  <text x="648" y="226" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">006020 attachment</text>
+  <line x1="860" y1="225" x2="896" y2="225" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round" marker-end="url(#tip)"/>
+  <rect x="904" y="140" width="230" height="170" rx="14" fill="#1e293b" stroke="#6366f1" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="928" y="190" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="800" fill="#6366f1" text-anchor="start" opacity="1">Payer</text>
+  <text x="928" y="226" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">signatures checked</text>
+  <rect x="64" y="370" width="312" height="29" rx="14.5" fill="#2dd4bf" fill-opacity="0.16" stroke="#2dd4bf" stroke-opacity="0.6"/>
+  <text x="220.15" y="388" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="600" fill="#2dd4bf" text-anchor="middle" opacity="1">verified by xmlsec1 and OpenSSL</text>
+</svg>

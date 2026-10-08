@@ -2,6 +2,8 @@
 
 ![Six numbered steps rising towards a finished migration](docs/assets/articles/hero-migrate-mirth.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 Moving off Mirth Connect is usually pictured as a rewrite: every channel rebuilt, every transformer retested, a long cut-over weekend. It does not have to be. With **[Perfuse](https://github.com/biodream-llc/perfuse)**, a free Apache-2.0 integration engine, your channels convert automatically, your JavaScript runs as it is, and you prove the result on your own traffic before you switch.
 
 This guide walks through a migration from start to finish. It works the same for **Mirth Connect**, the **Open Integration Engine (OIE)** and **BridgeLink**.

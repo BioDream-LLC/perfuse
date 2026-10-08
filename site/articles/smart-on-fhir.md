@@ -2,6 +2,8 @@
 
 ![A key labelled SMART](docs/assets/articles/hero-smart.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 **SMART on FHIR** is the standard way for an app to get permission to read, and sometimes write, health data through a FHIR API. Patient apps, clinician apps that launch inside the EHR, and back-end systems all use it. It is required by ONC's certification criteria for patient and population access, and by CMS's interoperability rules for payers.
 
 This guide explains how SMART works and what a good implementation looks like.

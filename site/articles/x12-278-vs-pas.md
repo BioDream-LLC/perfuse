@@ -2,6 +2,8 @@
 
 ![X12 278 and FHIR PAS connected in both directions](docs/assets/articles/hero-x12-pas.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 Prior authorization has two electronic standards in the US. The **X12 278** has been the HIPAA standard transaction for years. **Da Vinci PAS** brings the same exchange to **FHIR**, and it is the standard behind the Prior Authorization API that CMS-0057-F requires payers to run from 1 January 2027.
 
 Most organisations will need both for years to come. This guide explains each one and how to connect them.

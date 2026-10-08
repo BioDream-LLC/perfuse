@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-label="Flow: perfuse profile reports what a feed really contains. perfuse contract promote turns that into a contract. Perfuse re-checks recent traffic against it on a schedule and raises a contract-violation alert the day a sender drops a field, adds a code or starts repeating a segment.">
+  <title>Feed contracts</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="flowLine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1200" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.45"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3b82f6"/>
+    </marker>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#1e293b" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="440" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="440" rx="18" fill="url(#grid)" opacity="0.55"/>
+  <text x="64" y="64" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="700" fill="#f1f5f9" text-anchor="start" opacity="1">Know the day a sender changes something</text>
+  <rect x="64" y="130" width="240" height="200" rx="14" fill="#1e293b" stroke="#22d3ee" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="88" y="178" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#22d3ee" text-anchor="start" opacity="1">Profile</text>
+  <text x="88" y="214.0" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">what the feed</text>
+  <text x="88" y="236.475" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">really contains</text>
+  <text x="88" y="304" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="14" font-weight="400" fill="#fbbf24" text-anchor="start" opacity="1">perfuse profile</text>
+  <line x1="310" y1="230" x2="338" y2="230" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round" marker-end="url(#tip)"/>
+  <rect x="344" y="130" width="240" height="200" rx="14" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="368" y="178" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#3b82f6" text-anchor="start" opacity="1">Promote</text>
+  <text x="368" y="214.0" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">turn it into</text>
+  <text x="368" y="236.475" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">expectations</text>
+  <text x="368" y="304" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="14" font-weight="400" fill="#fbbf24" text-anchor="start" opacity="1">contract promote</text>
+  <line x1="590" y1="230" x2="618" y2="230" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round" marker-end="url(#tip)"/>
+  <rect x="624" y="130" width="240" height="200" rx="14" fill="#1e293b" stroke="#6366f1" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="648" y="178" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#6366f1" text-anchor="start" opacity="1">Check</text>
+  <text x="648" y="214.0" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">recent traffic,</text>
+  <text x="648" y="236.475" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">on a schedule</text>
+  <text x="648" y="304" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="14" font-weight="400" fill="#fbbf24" text-anchor="start" opacity="1">check_every: 15m</text>
+  <line x1="870" y1="230" x2="898" y2="230" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round" marker-end="url(#tip)"/>
+  <rect x="904" y="130" width="240" height="200" rx="14" fill="#1e293b" stroke="#fb7185" stroke-width="1.5" filter="url(#lift)"/>
+  <text x="928" y="178" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#fb7185" text-anchor="start" opacity="1">Alert</text>
+  <text x="928" y="214.0" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">contract violation,</text>
+  <text x="928" y="236.475" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15.5" font-weight="400" fill="#94a3b8" text-anchor="start" opacity="1">the same day</text>
+  <text x="928" y="304" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="14" font-weight="400" fill="#fbbf24" text-anchor="start" opacity="1">alert rule</text>
+  <rect x="64" y="380" width="489" height="29" rx="14.5" fill="#2dd4bf" fill-opacity="0.16" stroke="#2dd4bf" stroke-opacity="0.6"/>
+  <text x="308.5" y="398" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="600" fill="#2dd4bf" text-anchor="middle" opacity="1">every line says whether it was measured or decided</text>
+</svg>

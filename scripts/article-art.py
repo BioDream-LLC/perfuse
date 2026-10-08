@@ -457,6 +457,203 @@ def x12_vs_pas():
     s.write("x12-278-vs-pas.svg")
 
 
+# ---- third batch --------------------------------------------------------------------------------------------------
+
+def motif_dicom(s):
+    for i, r in enumerate([120, 92, 64, 36]):
+        s.circle(930, 180, r, "none", stroke=[LINE, BLUE, CYAN, TEAL][i], sw=3 if i else 2, extra=f'stroke-opacity="{0.5 + i * 0.15}"')
+    s.circle(930, 180, 14, CYAN, extra='filter="url(#glow)"')
+    for i, t in enumerate(["C-STORE", "C-FIND", "C-MOVE"]):
+        s.pill(1068, 96 + i * 66, t, [CYAN, BLUE, INDIGO][i], 14)
+
+
+def motif_signed_doc(s):
+    s.card(820, 50, 200, 260, fill=CARD, stroke=LINE, r=14, extra='filter="url(#lift)"')
+    for i in range(6):
+        s.add(f'<rect x="846" y="{88 + i * 28}" width="{148 - (i % 3) * 30}" height="10" rx="5" fill="#334155"/>')
+    s.circle(985, 262, 46, "url(#hero)", extra='filter="url(#glow)"')
+    s.add('<path d="M965 262 L980 277 L1008 246" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>')
+    s.pill(700, 290, "X12 275", AMBER, 15)
+    s.pill(1060, 60, "C-CDA", TEAL, 15)
+
+
+def motif_bars(s):
+    vals = [0.55, 0.8, 0.4, 0.95, 0.7]
+    for i, v in enumerate(vals):
+        h = 220 * v
+        s.card(740 + i * 80, 290 - h, 52, h, fill="url(#hero)" if i == 3 else CARD2, stroke=LINE, r=10)
+    s.add('<line x1="720" y1="292" x2="1150" y2="292" stroke="#475569" stroke-width="2"/>')
+    s.pill(1000, 40, "mean and median, in days", TEAL, 14)
+
+
+def motif_engines(s):
+    names = [("Mirth", "#475569"), ("OIE", "#475569"), ("BridgeLink", "#475569"), ("Perfuse", None)]
+    for i, (n, c) in enumerate(names):
+        x = 700 + i * 120
+        hot = c is None
+        h = 200 if hot else 140
+        s.card(x, 290 - h, 100, h, fill="url(#hero)" if hot else CARD, stroke="none" if hot else LINE, r=14, extra='filter="url(#lift)"' if hot else "")
+        s.text(x + 50, 314, n, size=15, weight=700 if hot else 500, anchor="middle", fill=CYAN if hot else MUTED)
+
+
+def motif_shadow(s):
+    s.path("M700 140 C 820 140, 880 140, 1150 140", color=CYAN, sw=6)
+    s.path("M700 140 C 800 140, 820 230, 900 230 S 1050 230, 1150 230", color=INDIGO, sw=4, dash="10 10", arrow=False)
+    s.circle(700, 140, 14, CYAN, extra='filter="url(#glow)"')
+    s.pill(1000, 92, "live: delivers", CYAN, 14)
+    s.pill(830, 252, "shadow: compares, never delivers", INDIGO, 14)
+
+
+def motif_contract(s):
+    s.card(820, 46, 220, 270, fill=CARD, stroke=LINE, r=14, extra='filter="url(#lift)"')
+    rows = [("PID-3", TEAL), ("PID-8", TEAL), ("PV1-2", TEAL), ("OBX-6", ROSE), ("ZPI", TEAL)]
+    for i, (f, c) in enumerate(rows):
+        y = 90 + i * 44
+        s.text(846, y + 6, f, size=16, font=MONO, fill=INK, weight=600)
+        s.circle(1008, y, 11, c)
+        mark = '<path d="M1003 %d l4 4 l8 -9" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>' % (y)
+        s.add(mark if c == TEAL else f'<path d="M1004 {y - 4} l8 8 M1012 {y - 4} l-8 8" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>')
+    s.pill(600, 318, "contract violation: OBX-6", ROSE, 14)
+
+
+def dicom_flow():
+    s = SVG(1200, 470, "DICOM routing and de-identification",
+            "Flow: modalities and PACS send studies to Perfuse over C-STORE. Perfuse routes, de-identifies, and "
+            "extracts metadata. Studies go on to a PACS, de-identified to a research archive or cloud storage, and as "
+            "observations in HL7 v2 or FHIR.")
+    s.text(64, 64, "Routing imaging, with privacy built into the pipeline", size=24, weight=700)
+    s.card(64, 150, 230, 200, extra='filter="url(#lift)"', stroke=CYAN)
+    s.text(88, 194, "Modalities, PACS", size=19, weight=700)
+    s.lines(88, 230, ["CT, MR, ultrasound", "C-STORE, C-FIND"], size=15.5, fill=MUTED)
+    s.card(400, 120, 320, 260, fill="url(#hero)", stroke="none", extra='filter="url(#lift)"')
+    s.text(560, 168, "Perfuse", size=24, weight=800, anchor="middle", fill="#fff")
+    s.lines(426, 208, ["extracts metadata into tags", "routes on it with filters", "removes the patient", "strips private tags", "queries on a schedule"], size=15.5, fill="#e0f2fe", gap=30)
+    s.arrow(300, 250, 392, 250, color=CYAN, sw=4)
+    outs = [("PACS", "C-STORE, C-MOVE, C-GET", CYAN), ("Research archive", "de-identified, S3 or Azure", TEAL), ("EHR", "HL7 v2 or FHIR observations", INDIGO)]
+    for i, (n, d, c) in enumerate(outs):
+        y = 110 + i * 100
+        s.card(830, y, 306, 80, extra='filter="url(#lift)"', stroke=c)
+        s.text(854, y + 34, n, size=18, weight=700)
+        s.text(854, y + 60, d, size=15, fill=c)
+        s.arrow(726, 250, 822, y + 40, color=c, sw=3)
+    s.pill(64, 418, "verified against a real Orthanc PACS", TEAL, 15)
+    s.write("dicom-flow.svg")
+
+
+def attachments_flow():
+    s = SVG(1200, 440, "Signed claims attachments",
+            "Flow: a C-CDA document is signed to the HL7 Digital Signatures guide with XAdES-X-L, OCSP and an RFC 3161 "
+            "time-stamp, placed in an X12 275 attachment, and sent to the payer. On the way in, every signature is "
+            "checked.")
+    s.text(64, 64, "From clinical document to signed attachment", size=24, weight=700)
+    steps = [("C-CDA", "the clinical document", TEAL), ("Sign", "XAdES-X-L, OCSP,", CYAN), ("X12 275", "006020 attachment", AMBER), ("Payer", "signatures checked", INDIGO)]
+    for i, (n, d, c) in enumerate(steps):
+        x = 64 + i * 280
+        hot = i == 1
+        s.card(x, 140, 230, 170, fill="url(#hero)" if hot else CARD, stroke="none" if hot else c, extra='filter="url(#lift)"')
+        s.text(x + 24, 190, n, size=24, weight=800, fill="#fff" if hot else c)
+        s.text(x + 24, 226, d, size=15.5, fill="#e0f2fe" if hot else MUTED)
+        if hot:
+            s.text(x + 24, 250, "RFC 3161 time-stamp", size=15.5, fill="#e0f2fe")
+        if i < 3:
+            s.arrow(x + 236, 225, x + 272, 225, color=BLUE, sw=3.5)
+    s.pill(64, 370, "verified by xmlsec1 and OpenSSL", TEAL, 15)
+    s.write("attachments-flow.svg")
+
+
+def metrics_flow():
+    s = SVG(1200, 470, "Prior authorization metrics",
+            "Flow: a CSV of the year's prior authorization decisions goes into perfuse cms0057 metrics, which produces "
+            "the public page in CMS's layout, a CSV and JSON, covering approvals, denials, approvals after appeal, "
+            "extensions and mean and median decision times.")
+    s.text(64, 64, "One year of decisions, one public page", size=24, weight=700)
+    s.card(64, 140, 260, 220, extra='filter="url(#lift)"', stroke=AMBER)
+    s.text(88, 184, "decisions.csv", size=19, weight=700, font=MONO, fill=AMBER)
+    for i in range(5):
+        s.add(f'<rect x="88" y="{206 + i * 26}" width="{200 - (i % 2) * 40}" height="10" rx="5" fill="#334155"/>')
+    s.card(420, 170, 300, 160, fill="url(#hero)", stroke="none", extra='filter="url(#lift)"')
+    s.text(570, 232, "perfuse cms0057", size=20, weight=800, anchor="middle", fill="#fff", font=MONO)
+    s.text(570, 262, "metrics", size=20, weight=800, anchor="middle", fill="#fff", font=MONO)
+    s.arrow(330, 250, 412, 250, color=AMBER, sw=4)
+    s.card(816, 110, 320, 280, extra='filter="url(#lift)"', stroke=TEAL)
+    s.text(840, 150, "Public page, CSV, JSON", size=19, weight=700, fill=TEAL)
+    for i, m in enumerate(["approved", "denied", "approved after appeal", "extended timeframe", "mean and median days"]):
+        s.circle(848, 188 + i * 40, 6, TEAL)
+        s.text(866, 194 + i * 40, m, size=16)
+    s.arrow(726, 250, 808, 250, color=TEAL, sw=4)
+    s.pill(64, 420, "standard and expedited reported separately, units always written", CYAN, 14)
+    s.write("metrics-flow.svg")
+
+
+def engines_chart():
+    s = SVG(1200, 470, "Open-source Mirth-family engines and Perfuse",
+            "Comparison of runtime and channel format. Mirth Connect 4.5.2, Open Integration Engine and BridgeLink run "
+            "on Java and share Mirth's channel format. Perfuse is a single native binary that imports and exports "
+            "Mirth channels and adds FHIR, Da Vinci, CMS-0057, shadow mode and feed contracts.")
+    s.text(64, 64, "Same channels, a new foundation", size=24, weight=700)
+    s.card(64, 110, 520, 320, extra='filter="url(#lift)"')
+    s.text(92, 152, "Mirth 4.5.2, OIE, BridgeLink", size=20, weight=700)
+    for i, t in enumerate(["the Mirth 4.5.2 code base", "Java runtime and application server", "Mirth channel XML", "a mature, familiar model"]):
+        s.circle(100, 196 + i * 50, 6, "#64748b")
+        s.text(118, 202 + i * 50, t, size=16.5, fill=MUTED)
+    s.card(616, 110, 520, 320, fill="url(#hero)", stroke="none", extra='filter="url(#lift)"')
+    s.text(644, 152, "Perfuse", size=20, weight=800, fill="#fff")
+    for i, t in enumerate(["a new engine, written in Go", "one native file, 31 MB at rest", "imports and exports Mirth channels", "FHIR, Da Vinci, CMS-0057 built in", "shadow mode and feed contracts"]):
+        s.circle(652, 196 + i * 46, 6, "#fff")
+        s.text(670, 202 + i * 46, t, size=16.5, fill="#fff")
+    s.write("engines-compared.svg")
+
+
+def shadow_flow():
+    s = SVG(1200, 480, "Shadow mode",
+            "Flow: each message reaches the live channel, which delivers it and acknowledges it. A copy runs through "
+            "the candidate channel, which has no destinations and cannot deliver. The two outputs are compared field "
+            "by field at component level, and the Shadow tab shows the difference rate and each disagreement.")
+    s.text(64, 64, "Test a change on real traffic, with nothing delivered", size=24, weight=700)
+    s.card(64, 200, 190, 100, extra='filter="url(#lift)"', stroke=CYAN)
+    s.text(88, 244, "Message", size=19, weight=700)
+    s.text(88, 272, "real traffic", size=15.5, fill=MUTED)
+    s.card(360, 110, 300, 110, extra='filter="url(#lift)"', stroke=CYAN)
+    s.text(384, 152, "Live channel", size=19, weight=700, fill=CYAN)
+    s.text(384, 182, "delivers and acknowledges", size=15.5, fill=MUTED)
+    s.card(360, 290, 300, 110, extra='filter="url(#lift)" stroke-dasharray="8 6"', stroke=INDIGO)
+    s.text(384, 332, "Candidate channel", size=19, weight=700, fill=INDIGO)
+    s.text(384, 362, "no destinations at all", size=15.5, fill=MUTED)
+    s.arrow(258, 240, 352, 170, color=CYAN, sw=3.5)
+    s.arrow(258, 262, 352, 340, color=INDIGO, sw=3, dash="8 6")
+    s.card(780, 110, 180, 110, fill=CARD2, stroke=CYAN)
+    s.text(870, 160, "Receiver", size=18, weight=700, anchor="middle")
+    s.text(870, 188, "gets the live result", size=14.5, anchor="middle", fill=MUTED)
+    s.arrow(666, 165, 772, 165, color=CYAN, sw=3.5)
+    s.card(780, 270, 356, 150, fill="url(#hero)", stroke="none", extra='filter="url(#lift)"')
+    s.text(804, 312, "Compared field by field", size=19, weight=800, fill="#fff")
+    s.lines(804, 344, ["PID-5.1  SMITH  →  Smith", "filter: kept  vs  dropped", "difference rate on the Shadow tab"], size=15, fill="#e0f2fe", gap=26)
+    s.add('<path d="M666 345 H 772" stroke="#6366f1" stroke-width="3" marker-end="url(#tip)"/>')
+    s.add('<path d="M620 222 C 620 250, 700 290, 772 300" fill="none" stroke="#22d3ee" stroke-width="3" stroke-dasharray="4 6" marker-end="url(#tip)"/>')
+    s.write("shadow-mode.svg")
+
+
+def contract_flow():
+    s = SVG(1200, 440, "Feed contracts",
+            "Flow: perfuse profile reports what a feed really contains. perfuse contract promote turns that into a "
+            "contract. Perfuse re-checks recent traffic against it on a schedule and raises a contract-violation alert the day a "
+            "sender drops a field, adds a code or starts repeating a segment.")
+    s.text(64, 64, "Know the day a sender changes something", size=24, weight=700)
+    steps = [("Profile", "what the feed", "really contains", "perfuse profile", CYAN), ("Promote", "turn it into", "expectations", "contract promote", BLUE),
+             ("Check", "recent traffic,", "on a schedule", "check_every: 15m", INDIGO), ("Alert", "contract violation,", "the same day", "alert rule", ROSE)]
+    for i, (n, a, b, cmd, c) in enumerate(steps):
+        x = 64 + i * 280
+        hot = i == 3
+        s.card(x, 130, 240, 200, fill=CARD, stroke=c, extra='filter="url(#lift)"')
+        s.text(x + 24, 178, n, size=22, weight=800, fill=c)
+        s.lines(x + 24, 214, [a, b], size=15.5, fill=MUTED)
+        s.text(x + 24, 304, cmd, size=14, font=MONO, fill=AMBER)
+        if i < 3:
+            s.arrow(x + 246, 230, x + 274, 230, color=BLUE, sw=3.5)
+    s.pill(64, 380, "every line says whether it was measured or decided", TEAL, 15)
+    s.write("feed-contracts.svg")
+
+
 if __name__ == "__main__":
     hero("hero-mirth-licence.svg", "MIRTH CONNECT 4.6", ["Your options after", "the licence change"], motif_fork,
          "Banner: four paths after the Mirth Connect 4.6 licence change, with moving forward highlighted.")
@@ -476,6 +673,19 @@ if __name__ == "__main__":
          "Banner: a key labelled SMART.")
     hero("hero-x12-pas.svg", "PRIOR AUTHORIZATION", ["X12 278 and", "FHIR PAS"], motif_bridge,
          "Banner: X12 278 and FHIR PAS connected by arrows in both directions.")
+    hero("hero-dicom.svg", "DICOM", ["Imaging routing and", "de-identification"], motif_dicom,
+         "Banner: concentric rings like a scan, with DICOM service labels.")
+    hero("hero-attachments.svg", "CMS-0053", ["Signed claims", "attachments"], motif_signed_doc,
+         "Banner: a document with a signature seal, labelled C-CDA and X12 275.")
+    hero("hero-metrics.svg", "CMS-0057 METRICS", ["Prior authorization", "metrics, published"], motif_bars,
+         "Banner: a bar chart of prior authorization metrics.")
+    hero("hero-engines.svg", "COMPARED", ["Open-source", "integration engines"], motif_engines,
+         "Banner: four engines as columns, Perfuse highlighted.")
+    hero("hero-shadow.svg", "SHADOW MODE", ["Change a live", "interface safely"], motif_shadow,
+         "Banner: a live path that delivers and a dashed shadow path that only compares.")
+    hero("hero-contracts.svg", "FEED CONTRACTS", ["Catch upstream", "changes the same day"], motif_contract,
+         "Banner: a contract with field checks, one flagged as a violation.")
+    dicom_flow(); attachments_flow(); metrics_flow(); engines_chart(); shadow_flow(); contract_flow()
     ecr_flow(); tefca_diagram(); smart_flow(); x12_vs_pas()
     memory_chart(); migration_pipeline(); cms_timeline(); cms_apis(); davinci_flow(); v2_mapping()
     print("wrote", len(os.listdir(OUT)), "files to", OUT)

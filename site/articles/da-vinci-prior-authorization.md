@@ -2,6 +2,8 @@
 
 ![CRD, DTR and PAS as three linked steps from order to decision](docs/assets/articles/hero-da-vinci.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 Prior authorization has long meant phone calls, faxes and portals. The HL7 **Da Vinci Project** replaces that with three FHIR implementation guides that work together inside the clinician's normal workflow:
 
 - **CRD**, Coverage Requirements Discovery: does this order need prior authorization, and what is needed?

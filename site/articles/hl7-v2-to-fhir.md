@@ -2,6 +2,8 @@
 
 ![HL7 v2 segments flowing into FHIR resources](docs/assets/articles/hero-v2-fhir.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 Most clinical data in the US still moves as **HL7 v2**: admissions as ADT, lab results as ORU, orders as ORM, schedules as SIU. Most new applications, and every API that CMS and ONC now require, expect **FHIR**. Converting between them is one of the most common jobs in health IT, and one of the easiest to get subtly wrong.
 
 This guide covers what maps to what, the details that matter, and how to do it well.

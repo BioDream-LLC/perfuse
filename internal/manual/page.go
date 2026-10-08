@@ -179,6 +179,7 @@ func RenderStandalonePage(title, description, canonical, src string) string {
 	fmt.Fprintf(&b, "<meta property=\"og:title\" content=\"%s\">\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<meta property=\"og:description\" content=\"%s\">\n", html.EscapeString(description))
 	b.WriteString("<meta property=\"og:type\" content=\"article\">\n")
+	b.WriteString("<meta name=\"author\" content=\"BioDream Developer\">\n")
 	if canonical != "" {
 		fmt.Fprintf(&b, "<meta property=\"og:url\" content=\"%s\">\n", html.EscapeString(canonical))
 	}

@@ -2,6 +2,8 @@
 
 ![CMS-0057-F, the Interoperability and Prior Authorization rule](docs/assets/articles/hero-cms-0057.svg)
 
+By **BioDream Developer**, BioDream LLC
+
 CMS-0057-F, the **Interoperability and Prior Authorization Final Rule**, is the biggest change to how US payers exchange data since the original Patient Access rule. It sets firm deadlines for faster prior authorization decisions and for four FHIR APIs that payers must run.
 
 This guide explains who it applies to, what it requires, when, and how to meet it without building everything from scratch.
@@ -23,7 +25,7 @@ Providers are affected too. From the 2027 performance period, the **"Electronic 
 
 ### From 1 January 2026: faster, clearer decisions
 
-- **Decision timeframes**: 72 hours for expedited (urgent) requests and 7 calendar days for standard requests.
+- **Decision timeframes**: 72 hours for expedited (urgent) requests and 7 calendar days for standard requests, for Medicare Advantage, Medicaid and CHIP. Qualified Health Plan issuers on the federal exchanges keep their existing timeframes.
 - **A specific reason for every denial**, whatever channel the request arrived on.
 - **Public prior authorization metrics**, posted every year on the payer's website: approvals, denials, approvals after appeal, extensions, and average and median decision times.
 
