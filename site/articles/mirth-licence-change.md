@@ -155,3 +155,5 @@ no licence keys, no user limits and no paid tiers inside the product. Every rele
 Perfuse is built by BioDream LLC.
 
 Mirth and Mirth Connect are trademarks of their respective owners, used here only to describe compatibility.
+
+Related: [How to migrate Mirth Connect channels, step by step](https://perfuse.health/migrate-mirth-channels/) · [CMS-0057-F explained](https://perfuse.health/cms-0057-explained/).

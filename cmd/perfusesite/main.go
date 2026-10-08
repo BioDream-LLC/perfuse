@@ -42,6 +42,34 @@ type page struct {
 // link that resolves on GitHub and 404s on the website is worse than no link.
 var pages = []page{
 	{
+		src:         "site/articles/cms-0057-explained.md",
+		dir:         "cms-0057-explained",
+		title:       "CMS-0057-F explained: the Interoperability and Prior Authorization rule, in plain terms",
+		description: "Who CMS-0057-F applies to, what it requires from 2026 and 2027, the FHIR standards behind it, and how Perfuse delivers the four payer APIs.",
+		priority:    "0.9",
+	},
+	{
+		src:         "site/articles/da-vinci-prior-authorization.md",
+		dir:         "da-vinci-prior-authorization",
+		title:       "Da Vinci CRD, DTR and PAS explained: electronic prior authorization from order to decision",
+		description: "How the Da Vinci CRD, DTR and PAS guides work together for electronic prior authorization, and how Perfuse implements all three.",
+		priority:    "0.9",
+	},
+	{
+		src:         "site/articles/migrate-mirth-channels.md",
+		dir:         "migrate-mirth-channels",
+		title:       "How to migrate Mirth Connect channels, step by step",
+		description: "Export, explain, translate, test and prove: a step-by-step migration from Mirth Connect, OIE or BridgeLink to Perfuse.",
+		priority:    "0.9",
+	},
+	{
+		src:         "site/articles/hl7-v2-to-fhir.md",
+		dir:         "hl7-v2-to-fhir",
+		title:       "HL7 v2 to FHIR: a practical guide to converting real feeds",
+		description: "What HL7 v2 messages map to in FHIR, the details that make or break a conversion, and how Perfuse converts v2 to FHIR and US Core.",
+		priority:    "0.8",
+	},
+	{
 		src:         "site/articles/mirth-licence-change.md",
 		dir:         "mirth-licence-change",
 		title:       "Mirth Connect 4.6 licence change: your options, and the fastest way forward",
