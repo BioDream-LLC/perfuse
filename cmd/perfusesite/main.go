@@ -42,6 +42,34 @@ type page struct {
 // link that resolves on GitHub and 404s on the website is worse than no link.
 var pages = []page{
 	{
+		src:         "site/articles/ecr-elr.md",
+		dir:         "ecr-elr",
+		title:       "eCR and ELR explained: automatic public health reporting from clinical data",
+		description: "How electronic case reporting and electronic lab reporting work, from trigger codes to Reportability Responses, and how Perfuse automates both.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/tefca-udap.md",
+		dir:         "tefca-udap",
+		title:       "TEFCA and UDAP explained: national health data exchange, in plain terms",
+		description: "How TEFCA, QHINs, Facilitated FHIR and UDAP work together for national exchange, and how Perfuse takes part.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/smart-on-fhir.md",
+		dir:         "smart-on-fhir",
+		title:       "SMART on FHIR explained: how apps get secure access to health data",
+		description: "SMART App Launch, Backend Services, scopes and PKCE explained, and Perfuse's built-in SMART authorization server.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/x12-278-vs-pas.md",
+		dir:         "x12-278-vs-pas",
+		title:       "X12 278 and FHIR PAS: two ways to request prior authorization, and how to bridge them",
+		description: "The X12 278 and Da Vinci PAS compared, why payers need both, and how Perfuse converts between them.",
+		priority:    "0.8",
+	},
+	{
 		src:         "site/articles/cms-0057-explained.md",
 		dir:         "cms-0057-explained",
 		title:       "CMS-0057-F explained: the Interoperability and Prior Authorization rule, in plain terms",

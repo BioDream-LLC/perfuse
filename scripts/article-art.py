@@ -311,6 +311,152 @@ def v2_mapping():
     s.write("v2-fhir-mapping.svg")
 
 
+# ---- second batch -------------------------------------------------------------------------------------------------
+
+def motif_publichealth(s):
+    s.circle(930, 180, 110, CARD, stroke=TEAL, sw=4, extra='filter="url(#lift)"')
+    s.add('<rect x="910" y="120" width="40" height="120" rx="8" fill="url(#hero)"/>')
+    s.add('<rect x="870" y="160" width="120" height="40" rx="8" fill="url(#hero)"/>')
+    for i, (t, c) in enumerate([("eICR", CYAN), ("RR", TEAL), ("ELR", AMBER)]):
+        s.pill(1060, 90 + i * 70, t, c, 16)
+
+
+def motif_network(s):
+    pts = [(760, 110), (880, 70), (1010, 120), (1100, 220), (980, 290), (840, 260), (930, 180)]
+    for a in range(len(pts) - 1):
+        x1, y1 = pts[a]; x2, y2 = pts[6]
+        s.add(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{BLUE}" stroke-width="2.5" stroke-opacity="0.7"/>')
+        x3, y3 = pts[(a + 1) % 6]
+        s.add(f'<line x1="{x1}" y1="{y1}" x2="{x3}" y2="{y3}" stroke="{LINE}" stroke-width="2"/>')
+    for i, (x, y) in enumerate(pts):
+        hub = i == 6
+        s.circle(x, y, 30 if hub else 18, "url(#hero)" if hub else CARD, stroke=CYAN, sw=3, extra='filter="url(#glow)"' if hub else "")
+    s.text(930, 186, "QHIN", size=14, weight=800, anchor="middle", fill="#fff")
+
+
+def motif_key(s):
+    s.circle(860, 180, 70, "none", stroke="url(#flowLine)", sw=18)
+    s.add('<rect x="925" y="168" width="200" height="24" rx="8" fill="url(#hero)"/>')
+    s.add('<rect x="1060" y="190" width="22" height="44" rx="5" fill="url(#hero)"/>')
+    s.add('<rect x="1100" y="190" width="22" height="30" rx="5" fill="url(#hero)"/>')
+    s.text(860, 188, "SMART", size=20, weight=800, anchor="middle", fill=CYAN)
+
+
+def motif_bridge(s):
+    s.card(700, 110, 170, 140, fill=CARD, stroke=AMBER)
+    s.text(785, 170, "X12", size=34, weight=800, anchor="middle", fill=AMBER)
+    s.text(785, 205, "278", size=22, weight=700, anchor="middle", fill=MUTED)
+    s.card(1000, 110, 170, 140, fill=CARD, stroke=TEAL)
+    s.text(1085, 170, "FHIR", size=34, weight=800, anchor="middle", fill=TEAL)
+    s.text(1085, 205, "PAS", size=22, weight=700, anchor="middle", fill=MUTED)
+    s.arrow(880, 160, 990, 160, color=CYAN, sw=4)
+    s.arrow(990, 200, 880, 200, color=INDIGO, sw=4)
+
+
+def ecr_flow():
+    s = SVG(1200, 470, "Electronic case reporting and lab reporting",
+            "Flow: an EHR or lab feed reaches Perfuse. Messages carrying a reportable-condition trigger code become "
+            "an eICR sent to public health, and a Reportability Response comes back. Lab results become HL7 2.5.1 "
+            "ELR messages carrying only the reportable orders.")
+    s.text(64, 64, "From clinical data to public health, automatically", size=24, weight=700)
+    s.card(64, 150, 220, 200, extra='filter="url(#lift)"')
+    s.text(88, 194, "EHR and labs", size=19, weight=700)
+    s.lines(88, 230, ["ADT, ORU, notes", "HL7 v2 or FHIR"], size=15.5, fill=MUTED)
+    s.card(400, 130, 300, 240, fill="url(#hero)", stroke="none", extra='filter="url(#lift)"')
+    s.text(550, 178, "Perfuse", size=24, weight=800, anchor="middle", fill="#fff")
+    s.lines(424, 220, ["matches trigger codes (RCTC)", "builds the eICR", "reshapes lab results to ELR", "stores the response"], size=15.5, fill="#e0f2fe", gap=30)
+    s.arrow(290, 250, 392, 250, color=CYAN, sw=4)
+    s.card(820, 110, 316, 110, extra='filter="url(#lift)"', stroke=TEAL)
+    s.text(844, 150, "Public health: case reports", size=18, weight=700)
+    s.text(844, 180, "eCR 2.1.2 eICR out", size=15.5, fill=TEAL)
+    s.text(844, 204, "Reportability Response back", size=15.5, fill=MUTED)
+    s.card(820, 270, 316, 110, extra='filter="url(#lift)"', stroke=AMBER)
+    s.text(844, 310, "Public health: lab reporting", size=18, weight=700)
+    s.text(844, 340, "HL7 2.5.1 ELR", size=15.5, fill=AMBER)
+    s.text(844, 364, "reportable orders only", size=15.5, fill=MUTED)
+    s.arrow(706, 200, 812, 165, color=TEAL, sw=3.5)
+    s.arrow(812, 190, 706, 225, color=TEAL, sw=2.5, dash="7 6")
+    s.arrow(706, 300, 812, 325, color=AMBER, sw=3.5)
+    s.pill(64, 410, "a report goes because a code matched, not because someone remembered", CYAN, 14)
+    s.write("ecr-elr-flow.svg")
+
+
+def tefca_diagram():
+    s = SVG(1200, 480, "TEFCA exchange with UDAP",
+            "Two organisations, each connected to a QHIN, exchange records across the national network. Perfuse "
+            "registers with UDAP, verifies signed metadata and certificate chains, and audits every exchange to disk.")
+    s.text(64, 64, "Exchanging records with organisations you have never connected to", size=24, weight=700)
+    s.card(64, 170, 230, 170, extra='filter="url(#lift)"', stroke=CYAN)
+    s.text(88, 214, "Your organisation", size=18, weight=700)
+    s.text(88, 244, "with Perfuse", size=15.5, fill=CYAN)
+    s.lines(88, 280, ["UDAP registration", "audit log on disk"], size=15, fill=MUTED)
+    for x, n in [(390, "QHIN A"), (700, "QHIN B")]:
+        s.circle(x + 55, 255, 62, "url(#hero)", extra='filter="url(#lift)"')
+        s.text(x + 55, 262, n, size=17, weight=800, anchor="middle", fill="#fff")
+    s.add('<path d="M507 255 H 693" stroke="url(#flowLine)" stroke-width="6" stroke-linecap="round"/>')
+    s.text(600, 236, "TEFCA network", size=15, anchor="middle", fill=MUTED)
+    s.card(906, 170, 230, 170, extra='filter="url(#lift)"', stroke=INDIGO)
+    s.text(930, 214, "Another organisation", size=18, weight=700)
+    s.text(930, 244, "anywhere in the US", size=15.5, fill=INDIGO)
+    s.lines(930, 280, ["hospital, clinic,", "payer or agency"], size=15, fill=MUTED)
+    s.arrow(298, 255, 380, 255, color=CYAN, sw=3.5)
+    s.arrow(820, 255, 900, 255, color=INDIGO, sw=3.5)
+    for i, t in enumerate(["signed metadata verified", "certificate chains checked", "every exchange audited"]):
+        s.pill(140 + i * 330, 400, t, TEAL, 15)
+    s.write("tefca-udap.svg")
+
+
+def smart_flow():
+    s = SVG(1200, 530, "SMART on FHIR authorization",
+            "An app asks the authorization server for access with PKCE. The user signs in and consents to scopes. "
+            "The server issues an access token and refresh token. The app calls the FHIR API with the token, and "
+            "granular scopes decide what it may read. Backend services use signed client assertions instead.")
+    s.text(64, 64, "How a SMART app gets access to FHIR data", size=24, weight=700)
+    cols = [("App", "patient, clinician", "or backend", CYAN), ("Authorization server", "sign-in, consent,", "tokens", BLUE),
+            ("FHIR API", "scopes enforced", "on every call", INDIGO)]
+    for i, (n, a, b, c) in enumerate(cols):
+        x = 64 + i * 380
+        s.card(x, 110, 310, 120, fill="url(#hero)" if i == 1 else CARD, stroke=c, extra='filter="url(#lift)"')
+        s.text(x + 24, 152, n, size=20, weight=800, fill="#fff")
+        s.lines(x + 24, 182, [a, b], size=15.5, fill="#e0f2fe" if i == 1 else MUTED)
+    for x in (219, 599, 979):
+        s.add(f'<line x1="{x}" y1="234" x2="{x}" y2="452" stroke="{LINE}" stroke-width="2" stroke-dasharray="4 6"/>')
+    rows = [(272, 219, 599, CYAN, "", "1  authorize, with PKCE"),
+            (320, 599, 599, BLUE, "", "2  user signs in and consents to scopes"),
+            (384, 599, 219, BLUE, "7 6", "3  access and refresh tokens"),
+            (436, 219, 979, INDIGO, "", "4  call FHIR: only what the scopes allow")]
+    for y, x1, x2, c, dash, label in rows:
+        if x1 != x2:
+            s.arrow(x1 + (6 if x2 > x1 else -6), y, x2 + (-8 if x2 > x1 else 8), y, color=c, sw=3, dash=dash)
+            s.text((x1 + x2) / 2, y - 10, label, size=15.5, anchor="middle")
+        else:
+            s.card(x1 - 170, y - 22, 340, 34, fill=CARD2, stroke=c, r=17)
+            s.text(x1, y + 1, label, size=15.5, anchor="middle")
+    s.pill(64, 470, "Inferno SMART App Launch STU2.2: 80 of 80", TEAL, 15)
+    s.write("smart-flow.svg")
+
+
+def x12_vs_pas():
+    s = SVG(1200, 470, "X12 278 and FHIR PAS",
+            "Comparison. X12 278: the HIPAA transaction, batch-oriented, used by utilization management systems. "
+            "FHIR PAS: a REST API inside the EHR workflow, with documentation attached and pended decisions pushed "
+            "back. Perfuse sits between them and converts both ways.")
+    s.text(64, 64, "Two ways to ask for prior authorization, one engine between them", size=24, weight=700)
+    for x, n, c, items in [(64, "X12 278", AMBER, ["the HIPAA transaction", "segments and loops", "the payer's UM system speaks it", "clearinghouses and EDI"]),
+                           (836, "FHIR PAS", TEAL, ["a REST API, Claim/$submit", "documentation attached", "pended decisions pushed back", "part of CMS-0057"])]:
+        s.card(x, 120, 300, 300, extra='filter="url(#lift)"', stroke=c)
+        s.text(x + 24, 164, n, size=24, weight=800, fill=c)
+        for i, t in enumerate(items):
+            s.circle(x + 30, 206 + i * 48, 5, c)
+            s.text(x + 46, 212 + i * 48, t, size=16)
+    s.card(450, 170, 300, 200, fill="url(#hero)", stroke="none", extra='filter="url(#lift)"')
+    s.text(600, 228, "Perfuse", size=26, weight=800, anchor="middle", fill="#fff")
+    s.lines(600, 266, ["PAS → 278 for the payer", "278 → PAS ClaimResponse", "validated by HL7's validator"], size=15.5, fill="#e0f2fe", anchor="middle", gap=28)
+    s.arrow(370, 240, 444, 240, color=AMBER, sw=3.5); s.arrow(444, 300, 370, 300, color=AMBER, sw=3.5, dash="7 6")
+    s.arrow(756, 240, 830, 240, color=TEAL, sw=3.5); s.arrow(830, 300, 756, 300, color=TEAL, sw=3.5, dash="7 6")
+    s.write("x12-278-vs-pas.svg")
+
+
 if __name__ == "__main__":
     hero("hero-mirth-licence.svg", "MIRTH CONNECT 4.6", ["Your options after", "the licence change"], motif_fork,
          "Banner: four paths after the Mirth Connect 4.6 licence change, with moving forward highlighted.")
@@ -322,5 +468,14 @@ if __name__ == "__main__":
          "Banner: CRD, DTR and PAS as three linked circles, from order to documentation to decision.")
     hero("hero-v2-fhir.svg", "HL7 V2 → FHIR", ["Converting real", "v2 feeds to FHIR"], motif_v2fhir,
          "Banner: HL7 v2 segments flowing into FHIR resources.")
+    hero("hero-ecr.svg", "PUBLIC HEALTH", ["eCR and ELR,", "reporting on autopilot"], motif_publichealth,
+         "Banner: a public health cross with eICR, RR and ELR labels.")
+    hero("hero-tefca.svg", "TEFCA AND UDAP", ["National exchange,", "explained"], motif_network,
+         "Banner: a network of organisations around a QHIN hub.")
+    hero("hero-smart.svg", "SMART ON FHIR", ["Secure access", "to FHIR data"], motif_key,
+         "Banner: a key labelled SMART.")
+    hero("hero-x12-pas.svg", "PRIOR AUTHORIZATION", ["X12 278 and", "FHIR PAS"], motif_bridge,
+         "Banner: X12 278 and FHIR PAS connected by arrows in both directions.")
+    ecr_flow(); tefca_diagram(); smart_flow(); x12_vs_pas()
     memory_chart(); migration_pipeline(); cms_timeline(); cms_apis(); davinci_flow(); v2_mapping()
     print("wrote", len(os.listdir(OUT)), "files to", OUT)
