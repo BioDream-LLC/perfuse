@@ -179,6 +179,15 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	pasOn := fset.Bool("pas", false,
 		"serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what "+
 			"no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result")
+	pas278URL := fset.String("pas-278-url", "",
+		"forward every PAS request to the payer's utilization management system as an X12 278 request POSTed to this URL "+
+			"(application/edi-x12), and answer with its 278 response; later 278 responses go to Claim/$decide-278")
+	pas278Sender := fset.String("pas-278-sender", "PERFUSE", "ISA06/GS02 sender ID on the 278s sent to -pas-278-url")
+	pas278Receiver := fset.String("pas-278-receiver", "", "ISA08/GS03 receiver ID on the 278s sent to -pas-278-url")
+	pas278Payer := fset.String("pas-278-payer-id", "", "the UMO's payer ID (NM1*X3) when the request's insurer carries no identifier")
+	pas278TokenEnv := fset.String("pas-278-token-env", "",
+		"name of an environment variable holding a bearer token for -pas-278-url (the token itself is never a flag)")
+	pas278Production := fset.Bool("pas-278-production", false, "mark the 278s sent as production (ISA15 P) rather than test")
 	ecrResponses := fset.Bool("ecr-responses", false,
 		"accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived "+
 			"from the eICR it answers")
@@ -1091,6 +1100,18 @@ oidcDone:
 						Alternative: a.Alternative}
 				}
 				rules = *crdRules
+			}
+			if *pas278URL != "" {
+				um, err := newPAS278(*pas278URL, *pas278TokenEnv)
+				if err != nil {
+					return err
+				}
+				if *pas278Receiver == "" {
+					return fmt.Errorf("-pas-278-url needs -pas-278-receiver, the UM system's interchange ID")
+				}
+				fhirSrv.PAS.UM = &fhirserver.PASUM{Send: um, SenderID: *pas278Sender, ReceiverID: *pas278Receiver,
+					PayerID: *pas278Payer, Production: *pas278Production, Log: log}
+				rules = "the utilization management system at " + *pas278URL + ", over X12 278"
 			}
 			log.Info("serving Da Vinci PAS", "submit", baseURL+"/Claim/$submit", "rules", rules)
 		}

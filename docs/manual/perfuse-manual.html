@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 4493e39</p>
+<p class="version">version 0.1 · 231b414</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -572,6 +572,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s16-6-prior-authorisation-metrics"><span class="num">16.6</span> Prior authorisation metrics</a></div>
 <div class="toc-d2"><a href="#s16-7-what-was-checked-and-against-what"><span class="num">16.7</span> What was checked, and against what</a></div>
 <div class="toc-d2"><a href="#s16-8-deciding-prior-authorisation-requests-pas"><span class="num">16.8</span> Deciding prior authorisation requests: PAS</a></div>
+<div class="toc-d3"><a href="#s16-8-1-deciding-in-an-x12-utilization-management-system"><span class="num">16.8.1</span> Deciding in an X12 utilization management system</a></div>
 <div class="toc-d1"><a href="#s17-security"><span class="num">17</span> Security</a></div>
 <div class="toc-d2"><a href="#s17-1-transport-security"><span class="num">17.1</span> Transport security</a></div>
 <div class="toc-d2"><a href="#s17-2-authentication-and-roles"><span class="num">17.2</span> Authentication and roles</a></div>
@@ -2724,8 +2725,13 @@ rules:
   {&#34;name&#34;: &#34;decision&#34;, &#34;valueCode&#34;: &#34;approve&#34;},
   {&#34;name&#34;: &#34;reason&#34;, &#34;valueString&#34;: &#34;Reviewed with the plan of care.&#34;},
   {&#34;name&#34;: &#34;reviewer&#34;, &#34;valueString&#34;: &#34;&lt;the reviewer&#39;s NPI&gt;&#34;}]}</code></pre>
-<p><code>item</code> (valueInteger, repeatable) limits the decision to some lines. The decision becomes a new version of the response, marked as reviewed by a person, and with <code>-fhir-subscriptions</code> it is delivered on the PAS topic (<code>PASSubscriptionTopic</code>, filtered by <code>org-identifier</code>, the requesting organisation&#39;s identifier) as the full PAS Response Bundle, in the same transaction that records it. <code>$inquire</code> returns the current response to every request that provider made about that member; another provider&#39;s inquiry finds nothing. <code>$decide</code> needs a write scope; <code>$inquire</code> is a read.</p>
+<p><code>decision</code> may also be <code>modify</code>: certified, but not as asked, with <code>quantity</code> (valueDecimal, the units certified) and/or <code>alternative</code> (valueCoding, the service approved instead). The response then says A6 Modified, with the certified detail or the alternative as an added item, and an authorization number. <code>item</code> (valueInteger, repeatable) limits the decision to some lines. The decision becomes a new version of the response, marked as reviewed by a person, and with <code>-fhir-subscriptions</code> it is delivered on the PAS topic (<code>PASSubscriptionTopic</code>, filtered by <code>org-identifier</code>, the requesting organisation&#39;s identifier) as the full PAS Response Bundle, in the same transaction that records it. <code>$inquire</code> returns the current response to every request that provider made about that member; another provider&#39;s inquiry finds nothing. <code>$decide</code> needs a write scope; <code>$inquire</code> is a read.</p>
 <p>Requests and every version of their responses are kept in <code>pas_requests</code> and <code>pas_responses</code> in the server&#39;s database.</p>
+<h4 id="s16-8-1-deciding-in-an-x12-utilization-management-system"><span class="num">16.8.1</span> Deciding in an X12 utilization management system</h4>
+<p>Most payers decide prior authorizations in a UM system that speaks X12 278. With <code>-pas-278-url</code>, Perfuse is the FHIR front of that system: each <code>$submit</code> is sent as one 278 request (005010X217), every item a patient event carrying its service type, procedure code, diagnoses, date and quantity, and the 278 response&#39;s action code and authorization number become the item&#39;s review action. Local rules are not consulted.</p>
+<pre class="code lang-sh"><code>perfuse serve -fhir -pas -pas-278-url https://um.example/x12/278 -pas-278-receiver ACMEUM \
+  -pas-278-token-env UM_TOKEN</code></pre>
+<p>A UM system that pends first and decides later posts its later 278 response to <code>POST /fhir/Claim/$decide-278</code>; each event is matched to its request by the trace number Perfuse sent, and decided as <code>$decide</code> would decide it. If the UM system cannot be reached, or answers with something that is not a 278 response, every item is pended for a reviewer and the provider is told only that; the reason is in the server log.</p>
 <p>A subscription with <code>id-only</code> content tells the provider which answer changed without saying what it is: the notification&#39;s focus is <code>Bundle/&lt;id&gt;</code>. <code>GET /fhir/Bundle/&lt;id&gt;</code> returns the latest PAS Response Bundle, <code>GET /fhir/Bundle/&lt;id&gt;/_history/&lt;n&gt;</code> the version a notification sent, and <code>GET /fhir/ClaimResponse/&lt;id&gt;</code> the ClaimResponse alone. A token bound to one patient is told they do not exist, as for any record outside its patient.</p>
 <p><strong>Verified</strong> with the official Inferno PAS Server v2.2.1 suite (see verification). Not sent, though PAS marks them must-support: <code>ClaimResponse.adjudication</code> with a review action, <code>ClaimResponse.extension:authorizedProvider</code> and <code>ClaimResponse.item.extension:communicatedDiagnosis</code>, because the extensions they need are not allowed there by their own context in PAS 2.2.1 and the validator rejects a response carrying them; and <code>request.extension:DataAbsentReason</code>, because Perfuse always knows the request. Not implemented: forwarding a request to a payer&#39;s utilization management system as an X12 278, and attachments sent back with CDex.</p>
 <p>A rules file is checked against CRD&#39;s own invariants when it loads: a questionnaire needs documentation, a service that is not covered cannot need authorisation, <code>satisfied</code> belongs to one case and not a rule, and anything conditional must give a reason.</p>

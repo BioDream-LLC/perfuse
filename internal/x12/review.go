@@ -212,9 +212,11 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 			review.ReferenceID = s.Element(3).String()
 			review.Date = s.Element(4).String()
 			review.Time = s.Element(5).String()
-			// BHT06 distinguishes the two directions. 11 is a response and 13 a request; anything else is treated as a request,
-			// because a request is the safe reading - it has no decision to act on.
-			review.IsResponse = s.Element(6).String() == "11"
+			// BHT02, the transaction set purpose, distinguishes the two directions: 11 is a response and 13 a request. Anything else
+			// is treated as a request, because a request is the safe reading - it has no decision to act on. BHT06 is not used in
+			// the 278 (005010X217); it was once read here instead, which made every conforming response read as a request, and is
+			// still accepted from senders that put the code there too.
+			review.IsResponse = s.Element(2).String() == "11" || s.Element(6).String() == "11"
 
 		case "HL":
 			level = s.Element(3).String()

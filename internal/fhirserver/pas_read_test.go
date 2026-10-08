@@ -3,6 +3,7 @@ package fhirserver
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -65,5 +66,65 @@ func TestAPatientTokenCannotReadPASAnswers(t *testing.T) {
 		if code, _, _ := pasGet(t, h, p); code != http.StatusNotFound {
 			t.Errorf("%s with a patient token: %d, want 404", p, code)
 		}
+	}
+}
+
+func decideJSON(id string, params ...string) string {
+	out := `{"resourceType":"Parameters","parameter":[{"name":"claimResponse","valueString":"` + id + `"}`
+	for _, p := range params {
+		out += "," + p
+	}
+	return out + "]}"
+}
+
+// A reviewer certifies fewer units than asked: modified, with what was authorized, and an authorization number.
+func TestAReviewerCanCertifyFewerUnitsThanAsked(t *testing.T) {
+	f := newPASFixture(t)
+	_, submitted := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("M1", "2*10"))
+	id := str(claimResponseOf(t, submitted)["id"])
+	code, out := pasPost(t, f.h, "/Claim/$decide", decideJSON(id, `{"name":"decision","valueCode":"modify"}`,
+		`{"name":"quantity","valueDecimal":4}`, `{"name":"reason","valueString":"Four visits, then review."}`))
+	if code != http.StatusOK {
+		t.Fatalf("%d %v", code, out)
+	}
+	cr := claimResponseOf(t, out)
+	if actionCodes(cr) != "A6" || cr["preAuthRef"] == nil {
+		t.Fatalf("want modified with an authorization number: %s %v", actionCodes(cr), cr["preAuthRef"])
+	}
+	detail := toJSON(asSliceAny(cr["item"])[0])
+	if !strings.Contains(detail, "extension-itemAuthorizedDetail") || !strings.Contains(detail, `"value":4`) {
+		t.Errorf("the certified quantity is not said: %s", detail)
+	}
+	if !strings.Contains(toJSON(cr["processNote"]), "Certified for 4") {
+		t.Errorf("note: %v", cr["processNote"])
+	}
+}
+
+func TestAReviewerCanApproveAnotherServiceInstead(t *testing.T) {
+	f := newPASFixture(t)
+	_, submitted := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("M2", "2"))
+	id := str(claimResponseOf(t, submitted)["id"])
+	code, out := pasPost(t, f.h, "/Claim/$decide", decideJSON(id, `{"name":"decision","valueCode":"modify"}`,
+		`{"name":"alternative","valueCoding":{"system":"https://codesystem.x12.org/005010/1365","code":"4"}}`))
+	if code != http.StatusOK {
+		t.Fatalf("%d %v", code, out)
+	}
+	cr := claimResponseOf(t, out)
+	add := asSliceAny(cr["addItem"])
+	if actionCodes(cr) != "A6" || len(add) != 1 || !strings.Contains(toJSON(add[0]), `"code":"4"`) {
+		t.Fatalf("want the alternative as an added item: %s %v", actionCodes(cr), cr["addItem"])
+	}
+}
+
+func TestModifyWithoutWhatWasCertifiedIsRefused(t *testing.T) {
+	f := newPASFixture(t)
+	_, submitted := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("M3", "2"))
+	id := str(claimResponseOf(t, submitted)["id"])
+	if code, _ := pasPost(t, f.h, "/Claim/$decide", decideJSON(id, `{"name":"decision","valueCode":"modify"}`)); code != http.StatusBadRequest {
+		t.Errorf("modify with nothing modified: %d", code)
+	}
+	if code, _ := pasPost(t, f.h, "/Claim/$decide", decideJSON(id, `{"name":"decision","valueCode":"approve"}`,
+		`{"name":"quantity","valueDecimal":2}`)); code != http.StatusBadRequest {
+		t.Errorf("quantity with approve: %d", code)
 	}
 }

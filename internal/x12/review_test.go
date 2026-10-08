@@ -476,3 +476,56 @@ func TestTheDocumentedAuthorisationFilterCompilesAndMatches(t *testing.T) {
 		t.Error("the documented filter matches a certified review")
 	}
 }
+
+// BHT02 says request (13) or response (11) in a 278; BHT06 is not used there.
+func TestA278ResponseIsReadFromBHT02(t *testing.T) {
+	raw := "ISA*00*          *00*          *ZZ*PAYER          *ZZ*CLINIC         *261008*1200*^*00501*000000002*0*T*:~" +
+		"GS*HI*PAYER*CLINIC*20261008*1200*2*X*005010X217~ST*278*0001*005010X217~BHT*0007*11*R1*20261008*1200~" +
+		"HL*1**20*1~NM1*X3*2*ACME*****PI*12345~HL*2*1*21*1~NM1*1P*2*CLINIC*****XX*1234567893~HL*3*2*22*1~" +
+		"NM1*IL*1*DOE*JANE****MI*M1~HL*4*3*EV*0~TRN*2*T1*9PAYER~UM*HS*I*3~HCR*A1*AUTH1~SE*14*0001~GE*1*2~IEA*1*000000002~"
+	m, err := Parse([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := m.ParseServiceReview()
+	if err != nil || !r.IsResponse || r.Events[0].AuthorisationNumber != "AUTH1" {
+		t.Fatalf("%v %+v", err, r)
+	}
+}
+
+// A built 278 request reads back as the request it was built from.
+func TestABuilt278RequestReadsBack(t *testing.T) {
+	out, err := BuildServiceReviewRequest(ServiceReviewRequest{Envelope: Envelope{SenderID: "PERFUSE", ReceiverID: "UM", ControlNumber: 7},
+		Payer: Person{LastName: "ACME", ID: "12345"}, Provider: Person{LastName: "CLINIC", ID: "1234567893"},
+		Subscriber: Person{LastName: "DOE", FirstName: "JANE", ID: "M1", DOB: "19800101", Gender: "F"},
+		Events: []ReviewRequestEvent{{Trace: "T1", ServiceType: "2", Diagnoses: []string{"M54.16"}, ServiceDate: "20261020", Procedure: "72148", Quantity: 2},
+			{Trace: "T2", ServiceType: "3", Urgent: true, CertificationType: "3"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := m.Validate(); !v.OK() {
+		t.Fatalf("envelope: %+v", v)
+	}
+	r, err := m.ParseServiceReview()
+	if err != nil || r.IsResponse || len(r.Events) != 2 {
+		t.Fatalf("%v %+v", err, r)
+	}
+	e := r.Events[0]
+	if e.TraceNumber != "T1" || e.ServiceType != "2" || e.Diagnoses[0] != "M5416" || e.ServiceDate != "20261020" ||
+		len(e.Lines) != 1 || e.Lines[0].ProcedureCode != "HC:72148" {
+		t.Errorf("event 1: %+v", e)
+	}
+	if !r.Events[1].Urgent || r.Events[1].CertificationType != "3" || r.Patient.IDCode != "M1" || r.DateOfBirth != "19800101" {
+		t.Errorf("event 2 / patient: %+v %+v", r.Events[1], r.Patient)
+	}
+	for _, bad := range []ServiceReviewRequest{{}, {Payer: Person{LastName: "A", ID: "1"}, Provider: Person{LastName: "B", ID: "1234567890"},
+		Subscriber: Person{LastName: "C", ID: "D"}, Events: []ReviewRequestEvent{{Trace: "T", ServiceType: "3"}}, Envelope: Envelope{SenderID: "S", ReceiverID: "R"}}} {
+		if _, err := BuildServiceReviewRequest(bad); err == nil {
+			t.Errorf("built from %+v", bad)
+		}
+	}
+}

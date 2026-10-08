@@ -50,9 +50,10 @@ func pasRequestJSON(trace string, items ...string) string {
 				"insurance": []any{map[string]any{"sequence": 1, "focal": true, "coverage": map[string]any{"reference": "Coverage/cov"}}},
 				"item":      list}},
 			map[string]any{"fullUrl": pasTestBase + "/Patient/member", "resource": map[string]any{"resourceType": "Patient", "id": "member",
-				"identifier": []any{map[string]any{"system": "http://plan.example/member", "value": "12345678901"}}}},
+				"identifier": []any{map[string]any{"system": "http://plan.example/member", "value": "12345678901"}},
+				"name":       []any{map[string]any{"family": "Member", "given": []any{"Pat"}}}, "gender": "female", "birthDate": "1980-01-01"}},
 			map[string]any{"fullUrl": pasTestBase + "/Organization/plan", "resource": map[string]any{"resourceType": "Organization", "id": "plan", "name": "Plan"}},
-			map[string]any{"fullUrl": pasTestBase + "/Organization/clinic", "resource": map[string]any{"resourceType": "Organization", "id": "clinic",
+			map[string]any{"fullUrl": pasTestBase + "/Organization/clinic", "resource": map[string]any{"resourceType": "Organization", "id": "clinic", "name": "Springfield Clinic",
 				"identifier": []any{map[string]any{"system": "http://hl7.org/fhir/sid/us-npi", "value": "8189991234"}}}},
 			map[string]any{"fullUrl": pasTestBase + "/Coverage/cov", "resource": map[string]any{"resourceType": "Coverage", "id": "cov",
 				"status": "active", "beneficiary": map[string]any{"reference": "Patient/member"}, "payor": []any{map[string]any{"reference": "Organization/plan"}}}},
@@ -84,6 +85,8 @@ func pasRules(codes ...map[string]any) PASAnswer {
 	return PASAnswer{Decision: "pend"}
 }
 
+func newPASFixtureClock() time.Time { return time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC) }
+
 func newPASFixture(t *testing.T) *subFixture {
 	t.Helper()
 	f := newSubFixture(t, true)
@@ -91,7 +94,7 @@ func newPASFixture(t *testing.T) *subFixture {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	srv := NewServer(f.store, "http://example.test/fhir", log)
 	srv.Auth = OpenAuth{}
-	srv.PAS = &PAS{Decide: pasRules, Now: func() time.Time { return time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC) }}
+	srv.PAS = &PAS{Decide: pasRules, Now: newPASFixtureClock}
 	f.h = srv.Handler()
 	return f
 }

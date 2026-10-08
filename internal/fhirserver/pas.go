@@ -48,6 +48,9 @@ type PAS struct {
 	Decide func(codes ...map[string]any) PASAnswer
 	// Now is the clock, for tests. Nil is time.Now.
 	Now func() time.Time
+	// UM, when set, sends every request to the payer's utilization management system as an X12 278 and answers with its
+	// decisions; Decide is then not consulted.
+	UM *PASUM
 }
 
 // PASAnswer is the payer's rule for one service.
@@ -109,6 +112,7 @@ func (s *Server) registerPAS(mux *http.ServeMux) {
 	mux.HandleFunc("POST /Claim/$submit", s.handlePASSubmit)
 	mux.HandleFunc("POST /Claim/$inquire", s.handlePASInquire)
 	mux.HandleFunc("POST /Claim/$decide", s.handlePASDecide)
+	mux.HandleFunc("POST /Claim/$decide-278", s.handlePASDecide278)
 }
 
 func (s *Server) pasReady(ctx context.Context) error {
@@ -125,6 +129,10 @@ func (s *Server) pasReady(ctx context.Context) error {
 				created INTEGER NOT NULL,
 				updated INTEGER NOT NULL,
 				request TEXT NOT NULL)`,
+			`CREATE TABLE IF NOT EXISTS pas_um_traces (
+				trace TEXT PRIMARY KEY,
+				id TEXT NOT NULL,
+				seq INTEGER NOT NULL)`,
 			`CREATE TABLE IF NOT EXISTS pas_responses (
 				id TEXT NOT NULL,
 				version INTEGER NOT NULL,
@@ -181,6 +189,11 @@ type pasRequest struct {
 	claim    map[string]any
 	claimURL string
 	entries  []map[string]any
+	// um holds the payer UM system's answers by item sequence, when the request was forwarded as an X12 278; umAuth is the
+	// authorization number it assigned, and umTraces the 278 trace numbers sent, by item sequence.
+	um       map[string]itemDecision
+	umAuth   string
+	umTraces map[string]string
 }
 
 // readPASRequest checks what this server needs to answer and says everything missing at once. It does not repeat the
@@ -285,6 +298,9 @@ func (s *Server) handlePASSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 	now := s.PAS.now().UTC()
 	id := newUUID()
+	if s.PAS.UM != nil && s.PAS.UM.Send != nil {
+		s.askUM(r.Context(), req, id, now)
+	}
 	response, pended := s.pasRespond(req, id, now)
 	if err := s.savePAS(r.Context(), req, id, response, pended, now); err != nil {
 		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
@@ -297,6 +313,9 @@ func (s *Server) handlePASSubmit(w http.ResponseWriter, r *http.Request) {
 type itemDecision struct {
 	code, display, why string
 	answer             PASAnswer
+	// number is the authorization number when someone else assigned it (the payer's UM system, over X12); empty means this
+	// server's own.
+	number string
 	// missing names what made the item impossible to decide, for an error rather than a decision.
 	missing string
 }
@@ -306,6 +325,7 @@ var (
 	pasDenied    = itemDecision{code: "A3", display: "Not Certified"}
 	pasPended    = itemDecision{code: "A4", display: "Pending"}
 	pasModified  = itemDecision{code: "A6", display: "Modified"}
+	pasPartial   = itemDecision{code: "A2", display: "Certified - partial"}
 	pasCancelled = itemDecision{code: "C", display: "Cancelled"}
 )
 
@@ -362,6 +382,14 @@ func (s *Server) decideItem(req *pasRequest, item map[string]any) itemDecision {
 		// Nothing to decide about. X12 answers this with AAA, an error, not with a decision.
 		return itemDecision{missing: "productOrService"}
 	}
+	if req.um != nil {
+		// The payer's UM system decides, over X12; its rules are not this server's to second-guess.
+		if d, ok := req.um[fmt.Sprint(item["sequence"])]; ok {
+			return d
+		}
+		return itemDecision{code: pasPended.code, display: pasPended.display,
+			why: "The utilization management system gave no answer for this service; it is pended for a reviewer."}
+	}
 	a := PASAnswer{Decision: "pend"}
 	if s.PAS.Decide != nil {
 		a = s.PAS.Decide(codes...)
@@ -406,7 +434,10 @@ func (c *pasContext) note(text string) int {
 func reviewAction(d itemDecision, number string) map[string]any {
 	ext := []any{map[string]any{"url": pasBase + "extension-reviewActionCode", "valueCodeableConcept": map[string]any{
 		"coding": []any{map[string]any{"system": x12Action, "code": d.code, "display": d.display}}}}}
-	if d.code == pasApproved.code || d.code == pasModified.code {
+	if certifies(d) {
+		if d.number != "" {
+			number = d.number
+		}
 		ext = append(ext, map[string]any{"url": "number", "valueString": number})
 	}
 	return map[string]any{
@@ -414,6 +445,11 @@ func reviewAction(d itemDecision, number string) map[string]any {
 		"category": map[string]any{"coding": []any{map[string]any{
 			"system": "http://terminology.hl7.org/CodeSystem/adjudication", "code": "submitted"}}},
 	}
+}
+
+// certifies says whether a decision approves something, in whole, in part or modified: what carries an authorization number.
+func certifies(d itemDecision) bool {
+	return d.code == pasApproved.code || d.code == pasModified.code || d.code == pasPartial.code
 }
 
 // careTeamProviders are the authorized providers an item (or, with sequences nil, the whole request) names through
@@ -493,7 +529,7 @@ func (c *pasContext) itemEchoes(item map[string]any, d itemDecision) []any {
 		ext = append(ext, map[string]any{"url": pasBase + "extension-itemRequestedServiceDate", "valuePeriod": v})
 	}
 	ext = append(ext, map[string]any{"url": pasBase + "extension-itemPreAuthIssueDate", "valueDate": c.today})
-	if d.code == pasApproved.code || d.code == pasModified.code {
+	if certifies(d) {
 		ext = append(ext, map[string]any{"url": pasBase + "extension-itemPreAuthPeriod", "valuePeriod": map[string]any{"start": c.today, "end": c.until}})
 		ext = append(ext, c.careTeamProviders(asSliceAny(item["careTeamSequence"]))...)
 		if p := c.encounterPeriod(); p != nil {
@@ -570,6 +606,10 @@ func (s *Server) pasRespond(req *pasRequest, id string, now time.Time) (map[stri
 	claim := req.claim
 	c := &pasContext{req: req, id: id, authNumber: "PA-" + strings.ToUpper(id[:8]),
 		today: now.Format("2006-01-02"), until: now.AddDate(0, 0, pasAuthDays).Format("2006-01-02")}
+	if req.umAuth != "" {
+		// The payer's UM system numbered it; the provider bills against that number, not one this server made up.
+		c.authNumber = req.umAuth
+	}
 
 	var items, added, errs, docRequests []any
 	var extra []map[string]any
@@ -622,7 +662,7 @@ func (s *Server) pasRespond(req *pasRequest, id string, now time.Time) (map[stri
 		if d.why != "" {
 			out["noteNumber"] = []any{c.note(d.why)}
 		}
-		approved = approved || d.code == pasApproved.code || d.code == pasModified.code
+		approved = approved || certifies(d)
 		if d.code == pasPended.code {
 			pended = true
 			if len(d.answer.Attachments) > 0 || d.answer.Questionnaire != "" {
@@ -951,6 +991,11 @@ func (s *Server) savePAS(ctx context.Context, req *pasRequest, id string, respon
 	if _, err := tx.ExecContext(ctx, `INSERT INTO pas_responses (id, version, response) VALUES (?, 1, ?)`, id, string(respRaw)); err != nil {
 		return err
 	}
+	for seq, trace := range req.umTraces {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO pas_um_traces (trace, id, seq) VALUES (?, ?, ?)`, trace, id, seq); err != nil {
+			return err
+		}
+	}
 	return tx.Commit()
 }
 
@@ -1066,6 +1111,8 @@ func (s *Server) handlePASDecide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var id, decision, reason, reviewerNPI string
+	var quantity float64
+	var alternative map[string]any
 	items := map[int]bool{}
 	for _, p := range body.Parameter {
 		switch str(p["name"]) {
@@ -1078,6 +1125,27 @@ func (s *Server) handlePASDecide(w http.ResponseWriter, r *http.Request) {
 		case "reviewer":
 			// The reviewer's NPI, which the response carries in claimResponseReviewer.
 			reviewerNPI = str(p["valueString"])
+		case "quantity":
+			// How many units are certified, for decision modify.
+			switch {
+			case p["valueDecimal"] != nil:
+				quantity, _ = p["valueDecimal"].(float64)
+			case p["valueInteger"] != nil:
+				quantity, _ = p["valueInteger"].(float64)
+			case p["valueQuantity"] != nil:
+				quantity, _ = asMapAny(p["valueQuantity"])["value"].(float64)
+			}
+			if quantity <= 0 {
+				s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", "quantity is a number of units above 0 (valueDecimal)")
+				return
+			}
+		case "alternative":
+			// The service approved instead, for decision modify.
+			alternative = asMapAny(p["valueCoding"])
+			if str(alternative["code"]) == "" {
+				s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", "alternative is the service approved instead (valueCoding, with a code)")
+				return
+			}
 		case "item":
 			n, ok := p["valueInteger"].(float64)
 			if !ok || n < 1 {
@@ -1093,8 +1161,21 @@ func (s *Server) handlePASDecide(w http.ResponseWriter, r *http.Request) {
 		d = pasApproved
 	case "deny":
 		d = pasDenied
+	case "modify":
+		// Certified, but not as asked: for fewer units, or with another service approved instead.
+		if quantity <= 0 && alternative == nil {
+			s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "required",
+				"decision modify needs quantity (the units certified) or alternative (the service approved instead), or both")
+			return
+		}
+		d = pasModified
+		d.answer = PASAnswer{Decision: "approve", AllowedQuantity: quantity, Alternative: alternative}
 	default:
-		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", "decision must be approve or deny")
+		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", "decision must be approve, deny or modify")
+		return
+	}
+	if (quantity > 0 || alternative != nil) && decision != "modify" {
+		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "value", "quantity and alternative go with decision modify")
 		return
 	}
 	d.why = reason
@@ -1127,17 +1208,22 @@ func (s *Server) decidePAS(ctx context.Context, id string, d itemDecision, items
 	}
 	defer func() { _ = tx.Rollback() }()
 	var version int
-	var raw string
-	if err := tx.QueryRowContext(ctx, `SELECT r.version, p.response FROM pas_requests r
-		JOIN pas_responses p ON p.id = r.id AND p.version = r.version WHERE r.id = ?`, id).Scan(&version, &raw); err != nil {
+	var raw, reqRaw string
+	if err := tx.QueryRowContext(ctx, `SELECT r.version, p.response, r.request FROM pas_requests r
+		JOIN pas_responses p ON p.id = r.id AND p.version = r.version WHERE r.id = ?`, id).Scan(&version, &raw, &reqRaw); err != nil {
 		return nil, err
 	}
+	var stored map[string]any
+	if err := json.Unmarshal([]byte(reqRaw), &stored); err != nil {
+		return nil, err
+	}
+	req, _ := readPASRequest(stored, false)
 	var bundle map[string]any
 	if err := json.Unmarshal([]byte(raw), &bundle); err != nil {
 		return nil, err
 	}
 	now := s.PAS.now().UTC()
-	changed, stillPended := applyDecision(bundle, d, items, reviewerNPI, now)
+	changed, stillPended := applyDecision(bundle, d, items, reviewerNPI, now, req)
 	if !changed {
 		return nil, ErrNotPended
 	}
@@ -1170,7 +1256,10 @@ func (s *Server) decidePAS(ctx context.Context, id string, d itemDecision, items
 }
 
 // applyDecision rewrites the pended items of a response Bundle's ClaimResponse to d.
-func applyDecision(bundle map[string]any, d itemDecision, items map[int]bool, reviewerNPI string, now time.Time) (changed, stillPended bool) {
+//
+// req is the request as it was submitted, which a modified decision needs: what is certified for fewer units, or approved
+// instead, is described from the requested item.
+func applyDecision(bundle map[string]any, d itemDecision, items map[int]bool, reviewerNPI string, now time.Time, req *pasRequest) (changed, stillPended bool) {
 	var cr map[string]any
 	for _, e := range asSliceAny(bundle["entry"]) {
 		if res := asMapAny(asMapAny(e)["resource"]); res["resourceType"] == "ClaimResponse" {
@@ -1182,8 +1271,17 @@ func applyDecision(bundle map[string]any, d itemDecision, items map[int]bool, re
 		return false, false
 	}
 	authNumber := "PA-" + strings.ToUpper(str(cr["id"])[:8])
+	if d.number != "" {
+		authNumber = d.number
+	}
 	today := now.Format("2006-01-02")
 	until := now.AddDate(0, 0, pasAuthDays).Format("2006-01-02")
+	requested := map[string]map[string]any{}
+	if req != nil {
+		for _, it := range asSliceAny(req.claim["item"]) {
+			requested[fmt.Sprint(asMapAny(it)["sequence"])] = asMapAny(it)
+		}
+	}
 	notes := asSliceAny(cr["processNote"])
 	for _, it := range asSliceAny(cr["item"]) {
 		item := asMapAny(it)
@@ -1209,7 +1307,23 @@ func applyDecision(bundle map[string]any, d itemDecision, items map[int]bool, re
 				}
 				code["code"], code["display"] = d.code, d.display
 				changed = true
-				if d.code == pasApproved.code {
+				why := d.why
+				if d.code == pasModified.code {
+					asked := requested[fmt.Sprint(seq)]
+					if d.answer.AllowedQuantity > 0 && asked != nil {
+						detail := []any{map[string]any{"url": "productOrServiceCode", "valueCodeableConcept": asked["productOrService"]},
+							map[string]any{"url": "quantity", "valueQuantity": withValue(asMapAny(asked["quantity"]), d.answer.AllowedQuantity)}}
+						item["extension"] = append(asSliceAny(item["extension"]),
+							map[string]any{"url": pasBase + "extension-itemAuthorizedDetail", "extension": detail})
+						why = strings.TrimSpace(why + fmt.Sprintf(" Certified for %v.", d.answer.AllowedQuantity))
+					}
+					if d.answer.Alternative != nil && asked != nil {
+						c := &pasContext{req: req, id: str(cr["id"]), authNumber: authNumber, today: today, until: until}
+						cr["addItem"] = append(asSliceAny(cr["addItem"]), c.addedItem(asked, d))
+						why = strings.TrimSpace(why + " Approved as the added item instead.")
+					}
+				}
+				if certifies(d) {
 					ra["extension"] = append(asSliceAny(ra["extension"]), map[string]any{"url": "number", "valueString": authNumber})
 					item["extension"] = append(asSliceAny(item["extension"]), map[string]any{"url": pasBase + "extension-itemPreAuthPeriod",
 						"valuePeriod": map[string]any{"start": today, "end": until}})
@@ -1218,9 +1332,9 @@ func applyDecision(bundle map[string]any, d itemDecision, items map[int]bool, re
 				}
 				// The note that said it was pended no longer describes it.
 				delete(item, "noteNumber")
-				if d.why != "" {
+				if why != "" {
 					n := nextNote(notes)
-					notes = append(notes, map[string]any{"number": n, "type": "display", "text": d.why})
+					notes = append(notes, map[string]any{"number": n, "type": "display", "text": why})
 					item["noteNumber"] = []any{n}
 				}
 			}
