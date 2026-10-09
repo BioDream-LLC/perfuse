@@ -806,3 +806,33 @@ func TestSearchByAnIdentifierWithEscapedPipes(t *testing.T) {
 		}
 	}
 }
+
+// Every type a server stores answers with versionId and lastUpdated, not only the first types it was written for; Inferno's
+// US Core _lastUpdated searches found no value on Condition. Tags and security labels the sender put there stay.
+func TestEveryStoredTypeCarriesVersionAndLastUpdated(t *testing.T) {
+	_, h := newTestServer(t)
+	for _, tc := range []struct{ path, body string }{
+		{"/Condition/c1", `{"resourceType":"Condition","id":"c1","subject":{"reference":"Patient/p1"},
+			"meta":{"tag":[{"system":"urn:t","code":"x"}],"security":[{"system":"http://terminology.hl7.org/CodeSystem/v3-Confidentiality","code":"R"}]}}`},
+		{"/Coverage/v1", `{"resourceType":"Coverage","id":"v1","status":"active","beneficiary":{"reference":"Patient/p1"},"payor":[{"reference":"Organization/o1"}]}`},
+		{"/MedicationRequest/m1", `{"resourceType":"MedicationRequest","id":"m1","status":"active","intent":"order","subject":{"reference":"Patient/p1"},"medicationCodeableConcept":{"text":"x"}}`},
+	} {
+		do(t, h, http.MethodPut, tc.path, tc.body)
+		rec := do(t, h, http.MethodGet, tc.path, nil)
+		var got struct {
+			Meta struct {
+				VersionID, LastUpdated string
+				Tag, Security          []map[string]string
+			}
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatal(err)
+		}
+		if got.Meta.VersionID != "1" || got.Meta.LastUpdated == "" {
+			t.Errorf("%s: meta %+v", tc.path, got.Meta)
+		}
+		if tc.path == "/Condition/c1" && (len(got.Meta.Tag) != 1 || len(got.Meta.Security) != 1) {
+			t.Errorf("tags or security labels were dropped: %+v", got.Meta)
+		}
+	}
+}

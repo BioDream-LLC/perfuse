@@ -530,42 +530,13 @@ func stampMeta(r fhir.Resource, versionID int, now time.Time) {
 		LastUpdated: dbtime.Format(now),
 	}
 
-	switch v := r.(type) {
-	case *fhir.Patient:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.Encounter:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.Observation:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.DiagnosticReport:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.Practitioner:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.Organization:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.Location:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.Specimen:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
-	case *fhir.ServiceRequest:
-		meta.Profile = existingProfiles(v.Meta)
-		v.Meta = meta
+	// Every stored type, not a list of them: a type left off a list answered without versionId or lastUpdated, so a client
+	// could not make a conditional update or a _lastUpdated search from what it read.
+	// Security labels, tags and source are the sender's and are kept.
+	if old := r.ResourceMeta(); old != nil {
+		meta.Profile, meta.Security, meta.Tag, meta.Source = old.Profile, old.Security, old.Tag, old.Source
 	}
-}
-
-func existingProfiles(meta *fhir.Meta) []string {
-	if meta == nil {
-		return nil
-	}
-	return meta.Profile
+	r.SetResourceMeta(meta)
 }
 
 func supportedType(resourceType string) bool {

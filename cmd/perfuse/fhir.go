@@ -467,7 +467,7 @@ func cmdFHIRServe(args []string, stdout, stderr io.Writer) error {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/fhir/", http.StripPrefix("/fhir", srv.Handler()))
+	mountFHIR(mux, srv.Handler())
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		counts, err := store.Counts(r.Context())
 		if err != nil {
@@ -807,4 +807,17 @@ func cmdFHIREICR(args []string, stdout, stderr io.Writer) error {
 		return errBlocking
 	}
 	return nil
+}
+
+// mountFHIR serves the FHIR endpoint at /fhir. The base itself as well as everything under it: a transaction or batch is
+// POST [base], and a ServeMux subtree pattern alone answers POST /fhir with a redirect to /fhir/, which a client that does
+// not resend the body after a 307 (most HTTP libraries) takes as failure.
+func mountFHIR(mux *http.ServeMux, h http.Handler) {
+	inner := http.StripPrefix("/fhir", h)
+	mux.Handle("/fhir/", inner)
+	mux.Handle("/fhir", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r2 := r.Clone(r.Context())
+		r2.URL.Path, r2.URL.RawPath = "/fhir/", ""
+		inner.ServeHTTP(w, r2)
+	}))
 }

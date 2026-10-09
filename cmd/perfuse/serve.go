@@ -1303,7 +1303,7 @@ oidcDone:
 		// The FHIR endpoint is deliberately outside the session-cookie API. FHIR
 		// clients are machines with tokens, not browsers, and pretending otherwise
 		// would mean every EHR integration had to hold a login cookie.
-		mux.Handle("/fhir/", http.StripPrefix("/fhir", fhirSrv.Handler()))
+		mountFHIR(mux, fhirSrv.Handler())
 		srv.DTRPackage = fhirSrv.QuestionnairePackage
 
 		// Reports the scheme actually in use rather than asserting one. The previous line claimed the endpoint
