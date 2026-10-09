@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · f0ad968</p>
+<p class="version">version 0.1 · a766033</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2140,6 +2140,7 @@ performing_lab_clia: 14D0000000
 placer_authority: {namespace: SPRINGFIELD-EHR, id: 2.16.840.1.113883.19.5.1, type: ISO}
 filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, type: ISO}</code></pre>
 <p>The ordering facility, performing lab and assigning authorities are used only where the lab&#39;s message leaves them out, and each use is a note. What only the lab knows is never filled in: a result with no specimen type goes with SPM-4 empty and a note saying so, because a guessed specimen in a report to public health is worse than a gap the state can ask about. Start with <code>processing: T</code> while the state&#39;s onboarding team tests the feed.</p>
+<p>MSH-2 is written as <code>^~\&amp;#</code>, the five characters ELR Release 1&#39;s errata require and ONC&#39;s certification tool checks. If your state&#39;s guide shows the older four, add <code>encoding_characters: &#34;^~\\&amp;&#34;</code> to the file.</p>
 <p>To send them from a channel rather than from the command line, give the destination that reaches the state an <code>elr</code> block naming the same file. Each lab result is reshaped on the way out, and one with nothing reportable is not sent at all, which is counted as delivered, not failed: the state asked for reportable results only.</p>
 <pre class="code lang-yaml"><code>destinations:
   - name: state-elr

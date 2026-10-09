@@ -476,7 +476,8 @@ and order-number assigning authorities used when the lab's message leaves them o
 the source's separators become `^~\&`; ORC is built from OBR when missing; SPM from OBR-15, OBR-7 and OBR-14 when missing; CE
 results become CWE; race and ethnicity coded CDCREC are recoded to HL7 tables 0005 and 0189, keeping the sender's coding as the
 alternate; an NPI named only `NPI` gets its OID and identifier type. What the lab did not send (a specimen type, the time the
-specimen was received) stays empty and is printed as a note.
+specimen was received) stays empty and is printed as a note. MSH-2 is `^~\&#`, the five characters ELR Release 1's errata require
+(ONC's ELR-013); `encoding_characters: "^~\\&"` in the config writes four for a state that asks for them.
 
 A destination's `elr` block does the same on the way out of a channel: `elr: {config: elr.yaml, rctc: rctc.json}` (paths relative
 to the channel file; `rctc` optional). Each ORU^R01 is delivered as its ELR message; one with nothing reportable is not sent and

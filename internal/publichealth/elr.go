@@ -54,7 +54,9 @@ type ELROptions struct {
 	ReceivingApplication, ReceivingFacility HD
 	// Processing is MSH-11: P production (the default), T training, D debugging.
 	Processing string
-	Software   Software
+	// EncodingCharacters is MSH-2: EncodingCharactersELR (the default) or EncodingCharactersFour for a state that asks for it.
+	EncodingCharacters string
+	Software           Software
 	// OrderingFacility is used for ORC-21 to ORC-24 when the order does not name the facility, which ELR requires and many
 	// lab feeds leave out because the lab and the facility are the same organisation.
 	OrderingFacility Facility
@@ -64,6 +66,22 @@ type ELROptions struct {
 	// PlacerAuthority and FillerAuthority are the assigning authorities given to order and specimen numbers that arrive
 	// without one (ORC-2, ORC-3, OBR-2, OBR-3, SPM-2): the ordering system's, and the lab's.
 	PlacerAuthority, FillerAuthority HD
+}
+
+// The values MSH-2 may take. ELR Release 1's errata (October 2011) made MSH-2 five characters, the four separators and the
+// truncation character, and ONC's certification test (ELR-013) requires exactly that; some states' own guides still show four.
+const (
+	EncodingCharactersELR  = `^~\&#`
+	EncodingCharactersFour = `^~\&`
+)
+
+// encodingCharacters is MSH-2: the errata's five characters unless four were asked for. The truncation character changes
+// nothing in a 2.5.1 message, whose fields are never truncated by Perfuse, so the body is the same either way.
+func (o ELROptions) encodingCharacters() string {
+	if o.EncodingCharacters == EncodingCharactersFour {
+		return EncodingCharactersFour
+	}
+	return EncodingCharactersELR
 }
 
 // ELR is a built report and what went into it.
@@ -270,7 +288,7 @@ func BuildELR(m *hl7.Message, triggers *TriggerSet, opts ELROptions) (*ELR, erro
 }
 
 // splitSegment splits a segment into fields and re-encodes each with the standard separators, so a message sent with unusual
-// encoding characters comes out as ELR requires (MSH-2 ^~\&). A standard separator that was plain text in the source is
+// encoding characters comes out with the standard separators. A standard separator that was plain text in the source is
 // escaped, or it would become structure.
 func splitSegment(raw []byte, sep hl7.Separators) elrSegment {
 	std := hl7.DefaultSeparators()
@@ -309,7 +327,7 @@ func splitSegment(raw []byte, sep hl7.Separators) elrSegment {
 func elrMSH(m *hl7.Message, opts ELROptions) string {
 	msh := make(elrSegment, 22)
 	msh[0] = "MSH"
-	msh[2] = `^~\&`
+	msh[2] = opts.encodingCharacters()
 	msh[3] = opts.SendingApplication.encode("^")
 	msh[4] = opts.SendingFacility.encode("^")
 	msh[5] = opts.ReceivingApplication.encode("^")
@@ -651,6 +669,7 @@ type ELRConfig struct {
 	ReceivingApplication HD       `yaml:"receiving_application"`
 	ReceivingFacility    HD       `yaml:"receiving_facility"`
 	Processing           string   `yaml:"processing"`
+	EncodingCharacters   string   `yaml:"encoding_characters,omitempty"`
 	OrderingFacility     Facility `yaml:"ordering_facility"`
 	PerformingLab        Facility `yaml:"performing_lab"`
 	PerformingLabCLIA    string   `yaml:"performing_lab_clia"`
@@ -670,6 +689,10 @@ func LoadELRConfig(path string) (ELRConfig, error) {
 	if err := dec.Decode(&c); err != nil {
 		return c, fmt.Errorf("%s: %w", path, err)
 	}
+	if c.EncodingCharacters != "" && c.EncodingCharacters != EncodingCharactersELR && c.EncodingCharacters != EncodingCharactersFour {
+		return c, fmt.Errorf("%s: encoding_characters is %s (the ELR errata's) or %s, not %s", path, EncodingCharactersELR,
+			EncodingCharactersFour, c.EncodingCharacters)
+	}
 	if c.Processing != "" && c.Processing != "P" && c.Processing != "T" && c.Processing != "D" {
 		return c, fmt.Errorf("%s: processing is P, T or D, not %q", path, c.Processing)
 	}
@@ -679,7 +702,7 @@ func LoadELRConfig(path string) (ELRConfig, error) {
 // Options turns the file into build options.
 func (c ELRConfig) Options(now time.Time, sw Software) ELROptions {
 	return ELROptions{Now: now, SendingApplication: c.SendingApplication, SendingFacility: c.SendingFacility,
-		ReceivingApplication: c.ReceivingApplication, ReceivingFacility: c.ReceivingFacility, Processing: c.Processing,
+		ReceivingApplication: c.ReceivingApplication, ReceivingFacility: c.ReceivingFacility, Processing: c.Processing, EncodingCharacters: c.EncodingCharacters,
 		Software: sw, OrderingFacility: c.OrderingFacility, PerformingLab: c.PerformingLab,
 		PerformingLabCLIA: c.PerformingLabCLIA, PlacerAuthority: c.PlacerAuthority, FillerAuthority: c.FillerAuthority}
 }

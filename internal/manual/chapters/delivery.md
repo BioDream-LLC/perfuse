@@ -209,6 +209,9 @@ is a note. What only the lab knows is never filled in: a result with no specimen
 because a guessed specimen in a report to public health is worse than a gap the state can ask about. Start with `processing: T`
 while the state's onboarding team tests the feed.
 
+MSH-2 is written as `^~\&#`, the five characters ELR Release 1's errata require and ONC's certification tool checks. If your
+state's guide shows the older four, add `encoding_characters: "^~\\&"` to the file.
+
 To send them from a channel rather than from the command line, give the destination that reaches the state an `elr` block naming
 the same file. Each lab result is reshaped on the way out, and one with nothing reportable is not sent at all, which is counted as
 delivered, not failed: the state asked for reportable results only.

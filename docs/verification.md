@@ -344,7 +344,16 @@ findings the profile raises against itself:
 - ELR-037 (ORC-12 must equal OBR-16) fails with the two fields identical, as it does on the profile's own sample message.
 - Two ARLN program checks that do not apply to this program.
 
-The ONC ELR tool itself, now hosted at tools.valitheus.com, was not run: it is a web form, and scripting it failed.
+**The ONC ELR tool, October 2026.** The ONC certification tool itself (Electronic Laboratory Reporting HL7 V2.5.1 Validation Tool
+1.9.3, formerly NIST's, now at tools.valitheus.com/mu-elr), context-free validation, driven through a browser with the same two
+messages. It validates against ELR Release 1 with its errata, not the APHL profile. It found one error the profile does not check:
+
+- **MSH-2 was four characters.** The October 2011 errata to ELR Release 1 made MSH-2 five, `^~\&#` (the separators and the
+  truncation character), and the certification tool requires it (ELR-013). Perfuse now writes the five. A state whose own guide still
+  shows four can have them with `encoding_characters: "^~\\&"` in the ELR file. The APHL profile accepts either.
+
+After the fix, the message with its specimen is **Valid, 0 errors**. The one without a specimen has two: SPM-4 and SPM-18 missing,
+the lab's gaps Perfuse names in its notes and does not fill. None of the APHL profile's own defects above appear in the ONC tool.
 
 **SMART App Launch, October 2026.** Inferno's SMART App Launch STU2.2 suite (smart_app_launch_test_kit 1.0.3) against
 `serve -fhir -smart-clients -smart-users`, Perfuse issuing the tokens itself. A script played the browser: it followed Inferno's

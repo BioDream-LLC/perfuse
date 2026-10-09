@@ -170,6 +170,24 @@ func TestELRReencodesTheSendersSeparators(t *testing.T) {
 	}
 }
 
+// MSH-2 is the five characters ELR Release 1's errata require (ONC's ELR-013), or four for a state that asks for them.
+func TestELRWritesTheErrataEncodingCharacters(t *testing.T) {
+	for want, opt := range map[string]string{"MSH|^~\\&#|": "", "MSH|^~\\&|": EncodingCharactersFour} {
+		opts := elrOptions()
+		opts.EncodingCharacters = opt
+		r, err := buildELRFrom(t, "testdata/oru-elr-source.hl7", opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(string(r.Message), want) {
+			t.Errorf("encoding_characters %q: the message starts %q, want %q", opt, string(r.Message)[:12], want)
+		}
+		if _, err := hl7.Parse(r.Message); err != nil {
+			t.Errorf("the ELR message does not parse: %v", err)
+		}
+	}
+}
+
 // TestELRForTheNISTValidator writes the reports for the NIST HL7 v2 validator when ELR_OUT names a directory (see
 // docs/verification.md).
 func TestELRForTheNISTValidator(t *testing.T) {
