@@ -1,1 +1,4 @@
 qa/
+
+# Written by tsc -b on every type check; build state, not source.
+*.tsbuildinfo
