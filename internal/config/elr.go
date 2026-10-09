@@ -48,3 +48,33 @@ func (e *ELRDestination) load(dir, dest string) []error {
 	}
 	return errs
 }
+
+// CompanionFiles are the files beside a channel that its destinations read: each ELR destination's config. A directory of
+// channels holds them too, so the loaders use this to tell a channel's companion from a channel file that will not load.
+func (c *Channel) CompanionFiles() []string {
+	var out []string
+	for _, d := range c.Destinations {
+		if d.ELR != nil && d.ELR.Config != "" {
+			if abs, err := filepath.Abs(d.ELR.Config); err == nil {
+				out = append(out, abs)
+			}
+		}
+	}
+	return out
+}
+
+// IsCompanion reports whether path is one of the companion files of these channels.
+func IsCompanion(path string, channels []*Channel) bool {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return false
+	}
+	for _, c := range channels {
+		for _, f := range c.CompanionFiles() {
+			if f == abs {
+				return true
+			}
+		}
+	}
+	return false
+}

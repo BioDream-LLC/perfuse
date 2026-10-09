@@ -115,7 +115,7 @@ export function Passkeys() {
         {!configured && !error && (
           <p className="rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-xs leading-relaxed text-slate-300">
             Passkeys are not switched on for this server. An administrator turns them on by starting Perfuse with{' '}
-            <code className="text-slate-200">-passkey-rpid</code> set to the hostname people use to reach it. Until then,
+            <code className="text-slate-200">-passkey-domain</code> set to the hostname people use to reach it. Until then,
             sign in with a password or your organisation's single sign-on.
           </p>
         )}

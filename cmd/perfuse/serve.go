@@ -1211,6 +1211,7 @@ oidcDone:
 		var smartKeys *oidc.KeySet
 		var smartExtraCaps []string
 		var smartRevoked func(string) bool
+		var smartWithdrawn func(string, string) bool
 		var smartIntrospect, smartRevoke string
 		if *smartUsers != "" && *smartClients == "" {
 			return errors.New("-smart-users needs -smart-clients: people sign in to authorize the apps registered there")
@@ -1246,21 +1247,23 @@ oidcDone:
 					"launch-ehr", "context-ehr-patient", "context-ehr-encounter"}
 			}
 			smartRevoked = as.Revoked
+			smartWithdrawn = as.Withdrawn
 			smartIntrospect, smartRevoke = as.Issuer+"/introspect", as.Issuer+"/revoke"
 			log.Info("SMART authorization server", "issuer", as.Issuer, "clients", len(as.Clients), "key", as.Key.ID)
 		}
 
 		fhirAuth, err := fhirAuthenticator(fhirAuthOptions{
-			SMARTIssuer:   strings.TrimSpace(*smartIssuer),
-			SMARTAudience: strings.TrimSpace(*smartAudience),
-			SMARTJWKS:     strings.TrimSpace(*smartJWKS),
-			SMARTKeys:     smartKeys,
-			SMARTRevoked:  smartRevoked,
-			BaseURL:       baseURL,
-			Open:          *fhirOpen,
-			ReadOnly:      *fhirReadOnly,
-			Store:         st,
-			Log:           log,
+			SMARTIssuer:    strings.TrimSpace(*smartIssuer),
+			SMARTAudience:  strings.TrimSpace(*smartAudience),
+			SMARTJWKS:      strings.TrimSpace(*smartJWKS),
+			SMARTKeys:      smartKeys,
+			SMARTRevoked:   smartRevoked,
+			SMARTWithdrawn: smartWithdrawn,
+			BaseURL:        baseURL,
+			Open:           *fhirOpen,
+			ReadOnly:       *fhirReadOnly,
+			Store:          st,
+			Log:            log,
 		})
 		if err != nil {
 			return err

@@ -105,3 +105,31 @@ func writeFile(t *testing.T, dir, name, body string) {
 		t.Fatalf("could not write %s: %v", name, err)
 	}
 }
+
+// An ELR destination's config beside its channel, as examples/elr lays it out, is that channel's companion and not a broken channel.
+// It is recognised by being named in a channel's elr.config, not by whether it parses, so a stray file is still reported.
+func TestAnELRConfigBesideItsChannelIsNotABrokenChannel(t *testing.T) {
+	dir := t.TempDir()
+	for _, f := range []string{"elr.yaml", "lab-to-state.yaml"} {
+		raw, err := os.ReadFile(filepath.Join("../../examples/elr", f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		writeFile(t, dir, f, string(raw))
+	}
+	repo, err := NewChannelRepo(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid, broken, err := repo.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(broken) != 0 || len(valid) != 1 {
+		t.Errorf("got %d channel(s) and broken %v; want lab-to-state and nothing broken", len(valid), broken)
+	}
+	writeFile(t, dir, "stray.yaml", "sending_facility: {id: x}\n")
+	if _, broken, _ = repo.List(); broken["stray.yaml"] == "" {
+		t.Errorf("a file no channel names was not reported: %v", broken)
+	}
+}

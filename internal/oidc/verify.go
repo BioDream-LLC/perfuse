@@ -50,6 +50,9 @@ type Claims struct {
 	// Encounter is the SMART encounter launch context.
 	Encounter string
 
+	// ClientID is the client_id claim of an access token: the app it was issued to.
+	ClientID string
+
 	// JTI is the token's unique id, which a System token must carry.
 	JTI string
 
@@ -81,6 +84,7 @@ type claimSet struct {
 	Patient           string          `json:"patient"`
 	Encounter         string          `json:"encounter"`
 	JTI               string          `json:"jti"`
+	ClientID          string          `json:"client_id"`
 	FHIRUser          string          `json:"fhirUser"`
 }
 
@@ -251,6 +255,7 @@ func Verify(ctx context.Context, keys *KeySet, token string, opts VerifyOptions)
 		Patient:           cs.Patient,
 		Encounter:         cs.Encounter,
 		JTI:               cs.JTI,
+		ClientID:          cs.ClientID,
 		FHIRUser:          cs.FHIRUser,
 		ExpiresAt:         expiry,
 		IssuedAt:          issued,

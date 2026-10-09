@@ -19,10 +19,19 @@ func (s *Server) verifyOwn(ctx context.Context, token string) (*oidc.Claims, boo
 	}
 	c, err := oidc.Verify(ctx, keys, token, oidc.VerifyOptions{Issuer: s.Issuer, ClientID: s.Audience,
 		Algorithms: []string{"RS256"}, System: true, Now: s.now})
-	if err != nil || s.Revoked(c.JTI) {
+	if err != nil || s.Revoked(c.JTI) || s.Withdrawn(c.ClientID, c.Subject) {
 		return nil, false
 	}
 	return c, true
+}
+
+// Withdrawn reports whether the app a token was issued to, or the person who authorized it, has been removed since. A
+// backend token's subject is its client; a user token's is the username.
+func (s *Server) Withdrawn(clientID, subject string) bool {
+	if clientID == "" || s.client(clientID) == nil {
+		return true
+	}
+	return subject != clientID && s.user(subject) == nil
 }
 
 // Revoked reports whether an access token was revoked; the FHIR endpoint asks on every request.

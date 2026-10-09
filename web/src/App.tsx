@@ -85,21 +85,16 @@ export type Tab =
   | 'audit'
   | 'settings'
 
-// Every view's id, for reading one out of the URL. A string from the address bar is only trusted once it is in here.
-const TAB_IDS = [
-  'dashboard', 'teams', 'channels', 'messages', 'queue', 'alerts', 'metrics', 'fhir', 'subscriptions', 'documents', 'payer',
-  'cms0057', 'shl', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
-  'mapper', 'users', 'audit', 'settings',
-] as const satisfies readonly Tab[]
 
 // A compile error when a view is added to Tab and not here, so its URL cannot silently open the dashboard instead.
+const everyAddressIsATab: readonly Tab[] = TAB_IDS
 const everyTabHasAnAddress: Exclude<Tab, (typeof TAB_IDS)[number]> extends never ? true : false = true
 void everyTabHasAnAddress
+void everyAddressIsATab
 
 /** tabFromHash reads a view from "#/channels", or returns null for anything else. */
 function tabFromHash(hash: string): Tab | null {
-  const id = /^#\/([a-z]+)$/.exec(hash)?.[1]
-  return id && (TAB_IDS as readonly string[]).includes(id) ? (id as Tab) : null
+  return viewFromHash(hash) as Tab | null
 }
 
 export default function App() {
@@ -132,6 +127,7 @@ import { explainPasskeyError, passkeysSupported, usePasskey } from './passkey'
 import { Tokens } from './Tokens'
 import { SMARTApps } from './SMARTApps'
 import { TEFCAView } from './TEFCAView'
+import { TAB_IDS, viewFromHash } from './tabHash'
 
 function Login() {
   const dispatch = useDispatch<AppDispatch>()

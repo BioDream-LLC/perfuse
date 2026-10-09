@@ -51,3 +51,31 @@ func TestAnELRDestinationIsRefusedWhereItCouldNotWork(t *testing.T) {
 		}
 	}
 }
+
+// The ELR file beside its channel is that channel's companion, not a channel file that will not load; a stray file that is
+// neither still stops the directory.
+func TestADirectoryWithAnELRChannelLoads(t *testing.T) {
+	cs, err := LoadDir("../../examples/elr")
+	if err != nil {
+		t.Fatalf("examples/elr: %v", err)
+	}
+	if len(cs) != 1 || cs[0].Name != "lab-to-state" {
+		t.Fatalf("loaded %d channels, want lab-to-state alone", len(cs))
+	}
+	dir := t.TempDir()
+	for _, f := range []string{"elr.yaml", "lab-to-state.yaml"} {
+		raw, err := os.ReadFile(filepath.Join("../../examples/elr", f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, f), raw, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, "stray.yaml"), []byte("sending_facility: {id: x}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadDir(dir); err == nil || !strings.Contains(err.Error(), "stray.yaml") {
+		t.Errorf("a stray file that is no channel's companion loaded: %v", err)
+	}
+}

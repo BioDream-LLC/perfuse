@@ -88,13 +88,22 @@ func (r *ChannelRepo) List() (valid []ChannelSummary, broken map[string]string, 
 	}
 
 	broken = map[string]string{}
+	var loaded []*config.Channel
+	failed := map[string]string{}
 	for _, path := range paths {
 		c, loadErr := config.LoadFile(path)
 		if loadErr != nil {
-			broken[filepath.Base(path)] = loadErr.Error()
+			failed[path] = loadErr.Error()
 			continue
 		}
+		loaded = append(loaded, c)
 		valid = append(valid, summarise(c, path))
+	}
+	// An ELR destination's config sits beside its channel; it is a companion, not a channel that will not load.
+	for path, reason := range failed {
+		if !config.IsCompanion(path, loaded) {
+			broken[filepath.Base(path)] = reason
+		}
 	}
 
 	sort.Slice(valid, func(i, j int) bool { return valid[i].Name < valid[j].Name })

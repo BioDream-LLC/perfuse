@@ -64,6 +64,10 @@ type SMARTConfig struct {
 
 	// Revoked, when set, reports access tokens revoked before they expired, by jti.
 	Revoked func(jti string) bool
+
+	// Withdrawn, when set, reports a token whose app or person has since been removed (by client_id and sub), so that
+	// removing them stops what they were already given and not only what they ask for next.
+	Withdrawn func(clientID, subject string) bool
 }
 
 // SMARTAuth authenticates a SMART on FHIR access token.
@@ -136,6 +140,9 @@ func (a *SMARTAuth) Authenticate(r *http.Request) (*Caller, error) {
 
 	if a.cfg.Revoked != nil && a.cfg.Revoked(claims.JTI) {
 		return nil, fmt.Errorf("this SMART token was revoked")
+	}
+	if a.cfg.Withdrawn != nil && a.cfg.Withdrawn(claims.ClientID, claims.Subject) {
+		return nil, fmt.Errorf("the app or person this SMART token was issued to has been removed")
 	}
 
 	scopes := strings.Fields(claims.Scope)

@@ -102,7 +102,10 @@ export function SMARTApps() {
     setUser({ username: u.username, name: u.name ?? '', fhirUser: u.fhirUser, oidcSubject: u.oidcSubject ?? '', password: '' })
 
   const remove = async (what: 'client' | 'user', id: string) => {
-    if (!window.confirm(`Remove ${id}? Its tokens and refresh tokens stop working.`)) return
+    const consequence = what === 'client'
+      ? 'Its tokens and refresh tokens stop working.'
+      : 'They can no longer sign in to authorize apps, and the tokens they granted stop working.'
+    if (!window.confirm(`Remove ${id}? ${consequence}`)) return
     setError(null)
     try {
       if (what === 'client') await api.deleteSMARTClient(id)

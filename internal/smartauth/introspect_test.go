@@ -84,3 +84,30 @@ func TestIntrospectionAndRevocation(t *testing.T) {
 func stringsReader(s string) *strings.Reader { return strings.NewReader(s) }
 
 func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }
+
+// Removing an app or the person who authorized it stops the access tokens already issued, not only the next one: the console's
+// confirmation says so, and an hour-long token that outlived its app would make that untrue.
+func TestRemovingTheAppOrPersonStopsTheirTokens(t *testing.T) {
+	for _, remove := range []string{"app", "person"} {
+		f := userFixture(t)
+		access := memberTokens(t, f)["access_token"].(string)
+		keys, _ := oidc.NewStaticKeySet(f.srv.Key.JWKS())
+		auth, _ := fhirserver.NewSMARTAuth(fhirserver.SMARTConfig{Issuer: f.srv.Issuer, Audience: f.srv.Audience, Keys: keys,
+			Revoked: f.srv.Revoked, Withdrawn: f.srv.Withdrawn})
+		req := httptest.NewRequest(http.MethodGet, "/Patient/p1", nil)
+		req.Header.Set("Authorization", "Bearer "+access)
+		if _, err := auth.Authenticate(req); err != nil {
+			t.Fatalf("the token was refused before anything was removed: %v", err)
+		}
+		f.srv.mu.Lock()
+		if remove == "app" {
+			delete(f.srv.Clients, "app")
+		} else {
+			delete(f.srv.Users, "amy")
+		}
+		f.srv.mu.Unlock()
+		if _, err := auth.Authenticate(req); err == nil {
+			t.Errorf("removing the %s left its access token working", remove)
+		}
+	}
+}

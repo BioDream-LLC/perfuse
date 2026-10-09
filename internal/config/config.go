@@ -908,16 +908,27 @@ func LoadDir(root string) ([]*Channel, error) {
 
 	var channels []*Channel
 	byName := map[string]string{}
+	var failed []string
+	failures := map[string]error{}
 	for _, path := range paths {
 		c, err := LoadFile(path)
 		if err != nil {
-			return nil, err
+			failed = append(failed, path)
+			failures[path] = err
+			continue
 		}
 		if prev, dup := byName[c.Name]; dup {
 			return nil, fmt.Errorf("%s: channel name %q is already used by %s", path, c.Name, prev)
 		}
 		byName[c.Name] = path
 		channels = append(channels, c)
+	}
+
+	// A file that is not a channel but a channel's companion (an ELR destination's config, kept beside it) is not an error.
+	for _, path := range failed {
+		if !IsCompanion(path, channels) {
+			return nil, failures[path]
+		}
 	}
 
 	// Routing can only be checked once every channel is known. A destination naming a channel that

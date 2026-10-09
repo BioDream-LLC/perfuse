@@ -27,6 +27,8 @@ type fhirAuthOptions struct {
 	SMARTKeys *oidc.KeySet
 	// SMARTRevoked reports access tokens the issuer revoked.
 	SMARTRevoked func(jti string) bool
+	// SMARTWithdrawn reports tokens whose app or person the issuer no longer has.
+	SMARTWithdrawn func(clientID, subject string) bool
 
 	// BaseURL is this server's FHIR base, used as the SMART audience when none is given.
 	BaseURL string
@@ -72,11 +74,12 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 		}
 
 		auth, err := fhirserver.NewSMARTAuth(fhirserver.SMARTConfig{
-			Issuer:   opts.SMARTIssuer,
-			Audience: audience,
-			JWKSURL:  opts.SMARTJWKS,
-			Keys:     opts.SMARTKeys,
-			Revoked:  opts.SMARTRevoked,
+			Issuer:    opts.SMARTIssuer,
+			Audience:  audience,
+			JWKSURL:   opts.SMARTJWKS,
+			Keys:      opts.SMARTKeys,
+			Revoked:   opts.SMARTRevoked,
+			Withdrawn: opts.SMARTWithdrawn,
 		})
 		if err != nil {
 			return nil, err
