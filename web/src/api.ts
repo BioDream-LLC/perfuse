@@ -1380,6 +1380,10 @@ export const api = {
     request<{ connections: ConnectionCheck[]; checkedAt: string }>('GET', `/api/connections${channel ? `?channel=${encodeURIComponent(channel)}` : ''}`),
 
   /** dashboards lists the persona dashboards, which one this person is given and why, and their saved view. */
+  /** dashboardFigures computes the server-side figures of these tiles: aggregates only, never a message or a patient. */
+  dashboardFigures: (tiles: string[]) =>
+    request<{ figures: Record<string, DashboardFigure> }>('GET', `/api/dashboards/figures?tiles=${encodeURIComponent(tiles.join(','))}`),
+
   dashboards: () => request<DashboardsResponse>('GET', '/api/dashboards'),
 
   /** saveDashboardView stores this person's view; an empty dashboard clears it. */
@@ -2664,6 +2668,14 @@ export interface PASection {
   deniedAfterAppeal: PACount
   turnaround: { meanHours: number; medianHours: number; mean: string; median: string }
   deadlineLabel: string
+}
+
+/** A dashboard figure: rows of a label and a value, toned ok, warn or bad. */
+export interface DashboardFigure {
+  rows: { label: string; value: string; tone?: 'ok' | 'warn' | 'bad' }[]
+  note?: string
+  unavailable?: string
+  empty?: string
 }
 
 /** A Da Vinci PAS request as its reviewer sees it. */

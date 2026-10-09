@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from './api'
 import type { PASCase, PASReview } from './api'
 import { CodeArea } from './CodeArea'
+import { IconPatient, IconQueue } from './Icons'
 import { ErrorBox, Field, Section } from './ui'
 import type { UiError } from './store'
 
@@ -58,6 +59,7 @@ export function PASReviewQueue() {
     <div className="grid gap-5 xl:grid-cols-[minmax(0,26rem)_1fr]">
       <Section
         title={all ? 'Every request' : 'Waiting for a reviewer'}
+        icon={IconQueue}
         description="Pended requests, soonest due first: 72 hours for an expedited request, 7 days for a standard one."
       >
         <label className="mb-3 flex items-center gap-2 text-sm text-slate-300">
@@ -163,7 +165,7 @@ function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
   const pendedItems = c.items.filter((it) => it.code === 'A4')
   return (
     <div className="space-y-4" data-testid="pas-case">
-      <Section title={c.member || 'Unnamed member'} description={`Member ${c.memberId || 'unknown'} · ${c.provider}`}>
+      <Section title={c.member || 'Unnamed member'} icon={IconPatient} description={`Member ${c.memberId || 'unknown'} · ${c.provider}`}>
         <table className="w-full text-left text-sm">
           <thead className="text-xs text-slate-400">
             <tr>

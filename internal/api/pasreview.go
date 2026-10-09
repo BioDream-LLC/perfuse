@@ -53,7 +53,7 @@ func (s *Server) handlePASCase(w http.ResponseWriter, r *http.Request, sess *sto
 		return
 	}
 	// Who read a member's request is asked about afterwards, so it is recorded.
-	_ = s.Store.Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "pas.read", Target: id, IP: clientIP(r)})
+	_ = s.storeFor(sess).Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "pas.read", Target: id, IP: clientIP(r)})
 	s.ok(w, c)
 }
 
@@ -83,7 +83,7 @@ func (s *Server) handlePASDecide(w http.ResponseWriter, r *http.Request, sess *s
 		s.failErr(w, r, err)
 		return
 	}
-	_ = s.Store.Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "pas.decide", Target: id,
+	_ = s.storeFor(sess).Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "pas.decide", Target: id,
 		Detail: fmt.Sprintf("%s %v", rv.Decision, rv.Items), IP: clientIP(r)})
 	s.ok(w, map[string]any{"response": out})
 }

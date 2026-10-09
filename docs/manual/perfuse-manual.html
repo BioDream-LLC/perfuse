@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 61246e5</p>
+<p class="version">version 0.1 · 023de0f</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -1238,7 +1238,28 @@ destinations:
 roles: {viewer: manager}</code></pre>
 <p>A group wins over a role, and anyone unmatched opens on Operations. <strong>Arrange tiles</strong> hides and reorders tiles, the channel picker filters them, and <strong>Save as my view</strong> keeps that as your own dashboard until <strong>Reset</strong>.</p>
 <p><strong>Export to Grafana</strong> downloads the dashboard as Grafana JSON over <code>/metrics</code>, with a data source variable and a channel filter, for anyone who needs more than light configuration. Tiles with no metric behind them are left out, and the export&#39;s description names them.</p>
-<p>The <strong>Connections</strong> tile checks every networked destination in layers. It looks the name up, opens a TCP connection, completes TLS where it is used, and reads the destination&#39;s last delivery and failure from real traffic. Each failure says what it means, for example &#34;refused: the partner&#39;s engine is probably stopped&#34;, &#34;timed out: a firewall or a VPN tunnel that is down&#34;, or &#34;a certificate from an authority this server does not trust&#34;. Nothing is sent to the partner. Figures a dashboard needs that are not recorded yet are listed under <strong>Not measured yet</strong> instead of being drawn as empty tiles; VPN tunnel state and PAS turnaround are two of them.</p>
+<p>The <strong>Connections</strong> tile checks every networked destination in layers. It looks the name up, opens a TCP connection, completes TLS where it is used, and reads the destination&#39;s last delivery and failure from real traffic. Each failure says what it means, for example &#34;refused: the partner&#39;s engine is probably stopped&#34;, &#34;timed out: a firewall or a VPN tunnel that is down&#34;, or &#34;a certificate from an authority this server does not trust&#34;. Nothing is sent to the partner. Figures a dashboard needs that are not recorded yet are listed under <strong>Not measured yet</strong> instead of being drawn as empty tiles.</p>
+<p>The department dashboards compute their own figures on the server, and each one says what window and source it covers:</p>
+<ul>
+<li><strong>Prior authorization:</strong> PAS requests decided within CMS-0057&#39;s 72 hours (expedited) or 7 days (standard), decided late, waiting,</li>
+</ul>
+<p>  and overdue now, with the median time to decide. Also how the services asked for were answered (approved, modified, denied,   pended), as each stands now, over 30 days.</p>
+<ul>
+<li><strong>Imaging:</strong> objects received by C-STORE per modality, and those not delivered on. Also the routing delay per channel (the median</li>
+</ul>
+<p>  and the 95th percentile), C-FIND queries and failures per query channel, and imaging reports (an ORU whose OBR-24 is an imaging   section, or an MDM) that did not reach every destination.</p>
+<ul>
+<li><strong>Revenue cycle:</strong> 999 transaction sets accepted, accepted with errors and rejected, and 277CA claims accepted and rejected</li>
+</ul>
+<p>  (A3, A4, A6, A7, A8). Also 835 claims matched by patient account number to 837s sent through this server, and the commonest   rejection reasons.</p>
+<ul>
+<li><strong>Laboratory:</strong> result delivery time, from receipt to the last destination&#39;s acknowledgement, and critical results (OBX-8 HH, LL,</li>
+</ul>
+<p>  AA, &gt; or &lt;) that did not reach every destination.</p>
+<ul>
+<li><strong>Privacy and security:</strong> who opened messages, searched for patients or read prior authorizations in the console over 7 days, from</li>
+</ul>
+<p>  the audit log (opening a message is audited as <code>message.read</code>). Also each live API token and when it was last used; a token   unused for 90 days is flagged.</p>
 <h4 id="s3-4-2-fhir-lab"><span class="num">3.4.2</span> FHIR lab</h4>
 <p>Convert HL7 v2 to FHIR, validate a resource, and inspect the result. The samples cover admissions, lab results, appointments, clinical notes, immunizations and a reportable visit. The validation includes US Core, which is the profile American regulation is written against, so this answers &#34;is what they sent us actually conformant&#34; without adopting anything.</p>
 <p><strong>Public health case report</strong> builds the eCR eICR a case reporting destination would send for the message. It shows which trigger code made the visit reportable, what the report had to mark as missing, and the document itself. A message with nothing reportable gets the reason instead. Nothing is sent from here.</p>

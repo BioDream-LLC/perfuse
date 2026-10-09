@@ -172,7 +172,7 @@ func (s *Server) auditIdentitySearch(r *http.Request, sess *store.Session, q msg
 		detail += " channel=" + q.Channel
 	}
 
-	_ = s.Store.Audit(r.Context(), store.AuditEntry{
+	_ = s.storeFor(sess).Audit(r.Context(), store.AuditEntry{
 		Username: sess.Username,
 		Action:   "message.identity.search",
 

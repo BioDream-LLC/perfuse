@@ -537,6 +537,10 @@ func (s *Server) handleGetMessage(w http.ResponseWriter, r *http.Request, sess *
 		return
 	}
 
+	// Opening a message is reading what it says about a patient, so who did it is recorded: the privacy dashboard counts it.
+	_ = s.storeFor(sess).Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "message.read",
+		Target: fmt.Sprintf("%s/%d", m.Channel, m.ID), IP: clientIP(r)})
+
 	body := map[string]any{"message": m}
 
 	// The parsed view is what makes the viewer useful: field names instead of

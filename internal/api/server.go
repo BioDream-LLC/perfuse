@@ -474,6 +474,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/cms0057/carinbb", s.require(store.RoleViewer, s.handleCARIN))
 	mux.Handle("POST /api/cms0057/priorauth", s.require(store.RoleViewer, s.handlePDexPriorAuth))
 	mux.Handle("POST /api/cms0057/metrics", s.require(store.RoleViewer, s.handlePAMetrics))
+	mux.Handle("GET /api/dashboards/figures", s.require(store.RoleViewer, s.handleDashboardFigures))
 	mux.Handle("GET /api/pas/cases", s.require(store.RoleViewer, s.handlePASCases))
 	mux.Handle("GET /api/pas/cases/{id}", s.require(store.RoleViewer, s.handlePASCase))
 	mux.Handle("POST /api/pas/cases/{id}/decide", s.require(store.RoleEditor, s.handlePASDecide))

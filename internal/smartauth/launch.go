@@ -1,6 +1,7 @@
 package smartauth
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"slices"
@@ -105,12 +106,12 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	launch := newID()
-	s.mu.Lock()
-	if s.launches == nil {
-		s.launches = map[string]launchContext{}
+	lc := launchContext{Patient: patient, Encounter: r.PostForm.Get("encounter"), Expires: s.now().Add(launchLife)}
+	data, _ := json.Marshal(lc)
+	if err := s.grants().Put(r.Context(), kindLaunch, hashKey(launch), data, lc.Expires); err != nil {
+		problem(w, http.StatusServiceUnavailable, "The launch could not be recorded. Try again.")
+		return
 	}
-	s.launches[launch] = launchContext{patient: patient, encounter: r.PostForm.Get("encounter"), expires: s.now().Add(launchLife)}
-	s.mu.Unlock()
 	u, err := url.Parse(client.LaunchURL)
 	if err != nil {
 		problem(w, http.StatusInternalServerError, "The app's launch URL is not a URL.")

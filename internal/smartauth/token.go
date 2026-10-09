@@ -37,15 +37,14 @@ type Server struct {
 	Patients      func(ctx context.Context, search string) ([]PatientChoice, error)
 	PatientExists func(ctx context.Context, id string) bool
 
-	mu       sync.Mutex
-	used     map[string]time.Time // client assertion jti -> its expiry, to refuse a replay
-	pending  map[string]*pending
-	codes    map[string]*grantRecord
-	refresh  map[string]*grantRecord
-	launches map[string]launchContext
+	// Grants keeps codes, refresh tokens, revocations, used assertion ids and launch ids; in memory when nil.
+	Grants Grants
+
+	mu      sync.Mutex
+	pending map[string]*pending
+	pruned  time.Time
 
 	launchSessions map[string]*launchSession
-	revoked        map[string]time.Time // access token jti -> its expiry
 }
 
 // AuthorizeURL is where apps send people to sign in, empty when nobody can.
@@ -235,21 +234,16 @@ func (s *Server) assertedClient(ctx context.Context, form map[string][]string) (
 	if claims.ExpiresAt.After(s.now().Add(5 * time.Minute)) {
 		return nil, fmt.Errorf("the client assertion expires more than five minutes from now")
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.used == nil {
-		s.used = map[string]time.Time{}
-	}
-	for j, exp := range s.used {
-		if s.now().After(exp.Add(time.Minute)) {
-			delete(s.used, j)
-		}
-	}
 	key := iss + " " + claims.JTI
-	if _, seen := s.used[key]; seen {
+	// Kept a minute past the assertion's expiry, for clock skew, and claimed atomically so two requests racing with one
+	// assertion cannot both pass.
+	fresh, err := s.grants().Claim(ctx, kindJTI, hashKey(key), claims.ExpiresAt.Add(time.Minute), s.now())
+	if err != nil {
+		return nil, fmt.Errorf("the client assertion could not be recorded: %w", err)
+	}
+	if !fresh {
 		return nil, fmt.Errorf("the client assertion's jti was already used")
 	}
-	s.used[key] = claims.ExpiresAt
 	return client, nil
 }
 

@@ -6,6 +6,7 @@ import type {
   CertificateSnapshot,
   ConnectionCheck,
   DashboardDef,
+  DashboardFigure,
   DashboardsResponse,
   DashboardTile,
   DestinationStat,
@@ -32,6 +33,7 @@ interface Data {
   certificates?: CertificateSnapshot
   connections?: ConnectionCheck[]
   audit?: AuditEntry[]
+  figures?: Record<string, DashboardFigure>
   failures: Record<string, string>
 }
 
@@ -101,6 +103,10 @@ export function TeamDashboards() {
       run('certificates', async () => void (next.certificates = await api.certificates())),
       run('connections', async () => void (next.connections = (await api.connections(channel || undefined)).connections)),
       run('audit', async () => void (next.audit = (await api.listAudit(30)).entries)),
+      run('figures', async () => {
+        const ids = tiles.filter((t) => tileDefs.get(t)?.source === 'figures')
+        next.figures = (await api.dashboardFigures(ids)).figures
+      }),
     ])
     setData(next)
   }, [tiles, tileDefs, channel])
@@ -307,6 +313,7 @@ function age(seconds: number) {
 function TileBody({ tile, data, channel }: { tile: DashboardTile; data: Data; channel: string }) {
   const failed = data.failures[tile.source] ?? (tile.source === 'destinations' ? data.failures.stats : undefined)
   if (failed) return <p className="text-sm text-amber-300">Unavailable: {failed}</p>
+  if (tile.source === 'figures') return <FigureBody figure={data.figures?.[tile.id]} />
   switch (tile.id) {
     case 'channels': {
       const st = data.status
@@ -390,6 +397,32 @@ function TileBody({ tile, data, channel }: { tile: DashboardTile; data: Data; ch
       return <p className="text-sm text-slate-400">FHIR validation counts are in Metrics, and in the Grafana export of this dashboard.</p>
   }
   return null
+}
+
+const toneClass = { ok: 'text-emerald-300', warn: 'text-amber-300', bad: 'text-rose-300' }
+
+function FigureBody({ figure }: { figure?: DashboardFigure }) {
+  if (!figure) return <Spinner label="…" />
+  if (figure.unavailable) return <p className="text-sm text-amber-300">Unavailable: {figure.unavailable}</p>
+  return (
+    <div className="space-y-2" data-testid="dashboard-figure">
+      {figure.rows.length === 0 ? (
+        <p className="text-sm text-slate-400">{figure.empty ?? 'Nothing to show.'}</p>
+      ) : (
+        <table className="w-full text-sm">
+          <tbody>
+            {figure.rows.map((r, i) => (
+              <tr key={i} className="border-t border-slate-800 first:border-0">
+                <td className="whitespace-pre py-1 pr-3 text-slate-300">{r.label}</td>
+                <td className={`py-1 text-right font-mono ${r.tone ? toneClass[r.tone] : 'text-slate-200'}`}>{r.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {figure.note && <p className="text-xs text-slate-500">{figure.note}</p>}
+    </div>
+  )
 }
 
 function Connections({ checks }: { checks?: ConnectionCheck[] }) {

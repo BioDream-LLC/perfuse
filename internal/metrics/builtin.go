@@ -36,6 +36,8 @@ const (
 
 	// DatabasePollFailures counts polls that could not run at all.
 	DatabasePollFailures = "perfuse_database_poll_failures_total"
+	DICOMQueryPolls      = "perfuse_dicom_query_polls_total"
+	DICOMQueryFailures   = "perfuse_dicom_query_failures_total"
 
 	// SFTPFilesRead counts files collected from an SFTP server.
 	SFTPFilesRead = "perfuse_sftp_files_read_total"
@@ -107,6 +109,8 @@ func (c *Collector) registerBuiltins() {
 		{MessagesDelivered, KindCounter, UnitCount, "Messages delivered to every destination.", []string{"tenant", "channel"}},
 		{MessagesFiltered, KindCounter, UnitCount, "Messages a filter declined.", []string{"tenant", "channel"}},
 		{DatabaseQuarantined, KindCounter, UnitCount, "Rows a database source abandoned after failing every attempt. Alert on any increase.", []string{"tenant", "channel"}},
+		{DICOMQueryPolls, KindCounter, UnitCount, "Worklist and archive queries (C-FIND) a DICOM query source ran.", []string{"tenant", "channel"}},
+		{DICOMQueryFailures, KindCounter, UnitCount, "DICOM queries that failed: the archive could not be reached or refused the query.", []string{"tenant", "channel"}},
 		{DatabaseRowsRead, KindCounter, UnitCount, "Rows read from a database source.", []string{"tenant", "channel"}},
 		{DatabasePollFailures, KindCounter, UnitCount, "Database polls that could not run.", []string{"tenant", "channel"}},
 		{SFTPFilesRead, KindCounter, UnitCount, "Files collected from an SFTP server.", []string{"tenant", "channel"}},

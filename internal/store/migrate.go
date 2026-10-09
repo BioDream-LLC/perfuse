@@ -434,6 +434,22 @@ var migrations = []migration{
 			)`,
 		},
 	},
+	{
+		// The SMART authorization server's grants: authorization codes, refresh tokens, revoked access tokens and used client
+		// assertion ids. In memory, a restart signed everyone out and forgot every revocation. The key is a SHA-256 of the
+		// code or token, never the token itself, so a copy of the database grants nothing.
+		name: "smart-grants",
+		stmts: []string{
+			`CREATE TABLE IF NOT EXISTS smart_grants (
+				kind       TEXT NOT NULL,
+				key        TEXT NOT NULL,
+				data       TEXT NOT NULL,
+				expires_at TEXT NOT NULL,
+				PRIMARY KEY (kind, key)
+			)`,
+			`CREATE INDEX IF NOT EXISTS smart_grants_expiry ON smart_grants(expires_at)`,
+		},
+	},
 }
 
 // applyMigrations runs whatever has not run yet.

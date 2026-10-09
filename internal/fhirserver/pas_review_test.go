@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestTheReviewerQueueListsWhatIsPendedSoonestDueFirstAndDecidesIt(t *testing.T) {
@@ -43,5 +44,34 @@ func TestTheReviewerQueueListsWhatIsPendedSoonestDueFirstAndDecidesIt(t *testing
 	}
 	if all, _ := srv.Cases(ctx, false, 0); len(all) != 3 || !all[0].Pended {
 		t.Errorf("all requests, pended first: %+v", all)
+	}
+}
+
+func TestThePriorAuthorizationFiguresCountTimelinessAndDecisions(t *testing.T) {
+	f := newPASFixture(t)
+	pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("F1", "3"))
+	pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("F2", "2*10"))
+	urgent := strings.Replace(pasRequestJSON("F3", "2"), `"code":"normal"`, `"code":"stat"`, 1)
+	pasPost(t, f.h, "/Claim/$submit", urgent)
+	srv := NewServer(f.store, "http://example.test/fhir", nil)
+	srv.PAS = &PAS{Now: newPASFixtureClock}
+	fig, err := srv.Figures(context.Background(), newPASFixtureClock().AddDate(0, 0, -30))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fig.Standard.Requests != 2 || fig.Expedited.Requests != 1 || fig.Items != 3 {
+		t.Errorf("requests by priority: %+v", fig)
+	}
+	if fig.Standard.DecidedInTime != 1 || fig.Standard.PendingInTime != 1 || fig.Expedited.PendingInTime != 1 || fig.Standard.Overdue != 0 {
+		t.Errorf("timeliness: %+v %+v", fig.Standard, fig.Expedited)
+	}
+	if fig.Decisions["approved"] != 1 || fig.Decisions["pended"] != 2 {
+		t.Errorf("decisions: %v", fig.Decisions)
+	}
+	late := &PAS{Now: func() time.Time { return newPASFixtureClock().Add(8 * 24 * time.Hour) }}
+	srv.PAS = late
+	fig, _ = srv.Figures(context.Background(), newPASFixtureClock().AddDate(0, 0, -30))
+	if fig.Standard.Overdue != 1 || fig.Expedited.Overdue != 1 {
+		t.Errorf("eight days on, both pended requests are overdue: %+v %+v", fig.Standard, fig.Expedited)
 	}
 }

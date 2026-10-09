@@ -1701,6 +1701,8 @@ export function IconTheme(props: IconProps) {
  */
 export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   // Claims attachments and prior authorisation.
+  'Documents': IconDocuments,
+  'Decide': IconCheck,
   'Who and which claim': IconBilling,
   'Envelope': IconX12,
   'The document': IconDocuments,

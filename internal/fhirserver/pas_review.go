@@ -357,3 +357,110 @@ func pasTimeframe(expedited bool) time.Duration {
 	}
 	return 7 * 24 * time.Hour
 }
+
+// PASFigures are the prior authorization figures a payer's operations dashboard shows: how many requests met the CMS-0057
+// timeframe, how many are overdue now, and how the services asked for were answered.
+type PASFigures struct {
+	Since time.Time `json:"since"`
+	// Standard and Expedited count requests by where they stand against their timeframe.
+	Standard  PASTimeliness `json:"standard"`
+	Expedited PASTimeliness `json:"expedited"`
+	// Decisions counts items by their current review action: approved, partial, modified, denied, pended, cancelled.
+	Decisions map[string]int `json:"decisions"`
+	Items     int            `json:"items"`
+}
+
+// PASTimeliness is one priority's requests against its timeframe.
+type PASTimeliness struct {
+	Requests      int `json:"requests"`
+	DecidedInTime int `json:"decidedInTime"`
+	DecidedLate   int `json:"decidedLate"`
+	PendingInTime int `json:"pendingInTime"`
+	Overdue       int `json:"overdue"`
+	// MedianHours is the median time from receipt to the decision, over the decided requests; 0 when none was decided.
+	MedianHours float64 `json:"medianHours"`
+}
+
+// Figures computes PASFigures over the requests received since a time.
+func (s *Server) Figures(ctx context.Context, since time.Time) (*PASFigures, error) {
+	if err := s.pasReady(ctx); err != nil {
+		return nil, err
+	}
+	rows, err := s.Store.db.QueryContext(ctx, `SELECT r.id, r.version, r.pended, r.created, r.updated, r.request, p.response FROM pas_requests r
+		JOIN pas_responses p ON p.id = r.id AND p.version = r.version WHERE r.created >= ?`, since.UnixMilli())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	now := time.Now()
+	if s.PAS != nil {
+		now = s.PAS.now()
+	}
+	out := &PASFigures{Since: since, Decisions: map[string]int{}}
+	var stdHours, expHours []float64
+	for rows.Next() {
+		c, err := scanCase(rows)
+		if err != nil {
+			return nil, err
+		}
+		t := &out.Standard
+		if c.Expedited {
+			t = &out.Expedited
+		}
+		t.Requests++
+		switch {
+		case c.Pended && now.After(c.Due):
+			t.Overdue++
+		case c.Pended:
+			t.PendingInTime++
+		case !c.Updated.After(c.Due):
+			t.DecidedInTime++
+		default:
+			t.DecidedLate++
+		}
+		if !c.Pended {
+			h := c.Updated.Sub(c.Created).Hours()
+			if c.Expedited {
+				expHours = append(expHours, h)
+			} else {
+				stdHours = append(stdHours, h)
+			}
+		}
+		for _, it := range c.Items {
+			out.Items++
+			out.Decisions[decisionName(it.Code)]++
+		}
+	}
+	out.Standard.MedianHours, out.Expedited.MedianHours = median(stdHours), median(expHours)
+	return out, rows.Err()
+}
+
+func decisionName(code string) string {
+	switch code {
+	case "A1":
+		return "approved"
+	case "A2":
+		return "partially approved"
+	case "A6":
+		return "modified"
+	case "A3":
+		return "denied"
+	case "A4":
+		return "pended"
+	case "C":
+		return "cancelled"
+	}
+	return "other"
+}
+
+func median(v []float64) float64 {
+	if len(v) == 0 {
+		return 0
+	}
+	sort.Float64s(v)
+	m := len(v) / 2
+	if len(v)%2 == 1 {
+		return v[m]
+	}
+	return (v[m-1] + v[m]) / 2
+}

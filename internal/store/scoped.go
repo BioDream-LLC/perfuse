@@ -111,6 +111,11 @@ func (sc *Scoped) ListAudit(ctx context.Context, limit int) ([]AuditEntry, error
 	return sc.store.listAuditIn(ctx, sc.id, limit)
 }
 
+// AuditCounts counts this tenant's audit entries since a time by user and action, for the given actions only.
+func (sc *Scoped) AuditCounts(ctx context.Context, since time.Time, actions []string) ([]AuditCount, error) {
+	return sc.store.auditCountsIn(ctx, sc.id, since, actions)
+}
+
 // GetUserByID returns one of this tenant's users, and reports not found for anybody else's.
 //
 // Not found rather than forbidden, deliberately. Telling a caller that an identifier exists but belongs to somebody else

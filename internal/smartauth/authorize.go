@@ -1,9 +1,11 @@
 package smartauth
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"slices"
@@ -129,7 +131,7 @@ func (s *Server) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 			fail("invalid_request", "the launch is unknown or has expired; launch the app again")
 			return
 		}
-		p.launchPatient, p.launchEncounter = ctx.patient, ctx.encounter
+		p.launchPatient, p.launchEncounter = ctx.Patient, ctx.Encounter
 	} else {
 		p.scopes = slices.DeleteFunc(p.scopes, func(sc string) bool { return sc == "launch" })
 	}
@@ -137,6 +139,7 @@ func (s *Server) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		fail("invalid_scope", "none of the requested scopes is registered for this app")
 		return
 	}
+	s.pruneGrants(r.Context())
 	id := newID()
 	s.mu.Lock()
 	s.pruneLocked()
@@ -307,12 +310,10 @@ func (s *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 	g := &grantRecord{client: p.client, redirect: p.redirect, challenge: p.challenge, nonce: p.nonce, scopes: scopes,
 		patient: p.patient, encounter: p.launchEncounter, user: p.user, expires: s.now().Add(codeLife)}
 	code := newID()
-	s.mu.Lock()
-	if s.codes == nil {
-		s.codes = map[string]*grantRecord{}
+	if err := s.putGrant(r.Context(), kindCode, code, g); err != nil {
+		problem(w, http.StatusServiceUnavailable, "The authorization could not be recorded. Try again.")
+		return
 	}
-	s.codes[code] = g
-	s.mu.Unlock()
 	u, _ := url.Parse(p.redirect)
 	q := u.Query()
 	q.Set("code", code)
@@ -378,12 +379,9 @@ func (s *Server) authorizationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code := r.PostForm.Get("code")
-	s.mu.Lock()
-	g := s.codes[code]
-	delete(s.codes, code) // single use, whatever happens next
-	s.mu.Unlock()
+	g := s.grant(r.Context(), kindCode, code, true) // single use, whatever happens next
 	switch {
-	case g == nil || s.now().After(g.expires):
+	case g == nil:
 		tokenError(w, http.StatusBadRequest, "invalid_grant", "the code is unknown, used or expired")
 		return
 	case g.client != client:
@@ -453,12 +451,10 @@ func (s *Server) issueUserTokens(w http.ResponseWriter, g *grantRecord, refresh 
 		}
 		r := *g
 		r.expires = s.now().Add(life)
-		s.mu.Lock()
-		if s.refresh == nil {
-			s.refresh = map[string]*grantRecord{}
+		if err := s.putGrant(context.Background(), kindRefresh, refresh, &r); err != nil {
+			tokenError(w, http.StatusInternalServerError, "server_error", "the refresh token could not be recorded")
+			return
 		}
-		s.refresh[refresh] = &r
-		s.mu.Unlock()
 	}
 	if refresh != "" {
 		body["refresh_token"] = refresh
@@ -474,10 +470,8 @@ func (s *Server) refreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt := r.PostForm.Get("refresh_token")
-	s.mu.Lock()
-	g := s.refresh[rt]
-	s.mu.Unlock()
-	if g == nil || s.now().After(g.expires) || g.client != client {
+	g := s.grant(r.Context(), kindRefresh, rt, false)
+	if g == nil || g.client != client {
 		tokenError(w, http.StatusBadRequest, "invalid_grant", "the refresh token is unknown, expired or another client's")
 		return
 	}
@@ -540,7 +534,7 @@ type errClient string
 
 func (e errClient) Error() string { return string(e) }
 
-// pruneLocked drops expired authorizations, codes and refresh tokens. The caller holds s.mu.
+// pruneLocked drops expired sign-ins in progress. The caller holds s.mu. Expired grants are pruned by pruneGrants.
 func (s *Server) pruneLocked() {
 	now := s.now()
 	for k, p := range s.pending {
@@ -548,36 +542,34 @@ func (s *Server) pruneLocked() {
 			delete(s.pending, k)
 		}
 	}
-	for k, g := range s.codes {
-		if now.After(g.expires) {
-			delete(s.codes, k)
-		}
-	}
-	for k, g := range s.refresh {
-		if now.After(g.expires) {
-			delete(s.refresh, k)
-		}
-	}
-	for k, exp := range s.revoked {
-		if now.After(exp) {
-			delete(s.revoked, k)
-		}
-	}
 }
 
 type launchContext struct {
-	patient, encounter string
-	expires            time.Time
+	Patient   string    `json:"patient"`
+	Encounter string    `json:"encounter,omitempty"`
+	Expires   time.Time `json:"expires"`
 }
 
 // takeLaunch resolves an EHR launch id, once.
 func (s *Server) takeLaunch(id string) (launchContext, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	l, ok := s.launches[id]
-	delete(s.launches, id)
-	if !ok || s.now().After(l.expires) {
+	data, ok, err := s.grants().Take(context.Background(), kindLaunch, hashKey(id), s.now())
+	var l launchContext
+	if err != nil || !ok || json.Unmarshal(data, &l) != nil {
 		return launchContext{}, false
 	}
 	return l, true
+}
+
+// pruneGrants drops expired codes, refresh tokens and marks, at most once a minute.
+func (s *Server) pruneGrants(ctx context.Context) {
+	now := s.now()
+	s.mu.Lock()
+	due := now.Sub(s.pruned) >= time.Minute
+	if due {
+		s.pruned = now
+	}
+	s.mu.Unlock()
+	if due {
+		_ = s.grants().Prune(ctx, now)
+	}
 }

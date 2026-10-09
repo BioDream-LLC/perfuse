@@ -1209,6 +1209,8 @@ oidcDone:
 			if err != nil {
 				return err
 			}
+			// Codes, refresh tokens and revocations in the console database, so a restart signs nobody out.
+			as.Grants = st.SMARTGrants()
 			if smartKeys, err = oidc.NewStaticKeySet(as.Key.JWKS()); err != nil {
 				return err
 			}

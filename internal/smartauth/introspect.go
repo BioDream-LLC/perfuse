@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/biodream-llc/perfuse/internal/oidc"
 )
@@ -28,10 +27,7 @@ func (s *Server) verifyOwn(ctx context.Context, token string) (*oidc.Claims, boo
 
 // Revoked reports whether an access token was revoked; the FHIR endpoint asks on every request.
 func (s *Server) Revoked(jti string) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	_, ok := s.revoked[jti]
-	return ok
+	return s.marked(context.Background(), kindRevoked, jti)
 }
 
 func (s *Server) handleIntrospect(w http.ResponseWriter, r *http.Request) {
@@ -100,11 +96,9 @@ func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := r.PostForm.Get("token")
-	s.mu.Lock()
-	if g := s.refresh[token]; g != nil && g.client == client {
-		delete(s.refresh, token)
+	if g := s.grant(r.Context(), kindRefresh, token, false); g != nil && g.client == client {
+		_ = s.grants().Delete(r.Context(), kindRefresh, hashKey(token))
 	}
-	s.mu.Unlock()
 	if c, ok := s.verifyOwn(r.Context(), token); ok {
 		var owner struct {
 			ClientID string `json:"client_id"`
@@ -113,12 +107,11 @@ func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 			_ = json.Unmarshal(raw, &owner)
 		}
 		if owner.ClientID == client.ID {
-			s.mu.Lock()
-			if s.revoked == nil {
-				s.revoked = map[string]time.Time{}
+			if err := s.mark(r.Context(), kindRevoked, c.JTI, c.ExpiresAt); err != nil {
+				// Saying it worked when it did not would leave a token the caller believes is dead working for an hour.
+				tokenError(w, http.StatusServiceUnavailable, "temporarily_unavailable", "the revocation could not be recorded")
+				return
 			}
-			s.revoked[c.JTI] = c.ExpiresAt
-			s.mu.Unlock()
 		}
 	}
 	// RFC 7009: success whether or not the token was valid, so revocation cannot be used to test tokens.

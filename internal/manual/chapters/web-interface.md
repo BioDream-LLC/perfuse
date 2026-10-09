@@ -122,8 +122,24 @@ The **Connections** tile checks every networked destination in layers. It looks 
 where it is used, and reads the destination's last delivery and failure from real traffic. Each failure says what it means, for
 example "refused: the partner's engine is probably stopped", "timed out: a firewall or a VPN tunnel that is down", or "a
 certificate from an authority this server does not trust". Nothing is sent to the partner. Figures a dashboard needs that are not
-recorded yet are listed under **Not measured yet** instead of being drawn as empty tiles; VPN tunnel state and PAS turnaround are
-two of them.
+recorded yet are listed under **Not measured yet** instead of being drawn as empty tiles.
+
+The department dashboards compute their own figures on the server, and each one says what window and source it covers:
+
+- **Prior authorization:** PAS requests decided within CMS-0057's 72 hours (expedited) or 7 days (standard), decided late, waiting,
+  and overdue now, with the median time to decide. Also how the services asked for were answered (approved, modified, denied,
+  pended), as each stands now, over 30 days.
+- **Imaging:** objects received by C-STORE per modality, and those not delivered on. Also the routing delay per channel (the median
+  and the 95th percentile), C-FIND queries and failures per query channel, and imaging reports (an ORU whose OBR-24 is an imaging
+  section, or an MDM) that did not reach every destination.
+- **Revenue cycle:** 999 transaction sets accepted, accepted with errors and rejected, and 277CA claims accepted and rejected
+  (A3, A4, A6, A7, A8). Also 835 claims matched by patient account number to 837s sent through this server, and the commonest
+  rejection reasons.
+- **Laboratory:** result delivery time, from receipt to the last destination's acknowledgement, and critical results (OBX-8 HH, LL,
+  AA, > or <) that did not reach every destination.
+- **Privacy and security:** who opened messages, searched for patients or read prior authorizations in the console over 7 days, from
+  the audit log (opening a message is audited as `message.read`). Also each live API token and when it was last used; a token
+  unused for 90 days is flagged.
 
 ### FHIR lab
 

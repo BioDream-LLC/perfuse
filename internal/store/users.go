@@ -539,3 +539,36 @@ func requireOneRow(res sql.Result) error {
 	}
 	return nil
 }
+
+// AuditCount is how many times one user did one thing.
+type AuditCount struct {
+	Username string `json:"username"`
+	Action   string `json:"action"`
+	Count    int    `json:"count"`
+}
+
+// auditCountsIn counts one tenant's audit entries since a time by user and action, for the given actions only, most first.
+func (s *Store) auditCountsIn(ctx context.Context, tid tenant.ID, since time.Time, actions []string) ([]AuditCount, error) {
+	if len(actions) == 0 {
+		return nil, nil
+	}
+	args := []any{string(tid), formatTime(since)}
+	for _, a := range actions {
+		args = append(args, a)
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT username, action, COUNT(*) FROM audit WHERE tenant_id = ? AND at >= ? AND action IN (`+
+		strings.TrimSuffix(strings.Repeat("?,", len(actions)), ",")+`) GROUP BY username, action ORDER BY COUNT(*) DESC, username`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []AuditCount
+	for rows.Next() {
+		var c AuditCount
+		if err := rows.Scan(&c.Username, &c.Action, &c.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}

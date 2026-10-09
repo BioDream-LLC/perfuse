@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/metrics"
 	"strconv"
 	"strings"
 	"sync"
@@ -155,6 +156,7 @@ func (c *Channel) pollDICOMOnce(ctx context.Context, cfg *config.DICOMQuerySourc
 		client.TLS = tlsCfg
 	}
 
+	c.incMetric(metrics.DICOMQueryPolls)
 	results, err := client.Find(pollCtx, dicom.QueryRequest{
 		Level:       dicom.QueryLevel(cfg.ResolvedLevel()),
 		Match:       identifier,
@@ -164,6 +166,7 @@ func (c *Channel) pollDICOMOnce(ctx context.Context, cfg *config.DICOMQuerySourc
 	if err != nil {
 		// The mark is deliberately not advanced. A failed poll must re-ask the same period next time, or a transient
 		// archive outage becomes a permanent hole in what was collected.
+		c.incMetric(metrics.DICOMQueryFailures)
 		c.log.Error("the archive query failed", "archive", cfg.Address, "err", err)
 		return
 	}

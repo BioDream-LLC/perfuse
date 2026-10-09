@@ -45,3 +45,17 @@ test("the department summary says what is wrong in plain words", async ({ page }
   await expect(page.getByTestId("dashboard-tiles")).toContainText(/In plain words/);
   await expect(page.getByTestId("dashboard-tiles")).toContainText(/Everything is working|failed in the last day|would not load|\w/);
 });
+
+test("the department dashboards draw the server's figures", async ({ page }) => {
+  await page.goto("/");
+  await openTab(page, "Team dashboards");
+  const tiles = page.getByTestId("dashboard-tiles");
+  await page.getByLabel("Dashboard", { exact: true }).selectOption("prior-auth");
+  await expect(tiles).toContainText("Prior authorization timeframes, 30 days");
+  await expect(tiles).toContainText(/72 hours|No prior authorization requests in 30 days/, { timeout: 15_000 });
+  await page.getByLabel("Dashboard", { exact: true }).selectOption("lab");
+  await expect(tiles).toContainText(/critical result|Every critical result/, { timeout: 15_000 });
+  await page.getByLabel("Dashboard", { exact: true }).selectOption("privacy");
+  await expect(tiles).toContainText("API token use");
+  await expect(page.getByTestId("dashboard-figure").first()).toBeVisible();
+});
