@@ -209,6 +209,12 @@ is a note. What only the lab knows is never filled in: a result with no specimen
 because a guessed specimen in a report to public health is worse than a gap the state can ask about. Start with `processing: T`
 while the state's onboarding team tests the feed.
 
+What the lab got right is kept as it was sent. A child order (a susceptibility panel or a reflex test whose OBR-29 names its parent
+and which has no ORC of its own) goes as received, with no ORC or specimen invented for it, and a child with no reportable result
+of its own goes with its parent's, since a susceptibility means nothing without the culture it belongs to. A note after the PID
+stays with the patient, and ORC-14, the call-back phone number, is copied from OBR-17 when the lab only put it there. All 28 example
+messages ONC publishes for its ELR certification tool come out valid with no errors.
+
 MSH-2 is written as `^~\&#`, the five characters ELR Release 1's errata require and ONC's certification tool checks. If your
 state's guide shows the older four, add `encoding_characters: "^~\\&"` to the file.
 
@@ -231,6 +237,10 @@ The block applies on an HL7 v2 channel, to destinations that deliver the message
 Azure Blob, soap, the message brokers, or another channel); the channel refuses to load otherwise, and when the file is missing or
 lacks the sending facility, receiving application or receiving facility. The notes are written to the log with the message's
 control ID.
+
+The ELR file is the channel's companion, not a channel: `perfuse check` and the Channels screen skip it rather than reporting a
+channel that will not load. In the channel builder the same two settings are under the destination, in **Lab reporting (ELR
+2.5.1)**; the trigger codes field opens once an ELR file is named, and saving refuses a file that is not beside the channel.
 
 ## When the transport says yes and the message did not arrive
 

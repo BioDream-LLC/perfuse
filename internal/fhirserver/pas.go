@@ -1190,6 +1190,8 @@ func (s *Server) handlePASDecide(w http.ResponseWriter, r *http.Request) {
 		s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityError, "not-found", "no prior authorization request has ClaimResponse "+id)
 	case errors.Is(err, ErrNotPended):
 		s.writeOutcome(w, r, http.StatusConflict, fhir.SeverityError, "conflict", err.Error())
+	case errors.As(err, new(ErrBadReview)):
+		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "invalid", err.Error())
 	case err != nil:
 		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
 	default:

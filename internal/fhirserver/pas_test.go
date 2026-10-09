@@ -219,13 +219,18 @@ func TestAReviewersDecisionIsDeliveredToTheSubscribedProvider(t *testing.T) {
 		t.Fatalf("the PAS subscription should be active after its handshake: %s", f.status(t, "pas"))
 	}
 
-	_, submitted := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("T4", "2", "3"))
+	_, submitted := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("T4", "2*3", "3"))
 	id := str(claimResponseOf(t, submitted)["id"])
 	f.deliver(2)
 	if n := len(rcv.received()); n != 1 {
 		t.Fatalf("the synchronous answer is not an event; only the handshake should have been sent, got %d", n)
 	}
 
+	if code, _ := pasPost(t, f.h, "/Claim/$decide", `{"resourceType":"Parameters","parameter":[
+		{"name":"claimResponse","valueString":"`+id+`"},{"name":"decision","valueCode":"modify"},
+		{"name":"quantity","valueDecimal":999}]}`); code != http.StatusBadRequest {
+		t.Errorf("a modify certifying more than was asked for answered %d, not 400", code)
+	}
 	code, decided := pasPost(t, f.h, "/Claim/$decide", `{"resourceType":"Parameters","parameter":[
 		{"name":"claimResponse","valueString":"`+id+`"},{"name":"decision","valueCode":"approve"},
 		{"name":"reason","valueString":"Reviewed by the medical director."}]}`)
