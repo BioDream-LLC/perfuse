@@ -29,6 +29,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/peers"
 	"github.com/biodream-llc/perfuse/internal/settings"
+	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/tefca"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
@@ -231,6 +232,12 @@ type Server struct {
 	CRD *crd.Rules
 	// PAS is the FHIR server answering Da Vinci PAS, for the reviewer queue; nil or without PAS, the queue says it is off.
 	PAS *fhirserver.Server
+
+	// SMART is the built-in SMART authorization server, and the files its apps and people are kept in, which Users →
+	// SMART apps edits. Nil without -smart-clients.
+	SMART            *smartauth.Server
+	SMARTClientsFile string
+	SMARTUsersFile   string
 
 	// DTRPackage runs this server's own DTR $questionnaire-package on a Parameters body, for the console. Nil when no FHIR endpoint
 	// is served.
@@ -474,6 +481,11 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/cms0057/carinbb", s.require(store.RoleViewer, s.handleCARIN))
 	mux.Handle("POST /api/cms0057/priorauth", s.require(store.RoleViewer, s.handlePDexPriorAuth))
 	mux.Handle("POST /api/cms0057/metrics", s.require(store.RoleViewer, s.handlePAMetrics))
+	mux.Handle("GET /api/smart", s.require(store.RoleAdmin, s.handleSMARTDirectory))
+	mux.Handle("PUT /api/smart/clients/{id}", s.require(store.RoleAdmin, s.handleSMARTClientSave))
+	mux.Handle("DELETE /api/smart/clients/{id}", s.require(store.RoleAdmin, s.handleSMARTClientDelete))
+	mux.Handle("PUT /api/smart/users/{username}", s.require(store.RoleAdmin, s.handleSMARTUserSave))
+	mux.Handle("DELETE /api/smart/users/{username}", s.require(store.RoleAdmin, s.handleSMARTUserDelete))
 	mux.Handle("GET /api/dashboards/figures", s.require(store.RoleViewer, s.handleDashboardFigures))
 	mux.Handle("GET /api/pas/cases", s.require(store.RoleViewer, s.handlePASCases))
 	mux.Handle("GET /api/pas/cases/{id}", s.require(store.RoleViewer, s.handlePASCase))

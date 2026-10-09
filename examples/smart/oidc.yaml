@@ -1,0 +1,8 @@
+# serve -smart-oidc examples/smart/oidc.yaml: people sign in to authorize SMART apps at your identity provider.
+# Register <public URL>/auth/oidc/callback as a redirect URI there. Each person must be in the -smart-users file with
+# oidc_subject set to the ID token's sub; that file still says which FHIR user they are.
+issuer: https://login.example.org/realms/clinic
+client_id: perfuse-smart
+client_secret_env: PERFUSE_SMART_OIDC_SECRET   # or client_secret_file: /etc/perfuse/smart-oidc.secret
+label: Example Clinic ID
+scopes: [openid]

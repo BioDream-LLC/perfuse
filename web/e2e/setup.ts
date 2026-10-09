@@ -219,6 +219,12 @@ export default async function globalSetup() {
   // The signing certificate is reused from the pair written above. It is not the certificate any real identity provider would use,
   // and it does not need to be: nothing here signs an assertion, and what these tests check is that the screen reads and writes the
   // file. A certificate that parses is enough, and one that does not would be refused at startup - which is the point of that check.
+  // The built-in SMART authorization server, so Users → SMART apps edits real files.
+  const smartClients = join(dir, "smart-clients.yaml");
+  writeFileSync(smartClients, 'clients:\n  - id: member-app\n    name: Member app\n    kind: public\n    redirect_uris: ["https://app.example.org/cb"]\n    scopes: [openid, fhirUser, launch/patient, "patient/*.rs"]\n');
+  const smartUsers = join(dir, "smart-users.yaml");
+  writeFileSync(smartUsers, "users: []\n");
+
   const samlConfig = join(dir, "saml.yaml");
   writeFileSync(
     samlConfig,
@@ -326,6 +332,9 @@ export default async function globalSetup() {
       "-fhir-bulk-export",
       // Da Vinci PAS, decided by the same example rules, so the reviewer queue has pended requests to show and decide.
       "-pas",
+      "-smart-clients", smartClients,
+      "-smart-users", smartUsers,
+      "-smart-key", join(dir, "smart.key"),
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
   );

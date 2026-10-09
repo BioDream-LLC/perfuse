@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 023de0f</p>
+<p class="version">version 0.1 · d1bd8a8</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2722,6 +2722,8 @@ rules:
 <p><strong>Signing in as a client</strong>: DTR and PAS clients reach the payer with SMART Backend Services - a signed JWT exchanged for a token at the payer&#39;s authorization server. Point Perfuse at that server with <code>-smart-issuer</code> (and <code>-smart-jwks</code> if its address does not resolve from Perfuse), and pass <code>-smart-backend-services</code> so the discovery document says so. The Inferno DTR suite passes this way with Keycloak as the authorization server.</p>
 <p>Perfuse can be that authorization server itself: <code>serve -fhir -smart-clients clients.yaml</code> issues Backend Services tokens at <code>/auth/token</code> to the clients listed, each with the public keys it signs its assertions with and the system scopes it may be granted, and the FHIR endpoint accepts them. No separate identity server is needed for a payer&#39;s machine-to-machine clients.</p>
 <p>With <code>-smart-users users.yaml</code> as well, members and clinicians sign in there to authorize apps, which the Patient Access API needs: the app sends the person to <code>/auth/authorize</code>, they sign in, a clinician chooses the patient, and both see what the app asks for and can untick any of it. A member is only ever given their own record, whatever the app asks for. Each person in the file names the FHIR resource they are, <code>Patient/…</code> or <code>Practitioner/…</code>, and a password hash from <code>perfuse smart hash</code>; the password itself is never written down.</p>
+<p>People can sign in at the organisation&#39;s own identity provider instead: <code>-smart-oidc oidc.yaml</code> names it (issuer, client id and where the secret is), and the sign-in page offers &#34;Sign in with&#34; it beside the password. Each person is linked by the provider&#39;s subject, <code>oidc_subject</code> in the users file, so the file still decides who may authorize apps and which FHIR resource they are; an account linked to nobody is refused. Codes, refresh tokens and revocations are kept in the database, so a restart signs nobody out.</p>
+<p><strong>Users → SMART apps</strong> in the console lists the registered apps and the people, and adds, edits and removes them. Each save is checked as the files are at start-up, written to them, and used at once. A confidential app saved without a secret is given one, shown once; a password is set there and never shown back.</p>
 <h3 id="s16-8-deciding-prior-authorisation-requests-pas"><span class="num">16.8</span> Deciding prior authorisation requests: PAS</h3>
 <p><code>serve -fhir -pas -crd-rules rules.yaml</code> answers Da Vinci PAS 2.2.1 at <code>POST /fhir/Claim/$submit</code> and <code>POST /fhir/Claim/$inquire</code>. The decisions come from the same rules file as CRD&#39;s answers, so the order a clinician is told needs authorisation is decided by the rule that said so:</p>
 <pre class="code lang-yaml"><code>  - description: Physical therapy

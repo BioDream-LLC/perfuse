@@ -23,7 +23,7 @@ type launchSession struct {
 
 func (s *Server) launchApps() []*Client {
 	var out []*Client
-	for _, c := range s.Clients {
+	for _, c := range s.clientList() {
 		if c.LaunchURL != "" && c.Kind != KindBackend {
 			out = append(out, c)
 		}
@@ -46,7 +46,7 @@ func (s *Server) handleLaunchSignIn(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusBadRequest, "The form could not be read.")
 		return
 	}
-	u := s.Users[r.PostForm.Get("username")]
+	u := s.user(r.PostForm.Get("username"))
 	ok := false
 	if u != nil {
 		ok, _ = store.VerifyPassword(u.PasswordHash, r.PostForm.Get("password"))
@@ -95,7 +95,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		s.showLaunchChoice(w, r, id, ls.user)
 		return
 	}
-	client := s.Clients[r.PostForm.Get("app")]
+	client := s.client(r.PostForm.Get("app"))
 	patient := r.PostForm.Get("patient")
 	if own := ls.user.patientID(); own != "" {
 		patient = own // a member launches with their own record, whatever the form says

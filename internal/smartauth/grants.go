@@ -163,8 +163,8 @@ func (s *Server) grant(ctx context.Context, kind, raw string, take bool) *grantR
 	if json.Unmarshal(data, &sg) != nil {
 		return nil
 	}
-	client := s.Clients[sg.Client]
-	user := s.Users[sg.User]
+	client := s.client(sg.Client)
+	user := s.user(sg.User)
 	if client == nil || user == nil {
 		return nil
 	}

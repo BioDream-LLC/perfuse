@@ -1380,6 +1380,15 @@ export const api = {
     request<{ connections: ConnectionCheck[]; checkedAt: string }>('GET', `/api/connections${channel ? `?channel=${encodeURIComponent(channel)}` : ''}`),
 
   /** dashboards lists the persona dashboards, which one this person is given and why, and their saved view. */
+  /** smartDirectory is the built-in SMART authorization server's apps and people; enabled false when it is not running. */
+  smartDirectory: () => request<SMARTDirectory>('GET', '/api/smart'),
+  saveSMARTClient: (id: string, c: Partial<SMARTClient> & { secret?: string }) =>
+    request<{ id: string; secret?: string }>('PUT', `/api/smart/clients/${encodeURIComponent(id)}`, c),
+  deleteSMARTClient: (id: string) => request<unknown>('DELETE', `/api/smart/clients/${encodeURIComponent(id)}`),
+  saveSMARTUser: (username: string, u: Partial<SMARTUser> & { password?: string }) =>
+    request<{ username: string }>('PUT', `/api/smart/users/${encodeURIComponent(username)}`, u),
+  deleteSMARTUser: (username: string) => request<unknown>('DELETE', `/api/smart/users/${encodeURIComponent(username)}`),
+
   /** dashboardFigures computes the server-side figures of these tiles: aggregates only, never a message or a patient. */
   dashboardFigures: (tiles: string[]) =>
     request<{ figures: Record<string, DashboardFigure> }>('GET', `/api/dashboards/figures?tiles=${encodeURIComponent(tiles.join(','))}`),
@@ -2668,6 +2677,37 @@ export interface PASection {
   deniedAfterAppeal: PACount
   turnaround: { meanHours: number; medianHours: number; mean: string; median: string }
   deadlineLabel: string
+}
+
+/** An app registered with the built-in SMART authorization server. */
+export interface SMARTClient {
+  id: string
+  name?: string
+  kind: 'public' | 'confidential-symmetric' | 'confidential-asymmetric' | 'backend'
+  scopes: string[]
+  redirectUris?: string[]
+  launchUrl?: string
+  jwksUri?: string
+  jwks?: Record<string, unknown>
+  hasSecret?: boolean
+}
+
+/** A person who signs in to authorize SMART apps. */
+export interface SMARTUser {
+  username: string
+  name?: string
+  fhirUser: string
+  oidcSubject?: string
+  hasPassword: boolean
+}
+
+export interface SMARTDirectory {
+  enabled: boolean
+  issuer?: string
+  clients?: SMARTClient[]
+  users?: SMARTUser[]
+  signIn?: boolean
+  upstream?: { label: string; issuer: string; redirectUri: string }
 }
 
 /** A dashboard figure: rows of a label and a value, toned ok, warn or bad. */

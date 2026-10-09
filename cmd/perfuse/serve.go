@@ -37,6 +37,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/peers"
 	"github.com/biodream-llc/perfuse/internal/queue"
 	"github.com/biodream-llc/perfuse/internal/settings"
+	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/web"
@@ -216,6 +217,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"run Perfuse's own SMART authorization server at /auth for the apps registered in this YAML file")
 	smartUsers := fset.String("smart-users", "",
 		"with -smart-clients, the people who may sign in to authorize apps (YAML: username, password_hash, fhir_user)")
+	smartOIDC := fset.String("smart-oidc", "",
+		"with -smart-users, let people sign in at this OpenID Connect provider (YAML: issuer, client_id, client_secret_file or client_secret_env, label); each is linked by oidc_subject")
 	smartKey := fset.String("smart-key", "smart-signing.key",
 		"the built-in authorization server's RSA signing key (PEM, mode 0600), created if missing")
 	smartBackend := fset.Bool("smart-backend-services", false,
@@ -1211,6 +1214,16 @@ oidcDone:
 			}
 			// Codes, refresh tokens and revocations in the console database, so a restart signs nobody out.
 			as.Grants = st.SMARTGrants()
+			if *smartOIDC != "" {
+				if *smartUsers == "" {
+					return errors.New("-smart-oidc needs -smart-users: the users file links each provider account to a FHIR user")
+				}
+				if as.Upstream, err = smartauth.LoadUpstream(context.Background(), *smartOIDC); err != nil {
+					return err
+				}
+				log.Info("SMART sign-in at an identity provider", "issuer", as.Upstream.Provider.Issuer, "redirect", as.UpstreamRedirect())
+			}
+			srv.SMART, srv.SMARTClientsFile, srv.SMARTUsersFile = as, *smartClients, *smartUsers
 			if smartKeys, err = oidc.NewStaticKeySet(as.Key.JWKS()); err != nil {
 				return err
 			}

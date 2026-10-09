@@ -18,6 +18,9 @@ type User struct {
 	// FHIRUser is the FHIR resource the person is, Patient/123 or Practitioner/456. A Patient user only ever gets their own
 	// record, whatever scopes an app asks for.
 	FHIRUser string `yaml:"fhir_user"`
+	// OIDCSubject links the person to their account at the upstream identity provider (-smart-oidc): the ID token's sub,
+	// which is stable, never an email that can be reassigned. Either this or a password_hash is needed.
+	OIDCSubject string `yaml:"oidc_subject,omitempty"`
 }
 
 // Users is keyed by username.
@@ -45,8 +48,15 @@ func LoadUsers(path string) (Users, error) {
 			return nil, fmt.Errorf("%s has no username", where)
 		case out[u.Username] != nil:
 			return nil, fmt.Errorf("%s: the username is used twice", where)
-		case !strings.HasPrefix(u.PasswordHash, "pbkdf2-sha256$"):
+		case u.PasswordHash == "" && u.OIDCSubject == "":
+			return nil, fmt.Errorf("%s: needs a password_hash (from perfuse smart hash) or an oidc_subject", where)
+		case u.PasswordHash != "" && !strings.HasPrefix(u.PasswordHash, "pbkdf2-sha256$"):
 			return nil, fmt.Errorf("%s: password_hash must be the output of perfuse smart hash", where)
+		}
+		for _, o := range out {
+			if u.OIDCSubject != "" && o.OIDCSubject == u.OIDCSubject {
+				return nil, fmt.Errorf("%s: oidc_subject is also %s's", where, o.Username)
+			}
 		}
 		typ, id, ok := strings.Cut(u.FHIRUser, "/")
 		if !ok || id == "" || (typ != "Patient" && typ != "Practitioner" && typ != "PractitionerRole" && typ != "RelatedPerson") {

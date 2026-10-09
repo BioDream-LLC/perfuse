@@ -1700,6 +1700,9 @@ export function IconTheme(props: IconProps) {
  * seventy-ninth icon for one heading.
  */
 export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
+  // The SMART authorization server.
+  'SMART apps': IconKey,
+  'People who authorize apps': IconUsers,
   // Claims attachments and prior authorisation.
   'Documents': IconDocuments,
   'Decide': IconCheck,

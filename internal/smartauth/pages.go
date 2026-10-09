@@ -20,7 +20,9 @@ fieldset{border:1px solid #767676;padding:.5rem 1rem}li{margin:.25rem 0}</style>
 <form method="post" action="signin"><input type="hidden" name="req" value="{{.Req}}">
 <label for="username">Username</label><input type="text" id="username" name="username" autocomplete="username" required autofocus>
 <label for="password">Password</label><input type="password" id="password" name="password" autocomplete="current-password" required>
-<button type="submit">Sign in</button></form>{{template "foot"}}{{end}}
+<button type="submit">Sign in</button></form>
+{{with .Upstream}}<form method="post" action="oidc/start"><input type="hidden" name="req" value="{{$.Req}}">
+<button type="submit">Sign in with {{.}}</button></form>{{end}}{{template "foot"}}{{end}}
 
 {{define "patient"}}{{template "head" "Choose a patient"}}<h1>Choose a patient</h1>
 <p><strong>{{.App}}</strong> works with one patient's records. Choose whose.</p>

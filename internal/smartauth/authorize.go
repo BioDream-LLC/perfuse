@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/oidc"
 	"net/http"
 	"net/url"
 	"slices"
@@ -41,6 +42,8 @@ type pending struct {
 	patient                           string
 	failures                          int
 	expires                           time.Time
+	// upstream is the sign-in at the -smart-oidc provider in progress, if one was started.
+	upstream *oidc.AuthRequest
 }
 
 // grantRecord is what a code or refresh token stands for.
@@ -94,7 +97,7 @@ func (s *Server) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		}
 		q = r.PostForm
 	}
-	client := s.Clients[q.Get("client_id")]
+	client := s.client(q.Get("client_id"))
 	if client == nil || client.Kind == KindBackend {
 		problem(w, http.StatusBadRequest, "This app is not registered to sign people in here.")
 		return
@@ -148,7 +151,7 @@ func (s *Server) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 	s.pending[id] = p
 	s.mu.Unlock()
-	s.render(w, "signin", map[string]any{"Req": id, "App": appName(client)})
+	s.render(w, "signin", map[string]any{"Req": id, "App": appName(client), "Upstream": s.upstreamLabel()})
 }
 
 func appName(c *Client) string {
@@ -186,7 +189,7 @@ func (s *Server) handleSignIn(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
 		return
 	}
-	u := s.Users[r.PostForm.Get("username")]
+	u := s.user(r.PostForm.Get("username"))
 	ok := false
 	if u != nil {
 		ok, _ = store.VerifyPassword(u.PasswordHash, r.PostForm.Get("password"))
@@ -207,7 +210,8 @@ func (s *Server) handleSignIn(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		s.render(w, "signin", map[string]any{"Req": id, "App": appName(p.client), "Error": "That username and password did not match."})
+		s.render(w, "signin", map[string]any{"Req": id, "App": appName(p.client), "Error": "That username and password did not match.",
+			"Upstream": s.upstreamLabel()})
 		return
 	}
 	s.mu.Lock()
@@ -510,7 +514,7 @@ func (s *Server) authenticatedClient(r *http.Request) (*Client, error) {
 	} else {
 		id, secret = r.PostForm.Get("client_id"), r.PostForm.Get("client_secret")
 	}
-	c := s.Clients[id]
+	c := s.client(id)
 	if c == nil {
 		return nil, errClient("unknown client")
 	}

@@ -37,6 +37,9 @@ type Server struct {
 	Patients      func(ctx context.Context, search string) ([]PatientChoice, error)
 	PatientExists func(ctx context.Context, id string) bool
 
+	// Upstream, when set, offers sign-in at the organisation's identity provider beside the password.
+	Upstream *Upstream
+
 	// Grants keeps codes, refresh tokens, revocations, used assertion ids and launch ids; in memory when nil.
 	Grants Grants
 
@@ -49,7 +52,7 @@ type Server struct {
 
 // AuthorizeURL is where apps send people to sign in, empty when nobody can.
 func (s *Server) AuthorizeURL() string {
-	if len(s.Users) == 0 {
+	if !s.signIn() {
 		return ""
 	}
 	return strings.TrimRight(s.Issuer, "/") + "/authorize"
@@ -71,12 +74,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /token", s.handleToken)
 	mux.HandleFunc("POST /introspect", s.handleIntrospect)
 	mux.HandleFunc("POST /revoke", s.handleRevoke)
-	if len(s.Users) > 0 {
+	if s.signIn() {
 		mux.HandleFunc("GET /authorize", s.handleAuthorize)
 		mux.HandleFunc("POST /authorize", s.handleAuthorize)
 		mux.HandleFunc("POST /signin", s.handleSignIn)
 		mux.HandleFunc("POST /patient", s.handlePatient)
 		mux.HandleFunc("POST /consent", s.handleConsent)
+		if s.Upstream != nil {
+			mux.HandleFunc("POST /oidc/start", s.handleUpstreamStart)
+			mux.HandleFunc("GET /oidc/callback", s.handleUpstreamCallback)
+		}
 		mux.HandleFunc("GET /launch", s.handleLaunchPage)
 		mux.HandleFunc("POST /launch/signin", s.handleLaunchSignIn)
 		mux.HandleFunc("POST /launch/choose", s.handleLaunch)
@@ -216,7 +223,7 @@ func (s *Server) assertedClient(ctx context.Context, form map[string][]string) (
 	if err != nil {
 		return nil, err
 	}
-	client := s.Clients[iss]
+	client := s.client(iss)
 	if client == nil || client.keys == nil {
 		return nil, fmt.Errorf("no client %q with registered keys", iss)
 	}

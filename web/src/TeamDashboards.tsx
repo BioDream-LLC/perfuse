@@ -420,7 +420,7 @@ function FigureBody({ figure }: { figure?: DashboardFigure }) {
           </tbody>
         </table>
       )}
-      {figure.note && <p className="text-xs text-slate-500">{figure.note}</p>}
+      {figure.note && figure.rows.length > 0 && <p className="text-xs text-slate-500">{figure.note}</p>}
     </div>
   )
 }

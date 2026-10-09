@@ -130,6 +130,7 @@ import { NAV_GROUPS, DIRECT_TABS, GroupMenu, type NavItem } from './NavGroups'
 import { Passkeys } from './Passkeys'
 import { explainPasskeyError, passkeysSupported, usePasskey } from './passkey'
 import { Tokens } from './Tokens'
+import { SMARTApps } from './SMARTApps'
 import { TEFCAView } from './TEFCAView'
 
 function Login() {
@@ -913,6 +914,7 @@ function Console() {
             <Passkeys />
             <Users />
             <Tokens />
+            <SMARTApps />
           </div>
         )}
         {tab === 'audit' && <Audit />}
