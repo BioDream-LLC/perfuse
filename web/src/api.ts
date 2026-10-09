@@ -2732,7 +2732,7 @@ export interface PASCase {
   updated: string
   expedited: boolean
   due: string
-  items: { sequence: number; service: string; quantity?: number; code: string; display: string; note?: string }[]
+  items: { sequence: number; service: string; system?: string; quantity?: number; code: string; display: string; note?: string }[]
   asked?: string[]
   attachments: {
     id: number

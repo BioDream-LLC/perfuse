@@ -40,8 +40,10 @@ type PASCase struct {
 
 // PASCaseItem is one service asked for and where it stands.
 type PASCaseItem struct {
-	Sequence int     `json:"sequence"`
-	Service  string  `json:"service"`
+	Sequence int    `json:"sequence"`
+	Service  string `json:"service"`
+	// System is the code system of the service asked for, which a service approved instead is normally coded in too.
+	System   string  `json:"system,omitempty"`
 	Quantity float64 `json:"quantity,omitempty"`
 	Code     string  `json:"code"`
 	Display  string  `json:"display"`
@@ -149,7 +151,10 @@ func (s *Server) Cases(ctx context.Context, pendedOnly bool, limit int) ([]PASCa
 		return nil, err
 	}
 	for i := range out {
-		out[i].Attachments = counts[out[i].ID]
+		// An empty list, not null: the queue counts them, and a case nobody has sent a document for is the usual one.
+		if out[i].Attachments = counts[out[i].ID]; out[i].Attachments == nil {
+			out[i].Attachments = []PASAttachment{}
+		}
 		out[i].Request, out[i].Response = nil, nil
 	}
 	sort.SliceStable(out, func(i, j int) bool {
@@ -289,6 +294,9 @@ func scanCase(row rowScanner) (*PASCase, error) {
 		fmt.Sscan(seq, &item.Sequence)
 		if asked := requested[seq]; asked != nil {
 			item.Service = codingLabel(asMapAny(asked["productOrService"]))
+			if c := asSliceAny(asMapAny(asked["productOrService"])["coding"]); len(c) > 0 {
+				item.System = str(asMapAny(c[0])["system"])
+			}
 			item.Quantity, _ = asMapAny(asked["quantity"])["value"].(float64)
 		}
 		item.Code, item.Display = reviewCode(im)

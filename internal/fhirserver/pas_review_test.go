@@ -2,6 +2,7 @@ package fhirserver
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +22,9 @@ func TestTheReviewerQueueListsWhatIsPendedSoonestDueFirstAndDecidesIt(t *testing
 	if err != nil || len(cases) != 2 {
 		t.Fatalf("two pended requests expected: %v %+v", err, cases)
 	}
+	if b, _ := json.Marshal(cases[0]); !strings.Contains(string(b), `"attachments":[]`) {
+		t.Errorf("a case with no documents yet lists them as null, which the reviewer queue cannot count: %s", b)
+	}
 	if cases[0].Trace != "Q3" || !cases[0].Expedited || cases[0].Due.Sub(cases[0].Created).Hours() != 72 {
 		t.Errorf("the expedited request is due first, in 72 hours: %+v", cases[0])
 	}
@@ -34,6 +38,11 @@ func TestTheReviewerQueueListsWhatIsPendedSoonestDueFirstAndDecidesIt(t *testing
 	}
 	if _, err := srv.Review(ctx, one.ID, PASReview{Decision: "modify"}); err == nil {
 		t.Error("modify with nothing modified was accepted")
+	}
+	for _, units := range []float64{10, 25} {
+		if _, err := srv.Review(ctx, one.ID, PASReview{Decision: "modify", Quantity: units}); err == nil {
+			t.Errorf("a modify certifying %v of the 10 units asked for was accepted", units)
+		}
 	}
 	out, err := srv.Review(ctx, one.ID, PASReview{Decision: "modify", Quantity: 4, Reason: "Four, then review.", ReviewerNPI: "1234567893"})
 	if err != nil || actionCodes(claimResponseOf(t, out)) != "A6" {

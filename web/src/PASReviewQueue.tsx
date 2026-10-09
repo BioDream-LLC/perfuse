@@ -98,7 +98,7 @@ export function PASReviewQueue() {
                     {c.pended && (
                       <span className={`mt-1 block text-xs ${due.late ? 'text-rose-300' : 'text-slate-400'}`}>
                         {due.text}
-                        {c.attachments.length > 0 && ` · ${c.attachments.length} document${c.attachments.length === 1 ? '' : 's'} received`}
+                        {(c.attachments?.length ?? 0) > 0 && ` · ${c.attachments.length} document${c.attachments.length === 1 ? '' : 's'} received`}
                       </span>
                     )}
                   </button>
@@ -120,6 +120,12 @@ export function PASReviewQueue() {
   )
 }
 
+// fewest is the most a modify may certify: one less than the smallest quantity asked for, or nothing when none was given.
+function fewest(c: PASCase): number | undefined {
+  const asked = c.items.map((i) => i.quantity ?? 0).filter((q) => q > 0)
+  return asked.length ? Math.min(...asked) - 1 : undefined
+}
+
 function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
   const [c, setC] = useState<PASCase | null>(null)
   const [error, setError] = useState<UiError | null>(null)
@@ -127,7 +133,7 @@ function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
   const [reason, setReason] = useState('')
   const [npi, setNpi] = useState('')
   const [quantity, setQuantity] = useState('')
-  const [altSystem, setAltSystem] = useState('https://codesystem.x12.org/005010/1365')
+  const [altSystem, setAltSystem] = useState('')
   const [altCode, setAltCode] = useState('')
   const [chosen, setChosen] = useState<number[]>([])
   const [done, setDone] = useState<string | null>(null)
@@ -135,7 +141,11 @@ function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
   const [showBundles, setShowBundles] = useState(false)
 
   useEffect(() => {
-    api.pasCase(id).then(setC, (e) => setError(toError(e)))
+    api.pasCase(id).then((got) => {
+      setC(got)
+      // A service approved instead is coded like the one asked for (HCPCS, CPT), so that is where the system starts.
+      setAltSystem((cur) => cur || got.items.find((i) => i.system)?.system || '')
+    }, (e) => setError(toError(e)))
   }, [id])
 
   async function decide() {
@@ -196,7 +206,7 @@ function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
         title="Documents"
         description={c.asked?.length ? `Asked for: ${c.asked.join(', ')}` : 'The response asked for no documents.'}
       >
-        {c.attachments.length === 0 ? (
+        {!c.attachments?.length ? (
           <p className="text-sm text-slate-400">None received yet.</p>
         ) : (
           <ul className="space-y-2 text-sm" data-testid="pas-documents">
@@ -250,7 +260,8 @@ function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
             {decision === 'modify' && (
               <div className="grid gap-3 sm:grid-cols-3">
                 <Field label="Units certified" hint="Fewer than asked.">
-                  <input className="input" type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                  <input className="input" type="number" min={1}
+                    max={fewest(c)} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                 </Field>
                 <Field label="Approved instead: code system">
                   <input className="input" value={altSystem} onChange={(e) => setAltSystem(e.target.value)} />

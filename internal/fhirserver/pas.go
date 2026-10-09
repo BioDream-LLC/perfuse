@@ -1219,6 +1219,9 @@ func (s *Server) decidePAS(ctx context.Context, id string, d itemDecision, items
 		return nil, err
 	}
 	req, _ := readPASRequest(stored, false)
+	if err := certifiesFewer(d, items, req); err != nil {
+		return nil, err
+	}
 	var bundle map[string]any
 	if err := json.Unmarshal([]byte(raw), &bundle); err != nil {
 		return nil, err
@@ -1260,6 +1263,27 @@ func (s *Server) decidePAS(ctx context.Context, id string, d itemDecision, items
 //
 // req is the request as it was submitted, which a modified decision needs: what is certified for fewer units, or approved
 // instead, is described from the requested item.
+// certifiesFewer refuses a modify that certifies as many units as were asked for or more: that is an approval, or more than the
+// provider requested, and recording it as a modification would tell the provider their request was cut when it was not.
+func certifiesFewer(d itemDecision, items map[int]bool, req *pasRequest) error {
+	if d.answer.AllowedQuantity <= 0 || req == nil {
+		return nil
+	}
+	for _, it := range asSliceAny(req.claim["item"]) {
+		item := asMapAny(it)
+		seq, _ := item["sequence"].(float64)
+		if len(items) > 0 && !items[int(seq)] {
+			continue
+		}
+		asked, _ := asMapAny(item["quantity"])["value"].(float64)
+		if asked > 0 && d.answer.AllowedQuantity >= asked {
+			return ErrBadReview{fmt.Sprintf("item %v asked for %v units, so certifying %v is not a modification: approve it, or certify fewer",
+				seq, asked, d.answer.AllowedQuantity)}
+		}
+	}
+	return nil
+}
+
 func applyDecision(bundle map[string]any, d itemDecision, items map[int]bool, reviewerNPI string, now time.Time, req *pasRequest) (changed, stillPended bool) {
 	var cr map[string]any
 	for _, e := range asSliceAny(bundle["entry"]) {
