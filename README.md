@@ -197,7 +197,7 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2">The exports apply the rule's exclusions on the way out: <b>no cost-sharing or provider remittances</b> to providers or other payers, and <b>no denied prior authorizations</b> to another payer</td></tr>
 <tr><td colspan="2"><b>The yearly prior authorization metrics page</b>, in the layout of CMS's own template — approvals, denials, extensions, appeals, mean and median turnaround with the unit always written — as a self-contained public page, CSV or JSON</td></tr>
 <tr><td colspan="2">Submits prior authorization requests to payer FHIR APIs, and <b>maps Da Vinci PAS to and from the X12 278</b>, so a payer on either side is reachable</td></tr>
-<tr><td colspan="2">Or be the payer: a <b>Da Vinci PAS 2.2.1 server</b> with <code>Claim/$submit</code>, <code>$inquire</code> and a reviewer's <code>$decide</code>, pended decisions delivered by subscription. <b>Inferno PAS Server suite 82 of 84</b>; the two left are must-support elements PAS's own extension contexts forbid there</td></tr>
+<tr><td colspan="2">Or be the payer: a <b>Da Vinci PAS 2.2.1 server</b> with <code>Claim/$submit</code>, <code>$inquire</code> and a reviewer's <code>$decide</code>, pended decisions delivered by subscription, and a <b>reviewer queue</b> in the console that reads each pended request with the documents sent for it (<code>$submit-attachment</code>) and approves, denies or certifies fewer units. <b>Inferno PAS Server suite 82 of 84</b>; the two left are must-support elements PAS's own extension contexts forbid there</td></tr>
 <tr><td colspan="2">Da Vinci <b>CRD 2.2.1</b> over CDS Hooks and <b>DTR 2.2.0</b> questionnaire packages, so the order, its documentation and the request all have an answer. Drugs are out of scope, as they are in the rule</td></tr>
 <tr><td colspan="2">Inferno's <b>CRD Server 2.2.1 suite passes</b>, and the <b>DTR Payer Server 2.2.0 suite 43 of 45</b>; the two left require an extension DTR's base profile allows zero times</td></tr>
 </tbody></table>
@@ -208,7 +208,7 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2"><b>Electronic case reporting (eCR)</b>: a FHIR destination that sends an HL7 eCR 2.1.2 eICR for each message carrying a reportable-condition trigger code, and nothing for the rest</td></tr>
 <tr><td colspan="2">Triggers from the RCTC you load (or a built-in sample for testing), so a report goes because a code matched rather than because somebody remembered. Validated against the eCR guide with the HL7 validator</td></tr>
 <tr><td colspan="2">The answer comes back: <b>Reportability Responses</b> are received at <code>$process-message</code> and stored where the sent report said to look, and a <b>test agency</b> answers eICRs so the round trip can be tried without one. Proven between two Perfuse servers; the RR validates with 0 errors</td></tr>
-<tr><td colspan="2"><b>Electronic lab reporting (ELR)</b>: <code>perfuse elr</code> reshapes a lab's ORU^R01 into an HL7 2.5.1 ELR message carrying only the reportable orders, and says what the lab left out. Checked with NIST's HL7 v2 validator</td></tr>
+<tr><td colspan="2"><b>Electronic lab reporting (ELR)</b>: <code>perfuse elr</code> reshapes a lab's ORU^R01 into an HL7 2.5.1 ELR message carrying only the reportable orders, and says what the lab left out, from the command line or as a channel destination that sends the state only the reportable results. Checked with NIST's HL7 v2 validator, and ONC's ELR certification tool reports all 28 of its example messages valid</td></tr>
 </tbody></table>
 
 <table width="100%">
@@ -226,6 +226,7 @@ depends on something outside this software that is stated too.
 <tbody>
 <tr><td colspan="2">A <b>live dashboard</b>, and a <b>flow map</b> with a scrubber — drag it back to a moment and see which strands were dark</td></tr>
 <tr><td colspan="2"><b>Metrics</b> with percentiles, exposed for <b>Prometheus</b></td></tr>
+<tr><td colspan="2"><b>Team dashboards</b> for each kind of person who watches the interfaces: operations, connections (each partner checked layer by layer, plus <b>VPN tunnel state from AWS, Azure or strongSwan</b> with a printable connection sheet), prior authorization (CMS-0057 timeframes met, late and overdue), imaging, revenue cycle, lab, privacy, exportable to <b>Grafana</b></td></tr>
 <tr><td colspan="2"><b>Alerts</b> that tell you rather than waiting to be found. Eleven rule kinds: error rate, no traffic, <b>below rhythm</b> (a feed quieter than its own history, which catches a half-broken sender that a threshold misses), channel down, queue depth, queue age, queue stuck, slow delivery, script errors, rows quarantined, and contract violations</td></tr>
 <tr><td colspan="2"><b>Distributed tracing</b> exported over OTLP</td></tr>
 <tr><td colspan="2">A <b>message store</b> with retention, full search, and search <i>inside</i> message content using the same expression language channels filter with — so anything that works in the search box can be pasted into a channel</td></tr>
