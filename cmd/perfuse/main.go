@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/analyze"
+	"github.com/biodream-llc/perfuse/internal/engine"
 	"github.com/biodream-llc/perfuse/internal/mirth"
 )
 
@@ -123,6 +124,8 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) error {
+	// ELR destinations name Perfuse's version in the SFT segment they add.
+	engine.SoftwareVersion = buildVersion()
 	if len(args) == 0 {
 		return errNoArgs
 	}

@@ -209,6 +209,26 @@ is a note. What only the lab knows is never filled in: a result with no specimen
 because a guessed specimen in a report to public health is worse than a gap the state can ask about. Start with `processing: T`
 while the state's onboarding team tests the feed.
 
+To send them from a channel rather than from the command line, give the destination that reaches the state an `elr` block naming
+the same file. Each lab result is reshaped on the way out, and one with nothing reportable is not sent at all, which is counted as
+delivered, not failed: the state asked for reportable results only.
+
+```yaml
+destinations:
+  - name: state-elr
+    type: mllp                 # or http, sftp, file: whatever the state's onboarding team gives you
+    address: elr.health.state.example:6661
+    tls: {enabled: true}
+    elr:
+      config: elr.yaml         # beside this channel file
+      rctc: rctc.json          # optional; the built-in sample is for testing only
+```
+
+The block applies on an HL7 v2 channel, to destinations that deliver the message itself (mllp, http, tcp, file, sftp, ftp, S3,
+Azure Blob, soap, the message brokers, or another channel); the channel refuses to load otherwise, and when the file is missing or
+lacks the sending facility, receiving application or receiving facility. The notes are written to the log with the message's
+control ID.
+
 ## When the transport says yes and the message did not arrive
 
 "Did this arrive" is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.

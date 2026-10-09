@@ -647,6 +647,7 @@ export function ChannelBuilder({
                     dest={dest}
                     index={i}
                     canRemove={draft.destinations.length > 1}
+                    hl7Channel={draft.dataType === 'hl7'}
                     onChange={(patch) => updateDestination(dest.id, patch)}
                     onRemove={() =>
                       set(
@@ -730,16 +731,22 @@ export function ChannelBuilder({
   )
 }
 
+// The destination types an elr block may sit on: those that deliver the HL7 v2 message as it is (config.validate agrees).
+const elrDestinationTypes = new Set(['mllp', 'file', 'http', 'sftp', 'ftp', 'tcp', 's3', 'azure_blob', 'soap', 'broker', 'kafka',
+  'sqs', 'sns', 'amqp', 'channel'])
+
 function DestinationCard({
   dest,
   index,
   canRemove,
+  hl7Channel,
   onChange,
   onRemove,
 }: {
   dest: Destination
   index: number
   canRemove: boolean
+  hl7Channel: boolean
   onChange: (patch: Partial<Destination>) => void
   onRemove: () => void
 }) {
@@ -2742,6 +2749,25 @@ function DestinationCard({
               placeholder={"// response holds what came back\nreturn !response.includes('MSA|AE')"}
             />
           </Field>
+        </div>
+      )}
+
+      {/* Lab reporting to public health. Offered only where the loader accepts it: an HL7 v2 channel, and a destination that
+          delivers the message itself rather than converting it. */}
+      {hl7Channel && elrDestinationTypes.has(dest.type) && (
+        <div className="mt-4 rounded-lg border border-slate-800 p-3" data-testid="elr-settings">
+          <p className="mb-2 text-sm text-slate-300">
+            <span className="text-violet-300">Lab reporting (ELR 2.5.1).</span> Name an ELR file to send this destination only the
+            reportable results, reshaped for the state. A result with nothing reportable is not sent.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="ELR file" hint="Sender and receiver OIDs and what fills the lab's gaps, as for perfuse elr -config. Relative to the channel file.">
+              <input className="input font-mono text-xs" value={dest.elrConfig} onChange={(e) => onChange({ elrConfig: e.target.value })} placeholder="elr.yaml" />
+            </Field>
+            <Field label="Trigger codes (RCTC)" hint="A ValueSet or eRSD Bundle. Empty uses the built-in sample, which is for testing only.">
+              <input className="input font-mono text-xs" value={dest.elrRctc} onChange={(e) => onChange({ elrRctc: e.target.value })} placeholder="rctc.json" disabled={!dest.elrConfig.trim()} />
+            </Field>
+          </div>
         </div>
       )}
 

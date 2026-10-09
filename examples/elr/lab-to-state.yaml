@@ -1,0 +1,14 @@
+# Lab results in over MLLP, reportable ones out to the state as ELR 2.5.1.
+# perfuse check examples/elr/lab-to-state.yaml
+name: lab-to-state
+source:
+  type: mllp
+  listen: ":6670"
+filter: MSH-9.1 == "ORU"
+destinations:
+  - name: state-elr
+    type: mllp
+    address: elr.health.state.example:6661
+    tls: {enabled: true}
+    elr:
+      config: elr.yaml

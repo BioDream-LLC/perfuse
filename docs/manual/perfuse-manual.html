@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · b500706</p>
+<p class="version">version 0.1 · f0ad968</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -829,8 +829,9 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s22-7-5-max-open-conns"><span class="num">22.7.5</span> max_open_conns</a></div>
 <div class="toc-d2"><a href="#s22-8-destination"><span class="num">22.8</span> Destination</a></div>
 <div class="toc-d3"><a href="#s22-8-1-name"><span class="num">22.8.1</span> name</a></div>
-<div class="toc-d3"><a href="#s22-8-2-response-transformer"><span class="num">22.8.2</span> response_transformer</a></div>
-<div class="toc-d3"><a href="#s22-8-3-queue"><span class="num">22.8.3</span> queue</a></div>
+<div class="toc-d3"><a href="#s22-8-2-elr"><span class="num">22.8.2</span> elr</a></div>
+<div class="toc-d3"><a href="#s22-8-3-response-transformer"><span class="num">22.8.3</span> response_transformer</a></div>
+<div class="toc-d3"><a href="#s22-8-4-queue"><span class="num">22.8.4</span> queue</a></div>
 <div class="toc-d2"><a href="#s22-9-document-destination"><span class="num">22.9</span> Document Destination</a></div>
 <div class="toc-d3"><a href="#s22-9-1-format"><span class="num">22.9.1</span> format</a></div>
 <div class="toc-d3"><a href="#s22-9-2-template"><span class="num">22.9.2</span> template</a></div>
@@ -839,85 +840,88 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s22-9-5-timeout"><span class="num">22.9.5</span> timeout</a></div>
 <div class="toc-d2"><a href="#s22-10-ecr-destination"><span class="num">22.10</span> ECR Destination</a></div>
 <div class="toc-d3"><a href="#s22-10-1-rctc"><span class="num">22.10.1</span> rctc</a></div>
-<div class="toc-d2"><a href="#s22-11-fhir-destination"><span class="num">22.11</span> FHIR Destination</a></div>
-<div class="toc-d3"><a href="#s22-11-1-url"><span class="num">22.11.1</span> url</a></div>
-<div class="toc-d3"><a href="#s22-11-2-version"><span class="num">22.11.2</span> version</a></div>
-<div class="toc-d3"><a href="#s22-11-3-timezone"><span class="num">22.11.3</span> timezone</a></div>
-<div class="toc-d3"><a href="#s22-11-4-default-identifier-system"><span class="num">22.11.4</span> default_identifier_system</a></div>
-<div class="toc-d3"><a href="#s22-11-5-claim-us-core"><span class="num">22.11.5</span> claim_us_core</a></div>
-<div class="toc-d3"><a href="#s22-11-6-validate-before-send"><span class="num">22.11.6</span> validate_before_send</a></div>
-<div class="toc-d3"><a href="#s22-11-7-reject-on-warning"><span class="num">22.11.7</span> reject_on_warning</a></div>
-<div class="toc-d3"><a href="#s22-11-8-bearer-token"><span class="num">22.11.8</span> bearer_token</a></div>
-<div class="toc-d3"><a href="#s22-11-9-ecr"><span class="num">22.11.9</span> ecr</a></div>
-<div class="toc-d2"><a href="#s22-12-ftp-destination"><span class="num">22.12</span> FTP Destination</a></div>
-<div class="toc-d3"><a href="#s22-12-1-host"><span class="num">22.12.1</span> host</a></div>
-<div class="toc-d3"><a href="#s22-12-2-user"><span class="num">22.12.2</span> user</a></div>
-<div class="toc-d3"><a href="#s22-12-3-password"><span class="num">22.12.3</span> password</a></div>
-<div class="toc-d3"><a href="#s22-12-4-security"><span class="num">22.12.4</span> security</a></div>
-<div class="toc-d3"><a href="#s22-12-5-insecure-skip-verify"><span class="num">22.12.5</span> insecure_skip_verify</a></div>
-<div class="toc-d3"><a href="#s22-12-6-allow-clear-password"><span class="num">22.12.6</span> allow_clear_password</a></div>
-<div class="toc-d3"><a href="#s22-12-7-temp-suffix"><span class="num">22.12.7</span> temp_suffix</a></div>
-<div class="toc-d3"><a href="#s22-12-8-timeout"><span class="num">22.12.8</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-13-http-destination"><span class="num">22.13</span> HTTP Destination</a></div>
-<div class="toc-d3"><a href="#s22-13-1-url"><span class="num">22.13.1</span> url</a></div>
-<div class="toc-d3"><a href="#s22-13-2-method"><span class="num">22.13.2</span> method</a></div>
-<div class="toc-d3"><a href="#s22-13-3-content-type"><span class="num">22.13.3</span> content_type</a></div>
-<div class="toc-d3"><a href="#s22-13-4-bearer-token"><span class="num">22.13.4</span> bearer_token</a></div>
-<div class="toc-d3"><a href="#s22-13-5-success-status"><span class="num">22.13.5</span> success_status</a></div>
-<div class="toc-d3"><a href="#s22-13-6-fail-on-body"><span class="num">22.13.6</span> fail_on_body</a></div>
-<div class="toc-d3"><a href="#s22-13-7-follow-redirects"><span class="num">22.13.7</span> follow_redirects</a></div>
-<div class="toc-d2"><a href="#s22-14-java-script-destination"><span class="num">22.14</span> Java Script Destination</a></div>
-<div class="toc-d3"><a href="#s22-14-1-script"><span class="num">22.14.1</span> script</a></div>
-<div class="toc-d3"><a href="#s22-14-2-timeout"><span class="num">22.14.2</span> timeout</a></div>
-<div class="toc-d3"><a href="#s22-14-3-success-on-undefined"><span class="num">22.14.3</span> success_on_undefined</a></div>
-<div class="toc-d2"><a href="#s22-15-kafka-destination"><span class="num">22.15</span> Kafka Destination</a></div>
-<div class="toc-d3"><a href="#s22-15-1-brokers"><span class="num">22.15.1</span> brokers</a></div>
-<div class="toc-d3"><a href="#s22-15-2-topic"><span class="num">22.15.2</span> topic</a></div>
-<div class="toc-d3"><a href="#s22-15-3-key"><span class="num">22.15.3</span> key</a></div>
-<div class="toc-d3"><a href="#s22-15-4-acks"><span class="num">22.15.4</span> acks</a></div>
-<div class="toc-d3"><a href="#s22-15-5-compression"><span class="num">22.15.5</span> compression</a></div>
-<div class="toc-d3"><a href="#s22-15-6-headers"><span class="num">22.15.6</span> headers</a></div>
-<div class="toc-d3"><a href="#s22-15-7-timeout"><span class="num">22.15.7</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-16-s3-destination"><span class="num">22.16</span> S3 Destination</a></div>
-<div class="toc-d3"><a href="#s22-16-1-key"><span class="num">22.16.1</span> key</a></div>
-<div class="toc-d3"><a href="#s22-16-2-access-key-id"><span class="num">22.16.2</span> access_key_id</a></div>
-<div class="toc-d3"><a href="#s22-16-3-secret-access-key"><span class="num">22.16.3</span> secret_access_key</a></div>
-<div class="toc-d3"><a href="#s22-16-4-path-style"><span class="num">22.16.4</span> path_style</a></div>
-<div class="toc-d3"><a href="#s22-16-5-content-type"><span class="num">22.16.5</span> content_type</a></div>
-<div class="toc-d3"><a href="#s22-16-6-timeout"><span class="num">22.16.6</span> timeout</a></div>
-<div class="toc-d3"><a href="#s22-16-7-storage-class"><span class="num">22.16.7</span> storage_class</a></div>
-<div class="toc-d3"><a href="#s22-16-8-format"><span class="num">22.16.8</span> format</a></div>
-<div class="toc-d2"><a href="#s22-17-sftp-destination"><span class="num">22.17</span> SFTP Destination</a></div>
-<div class="toc-d3"><a href="#s22-17-1-host"><span class="num">22.17.1</span> host</a></div>
-<div class="toc-d3"><a href="#s22-17-2-password"><span class="num">22.17.2</span> password</a></div>
-<div class="toc-d3"><a href="#s22-17-3-file-name"><span class="num">22.17.3</span> file_name</a></div>
-<div class="toc-d3"><a href="#s22-17-4-temp-suffix"><span class="num">22.17.4</span> temp_suffix</a></div>
-<div class="toc-d3"><a href="#s22-17-5-timeout"><span class="num">22.17.5</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-18-smtp-destination"><span class="num">22.18</span> SMTP Destination</a></div>
+<div class="toc-d2"><a href="#s22-11-elr-destination"><span class="num">22.11</span> ELR Destination</a></div>
+<div class="toc-d3"><a href="#s22-11-1-config"><span class="num">22.11.1</span> config</a></div>
+<div class="toc-d3"><a href="#s22-11-2-rctc"><span class="num">22.11.2</span> rctc</a></div>
+<div class="toc-d2"><a href="#s22-12-fhir-destination"><span class="num">22.12</span> FHIR Destination</a></div>
+<div class="toc-d3"><a href="#s22-12-1-url"><span class="num">22.12.1</span> url</a></div>
+<div class="toc-d3"><a href="#s22-12-2-version"><span class="num">22.12.2</span> version</a></div>
+<div class="toc-d3"><a href="#s22-12-3-timezone"><span class="num">22.12.3</span> timezone</a></div>
+<div class="toc-d3"><a href="#s22-12-4-default-identifier-system"><span class="num">22.12.4</span> default_identifier_system</a></div>
+<div class="toc-d3"><a href="#s22-12-5-claim-us-core"><span class="num">22.12.5</span> claim_us_core</a></div>
+<div class="toc-d3"><a href="#s22-12-6-validate-before-send"><span class="num">22.12.6</span> validate_before_send</a></div>
+<div class="toc-d3"><a href="#s22-12-7-reject-on-warning"><span class="num">22.12.7</span> reject_on_warning</a></div>
+<div class="toc-d3"><a href="#s22-12-8-bearer-token"><span class="num">22.12.8</span> bearer_token</a></div>
+<div class="toc-d3"><a href="#s22-12-9-ecr"><span class="num">22.12.9</span> ecr</a></div>
+<div class="toc-d2"><a href="#s22-13-ftp-destination"><span class="num">22.13</span> FTP Destination</a></div>
+<div class="toc-d3"><a href="#s22-13-1-host"><span class="num">22.13.1</span> host</a></div>
+<div class="toc-d3"><a href="#s22-13-2-user"><span class="num">22.13.2</span> user</a></div>
+<div class="toc-d3"><a href="#s22-13-3-password"><span class="num">22.13.3</span> password</a></div>
+<div class="toc-d3"><a href="#s22-13-4-security"><span class="num">22.13.4</span> security</a></div>
+<div class="toc-d3"><a href="#s22-13-5-insecure-skip-verify"><span class="num">22.13.5</span> insecure_skip_verify</a></div>
+<div class="toc-d3"><a href="#s22-13-6-allow-clear-password"><span class="num">22.13.6</span> allow_clear_password</a></div>
+<div class="toc-d3"><a href="#s22-13-7-temp-suffix"><span class="num">22.13.7</span> temp_suffix</a></div>
+<div class="toc-d3"><a href="#s22-13-8-timeout"><span class="num">22.13.8</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-14-http-destination"><span class="num">22.14</span> HTTP Destination</a></div>
+<div class="toc-d3"><a href="#s22-14-1-url"><span class="num">22.14.1</span> url</a></div>
+<div class="toc-d3"><a href="#s22-14-2-method"><span class="num">22.14.2</span> method</a></div>
+<div class="toc-d3"><a href="#s22-14-3-content-type"><span class="num">22.14.3</span> content_type</a></div>
+<div class="toc-d3"><a href="#s22-14-4-bearer-token"><span class="num">22.14.4</span> bearer_token</a></div>
+<div class="toc-d3"><a href="#s22-14-5-success-status"><span class="num">22.14.5</span> success_status</a></div>
+<div class="toc-d3"><a href="#s22-14-6-fail-on-body"><span class="num">22.14.6</span> fail_on_body</a></div>
+<div class="toc-d3"><a href="#s22-14-7-follow-redirects"><span class="num">22.14.7</span> follow_redirects</a></div>
+<div class="toc-d2"><a href="#s22-15-java-script-destination"><span class="num">22.15</span> Java Script Destination</a></div>
+<div class="toc-d3"><a href="#s22-15-1-script"><span class="num">22.15.1</span> script</a></div>
+<div class="toc-d3"><a href="#s22-15-2-timeout"><span class="num">22.15.2</span> timeout</a></div>
+<div class="toc-d3"><a href="#s22-15-3-success-on-undefined"><span class="num">22.15.3</span> success_on_undefined</a></div>
+<div class="toc-d2"><a href="#s22-16-kafka-destination"><span class="num">22.16</span> Kafka Destination</a></div>
+<div class="toc-d3"><a href="#s22-16-1-brokers"><span class="num">22.16.1</span> brokers</a></div>
+<div class="toc-d3"><a href="#s22-16-2-topic"><span class="num">22.16.2</span> topic</a></div>
+<div class="toc-d3"><a href="#s22-16-3-key"><span class="num">22.16.3</span> key</a></div>
+<div class="toc-d3"><a href="#s22-16-4-acks"><span class="num">22.16.4</span> acks</a></div>
+<div class="toc-d3"><a href="#s22-16-5-compression"><span class="num">22.16.5</span> compression</a></div>
+<div class="toc-d3"><a href="#s22-16-6-headers"><span class="num">22.16.6</span> headers</a></div>
+<div class="toc-d3"><a href="#s22-16-7-timeout"><span class="num">22.16.7</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-17-s3-destination"><span class="num">22.17</span> S3 Destination</a></div>
+<div class="toc-d3"><a href="#s22-17-1-key"><span class="num">22.17.1</span> key</a></div>
+<div class="toc-d3"><a href="#s22-17-2-access-key-id"><span class="num">22.17.2</span> access_key_id</a></div>
+<div class="toc-d3"><a href="#s22-17-3-secret-access-key"><span class="num">22.17.3</span> secret_access_key</a></div>
+<div class="toc-d3"><a href="#s22-17-4-path-style"><span class="num">22.17.4</span> path_style</a></div>
+<div class="toc-d3"><a href="#s22-17-5-content-type"><span class="num">22.17.5</span> content_type</a></div>
+<div class="toc-d3"><a href="#s22-17-6-timeout"><span class="num">22.17.6</span> timeout</a></div>
+<div class="toc-d3"><a href="#s22-17-7-storage-class"><span class="num">22.17.7</span> storage_class</a></div>
+<div class="toc-d3"><a href="#s22-17-8-format"><span class="num">22.17.8</span> format</a></div>
+<div class="toc-d2"><a href="#s22-18-sftp-destination"><span class="num">22.18</span> SFTP Destination</a></div>
 <div class="toc-d3"><a href="#s22-18-1-host"><span class="num">22.18.1</span> host</a></div>
-<div class="toc-d3"><a href="#s22-18-2-from"><span class="num">22.18.2</span> from</a></div>
-<div class="toc-d3"><a href="#s22-18-3-to"><span class="num">22.18.3</span> to</a></div>
-<div class="toc-d3"><a href="#s22-18-4-cc"><span class="num">22.18.4</span> cc</a></div>
-<div class="toc-d3"><a href="#s22-18-5-bcc"><span class="num">22.18.5</span> bcc</a></div>
-<div class="toc-d3"><a href="#s22-18-6-body"><span class="num">22.18.6</span> body</a></div>
-<div class="toc-d3"><a href="#s22-18-7-attach-name"><span class="num">22.18.7</span> attach_name</a></div>
-<div class="toc-d3"><a href="#s22-18-8-username"><span class="num">22.18.8</span> username</a></div>
-<div class="toc-d3"><a href="#s22-18-9-password"><span class="num">22.18.9</span> password</a></div>
-<div class="toc-d3"><a href="#s22-18-10-starttls"><span class="num">22.18.10</span> starttls</a></div>
-<div class="toc-d3"><a href="#s22-18-11-insecure-skip-verify"><span class="num">22.18.11</span> insecure_skip_verify</a></div>
-<div class="toc-d2"><a href="#s22-19-sns-destination"><span class="num">22.19</span> SNS Destination</a></div>
-<div class="toc-d3"><a href="#s22-19-1-subject"><span class="num">22.19.1</span> subject</a></div>
-<div class="toc-d2"><a href="#s22-20-soap-destination"><span class="num">22.20</span> SOAP Destination</a></div>
-<div class="toc-d3"><a href="#s22-20-1-action"><span class="num">22.20.1</span> action</a></div>
-<div class="toc-d3"><a href="#s22-20-2-body"><span class="num">22.20.2</span> body</a></div>
-<div class="toc-d3"><a href="#s22-20-3-header"><span class="num">22.20.3</span> header</a></div>
-<div class="toc-d3"><a href="#s22-20-4-fault-is-success"><span class="num">22.20.4</span> fault_is_success</a></div>
-<div class="toc-d3"><a href="#s22-20-5-timeout"><span class="num">22.20.5</span> timeout</a></div>
-<div class="toc-d2"><a href="#s22-21-sqs-destination"><span class="num">22.21</span> SQS Destination</a></div>
-<div class="toc-d3"><a href="#s22-21-1-queue-url"><span class="num">22.21.1</span> queue_url</a></div>
-<div class="toc-d2"><a href="#s22-22-tcp-dest"><span class="num">22.22</span> TCP Dest</a></div>
-<div class="toc-d3"><a href="#s22-22-1-expect-reply"><span class="num">22.22.1</span> expect_reply</a></div>
-<div class="toc-d3"><a href="#s22-22-2-keep-alive"><span class="num">22.22.2</span> keep_alive</a></div>
+<div class="toc-d3"><a href="#s22-18-2-password"><span class="num">22.18.2</span> password</a></div>
+<div class="toc-d3"><a href="#s22-18-3-file-name"><span class="num">22.18.3</span> file_name</a></div>
+<div class="toc-d3"><a href="#s22-18-4-temp-suffix"><span class="num">22.18.4</span> temp_suffix</a></div>
+<div class="toc-d3"><a href="#s22-18-5-timeout"><span class="num">22.18.5</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-19-smtp-destination"><span class="num">22.19</span> SMTP Destination</a></div>
+<div class="toc-d3"><a href="#s22-19-1-host"><span class="num">22.19.1</span> host</a></div>
+<div class="toc-d3"><a href="#s22-19-2-from"><span class="num">22.19.2</span> from</a></div>
+<div class="toc-d3"><a href="#s22-19-3-to"><span class="num">22.19.3</span> to</a></div>
+<div class="toc-d3"><a href="#s22-19-4-cc"><span class="num">22.19.4</span> cc</a></div>
+<div class="toc-d3"><a href="#s22-19-5-bcc"><span class="num">22.19.5</span> bcc</a></div>
+<div class="toc-d3"><a href="#s22-19-6-body"><span class="num">22.19.6</span> body</a></div>
+<div class="toc-d3"><a href="#s22-19-7-attach-name"><span class="num">22.19.7</span> attach_name</a></div>
+<div class="toc-d3"><a href="#s22-19-8-username"><span class="num">22.19.8</span> username</a></div>
+<div class="toc-d3"><a href="#s22-19-9-password"><span class="num">22.19.9</span> password</a></div>
+<div class="toc-d3"><a href="#s22-19-10-starttls"><span class="num">22.19.10</span> starttls</a></div>
+<div class="toc-d3"><a href="#s22-19-11-insecure-skip-verify"><span class="num">22.19.11</span> insecure_skip_verify</a></div>
+<div class="toc-d2"><a href="#s22-20-sns-destination"><span class="num">22.20</span> SNS Destination</a></div>
+<div class="toc-d3"><a href="#s22-20-1-subject"><span class="num">22.20.1</span> subject</a></div>
+<div class="toc-d2"><a href="#s22-21-soap-destination"><span class="num">22.21</span> SOAP Destination</a></div>
+<div class="toc-d3"><a href="#s22-21-1-action"><span class="num">22.21.1</span> action</a></div>
+<div class="toc-d3"><a href="#s22-21-2-body"><span class="num">22.21.2</span> body</a></div>
+<div class="toc-d3"><a href="#s22-21-3-header"><span class="num">22.21.3</span> header</a></div>
+<div class="toc-d3"><a href="#s22-21-4-fault-is-success"><span class="num">22.21.4</span> fault_is_success</a></div>
+<div class="toc-d3"><a href="#s22-21-5-timeout"><span class="num">22.21.5</span> timeout</a></div>
+<div class="toc-d2"><a href="#s22-22-sqs-destination"><span class="num">22.22</span> SQS Destination</a></div>
+<div class="toc-d3"><a href="#s22-22-1-queue-url"><span class="num">22.22.1</span> queue_url</a></div>
+<div class="toc-d2"><a href="#s22-23-tcp-dest"><span class="num">22.23</span> TCP Dest</a></div>
+<div class="toc-d3"><a href="#s22-23-1-expect-reply"><span class="num">22.23.1</span> expect_reply</a></div>
+<div class="toc-d3"><a href="#s22-23-2-keep-alive"><span class="num">22.23.2</span> keep_alive</a></div>
 <div class="toc-d1"><a href="#s23-format-reference"><span class="num">23</span> Format Reference</a></div>
 <div class="toc-d2"><a href="#s23-1-attachments"><span class="num">23.1</span> Attachments</a></div>
 <div class="toc-d3"><a href="#s23-1-1-reassemble"><span class="num">23.1.1</span> reassemble</a></div>
@@ -2136,6 +2140,16 @@ performing_lab_clia: 14D0000000
 placer_authority: {namespace: SPRINGFIELD-EHR, id: 2.16.840.1.113883.19.5.1, type: ISO}
 filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, type: ISO}</code></pre>
 <p>The ordering facility, performing lab and assigning authorities are used only where the lab&#39;s message leaves them out, and each use is a note. What only the lab knows is never filled in: a result with no specimen type goes with SPM-4 empty and a note saying so, because a guessed specimen in a report to public health is worse than a gap the state can ask about. Start with <code>processing: T</code> while the state&#39;s onboarding team tests the feed.</p>
+<p>To send them from a channel rather than from the command line, give the destination that reaches the state an <code>elr</code> block naming the same file. Each lab result is reshaped on the way out, and one with nothing reportable is not sent at all, which is counted as delivered, not failed: the state asked for reportable results only.</p>
+<pre class="code lang-yaml"><code>destinations:
+  - name: state-elr
+    type: mllp                 # or http, sftp, file: whatever the state&#39;s onboarding team gives you
+    address: elr.health.state.example:6661
+    tls: {enabled: true}
+    elr:
+      config: elr.yaml         # beside this channel file
+      rctc: rctc.json          # optional; the built-in sample is for testing only</code></pre>
+<p>The block applies on an HL7 v2 channel, to destinations that deliver the message itself (mllp, http, tcp, file, sftp, ftp, S3, Azure Blob, soap, the message brokers, or another channel); the channel refuses to load otherwise, and when the file is missing or lacks the sending facility, receiving application or receiving facility. The notes are written to the log with the message&#39;s control ID.</p>
 <h3 id="s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</h3>
 <p>&#34;Did this arrive&#34; is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.</p>
 <p><strong>Inspect the reply</strong> on a destination takes a script given the receiver&#39;s response. Return false, or throw, and the delivery is marked failed — which means it retries, queues, and appears in the failure count instead of being silently counted as delivered.</p>
@@ -4075,6 +4089,7 @@ rules:
 <tr><td><code>sns</code></td><td>SNSDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>amqp</code></td><td>AMQPDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>azure_blob</code></td><td>AzureBlobDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>elr</code></td><td>ELRDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>response_transformer</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 <tr><td><code>retry</code></td><td>Retry</td><td>no</td><td>—</td></tr>
@@ -4084,11 +4099,14 @@ rules:
 <h4 id="s22-8-1-name"><span class="num">22.8.1</span> name</h4>
 <p>Name identifies the destination in logs and metrics.</p>
 <p>Required within a channel.</p>
-<h4 id="s22-8-2-response-transformer"><span class="num">22.8.2</span> response_transformer</h4>
+<h4 id="s22-8-2-elr"><span class="num">22.8.2</span> elr</h4>
+<p>ELR makes this a public health lab reporting destination: each lab result (ORU^R01) is reshaped into an ELR 2.5.1 message holding only the orders with a reportable result, and that is what is delivered; a message with nothing reportable is not sent at all.</p>
+<p>Applies to destinations that deliver an HL7 v2 message as it is (mllp, http, file, sftp and the rest), on an hl7 channel.</p>
+<h4 id="s22-8-3-response-transformer"><span class="num">22.8.3</span> response_transformer</h4>
 <p>ResponseTransformer inspects what the receiver said back and may mark the delivery failed.</p>
 <p>It exists because &#34;did this arrive&#34; is often not a question the transport can answer: an MLLP receiver returns an application acknowledgement whose meaning is in its text, and an HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.</p>
 <p>Only meaningful on a destination that receives a reply. On one that cannot, it is refused at load rather than left never running.</p>
-<h4 id="s22-8-3-queue"><span class="num">22.8.3</span> queue</h4>
+<h4 id="s22-8-4-queue"><span class="num">22.8.4</span> queue</h4>
 <p>Queue makes delivery durable: a message that cannot be delivered now is kept on disk and retried until it can be.</p>
 <p>Off by default.</p>
 <h3 id="s22-9-document-destination"><span class="num">22.9</span> Document Destination</h3>
@@ -4138,7 +4156,23 @@ rules:
 <h4 id="s22-10-1-rctc"><span class="num">22.10.1</span> rctc</h4>
 <p>RCTC is a FHIR ValueSet, or a Bundle of them such as the eRSD, holding the trigger codes.</p>
 <p>Without it Perfuse&#39;s short built-in sample is used, which is for testing: agencies expect the RCTC.</p>
-<h3 id="s22-11-fhir-destination"><span class="num">22.11</span> FHIR Destination</h3>
+<h3 id="s22-11-elr-destination"><span class="num">22.11</span> ELR Destination</h3>
+<p>ELRDestination configures electronic laboratory reporting.</p>
+<p>Defined as <code>ELRDestination</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>config</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>rctc</code></td><td>text</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s22-11-1-config"><span class="num">22.11.1</span> config</h4>
+<p>Config is the ELR file <code>perfuse elr -config</code> reads: the sending and receiving applications and facilities by OID, the processing mode, and what fills the gaps a lab feed leaves (ordering facility, performing lab, assigning authorities).</p>
+<p>A relative path is read from the channel file&#39;s directory.</p>
+<h4 id="s22-11-2-rctc"><span class="num">22.11.2</span> rctc</h4>
+<p>RCTC is a FHIR ValueSet, or a Bundle of them such as the eRSD, holding the trigger codes.</p>
+<p>Without it Perfuse&#39;s short built-in sample is used, which is for testing: agencies expect the RCTC. Relative to the channel file, as Config.</p>
+<h3 id="s22-12-fhir-destination"><span class="num">22.12</span> FHIR Destination</h3>
 <p>FHIRDestination configures conversion to FHIR and delivery to a FHIR server.</p>
 <p>Defined as <code>FHIRDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4158,34 +4192,34 @@ rules:
 <tr><td><code>ecr</code></td><td>ECRDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-11-1-url"><span class="num">22.11.1</span> url</h4>
+<h4 id="s22-12-1-url"><span class="num">22.12.1</span> url</h4>
 <p>URL is the base URL of the FHIR server, for example &#34;https://fhir.example.org/fhir&#34;.</p>
 <p>The bundle is posted to it directly.</p>
-<h4 id="s22-11-2-version"><span class="num">22.11.2</span> version</h4>
+<h4 id="s22-12-2-version"><span class="num">22.12.2</span> version</h4>
 <p>Version is the FHIR release to produce: R4, R4B or R5. Defaults to R5, the latest published release.</p>
 <p>A deployment talking to an EHR almost always wants R4 and should say so, because silently downgrading would hide a real interoperability decision.</p>
-<h4 id="s22-11-3-timezone"><span class="num">22.11.3</span> timezone</h4>
+<h4 id="s22-12-3-timezone"><span class="num">22.12.3</span> timezone</h4>
 <p>Timezone is applied to HL7 v2 timestamps that carry no offset. v2 permits a bare local time and FHIR does not, so something has to supply one.</p>
 <p>When unset, the offset the sender put on MSH-7 is used, since v2 presumes a bare time is the sender&#39;s local time; a message whose MSH-7 has no offset either falls back to UTC.</p>
-<h4 id="s22-11-4-default-identifier-system"><span class="num">22.11.4</span> default_identifier_system</h4>
+<h4 id="s22-12-4-default-identifier-system"><span class="num">22.12.4</span> default_identifier_system</h4>
 <p>DefaultIdentifierSystem namespaces identifiers whose assigning authority has no configured URI.</p>
 <p>Without a system, an MRN is ambiguous between facilities.</p>
-<h4 id="s22-11-5-claim-us-core"><span class="num">22.11.5</span> claim_us_core</h4>
+<h4 id="s22-12-5-claim-us-core"><span class="num">22.12.5</span> claim_us_core</h4>
 <p>ClaimUSCore adds the US Core 9.0.0 profile to each resource produced that has been checked against it and conforms.</p>
 <p>A resource that falls short is sent without the claim, with a note saying why.</p>
-<h4 id="s22-11-6-validate-before-send"><span class="num">22.11.6</span> validate_before_send</h4>
+<h4 id="s22-12-6-validate-before-send"><span class="num">22.12.6</span> validate_before_send</h4>
 <p>ValidateBeforeSend refuses to post a bundle that fails validation.</p>
 <p>Defaults to true: sending a resource a server will reject wastes a retry budget and hides the real problem behind a transport error.</p>
-<h4 id="s22-11-7-reject-on-warning"><span class="num">22.11.7</span> reject_on_warning</h4>
+<h4 id="s22-12-7-reject-on-warning"><span class="num">22.12.7</span> reject_on_warning</h4>
 <p>RejectOnWarning also refuses on warnings, such as a missing US Core identifier.</p>
 <p>Off by default, because a warning is a judgement about profile conformance rather than about validity.</p>
-<h4 id="s22-11-8-bearer-token"><span class="num">22.11.8</span> bearer_token</h4>
+<h4 id="s22-12-8-bearer-token"><span class="num">22.12.8</span> bearer_token</h4>
 <p>BearerToken is sent as an Authorization header.</p>
 <p>Prefer an environment variable reference, ${NAME}, over a literal in a file that goes into git.</p>
-<h4 id="s22-11-9-ecr"><span class="num">22.11.9</span> ecr</h4>
+<h4 id="s22-12-9-ecr"><span class="num">22.12.9</span> ecr</h4>
 <p>ECR makes this a public health case reporting destination.</p>
 <p>Each message is checked for trigger codes; one that has any is sent as an eCR 2.1 eICR, wrapped in an eCR message, to url&#39;s $process-message, and one with none is not sent at all.</p>
-<h3 id="s22-12-ftp-destination"><span class="num">22.12</span> FTP Destination</h3>
+<h3 id="s22-13-ftp-destination"><span class="num">22.13</span> FTP Destination</h3>
 <p>FTPDestination uploads a file per message.</p>
 <p>Defined as <code>FTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4204,32 +4238,32 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>60s</td></tr>
 </tbody>
 </table>
-<h4 id="s22-12-1-host"><span class="num">22.12.1</span> host</h4>
+<h4 id="s22-13-1-host"><span class="num">22.13.1</span> host</h4>
 <p>Host is the server, with an optional port.</p>
 <p>Defaults to 21, or 990 for implicit TLS.</p>
-<h4 id="s22-12-2-user"><span class="num">22.12.2</span> user</h4>
+<h4 id="s22-13-2-user"><span class="num">22.13.2</span> user</h4>
 <p>User and Password authenticate.</p>
 <p>An empty user means anonymous.</p>
-<h4 id="s22-12-3-password"><span class="num">22.12.3</span> password</h4>
+<h4 id="s22-13-3-password"><span class="num">22.13.3</span> password</h4>
 <p>User and Password authenticate.</p>
 <p>An empty user means anonymous.</p>
-<h4 id="s22-12-4-security"><span class="num">22.12.4</span> security</h4>
+<h4 id="s22-13-4-security"><span class="num">22.13.4</span> security</h4>
 <p>Security selects TLS: explicit, implicit or none.</p>
 <p>Defaults to explicit rather than none, because defaulting to plain FTP would make the insecure choice the quiet one, and a site that genuinely has no TLS should have to write that down.</p>
-<h4 id="s22-12-5-insecure-skip-verify"><span class="num">22.12.5</span> insecure_skip_verify</h4>
+<h4 id="s22-13-5-insecure-skip-verify"><span class="num">22.13.5</span> insecure_skip_verify</h4>
 <p>InsecureSkipVerify accepts any certificate.</p>
 <p>Needed more often than anybody would like: these servers frequently have a self-signed certificate generated years ago that nobody can reissue. Named separately so choosing it is deliberate and visible in the file rather than hidden inside a &#34;security: relaxed&#34; mode.</p>
-<h4 id="s22-12-6-allow-clear-password"><span class="num">22.12.6</span> allow_clear_password</h4>
+<h4 id="s22-13-6-allow-clear-password"><span class="num">22.13.6</span> allow_clear_password</h4>
 <p>AllowClearPassword permits a password over plain FTP.</p>
 <p>Refused by default, because that sends a credential across the network in clear text on every single delivery. Some analysers genuinely have no TLS, so it has to be possible - but it has to be written down, so that it is a decision somebody made rather than a default they inherited. The name is deliberately uncomfortable to type.</p>
-<h4 id="s22-12-7-temp-suffix"><span class="num">22.12.7</span> temp_suffix</h4>
+<h4 id="s22-13-7-temp-suffix"><span class="num">22.13.7</span> temp_suffix</h4>
 <p>TempSuffix is appended while the file is being written and removed by a rename once it is complete.</p>
 <p>Defaults to &#34;.part&#34;.</p>
 <p>Whoever collects these files is usually a scheduled job that takes whatever it finds, and without the rename it eventually takes half a message.</p>
-<h4 id="s22-12-8-timeout"><span class="num">22.12.8</span> timeout</h4>
+<h4 id="s22-13-8-timeout"><span class="num">22.13.8</span> timeout</h4>
 <p>Timeout bounds one transfer.</p>
 <p>Defaults to 60s.</p>
-<h3 id="s22-13-http-destination"><span class="num">22.13</span> HTTP Destination</h3>
+<h3 id="s22-14-http-destination"><span class="num">22.14</span> HTTP Destination</h3>
 <p>HTTPDestination posts messages to an HTTP endpoint.</p>
 <p>The commonest thing a Mirth channel does that Perfuse could not, and the commonest blocker the translator reports. Most uses are unglamorous: post the message to an internal API, post it to a web service that wraps a legacy system, post it to something somebody wrote in an afternoon.</p>
 <p>Defined as <code>HTTPDestination</code> in <code>internal/config</code>.</p>
@@ -4249,30 +4283,30 @@ rules:
 <tr><td><code>follow_redirects</code></td><td>true or false</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-13-1-url"><span class="num">22.13.1</span> url</h4>
+<h4 id="s22-14-1-url"><span class="num">22.14.1</span> url</h4>
 <p>URL is where to post.</p>
 <p>Required.</p>
-<h4 id="s22-13-2-method"><span class="num">22.13.2</span> method</h4>
+<h4 id="s22-14-2-method"><span class="num">22.14.2</span> method</h4>
 <p>Method defaults to POST.</p>
 <p>PUT is allowed for an endpoint that wants it.</p>
 <p>GET and DELETE are refused: this sends a message body, and a transport that silently dropped the message because of a method choice would be a very quiet way to lose data.</p>
-<h4 id="s22-13-3-content-type"><span class="num">22.13.3</span> content_type</h4>
+<h4 id="s22-14-3-content-type"><span class="num">22.14.3</span> content_type</h4>
 <p>ContentType defaults to application/hl7-v2+er7, which is the registered type for a pipe-delimited HL7 v2 message.</p>
 <p>Many endpoints want text/plain instead.</p>
-<h4 id="s22-13-4-bearer-token"><span class="num">22.13.4</span> bearer_token</h4>
+<h4 id="s22-14-4-bearer-token"><span class="num">22.14.4</span> bearer_token</h4>
 <p>BearerToken is sent as an Authorization header.</p>
 <p>Prefer an environment variable reference over a literal in a file that goes into git.</p>
-<h4 id="s22-13-5-success-status"><span class="num">22.13.5</span> success_status</h4>
+<h4 id="s22-14-5-success-status"><span class="num">22.14.5</span> success_status</h4>
 <p>SuccessStatus lists the status codes that count as delivered.</p>
 <p>Defaults to any 2xx.</p>
 <p>Configurable because endpoints disagree about what success looks like: some answer 200 with an error in the body, and some answer 202 for a queue they have accepted the message into.</p>
-<h4 id="s22-13-6-fail-on-body"><span class="num">22.13.6</span> fail_on_body</h4>
+<h4 id="s22-14-6-fail-on-body"><span class="num">22.14.6</span> fail_on_body</h4>
 <p>FailOnBody treats a response containing any of these strings as a failure, whatever the status code.</p>
 <p>This exists because an endpoint answering 200 with &#34;ERROR: patient not found&#34; in the body is common, and treating it as delivered means the message is gone and nobody knows.</p>
-<h4 id="s22-13-7-follow-redirects"><span class="num">22.13.7</span> follow_redirects</h4>
+<h4 id="s22-14-7-follow-redirects"><span class="num">22.14.7</span> follow_redirects</h4>
 <p>FollowRedirects allows the request to be redirected.</p>
 <p>Off by default: a redirect on a write would repost clinical data somewhere the configuration never named.</p>
-<h3 id="s22-14-java-script-destination"><span class="num">22.14</span> Java Script Destination</h3>
+<h3 id="s22-15-java-script-destination"><span class="num">22.15</span> Java Script Destination</h3>
 <p>JavaScriptDestination runs a script instead of sending anywhere.</p>
 <p>Mirth&#39;s JavaScript Writer, and it is used far more than its position in a feature list suggests. It is the escape hatch: when a site needs to talk to something no connector covers, or apply logic no transformation expresses, they write a JavaScript Writer. A migration that cannot run those cannot move the channels that have them, which in a mature Mirth installation is a large fraction.</p>
 <p>Deliberately not a general scripting host. The script gets the message and the same helpers a transformer gets; what it does not get is a way to reach the filesystem or the network, because that is what the other destinations are for and a script that opens its own socket is invisible to every retry, queue and metric in the engine.</p>
@@ -4285,18 +4319,18 @@ rules:
 <tr><td><code>success_on_undefined</code></td><td>true or false (a block, omit to leave off)</td><td>no</td><td>true</td></tr>
 </tbody>
 </table>
-<h4 id="s22-14-1-script"><span class="num">22.14.1</span> script</h4>
+<h4 id="s22-15-1-script"><span class="num">22.15.1</span> script</h4>
 <p>Script is the code to run.</p>
 <p>Required.</p>
-<h4 id="s22-14-2-timeout"><span class="num">22.14.2</span> timeout</h4>
+<h4 id="s22-15-2-timeout"><span class="num">22.15.2</span> timeout</h4>
 <p>Timeout bounds one execution.</p>
 <p>Zero applies a default.</p>
 <p>Bounded because a destination script is on the delivery path: an infinite loop in one does not merely fail a message, it holds the queue behind it.</p>
-<h4 id="s22-14-3-success-on-undefined"><span class="num">22.14.3</span> success_on_undefined</h4>
+<h4 id="s22-15-3-success-on-undefined"><span class="num">22.15.3</span> success_on_undefined</h4>
 <p>SuccessOnUndefined treats a script that returns nothing as success.</p>
 <p>Defaults to true.</p>
 <p>True is the right default and worth explaining. Mirth&#39;s JavaScript Writers overwhelmingly do their work and return nothing, so requiring an explicit return would break every one of them on import. Setting it false is for a site that wants a script to be explicit about whether it worked.</p>
-<h3 id="s22-15-kafka-destination"><span class="num">22.15</span> Kafka Destination</h3>
+<h3 id="s22-16-kafka-destination"><span class="num">22.16</span> Kafka Destination</h3>
 <p>KafkaDestination publishes messages to a Kafka topic.</p>
 <p>Defined as <code>KafkaDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4313,31 +4347,31 @@ rules:
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-15-1-brokers"><span class="num">22.15.1</span> brokers</h4>
+<h4 id="s22-16-1-brokers"><span class="num">22.16.1</span> brokers</h4>
 <p>Brokers is the bootstrap server list.</p>
 <p>Required.</p>
-<h4 id="s22-15-2-topic"><span class="num">22.15.2</span> topic</h4>
+<h4 id="s22-16-2-topic"><span class="num">22.16.2</span> topic</h4>
 <p>Topic is where to publish.</p>
 <p>Required.</p>
-<h4 id="s22-15-3-key"><span class="num">22.15.3</span> key</h4>
+<h4 id="s22-16-3-key"><span class="num">22.16.3</span> key</h4>
 <p>Key is a template for the record key, which decides the partition.</p>
 <p>This is the field that makes Kafka safe for a clinical feed, and it is worth being precise about why. Kafka guarantees order within a partition and nowhere else. Records with the same key always land in the same partition, so keying on the patient identifier keeps that patient&#39;s events in order while letting different patients go in parallel.</p>
 <p>Without a key there is no such guarantee. Measured against a real broker, thirty unkeyed records went to one partition rather than spreading: the client keeps a batch together and picks a new partition between batches. So the ordering holds by accident and breaks at a boundary nobody can see, which is worse than breaking consistently - an A03 discharge read before its A01 admission, intermittently, under load.</p>
 <p>An HL7 path, evaluated against the outgoing message: PID-3.1 keys by patient.</p>
-<h4 id="s22-15-4-acks"><span class="num">22.15.4</span> acks</h4>
+<h4 id="s22-16-4-acks"><span class="num">22.16.4</span> acks</h4>
 <p>Acks is how many brokers must confirm a write: &#34;all&#34;, &#34;leader&#34; or &#34;none&#34;.</p>
 <p>Defaults to all, which is the only setting that survives a broker failing between the write and the replication. &#34;none&#34; is fire-and-forget and will lose messages; it exists because somebody moving non-clinical telemetry may legitimately want it, and refusing it outright would mean they wrote their own producer instead.</p>
-<h4 id="s22-15-5-compression"><span class="num">22.15.5</span> compression</h4>
+<h4 id="s22-16-5-compression"><span class="num">22.16.5</span> compression</h4>
 <p>Compression is &#34;none&#34;, &#34;gzip&#34;, &#34;snappy&#34;, &#34;lz4&#34; or &#34;zstd&#34;.</p>
 <p>Defaults to snappy.</p>
 <p>On by default because HL7 is highly compressible text and the wire is usually the constraint. Snappy rather than zstd as the default: it is the cheapest in CPU, and a connector on the delivery path should not be the thing that saturates a core.</p>
-<h4 id="s22-15-6-headers"><span class="num">22.15.6</span> headers</h4>
+<h4 id="s22-16-6-headers"><span class="num">22.16.6</span> headers</h4>
 <p>Headers are record headers to set.</p>
 <p>Values are templates evaluated per message.</p>
-<h4 id="s22-15-7-timeout"><span class="num">22.15.7</span> timeout</h4>
+<h4 id="s22-16-7-timeout"><span class="num">22.16.7</span> timeout</h4>
 <p>Timeout bounds one publish.</p>
 <p>Defaults to thirty seconds.</p>
-<h3 id="s22-16-s3-destination"><span class="num">22.16</span> S3 Destination</h3>
+<h3 id="s22-17-s3-destination"><span class="num">22.17</span> S3 Destination</h3>
 <p>S3Destination writes each message as an object.</p>
 <p>Defined as <code>S3Destination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4359,32 +4393,32 @@ rules:
 <tr><td><code>format</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-16-1-key"><span class="num">22.16.1</span> key</h4>
+<h4 id="s22-17-1-key"><span class="num">22.17.1</span> key</h4>
 <p>Key templates the object key, using the same ${date}, ${timestamp}, ${control_id}, ${message_type} and ${channel} placeholders as the file and SFTP destinations.</p>
 <p>Defaults to a date-partitioned path plus the control id.</p>
 <p>Date partitioning by default because the alternative - every object in one flat prefix - makes a bucket that is slow to list and impossible to lifecycle by age, and nobody discovers that until there are four million objects in it.</p>
-<h4 id="s22-16-2-access-key-id"><span class="num">22.16.2</span> access_key_id</h4>
+<h4 id="s22-17-2-access-key-id"><span class="num">22.17.2</span> access_key_id</h4>
 <p>AccessKeyID and SecretAccessKey authenticate.</p>
 <p>Either may name an environment variable instead of holding the value, using the form ${NAME}.</p>
-<h4 id="s22-16-3-secret-access-key"><span class="num">22.16.3</span> secret_access_key</h4>
+<h4 id="s22-17-3-secret-access-key"><span class="num">22.17.3</span> secret_access_key</h4>
 <p>AccessKeyID and SecretAccessKey authenticate.</p>
 <p>Either may name an environment variable instead of holding the value, using the form ${NAME}.</p>
-<h4 id="s22-16-4-path-style"><span class="num">22.16.4</span> path_style</h4>
+<h4 id="s22-17-4-path-style"><span class="num">22.17.4</span> path_style</h4>
 <p>PathStyle addresses the bucket as a path rather than a subdomain.</p>
 <p>Most S3-compatible stores need this.</p>
-<h4 id="s22-16-5-content-type"><span class="num">22.16.5</span> content_type</h4>
+<h4 id="s22-17-5-content-type"><span class="num">22.17.5</span> content_type</h4>
 <p>ContentType labels the object.</p>
 <p>Defaults to application/hl7-v2 for HL7 and text/plain otherwise.</p>
-<h4 id="s22-16-6-timeout"><span class="num">22.16.6</span> timeout</h4>
+<h4 id="s22-17-6-timeout"><span class="num">22.17.6</span> timeout</h4>
 <p>Timeout bounds one upload.</p>
 <p>Defaults to 60s.</p>
-<h4 id="s22-16-7-storage-class"><span class="num">22.16.7</span> storage_class</h4>
+<h4 id="s22-17-7-storage-class"><span class="num">22.17.7</span> storage_class</h4>
 <p>StorageClass is the S3 storage class each object is written with: STANDARD_IA, INTELLIGENT_TIERING, GLACIER_IR, GLACIER, DEEP_ARCHIVE and so on.</p>
 <p>This is how an archive goes straight to Glacier - S3 has no separate Glacier API to call.</p>
-<h4 id="s22-16-8-format"><span class="num">22.16.8</span> format</h4>
+<h4 id="s22-17-8-format"><span class="num">22.17.8</span> format</h4>
 <p>Format is hl7 (the default: each object is the message) or ndjson: each object is one JSON line with the message and the fields worth querying, under date-partitioned keys, so Amazon Athena can query the archive.</p>
 <p>See perfuse athena.</p>
-<h3 id="s22-17-sftp-destination"><span class="num">22.17</span> SFTP Destination</h3>
+<h3 id="s22-18-sftp-destination"><span class="num">22.18</span> SFTP Destination</h3>
 <p>SFTPDestination writes each message to a file on an SFTP server.</p>
 <p>Defined as <code>SFTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4405,23 +4439,23 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>60s</td></tr>
 </tbody>
 </table>
-<h4 id="s22-17-1-host"><span class="num">22.17.1</span> host</h4>
+<h4 id="s22-18-1-host"><span class="num">22.18.1</span> host</h4>
 <p>Host is the server, with an optional port.</p>
 <p>Defaults to 22.</p>
-<h4 id="s22-17-2-password"><span class="num">22.17.2</span> password</h4>
+<h4 id="s22-18-2-password"><span class="num">22.18.2</span> password</h4>
 <p>Password authenticates with a password.</p>
 <p>Prefer KeyFile.</p>
-<h4 id="s22-17-3-file-name"><span class="num">22.17.3</span> file_name</h4>
+<h4 id="s22-18-3-file-name"><span class="num">22.18.3</span> file_name</h4>
 <p>FileName templates the name.</p>
 <p>Defaults to a timestamp plus the control ID.</p>
-<h4 id="s22-17-4-temp-suffix"><span class="num">22.17.4</span> temp_suffix</h4>
+<h4 id="s22-18-4-temp-suffix"><span class="num">22.18.4</span> temp_suffix</h4>
 <p>TempSuffix is appended while a file is being written, and removed by a rename once it is complete.</p>
 <p>Defaults to &#34;.part&#34;.</p>
 <p>The same courtesy this connector needs on the way in. Whoever collects these files has the identical problem, and a rename within a directory is atomic on every server worth using.</p>
-<h4 id="s22-17-5-timeout"><span class="num">22.17.5</span> timeout</h4>
+<h4 id="s22-18-5-timeout"><span class="num">22.18.5</span> timeout</h4>
 <p>Timeout bounds a single connection.</p>
 <p>Defaults to 60s.</p>
-<h3 id="s22-18-smtp-destination"><span class="num">22.18</span> SMTP Destination</h3>
+<h3 id="s22-19-smtp-destination"><span class="num">22.19</span> SMTP Destination</h3>
 <p>SMTPDestination configures delivery by email.</p>
 <p>Defined as <code>SMTPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4443,40 +4477,40 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-18-1-host"><span class="num">22.18.1</span> host</h4>
+<h4 id="s22-19-1-host"><span class="num">22.19.1</span> host</h4>
 <p>Host is the mail server, with an optional port.</p>
 <p>Port 587 is assumed, which is submission with STARTTLS - the port a modern server expects a client on. Port 25 is server-to-server and is usually either blocked or unauthenticated.</p>
-<h4 id="s22-18-2-from"><span class="num">22.18.2</span> from</h4>
+<h4 id="s22-19-2-from"><span class="num">22.19.2</span> from</h4>
 <p>From is the envelope sender.</p>
 <p>Required, because a message with no sender is discarded silently by a great deal of mail infrastructure, which makes it the hardest possible failure to diagnose.</p>
-<h4 id="s22-18-3-to"><span class="num">22.18.3</span> to</h4>
+<h4 id="s22-19-3-to"><span class="num">22.19.3</span> to</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s22-18-4-cc"><span class="num">22.18.4</span> cc</h4>
+<h4 id="s22-19-4-cc"><span class="num">22.19.4</span> cc</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s22-18-5-bcc"><span class="num">22.18.5</span> bcc</h4>
+<h4 id="s22-19-5-bcc"><span class="num">22.19.5</span> bcc</h4>
 <p>To, CC and BCC are recipients.</p>
 <p>At least one To is required.</p>
-<h4 id="s22-18-6-body"><span class="num">22.18.6</span> body</h4>
+<h4 id="s22-19-6-body"><span class="num">22.19.6</span> body</h4>
 <p>Body is the message text.</p>
 <p>Field references are substituted, as in Subject. When it is empty the message itself is the body.</p>
-<h4 id="s22-18-7-attach-name"><span class="num">22.18.7</span> attach_name</h4>
+<h4 id="s22-19-7-attach-name"><span class="num">22.19.7</span> attach_name</h4>
 <p>AttachName names the attachment.</p>
 <p>Defaults to the control ID with a .hl7 suffix.</p>
-<h4 id="s22-18-8-username"><span class="num">22.18.8</span> username</h4>
+<h4 id="s22-19-8-username"><span class="num">22.19.8</span> username</h4>
 <p>Username and Password authenticate to the server.</p>
 <p>Both or neither.</p>
-<h4 id="s22-18-9-password"><span class="num">22.18.9</span> password</h4>
+<h4 id="s22-19-9-password"><span class="num">22.19.9</span> password</h4>
 <p>Username and Password authenticate to the server.</p>
 <p>Both or neither.</p>
-<h4 id="s22-18-10-starttls"><span class="num">22.18.10</span> starttls</h4>
+<h4 id="s22-19-10-starttls"><span class="num">22.19.10</span> starttls</h4>
 <p>StartTLS upgrades the connection before authenticating.</p>
 <p>It defaults to on, and turning it off with a username set is refused rather than allowed: sending a password over an unencrypted connection is not a trade-off worth offering.</p>
-<h4 id="s22-18-11-insecure-skip-verify"><span class="num">22.18.11</span> insecure_skip_verify</h4>
+<h4 id="s22-19-11-insecure-skip-verify"><span class="num">22.19.11</span> insecure_skip_verify</h4>
 <p>InsecureSkipVerify accepts any certificate.</p>
 <p>Named unambiguously because that is what it does.</p>
-<h3 id="s22-19-sns-destination"><span class="num">22.19</span> SNS Destination</h3>
+<h3 id="s22-20-sns-destination"><span class="num">22.20</span> SNS Destination</h3>
 <p>SNSDestination publishes each message to an SNS topic.</p>
 <p>Defined as <code>SNSDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4487,10 +4521,10 @@ rules:
 <tr><td><code>group_by</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-19-1-subject"><span class="num">22.19.1</span> subject</h4>
+<h4 id="s22-20-1-subject"><span class="num">22.20.1</span> subject</h4>
 <p>Subject is sent with email subscriptions.</p>
 <p>Optional; ${message_type} and ${control_id} are filled in.</p>
-<h3 id="s22-20-soap-destination"><span class="num">22.20</span> SOAP Destination</h3>
+<h3 id="s22-21-soap-destination"><span class="num">22.21</span> SOAP Destination</h3>
 <p>SOAPDestination posts a SOAP request per message.</p>
 <p>Defined as <code>SOAPDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4509,22 +4543,22 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>30s</td></tr>
 </tbody>
 </table>
-<h4 id="s22-20-1-action"><span class="num">22.20.1</span> action</h4>
+<h4 id="s22-21-1-action"><span class="num">22.21.1</span> action</h4>
 <p>Action is the SOAPAction.</p>
 <p>Required by most 1.1 services.</p>
-<h4 id="s22-20-2-body"><span class="num">22.20.2</span> body</h4>
+<h4 id="s22-21-2-body"><span class="num">22.21.2</span> body</h4>
 <p>Body is the XML that goes inside the envelope, with ${PID-5.1} style references to message paths.</p>
 <p>Required. There is no useful default: the element names come from the service&#39;s own schema and no engine can guess them.</p>
-<h4 id="s22-20-3-header"><span class="num">22.20.3</span> header</h4>
+<h4 id="s22-21-3-header"><span class="num">22.21.3</span> header</h4>
 <p>Header is XML for the envelope&#39;s Header element.</p>
 <p>Omitted entirely when empty, because some services reject an empty one.</p>
-<h4 id="s22-20-4-fault-is-success"><span class="num">22.20.4</span> fault_is_success</h4>
+<h4 id="s22-21-4-fault-is-success"><span class="num">22.21.4</span> fault_is_success</h4>
 <p>FaultIsSuccess lists fault codes that count as delivered.</p>
 <p>Needed more often than it should be. A service that answers a resend with &#34;already submitted&#34; is telling you the message arrived, and without this a site has to write a response transformer to say so - or worse, watches a queue retry forever against a receiver that already has the message.</p>
-<h4 id="s22-20-5-timeout"><span class="num">22.20.5</span> timeout</h4>
+<h4 id="s22-21-5-timeout"><span class="num">22.21.5</span> timeout</h4>
 <p>Timeout bounds one call.</p>
 <p>Defaults to 30s.</p>
-<h3 id="s22-21-sqs-destination"><span class="num">22.21</span> SQS Destination</h3>
+<h3 id="s22-22-sqs-destination"><span class="num">22.22</span> SQS Destination</h3>
 <p>SQSDestination sends each message to an SQS queue.</p>
 <p>Defined as <code>SQSDestination</code> in <code>internal/config</code>.</p>
 <table>
@@ -4534,10 +4568,10 @@ rules:
 <tr><td><code>group_by</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-21-1-queue-url"><span class="num">22.21.1</span> queue_url</h4>
+<h4 id="s22-22-1-queue-url"><span class="num">22.22.1</span> queue_url</h4>
 <p>QueueURL names the queue.</p>
 <p>One ending .fifo is a FIFO queue, and is grouped and deduplicated.</p>
-<h3 id="s22-22-tcp-dest"><span class="num">22.22</span> TCP Dest</h3>
+<h3 id="s22-23-tcp-dest"><span class="num">22.23</span> TCP Dest</h3>
 <p>TCPDest sends messages to a socket with configurable framing.</p>
 <p>Defined as <code>TCPDest</code> in <code>internal/config</code>.</p>
 <table>
@@ -4551,10 +4585,10 @@ rules:
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s22-22-1-expect-reply"><span class="num">22.22.1</span> expect_reply</h4>
+<h4 id="s22-23-1-expect-reply"><span class="num">22.23.1</span> expect_reply</h4>
 <p>ExpectReply waits for bytes back before reporting success.</p>
 <p>Off by default, and worth thinking about. With it off, &#34;delivered&#34; means the bytes reached the operating system&#39;s send buffer, which a peer that crashed a moment later never read. With it on, a peer that never replies makes every message time out.</p>
-<h4 id="s22-22-2-keep-alive"><span class="num">22.22.2</span> keep_alive</h4>
+<h4 id="s22-23-2-keep-alive"><span class="num">22.23.2</span> keep_alive</h4>
 <p>KeepAlive holds one connection open across messages rather than dialling per message.</p>
 <p>Most device endpoints expect this; some refuse a second message on the same connection. Off by default because a connection per message is the behaviour that works everywhere, at the cost of a handshake each time.</p>
 </section>
@@ -5827,6 +5861,7 @@ rules:
 <tr><td><code>commit_after_delivery</code></td><td>Kafka Source</td></tr>
 <tr><td><code>compare</code></td><td>Shadow</td></tr>
 <tr><td><code>compression</code></td><td>Kafka Destination</td></tr>
+<tr><td><code>config</code></td><td>ELR Destination</td></tr>
 <tr><td><code>container</code></td><td>Azure Blob Access</td></tr>
 <tr><td><code>content_type</code></td><td>AMQP Destination, Azure Blob Destination, Broker Destination, HTTP Destination, S3 Destination</td></tr>
 <tr><td><code>contract</code></td><td>Channel</td></tr>
@@ -5849,6 +5884,7 @@ rules:
 <tr><td><code>dsn</code></td><td>Database Destination, Database Source</td></tr>
 <tr><td><code>ecr</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>element</code></td><td>SOAP Source</td></tr>
+<tr><td><code>elr</code></td><td>Destination</td></tr>
 <tr><td><code>emit_on_first_poll</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>enabled</code></td><td>Channel, Destination, Queue Config</td></tr>
 <tr><td><code>endpoint</code></td><td>AWS Access, Azure Blob Access, S3 Destination</td></tr>
@@ -5958,7 +5994,7 @@ rules:
 <tr><td><code>quiet_after</code></td><td>Serial Source</td></tr>
 <tr><td><code>quote</code></td><td>Delimited</td></tr>
 <tr><td><code>raw</code></td><td>File Poll</td></tr>
-<tr><td><code>rctc</code></td><td>ECR Destination</td></tr>
+<tr><td><code>rctc</code></td><td>ECR Destination, ELR Destination</td></tr>
 <tr><td><code>read_timeout</code></td><td>HTTP Source, SOAP Source</td></tr>
 <tr><td><code>reassemble</code></td><td>Attachments</td></tr>
 <tr><td><code>reconnect</code></td><td>AMQP Source, Broker Source</td></tr>

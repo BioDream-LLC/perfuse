@@ -908,16 +908,20 @@ function readDestination(d: WireDest): Destination {
   dest.timeoutSeconds = readSeconds(d.timeout)
   if (d.retry) {
     dest.retryAttempts = d.retry.attempts ?? 0
-    dest.responseTransformer = d.responseTransformer ?? ''
-    dest.queueEnabled = d.queue?.enabled === true
-    dest.queueMaxAttempts = d.queue?.maxAttempts ? String(d.queue.maxAttempts) : ''
-    dest.queueBackoff = d.queue?.backoff ?? ''
-    dest.queueMaxBackoff = d.queue?.maxBackoff ?? ''
-    dest.queueMaxDepth = d.queue?.maxDepth ? String(d.queue.maxDepth) : ''
-    dest.queueRetainHours = d.queue?.retainHours ? String(d.queue.retainHours) : ''
     dest.retryBackoffSeconds = readSeconds(d.retry.backoff)
     dest.retryMaxBackoffSeconds = readSeconds(d.retry.maxBackoff)
   }
+  // Read whether or not there is a retry block. They were inside it, so a destination with a response transformer or a
+  // queue and no retry settings lost them when it was opened in the form and saved.
+  dest.responseTransformer = d.responseTransformer ?? ''
+  dest.elrConfig = d.elr?.config ?? ''
+  dest.elrRctc = d.elr?.rctc ?? ''
+  dest.queueEnabled = d.queue?.enabled === true
+  dest.queueMaxAttempts = d.queue?.maxAttempts ? String(d.queue.maxAttempts) : ''
+  dest.queueBackoff = d.queue?.backoff ?? ''
+  dest.queueMaxBackoff = d.queue?.maxBackoff ?? ''
+  dest.queueMaxDepth = d.queue?.maxDepth ? String(d.queue.maxDepth) : ''
+  dest.queueRetainHours = d.queue?.retainHours ? String(d.queue.retainHours) : ''
 
   return dest
 }
@@ -1142,6 +1146,7 @@ interface WireStep {
 
 interface WireDest {
   responseTransformer?: string
+  elr?: { config?: string; rctc?: string }
 
   queue?: {
     enabled?: boolean

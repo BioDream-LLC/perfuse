@@ -207,3 +207,20 @@ test("the empty template says what is missing rather than just failing", async (
 
   expect(problems, `console problems on the empty template:\n${problems.join("\n")}`).toEqual([]);
 });
+
+test("a destination to the state can send lab results as ELR", async ({ page }) => {
+  const problems = watch(page);
+  await openBuilder(page, /Pass a feed to another system/);
+  await page.getByPlaceholder("adt-inbound").fill("lab-to-state-gui");
+
+  // Offered on an MLLP destination of an HL7 channel, with the trigger codes waiting for an ELR file first.
+  const elr = page.getByTestId("elr-settings").first();
+  await expect(elr).toBeVisible();
+  await expect(elr.getByPlaceholder("rctc.json")).toBeDisabled();
+  await elr.getByPlaceholder("elr.yaml").fill("elr.yaml");
+  await expect(elr.getByPlaceholder("rctc.json")).toBeEnabled();
+
+  const yaml = await yamlPreview(page, "config: elr.yaml");
+  expect(yaml).toMatch(/elr:\s+config: elr\.yaml/);
+  expect(problems, problems.join("\n")).toEqual([]);
+});

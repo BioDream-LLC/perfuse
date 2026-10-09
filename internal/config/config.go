@@ -553,6 +553,12 @@ type Destination struct {
 	// AzureBlob applies to an azure_blob destination.
 	AzureBlob *AzureBlobDestination `yaml:"azure_blob,omitempty"`
 
+	// ELR makes this a public health lab reporting destination: each lab result (ORU^R01) is reshaped into an ELR 2.5.1
+	// message holding only the orders with a reportable result, and that is what is delivered; a message with nothing
+	// reportable is not sent at all. Applies to destinations that deliver an HL7 v2 message as it is (mllp, http, file,
+	// sftp and the rest), on an hl7 channel.
+	ELR *ELRDestination `yaml:"elr,omitempty"`
+
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	//
 	// It exists because "did this arrive" is often not a question the transport can answer: an MLLP
@@ -638,6 +644,18 @@ type FHIRDestination struct {
 	// ECR makes this a public health case reporting destination. Each message is checked for trigger codes; one that has any
 	// is sent as an eCR 2.1 eICR, wrapped in an eCR message, to url's $process-message, and one with none is not sent at all.
 	ECR *ECRDestination `yaml:"ecr,omitempty"`
+}
+
+// ELRDestination configures electronic laboratory reporting.
+type ELRDestination struct {
+	// Config is the ELR file `perfuse elr -config` reads: the sending and receiving applications and facilities by OID, the
+	// processing mode, and what fills the gaps a lab feed leaves (ordering facility, performing lab, assigning authorities).
+	// A relative path is read from the channel file's directory.
+	Config string `yaml:"config"`
+
+	// RCTC is a FHIR ValueSet, or a Bundle of them such as the eRSD, holding the trigger codes. Without it Perfuse's short
+	// built-in sample is used, which is for testing: agencies expect the RCTC. Relative to the channel file, as Config.
+	RCTC string `yaml:"rctc,omitempty"`
 }
 
 // ECRDestination configures electronic case reporting.

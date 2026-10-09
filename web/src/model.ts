@@ -427,6 +427,10 @@ export interface Destination {
 
   /** responseTransformer inspects what the receiver said back and may mark the delivery failed. */
   responseTransformer: string
+  /** elrConfig turns the destination into lab reporting to public health: the ELR file (OIDs, gaps the lab leaves). */
+  elrConfig: string
+  /** elrRctc is the trigger codes file; empty uses the built-in sample. */
+  elrRctc: string
   jsTimeout: string
   jsRequireResult: boolean
 
@@ -2214,6 +2218,7 @@ function destinationToWire(d: Destination): unknown {
   }
 
   if (d.responseTransformer.trim()) out.responseTransformer = d.responseTransformer
+  if (d.elrConfig.trim()) out.elr = { config: d.elrConfig.trim(), rctc: d.elrRctc.trim() || undefined }
 
   if (d.queueEnabled) {
     out.queue = {
@@ -2351,6 +2356,8 @@ export function newDestination(): Destination {
 
     jsScript: '',
     responseTransformer: '',
+    elrConfig: '',
+    elrRctc: '',
     jsTimeout: '',
     jsRequireResult: false,
     docDir: '',

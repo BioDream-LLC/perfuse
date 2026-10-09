@@ -110,7 +110,13 @@ func lookupTable(tables *codeset.Set, name string) (*codeset.Table, bool) {
 // addresses and directories - so every other destination type printed a blank where its target should be. A single
 // function means a new destination type is described everywhere at once, or nowhere, rather than in two places out
 // of three.
-func DescribeTransport(d config.Destination) string { return describeTransport(d) }
+func DescribeTransport(d config.Destination) string {
+	if d.ELR != nil {
+		// The state receives ELR, not the lab's message, and someone reading the description needs to know that.
+		return describeTransport(d) + ", reportable results only, as ELR 2.5.1"
+	}
+	return describeTransport(d)
+}
 
 func describeTransport(d config.Destination) string {
 	switch d.Type {

@@ -209,6 +209,14 @@ func (c *Channel) Validate() error {
 		c.Scripts = &Scripts{}
 	}
 
+	// ELR files are named relative to the channel file, like a contract, and checked now rather than when the first lab
+	// result arrives.
+	for i := range c.Destinations {
+		if e := c.Destinations[i].ELR; e != nil {
+			errs = append(errs, e.load(filepath.Dir(c.path), c.Destinations[i].Name)...)
+		}
+	}
+
 	if c.Contract != nil {
 		if err := c.Contract.load(filepath.Dir(c.path)); err != nil {
 			errs = append(errs, err)
@@ -759,6 +767,20 @@ func (d *Destination) validate(dataType DataType) []error {
 	}
 	if d.Type != DestinationChannel && d.Channel != nil {
 		errs = append(errs, errors.New("a channel block only applies to a channel destination"))
+	}
+
+	if d.ELR != nil {
+		if dataType != DataHL7 {
+			errs = append(errs, fmt.Errorf("an elr block reshapes HL7 v2 lab results, and this is a %s channel", dataType))
+		}
+		switch d.Type {
+		case DestinationMLLP, DestinationFile, DestinationHTTP, DestinationSFTP, DestinationFTP, DestinationTCP, DestinationS3,
+			DestinationAzureBlob, DestinationSOAP, DestinationBroker, DestinationKafka, DestinationSQS, DestinationSNS,
+			DestinationAMQP, DestinationChannel:
+		default:
+			// These convert or interpret the message rather than deliver it, so an ELR message would never reach anyone.
+			errs = append(errs, fmt.Errorf("an elr block applies to a destination that delivers the HL7 v2 message itself, not a %s destination", d.Type))
+		}
 	}
 
 	// A response transformer on a destination that never receives a reply would be a script that never

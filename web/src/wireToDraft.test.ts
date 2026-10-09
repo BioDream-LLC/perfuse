@@ -16,6 +16,22 @@ const minimal: WireModel = {
 }
 
 describe('reading a channel back into the form', () => {
+  it('keeps an ELR block through a round trip', () => {
+    // A lab-reporting destination reopened in the form and saved must still send ELR, not the lab's raw results.
+    const model = { ...minimal, destinations: [{ name: 'state', type: 'mllp', address: 'elr.state.example:6661',
+      elr: { config: 'elr.yaml', rctc: 'rctc.json' } }] } as WireModel
+    const out = roundTrip(model) as unknown as { destinations: { elr?: { config: string; rctc?: string } }[] }
+    expect(out.destinations[0]?.elr).toEqual({ config: 'elr.yaml', rctc: 'rctc.json' })
+    // Nor are the reply script and the queue lost on a destination with no retry block.
+    const kept = roundTrip({ ...minimal, destinations: [{ name: 'out', type: 'mllp', address: 'h:1',
+      responseTransformer: 'return true', queue: { enabled: true } }] } as WireModel) as unknown as
+      { destinations: { responseTransformer?: string; queue?: { enabled?: boolean } }[] }
+    expect(kept.destinations[0]?.responseTransformer).toBe('return true')
+    expect(kept.destinations[0]?.queue?.enabled).toBe(true)
+    const plain = roundTrip(minimal) as unknown as { destinations: { elr?: unknown }[] }
+    expect(plain.destinations[0]?.elr).toBeUndefined()
+  })
+
   it('keeps the name, source and destination', () => {
     const draft = wireToDraft(minimal)
     expect(draft.name).toBe('feed')

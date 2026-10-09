@@ -638,7 +638,8 @@ server, below.
 
 **October 2026.** The Inferno US Core test kit (us_core_test_kit 1.1.6, US Core Server v7.0.0, SMART App Launch 2.0.0), run
 locally in Docker against `serve -fhir -smart-clients -smart-users`, Perfuse issuing the tokens itself. The data was Inferno's own
-reference server data set (739 resources, patient 85). A script played the browser through Perfuse's sign-in and consent pages.
+reference server patient bundles (740 resources, patients 85 and 355). A script played the browser through Perfuse's sign-in and
+consent pages.
 
 - Standalone launch: 20 of 20.
 - **Granular scopes 1** (Condition `encounter-diagnosis` and `health-concern`, Observation `laboratory` and `social-history`):
@@ -646,7 +647,9 @@ reference server data set (739 resources, patient 85). A script played the brows
 - **Granular scopes 2** (Condition `problem-list-item`, Observation `vital-signs`, `survey` and `sdoh`): the same, 17 passes and 2 skips.
 - The skips are searches the data cannot exercise: no `asserted-date` search, and no `health-concern` or `problem-list-item`
   Condition for the patient.
-- US Core FHIR API under a patient token: 260 pass, 17 fail.
+- US Core FHIR API under a patient token (patient 85): 272 pass, 14 fail.
+- The same group as a backend-services client (`system/*.rs`, both patients): 501 pass, 4 fail. All four are one Observation in
+  Inferno's data whose `effectivePeriod` has `stop` where FHIR has `end`; Perfuse returns what it was given.
 
 The suite found:
 
@@ -661,12 +664,19 @@ The suite found:
   Organization, Practitioner, Location and Medication referenced by their records answered 404. Now Coverage counts as the
   patient's. The shared directory and drug types can be read by id when the scopes cover the type.
 - **`_include=MedicationDispense:medication`** was refused. It is now supported, and stored dispenses are indexed again.
+- **Most types were answered without `meta.versionId` or `meta.lastUpdated`.** Only nine types were stamped when stored, so a
+  Condition, a MedicationRequest or a Coverage gave a client nothing to put in `If-Match` or a `_lastUpdated` search. Every stored
+  type is stamped now, and the sender's security labels, tags and source are kept (they were dropped on those nine).
+- **A transaction to the base URL was redirected.** `POST /fhir` answered 307 to `/fhir/`, which most HTTP clients do not follow
+  with the body. The base itself is now served.
 
-Two kinds of failure are left:
+What is left under the patient token:
 
-- **Searches of the directory itself** (Practitioner, Organization, Location by name or address), which Perfuse refuses on
-  purpose under a token limited to one patient, so that a patient's app cannot list every clinician.
-- **Gaps in the data set:** no Medication or PractitionerRole resources, no data-absent-reason, and no DocumentReference custodian.
+- **Searches of the directory itself** (12: Practitioner, PractitionerRole, Organization, Location by name, address or
+  specialty), which Perfuse refuses on purpose under a token limited to one patient, so that a patient's app cannot list every
+  clinician. The backend-services run shows the same searches pass when the token may see the directory.
+- **What patient 85's data does not hold** (2): its one data-absent-reason is on a Condition category no US Core search reaches,
+  and its documents name no custodian. Both pass with patient 355 in the backend-services run.
 
 ## Public health case reports, against the HL7 validator and HAPI FHIR
 

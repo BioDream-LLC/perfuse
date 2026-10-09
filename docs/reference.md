@@ -326,7 +326,8 @@ the code system. The details are in `docs/verification.md`.
 ### The FHIR server
 
 A capability statement, read, search, create, update, delete, transaction and
-`$validate`. One hundred and twenty-seven resource types with search parameters, covering clinical
+`$validate`. A transaction or batch is `POST` to the base (`/fhir` or `/fhir/`). Every stored resource carries
+`meta.versionId` and `meta.lastUpdated`; the sender's `meta.security`, `meta.tag` and `meta.source` are kept. One hundred and twenty-seven resource types with search parameters, covering clinical
 (Patient, Encounter, Observation, DiagnosticReport, Condition, Procedure),
 medications (Medication, MedicationRequest, MedicationStatement, MedicationDispense,
 MedicationAdministration), care coordination (CarePlan, CareTeam, Goal, Task),
@@ -476,6 +477,11 @@ the source's separators become `^~\&`; ORC is built from OBR when missing; SPM f
 results become CWE; race and ethnicity coded CDCREC are recoded to HL7 tables 0005 and 0189, keeping the sender's coding as the
 alternate; an NPI named only `NPI` gets its OID and identifier type. What the lab did not send (a specimen type, the time the
 specimen was received) stays empty and is printed as a note.
+
+A destination's `elr` block does the same on the way out of a channel: `elr: {config: elr.yaml, rctc: rctc.json}` (paths relative
+to the channel file; `rctc` optional). Each ORU^R01 is delivered as its ELR message; one with nothing reportable is not sent and
+counts as delivered. HL7 v2 channels only, on destinations that deliver the message itself (mllp, http, tcp, file, sftp, ftp, s3,
+azure_blob, soap, broker, kafka, sqs, sns, amqp, channel). The config is read and checked when the channel loads.
 
 ## CMS-0057 for payers
 

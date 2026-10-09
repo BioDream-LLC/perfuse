@@ -800,6 +800,9 @@ type buildDest struct {
 	// where the message goes belongs to the receiving channel.
 	Channel *buildChannelDest `json:"channel,omitempty" yaml:"channel,omitempty"`
 
+	// ELR sends lab results to public health as ELR 2.5.1, reportable ones only, over whatever this destination is.
+	ELR *buildELR `json:"elr,omitempty" yaml:"elr,omitempty"`
+
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	ResponseTransformer string `json:"responseTransformer,omitempty" yaml:"response_transformer,omitempty"`
 
@@ -893,6 +896,11 @@ type buildFHIRDest struct {
 
 	// ECR turns the destination into public health case reporting: eICRs for reportable messages, to url's $process-message.
 	ECR *buildECR `json:"ecr,omitempty" yaml:"ecr,omitempty"`
+}
+
+type buildELR struct {
+	Config string `json:"config,omitempty" yaml:"config,omitempty"`
+	RCTC   string `json:"rctc,omitempty" yaml:"rctc,omitempty"`
 }
 
 type buildECR struct {

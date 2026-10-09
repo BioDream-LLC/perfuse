@@ -346,6 +346,18 @@ func NewChannel(cfg *config.Channel, factory SenderFactory, log *slog.Logger) (*
 			dest.sender = sender
 		}
 
+		// After the script swap, so the ELR message is what any destination type delivers.
+		if resolved.ELR != nil {
+			wrapped, err := wrapELR(resolved.ELR, sender, ch.log.With("destination", resolved.Name))
+			if err != nil {
+				ch.closeSenders()
+				sender.Close()
+				return nil, fmt.Errorf("channel %q destination %q: %w", cfg.Name, d.Name, err)
+			}
+			sender = wrapped
+			dest.sender = sender
+		}
+
 		if src := strings.TrimSpace(resolved.ResponseTransformer); src != "" {
 			engine := cfg.Scripts.Engine()
 			if engine == nil {
