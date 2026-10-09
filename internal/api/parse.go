@@ -80,7 +80,7 @@ func (s *Server) handleParseChannel(w http.ResponseWriter, r *http.Request, _ *s
 		return
 	}
 
-	res := parseChannelForForm(req.YAML)
+	res := parseChannelForForm(req.YAML, s.channelDir())
 
 	// A refusal is a successful answer to the question that was asked, not an error. The caller
 	// asked whether the form can edit this file; "no, because of this" is the answer.
@@ -88,11 +88,11 @@ func (s *Server) handleParseChannel(w http.ResponseWriter, r *http.Request, _ *s
 }
 
 // parseChannelForForm decides whether the form can faithfully represent a channel file.
-func parseChannelForForm(text string) parseResponse {
+func parseChannelForForm(text, dir string) parseResponse {
 	// The file has to load before anything else is worth saying. A file that does not load is a
 	// job for the text editor no matter what the form could do with it, and the loader's own error
 	// is more useful than anything said here.
-	original, err := config.Load(bytes.NewReader([]byte(text)), "(existing)")
+	original, err := loadBeside(dir, text, "(existing)")
 	if err != nil {
 		return parseResponse{
 			Editable: false,
@@ -123,7 +123,7 @@ func parseChannelForForm(text string) parseResponse {
 	// Load the regeneration the same way, then compare what the engine would actually run. Comparing
 	// the loaded channels rather than the two texts is what lets comments and key order differ
 	// without being treated as a change in meaning.
-	rebuilt, err := config.Load(bytes.NewReader([]byte(regenerated)), "(from the form)")
+	rebuilt, err := loadBeside(dir, regenerated, "(from the form)")
 	if err != nil {
 		return parseResponse{
 			Editable: false,

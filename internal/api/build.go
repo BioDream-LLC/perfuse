@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"gopkg.in/yaml.v3"
 )
@@ -1421,7 +1420,7 @@ func (s *Server) handleBuildChannel(w http.ResponseWriter, r *http.Request, _ *s
 
 	out := buildResponse{YAML: text, Problems: []validateProblem{}}
 
-	c, err := config.Load(bytes.NewReader([]byte(text)), "(unsaved)")
+	c, err := loadBeside(s.channelDir(), text, "(unsaved)")
 	if err != nil {
 		out.Problems = problemsFromError(err)
 		s.ok(w, out)

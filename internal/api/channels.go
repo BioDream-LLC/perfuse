@@ -167,6 +167,29 @@ func (r *ChannelRepo) Validate(raw []byte) (*config.Channel, error) {
 	return c, nil
 }
 
+// loadBeside loads a channel's text as if it were a file named label in dir, so the files it names (an ELR config, scripts.include)
+// resolve against the files beside the channels rather than against wherever the server was started. The directory is the
+// server's business, so it is taken back out of any error.
+func loadBeside(dir, text, label string) (*config.Channel, error) {
+	at := label
+	if dir != "" {
+		at = filepath.Join(dir, label)
+	}
+	c, err := config.Load(strings.NewReader(text), at)
+	if err != nil && at != label {
+		return nil, errors.New(strings.ReplaceAll(strings.ReplaceAll(err.Error(), at, label), dir+string(filepath.Separator), ""))
+	}
+	return c, err
+}
+
+// channelDir is the channel directory, or "" when the server has none.
+func (s *Server) channelDir() string {
+	if s.Channels == nil {
+		return ""
+	}
+	return s.Channels.Dir
+}
+
 // Create writes a new channel. It refuses to overwrite an existing one.
 func (r *ChannelRepo) Create(raw []byte) (*config.Channel, error) {
 	c, err := r.Validate(raw)

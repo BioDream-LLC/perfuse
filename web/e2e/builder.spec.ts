@@ -1,5 +1,10 @@
+import { copyFileSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
 import { openTab } from "./nav";
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 // Builds channels through the form the way an operator does, then checks the file that results and the form that comes back.
 //
@@ -79,7 +84,7 @@ test("a channel built through the form saves, and comes back the same", async ({
   const name = "gui-built-fhir";
   await page.getByPlaceholder("adt-inbound").fill(name);
   await page.getByPlaceholder("ADT from the hospital, forwarded to the registry").fill("Built through the GUI");
-  await page.getByPlaceholder(":6661").fill("127.0.0.1:0");
+  await page.getByRole("textbox", { name: "Listen on" }).fill("127.0.0.1:0");
 
   // Read the YAML the form generated, before saving. This is what the operator is shown and told will be written. Waited for by
   // the name typed, because the preview is rebuilt after a pause in typing.
@@ -222,5 +227,25 @@ test("a destination to the state can send lab results as ELR", async ({ page }) 
 
   const yaml = await yamlPreview(page, "config: elr.yaml");
   expect(yaml).toMatch(/elr:\s+config: elr\.yaml/);
+
+  // Saved with its ELR file beside it, it opens again in the form, the file read from the channel directory.
+  const channels = process.env.PERFUSE_E2E_CHANNELS;
+  expect(channels, "the fixture names its channel directory").toBeTruthy();
+  copyFileSync(join(here, "..", "..", "examples", "elr", "elr.yaml"), join(channels!, "elr.yaml"));
+  try {
+    // Any free port: the template's :6661 may be in use on the machine running the suite.
+    await page.getByRole("textbox", { name: "Listen on" }).fill("127.0.0.1:0");
+    await page.getByRole("button", { name: "Create channel" }).click();
+    // The nearest box around the channel's name that holds an Edit button: its own card, not the list around every card.
+    const card = page.getByText("lab-to-state-gui", { exact: true }).first()
+      .locator('xpath=ancestor::*[.//button[normalize-space()="Edit"]][1]');
+    await card.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByRole("heading", { name: "Editing lab-to-state-gui" })).toBeVisible();
+    await expect(page.getByText(/does not load/)).toHaveCount(0);
+    await expect(page.getByTestId("elr-settings").first().getByPlaceholder("elr.yaml")).toHaveValue("elr.yaml");
+  } finally {
+    await page.request.delete("/api/channels/lab-to-state-gui", { headers: { "X-Perfuse-Request": "1" } });
+    rmSync(join(channels!, "elr.yaml"), { force: true });
+  }
   expect(problems, problems.join("\n")).toEqual([]);
 });

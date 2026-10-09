@@ -493,6 +493,8 @@ export default async function globalSetup() {
   process.env.PERFUSE_E2E_SHADOW_MLLP = String(shadowPort);
   // The second shadowed channel, so a test can switch between them and see the report follow.
   process.env.PERFUSE_E2E_SHADOW_MLLP_B = String(shadowPortB);
+  // The channel directory, so a test can put a file a channel names (an ELR config) beside it, as an administrator would.
+  process.env.PERFUSE_E2E_CHANNELS = channels;
 
   // Recorded for the teardown, which runs in a separate process and cannot see these values.
   writeFileSync(STATE_FILE, JSON.stringify({ pid: proc.pid, dir, url }, null, 2));

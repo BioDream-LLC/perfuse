@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"strings"
@@ -81,7 +80,7 @@ func (s *Server) handleValidateChannel(w http.ResponseWriter, r *http.Request, _
 
 	// The path is only used in error messages. Naming it something recognisable is
 	// better than an empty string appearing in the middle of a sentence.
-	c, err := config.Load(bytes.NewReader([]byte(req.YAML)), "(unsaved)")
+	c, err := loadBeside(s.channelDir(), req.YAML, "(unsaved)")
 	if err != nil {
 		s.ok(w, validateResponse{
 			OK:       false,

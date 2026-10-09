@@ -3,6 +3,7 @@ package api
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -131,5 +132,26 @@ func TestAnELRConfigBesideItsChannelIsNotABrokenChannel(t *testing.T) {
 	writeFile(t, dir, "stray.yaml", "sending_facility: {id: x}\n")
 	if _, broken, _ = repo.List(); broken["stray.yaml"] == "" {
 		t.Errorf("a file no channel names was not reported: %v", broken)
+	}
+}
+
+// Editing a channel whose ELR file sits beside it: the form, validation and preview read that file from the channel directory, as
+// saving does, rather than from wherever the server was started (which said "does not load" for a channel that loads).
+func TestTheFormOpensAChannelWhoseELRFileIsBesideIt(t *testing.T) {
+	dir := t.TempDir()
+	elr, err := os.ReadFile(filepath.Join("..", "..", "examples", "elr", "elr.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "elr.yaml"), elr, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	text := "name: lab-to-state\nsource:\n  type: mllp\n  listen: 127.0.0.1:0\ndestinations:\n  - name: state\n    type: mllp\n" +
+		"    address: state.example.org:6661\n    elr:\n      config: elr.yaml\n"
+	if res := parseChannelForForm(text, dir); strings.Contains(res.Why, "does not load") {
+		t.Fatalf("the form could not open it: %s", res.Why)
+	}
+	if res := parseChannelForForm(text, t.TempDir()); !strings.Contains(res.Why, "does not load") || strings.Contains(res.Why, os.TempDir()) {
+		t.Errorf("without the file it should not load, and the error should not show the server's directory: %s", res.Why)
 	}
 }

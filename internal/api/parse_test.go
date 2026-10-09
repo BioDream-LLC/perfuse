@@ -28,7 +28,7 @@ destinations:
   - name: out
     type: file
     dir: /tmp/out
-`)
+`, "")
 
 	if !res.Editable {
 		t.Fatalf("refused a channel the form built its own model from: %s", res.Why)
@@ -63,7 +63,7 @@ destinations:
   - name: out
     type: file
     dir: /tmp/out
-`)
+`, "")
 
 	if res.Editable {
 		t.Fatal("the form offered to edit a channel containing a setting it cannot show")
@@ -125,7 +125,7 @@ func TestAFileThatDoesNotLoadIsSentToTheTextEditor(t *testing.T) {
 source:
   type: mllp
 destinations: []
-`)
+`, "")
 
 	if res.Editable {
 		t.Fatal("a channel that does not load was offered to the form")
@@ -149,7 +149,7 @@ destinations:
   - name: out
     type: file
     dir: /tmp/out
-`)
+`, "")
 
 	if !res.Editable {
 		t.Fatalf("a commented channel was refused: %s", res.Why)
@@ -174,7 +174,7 @@ func TestAnAlreadyTidyFileWarnsAboutNothing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res := parseChannelForForm(built)
+	res := parseChannelForForm(built, "")
 	if !res.Editable {
 		t.Fatalf("the form refused its own output: %s", res.Why)
 	}
@@ -209,7 +209,7 @@ destinations:
     dir: /var/spool/archive
 `
 
-	res := parseChannelForForm(original)
+	res := parseChannelForForm(original, "")
 	if !res.Editable {
 		t.Fatalf("refused: %s", res.Why)
 	}
