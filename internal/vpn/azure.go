@@ -74,8 +74,18 @@ func (m *Monitor) azureToken(ctx context.Context, a *AzureSource) (string, error
 	}
 	azureTokens.Unlock()
 	secret := os.Getenv(a.ClientSecretEnv)
-	if a.ClientSecretEnv == "" || secret == "" || a.TenantID == "" || a.ClientID == "" {
-		return "", fmt.Errorf("no Entra ID credentials: set tenant_id, client_id and client_secret_env (an app with Reader on the connection)")
+	var missing []string
+	for _, f := range []struct{ name, v string }{{"tenant_id", a.TenantID}, {"client_id", a.ClientID}, {"client_secret_env", a.ClientSecretEnv}} {
+		if f.v == "" {
+			missing = append(missing, f.name)
+		}
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("no Entra ID credentials: set %s in the -vpn file (an app with Reader on the connection)", strings.Join(missing, ", "))
+	}
+	if secret == "" {
+		// The usual case once the file is right: the service was started without the variable in its environment.
+		return "", fmt.Errorf("no Entra ID client secret: the environment variable %s, named by client_secret_env, is not set", a.ClientSecretEnv)
 	}
 	tokenURL := a.TokenURL
 	if tokenURL == "" {
