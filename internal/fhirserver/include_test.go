@@ -2,6 +2,7 @@ package fhirserver
 
 import (
 	"context"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -449,5 +450,18 @@ func TestABadIncludeIsRefusedThroughTheQueryParser(t *testing.T) {
 	}
 	if len(q.Includes) != 1 {
 		t.Errorf("the include was not recorded on the query: %+v", q.Includes)
+	}
+}
+
+// US Core asks for the drug with a dispense, as with an order.
+func TestADispenseIncludesItsMedication(t *testing.T) {
+	_, h := newTestServer(t)
+	do(t, h, http.MethodPut, "/Medication/m1", `{"resourceType":"Medication","id":"m1","code":{"text":"amoxicillin"}}`)
+	do(t, h, http.MethodPut, "/Patient/p1", `{"resourceType":"Patient","id":"p1","name":[{"family":"A"}]}`)
+	do(t, h, http.MethodPut, "/MedicationDispense/d1", `{"resourceType":"MedicationDispense","id":"d1","status":"completed",
+		"medicationReference":{"reference":"Medication/m1"},"subject":{"reference":"Patient/p1"}}`)
+	rec := do(t, h, http.MethodGet, "/MedicationDispense?patient=p1&_include=MedicationDispense:medication", nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"mode": "include"`) || !strings.Contains(rec.Body.String(), "amoxicillin") {
+		t.Errorf("%d %s", rec.Code, rec.Body)
 	}
 }

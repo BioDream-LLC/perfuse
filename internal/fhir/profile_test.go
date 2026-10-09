@@ -1,6 +1,7 @@
 package fhir
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -197,4 +198,25 @@ func messages(res *ValidationResult) string {
 	}
 
 	return strings.Join(parts, " | ")
+}
+
+// An attachment whose data is absent for a stated reason has data, as FHIRPath counts it: us-core-6 is url.exists() or
+// data.exists(), and an element holding only an extension exists. Inferno's US Core data carries one.
+func TestAnAttachmentWithADataAbsentReasonMeetsUSCore6(t *testing.T) {
+	raw := `{"resourceType":"DocumentReference","meta":{"profile":["http://hl7.org/fhir/us/core/StructureDefinition/us-core-documentreference"]},
+	"status":"current","type":{"coding":[{"system":"http://loinc.org","code":"34133-9"}]},
+	"category":[{"coding":[{"system":"http://hl7.org/fhir/us/core/CodeSystem/us-core-documentreference-category","code":"clinical-note"}]}],
+	"subject":{"reference":"Patient/1"},
+	"content":[{"attachment":{"contentType":"text/plain","_data":{"extension":[{"url":"http://hl7.org/fhir/StructureDefinition/data-absent-reason","valueCode":"error"}]}}}]}`
+	var d DocumentReference
+	if err := json.Unmarshal([]byte(raw), &d); err != nil {
+		t.Fatal(err)
+	}
+	if res := Validate(&d, ResourceShapeVersion); !res.Valid() {
+		t.Errorf("rejected: %s", messages(res))
+	}
+	d.Content[0].Attachment.DataElement = nil
+	if res := Validate(&d, ResourceShapeVersion); res.Valid() || !strings.Contains(messages(res), "carries its data or a URL") {
+		t.Errorf("an attachment with neither data nor a URL was accepted: %s", messages(res))
+	}
 }

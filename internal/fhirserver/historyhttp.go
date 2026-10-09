@@ -150,7 +150,7 @@ func (s *Server) handleVersionRead(w http.ResponseWriter, r *http.Request) {
 	//
 	// A versioned read would otherwise be a way straight past the context check: an app refused the current Patient could
 	// ask for version 1 of it and be handed the record.
-	if caller := CallerFrom(r.Context()); !permitsResource(caller, resource) {
+	if caller := CallerFrom(r.Context()); !permitsRead(caller, resource) {
 		s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityError, "not-found",
 			fmt.Sprintf("%s/%s has no version %d", resourceType, id, versionID))
 

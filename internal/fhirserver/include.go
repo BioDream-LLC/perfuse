@@ -87,6 +87,11 @@ var referenceTargets = map[string]map[string][]string{
 		"encounter":  {"Encounter"},
 		"medication": {"Medication"},
 	},
+	"MedicationDispense": {
+		"patient":    {"Patient"},
+		"subject":    {"Patient", "Group"},
+		"medication": {"Medication"},
+	},
 	"AllergyIntolerance": {
 		"patient":   {"Patient"},
 		"encounter": {"Encounter"},

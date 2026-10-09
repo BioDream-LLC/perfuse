@@ -168,7 +168,9 @@ var usCoreMoreRules = []ProfileRules{
 		need(res, d.Subject != nil, "DocumentReference.subject", "us-core-documentreference", "US Core requires the patient")
 		need(res, len(d.Content) > 0, "DocumentReference.content", "us-core-documentreference", "a DocumentReference requires content")
 		for i, c := range d.Content {
-			need(res, c.Attachment != nil && (c.Attachment.URL != "" || c.Attachment.Data != ""), indexed("DocumentReference.content", i),
+			// url.exists() or data.exists(): an element holding only an extension (a data absent reason) exists.
+			a := c.Attachment
+			need(res, a != nil && (a.URL != "" || a.Data != "" || a.URLElement != nil || a.DataElement != nil), indexed("DocumentReference.content", i),
 				"us-core-6", "US Core invariant: an attachment carries its data or a URL to it")
 		}
 	}),

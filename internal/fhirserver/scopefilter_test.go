@@ -99,7 +99,7 @@ func TestIncludesAreLimitedLikeReads(t *testing.T) {
 	}
 }
 
-// A token limited to a patient still reads its user's own Practitioner record, and nothing else outside the patient.
+// A token limited to a patient reads its user's own Practitioner record, and other directory entries only as its scopes allow.
 func TestAPatientLimitedTokenReadsItsOwnUser(t *testing.T) {
 	srv, h := newTestServer(t)
 	for _, body := range []string{`{"resourceType":"Practitioner","id":"d1"}`, `{"resourceType":"Practitioner","id":"d2"}`} {
@@ -117,7 +117,23 @@ func TestAPatientLimitedTokenReadsItsOwnUser(t *testing.T) {
 	if c := read("/Practitioner/d1"); c != 200 {
 		t.Errorf("own Practitioner: %d", c)
 	}
-	if c := read("/Practitioner/d2"); c != 404 {
-		t.Errorf("another Practitioner under a patient-limited token: %d", c)
+	// Another Practitioner is a shared directory entry: readable by id when the scopes cover Practitioner, as US Core's read
+	// tests require (an app shows who wrote the order), and never by a token whose scopes do not, nor by search.
+	if c := read("/Practitioner/d2"); c != 200 {
+		t.Errorf("another Practitioner with user/*.rs under a patient-limited token: %d", c)
+	}
+	srv.Auth = fixedCaller{Caller{Name: "app", Scopes: []string{"patient/Observation.rs"}, Patient: "p1"}}
+	for path, want := range map[string]int{"/Practitioner/d2": 403, "/Practitioner": 403} {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code != want {
+			t.Errorf("%s with only Observation scopes: %d, want %d", path, rec.Code, want)
+		}
+	}
+	srv.Auth = fixedCaller{Caller{Name: "app", Scopes: []string{"patient/*.rs"}, Patient: "p1"}}
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/Practitioner", nil))
+	if rec.Code != 403 {
+		t.Errorf("the practitioner directory was listed through a patient's token: %d", rec.Code)
 	}
 }

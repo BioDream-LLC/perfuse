@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -101,7 +102,7 @@ var SearchParams = map[string][]string{
 	// Additional resource types.
 	"Medication":               {"_id", "_lastUpdated", "code", "status"},
 	"MedicationStatement":      {"_id", "_lastUpdated", "patient", "subject", "status"},
-	"MedicationDispense":       {"_id", "_lastUpdated", "patient", "subject", "status", "type"},
+	"MedicationDispense":       {"_id", "_lastUpdated", "patient", "subject", "status", "type", "medication"},
 	"MedicationAdministration": {"_id", "_lastUpdated", "patient", "subject", "status"},
 	"Coverage":                 {"_id", "_lastUpdated", "identifier", "patient", "beneficiary", "status", "subscriber-id", "payor"},
 	"Claim":                    {"_id", "_lastUpdated", "patient", "status", "use", "created"},
@@ -490,6 +491,10 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		addRef("patient", v.Subject)
 		addRef("subject", v.Subject)
 		add("status", v.Status, "")
+		// US Core asks for _include=MedicationDispense:medication, as for MedicationRequest.
+		if v.Medication != nil {
+			addRef("medication", v.Medication.Reference)
+		}
 
 	case *fhir.MedicationAdministration:
 		addRef("patient", v.Subject)
@@ -1735,9 +1740,14 @@ func (s *Store) SearchBundle(result *SearchResult, baseURL, resourceType string,
 	// A next link only when there is a next page, so a client can page without
 	// guessing.
 	if result.Offset+len(result.Resources) < result.Total {
-		next := fmt.Sprintf("%s/%s?_count=%d&_offset=%d",
-			strings.TrimRight(baseURL, "/"), resourceType,
-			result.Count, result.Offset+result.Count)
+		// The query travels with the page: a next link without it would be the next page of every resource of the type,
+		// not of this search - another patient's records, to a client following it.
+		q, _ := url.ParseQuery(query)
+		q.Del("_offset")
+		q.Del("_skip")
+		q.Set("_count", strconv.Itoa(result.Count))
+		q.Set("_offset", strconv.Itoa(result.Offset+result.Count))
+		next := fmt.Sprintf("%s/%s?%s", strings.TrimRight(baseURL, "/"), resourceType, q.Encode())
 		b.Link = append(b.Link, fhir.BundleLink{Relation: "next", URL: next})
 	}
 

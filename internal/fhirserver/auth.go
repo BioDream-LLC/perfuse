@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -300,7 +301,7 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		// Enforced here rather than in each handler for the reason the whole mux is wrapped: a route added later
 		// is covered by default. Doing it per handler is how one gets forgotten, and the one that gets forgotten
 		// is the one nobody tests.
-		if rt := resourceTypeOf(r); rt != "" && !caller.Allows(rt, isWriteRequest(r)) {
+		if rt := resourceTypeOf(r); rt != "" && !caller.Allows(rt, isWriteRequest(r)) && !readsOwnFHIRUser(caller, r) {
 			verb := "read"
 			if isWriteRequest(r) {
 				verb = "change"
@@ -315,6 +316,17 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(withCaller(r.Context(), caller)))
 	})
+}
+
+// readsOwnFHIRUser reports whether the request reads the signed-in person's own resource (the token's fhirUser) with the
+// fhirUser scope granted. SMART grants that scope so the app can read who signed in, whatever resource scopes it holds; an app
+// with only patient/Observation.rs and fhirUser could otherwise not read the Patient it was told the user is. Exactly that one
+// resource, by a plain read.
+func readsOwnFHIRUser(c *Caller, r *http.Request) bool {
+	if c.FHIRUser == "" || (r.Method != http.MethodGet && r.Method != http.MethodHead) || !slices.Contains(c.Scopes, "fhirUser") {
+		return false
+	}
+	return strings.Trim(r.URL.Path, "/") == c.FHIRUser
 }
 
 // resourceTypeOf returns the FHIR resource type a request addresses, or empty when it addresses none.
@@ -354,6 +366,8 @@ func resourceTypeOf(r *http.Request) string {
 var readOperations = map[string]bool{
 	"$inquire": true, "$questionnaire-package": true, "$next-question": true, "$log-questionnaire-errors": true,
 	"$expand": true, "$validate-code": true, "$translate": true, "$lookup": true, "$everything": true,
+	// POST [type]/_search is a search, which FHIR offers by POST so long queries need not go in a URL.
+	"_search": true,
 }
 
 // isWriteRequest is isWrite, except that a POST to one of readOperations is a read.

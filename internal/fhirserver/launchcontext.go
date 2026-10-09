@@ -101,7 +101,8 @@ func subjectOf(r fhir.Resource) (string, bool) {
 		return "", false
 	}
 
-	for _, field := range patientContextParams {
+	// Coverage names its patient beneficiary; without it a member's own coverage was refused to their app.
+	for _, field := range append(patientContextParams, "beneficiary") {
 		blob, ok := tree[field]
 		if !ok {
 			continue
@@ -191,6 +192,25 @@ func (s *Server) enforceSearchContext(caller *Caller, q *SearchQuery) error {
 	q.Criteria["patient"] = []string{caller.Patient}
 
 	return nil
+}
+
+// sharedTypes hold no one patient's data: the directory of who and where (organisations, practitioners, their roles,
+// locations, services, endpoints) and the drug catalogue. A patient's records point at them - the practitioner who wrote an
+// order, the drug it is for - and an app limited to that patient has to read them to show the record at all.
+//
+// A list, not "anything with no patient field": a type nobody taught this about must stay refused.
+var sharedTypes = map[string]bool{"Organization": true, "Practitioner": true, "PractitionerRole": true, "Location": true,
+	"HealthcareService": true, "Endpoint": true, "Medication": true}
+
+// permitsRead is permitsResource for reading one resource by id or including it: a patient-context token may also read a
+// shared type its scopes allow. Searching one is still refused (enforceSearchContext), so the directory cannot be listed
+// through a patient's token; reading needs an id, which the patient's own records give.
+func permitsRead(caller *Caller, r fhir.Resource) bool {
+	if permitsResource(caller, r) {
+		return true
+	}
+	return caller != nil && caller.Patient != "" && sharedTypes[r.ResourceTypeName()] &&
+		(caller.Encounter == "" || permitsEncounter(caller.Encounter, r)) && permitsScopes(caller, r)
 }
 
 // permitsResource reports whether the caller's context allows this resource.

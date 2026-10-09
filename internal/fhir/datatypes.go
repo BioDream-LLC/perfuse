@@ -202,9 +202,13 @@ type Attachment struct {
 	Language    string `json:"language,omitempty"`
 	Data        string `json:"data,omitempty"`
 	URL         string `json:"url,omitempty"`
-	Size        *int64 `json:"size,omitempty"`
-	Title       string `json:"title,omitempty"`
-	Creation    string `json:"creation,omitempty"`
+	// DataElement and URLElement are the primitives' extensions: a data absent reason in _data says the content exists and
+	// could not be sent, which FHIRPath counts as data being present.
+	DataElement *Element `json:"_data,omitempty"`
+	URLElement  *Element `json:"_url,omitempty"`
+	Size        *int64   `json:"size,omitempty"`
+	Title       string   `json:"title,omitempty"`
+	Creation    string   `json:"creation,omitempty"`
 }
 
 // CodeableReference is R5's combined code-or-reference type. In R4 output it is

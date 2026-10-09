@@ -511,7 +511,7 @@ func (s *Server) handleRead(w http.ResponseWriter, r *http.Request) {
 	//
 	// Checked after the fetch because there is no other way. The subject of an Observation is in the Observation, so
 	// deciding without reading it would mean guessing.
-	if !permitsResource(CallerFrom(r.Context()), resource) {
+	if !permitsRead(CallerFrom(r.Context()), resource) {
 		s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityError, "not-found",
 			fmt.Sprintf("%s/%s does not exist", resourceType, id))
 
@@ -597,7 +597,7 @@ func permittedIncludes(caller *Caller, included []fhir.Resource) []fhir.Resource
 	}
 	out := included[:0]
 	for _, r := range included {
-		if caller.Allows(r.ResourceTypeName(), false) && permitsResource(caller, r) {
+		if caller.Allows(r.ResourceTypeName(), false) && permitsRead(caller, r) {
 			out = append(out, r)
 		}
 	}

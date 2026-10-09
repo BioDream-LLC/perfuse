@@ -467,6 +467,18 @@ func TestSearchPaging(t *testing.T) {
 		t.Error("no next link on a paged result")
 	}
 
+	// The next page is of the same search. A next link that dropped the query paged through every resource of the type.
+	rec = do(t, h, http.MethodGet, "/Patient?gender=female&_count=1", nil)
+	next := ""
+	for _, l := range tree(t, rec)["link"].([]any) {
+		if l := l.(map[string]any); l["relation"] == "next" {
+			next = l["url"].(string)
+		}
+	}
+	if !strings.Contains(next, "gender=female") || !strings.Contains(next, "_offset=1") {
+		t.Errorf("the next link lost the search: %q", next)
+	}
+
 	rec = do(t, h, http.MethodGet, "/Patient?_count=5&_offset=10", nil)
 	if entries := tree(t, rec)["entry"].([]any); len(entries) != 2 {
 		t.Errorf("last page has %d entries, want 2", len(entries))
