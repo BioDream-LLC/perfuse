@@ -283,7 +283,18 @@ export function ChannelBuilder({
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_28rem]">
       <div className="space-y-5">
         {loadError && <ErrorBox error={loadError} />}
-        {saveError && <ErrorBox error={saveError} onDismiss={() => dispatch(clearSaveError())} />}
+        {saveError && (
+          <ErrorBox
+            // The live check under "The file this creates" already lists what the server objects to; repeating the same
+            // list here put it on the screen twice. The headline stays, pointing at it.
+            error={
+              rawYaml === null && built !== null && !built.ok && built.problems.length > 0
+                ? { message: `${saveError.message}. What is wrong is listed under "The file this creates".`, problems: [] }
+                : saveError
+            }
+            onDismiss={() => dispatch(clearSaveError())}
+          />
+        )}
         {startError && (
           <ErrorBox
             error={{ message: startError, problems: [] }}

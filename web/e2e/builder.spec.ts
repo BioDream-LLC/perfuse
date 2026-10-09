@@ -228,13 +228,21 @@ test("a destination to the state can send lab results as ELR", async ({ page }) 
   const yaml = await yamlPreview(page, "config: elr.yaml");
   expect(yaml).toMatch(/elr:\s+config: elr\.yaml/);
 
+  // Saved before the ELR file is there, it is refused, and the reason is shown once: the live check lists it, and the banner
+  // from the refused save points there rather than listing it again.
+  // Any free port: the template's :6661 may be in use on the machine running the suite.
+  await page.getByRole("textbox", { name: "Listen on" }).fill("127.0.0.1:0");
+  await page.getByRole("button", { name: "Create channel" }).click();
+  await expect(page.getByText(/What is wrong is listed under/)).toBeVisible();
+  await expect(page.getByText(/elr\.yaml: no such file/)).toHaveCount(1);
+  // The refusal is a 400 the browser logs; it is the answer this step asked for, not a fault.
+  for (let i = problems.length - 1; i >= 0; i--) if (/status of 400/.test(problems[i])) problems.splice(i, 1);
+
   // Saved with its ELR file beside it, it opens again in the form, the file read from the channel directory.
   const channels = process.env.PERFUSE_E2E_CHANNELS;
   expect(channels, "the fixture names its channel directory").toBeTruthy();
   copyFileSync(join(here, "..", "..", "examples", "elr", "elr.yaml"), join(channels!, "elr.yaml"));
   try {
-    // Any free port: the template's :6661 may be in use on the machine running the suite.
-    await page.getByRole("textbox", { name: "Listen on" }).fill("127.0.0.1:0");
     await page.getByRole("button", { name: "Create channel" }).click();
     // The nearest box around the channel's name that holds an Edit button: its own card, not the list around every card.
     const card = page.getByText("lab-to-state-gui", { exact: true }).first()
