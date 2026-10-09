@@ -355,6 +355,20 @@ messages. It validates against ELR Release 1 with its errata, not the APHL profi
 After the fix, the message with its specimen is **Valid, 0 errors**. The one without a specimen has two: SPM-4 and SPM-18 missing,
 the lab's gaps Perfuse names in its notes and does not fill. None of the APHL profile's own defects above appear in the ONC tool.
 
+Then the tool's own test data: its 28 example messages (ELR-ExampleMessages 1.9.2, ten test cases from a maximally populated lead
+result to culture and susceptibility panels, reflex hepatitis panels, titers and multi-result respiratory panels), each sent through
+`perfuse elr` as the lab's message, and Perfuse's output validated. The first run found two faults, both in messages with a child
+order (test cases 4 and 5B, a susceptibility panel or a reflex test whose OBR-29 names its parent):
+
+- **Perfuse built an ORC and an SPM for the child order.** The lab sent neither, which ELR allows, so the ORC came out without an
+  ordering facility and the SPM without a specimen type: six errors in a message that was valid as sent. A child order now goes
+  as the lab sent it, and a child with no trigger code of its own (antibiotics are not on the RCTC) is reported with its parent.
+- **A note about the patient was dropped.** An NTE after the PID belongs to the patient group; it is now kept there.
+
+Also: when OBR-17 has a callback phone, ORC-14 now carries it, as ELR requires. After the fixes all **28 are Valid, 0 errors**.
+The context-based tab, which compares a message with each test case's data sheet, was not run: its test case tree does not register
+a selection made by a script.
+
 **SMART App Launch, October 2026.** Inferno's SMART App Launch STU2.2 suite (smart_app_launch_test_kit 1.0.3) against
 `serve -fhir -smart-clients -smart-users`, Perfuse issuing the tokens itself. A script played the browser: it followed Inferno's
 authorization links, signed in through Perfuse's forms, chose the patient, approved the scopes and returned to Inferno, and for the

@@ -188,6 +188,42 @@ func TestELRWritesTheErrataEncodingCharacters(t *testing.T) {
 	}
 }
 
+// A susceptibility panel names its culture in OBR-29 and comes without an ORC or an SPM of its own, as in ONC's ELR test case 4;
+// ELR allows that, and building them would invent an ordering facility and a specimen. A note after the PID stays with the patient.
+func TestELRKeepsChildOrdersAndPatientNotesAsSent(t *testing.T) {
+	src := strings.Join([]string{
+		`MSH|^~\&|LIS|LAB|EHR|FAC|20261004101500-0500||ORU^R01^ORU_R01|X2|P|2.5.1`,
+		`PID|1||7^^^SPRINGFIELD&2.16.840.1.113883.19.5&ISO^MR||Doe^Avery||19800214|F`,
+		`NTE|1|P|Patient is English speaker.`,
+		`ORC|RE|O1^^2.16.840.1.113883.19.5.1^ISO|F1^LIS^2.16.840.1.113883.19.5.2^ISO|||||||||1234567893^Clinician^Morgan^^^^^^NPI&2.16.840.1.113883.4.6&ISO^L^^^NPI|||||||||Clinic^L|1 Main St^^Springfield^IL^62701^^B|^WPN^PH^^1^217^5550100`,
+		`OBR|1|O1^^2.16.840.1.113883.19.5.1^ISO|F1^LIS^2.16.840.1.113883.19.5.2^ISO|625-4^Bacteria identified in Stool by Culture^LN|||20110528|||||||||1234567893^Clinician^Morgan^^^^^^NPI&2.16.840.1.113883.4.6&ISO^L^^^NPI|^PRN^PH^^^407^2341212|||||201106010900-0500|||F`,
+		`OBX|1|CWE|625-4^Bacteria identified in Stool by Culture^LN||85729005^Shigella flexneri^SCT||||||F`,
+		`SPM|1|^F1&LIS&2.16.840.1.113883.19.5.2&ISO||119339001^Stool specimen^SCT|||||||||||||20110528|20110529`,
+		`OBR|2||F2^LIS^2.16.840.1.113883.19.5.2^ISO|50545-3^Bacterial susceptibility panel in Isolate by MIC^LN|||20110528|||||||||1234567893^Clinician^Morgan^^^^^^NPI&2.16.840.1.113883.4.6&ISO^L^^^NPI|^PRN^PH^^^407^2341212|||||201106010900-0500|||F|625-4&Bacteria identified in Stool by Culture&LN^^Shigella flexneri|||^F1&LIS&2.16.840.1.113883.19.5.2&ISO`,
+		`OBX|1|SN|185-9^Ciprofloxacin [Susceptibility] by MIC^LN||<=^0.06|ug/mL^microgram per milliliter^UCUM||S^Susceptible^HL70078|||F`,
+	}, "\r") + "\r"
+	m, err := hl7.Parse([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	culture := &TriggerSet{codes: map[string]triggerCode{"http://loinc.org|625-4": {Condition: "Shigellosis"}}, prefixes: map[string]triggerCode{}}
+	r, err := BuildELR(m, culture, elrOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, seg := range strings.Split(strings.TrimSpace(string(r.Message)), "\r") {
+		names = append(names, seg[:3])
+	}
+	got := strings.Join(names, " ")
+	if !strings.Contains(got, "PID NTE ") || !strings.HasSuffix(got, "SPM OBR OBX") {
+		t.Errorf("segments %s: want the patient note after PID, and the child order as OBR OBX with no ORC or SPM", got)
+	}
+	if orc := elrSegments(r, "ORC")[0]; field(orc, 14) != "^PRN^PH^^^407^2341212" {
+		t.Errorf("ORC-14 is %q; with OBR-17 valued ELR requires the callback phone", field(orc, 14))
+	}
+}
+
 // TestELRForTheNISTValidator writes the reports for the NIST HL7 v2 validator when ELR_OUT names a directory (see
 // docs/verification.md).
 func TestELRForTheNISTValidator(t *testing.T) {

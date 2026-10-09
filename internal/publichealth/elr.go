@@ -169,7 +169,7 @@ func BuildELR(m *hl7.Message, triggers *TriggerSet, opts ELROptions) (*ELR, erro
 
 	sep := m.Separators()
 	var pid, pv1 elrSegment
-	var head, sft []elrSegment // PID's NK1s, and the sender's SFTs
+	var head, sft, pidNotes []elrSegment // PID's NK1s, the sender's SFTs, and the notes about the patient
 	var orders []*elrOrder
 	var cur *elrOrder
 	lastWasSPM := false
@@ -215,9 +215,12 @@ func BuildELR(m *hl7.Message, triggers *TriggerSet, opts ELROptions) (*ELR, erro
 			}
 		case "NTE":
 			switch {
+			case cur == nil && pid != nil:
+				// A note after the PID and before any order is about the patient; ELR keeps it in the patient group.
+				pidNotes = append(pidNotes, seg)
 			case cur == nil:
 				if !skipped["NTE"] {
-					note("a note before the first order was left out")
+					note("a note before the patient was left out")
 					skipped["NTE"] = true
 				}
 			case len(cur.observations) > 0 && !lastWasSPM:
@@ -245,17 +248,26 @@ func BuildELR(m *hl7.Message, triggers *TriggerSet, opts ELROptions) (*ELR, erro
 	}
 
 	var keep []*elrOrder
+	kept := map[string]bool{} // filler order numbers (OBR-3.1) of the orders being reported
 	for _, o := range orders {
 		if o.obr == nil {
 			note("an ORC with no OBR was left out")
 			continue
 		}
 		o.triggers = orderTriggers(o, triggers)
+		if len(o.triggers) == 0 && kept[parentFiller(o.obr)] {
+			// A susceptibility panel or a reflex test goes with the result it belongs to: its antibiotics and follow-up
+			// tests are not on the trigger list, but the state needs them with the reportable organism.
+			keep = append(keep, o)
+			kept[strings.Split(o.obr.get(3), "^")[0]] = true
+			continue
+		}
 		if len(o.triggers) == 0 {
 			report.Dropped++
 			continue
 		}
 		keep = append(keep, o)
+		kept[strings.Split(o.obr.get(3), "^")[0]] = true
 		report.Triggers = append(report.Triggers, o.triggers...)
 	}
 	if len(keep) == 0 {
@@ -272,6 +284,10 @@ func BuildELR(m *hl7.Message, triggers *TriggerSet, opts ELROptions) (*ELR, erro
 	pid.set(22, ethnicityCodes(pid.get(22)))
 	elrPatientChecks(pid, note)
 	out = append(out, pid.String())
+	for i, n := range pidNotes {
+		n.set(1, strconv.Itoa(i+1))
+		out = append(out, n.String())
+	}
 	for i, nk := range head {
 		nk.set(1, strconv.Itoa(i+1))
 		out = append(out, nk.String())
@@ -285,6 +301,15 @@ func BuildELR(m *hl7.Message, triggers *TriggerSet, opts ELROptions) (*ELR, erro
 	}
 	report.Message = []byte(strings.Join(out, "\r") + "\r")
 	return report, nil
+}
+
+// parentFiller is the filler order number of the order a child order belongs to: OBR-29.2.1, or "" when it names none.
+func parentFiller(obr elrSegment) string {
+	c := strings.Split(obr.get(29), "^")
+	if len(c) < 2 {
+		return ""
+	}
+	return strings.Split(c[1], "&")[0]
 }
 
 // splitSegment splits a segment into fields and re-encodes each with the standard separators, so a message sent with unusual
@@ -410,10 +435,41 @@ func orderTriggers(o *elrOrder, triggers *TriggerSet) []Trigger {
 func elrOrderSegments(o *elrOrder, seq int, opts ELROptions, note func(string, ...any)) []string {
 	obr := o.obr
 	orc := o.orc
-	if orc == nil {
+	// A child order (a susceptibility panel or a reflex test) names its parent in OBR-29. ELR lets it go without an ORC or an
+	// SPM of its own, the parent's standing for both, and a lab that sends it that way is followed: building them would make
+	// up an ordering facility and a specimen the lab never named for that order.
+	child := o.orc == nil && obr.get(29) != ""
+	if orc == nil && !child {
 		orc = elrSegment{"ORC"}
 		note("OBR %d: the lab sent no ORC, so it was built from the OBR", seq)
 	}
+	if !child {
+		finishORC(&orc, obr, seq, opts, note)
+	}
+	obr.set(1, strconv.Itoa(seq))
+	withAuthority(&obr, 2, opts.PlacerAuthority)
+	withAuthority(&obr, 3, opts.FillerAuthority)
+	obr.set(16, providerIDs(obr.get(16)))
+	obr.set(28, providerIDs(obr.get(28)))
+	for n, what := range map[int]string{3: "the filler order number", 7: "when the specimen was collected", 16: "the ordering provider",
+		22: "when the result was reported", 25: "the result status"} {
+		if obr.get(n) == "" {
+			note("OBR %d: OBR-%d is empty; the lab did not send %s", seq, n, what)
+		}
+	}
+	var segs []string
+	if !child {
+		orc.set(12, providerIDs(orc.get(12)))
+		elrOrderChecks(orc, obr, seq, note)
+		segs = append(segs, orc.String())
+	}
+	segs = append(segs, obr.String())
+	segs = append(segs, orderBody(o, obr, child, seq, opts, note)...)
+	return segs
+}
+
+// finishORC fills the ORC from the OBR and the configuration where the lab left it empty.
+func finishORC(orc *elrSegment, obr elrSegment, seq int, opts ELROptions, note func(string, ...any)) {
 	orc.set(1, "RE")
 	if orc.get(2) == "" {
 		orc.set(2, obr.get(2))
@@ -423,6 +479,10 @@ func elrOrderSegments(o *elrOrder, seq int, opts ELROptions, note func(string, .
 	}
 	if orc.get(12) == "" {
 		orc.set(12, obr.get(16))
+	}
+	if orc.get(14) == "" && obr.get(17) != "" {
+		// ELR requires ORC-14 (the callback phone) when OBR-17 has one; they are the same number.
+		orc.set(14, obr.get(17))
 	}
 	if orc.get(21) == "" && opts.OrderingFacility.Name != "" {
 		f := opts.OrderingFacility
@@ -437,22 +497,13 @@ func elrOrderSegments(o *elrOrder, seq int, opts ELROptions, note func(string, .
 			note("ORC-%d: nothing says %s, which ELR requires", n, what)
 		}
 	}
-	obr.set(1, strconv.Itoa(seq))
-	for _, seg := range []*elrSegment{&orc, &obr} {
-		withAuthority(seg, 2, opts.PlacerAuthority)
-		withAuthority(seg, 3, opts.FillerAuthority)
-	}
-	orc.set(12, providerIDs(orc.get(12)))
-	obr.set(16, providerIDs(obr.get(16)))
-	obr.set(28, providerIDs(obr.get(28)))
-	for n, what := range map[int]string{3: "the filler order number", 7: "when the specimen was collected", 16: "the ordering provider",
-		22: "when the result was reported", 25: "the result status"} {
-		if obr.get(n) == "" {
-			note("OBR %d: OBR-%d is empty; the lab did not send %s", seq, n, what)
-		}
-	}
-	elrOrderChecks(orc, obr, seq, note)
-	segs := []string{orc.String(), obr.String()}
+	withAuthority(orc, 2, opts.PlacerAuthority)
+	withAuthority(orc, 3, opts.FillerAuthority)
+}
+
+// orderBody is an order's notes, results and specimens.
+func orderBody(o *elrOrder, obr elrSegment, child bool, seq int, opts ELROptions, note func(string, ...any)) []string {
+	var segs []string
 	for i, n := range o.notes {
 		n.set(1, strconv.Itoa(i+1))
 		segs = append(segs, n.String())
@@ -490,7 +541,7 @@ func elrOrderSegments(o *elrOrder, seq int, opts ELROptions, note func(string, .
 		}
 	}
 	specimens := o.specimens
-	if len(specimens) == 0 {
+	if len(specimens) == 0 && !child {
 		specimens = []elrSpecimen{{spm: specimenFromOBR(obr)}}
 		note("OBR %d: the lab sent no SPM, so the specimen was taken from OBR-15 and the collection time from OBR-7", seq)
 	}
