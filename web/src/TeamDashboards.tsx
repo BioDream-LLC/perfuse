@@ -421,6 +421,17 @@ function FigureBody({ figure }: { figure?: DashboardFigure }) {
         </table>
       )}
       {figure.note && figure.rows.length > 0 && <p className="text-xs text-slate-500">{figure.note}</p>}
+      {figure.links && figure.links.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {figure.links.map((l) => (
+            <li key={l.href}>
+              <a className="btn text-xs" href={l.href} download>
+                {l.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

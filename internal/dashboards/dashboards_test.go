@@ -31,7 +31,7 @@ func TestTheGrafanaExportFiltersByChannelAndSaysWhatItLeftOut(t *testing.T) {
 	if !strings.Contains(s, `perfuse_connections_open{channel=~\"$channel\"}`) {
 		t.Errorf("no channel filter: %s", s)
 	}
-	if !strings.Contains(s, "Not exported, because they have no metric behind them: Connections, Certificates") {
+	if !strings.Contains(s, "Not exported, because they have no metric behind them: Connections, VPN tunnels, Certificates") {
 		t.Errorf("does not say what it left out: %s", g["description"])
 	}
 	if got := withChannel(`max by (channel) (perfuse_queue_oldest_seconds{destination="x"})`); got != `max by (channel) (perfuse_queue_oldest_seconds{channel=~"$channel",destination="x"})` {

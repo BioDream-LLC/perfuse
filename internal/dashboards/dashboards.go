@@ -82,6 +82,7 @@ var Tiles = []Tile{
 	{ID: "x12-835-match", Title: "Remittances matched to claims, 7 days", Description: "835 claims matched by patient account number to the 837s sent.", Source: "figures"},
 	{ID: "x12-rejection-reasons", Title: "Commonest rejection reasons, 7 days", Description: "277CA status codes and 999 error codes, most frequent first.", Source: "figures"},
 	{ID: "privacy-patient-access", Title: "Patient data read, 7 days", Description: "Who opened messages, searched for patients or read prior authorizations, from the audit log.", Source: "figures"},
+	{ID: "vpn-tunnels", Title: "VPN tunnels", Description: "Each partner tunnel's state from AWS, Azure or strongSwan, whether both sides' settings agree, and its connection sheet.", Source: "figures"},
 	{ID: "token-use", Title: "API token use", Description: "Each live token and when it was last used.", Source: "figures"},
 }
 
@@ -91,9 +92,7 @@ var Dashboards = []Dashboard{
 		Tiles: []string{"channels", "throughput", "outcomes", "destinations", "queue", "alerts"}},
 	{ID: "connections", Title: "Connections", Audience: "Network and interface engineers",
 		Description: "Can each partner be reached, layer by layer, and why not.",
-		Tiles:       []string{"connections", "inbound", "queue", "certificates"},
-		Planned: []string{"VPN tunnel state from AWS Site-to-Site VPN, Azure VPN Gateway and strongSwan",
-			"a partner connection sheet with both sides' tunnel settings, and a check that they match"}},
+		Tiles:       []string{"connections", "vpn-tunnels", "inbound", "queue", "certificates"}},
 	{ID: "interface-analyst", Title: "Interface analyst", Audience: "Interface analysts",
 		Description: "Where messages are failing and backing up, so the right one gets replayed.",
 		Tiles:       []string{"errors-by-channel", "naks-by-sender", "queue", "destinations", "throughput", "alerts"}},

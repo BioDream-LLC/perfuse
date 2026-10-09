@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · d1bd8a8</p>
+<p class="version">version 0.1 · 6196628</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -1095,13 +1095,14 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s25-81-v2fhir"><span class="num">25.81</span> v2fhir</a></div>
 <div class="toc-d2"><a href="#s25-82-vcs"><span class="num">25.82</span> vcs</a></div>
 <div class="toc-d2"><a href="#s25-83-vfs"><span class="num">25.83</span> vfs</a></div>
-<div class="toc-d2"><a href="#s25-84-web"><span class="num">25.84</span> web</a></div>
-<div class="toc-d2"><a href="#s25-85-webauthn"><span class="num">25.85</span> webauthn</a></div>
-<div class="toc-d2"><a href="#s25-86-winservice"><span class="num">25.86</span> winservice</a></div>
-<div class="toc-d2"><a href="#s25-87-x12"><span class="num">25.87</span> x12</a></div>
-<div class="toc-d2"><a href="#s25-88-x12xml"><span class="num">25.88</span> x12xml</a></div>
-<div class="toc-d2"><a href="#s25-89-xmldsig"><span class="num">25.89</span> xmldsig</a></div>
-<div class="toc-d2"><a href="#s25-90-xtree"><span class="num">25.90</span> xtree</a></div>
+<div class="toc-d2"><a href="#s25-84-vpn"><span class="num">25.84</span> vpn</a></div>
+<div class="toc-d2"><a href="#s25-85-web"><span class="num">25.85</span> web</a></div>
+<div class="toc-d2"><a href="#s25-86-webauthn"><span class="num">25.86</span> webauthn</a></div>
+<div class="toc-d2"><a href="#s25-87-winservice"><span class="num">25.87</span> winservice</a></div>
+<div class="toc-d2"><a href="#s25-88-x12"><span class="num">25.88</span> x12</a></div>
+<div class="toc-d2"><a href="#s25-89-x12xml"><span class="num">25.89</span> x12xml</a></div>
+<div class="toc-d2"><a href="#s25-90-xmldsig"><span class="num">25.90</span> xmldsig</a></div>
+<div class="toc-d2"><a href="#s25-91-xtree"><span class="num">25.91</span> xtree</a></div>
 <div class="toc-d1"><a href="#s26-index-of-configuration-keys"><span class="num">26</span> Index of Configuration Keys</a></div>
 <div class="toc-d2"><a href="#s26-1-all-keys"><span class="num">26.1</span> All keys</a></div>
 </nav>
@@ -1238,7 +1239,7 @@ destinations:
 roles: {viewer: manager}</code></pre>
 <p>A group wins over a role, and anyone unmatched opens on Operations. <strong>Arrange tiles</strong> hides and reorders tiles, the channel picker filters them, and <strong>Save as my view</strong> keeps that as your own dashboard until <strong>Reset</strong>.</p>
 <p><strong>Export to Grafana</strong> downloads the dashboard as Grafana JSON over <code>/metrics</code>, with a data source variable and a channel filter, for anyone who needs more than light configuration. Tiles with no metric behind them are left out, and the export&#39;s description names them.</p>
-<p>The <strong>Connections</strong> tile checks every networked destination in layers. It looks the name up, opens a TCP connection, completes TLS where it is used, and reads the destination&#39;s last delivery and failure from real traffic. Each failure says what it means, for example &#34;refused: the partner&#39;s engine is probably stopped&#34;, &#34;timed out: a firewall or a VPN tunnel that is down&#34;, or &#34;a certificate from an authority this server does not trust&#34;. Nothing is sent to the partner. Figures a dashboard needs that are not recorded yet are listed under <strong>Not measured yet</strong> instead of being drawn as empty tiles.</p>
+<p>The <strong>Connections</strong> tile checks every networked destination in layers. It looks the name up, opens a TCP connection, completes TLS where it is used, and reads the destination&#39;s last delivery and failure from real traffic. Each failure says what it means, for example &#34;refused: the partner&#39;s engine is probably stopped&#34;, &#34;timed out: a firewall or a VPN tunnel that is down&#34;, or &#34;a certificate from an authority this server does not trust&#34;. Nothing is sent to the partner. With <code>-vpn tunnels.yaml</code> the <strong>VPN tunnels</strong> tile beside it reads each partner tunnel&#39;s state from AWS Site-to-Site VPN, an Azure VPN Gateway connection or strongSwan on this host, so a time-out can be told apart from a tunnel that is down. It also compares both sides&#39; IKE and IPsec settings, as the cloud reports ours and the file lists theirs, and says where they cannot agree. <strong>Connection sheet</strong> downloads a partner&#39;s settings side by side as Markdown to send them; it never holds a pre-shared key. Figures a dashboard needs that are not recorded yet are listed under <strong>Not measured yet</strong> instead of being drawn as empty tiles.</p>
 <p>The department dashboards compute their own figures on the server, and each one says what window and source it covers:</p>
 <ul>
 <li><strong>Prior authorization:</strong> PAS requests decided within CMS-0057&#39;s 72 hours (expedited) or 7 days (standard), decided late, waiting,</li>
@@ -5709,12 +5710,17 @@ rules:
 <p>No writing, beyond what disposal needs. Sending files is a different problem with different failure modes - a partially written file at the far end, which the existing senders handle by writing to a temporary name and renaming. Folding both directions into one interface would make each harder to reason about.</p>
 <p>No recursion. A poller that descends into subdirectories collects the archive directory it just moved a file into.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vfs</code></p>
-<h3 id="s25-84-web"><span class="num">25.84</span> web</h3>
+<h3 id="s25-84-vpn"><span class="num">25.84</span> vpn</h3>
+<p>Package vpn reports the state of the site-to-site VPN tunnels partner traffic runs over - AWS Site-to-Site VPN, Azure VPN Gateway connections and strongSwan - and keeps each partner&#39;s connection sheet: both sides&#39; tunnel settings, and whether they agree.</p>
+<p>A tunnel that is down looks, from an interface engine, exactly like a partner whose engine is stopped: connections time out. Saying &#34;the tunnel is down&#34; instead is the difference between calling the network team and calling the partner.</p>
+<p>Read only. Nothing here changes a tunnel, and no pre-shared key is ever read, kept or shown.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/vpn</code></p>
+<h3 id="s25-85-web"><span class="num">25.85</span> web</h3>
 <p>Package web serves the built front end from inside the binary.</p>
 <p>The assets are embedded rather than shipped alongside, so deployment stays one file. That is the same reason the engine avoids cgo: an operator should be able to copy a binary onto a server and run it, with no JVM, no installer and no asset directory to get out of step with the executable.</p>
 <p>The built output is committed so that <code>go build</code> works on a checkout without Node installed. Rebuild it with <code>make web</code>.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/web</code></p>
-<h3 id="s25-85-webauthn"><span class="num">25.85</span> webauthn</h3>
+<h3 id="s25-86-webauthn"><span class="num">25.86</span> webauthn</h3>
 <p>Package webauthn verifies passkeys.</p>
 <p>A passkey is a key pair the authenticator holds - Touch ID, Windows Hello, a YubiKey, a phone - where the private half never leaves the device. Signing in means the server sends a random challenge, the authenticator signs it after checking the user is present, and the server verifies the signature against the public key it stored at registration.</p>
 <p>The property that matters is not that it is convenient. It is that there is nothing to phish. A password can be typed into a convincing copy of a login page; a passkey signature is bound to the origin it was created for, so the copy gets a signature its server cannot use. For an integration engine holding a hospital&#39;s interfaces, that is the difference worth having.</p>
@@ -5724,12 +5730,12 @@ rules:
 <li>The signing algorithm is fixed at registration and stored with the key. Nothing at sign-in reads an algorithm from the client, because that is algorithm confusion and there is no function here that could do it. - The origin is compared exactly, never by prefix or suffix. A check that accepts anything ending in the right domain accepts an attacker&#39;s subdomain. - A challenge is single-use and expires. It is deleted when consumed, so a captured assertion cannot be replayed. - Attestation is not trusted for anything. The attestation statement is parsed to extract the credential and then its signature is ignored, because verifying it properly needs a maintained root store and pretending to verify it is worse than not claiming to. - The sign count is checked when the authenticator provides one, and its absence is not treated as suspicious. Many authenticators legitimately leave it at zero.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/webauthn</code></p>
-<h3 id="s25-86-winservice"><span class="num">25.86</span> winservice</h3>
+<h3 id="s25-87-winservice"><span class="num">25.87</span> winservice</h3>
 <p>Package winservice runs Perfuse as a Windows service.</p>
 <p>This file is the everywhere-else half. It exists so that cmd/perfuse can call into this package without wrapping every call site in a build tag: the subcommand is always compiled, and on Linux or macOS it explains that services are a Windows idea rather than failing to exist.</p>
 <p>Refusing with a clear sentence is better than hiding the subcommand. Somebody following Windows instructions on the wrong machine gets told what is actually going on, and the equivalent for their platform.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/winservice</code></p>
-<h3 id="s25-87-x12"><span class="num">25.87</span> x12</h3>
+<h3 id="s25-88-x12"><span class="num">25.88</span> x12</h3>
 <p>Reading and writing values at a path.</p>
 <h1 id="why-this-is-separate-from-path">Why this is separate from Path</h1>
 <p>path.go decides what a path expression means. This file resolves one against an actual interchange. Kept apart because the parsing rules are worth reading without the byte handling, and because the parser is used by the configuration validator, which has no message to resolve against.</p>
@@ -5737,7 +5743,7 @@ rules:
 <p>Segment.elements are subslices of Segment.raw, and Message.segs indexes into Message.raw. Editing a value in place changes the length of everything after it, so every one of those slices would need adjusting, and any that was missed would read correct until the one message where it did not.</p>
 <p>So a write rebuilds the segment, rebuilds the interchange, and parses it again. That costs a parse per changed message and buys the guarantee that a Message returned from here is exactly what parsing its own bytes produces. There is no state where the indexes and the bytes disagree, because that state is unrepresentable.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12</code></p>
-<h3 id="s25-88-x12xml"><span class="num">25.88</span> x12xml</h3>
+<h3 id="s25-89-x12xml"><span class="num">25.89</span> x12xml</h3>
 <p>Package x12xml converts an X12 interchange to and from the node tree the transformation, filter and script layers already work on.</p>
 <p>This is the same trick hl7xml plays, and for the same reason. Everything above the parser - declarative transformation steps, the filter language, JavaScript, the channel test runner - operates on an xtree.Node rather than on a format. Render X12 into that tree and all of it works on claims without a line of new code in any of those packages. Write a second addressing layer instead and every one of them grows an X12 branch that has to be kept in step with the HL7 one for ever.</p>
 <h1 id="element-naming">Element naming</h1>
@@ -5745,7 +5751,7 @@ rules:
 <p>Two independent reasons point the same way. It is what every 837 and 835 implementation guide writes, so a person reading the guide and a person reading the tree see the same token. And it is what Mirth&#39;s own X12 serialiser produces, so a Mirth script that walks msg[&#39;CLM&#39;][&#39;CLM01&#39;] keeps working - which is the whole migration promise.</p>
 <p>The element number is always two digits, matching the guides, so CLM01 rather than CLM1. Composite components add a further dotted number, CLM05.1, because X12 composites are one level deep and there is nothing to collide with.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12xml</code></p>
-<h3 id="s25-89-xmldsig"><span class="num">25.89</span> xmldsig</h3>
+<h3 id="s25-90-xmldsig"><span class="num">25.90</span> xmldsig</h3>
 <p>Package xmldsig implements XML Digital Signatures and the XAdES profile of them.</p>
 <h1 id="why-this-is-written-rather-than-borrowed">Why this is written rather than borrowed</h1>
 <p>A signed clinical document is a legal artefact. It asserts that a named person, at a named time, took responsibility for a specific set of bytes. Getting that wrong in either direction is serious: a signature that cannot be verified makes a valid document look forged, and a verifier that is too generous accepts a document somebody altered.</p>
@@ -5755,7 +5761,7 @@ rules:
 <h1 id="exclusive-rather-than-inclusive-by-default">Exclusive rather than inclusive, by default</h1>
 <p>Inclusive canonicalisation pulls in every namespace declaration that is in scope, including ones the signed element never uses. That makes a signature break when the document is later embedded inside something that declares an unrelated namespace on an ancestor, which is precisely what happens when a CDA is put inside a SOAP envelope or an IHE metadata wrapper. Exclusive canonicalisation includes only the declarations the element actually uses, and is what document exchange profiles specify for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xmldsig</code></p>
-<h3 id="s25-90-xtree"><span class="num">25.90</span> xtree</h3>
+<h3 id="s25-91-xtree"><span class="num">25.91</span> xtree</h3>
 <p>Package xtree is a mutable XML tree.</p>
 <p>Three very different features need to modify XML: HL7 transformations, which Mirth models as XML because that is what its scripts operate on; clinical documents, which are XML natively; and the declarative transformation steps. They share this one tree rather than each growing their own, because the alternative is three models that disagree about what an empty element means.</p>
 <p>The design goal is faithfulness to E4X semantics, since Mirth scripts are E4X and the whole point of running them unchanged is that they behave the same. That drives two decisions that would otherwise look strange: a node keeps a pointer to its parent, because E4X exposes parent(), and children are ordered with duplicates allowed, because an HL7 field repetition is literally a repeated element and scripts index into them by position.</p>

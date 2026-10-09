@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/metrics"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/store"
+	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/x12"
 )
 
@@ -35,6 +37,14 @@ type Figure struct {
 	Note        string `json:"note,omitempty"`
 	Unavailable string `json:"unavailable,omitempty"`
 	Empty       string `json:"empty,omitempty"`
+	// Links are downloads that go with the figure, such as each partner's connection sheet.
+	Links []FigureLink `json:"links,omitempty"`
+}
+
+// FigureLink is a download beside a figure.
+type FigureLink struct {
+	Label string `json:"label"`
+	Href  string `json:"href"`
 }
 
 type figureContext struct {
@@ -60,6 +70,7 @@ var figureFuncs = map[string]func(*figureContext) Figure{
 	"x12-rejection-reasons":  figX12RejectionReasons,
 	"privacy-patient-access": figPatientAccess,
 	"token-use":              figTokenUse,
+	"vpn-tunnels":            figVPNTunnels,
 }
 
 // FigureTiles are the tiles this endpoint draws.
@@ -73,11 +84,8 @@ func FigureTiles() []string {
 }
 
 func (s *Server) handleDashboardFigures(w http.ResponseWriter, r *http.Request, sess *store.Session) {
-	rt, ok := s.runtimeFor(w, r, sess)
-	if !ok {
-		return
-	}
-	fc := &figureContext{s: s, r: r, sess: sess, rt: rt, now: time.Now().UTC()}
+	// No engine is not a failure here: the figures that need one say so, and the rest (PAS, the audit log, VPN tunnels) do not.
+	fc := &figureContext{s: s, r: r, sess: sess, rt: s.optionalRuntime(sess), now: time.Now().UTC()}
 	out := map[string]Figure{}
 	for _, id := range strings.Split(r.URL.Query().Get("tiles"), ",") {
 		if f, ok := figureFuncs[strings.TrimSpace(id)]; ok {
@@ -172,7 +180,7 @@ func (fc *figureContext) channelsOfSource(types ...config.SourceType) []string {
 
 func (fc *figureContext) recent(window time.Duration, f msgstore.RecentFilter) ([]msgstore.RecentMessage, string) {
 	if fc.rt == nil || fc.rt.Messages == nil {
-		return nil, "message storage is not enabled in this process"
+		return nil, "message storage is not enabled in this process (it needs the engine)"
 	}
 	rows, err := fc.rt.Messages.Recent(fc.r.Context(), string(fc.sess.TenantID), fc.now.Add(-window), f)
 	if err != nil {
@@ -573,6 +581,33 @@ func figTokenUse(fc *figureContext) Figure {
 	}
 	return Figure{Rows: rows, Note: "API tokens that can still be used. A token unused for 90 days is a credential nobody is watching.",
 		Empty: "No API tokens."}
+}
+
+// --- connections ---------------------------------------------------------------------------------------------------
+
+func figVPNTunnels(fc *figureContext) Figure {
+	if fc.s.VPN == nil {
+		return Figure{Empty: "No tunnels are listed. Start the server with -vpn tunnels.yaml to read AWS, Azure and strongSwan tunnel state."}
+	}
+	if fc.s.Repos != nil && fc.sess.Role != store.RolePlatform {
+		return Figure{Unavailable: "VPN tunnels are shared by every tenant on this server, so they need a platform account"}
+	}
+	var rows []FigureRow
+	var links []FigureLink
+	for _, st := range fc.s.VPN.Statuses(fc.r.Context()) {
+		tone := map[vpn.State]string{vpn.Up: "ok", vpn.Partial: "warn", vpn.Down: "bad", vpn.Unknown: "warn"}[st.State]
+		label := st.Name
+		if st.Partner != "" {
+			label = st.Partner + " (" + st.Name + ")"
+		}
+		rows = append(rows, FigureRow{Label: label, Value: string(st.State), Tone: tone},
+			FigureRow{Label: "  " + st.Kind, Value: st.Detail})
+		for _, m := range st.Mismatches {
+			rows = append(rows, FigureRow{Label: "  settings disagree", Value: m, Tone: "bad"})
+		}
+		links = append(links, FigureLink{Label: "Connection sheet: " + label, Href: "/api/vpn/" + url.PathEscape(st.Name) + "/sheet"})
+	}
+	return Figure{Rows: rows, Links: links, Note: "Read from each tunnel's source at most once a minute. Settings are compared with the partner's, as listed in the -vpn file."}
 }
 
 // --- helpers -------------------------------------------------------------------------------------------------------

@@ -32,6 +32,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/tefca"
+	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
 )
 
@@ -238,6 +239,9 @@ type Server struct {
 	SMART            *smartauth.Server
 	SMARTClientsFile string
 	SMARTUsersFile   string
+
+	// VPN reads the partner tunnels listed in -vpn; nil without it.
+	VPN *vpn.Monitor
 
 	// DTRPackage runs this server's own DTR $questionnaire-package on a Parameters body, for the console. Nil when no FHIR endpoint
 	// is served.
@@ -486,6 +490,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("DELETE /api/smart/clients/{id}", s.require(store.RoleAdmin, s.handleSMARTClientDelete))
 	mux.Handle("PUT /api/smart/users/{username}", s.require(store.RoleAdmin, s.handleSMARTUserSave))
 	mux.Handle("DELETE /api/smart/users/{username}", s.require(store.RoleAdmin, s.handleSMARTUserDelete))
+	mux.Handle("GET /api/vpn", s.require(store.RoleViewer, s.handleVPN))
+	mux.Handle("GET /api/vpn/{name}/sheet", s.require(store.RoleViewer, s.handleVPNSheet))
 	mux.Handle("GET /api/dashboards/figures", s.require(store.RoleViewer, s.handleDashboardFigures))
 	mux.Handle("GET /api/pas/cases", s.require(store.RoleViewer, s.handlePASCases))
 	mux.Handle("GET /api/pas/cases/{id}", s.require(store.RoleViewer, s.handlePASCase))

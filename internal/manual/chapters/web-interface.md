@@ -121,7 +121,11 @@ names them.
 The **Connections** tile checks every networked destination in layers. It looks the name up, opens a TCP connection, completes TLS
 where it is used, and reads the destination's last delivery and failure from real traffic. Each failure says what it means, for
 example "refused: the partner's engine is probably stopped", "timed out: a firewall or a VPN tunnel that is down", or "a
-certificate from an authority this server does not trust". Nothing is sent to the partner. Figures a dashboard needs that are not
+certificate from an authority this server does not trust". Nothing is sent to the partner. With `-vpn tunnels.yaml` the **VPN tunnels** tile beside it
+reads each partner tunnel's state from AWS Site-to-Site VPN, an Azure VPN Gateway connection or strongSwan on this host, so a time-out
+can be told apart from a tunnel that is down. It also compares both sides' IKE and IPsec settings, as the cloud reports ours and the
+file lists theirs, and says where they cannot agree. **Connection sheet** downloads a partner's settings side by side as Markdown to
+send them; it never holds a pre-shared key. Figures a dashboard needs that are not
 recorded yet are listed under **Not measured yet** instead of being drawn as empty tiles.
 
 The department dashboards compute their own figures on the server, and each one says what window and source it covers:

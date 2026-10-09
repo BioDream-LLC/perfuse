@@ -13,7 +13,14 @@ test("a team dashboard is picked, arranged, saved, and opens as saved", async ({
   // do not resolve. Either way the tile says so in words. The layers themselves are tested against real listeners in
   // internal/api/connections_test.go.
   await expect(page.getByTestId("dashboard-tiles")).toContainText(/No destination reaches over the network|refused the connection|does not exist in DNS|timed out|Reachable/, { timeout: 20_000 });
-  await expect(page.getByText("Not measured yet")).toBeVisible();
+  await expect(page.getByTestId("dashboard-tiles")).toContainText("VPN tunnels");
+  // The tunnel is read from swanctl's output, and the settings that cannot agree are said: our MODP_2048 against their 19.
+  await expect(page.getByTestId("dashboard-tiles")).toContainText("Acme Lab (acme-lab)");
+  await expect(page.getByTestId("dashboard-tiles")).toContainText("Established, 1 of 1 child SAs installed.");
+  await expect(page.getByTestId("dashboard-tiles")).toContainText(/phase 1 DH group: ours MODP_2048, theirs 19/);
+  const sheet = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Connection sheet: Acme Lab (acme-lab)" }).click();
+  expect((await sheet).suggestedFilename()).toBe("vpn-acme-lab.md");
 
   // Arrange: hide the certificates tile and save.
   await page.getByRole("button", { name: "Arrange tiles" }).click();

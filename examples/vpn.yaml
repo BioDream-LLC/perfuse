@@ -1,0 +1,43 @@
+# serve -vpn examples/vpn.yaml: partner VPN tunnels on the Connections dashboard, with each partner's connection sheet.
+# State is read at most once a minute; nothing is ever changed, and no pre-shared key is read or shown.
+tunnels:
+  - name: acme-lab
+    partner: Acme Reference Lab
+    contact: network operations, +1 555 0100
+    aws:                                  # AWS Site-to-Site VPN; credentials from AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+      region: us-east-1                   # (a principal allowed ec2:DescribeVpnConnections)
+      connection_id: vpn-0123456789abcdef0
+    ours:                                 # anything left out is filled from what AWS reports
+      networks: [10.20.0.0/16]
+    theirs:
+      peer_address: 203.0.113.10
+      networks: [192.168.10.0/24]
+      ike_versions: [ikev2]
+      phase1_encryption: [AES256]
+      phase1_integrity: [SHA2-256]
+      phase1_dh_groups: ["14"]
+      phase1_lifetime: 28800
+      phase2_encryption: [AES256]
+      phase2_integrity: [SHA2-256]
+      phase2_lifetime: 3600
+
+  - name: riverside-clinic
+    partner: Riverside Clinic
+    azure:                                # Azure VPN Gateway connection; an Entra ID app with Reader on it
+      subscription: 00000000-0000-0000-0000-000000000000
+      resource_group: network-rg
+      connection: to-riverside
+      tenant_id: 11111111-1111-1111-1111-111111111111
+      client_id: 22222222-2222-2222-2222-222222222222
+      client_secret_env: PERFUSE_AZURE_VPN_SECRET
+    theirs:
+      peer_address: 198.51.100.20
+      ike_versions: [IKEv2]
+
+  - name: county-hie
+    partner: County HIE
+    strongswan:                           # strongSwan on this host: swanctl --list-sas --ike <connection>
+      connection: county-hie              # (Perfuse needs access to the charon socket: the vici group, or root)
+    theirs:
+      peer_address: 192.0.2.50
+      networks: [172.16.40.0/24]

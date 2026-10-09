@@ -40,6 +40,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"github.com/biodream-llc/perfuse/internal/store"
+	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/web"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
 )
@@ -217,6 +218,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"run Perfuse's own SMART authorization server at /auth for the apps registered in this YAML file")
 	smartUsers := fset.String("smart-users", "",
 		"with -smart-clients, the people who may sign in to authorize apps (YAML: username, password_hash, fhir_user)")
+	vpnFile := fset.String("vpn", "",
+		"partner VPN tunnels to report on the Connections dashboard (YAML: AWS Site-to-Site VPN, Azure VPN Gateway or strongSwan, and both sides' settings); see examples/vpn.yaml")
 	smartOIDC := fset.String("smart-oidc", "",
 		"with -smart-users, let people sign in at this OpenID Connect provider (YAML: issuer, client_id, client_secret_file or client_secret_env, label); each is linked by oidc_subject")
 	smartKey := fset.String("smart-key", "smart-signing.key",
@@ -848,6 +851,14 @@ oidcDone:
 		Settings:           settingsStore,
 		Branding:           brandingStore,
 		PasskeyAttestation: attestation,
+	}
+	if *vpnFile != "" {
+		f, err := vpn.Load(*vpnFile)
+		if err != nil {
+			return err
+		}
+		srv.VPN = &vpn.Monitor{File: f}
+		log.Info("VPN tunnels", "file", *vpnFile, "tunnels", len(f.Tunnels))
 	}
 
 	// The interface inventory, written to a file so it can be committed and read without the application.

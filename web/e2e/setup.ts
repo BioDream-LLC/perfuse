@@ -219,6 +219,32 @@ export default async function globalSetup() {
   // The signing certificate is reused from the pair written above. It is not the certificate any real identity provider would use,
   // and it does not need to be: nothing here signs an assertion, and what these tests check is that the screen reads and writes the
   // file. A certificate that parses is enough, and one that does not would be refused at startup - which is the point of that check.
+  // A partner VPN tunnel read from strongSwan, with a stand-in swanctl so the Connections dashboard reads real output.
+  const swanctl = join(dir, "swanctl");
+  writeFileSync(
+    swanctl,
+    [
+      "#!/bin/sh",
+      "cat <<'OUT'",
+      "acme: #1, ESTABLISHED, IKEv2, 4a3c4d1e3f5a2b1c_i* 9f8e7d6c5b4a3210_r",
+      "  remote 'acme' @ 203.0.113.10[4500]",
+      "  AES_CBC-256/HMAC_SHA2_256_128/PRF_HMAC_SHA2_256/MODP_2048",
+      "  established 25s ago, rekeying in 13844s",
+      "  acme-net: #1, reqid 1, INSTALLED, TUNNEL, ESP:AES_GCM_16-256",
+      "    local  10.20.0.0/16",
+      "    remote 192.168.10.0/24",
+      "OUT",
+      "",
+    ].join("\n"),
+    { mode: 0o755 },
+  );
+  const vpnFile = join(dir, "vpn.yaml");
+  writeFileSync(
+    vpnFile,
+    `tunnels:\n  - name: acme-lab\n    partner: Acme Lab\n    strongswan: {connection: acme, command: ${swanctl}}\n` +
+      "    theirs: {peer_address: 203.0.113.10, networks: [192.168.10.0/24], phase1_dh_groups: [\"19\"]}\n",
+  );
+
   // The built-in SMART authorization server, so Users → SMART apps edits real files.
   const smartClients = join(dir, "smart-clients.yaml");
   writeFileSync(smartClients, 'clients:\n  - id: member-app\n    name: Member app\n    kind: public\n    redirect_uris: ["https://app.example.org/cb"]\n    scopes: [openid, fhirUser, launch/patient, "patient/*.rs"]\n');
@@ -335,6 +361,7 @@ export default async function globalSetup() {
       "-smart-clients", smartClients,
       "-smart-users", smartUsers,
       "-smart-key", join(dir, "smart.key"),
+      "-vpn", vpnFile,
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
   );

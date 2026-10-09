@@ -2716,6 +2716,7 @@ export interface DashboardFigure {
   note?: string
   unavailable?: string
   empty?: string
+  links?: { label: string; href: string }[]
 }
 
 /** A Da Vinci PAS request as its reviewer sees it. */
