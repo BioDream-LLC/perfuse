@@ -12,7 +12,7 @@ behind it is exactly the kind of assertion this project exists to distrust.
 
 The Inferno runs (CRD, DTR, PAS and US Core 7) can be repeated from this repository: `conformance/inferno/run.sh <suite>` checks
 out the kit at the version recorded here, starts Perfuse with the same flags and data, and prints the results. See
-[conformance/inferno](../conformance/inferno/README.md).
+[conformance/inferno](https://github.com/biodream-llc/perfuse/tree/main/conformance/inferno).
 
 Every finding here was produced by running the software against another implementation. None of them were
 found by reading code, and several had a substantial body of passing tests sitting on top of them.
