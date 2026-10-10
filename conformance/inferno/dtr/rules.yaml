@@ -1,0 +1,11 @@
+payer: Inferno Test Plan
+url: https://payer.example.org
+rules:
+  - description: Dinner order (Inferno DTR fixture)
+    codes: [DINNER]
+    system: urn:inferno:dtr-test-kit:codes
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+    questionnaire: urn:inferno:dtr-test-kit:dinner-order-static
+    reason: The plan needs the dinner order documented before it is served.

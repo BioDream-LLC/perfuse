@@ -10,6 +10,10 @@ real PostgreSQL, a real OpenSSH server, real OpenSSL. This document says what wa
 it was verified against, and what the verification found — because a claim of verification with no record
 behind it is exactly the kind of assertion this project exists to distrust.
 
+The Inferno runs (CRD, DTR, PAS and US Core 7) can be repeated from this repository: `conformance/inferno/run.sh <suite>` checks
+out the kit at the version recorded here, starts Perfuse with the same flags and data, and prints the results. See
+[conformance/inferno](../conformance/inferno/README.md).
+
 Every finding here was produced by running the software against another implementation. None of them were
 found by reading code, and several had a substantial body of passing tests sitting on top of them.
 
@@ -413,7 +417,9 @@ The suite found:
 
 **The Inferno Da Vinci DTR test kit, October 2026.** The official DTR Payer Server v2.2.0 suite (davinci-dtr-test-kit v0.18.0,
 run locally in Docker) against Perfuse with Keycloak as the authorization server for SMART Backend Services: 43 pass, 1 omitted (no
-Binary attachments in the data), 2 fail. The two that fail cannot pass for any server: they require
+Binary attachments in the data), 2 fail. The same 43 with Perfuse's own authorization server (`conformance/inferno/run.sh dtr`), once
+an app launch client is registered: the kit's discovery test asks for `authorization_endpoint`, which SMART App Launch 2.2 requires
+only of a server that offers app launch. The two that fail cannot pass for any server: they require
 `Questionnaire.extension:assemble-expectation`, which DTR's base questionnaire profile allows at most 0 times, and `item` in the
 adaptive search profile, which also has a maximum of 0. The payer data was Inferno's own dinner-order fixtures, an adaptive version of
 it written with standard `enableWhen`, and one questionnaire using every element DTR marks must-support.
@@ -798,6 +804,17 @@ resolve in the file; `perfuse fhir convert` has no flag for it.
 
 Re-run with US Core loaded, the French and Welsh set is now free of validator errors as well: the US Core race extension the
 base-R4 run could not resolve validates.
+
+## VPN tunnel state, against strongSwan 5.9
+
+**October 2026.** Two strongSwan 5.9.13 gateways in Docker (Alpine 3.20) with an IKEv2 tunnel between them: AES-256, SHA-256 and
+MODP-2048 for IKE, AES-256-GCM for ESP, 10.1.0.0/16 to 10.2.0.0/16. Perfuse read the tunnel with the real `swanctl --list-sas`
+(`scripts/strongswan-up.sh`, then `go test ./internal/vpn -run StrongSwanForReal`). It reported the tunnel up, the other gateway's
+address, the networks and the proposals, and no mismatch against a partner sheet that agreed. A sheet saying DH group 19 was
+reported as a mismatch. With the other gateway stopped and the SA torn down, the tunnel read down.
+
+The output matched the sample the unit test had been written against, so the reader needed no change. AWS and Azure are read from
+their APIs, tested against recorded answers only.
 
 ## Mutual TLS, against OpenSSL
 

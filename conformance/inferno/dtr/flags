@@ -1,0 +1,6 @@
+port=8473
+-fhir
+-smart-clients clients.yaml
+-smart-users users.yaml
+-smart-key smart-signing.key
+-crd-rules rules.yaml

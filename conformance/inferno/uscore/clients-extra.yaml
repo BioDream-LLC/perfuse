@@ -1,0 +1,6 @@
+  - id: inferno-public
+    name: Inferno (public)
+    kind: public
+    redirect_uris: ["http://localhost/custom/smart/redirect", "http://localhost/custom/smart_stu2/redirect", "http://localhost/custom/smart_stu2_2/redirect"]
+    launch_url: http://localhost/custom/smart/launch
+    scopes: ["openid", "fhirUser", "profile", "launch", "launch/patient", "offline_access", "online_access", "patient/*", "user/*"]

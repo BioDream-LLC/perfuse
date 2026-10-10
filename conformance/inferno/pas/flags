@@ -1,0 +1,8 @@
+port=8473
+-fhir
+-smart-clients clients.yaml
+-smart-key smart-signing.key
+-crd-rules rules.yaml
+-pas
+-fhir-subscriptions
+-fhir-subscriptions-allow-http

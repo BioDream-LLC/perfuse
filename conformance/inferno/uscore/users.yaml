@@ -1,0 +1,5 @@
+users:
+  - username: amy
+    name: Amy Shaw
+    password_hash: "pbkdf2-sha256$600000$daZ0NDgdlxwwbDMyRJS6pw$c0UJ8Jn9oKYbSrkgP5CDZec9cXFdVptpPZbj57m9TFQ"
+    fhir_user: Patient/85

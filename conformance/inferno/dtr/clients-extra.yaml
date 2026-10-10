@@ -1,0 +1,7 @@
+  # A DTR app the payer lets members' providers launch. With app launch configured, the discovery document names the
+  # authorization endpoint, which the kit's discovery test asks for even of a server that only runs Backend Services.
+  - id: dtr-app
+    name: DTR app
+    kind: public
+    redirect_uris: ["https://dtr-app.example.org/callback"]
+    scopes: ["openid", "fhirUser", "launch", "launch/patient", "patient/*.rs", "user/*.rs"]

@@ -1,0 +1,3 @@
+clients:
+  - issuer: http://host.docker.internal/custom/crd_server_v221
+    jwks_url: http://localhost/custom/crd_server_v221/jwks.json

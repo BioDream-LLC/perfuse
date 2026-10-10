@@ -1,0 +1,43 @@
+# Da Vinci CRD rules: what Springfield Health Plan tells a clinician about an order while it is still a draft.
+# The Inferno CRD run (run.py) serves these with -crd-rules, and loads the member records members: fhir checks.
+payer: Springfield Health Plan
+url: https://www.springfield-health-plan.example
+rules:
+  - description: Home oxygen equipment
+    codes: [E0424, E0431, E1390]
+    system: http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+    questionnaire: https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen
+    reason: Prior authorization is required for home oxygen. Qualifying oxygen saturation within the last 30 days must be documented.
+    links:
+      - label: Home oxygen coverage policy
+        url: https://www.springfield-health-plan.example/policies/home-oxygen
+    # Billed as a monthly rental, approved for 90 days at a time, and dependent on the oximetry that qualifies it: if that
+    # order changes, the EHR should ask again.
+    billing_codes:
+      - {system: "http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets", code: E0424, display: "Stationary compressed gas 02"}
+    details:
+      - {code: allowed-period, value: "Rental for up to 36 months", qualification: "Recertification is required after the first 12 months"}
+    depends_on: ["94760", "94761"]
+    contact: {name: Springfield Health Plan utilization management, phone: "+1-217-555-0199", url: "https://www.springfield-health-plan.example/contact/um"}
+    expiry_days: 90
+  - description: Physical therapy evaluation
+    codes: ["97161", "97162", "97163"]
+    covered: covered
+    pa: no-auth
+    documentation: [clinical]
+    doc_purpose: [retain-doc]
+    reason: No prior authorization is needed. Keep the evaluation and plan of care on file; they are requested on audit.
+    details:
+      - {code: in-network-copay, value: "$30 per visit"}
+  - description: Office visit
+    codes: ["99213", "99214"]
+    covered: covered
+    pa: no-auth
+  - description: Cosmetic procedure
+    codes: ["15830"]
+    covered: not-covered
+    reason: Cosmetic surgery is excluded from the plan.
+members: fhir

@@ -1,0 +1,43 @@
+payer: Inferno PAS Test Plan
+url: https://payer.example.org
+rules:
+  - description: Consultation
+    codes: ["3"]
+    system: https://codesystem.x12.org/005010/1365
+    covered: covered
+    pa: auth-needed
+    pa_decision: approve
+    reason: Consultations are approved when requested by an in-network provider.
+  - description: Dialysis
+    codes: ["76"]
+    system: https://codesystem.x12.org/005010/1365
+    covered: not-covered
+    reason: Dialysis is not a benefit of this test plan.
+  - description: Surgery
+    codes: ["2"]
+    system: https://codesystem.x12.org/005010/1365
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+    questionnaire: urn:inferno:dtr-test-kit:dinner-order-static
+    pa_attachments: ["18776-5"]
+    pa_attachment_modifiers: ["18804-5"]
+    reason: Surgery is reviewed by a clinician with the plan of care.
+  - description: Physical therapy
+    codes: ["PT"]
+    system: https://codesystem.x12.org/005010/1365
+    covered: covered
+    pa: auth-needed
+    pa_decision: approve
+    details:
+      - code: allowed-quantity
+        value: "6"
+    reason: Up to six physical therapy visits are approved per request.
+  - description: MRI
+    codes: ["62"]
+    system: https://codesystem.x12.org/005010/1365
+    covered: covered
+    pa: auth-needed
+    pa_decision: approve
+    pa_alternative: {system: "https://codesystem.x12.org/005010/1365", code: "4", display: "Diagnostic X-Ray"}
+    reason: An X-ray is approved before an MRI.
