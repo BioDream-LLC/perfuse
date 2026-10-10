@@ -132,6 +132,7 @@ The validating subcommand is useful on its own: it will tell you whether a resou
 | `-fhir` | Serve the FHIR endpoint at `/fhir`. On by default. |
 | `-fhir-version` | The release served. R4 by default. |
 | `-fhir-read-only` | Refuse writes. |
+| `-fhir-api-tokens` | With SMART configured, accept Perfuse API tokens as well as SMART tokens (off by default; also under Settings → FHIR). |
 | `-fhir-bulk-export` | Enable `$export`. Off by default. |
 | `-fhir-subscriptions` | Enable topic subscriptions: encounter and appointment notifications to endpoints FHIR clients choose. Off by default; needs R4 and a writable endpoint. |
 | `-fhir-subscriptions-allow-http` | Let subscriptions deliver to plain `http`. For a test receiver, never for patient data on a network. |

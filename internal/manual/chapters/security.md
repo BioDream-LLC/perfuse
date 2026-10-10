@@ -26,6 +26,26 @@ The split that matters is Viewer and Editor. A great deal of useful work — inv
 
 Note that Viewer can read message content, which is clinical data. It is not a low-privilege role in any sense that matters for privacy; it is a low-privilege role for *configuration*.
 
+## Who may call the FHIR endpoint
+
+The FHIR endpoint (`serve -fhir`) checks one of two kinds of token:
+
+- **Perfuse API tokens**, made under **Users → Machine credentials** or with `perfuse token create`. Each carries a role, and can be
+  limited to FHIR Groups. This is the default when no SMART authorization server is configured.
+- **SMART access tokens**, from Perfuse's own authorization server (`-smart-clients`) or an outside one (`-smart-issuer`). Each
+  carries scopes, and the endpoint holds every request to them.
+
+With SMART configured, only SMART tokens are accepted, so every caller is held to its scopes. An API token has a role and no
+scopes: a viewer token can read every patient's record. A payer who turned SMART on to limit each app to what it was granted
+should not have a way in that is not limited.
+
+Some sites need both all the same - an internal claims feed that holds an API token and has no SMART client, beside member apps
+that sign in through SMART. For those, **Settings → FHIR → Accept Perfuse API tokens beside SMART tokens** (`-fhir-api-tokens` at
+start-up) lets API tokens in as well. It is off by default, it takes effect on the next request in either direction, and changing it
+is written to the audit log. A token is told apart by its shape: a SMART token is a signed JWT, and an API token never is, so one is
+never checked as the other. Where you can, give such a system a SMART Backend Services client instead, with only the system scopes
+it needs.
+
 ## Audit
 
 Configuration changes, logins, and access to message content are recorded with who, what and when.

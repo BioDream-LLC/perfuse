@@ -510,6 +510,22 @@ func Default() []Setting {
 			Sensitive: true,
 		},
 		{
+			Key:      "fhir.apiTokensWithSMART",
+			Group:    GroupFHIR,
+			Subgroup: "Access",
+			Label:    "Accept Perfuse API tokens beside SMART tokens",
+			Help: "Only matters when SMART apps are configured. Off, the FHIR endpoint takes SMART tokens only, so every " +
+				"caller is held to its scopes. On, a Perfuse API token (Users, Machine credentials) is accepted as well, " +
+				"for an internal system that has no SMART client; such a token has a role and no scopes, so it can read " +
+				"every patient's record. Takes effect on the next request.",
+			Kind:      KindBool,
+			Widget:    WidgetToggle,
+			Effect:    EffectLive,
+			Default:   false,
+			Flag:      "fhir-api-tokens",
+			Sensitive: true,
+		},
+		{
 			Key:      "fhir.pageSize",
 			Group:    GroupFHIR,
 			Subgroup: "Access",

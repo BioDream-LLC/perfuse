@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { openTab } from "./nav";
+import { smartToken } from "./smart";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,17 +57,14 @@ test("a 276 is built and an 834 is read into members", async ({ page }) => {
 test("an order is asked about at order-sign, and the payer's rules answer with coverage information", async ({ page }) => {
   await page.goto("/");
   // The payer loads its DTR questionnaire into the FHIR endpoint, as a payer would.
-  const mutating = { "X-Perfuse-Request": "1" };
-  const tok = await page.request.post("/api/tokens", { headers: mutating, data: { label: "e2e-dtr", role: "editor" } });
-  expect(tok.ok(), await tok.text()).toBeTruthy();
-  const token = (await tok.json()).token as string;
+  // A SMART Backend Services token: with SMART configured, the FHIR endpoint takes SMART tokens only by default.
+  const token = await smartToken(page.request);
   const questionnaire = JSON.parse(readFileSync(join(here, "..", "..", "examples", "crd", "questionnaire-home-oxygen.json"), "utf8"));
   const put = await page.request.put("/fhir/Questionnaire/home-oxygen", {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/fhir+json" },
     data: questionnaire,
   });
   expect(put.ok(), await put.text()).toBeTruthy();
-  await page.request.delete("/api/tokens/e2e-dtr", { headers: mutating });
 
   await openTab(page, "Claims & auth");
   await page.getByRole("button", { name: "Coverage requirements (CRD)" }).click();

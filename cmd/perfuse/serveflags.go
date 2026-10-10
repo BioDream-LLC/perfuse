@@ -24,6 +24,7 @@ var settingFlags = map[string]string{
 	"trace-endpoint":        "monitoring.traceEndpoint",
 	"drain-for":             "engine.drainFor",
 	"fhir-read-only":        "fhir.readOnly",
+	"fhir-api-tokens":       "fhir.apiTokensWithSMART",
 	"fleet-label":           "fleet.label",
 	"passkey-domain":        "signin.passkeyDomain",
 	"passkey-name":          "signin.passkeyName",

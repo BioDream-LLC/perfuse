@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 76fffce</p>
+<p class="version">version 0.1 · 7b13ef3</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -578,16 +578,17 @@ td code { font-size: 0.85em; }
 <div class="toc-d1"><a href="#s17-security"><span class="num">17</span> Security</a></div>
 <div class="toc-d2"><a href="#s17-1-transport-security"><span class="num">17.1</span> Transport security</a></div>
 <div class="toc-d2"><a href="#s17-2-authentication-and-roles"><span class="num">17.2</span> Authentication and roles</a></div>
-<div class="toc-d2"><a href="#s17-3-audit"><span class="num">17.3</span> Audit</a></div>
-<div class="toc-d2"><a href="#s17-4-secrets-in-configuration"><span class="num">17.4</span> Secrets in configuration</a></div>
-<div class="toc-d2"><a href="#s17-5-what-is-in-the-database"><span class="num">17.5</span> What is in the database</a></div>
-<div class="toc-d2"><a href="#s17-6-tenants"><span class="num">17.6</span> Tenants</a></div>
-<div class="toc-d2"><a href="#s17-7-test-data"><span class="num">17.7</span> Test data</a></div>
-<div class="toc-d2"><a href="#s17-8-single-sign-on"><span class="num">17.8</span> Single sign-on</a></div>
-<div class="toc-d3"><a href="#s17-8-1-what-a-group-mapping-decides"><span class="num">17.8.1</span> What a group mapping decides</a></div>
-<div class="toc-d3"><a href="#s17-8-2-saml-specifically"><span class="num">17.8.2</span> SAML, specifically</a></div>
-<div class="toc-d3"><a href="#s17-8-3-what-each-provider-sends"><span class="num">17.8.3</span> What each provider sends</a></div>
-<div class="toc-d2"><a href="#s17-9-what-perfuse-does-not-do"><span class="num">17.9</span> What Perfuse does not do</a></div>
+<div class="toc-d2"><a href="#s17-3-who-may-call-the-fhir-endpoint"><span class="num">17.3</span> Who may call the FHIR endpoint</a></div>
+<div class="toc-d2"><a href="#s17-4-audit"><span class="num">17.4</span> Audit</a></div>
+<div class="toc-d2"><a href="#s17-5-secrets-in-configuration"><span class="num">17.5</span> Secrets in configuration</a></div>
+<div class="toc-d2"><a href="#s17-6-what-is-in-the-database"><span class="num">17.6</span> What is in the database</a></div>
+<div class="toc-d2"><a href="#s17-7-tenants"><span class="num">17.7</span> Tenants</a></div>
+<div class="toc-d2"><a href="#s17-8-test-data"><span class="num">17.8</span> Test data</a></div>
+<div class="toc-d2"><a href="#s17-9-single-sign-on"><span class="num">17.9</span> Single sign-on</a></div>
+<div class="toc-d3"><a href="#s17-9-1-what-a-group-mapping-decides"><span class="num">17.9.1</span> What a group mapping decides</a></div>
+<div class="toc-d3"><a href="#s17-9-2-saml-specifically"><span class="num">17.9.2</span> SAML, specifically</a></div>
+<div class="toc-d3"><a href="#s17-9-3-what-each-provider-sends"><span class="num">17.9.3</span> What each provider sends</a></div>
+<div class="toc-d2"><a href="#s17-10-what-perfuse-does-not-do"><span class="num">17.10</span> What Perfuse does not do</a></div>
 <div class="toc-d1"><a href="#s18-operations"><span class="num">18</span> Operations</a></div>
 <div class="toc-d2"><a href="#s18-1-deployment"><span class="num">18.1</span> Deployment</a></div>
 <div class="toc-d2"><a href="#s18-2-configuration-as-files"><span class="num">18.2</span> Configuration as files</a></div>
@@ -2723,7 +2724,7 @@ rules:
 <li><code>GET /fhir/Group/{id}/$export</code> — the standard Bulk Data group export, treated as Provider Access.</li>
 </ul>
 <p>The exports apply the rule&#39;s exclusions on the way out. Claims lose the payment and every cost-sharing and remittance amount, and keep the services, codes, dates and providers; the CARIN profile is removed from <code>meta.profile</code> because the resource no longer meets it. Payer-to-Payer also leaves out denied prior authorisations. Members holding an active PDex Provider Access opt-out Consent are left out of a provider export, and the log records how many. The <code>patient</code> parameter can only narrow to members of the Group; naming anyone else is refused.</p>
-<p>Access to a Group&#39;s export is decided by the endpoint&#39;s authentication. SMART scopes say what kinds of resource a token may read, not which Group, so each provider needs a token that can reach only its own attribution list. An API token can be limited to Groups when it is made — <code>perfuse token create -label riverside-provider-access -fhir-groups riverside-attributed</code>, or the <strong>Limit to FHIR Groups</strong> field under Users → Machine credentials — and on the FHIR endpoint it can then read those Groups, run <code>$davinci-data-export</code> or <code>$export</code> on them and fetch what the export produced, and nothing else. Another provider&#39;s Group answers not-found rather than forbidden, so a token does not learn which other attribution lists exist; every other request, member matching and ordinary search included, is refused. The limit applies to API tokens; a token from a SMART issuer carries no Group limit.</p>
+<p>Access to a Group&#39;s export is decided by the endpoint&#39;s authentication. SMART scopes say what kinds of resource a token may read, not which Group, so each provider needs a token that can reach only its own attribution list. An API token can be limited to Groups when it is made — <code>perfuse token create -label riverside-provider-access -fhir-groups riverside-attributed</code>, or the <strong>Limit to FHIR Groups</strong> field under Users → Machine credentials — and on the FHIR endpoint it can then read those Groups, run <code>$davinci-data-export</code> or <code>$export</code> on them and fetch what the export produced, and nothing else. Another provider&#39;s Group answers not-found rather than forbidden, so a token does not learn which other attribution lists exist; every other request, member matching and ordinary search included, is refused. The limit applies to API tokens; a token from a SMART issuer carries no Group limit. When SMART is configured as well, API tokens are refused unless <strong>Settings → FHIR → Accept Perfuse API tokens beside SMART tokens</strong> is on (see Security, *Who may call the FHIR endpoint*); a provider&#39;s Group-limited token needs it.</p>
 <h3 id="s16-6-prior-authorisation-metrics"><span class="num">16.6</span> Prior authorisation metrics</h3>
 <p><code>perfuse cms0057 metrics</code> reads a CSV of decisions exported from the utilisation management system and produces the public page CMS requires, in the layout of its *Prior Authorization Metrics Reporting — Overview and Template*.</p>
 <pre class="code lang-sh"><code>perfuse cms0057 metrics -year 2025 -org &#34;Springfield Health Plan&#34; -services services.csv \
@@ -2806,31 +2807,43 @@ rules:
 </table>
 <p>The split that matters is Viewer and Editor. A great deal of useful work — investigating why a message failed, tracing it, searching the store — needs no ability to change anything, and giving somebody Editor so they can look at a message is how configuration gets changed by accident.</p>
 <p>Note that Viewer can read message content, which is clinical data. It is not a low-privilege role in any sense that matters for privacy; it is a low-privilege role for *configuration*.</p>
-<h3 id="s17-3-audit"><span class="num">17.3</span> Audit</h3>
+<h3 id="s17-3-who-may-call-the-fhir-endpoint"><span class="num">17.3</span> Who may call the FHIR endpoint</h3>
+<p>The FHIR endpoint (<code>serve -fhir</code>) checks one of two kinds of token:</p>
+<ul>
+<li><strong>Perfuse API tokens</strong>, made under <strong>Users → Machine credentials</strong> or with <code>perfuse token create</code>. Each carries a role, and can be</li>
+</ul>
+<p>  limited to FHIR Groups. This is the default when no SMART authorization server is configured.</p>
+<ul>
+<li><strong>SMART access tokens</strong>, from Perfuse&#39;s own authorization server (<code>-smart-clients</code>) or an outside one (<code>-smart-issuer</code>). Each</li>
+</ul>
+<p>  carries scopes, and the endpoint holds every request to them.</p>
+<p>With SMART configured, only SMART tokens are accepted, so every caller is held to its scopes. An API token has a role and no scopes: a viewer token can read every patient&#39;s record. A payer who turned SMART on to limit each app to what it was granted should not have a way in that is not limited.</p>
+<p>Some sites need both all the same - an internal claims feed that holds an API token and has no SMART client, beside member apps that sign in through SMART. For those, <strong>Settings → FHIR → Accept Perfuse API tokens beside SMART tokens</strong> (<code>-fhir-api-tokens</code> at start-up) lets API tokens in as well. It is off by default, it takes effect on the next request in either direction, and changing it is written to the audit log. A token is told apart by its shape: a SMART token is a signed JWT, and an API token never is, so one is never checked as the other. Where you can, give such a system a SMART Backend Services client instead, with only the system scopes it needs.</p>
+<h3 id="s17-4-audit"><span class="num">17.4</span> Audit</h3>
 <p>Configuration changes, logins, and access to message content are recorded with who, what and when.</p>
 <p>The audit log is in the same database as the messages. That is convenient and it is a limitation: somebody who can modify the database can modify the audit log. If your requirements include tamper-evident audit, the log needs shipping somewhere append-only, and Perfuse&#39;s own log output is the way to do that.</p>
-<h3 id="s17-4-secrets-in-configuration"><span class="num">17.4</span> Secrets in configuration</h3>
+<h3 id="s17-5-secrets-in-configuration"><span class="num">17.5</span> Secrets in configuration</h3>
 <p>Passwords, passcodes and keys appear in channel configuration, which means they are in the YAML files.</p>
 <p>Two consequences. The files need filesystem permissions that reflect what they contain, and if they are in version control — which is otherwise recommended — the repository holds credentials and must be treated accordingly.</p>
 <p>Where a value is a secret, the interface renders it as a secret and the API does not return it once saved. That protects it from being read over somebody&#39;s shoulder or leaked in a screenshot. It does not protect the file.</p>
-<h3 id="s17-5-what-is-in-the-database"><span class="num">17.5</span> What is in the database</h3>
+<h3 id="s17-6-what-is-in-the-database"><span class="num">17.6</span> What is in the database</h3>
 <p>The message store holds messages as received, which for a clinical feed means patient-identifiable data. It should be on encrypted storage, backed up as clinical data with the retention that implies, and access-controlled at the filesystem level as well as through Perfuse&#39;s own roles.</p>
 <p><code>cleanup.periodDays</code> limits how long it is kept. See <a href="#s12-the-message-store">the message store</a> for the tension between that and having enough history for rhythm-aware alerting.</p>
-<h3 id="s17-6-tenants"><span class="num">17.6</span> Tenants</h3>
+<h3 id="s17-7-tenants"><span class="num">17.7</span> Tenants</h3>
 <p>A tenant is an isolation boundary: channels, messages, users and settings belong to one, and nothing crosses.</p>
 <p>This exists for a service provider running feeds for several practices. Do not use it to separate departments within one organisation that need to see each other&#39;s traffic — the isolation is real and there is no cross-tenant view.</p>
-<h3 id="s17-7-test-data"><span class="num">17.7</span> Test data</h3>
+<h3 id="s17-8-test-data"><span class="num">17.8</span> Test data</h3>
 <p>The generated messages described in <a href="#s14-testing">testing</a> exist partly as a privacy control. Reproducing a problem elsewhere, sending an example to a vendor, or populating a test environment are all things that otherwise get done with real messages.</p>
 <p>The generator&#39;s output contains no patient data by construction rather than by redaction. Prefer it to hand-stripped real messages, which is a process that can be done incompletely and usually is.</p>
-<h3 id="s17-8-single-sign-on"><span class="num">17.8</span> Single sign-on</h3>
+<h3 id="s17-9-single-sign-on"><span class="num">17.9</span> Single sign-on</h3>
 <p>Three mechanisms, and local accounts alongside all of them.</p>
 <p><strong>OpenID Connect</strong> (<code>-oidc</code>), <strong>a directory over LDAP</strong> (<code>-ldap</code>), and <strong>SAML 2.0</strong> (<code>-saml</code>). Each is configured from <strong>Administer → Sign-on</strong> and written to the file the flag names, so the screen and the file are two views of one thing rather than two places to keep in step.</p>
 <p>Local accounts are always available and cannot be turned off. That is deliberate: an on-premises integration engine whose only way in is an identity provider becomes unreachable exactly when the identity provider is unreachable, and a clinical interface is not a good place to learn that. The sign-on screen tells you how many local administrators exist before it encourages you to depend on anything else.</p>
-<h4 id="s17-8-1-what-a-group-mapping-decides"><span class="num">17.8.1</span> What a group mapping decides</h4>
+<h4 id="s17-9-1-what-a-group-mapping-decides"><span class="num">17.9.1</span> What a group mapping decides</h4>
 <p>All three map groups from the directory to Perfuse roles, and somebody in groups matching more than one gets the most privileged. That is the only safe direction to resolve it — the alternative is a person losing access they are entitled to because they are also in a lesser group.</p>
 <p>A mapping that grants nobody anything is refused rather than saved. A configuration that authenticates people and turns all of them away looks identical to a broken product from the outside: the round trip completes and everybody is denied with nothing explaining why.</p>
 <p>Creating an account on first sign-in is off by default. With it off, somebody has to exist in Perfuse before they can sign in, so the directory decides who they are and Perfuse decides who is allowed in.</p>
-<h4 id="s17-8-2-saml-specifically"><span class="num">17.8.2</span> SAML, specifically</h4>
+<h4 id="s17-9-2-saml-specifically"><span class="num">17.9.2</span> SAML, specifically</h4>
 <p>The parts worth knowing before you configure it:</p>
 <ul>
 <li><strong>Only the certificate you configure is trusted.</strong> A certificate carried inside a response is never used. An attacker who can send a document can also put their own certificate in it, and a verifier that reads it is one anybody can authenticate to as anybody.</li>
@@ -2839,7 +2852,7 @@ rules:
 <li><strong>The group attribute has no default and is required.</strong> Entra sends <code>groups</code>, Okta sends whatever the application was configured with, ADFS sends a claim URI. A guess would produce a sign-in that works and grants nobody anything. If a sign-in is refused for having no role, the server log names the attributes that did arrive — which is usually the whole answer.</li>
 <li><strong>The reply URL must match exactly</strong> what is registered at the provider. A response says where it was destined and one addressed elsewhere is refused, because accepting it would mean accepting a response meant for a different service.</li>
 </ul>
-<h4 id="s17-8-3-what-each-provider-sends"><span class="num">17.8.3</span> What each provider sends</h4>
+<h4 id="s17-9-3-what-each-provider-sends"><span class="num">17.9.3</span> What each provider sends</h4>
 <p>The group attribute is where sign-ins go wrong, and the three common providers each name it differently.</p>
 <table>
 <thead><tr><th>Provider</th><th>Usually sends</th><th>Notes</th></tr></thead>
@@ -2853,7 +2866,7 @@ rules:
 <p>A claim URI may be entered by its final segment: typing <code>groups</code> finds <code>http://schemas.microsoft.com/ws/2008/06/identity/claims/groups</code>. A name that merely ends with the word does not match — <code>excluded_groups</code> is not <code>groups</code>.</p>
 <p>Group membership arriving as one comma-separated value is treated as a single group name and matches nothing. That is the correct reading of the standard, and splitting on commas would mean a group legitimately containing one silently became two. If that is what your provider sends, change it there.</p>
 <p><strong>Test</strong> on the sign-on screen checks everything that can be checked without a person: the settings, the certificate, and whether a sign-in request can be built. It says plainly that it cannot prove somebody can sign in, because that needs a real assertion about a real person and the only way to get one is for them to try.</p>
-<h3 id="s17-9-what-perfuse-does-not-do"><span class="num">17.9</span> What Perfuse does not do</h3>
+<h3 id="s17-10-what-perfuse-does-not-do"><span class="num">17.10</span> What Perfuse does not do</h3>
 <p>It does not encrypt the database at rest. Use filesystem or volume encryption.</p>
 <p>It does not manage its own certificates or renew them. Point it at files and manage those files with whatever you already use.</p>
 <p>SAML has been verified against two independent providers, each with a real browser sign-in, a real assertion and a real session: Keycloak 26 and Microsoft Entra. Two matters more than twice as much as one, because the two disagree in a way that turned out to be load-bearing — Keycloak writes its assertion with namespace prefixes and Entra writes the same elements without them, and the one defect this area has had was in prefix handling.</p>
@@ -3004,6 +3017,7 @@ rules:
 <tr><td><code>-fhir</code></td><td>Serve the FHIR endpoint at <code>/fhir</code>. On by default.</td></tr>
 <tr><td><code>-fhir-version</code></td><td>The release served. R4 by default.</td></tr>
 <tr><td><code>-fhir-read-only</code></td><td>Refuse writes.</td></tr>
+<tr><td><code>-fhir-api-tokens</code></td><td>With SMART configured, accept Perfuse API tokens as well as SMART tokens (off by default; also under Settings → FHIR).</td></tr>
 <tr><td><code>-fhir-bulk-export</code></td><td>Enable <code>$export</code>. Off by default.</td></tr>
 <tr><td><code>-fhir-subscriptions</code></td><td>Enable topic subscriptions: encounter and appointment notifications to endpoints FHIR clients choose. Off by default; needs R4 and a writable endpoint.</td></tr>
 <tr><td><code>-fhir-subscriptions-allow-http</code></td><td>Let subscriptions deliver to plain <code>http</code>. For a test receiver, never for patient data on a network.</td></tr>

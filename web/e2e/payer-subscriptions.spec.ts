@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { createServer, type IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
 import { openTab } from "./nav";
+import { smartToken } from "./smart";
 
 // The standards work added in one pass: v2 scheduling, documents and immunizations in the FHIR lab; topic subscriptions with
 // real delivery to a real receiver; the 275 builder and reader; and 278 to Da Vinci PAS. Each test drives the interface and then
@@ -44,9 +45,8 @@ test("a subscription handshakes, receives an encounter notification, and the pag
 
   try {
     await page.goto("/");
-    const tok = await page.request.post("/api/tokens", { headers: mutating, data: { label: "e2e-fhir", role: "editor" } });
-    expect(tok.ok(), await tok.text()).toBeTruthy();
-    token = (await tok.json()).token as string;
+    // A SMART Backend Services token: with SMART configured, the FHIR endpoint takes SMART tokens only by default.
+    token = await smartToken(page.request);
     const fhir = { Authorization: `Bearer ${token}`, "Content-Type": "application/fhir+json" };
 
     const sub = await page.request.put("/fhir/Subscription/e2e-sub", {
@@ -112,7 +112,6 @@ test("a subscription handshakes, receives an encounter notification, and the pag
     // Revoked, because the server is shared by the whole suite: a token left behind appears as a second table on the Users
     // view, and use-admin.spec.ts's locator("tbody") then matched two elements and failed. State a test creates is state it
     // removes.
-    await page.request.delete("/api/tokens/e2e-fhir", { headers: { "X-Perfuse-Request": "1" } });
   }
 });
 

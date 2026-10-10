@@ -12,13 +12,14 @@ test("the four CMS-0057 APIs are listed with what each still needs", async ({ pa
   for (const name of ["Patient Access API", "Provider Access API", "Payer-to-Payer API", "Prior Authorization API"]) {
     await expect(apis.getByRole("heading", { name })).toBeVisible();
   }
-  // The e2e server runs the payer operations and bulk export, so Provider Access is ready; it has no SMART issuer, so Patient
-  // Access is not, and says why.
+  // The e2e server runs the payer operations and bulk export, so Provider Access is ready; it runs Perfuse's own SMART
+  // authorization server too, so Patient Access is ready, and names SMART as what it rests on.
   const provider = apis.locator("section", { has: page.getByRole("heading", { name: "Provider Access API" }) });
   await expect(provider).toContainText("Ready");
   await expect(provider).toContainText("$davinci-data-export");
   const patient = apis.locator("section", { has: page.getByRole("heading", { name: "Patient Access API" }) });
-  await expect(patient).toContainText("Not ready");
+  await expect(patient).toContainText("Ready");
+  await expect(patient).not.toContainText("Not ready");
   await expect(patient).toContainText("SMART");
 });
 
@@ -97,10 +98,27 @@ test("a provider's token is issued limited to its Group, and the FHIR endpoint r
 
   // Checked against the FHIR endpoint itself, not the page: the limit is only real if the server enforces it.
   const bearer = { Authorization: `Bearer ${token}`, Prefer: "respond-async" };
-  expect((await page.request.get("/fhir/Patient", { headers: bearer })).status(), "an ordinary search").toBe(403);
-  expect((await page.request.get(`/fhir/Group/${label}-other/$davinci-data-export`, { headers: bearer })).status(),
-    "another provider's Group").toBe(404);
-  expect((await page.request.get("/fhir/metadata", { headers: bearer })).status(), "the capability statement").toBe(200);
+  const switchTo = async (on: boolean) => {
+    const res = await page.request.put("/api/settings/values", {
+      headers: { "X-Perfuse-Request": "1" },
+      data: { changes: { "fhir.apiTokensWithSMART": on } },
+    });
+    expect(res.ok(), await res.text()).toBeTruthy();
+  };
+
+  // SMART is configured on this server, so with the switch at its default an API token is not let in at all.
+  expect((await page.request.get("/fhir/Patient", { headers: bearer })).status(), "an API token beside SMART, switched off").toBe(401);
+
+  // Switched on, it is let in, and held to its Group.
+  await switchTo(true);
+  try {
+    expect((await page.request.get("/fhir/Patient", { headers: bearer })).status(), "an ordinary search").toBe(403);
+    expect((await page.request.get(`/fhir/Group/${label}-other/$davinci-data-export`, { headers: bearer })).status(),
+      "another provider's Group").toBe(404);
+    expect((await page.request.get("/fhir/metadata", { headers: bearer })).status(), "the capability statement").toBe(200);
+  } finally {
+    await switchTo(false);
+  }
 
   await openTab(page, "CMS-0057");
   const provider = page.getByTestId("cms0057-apis").locator("section", { has: page.getByRole("heading", { name: "Provider Access API" }) });

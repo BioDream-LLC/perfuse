@@ -1,11 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { smartToken } from "./smart";
 import { openTab } from "./nav";
 
 // The PAS reviewer queue, driven the way a payer's nurse reviewer would use it: a provider's request arrives over FHIR and is
 // pended, the provider sends the document it was asked for, and the reviewer reads both and certifies fewer units than asked.
 // Each step checks what the server recorded, read back over FHIR.
-
-const mutating = { "X-Perfuse-Request": "1" };
 
 function pasRequest(trace: string) {
   const base = "http://provider.example/fhir";
@@ -36,9 +35,8 @@ function pasRequest(trace: string) {
 
 test("a pended prior authorization is read with its document and certified for fewer units", async ({ page }) => {
   await page.goto("/");
-  const tok = await page.request.post("/api/tokens", { headers: mutating, data: { label: "e2e-pas", role: "editor" } });
-  expect(tok.ok(), await tok.text()).toBeTruthy();
-  const token = (await tok.json()).token as string;
+  // A SMART Backend Services token: with SMART configured, the FHIR endpoint takes SMART tokens only by default.
+  const token = await smartToken(page.request);
   const fhir = { Authorization: `Bearer ${token}`, "Content-Type": "application/fhir+json" };
   try {
     const sub = await page.request.post("/fhir/Claim/$submit", { headers: fhir, data: pasRequest("E2E-PAS-1") });
@@ -89,6 +87,5 @@ test("a pended prior authorization is read with its document and certified for f
     expect(JSON.stringify(now)).toContain("extension-itemAuthorizedDetail");
     expect(JSON.stringify(now)).toContain('"A6"');
   } finally {
-    await page.request.delete("/api/tokens/e2e-pas", { headers: mutating });
   }
 });

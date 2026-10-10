@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
+import { generateKeyPairSync } from "node:crypto";
 import { acquireRunLock } from "./runlock";
 import { chromium, request } from "@playwright/test";
 
@@ -247,7 +248,17 @@ export default async function globalSetup() {
 
   // The built-in SMART authorization server, so Users → SMART apps edits real files.
   const smartClients = join(dir, "smart-clients.yaml");
-  writeFileSync(smartClients, 'clients:\n  - id: member-app\n    name: Member app\n    kind: public\n    redirect_uris: ["https://app.example.org/cb"]\n    scopes: [openid, fhirUser, launch/patient, "patient/*.rs"]\n');
+  // And a backend client, so a test calls the FHIR endpoint with a SMART token as a payer's own systems would: with SMART
+  // configured, the endpoint takes SMART tokens only unless the "API tokens beside SMART" switch is on.
+  const { publicKey, privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const jwk = { ...publicKey.export({ format: "jwk" }), kid: "e2e", alg: "RS384", use: "sig" };
+  writeFileSync(join(dir, "smart-backend.pem"), privateKey.export({ format: "pem", type: "pkcs8" }) as string, { mode: 0o600 });
+  writeFileSync(
+    smartClients,
+    'clients:\n  - id: member-app\n    name: Member app\n    kind: public\n    redirect_uris: ["https://app.example.org/cb"]\n    scopes: [openid, fhirUser, launch/patient, "patient/*.rs"]\n' +
+      "  - id: e2e-backend\n    name: e2e backend\n    kind: backend\n    scopes: [\"system/*.*\"]\n    jwks:\n      keys:\n        - " +
+      JSON.stringify(jwk) + "\n",
+  );
   const smartUsers = join(dir, "smart-users.yaml");
   writeFileSync(smartUsers, "users: []\n");
 
@@ -495,6 +506,8 @@ export default async function globalSetup() {
   process.env.PERFUSE_E2E_SHADOW_MLLP_B = String(shadowPortB);
   // The channel directory, so a test can put a file a channel names (an ELR config) beside it, as an administrator would.
   process.env.PERFUSE_E2E_CHANNELS = channels;
+  // The backend client's private key, for e2e/smart.ts.
+  process.env.PERFUSE_E2E_SMART_KEY = join(dir, "smart-backend.pem");
 
   // Recorded for the teardown, which runs in a separate process and cannot see these values.
   writeFileSync(STATE_FILE, JSON.stringify({ pid: proc.pid, dir, url }, null, 2));

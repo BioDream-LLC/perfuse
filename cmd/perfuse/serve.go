@@ -178,6 +178,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	fhirMatchWithoutConsent := fset.Bool("fhir-member-match-without-consent", false,
 		"let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing")
 	fhirReadOnly := fset.Bool("fhir-read-only", false, "refuse writes to the FHIR endpoint")
+	fhirAPITokens := fset.Bool("fhir-api-tokens", false,
+		"with SMART configured, accept Perfuse API tokens on the FHIR endpoint as well (unscoped; the console's FHIR settings can switch it)")
 	pasOn := fset.Bool("pas", false,
 		"serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what "+
 			"no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result")
@@ -1264,6 +1266,12 @@ oidcDone:
 			ReadOnly:       *fhirReadOnly,
 			Store:          st,
 			Log:            log,
+			APITokensWithSMART: func() bool {
+				if settingsStore != nil {
+					return settingsStore.Bool("fhir.apiTokensWithSMART")
+				}
+				return *fhirAPITokens
+			},
 		})
 		if err != nil {
 			return err

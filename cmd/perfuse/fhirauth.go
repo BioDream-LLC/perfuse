@@ -38,6 +38,9 @@ type fhirAuthOptions struct {
 
 	Store *store.Store
 	Log   *slog.Logger
+
+	// APITokensWithSMART, read on every request, says whether API tokens are accepted beside SMART ones.
+	APITokensWithSMART func() bool
 }
 
 // fhirAuthenticator picks the scheme.
@@ -84,8 +87,10 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		return auth, nil
+		if opts.Store == nil {
+			return auth, nil
+		}
+		return &fhirserver.EitherAuth{SMART: auth, API: apiTokenAuth(opts), Allow: opts.APITokensWithSMART}, nil
 	}
 
 	if opts.Store == nil {
@@ -93,6 +98,11 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 			"issuer, or -fhir-open")
 	}
 
+	return apiTokenAuth(opts), nil
+}
+
+// apiTokenAuth checks Perfuse API tokens against the token store.
+func apiTokenAuth(opts fhirAuthOptions) *fhirserver.BearerAuth {
 	return &fhirserver.BearerAuth{
 		Lookup: func(ctx context.Context, token string) (string, string, error) {
 			sess, err := opts.Store.LookupAPIToken(ctx, token)
@@ -109,7 +119,7 @@ func fhirAuthenticator(opts fhirAuthOptions) (fhirserver.Authenticator, error) {
 			return nil
 		},
 		Log: opts.Log,
-	}, nil
+	}
 }
 
 // smartConfigured reports whether enough was given to advertise SMART endpoints.
