@@ -14,6 +14,10 @@ export default defineConfig({
     outDir: '../internal/web/dist',
     emptyOutDir: true,
     sourcemap: false,
+    // The one chunk over Vite's 500 kB default is CodeMirror with its language modes, fetched only when a script editor is
+    // first shown; the first load is the dashboard's chunk, about 340 kB. The limit sits just above the editor so that
+    // anything else growing past it is still reported.
+    chunkSizeWarningLimit: 750,
   },
   server: {
     // In development the front end runs on its own port and proxies the API, so

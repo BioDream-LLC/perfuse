@@ -4,28 +4,10 @@ import { api } from './api'
 import { MirthExportButton } from './MirthExport'
 import { isPlaygroundFragment } from './playgroundLink'
 import type { AuthMethods, ChannelSummary } from './api'
-import { ChannelBuilder } from './ChannelBuilder'
 import { Dashboard } from './Dashboard'
-import { DocumentLab } from './DocumentLab'
-import { FhirLab } from './FhirLab'
-import { TeamDashboards } from './TeamDashboards'
-import { PayerLab } from './PayerLab'
-import { CMS0057 } from './CMS0057'
-import { Subscriptions } from './Subscriptions'
-import { Messages } from './Messages'
-import { Metrics } from './Metrics'
-import { Queue } from './Queue'
 import { AlertBanner, Alerts, useAlerts } from './Alerts'
 import { ChannelHistoryPanel } from './ChannelHistory'
 import { FeedProfilePanel } from './FeedProfilePanel'
-import { Certificates } from './Certificates'
-import { Contracts } from './Contracts'
-import { Fleet } from './Fleet'
-import { Tables } from './Tables'
-import { MirthMigration } from './MirthMigration'
-import { HealthLinks } from './HealthLinks'
-import { MapperPanel } from './MapperPanel'
-import { Shadow } from './Shadow'
 import { CommandPalette, type Command } from './CommandPalette'
 import {
   checkSession,
@@ -49,6 +31,31 @@ import { Confirm, ErrorBox, Field, RoleBadge, Section, Spinner, StatusDot } from
 // dependency. CodeMirror is roughly seven hundred kilobytes and this is one tab of
 // thirteen; making everybody download and parse it to look at a dashboard would be a poor
 // trade. It arrives as its own chunk when somebody opens the tab.
+// Each view is its own chunk, fetched when it is first opened: the console's first load carries the dashboard and the
+// frame, not every screen behind the menus (the single bundle had grown past 1.6 MB).
+const TeamDashboards = lazy(() => import('./TeamDashboards').then((m) => ({ default: m.TeamDashboards })))
+const Messages = lazy(() => import('./Messages').then((m) => ({ default: m.Messages })))
+const Queue = lazy(() => import('./Queue').then((m) => ({ default: m.Queue })))
+const Metrics = lazy(() => import('./Metrics').then((m) => ({ default: m.Metrics })))
+const FhirLab = lazy(() => import('./FhirLab').then((m) => ({ default: m.FhirLab })))
+const Subscriptions = lazy(() => import('./Subscriptions').then((m) => ({ default: m.Subscriptions })))
+const DocumentLab = lazy(() => import('./DocumentLab').then((m) => ({ default: m.DocumentLab })))
+const PayerLab = lazy(() => import('./PayerLab').then((m) => ({ default: m.PayerLab })))
+const CMS0057 = lazy(() => import('./CMS0057').then((m) => ({ default: m.CMS0057 })))
+const HealthLinks = lazy(() => import('./HealthLinks').then((m) => ({ default: m.HealthLinks })))
+const Certificates = lazy(() => import('./Certificates').then((m) => ({ default: m.Certificates })))
+const MirthMigration = lazy(() => import('./MirthMigration').then((m) => ({ default: m.MirthMigration })))
+const Contracts = lazy(() => import('./Contracts').then((m) => ({ default: m.Contracts })))
+const Fleet = lazy(() => import('./Fleet').then((m) => ({ default: m.Fleet })))
+const TEFCAView = lazy(() => import('./TEFCAView').then((m) => ({ default: m.TEFCAView })))
+const Tables = lazy(() => import('./Tables').then((m) => ({ default: m.Tables })))
+const MapperPanel = lazy(() => import('./MapperPanel').then((m) => ({ default: m.MapperPanel })))
+const Shadow = lazy(() => import('./Shadow').then((m) => ({ default: m.Shadow })))
+const Settings = lazy(() => import('./Settings').then((m) => ({ default: m.Settings })))
+const SMARTApps = lazy(() => import('./SMARTApps').then((m) => ({ default: m.SMARTApps })))
+const Tokens = lazy(() => import('./Tokens').then((m) => ({ default: m.Tokens })))
+const Passkeys = lazy(() => import('./Passkeys').then((m) => ({ default: m.Passkeys })))
+const ChannelBuilder = lazy(() => import('./ChannelBuilder').then((m) => ({ default: m.ChannelBuilder })))
 const ScriptLab = lazy(() => import('./ScriptLab').then((m) => ({ default: m.ScriptLab })))
 
 // Lazy for the usual reason and one more: the playground fetches a 4 MB WebAssembly module the moment it
@@ -116,17 +123,12 @@ export default function App() {
   return me ? <Console /> : <Login />
 }
 
-import { Settings } from './Settings'
 import { useBranding, BrandMark } from './Branding'
 import { THEMES, THEME_LABELS, useTheme, type Theme } from './Theme'
 import { FrictionPanel } from './FrictionPanel'
 import { IconTheme, viewIcons } from './Icons'
 import { NAV_GROUPS, DIRECT_TABS, GroupMenu, type NavItem } from './NavGroups'
-import { Passkeys } from './Passkeys'
 import { explainPasskeyError, passkeysSupported, usePasskey } from './passkey'
-import { Tokens } from './Tokens'
-import { SMARTApps } from './SMARTApps'
-import { TEFCAView } from './TEFCAView'
 import { TAB_IDS, viewFromHash } from './tabHash'
 
 function Login() {
@@ -867,54 +869,56 @@ function Console() {
         aria-labelledby={`tab-${tab}`}
         className="mx-auto max-w-7xl px-6 py-6"
       >
-        {tab === 'dashboard' && <Dashboard onBuildChannel={() => setTab('channels')} />}
-        {tab === 'teams' && <TeamDashboards />}
-        {tab === 'channels' && <Channels />}
-        {tab === 'messages' && <Messages />}
-        {tab === 'queue' && <Queue role={me.role as 'viewer' | 'editor' | 'admin'} />}
-        {tab === 'alerts' && (
-          <Alerts role={me.role as 'viewer' | 'editor' | 'admin'} alerts={alerts} />
-        )}
-        {tab === 'metrics' && <Metrics />}
-        {tab === 'fhir' && <FhirLab />}
-        {tab === 'subscriptions' && <Subscriptions />}
-        {tab === 'documents' && <DocumentLab />}
-        {tab === 'payer' && <PayerLab />}
-        {tab === 'cms0057' && <CMS0057 />}
-        {tab === 'shl' && <HealthLinks />}
-        {tab === 'certificates' && <Certificates />}
-        {tab === 'scripts' && (
-          <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>
-            <ScriptLab />
-          </Suspense>
-        )}
-        {tab === 'migrate' && <MirthMigration />}
-        {tab === 'contracts' && <Contracts />}
-        {tab === 'fleet' && <Fleet />}
-        {tab === 'tefca' && <TEFCAView />}
-        {tab === 'tables' && <Tables />}
-        {tab === 'mapper' && <MapperPanel />}
-        {tab === 'flow' && (
-          <Suspense fallback={<Spinner label="Loading the flow map…" />}>
-            <FlowMap />
-          </Suspense>
-        )}
-        {tab === 'playground' && (
-          <Suspense fallback={<Spinner label="Loading the playground…" />}>
-            <Playground />
-          </Suspense>
-        )}
-        {tab === 'shadow' && <Shadow />}
-        {tab === 'users' && (
-          <div className="space-y-6">
-            <Passkeys />
-            <Users />
-            <Tokens />
-            <SMARTApps />
-          </div>
-        )}
-        {tab === 'audit' && <Audit />}
-        {tab === 'settings' && <Settings />}
+        <Suspense fallback={<Spinner label="Loading…" />}>
+          {tab === 'dashboard' && <Dashboard onBuildChannel={() => setTab('channels')} />}
+          {tab === 'teams' && <TeamDashboards />}
+          {tab === 'channels' && <Channels />}
+          {tab === 'messages' && <Messages />}
+          {tab === 'queue' && <Queue role={me.role as 'viewer' | 'editor' | 'admin'} />}
+          {tab === 'alerts' && (
+            <Alerts role={me.role as 'viewer' | 'editor' | 'admin'} alerts={alerts} />
+          )}
+          {tab === 'metrics' && <Metrics />}
+          {tab === 'fhir' && <FhirLab />}
+          {tab === 'subscriptions' && <Subscriptions />}
+          {tab === 'documents' && <DocumentLab />}
+          {tab === 'payer' && <PayerLab />}
+          {tab === 'cms0057' && <CMS0057 />}
+          {tab === 'shl' && <HealthLinks />}
+          {tab === 'certificates' && <Certificates />}
+          {tab === 'scripts' && (
+            <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>
+              <ScriptLab />
+            </Suspense>
+          )}
+          {tab === 'migrate' && <MirthMigration />}
+          {tab === 'contracts' && <Contracts />}
+          {tab === 'fleet' && <Fleet />}
+          {tab === 'tefca' && <TEFCAView />}
+          {tab === 'tables' && <Tables />}
+          {tab === 'mapper' && <MapperPanel />}
+          {tab === 'flow' && (
+            <Suspense fallback={<Spinner label="Loading the flow map…" />}>
+              <FlowMap />
+            </Suspense>
+          )}
+          {tab === 'playground' && (
+            <Suspense fallback={<Spinner label="Loading the playground…" />}>
+              <Playground />
+            </Suspense>
+          )}
+          {tab === 'shadow' && <Shadow />}
+          {tab === 'users' && (
+            <div className="space-y-6">
+              <Passkeys />
+              <Users />
+              <Tokens />
+              <SMARTApps />
+            </div>
+          )}
+          {tab === 'audit' && <Audit />}
+          {tab === 'settings' && <Settings />}
+        </Suspense>
       </main>
     </div>
   )
@@ -976,13 +980,15 @@ function Channels() {
             {editing ? `Editing ${editing.name}` : 'New channel'}
           </h1>
         </div>
-        <ChannelBuilder
-          editing={editing}
-          onClose={() => {
-            setBuilding(false)
-            setEditing(null)
-          }}
-        />
+        <Suspense fallback={<Spinner label="Loading the builder…" />}>
+          <ChannelBuilder
+            editing={editing}
+            onClose={() => {
+              setBuilding(false)
+              setEditing(null)
+            }}
+          />
+        </Suspense>
       </div>
     )
   }

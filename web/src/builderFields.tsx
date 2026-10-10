@@ -1,7 +1,11 @@
 import { CodeArea } from './CodeArea'
-import { ScriptEditor, type ScriptKind } from './ScriptEditor'
-import { cloneElement, isValidElement, useId } from 'react'
+import type { ScriptKind } from './ScriptEditor'
+import { cloneElement, isValidElement, lazy, Suspense, useId } from 'react'
 import type { ReactElement, ReactNode } from 'react'
+
+// The script editor is CodeMirror, most of the console's weight, and most channels never open a script: it is fetched the first
+// time a script field is shown rather than with the builder.
+const ScriptEditor = lazy(() => import('./ScriptEditor').then((m) => ({ default: m.ScriptEditor })))
 
 // Form controls for the channel builder.
 //
@@ -196,14 +200,16 @@ export function ScriptArea({
         only point at a real control. So the editor is named directly instead, from the same string - six editors on this page
         would otherwise announce themselves as six anonymous edit boxes.
       */}
-      <ScriptEditor
-        value={value ?? ''}
-        onChange={onChange}
-        kind={kind}
-        language={language}
-        minHeight={minHeight}
-        ariaLabel={base.label}
-      />
+      <Suspense fallback={<p className="text-xs text-slate-500">Loading the editor…</p>}>
+        <ScriptEditor
+          value={value ?? ''}
+          onChange={onChange}
+          kind={kind}
+          language={language}
+          minHeight={minHeight}
+          ariaLabel={base.label}
+        />
+      </Suspense>
     </Wrapper>
   )
 }

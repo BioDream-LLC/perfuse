@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
 import { BuilderScripts } from './BuilderScripts'
+import { scriptEditorReady } from './scriptEditorReady.test-helper'
 import { api } from './api'
 import type { ChannelDraft } from './model'
 
@@ -46,6 +47,8 @@ function draft(over: Partial<ChannelDraft> = {}): ChannelDraft {
 }
 
 describe('the builder writes scripts in a real editor', () => {
+  beforeAll(scriptEditorReady)
+
   beforeEach(() => {
     vi.useFakeTimers()
     vi.mocked(api.checkScript).mockClear()

@@ -1,7 +1,10 @@
 // @vitest-environment happy-dom
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent, within, cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import { afterEach, beforeAll } from 'vitest'
+import { scriptEditorReady } from './scriptEditorReady.test-helper'
+
+beforeAll(scriptEditorReady)
 import { BuilderScripts } from './BuilderScripts'
 import { emptyDraft, draftToWire } from './model'
 import { wireToDraft } from './wireToDraft'
