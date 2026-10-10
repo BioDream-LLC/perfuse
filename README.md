@@ -12,11 +12,11 @@ Your existing Mirth JavaScript runs unchanged.
 **31 MB of memory at rest, against Mirth's 383 MB** — measured on the same machine, both idle. One file to copy
 instead of a 254 MB install and a Java runtime, and it starts immediately rather than warming up.
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg?logo=go&logoColor=white)](https://go.dev) [![Release](https://img.shields.io/badge/release-v0.1.7-success.svg)](#download) [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#download) [![Tests](https://img.shields.io/badge/tests-verified%20against%20real%20Mirth%2C%20Keycloak%20%26%20Entra-brightgreen.svg)](#verified-against-real-software-not-mocks)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg?logo=go&logoColor=white)](https://go.dev) [![Release](https://img.shields.io/badge/release-v0.1.8-success.svg)](#download) [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#download) [![Tests](https://img.shields.io/badge/tests-verified%20against%20real%20Mirth%2C%20Keycloak%20%26%20Entra-brightgreen.svg)](#verified-against-real-software-not-mocks)
 
-### Download v0.1.7
+### Download v0.1.8
 
-<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-linux-amd64.tar.gz"><img src="docs/assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-darwin-arm64.tar.gz"><img src="docs/assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-windows-amd64.zip"><img src="docs/assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
+<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-linux-amd64.tar.gz"><img src="docs/assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-darwin-arm64.tar.gz"><img src="docs/assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-windows-amd64.zip"><img src="docs/assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
 
 <sub>One file, nothing to install. [Intel Macs, ARM64 Linux, ARM64 Windows and checksums](#download)</sub>
 
@@ -287,19 +287,19 @@ the notice and the full PDF manual.
 
 | Platform | Architecture | Download |
 |---|---|---|
-| **Windows** | x64 (Intel/AMD) | [`perfuse-v0.1.7-windows-amd64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-windows-amd64.zip) |
-| **Windows** | ARM64 | [`perfuse-v0.1.7-windows-arm64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-windows-arm64.zip) |
-| **macOS** | Apple Silicon (M1–M4) | [`perfuse-v0.1.7-darwin-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-darwin-arm64.tar.gz) |
-| **macOS** | Intel | [`perfuse-v0.1.7-darwin-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-darwin-amd64.tar.gz) |
-| **Linux** | x86-64 | [`perfuse-v0.1.7-linux-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-linux-amd64.tar.gz) |
-| **Linux** | ARM64 / aarch64 | [`perfuse-v0.1.7-linux-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/perfuse-v0.1.7-linux-arm64.tar.gz) |
+| **Windows** | x64 (Intel/AMD) | [`perfuse-v0.1.8-windows-amd64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-windows-amd64.zip) |
+| **Windows** | ARM64 | [`perfuse-v0.1.8-windows-arm64.zip`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-windows-arm64.zip) |
+| **macOS** | Apple Silicon (M1–M4) | [`perfuse-v0.1.8-darwin-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-darwin-arm64.tar.gz) |
+| **macOS** | Intel | [`perfuse-v0.1.8-darwin-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-darwin-amd64.tar.gz) |
+| **Linux** | x86-64 | [`perfuse-v0.1.8-linux-amd64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-linux-amd64.tar.gz) |
+| **Linux** | ARM64 / aarch64 | [`perfuse-v0.1.8-linux-arm64.tar.gz`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/perfuse-v0.1.8-linux-arm64.tar.gz) |
 
 **On Windows, unzip and double-click `perfuse.exe`.** It starts the server, keeps its database and channels in
 `%LOCALAPPDATA%\Perfuse`, and opens your browser at the sign-in page. The window it opens shows the administrator's
 password on the first run; keep it open while you use Perfuse, because closing it stops the server. Double-clicking
 again while it runs just opens the browser. From a command prompt, `perfuse` with no arguments still prints the usage.
 
-**Verify what you downloaded** against [`SHA256SUMS`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.7/SHA256SUMS):
+**Verify what you downloaded** against [`SHA256SUMS`](https://github.com/biodream-llc/perfuse/releases/download/v0.1.8/SHA256SUMS):
 
 ```sh
 shasum -a 256 -c SHA256SUMS --ignore-missing     # macOS / Linux
