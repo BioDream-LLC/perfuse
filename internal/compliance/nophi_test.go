@@ -95,6 +95,9 @@ func eachSourceFile(t *testing.T, fn func(path string, content string)) {
 
 	skipDirs := map[string]bool{
 		".git": true, "node_modules": true, "dist": true, "bin": true, "vendor": true,
+		// conformance/inferno/.work holds the Inferno kits and reference data the runs download: other projects' synthetic
+		// test patients, git-ignored and never part of this repository.
+		".work": true,
 	}
 
 	err := filepath.Walk(repoRoot(t), func(path string, info os.FileInfo, err error) error {
