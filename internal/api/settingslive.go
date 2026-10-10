@@ -40,6 +40,10 @@ var liveSettings = map[string]bool{
 	// something, and "after a restart" is not an answer at that moment.
 	"fhir.readOnly": true,
 
+	// Read per request by the FHIR endpoint's authenticator (fhirserver.EitherAuth), so switching it off shuts API tokens out on
+	// the next call: an admin who turns it off because a token leaked must not have to restart for that to count.
+	"fhir.apiTokensWithSMART": true,
+
 	// Read at the moment the interface asks what this product is called, which happens on every page
 	// load and on the sign-in page before anyone has a session. Nothing has to be pushed anywhere:
 	// the branding endpoint reads the current value each time it answers. Live because the whole point
