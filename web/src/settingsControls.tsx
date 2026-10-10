@@ -146,16 +146,19 @@ function Toggle({
   value,
   onChange,
   describedBy,
+  labelledBy,
 }: {
   value: boolean
   onChange: (v: boolean) => void
   describedBy: string
+  labelledBy: string
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={value}
+      aria-labelledby={labelledBy}
       aria-describedby={describedBy}
       onClick={() => onChange(!value)}
       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 ${
@@ -182,6 +185,7 @@ function Slider({
   unit,
   onChange,
   describedBy,
+  labelledBy,
 }: {
   value: number
   min: number
@@ -189,6 +193,7 @@ function Slider({
   unit?: string
   onChange: (v: number) => void
   describedBy: string
+  labelledBy: string
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -197,6 +202,7 @@ function Slider({
         min={min}
         max={max}
         value={value}
+        aria-labelledby={labelledBy}
         aria-describedby={describedBy}
         onChange={(e) => onChange(Number(e.target.value))}
         className="h-2 w-48 cursor-pointer appearance-none rounded-full bg-slate-200 accent-sky-600"
@@ -377,6 +383,12 @@ export function settingControlId(key: string): string {
   return `${key}-control`
 }
 
+/** settingLabelId is the id of a setting's visible label, which a switch or a slider is named by: neither is an element a
+ *  <label for> can point at, and without a name a screen reader announced every toggle on the page as "switch, off". */
+export function settingLabelId(key: string): string {
+  return `${key}-label`
+}
+
 /** labelsItsControl reports whether this widget renders one element a label may reference.
  *
  * Deliberately a short list rather than an exclusion. A toggle is a button with role=switch and a slider
@@ -410,6 +422,7 @@ export function SettingControl({
           value={Boolean(value)}
           onChange={onChange}
           describedBy={describedBy}
+          labelledBy={settingLabelId(setting.key)}
         />
       )
 
@@ -422,6 +435,7 @@ export function SettingControl({
           unit={setting.unit}
           onChange={onChange}
           describedBy={describedBy}
+          labelledBy={settingLabelId(setting.key)}
         />
       )
 

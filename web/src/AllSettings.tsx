@@ -7,6 +7,7 @@ import {
   type SettingsSchema,
   labelsItsControl,
   settingControlId,
+  settingLabelId,
 } from './settingsControls'
 import type { UiError } from './store'
 import { toUiError } from './store'
@@ -351,6 +352,7 @@ function SettingRow({
               radio group and a list each carry their own name, because none of them is a single element
               a label may reference. */}
           <label
+            id={settingLabelId(setting.key)}
             className="text-sm font-medium text-slate-100"
             htmlFor={labelsItsControl(setting.widget) ? settingControlId(setting.key) : undefined}
           >

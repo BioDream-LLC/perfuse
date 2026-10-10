@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { render, waitFor } from '@testing-library/react'
 import { BuilderScripts } from './BuilderScripts'
 import { emptyDraft } from './model'
