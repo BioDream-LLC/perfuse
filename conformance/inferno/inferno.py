@@ -120,21 +120,25 @@ def public_jwks():
     return {"keys": keys}
 
 
-def backend_token(token_url, client_id="inferno-backend", scope="system/*.cruds", local_url=None):
-    """A SMART Backend Services access token: a client assertion signed RS384 with Inferno's key, exchanged at token_url
-    (reached at local_url from this machine when the two differ)."""
-    jwk = next(k for k in inferno_jwks()["keys"] if k["kty"] == "RSA" and "d" in k)
+def backend_token(token_url, client_id="inferno-backend", scope="system/*.cruds", local_url=None, key_file=None, kid=None):
+    """A SMART Backend Services access token: a client assertion signed RS384 with Inferno's key, or with the RSA key in
+    key_file under kid, exchanged at token_url (reached at local_url from this machine when the two differ)."""
     b64 = lambda b: base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+    if key_file is None:
+        jwk = next(k for k in inferno_jwks()["keys"] if k["kty"] == "RSA" and "d" in k)
+        kid = jwk["kid"]
     now = int(time.time())
-    signing_input = b64(json.dumps({"alg": "RS384", "typ": "JWT", "kid": jwk["kid"]}).encode()) + "." + b64(json.dumps(
+    signing_input = b64(json.dumps({"alg": "RS384", "typ": "JWT", "kid": kid}).encode()) + "." + b64(json.dumps(
         {"iss": client_id, "sub": client_id, "aud": token_url, "iat": now, "exp": now + 240, "jti": str(uuid.uuid4())}).encode())
-    with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as f:
-        f.write(_rsa_pem(jwk))
+    if key_file is None:
+        with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as f:
+            f.write(_rsa_pem(jwk))
     try:
-        sig = subprocess.run(["openssl", "dgst", "-sha384", "-sign", f.name], input=signing_input.encode(),
+        sig = subprocess.run(["openssl", "dgst", "-sha384", "-sign", key_file or f.name], input=signing_input.encode(),
                              capture_output=True, check=True).stdout
     finally:
-        os.unlink(f.name)
+        if key_file is None:
+            os.unlink(f.name)
     form = urllib.parse.urlencode({
         "grant_type": "client_credentials", "scope": scope,
         "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",

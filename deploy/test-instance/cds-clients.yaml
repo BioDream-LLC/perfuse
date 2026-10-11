@@ -1,0 +1,4 @@
+# EHRs trusted to call the CRD service with signed JWTs: Inferno's CRD test client at inferno.healthit.gov.
+clients:
+  - issuer: https://inferno.healthit.gov/suites/custom/crd_server_v221
+    jwks_url: https://inferno.healthit.gov/suites/custom/crd_server_v221/jwks.json
