@@ -62,8 +62,8 @@ type Rule struct {
 	// Links are policy documents.
 	Links []Link `yaml:"links,omitempty" json:"links,omitempty"`
 
-	// DocPurpose says what the documentation is for: withclaim, withorder, retain-doc or OTH. withpa is refused: CRD 2.2.1's
-	// invariant crd-ci-q4 fails every coverage-information carrying it, so it could never validate.
+	// DocPurpose says what the documentation is for: withclaim, withorder, retain-doc or OTH, and withpa only when the rules
+	// file sets allow_withpa: CRD 2.2.1's invariant crd-ci-q4 fails every coverage-information carrying withpa.
 	DocPurpose []string `yaml:"doc_purpose,omitempty" json:"docPurpose,omitempty"`
 	// BillingCodes are the codes to bill this under, when they differ from the order's.
 	BillingCodes []Code `yaml:"billing_codes,omitempty" json:"billingCodes,omitempty"`
@@ -145,6 +145,11 @@ type Rules struct {
 	// Members says where the payer's own member records are, to resolve the coverage an EHR sends: "fhir" is this server's
 	// FHIR store, the one $member-match reads. Empty: not checked, and only the Coverage's own status and period are read.
 	Members string `yaml:"members,omitempty" json:"members,omitempty"`
+	// AllowWithPA lets doc_purpose name withpa. CRD 2.2.1's invariant crd-ci-q4 is written so that every coverage-information
+	// carrying withpa fails it, whatever pa-needed says; the guide's authors agree it is broken and a technical correction is
+	// due. Until then the HL7 validator, and Inferno, reject such a response, so this is for a partner who checks against the
+	// corrected guide. withpa is still refused beside a pa that says no authorization is needed, which is what crd-ci-q4 means.
+	AllowWithPA bool `yaml:"allow_withpa,omitempty" json:"allowWithPA,omitempty"`
 
 	// Check resolves the EHR's Coverage and Patient against the payer's records, when Members names them. Set by the server.
 	Check MemberCheck `yaml:"-" json:"-"`
@@ -234,9 +239,11 @@ func (r *Rules) Validate() error {
 			}
 		}
 		for _, d := range rule.DocPurpose {
-			if d == "withpa" {
-				problems = append(problems, where+": doc_purpose withpa fails CRD 2.2.1's own invariant crd-ci-q4 on every response, so it is not sent; documentation for prior authorization is implied by pa: auth-needed")
-			} else if !docPurposes[d] {
+			if d == "withpa" && !r.AllowWithPA {
+				problems = append(problems, where+": doc_purpose withpa fails CRD 2.2.1's own invariant crd-ci-q4 on every response, so it is not sent; documentation for prior authorization is implied by pa: auth-needed (set allow_withpa: true to send it for a partner using the corrected guide)")
+			} else if d == "withpa" && rule.PA != "auth-needed" && rule.PA != "performpa" && rule.PA != "conditional" {
+				problems = append(problems, fmt.Sprintf("%s: doc_purpose withpa says the documentation is for a prior authorization, and pa %q says none is needed", where, rule.PA))
+			} else if d != "withpa" && !docPurposes[d] {
 				problems = append(problems, fmt.Sprintf("%s: doc_purpose %q is not withclaim, withorder, retain-doc or OTH", where, d))
 			}
 		}
@@ -674,10 +681,10 @@ func (r *Rules) coverageInformation(rule Rule, matched bool, coverage string, no
 	for _, d := range rule.Documentation {
 		ext = append(ext, map[string]any{"url": "doc-needed", "valueCode": d})
 	}
-	// doc-purpose is not sent. "withpa" is the one value a rules file implies, but CRD 2.2.1's invariant crd-ci-q4 fails
-	// every instance carrying it, whatever pa-needed is: its left side is a where() with no exists(), which is empty when
-	// pa-needed is auth-needed, and "empty implies false" is not true. The element is optional, so leaving it out is
-	// conformant; DTR derives the same purpose from pa-needed.
+	// doc-purpose withpa is sent only when the rules file allows it. CRD 2.2.1's invariant crd-ci-q4 fails every instance
+	// carrying it, whatever pa-needed is: its left side is a where() with no exists(), which is empty when pa-needed is
+	// auth-needed, and "empty implies false" is not true. The element is optional, so leaving it out is conformant; DTR
+	// derives the same purpose from pa-needed.
 	if rule.Questionnaire != "" {
 		ext = append(ext, map[string]any{"url": "questionnaire", "valueCanonical": rule.Questionnaire})
 	}

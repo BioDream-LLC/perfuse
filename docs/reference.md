@@ -497,7 +497,8 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `serve -fhir-member-match-without-consent` | Lets `$member-match` answer without an active Consent; for testing only |
 | `serve -crd-rules <file>` | Da Vinci CRD 2.2.1 over CDS Hooks at `/cds-services` (order-sign, order-select, order-dispatch, appointment-book). See `examples/crd/rules.yaml` |
 | CRD rules: `members: fhir` | Resolve the coverage against this server's FHIR store: `no-member-found`, `coverage-not-found`, `no-active-coverage`, and `satisfied` with the number of an approved ClaimResponse |
-| CRD rule fields | `billing_codes`, `details` (crd-coverage-detail codes), `contact`, `expiry_days`, `depends_on`, `doc_purpose` (not `withpa`) |
+| CRD rule fields | `billing_codes`, `details` (crd-coverage-detail codes), `contact`, `expiry_days`, `depends_on`, `doc_purpose` |
+| CRD rules: `allow_withpa: true` | Lets `doc_purpose` name `withpa`, with a `pa` that needs an authorization. CRD 2.2.1's invariant crd-ci-q4 rejects every `withpa`; its authors agree it is broken. Until the correction, the HL7 validator and Inferno reject these responses, so leave it off unless a partner checks against the corrected guide |
 | `serve -cds-clients <file>` | EHRs trusted to call it with signed JWTs: `clients: [{issuer, jwks_url}]`. A Perfuse API token is also accepted |
 | `POST /fhir/Questionnaire/$questionnaire-package` | Da Vinci DTR 2.2.0: the questionnaires named, named on the order's coverage-information, or asked for by CRD's coverage assertion id (`context`), each as a package bundle with a QuestionnaireResponse and the Libraries it needs |
 | `POST /fhir/Questionnaire/$log-questionnaire-errors` | DTR 2.2.0: problems a DTR app met with a questionnaire, written to the server log |
