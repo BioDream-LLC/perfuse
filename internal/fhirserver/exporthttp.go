@@ -106,7 +106,8 @@ func (s *Server) handleExportStatus(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusNoContent)
+		// 202, which is what Bulk Data specifies for a cancel: the export is being stopped and its files removed.
+		w.WriteHeader(http.StatusAccepted)
 
 		return
 	}

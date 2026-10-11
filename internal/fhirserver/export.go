@@ -350,6 +350,15 @@ func (m *ExportManager) exportBatch(ctx context.Context, resourceType string, jo
 			}
 		}
 
+		// In the FHIR version the server speaks, as a read gives it. Stored content is the internal shape, and an R4
+		// server exporting it unconverted wrote R5 Encounters (class as a list, status "completed") into R4 files,
+		// which Inferno's Bulk Data suite found failing validation.
+		if res, err := fhir.UnmarshalResource(raw); err == nil {
+			if converted, err := fhir.MarshalVersioned(res, m.store.Version()); err == nil {
+				raw = converted
+			}
+		}
+
 		// Compacted, because stored content may be indented and NDJSON requires one resource per line - an
 		// indented resource would break the format in a way that is only visible to the consumer.
 		compact, err := compactJSON(raw)

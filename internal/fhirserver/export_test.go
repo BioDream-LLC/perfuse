@@ -2,6 +2,7 @@ package fhirserver
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // exportFixture prepares a store with an export manager and a few resources.
@@ -423,5 +426,49 @@ func TestBulkExportIsDeclaredAndItsManifestIsPlainJSON(t *testing.T) {
 			t.Fatalf("status: %d %s", rec.Code, rec.Body)
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// TestAnR4ServerExportsR4 covers an export file in the internal shape rather than the server's FHIR version. An R4
+// server read an Encounter as R4 (class a Coding, status "finished") and exported it as R5 (class a list, status
+// "completed"), which fails R4 validation; Inferno's Bulk Data suite found it.
+func TestAnR4ServerExportsR4(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { db.Close() })
+	store, err := NewStore(db, fhir.R4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, store, `{"resourceType": "Encounter", "id": "e1", "status": "finished",
+		"class": {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"}}`)
+
+	manager, err := NewExportManager(context.Background(), store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	started, err := manager.Start(context.Background(), ExportRequest{RequestURL: "/$export", Types: []string{"Encounter"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job := waitForExport(t, manager, started.ID); job.Status != ExportComplete {
+		t.Fatalf("the export did not complete: %s %s", job.Status, job.Error)
+	}
+	body, err := manager.File(context.Background(), started.ID, "Encounter")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var enc map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(body)), &enc); err != nil {
+		t.Fatal(err)
+	}
+	if enc["status"] != "finished" {
+		t.Errorf("status %v, want R4's finished", enc["status"])
+	}
+	if _, ok := enc["class"].(map[string]any); !ok {
+		t.Errorf("class is %T, want R4's single Coding", enc["class"])
 	}
 }
