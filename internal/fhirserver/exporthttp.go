@@ -1,6 +1,7 @@
 package fhirserver
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -180,7 +181,13 @@ func (s *Server) handleExportStatus(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	s.writeJSON(w, http.StatusOK, manifest)
+	// application/json, as Bulk Data requires: the manifest is not a FHIR resource, and writeJSON's FHIR media type made
+	// strict clients (Inferno's Bulk Data suite among them) refuse it.
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(manifest); err != nil {
+		s.Log.Error("writing a response failed", "err", err)
+	}
 }
 
 // handleExportFile serves one NDJSON output.

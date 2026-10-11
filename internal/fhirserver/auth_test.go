@@ -172,6 +172,24 @@ func TestAReadOnlyTokenCannotWrite(t *testing.T) {
 	}
 }
 
+// TestAReadOnlyTokenCanCancelItsExport covers the Bulk Data client that could start an export and not cancel it.
+//
+// Bulk Data clients hold read scopes (system/*.read), and the specification cancels an export with DELETE on its status URL.
+// Treating that DELETE as a write refused every cancel, and abandoned exports piled up until new ones were refused too.
+func TestAReadOnlyTokenCanCancelItsExport(t *testing.T) {
+	s := NewServer(nil, "http://example.test/fhir", nil)
+	s.Auth = &StaticAuth{Tokens: map[string]string{testToken: "test"}, ReadOnly: true}
+
+	if status, _ := probe(t, s, http.MethodDelete, "/_export/abc123/status", "Bearer "+testToken); status == http.StatusForbidden {
+		t.Error("a read-only token could not cancel an export")
+	}
+	for _, path := range []string{"/Patient/abc123", "/_export/abc123", "/Patient/_export/status", "/_export//status"} {
+		if status, reached := probe(t, s, http.MethodDelete, path, "Bearer "+testToken); status != http.StatusForbidden || reached {
+			t.Errorf("DELETE %s with a read-only token: status %d, reached=%v, want 403 and false", path, status, reached)
+		}
+	}
+}
+
 // TestEveryWritingMethodIsTreatedAsAWrite covers a method nobody thought about.
 //
 // Defaulting an unrecognised method to read would mean anything new is treated as harmless. PATCH is the one that

@@ -2,7 +2,10 @@ package fhirserver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -356,5 +359,69 @@ func TestAnIndentedStoredResourceIsCompactedOnExport(t *testing.T) {
 	}
 	if !found {
 		t.Error("the indented resource is missing from the export")
+	}
+}
+
+// TestBulkExportIsDeclaredAndItsManifestIsPlainJSON covers two things Inferno's Bulk Data suite failed: the CapabilityStatement
+// listed no system or Patient export, so a client reading it first would not try; and the manifest came back as
+// application/fhir+json, which a strict client refuses, since the manifest is not a FHIR resource.
+func TestBulkExportIsDeclaredAndItsManifestIsPlainJSON(t *testing.T) {
+	srv, _ := newTestServer(t)
+	manager, err := NewExportManager(context.Background(), srv.Store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.Export = manager
+	h := srv.Handler()
+
+	var cs struct {
+		Rest []struct {
+			Operation []struct{ Name, Definition string } `json:"operation"`
+			Resource  []struct {
+				Type      string                              `json:"type"`
+				Operation []struct{ Name, Definition string } `json:"operation"`
+			} `json:"resource"`
+		} `json:"rest"`
+	}
+	if err := json.Unmarshal(do(t, h, http.MethodGet, "/metadata", nil).Body.Bytes(), &cs); err != nil {
+		t.Fatal(err)
+	}
+	declared := map[string]bool{}
+	for _, op := range cs.Rest[0].Operation {
+		declared[op.Definition] = true
+	}
+	for _, r := range cs.Rest[0].Resource {
+		for _, op := range r.Operation {
+			declared[op.Definition] = true
+		}
+	}
+	for _, want := range []string{"http://hl7.org/fhir/uv/bulkdata/OperationDefinition/export",
+		"http://hl7.org/fhir/uv/bulkdata/OperationDefinition/patient-export"} {
+		if !declared[want] {
+			t.Errorf("the CapabilityStatement does not declare %s", want)
+		}
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/$export", nil)
+	req.Header.Set("Prefer", "respond-async")
+	kick := httptest.NewRecorder()
+	h.ServeHTTP(kick, req)
+	if kick.Code != http.StatusAccepted {
+		t.Fatalf("kickoff: %d %s", kick.Code, kick.Body)
+	}
+	status := strings.TrimPrefix(kick.Header().Get("Content-Location"), "http://example.test/fhir")
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		rec := do(t, h, http.MethodGet, status, nil)
+		if rec.Code == http.StatusOK {
+			if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+				t.Errorf("the manifest's Content-Type is %q, want application/json", ct)
+			}
+			break
+		}
+		if rec.Code != http.StatusAccepted || time.Now().After(deadline) {
+			t.Fatalf("status: %d %s", rec.Code, rec.Body)
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }

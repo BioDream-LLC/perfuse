@@ -370,8 +370,15 @@ var readOperations = map[string]bool{
 	"_search": true,
 }
 
-// isWriteRequest is isWrite, except that a POST to one of readOperations is a read.
+// isWriteRequest is isWrite, except that a POST to one of readOperations is a read, and so is cancelling a bulk export.
+//
+// Bulk Data lets the client that started an export cancel it with DELETE on its status URL, and that client holds read
+// scopes only (system/*.read). Cancelling changes no resource; the status URL carries a random job id only its starter
+// was given.
 func isWriteRequest(r *http.Request) bool {
+	if r.Method == http.MethodDelete && isExportStatusPath(r.URL.Path) {
+		return false
+	}
 	if r.Method == http.MethodPost {
 		path := strings.TrimSuffix(r.URL.Path, "/")
 		if i := strings.LastIndex(path, "/"); i >= 0 && readOperations[path[i+1:]] {
@@ -379,6 +386,13 @@ func isWriteRequest(r *http.Request) bool {
 		}
 	}
 	return isWrite(r.Method)
+}
+
+// isExportStatusPath reports whether path is a bulk export's status URL, .../_export/{id}/status.
+func isExportStatusPath(path string) bool {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	n := len(parts)
+	return n >= 3 && parts[n-3] == "_export" && parts[n-2] != "" && parts[n-1] == "status"
 }
 
 func isWrite(method string) bool {

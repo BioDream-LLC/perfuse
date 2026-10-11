@@ -360,6 +360,12 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 					"definition": "http://hl7.org/fhir/us/davinci-hrex/OperationDefinition/member-match",
 				})
 			}
+			if s.Export != nil {
+				ops = append(ops, map[string]any{
+					"name":       "export",
+					"definition": "http://hl7.org/fhir/uv/bulkdata/OperationDefinition/patient-export",
+				})
+			}
 			entry["operation"] = ops
 		}
 		// Stored value sets expand and validate here; so do the views of the mapping tables (urn:perfuse:codeset:...).
@@ -445,6 +451,13 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 	if s.Messages != nil {
 		rest["operation"] = []any{map[string]any{"name": "process-message",
 			"definition": "http://hl7.org/fhir/OperationDefinition/MessageHeader-process-message"}}
+	}
+	// Bulk Data's system-level export, declared where Bulk Data looks for it: a client is told to read the
+	// CapabilityStatement before trying, and Inferno's Bulk Data suite fails a server that does not list it.
+	if s.Export != nil {
+		ops, _ := rest["operation"].([]any)
+		rest["operation"] = append(ops, map[string]any{"name": "export",
+			"definition": "http://hl7.org/fhir/uv/bulkdata/OperationDefinition/export"})
 	}
 
 	statement := map[string]any{
