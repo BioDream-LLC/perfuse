@@ -10,7 +10,7 @@ real PostgreSQL, a real OpenSSH server, real OpenSSL. This document says what wa
 it was verified against, and what the verification found — because a claim of verification with no record
 behind it is exactly the kind of assertion this project exists to distrust.
 
-The Inferno runs (CRD, DTR, PAS and US Core 7) can be repeated from this repository: `conformance/inferno/run.sh <suite>` checks
+The Inferno runs (CRD, DTR, PAS, SMART App Launch and US Core 7) can be repeated from this repository: `conformance/inferno/run.sh <suite>` checks
 out the kit at the version recorded here, starts Perfuse with the same flags and data, and prints the results. See
 [conformance/inferno](https://github.com/biodream-llc/perfuse/tree/main/conformance/inferno).
 
