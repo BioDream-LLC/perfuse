@@ -8,6 +8,9 @@ go build -o bin/perfuse ./cmd/perfuse
 conformance/inferno/run.sh pas      # or crd, dtr, smart, uscore
 ```
 
+`hosted.py <crd|dtr|pas|smart>` runs the same inputs from Inferno's hosted kits at inferno.healthit.gov against the public test
+instance, test.perfuse.health (`deploy/test-instance`); no Docker needed.
+
 | Suite | Kit | Perfuse serves | Recorded |
 |---|---|---|---|
 | `crd` | davinci-crd-test-kit v0.14.2, CRD Server v2.2.1 | `-fhir -crd-rules -cds-clients` | passes as a whole |

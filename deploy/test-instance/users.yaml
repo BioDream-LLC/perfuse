@@ -1,4 +1,4 @@
 # Test people for app launch. Both passwords are "correct horse": this is a public test server with test data only.
 users:
-  - {username: amy, name: Amy Member, password_hash: "pbkdf2-sha256$600000$wmeuACyxBb2uvYQj4/dFIw$GFmZXUDAYfiT8xGYNIVm5YiY+WXL2o3gwhA7Hj9yQfg", fhir_user: Patient/pmember}
+  - {username: amy, name: Amy Member, password_hash: "pbkdf2-sha256$600000$wmeuACyxBb2uvYQj4/dFIw$GFmZXUDAYfiT8xGYNIVm5YiY+WXL2o3gwhA7Hj9yQfg", fhir_user: Patient/p1}
   - {username: drb, name: Dr B, password_hash: "pbkdf2-sha256$600000$wmeuACyxBb2uvYQj4/dFIw$GFmZXUDAYfiT8xGYNIVm5YiY+WXL2o3gwhA7Hj9yQfg", fhir_user: Practitioner/d1}

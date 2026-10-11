@@ -4,7 +4,7 @@
 - CRD's member records: Amy Shaw, her coverage, and an approved authorization for home oxygen;
 - DTR's questionnaires: Inferno's dinner-order fixtures (static, with their CQL Library and ELM, and adaptive) and the
   questionnaire that uses every element DTR marks must-support, with its answer ValueSets; and DTR 2.2.0's example Coverage;
-- the clinician the EHR launch signs in as (users.yaml: drb).
+- the clinician the EHR launch signs in as (users.yaml: drb), and SMART App Launch's two patients and encounter.
 
 Signs in as the loader client (clients.yaml) with the private key in ~/keys/perfuse-test-loader.pem. Every resource is PUT under
 its own id, so loading again changes nothing. The DTR fixtures come from the DTR kit, checked out by conformance/inferno/kit.sh
@@ -63,6 +63,13 @@ def main():
                   dtr.fixture("dinner_static/parameters_questionnaire_dinner_order_static.json")["parameter"][0]["resource"]["entry"]]
     resources += [dtr.adaptive(), dtr.VALUESET, dtr.BIG_VALUESET, dtr.QUESTIONNAIRE, dtr.coverage(),
                   {"resourceType": "Practitioner", "id": "d1", "name": [{"family": "Brown", "given": ["Dana"]}]}]
+    # SMART App Launch (smart/run.py): the patient amy signs in as, a second patient her token must not reach, and the
+    # encounter of the EHR launch.
+    resources += [
+        {"resourceType": "Patient", "id": "p1", "name": [{"family": "Member", "given": ["Amy"]}], "birthDate": "1980-02-14", "gender": "female"},
+        {"resourceType": "Patient", "id": "p2", "name": [{"family": "Other", "given": ["Ben"]}], "birthDate": "1975-05-01", "gender": "male"},
+        {"resourceType": "Encounter", "id": "e1", "status": "finished",
+         "class": {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"}, "subject": {"reference": "Patient/p1"}}]
     for res in resources:
         put(token, res)
 

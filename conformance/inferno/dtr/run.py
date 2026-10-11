@@ -118,12 +118,14 @@ def crd_order():
              "code": {"coding": [{"system": "urn:inferno:dtr-test-kit:codes", "code": "DINNER", "display": "Dinner"}]},
              "subject": {"reference": "Patient/pat015"}, "requester": {"reference": "Practitioner/pra1234"},
              "insurance": [{"reference": "Coverage/cov1"}]}
-    cov = {"resourceType": "Coverage", "id": "cov1", "status": "active", "beneficiary": {"reference": "Patient/pat015"},
+    # The member is Amy Shaw, subscriber 123: a payer that checks its member records (the public test instance) knows her.
+    cov = {"resourceType": "Coverage", "id": "cov1", "status": "active", "subscriberId": "123", "beneficiary": {"reference": "Patient/pat015"},
            "payor": [{"reference": "Organization/plan"}]}
     hook = {"hookInstance": "dinner-1", "hook": "order-sign",
             "context": {"userId": "Practitioner/pra1234", "patientId": "pat015",
                         "draftOrders": {"resourceType": "Bundle", "type": "collection", "entry": [{"resource": order}]}},
-            "prefetch": {"patient": {"resourceType": "Patient", "id": "pat015"},
+            "prefetch": {"patient": {"resourceType": "Patient", "id": "pat015", "birthDate": "1987-02-20", "gender": "female",
+                                     "name": [{"family": "Shaw", "given": ["Amy"]}]},
                          "coverage": {"resourceType": "Bundle", "type": "searchset", "entry": [{"resource": cov}]}}}
     req = urllib.request.Request(LOCAL + "/cds-services/crd-order-sign", json.dumps(hook).encode(),
                                  {"Content-Type": "application/json", "Authorization": "Bearer " + CONSOLE_TOKEN})

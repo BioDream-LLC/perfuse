@@ -145,3 +145,21 @@ def backend_token(token_url, client_id="inferno-backend", scope="system/*.cruds"
         "client_assertion": signing_input + "." + b64(sig)}).encode()
     with urllib.request.urlopen(urllib.request.Request(local_url or token_url, form), context=INSECURE, timeout=30) as r:
         return json.load(r)["access_token"]
+
+
+def cds_jwt(audience, issuer="https://inferno.healthit.gov/suites/custom/crd_server_v221"):
+    """A CDS Hooks bearer JWT for audience (the service's URL), signed RS384 with Inferno's published test key, as Inferno's
+    CRD client signs one: hosted Inferno publishes that key at <issuer>/jwks.json."""
+    jwk = next(k for k in inferno_jwks()["keys"] if k["kty"] == "RSA" and "d" in k)
+    b64 = lambda b: base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+    now = int(time.time())
+    signing_input = b64(json.dumps({"alg": "RS384", "typ": "JWT", "kid": jwk["kid"], "jku": issuer + "/jwks.json"}).encode()) + "." + \
+        b64(json.dumps({"iss": issuer, "sub": issuer, "aud": audience, "iat": now, "exp": now + 300, "jti": str(uuid.uuid4())}).encode())
+    with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as f:
+        f.write(_rsa_pem(jwk))
+    try:
+        sig = subprocess.run(["openssl", "dgst", "-sha384", "-sign", f.name], input=signing_input.encode(),
+                             capture_output=True, check=True).stdout
+    finally:
+        os.unlink(f.name)
+    return signing_input + "." + b64(sig)

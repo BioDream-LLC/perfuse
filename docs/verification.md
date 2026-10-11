@@ -1021,6 +1021,20 @@ workflow checks every half hour that it answers and that its certificate has mor
 tested (`certbot renew --dry-run`). The data are the conformance runs' fixtures; Inferno's backend client may read everything
 and write only Claims and Subscriptions, and a write to anything else was checked to be refused.
 
+Inferno's hosted test kits at inferno.healthit.gov, run against it on 11 October 2026 with v0.1.9 (`conformance/inferno/hosted.py`),
+gave the same results as the local runs:
+
+| Kit | Result |
+|---|---|
+| Da Vinci CRD Server v2.2.1 | 92 pass, 43 skip, 8 omit |
+| Da Vinci DTR Payer Server v2.2.0 | 43 pass, 1 omit, 2 fail (the same two must-support findings as locally) |
+| Da Vinci PAS Server v2.2.1 | 82 pass, 2 fail (the same two must-support findings as locally) |
+| SMART App Launch STU2.2, public app | 80 pass |
+| SMART App Launch STU2.2, confidential app | 67 pass, 3 omit |
+
+The first DTR run found one difference, in the run rather than the server: the order it asks CRD about named a patient no
+member record matches, which the local payer never checks and the public one does. The order is now Amy Shaw's.
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was

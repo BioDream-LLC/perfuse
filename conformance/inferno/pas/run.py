@@ -120,7 +120,7 @@ def reviewer(run_id):
                         {"decision": "approve", "reason": "Approved by the plan's reviewer after reading the attached documentation."})
         print("reviewer approved", todo[0], st, flush=True)
         return
-    u = "http://localhost/custom/subscriptions_r5_backport_r4_server/resume_pass?token=notification%20pas-notify-token"
+    u = inferno.INFERNO + "/custom/subscriptions_r5_backport_r4_server/resume_pass?token=notification%20pas-notify-token"
     try:
         print("confirmed the notifications", urllib.request.urlopen(u, timeout=30).status, flush=True)
     except Exception as e:  # noqa: BLE001 - reported, and the run times out on its own
