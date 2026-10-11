@@ -1,0 +1,9 @@
+[Unit]
+Description=Back up the Perfuse test instance's database (keeps 7 days)
+
+[Service]
+Type=oneshot
+User=perfuse
+Group=perfuse
+# sqlite3 .backup copies a consistent database while Perfuse keeps running.
+ExecStart=/bin/sh -c 'd=/opt/perfuse/backups; sqlite3 /opt/perfuse/data/perfuse.db ".backup $d/perfuse-$(date -u +%%Y%%m%%d).db" && find $d -name "perfuse-*.db" -mtime +7 -delete'

@@ -423,7 +423,8 @@ if (-not (Test-Path $exe)) {
 
 # Quoting matters: paths contain spaces, and sc.exe needs the whole command as
 # one argument with the inner quotes preserved.
-$command = '"' + $exe + '" serve -addr ` + addr + ` -channels "' + $channels + '" -db "' + $db + '"'
+$log      = Join-Path $root 'logs\perfuse.log'
+$command = '"' + $exe + '" serve -addr ` + addr + ` -channels "' + $channels + '" -db "' + $db + '" -log-file "' + $log + '"'
 
 if (Get-Service -Name $name -ErrorAction SilentlyContinue) {
   Write-Host "The $name service already exists. Stopping it to update the configuration."

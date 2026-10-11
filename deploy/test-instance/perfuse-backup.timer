@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily backup of the Perfuse test instance's database
+
+[Timer]
+OnCalendar=*-*-* 04:17:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

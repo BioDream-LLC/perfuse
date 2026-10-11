@@ -34,6 +34,9 @@ func shutdownContext() (context.Context, func()) {
 	return signal.NotifyContext(serveParent, shutdownSignals()...)
 }
 
+// underServiceManager is true when Windows' service manager started this process: it has no console to write to.
+var underServiceManager bool
+
 // runUnderServiceManagerIfNeeded runs fn as a Windows service when Windows started it that way.
 //
 // Reports whether it handled the run. False means this is an ordinary console process and the caller should carry on.
@@ -59,6 +62,7 @@ func runUnderServiceManagerIfNeeded(fn func() error, stderr io.Writer) (bool, er
 		name = winservice.DefaultName
 	}
 
+	underServiceManager = true
 	runErr := winservice.Run(name, func(ctx context.Context) error {
 		// The service manager's stop becomes the parent of the ordinary shutdown context, so everything downstream
 		// drains exactly as it does on Ctrl-C.

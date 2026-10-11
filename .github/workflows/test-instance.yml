@@ -1,0 +1,33 @@
+# Checks the public test instance, test.perfuse.health, every 30 minutes: it answers, its FHIR and CRD endpoints work, and
+# its certificate has more than 14 days left. A failed run is GitHub's notice that it is down.
+name: test instance
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  up:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: answers
+        run: |
+          set -eu
+          base=https://test.perfuse.health
+          curl -fsS -m 20 --retry 3 --retry-delay 20 --retry-all-errors "$base/livez"; echo
+          curl -fsS -m 20 --retry 2 "$base/fhir/metadata" | grep -q '"CapabilityStatement"'
+          curl -fsS -m 20 --retry 2 "$base/fhir/.well-known/smart-configuration" | grep -q '"token_endpoint"'
+          curl -fsS -m 20 --retry 2 "$base/cds-services" | grep -q 'crd-order-sign'
+      - name: certificate
+        run: |
+          set -eu
+          end=$(echo | openssl s_client -connect test.perfuse.health:443 -servername test.perfuse.health 2>/dev/null \
+            | openssl x509 -noout -enddate | cut -d= -f2)
+          left=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+          echo "certificate expires $end ($left days)"
+          [ "$left" -gt 14 ]

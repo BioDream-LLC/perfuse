@@ -8,9 +8,9 @@ host=test.perfuse.health
 here=$(cd "$(dirname "$0")" && pwd)
 
 apt-get update -qq
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl certbot >/dev/null
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl certbot sqlite3 >/dev/null
 id perfuse >/dev/null 2>&1 || useradd --system --home /opt/perfuse --shell /usr/sbin/nologin perfuse
-install -d -o perfuse -g perfuse -m 0700 /opt/perfuse/data /opt/perfuse/channels /opt/perfuse/logs
+install -d -o perfuse -g perfuse -m 0700 /opt/perfuse/data /opt/perfuse/channels /opt/perfuse/logs /opt/perfuse/backups
 install -d -o root -g perfuse -m 0750 /opt/perfuse/conf /opt/perfuse/tls
 
 # The release binary, checked against the published SHA256SUMS.
@@ -37,8 +37,9 @@ HOOK
 chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/perfuse.sh
 install -o root -g perfuse -m 0640 "/etc/letsencrypt/live/$host/fullchain.pem" "/etc/letsencrypt/live/$host/privkey.pem" /opt/perfuse/tls/
 
-install -m 0644 "$here/perfuse-test.service" /etc/systemd/system/perfuse-test.service
+install -m 0644 "$here/perfuse-test.service" "$here/perfuse-backup.service" "$here/perfuse-backup.timer" /etc/systemd/system/
 systemctl daemon-reload
+systemctl enable --now perfuse-backup.timer
 systemctl enable --now perfuse-test
 systemctl restart perfuse-test
 sleep 3

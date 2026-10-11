@@ -110,6 +110,61 @@ jobs:
           Get-Content serve.log -Tail 20
           if (-not $ok) { throw 'perfuse serve did not answer /livez' }
 
+      # Installs the service the way the manual says - perfuse init, then the generated install-service.ps1 as an
+      # administrator - and checks it runs as LocalService, answers, wrote the one-time password to its log, and that
+      # the data folder no longer lets ordinary users in.
+      - name: service
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force 'C:\Program Files\Perfuse' | Out-Null
+          Copy-Item ./perfuse.exe 'C:\Program Files\Perfuse\perfuse.exe'
+          ./perfuse.exe init -dir C:\perfuse-ci -service windows
+          & C:\perfuse-ci\install-service.ps1
+          $ok = $false
+          foreach ($i in 1..30) {
+            Start-Sleep -Seconds 2
+            try { if ((Invoke-WebRequest -Uri http://127.0.0.1:8080/livez -TimeoutSec 5).StatusCode -eq 200) { $ok = $true; break } } catch {}
+          }
+          Get-CimInstance Win32_Service -Filter "Name='Perfuse'" | Format-List Name, State, StartMode, StartName
+          if (-not $ok) { Get-Content C:\perfuse-ci\logs\perfuse.log -Tail 30 -ErrorAction SilentlyContinue; throw 'the service did not answer /livez' }
+          if ((Get-CimInstance Win32_Service -Filter "Name='Perfuse'").StartName -ne 'NT AUTHORITY\LocalService') { throw 'the service is not running as LocalService' }
+          if (-not (Select-String -Path C:\perfuse-ci\logs\perfuse.log -Pattern 'password:' -Quiet)) { throw 'the one-time administrator password is not in the log' }
+          $users = (Get-Acl C:\perfuse-ci).Access | Where-Object { $_.IdentityReference -match 'Users|Everyone|Authenticated' }
+          if ($users) { $users | Format-Table; throw 'ordinary users can still reach the data folder' }
+          Stop-Service Perfuse
+          if ((Get-Service Perfuse).Status -ne 'Stopped') { throw 'the service did not stop' }
+          ./perfuse.exe service remove
+          "service installed, answered, stopped and removed"
+
+  # Windows on Arm: the tests and the server, on real arm64 hardware.
+  windows-arm64:
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: true
+
+      - name: test
+        run: go test -timeout 1200s ./...
+
+      - name: serve
+        shell: pwsh
+        run: |
+          go build -o perfuse.exe ./cmd/perfuse
+          ./perfuse.exe version
+          $p = Start-Process -FilePath ./perfuse.exe -ArgumentList 'serve','-db','smoke.db','-addr','127.0.0.1:8480' -PassThru
+          $ok = $false
+          foreach ($i in 1..30) {
+            Start-Sleep -Seconds 2
+            try { if ((Invoke-WebRequest -Uri http://127.0.0.1:8480/livez -TimeoutSec 5).StatusCode -eq 200) { $ok = $true; break } } catch {}
+          }
+          Stop-Process -Id $p.Id -Force
+          if (-not $ok) { throw 'perfuse serve did not answer /livez' }
+          "answered on $env:PROCESSOR_ARCHITECTURE"
+
   web:
     runs-on: ubuntu-latest
     steps:

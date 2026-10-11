@@ -85,6 +85,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	keyFile := fset.String("tls-key", "", "TLS private key file")
 	insecure := fset.Bool("insecure", false, "serve over plain HTTP on a non-loopback address (not recommended)")
 	jsonLogs := fset.Bool("json-logs", false, "emit structured JSON logs")
+	logFile := fset.String("log-file", "", "append the log, and the first administrator's one-time password, to this file (mode 0600) "+
+		"instead of the console. A Windows service has no console, so there it defaults to perfuse.log beside the database")
 	peersFile := fset.String("peers", "", "YAML file listing other Perfuse instances to show in a fleet view")
 	oidcFile := fset.String("oidc", "", "YAML file configuring OpenID Connect sign-in")
 	ldapFile := fset.String("ldap", "", "YAML file configuring directory (LDAP) sign-in")
@@ -240,6 +242,20 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 
 	if err := fset.Parse(args); err != nil {
 		return err
+	}
+
+	// A Windows service's standard output and error go nowhere, and they carry the log and the one-time administrator
+	// password. Without a file the first install is a server nobody can sign in to and no log saying why.
+	if *logFile == "" && underServiceManager {
+		*logFile = filepath.Join(filepath.Dir(*dbPath), "perfuse.log")
+	}
+	if *logFile != "" {
+		f, err := os.OpenFile(*logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
+		if err != nil {
+			return fmt.Errorf("-log-file: %w", err)
+		}
+		defer f.Close()
+		stdout, stderr = f, f
 	}
 
 	// A misconfigured passkey domain is refused at startup rather than at the first request.
