@@ -1352,6 +1352,20 @@ func ParseSearch(resourceType string, values map[string][]string) (*SearchQuery,
 						}
 					}
 				}
+				// An R4 Encounter status, searched for in the R5 codes the store indexes: an R4 client's status=finished
+				// otherwise finds nothing, because the index holds "completed". Inferno's PDex suite found it.
+				if resourceType == "Encounter" && key == "status" {
+					parts := splitOr(v)
+					for i, one := range parts {
+						system, code, hasSystem := strings.Cut(one, "|")
+						if hasSystem {
+							parts[i] = system + "|" + fhir.UpgradeEncounterStatus(code)
+						} else {
+							parts[i] = fhir.UpgradeEncounterStatus(one)
+						}
+					}
+					v = strings.Join(parts, ",")
+				}
 				q.Criteria[key] = append(q.Criteria[key], v)
 			}
 		}

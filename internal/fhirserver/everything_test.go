@@ -265,3 +265,28 @@ func TestEverythingOnAnR4ServerIsR4(t *testing.T) {
 	}
 	t.Fatal("no Encounter in $everything")
 }
+
+// TestAnR4StatusSearchFindsTheEncounter covers status=finished finding nothing on an R4 server, because the index holds
+// R5's "completed". Inferno's PDex (US Core 3.1.1) suite found it.
+func TestAnR4StatusSearchFindsTheEncounter(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { db.Close() })
+	store, err := NewStore(db, fhir.R4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, store, `{"resourceType": "Encounter", "id": "e1", "status": "finished", "subject": {"reference": "Patient/p1"},
+		"class": {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"}}`)
+	srv := NewServer(store, "http://example.test/fhir", slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv.Auth = OpenAuth{}
+	for _, q := range []string{"status=finished", "status=planned,finished"} {
+		rec := do(t, srv.Handler(), http.MethodGet, "/Encounter?patient=p1&"+q, nil)
+		if !strings.Contains(rec.Body.String(), `"id": "e1"`) {
+			t.Errorf("%s found nothing: %d %s", q, rec.Code, rec.Body.String()[:min(300, rec.Body.Len())])
+		}
+	}
+}

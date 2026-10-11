@@ -984,6 +984,10 @@ var encounterStatusR4ToR5 = map[string]string{
 	"unknown":          "unknown",
 }
 
+// UpgradeEncounterStatus is upgradeEncounterStatus, for a search value: the store indexes the R5 codes, so an R4 client's
+// status=finished has to be looked for as "completed".
+func UpgradeEncounterStatus(status string) string { return upgradeEncounterStatus(status) }
+
 // upgradeEncounterStatus normalises an inbound encounter status to the R5 code the structs hold.
 //
 // Only R4-only codes are translated. A code that exists in both value sets is left alone, so "planned" and "in-progress" are not
