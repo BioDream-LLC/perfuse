@@ -16,7 +16,7 @@ func TestAKeyIsCreatedOnceAndItsTokensVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info, _ := os.Stat(path); info.Mode().Perm() != 0o600 {
+	if info, _ := os.Stat(path); unixModes && info.Mode().Perm() != 0o600 {
 		t.Errorf("key file mode %v, want 0600", info.Mode().Perm())
 	}
 	k2, err := LoadOrCreateKey(path)

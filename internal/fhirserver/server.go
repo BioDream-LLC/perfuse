@@ -2,6 +2,8 @@ package fhirserver
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1212,10 +1214,14 @@ func deriveID(r fhir.Resource) string {
 		}
 	}
 	if key == "" {
-		// Nothing identifying, so a time-based id is the honest fallback. It means
-		// a repeat post creates a second resource, which is what happens when a
-		// client sends nothing to match on.
-		key = fmt.Sprintf("%s-%d", r.ResourceTypeName(), time.Now().UnixNano())
+		// Nothing identifying, so a fresh random id: a repeat post creates a second resource, which is what happens when
+		// a client sends nothing to match on. Random rather than the clock: Windows' clock ticks far more coarsely than a
+		// nanosecond, so two posts in one tick got the same id and the second silently replaced the first.
+		var b [16]byte
+		if _, err := rand.Read(b[:]); err != nil {
+			panic("fhirserver: no randomness for a resource id: " + err.Error())
+		}
+		key = r.ResourceTypeName() + "-" + hex.EncodeToString(b[:])
 	}
 	return hashID(r.ResourceTypeName(), key)
 }

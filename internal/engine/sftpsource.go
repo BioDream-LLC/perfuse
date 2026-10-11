@@ -461,7 +461,7 @@ func (p *sftpPoller) moveTo(conn *sftpconn.Conn, name, dir string) error {
 	// A file of the same name is already there, which happens whenever a sending
 	// system reuses names. Suffixed rather than overwritten: the older file is
 	// somebody's evidence.
-	stamped := path.Join(dir, fmt.Sprintf("%s.%d", name, time.Now().UnixNano()))
+	stamped := path.Join(dir, name+"."+uniqueStamp())
 	if err := conn.Client.Rename(from, stamped); err != nil {
 		return fmt.Errorf("moving %s to %s: %w", from, dir, err)
 	}

@@ -451,7 +451,7 @@ func (p *filePoller) moveTo(ctx context.Context, fs vfs.FS, name, dir string) er
 
 	// A file of that name is already there, which happens whenever a sending system reuses names. Suffixed rather than
 	// overwritten: the older file is somebody's evidence.
-	stamped := fs.Join(dir, fmt.Sprintf("%s.%d", name, time.Now().UnixNano()))
+	stamped := fs.Join(dir, name+"."+uniqueStamp())
 	if err := fs.Rename(ctx, from, stamped); err != nil {
 		return fmt.Errorf("moving %s to %s: %w", from, dir, err)
 	}

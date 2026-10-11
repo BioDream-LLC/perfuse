@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/cda"
@@ -283,9 +282,9 @@ func (s *CDASender) writeFile(name string, data []byte) error {
 		// A document with the same identifier arriving twice is normal: a
 		// replacement carries the same set. Add the timestamp rather than
 		// overwriting, because overwriting destroys the earlier version.
-		path = filepath.Join(s.dir, fmt.Sprintf("%s-%d%s",
+		path = filepath.Join(s.dir, fmt.Sprintf("%s-%s%s",
 			strings.TrimSuffix(name, filepath.Ext(name)),
-			time.Now().UnixNano(), filepath.Ext(name)))
+			uniqueStamp(), filepath.Ext(name)))
 		f, err = os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 		if err != nil {
 			return err
@@ -370,7 +369,7 @@ func documentFilename(doc *cda.Document, m *hl7.Message) string {
 		id = strings.TrimSpace(m.ControlID())
 	}
 	if id == "" {
-		id = fmt.Sprintf("document-%d", time.Now().UnixNano())
+		id = "document-" + uniqueStamp()
 	}
 	return sanitise(id)
 }

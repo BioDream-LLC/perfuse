@@ -171,7 +171,7 @@ func (s *DocumentSender) fileName(msg *hl7.Message) (string, error) {
 		msgType = strings.ReplaceAll(msh.Field(9).String(), "^", "_")
 	}
 	if controlID == "" {
-		controlID = fmt.Sprintf("noid-%d", time.Now().UnixNano())
+		controlID = "noid-" + uniqueStamp()
 	}
 
 	now := time.Now().UTC()

@@ -1,0 +1,3 @@
+# Check text out with LF everywhere, Windows included: tests read Go and TypeScript sources and the manual is
+# compared byte for byte, and HL7 fixtures depend on exact segment endings.
+* text=auto eol=lf

@@ -447,7 +447,7 @@ func TestFilePermissionIsEnforced(t *testing.T) {
 	granted := New(Options{Timeout: 3 * time.Second, Permissions: []Permission{PermFile}, FileRoots: roots})
 	path := dir + "/out.txt"
 	root2, _ := hl7xml.FromRaw([]byte(adt))
-	s2, err := granted.Compile("f", `FileUtil.write('`+path+`', false, 'written');`, Transformer)
+	s2, err := granted.Compile("f", `FileUtil.write(`+jsString(path)+`, false, 'written');`, Transformer)
 	if err != nil {
 		t.Fatal(err)
 	}

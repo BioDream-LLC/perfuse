@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -302,7 +303,7 @@ Type=simple
 User=` + user + `
 Group=` + user + `
 WorkingDirectory=` + root + `
-EnvironmentFile=` + filepath.Join(root, "perfuse.env") + `
+EnvironmentFile=` + path.Join(root, "perfuse.env") + `
 ExecStart=/usr/local/bin/perfuse serve
 
 # Reloads channel files without dropping connections.
@@ -365,9 +366,9 @@ func launchdPlist(root, addr string) string {
     <string>-addr</string>
     <string>` + addr + `</string>
     <string>-channels</string>
-    <string>` + filepath.Join(root, "channels") + `</string>
+    <string>` + path.Join(root, "channels") + `</string>
     <string>-db</string>
-    <string>` + filepath.Join(root, "data", "perfuse.db") + `</string>
+    <string>` + path.Join(root, "data", "perfuse.db") + `</string>
   </array>
 
   <key>WorkingDirectory</key>
@@ -387,9 +388,9 @@ func launchdPlist(root, addr string) string {
        test box rather than for production. -->
 
   <key>StandardOutPath</key>
-  <string>` + filepath.Join(root, "logs", "perfuse.log") + `</string>
+  <string>` + path.Join(root, "logs", "perfuse.log") + `</string>
   <key>StandardErrorPath</key>
-  <string>` + filepath.Join(root, "logs", "perfuse.log") + `</string>
+  <string>` + path.Join(root, "logs", "perfuse.log") + `</string>
 
   <!-- Long enough for in-flight messages to finish. -->
   <key>ExitTimeOut</key>
@@ -437,12 +438,20 @@ sc.exe description $name "Healthcare integration engine. Routes and transforms H
 # Restart on failure, with a delay so a crash loop cannot fill the disk.
 sc.exe failure $name reset= 300 actions= restart/5000/restart/10000/restart/30000 | Out-Null
 
-# The service account needs to write the database and the logs. LocalService is
-# the least-privileged account that can still open a listening socket.
+# The directory holds the database (patient data), the session key and the
+# environment file, so only the service, the system and administrators may open
+# it: inheritance is cut, because a directory under ProgramData otherwise lets
+# every local user read it. This is what mode 0600 does on Linux and macOS.
+# LocalService is the least-privileged account that can still open a listening
+# socket, and it needs to write the database and the logs.
 $acl = Get-Acl $root
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-  'NT AUTHORITY\LocalService', 'Modify', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
-$acl.SetAccessRule($rule)
+$acl.SetAccessRuleProtection($true, $false)
+foreach ($who in 'NT AUTHORITY\SYSTEM', 'BUILTIN\Administrators') {
+  $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+    $who, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')))
+}
+$acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+  'NT AUTHORITY\LocalService', 'Modify', 'ContainerInherit,ObjectInherit', 'None', 'Allow')))
 Set-Acl -Path $root -AclObject $acl
 
 sc.exe config $name obj= 'NT AUTHORITY\LocalService' | Out-Null

@@ -204,7 +204,7 @@ func TestTheFileIsWrittenPrivately(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if perm := info.Mode().Perm(); perm != 0o600 {
+	if perm := info.Mode().Perm(); unixModes && perm != 0o600 {
 		t.Errorf("the settings file is mode %o, want 600", perm)
 	}
 }
