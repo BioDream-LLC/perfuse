@@ -4,7 +4,7 @@
 The inputs are the local runs' own (crd/run.py, dtr/run.py, pas/run.py), pointed at the public instance, whose data
 deploy/test-instance/load.py put in. Nothing runs in Docker. Results go to .work/hosted-<kit>/results.json.
 
-Usage: hosted.py <crd|dtr|pas|smart> [base URL] [public|confidential ...]
+Usage: hosted.py <crd|dtr|pas|bulk|smart> [base URL] [public|confidential ...]
 """
 import importlib.util
 import json
@@ -74,6 +74,15 @@ def pas():
                                  **m.inputs()}, on_waiting=m.reviewer)
 
 
+def bulk():
+    """Bulk Data Access v2.0.0 Server: a Group export, as Inferno's backend client."""
+    auth = json.dumps({"auth_type": "backend_services", "token_url": BASE + "/auth/token", "client_id": "inferno-backend",
+                       "requested_scopes": "system/*.read", "encryption_algorithm": "RS384", "use_discovery": "true"})
+    return inferno.run("bulk_data_v200", {"bulk_server_url": BASE + "/fhir", "smart_auth_info": auth, "group_id": "attributed",
+                                          "bulk_timeout": "180", "lines_to_validate": "100",
+                                          "since_timestamp": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(time.time() - 86400 * 30))})
+
+
 def smart(name):
     """smart/run.py's own driver: it signs amy and drb in at the instance's authorization pages as a browser would."""
     m = module("smart")
@@ -86,7 +95,7 @@ if __name__ == "__main__":
         for name in sys.argv[3:] or ["public", "confidential"]:
             smart(name)
         raise SystemExit
-    runs = {"crd": crd, "dtr": dtr, "pas": pas}
+    runs = {"crd": crd, "dtr": dtr, "pas": pas, "bulk": bulk}
     if KIT not in runs:
         raise SystemExit(__doc__)
     inferno.report(runs[KIT](), "hosted-" + KIT)

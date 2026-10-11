@@ -130,7 +130,8 @@ MEMBERS = [
      "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional"}]},
      "patient": {"reference": "Patient/pmember"}, "insurer": {"display": "Springfield Health Plan"}, "preAuthRef": "AUTH-778",
      "preAuthPeriod": {"start": "2026-09-01", "end": "2027-03-01"},
-     "addItem": [{"productOrService": {"coding": [{"system": HCPCS, "code": "E0424"}]}}]},
+     "addItem": [{"productOrService": {"coding": [{"system": HCPCS, "code": "E0424"}]},
+                  "adjudication": [{"category": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/adjudication", "code": "eligible"}]}}]}]},
 ]
 
 

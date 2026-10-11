@@ -70,6 +70,9 @@ def main():
         {"resourceType": "Patient", "id": "p2", "name": [{"family": "Other", "given": ["Ben"]}], "birthDate": "1975-05-01", "gender": "male"},
         {"resourceType": "Encounter", "id": "e1", "status": "finished",
          "class": {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"}, "subject": {"reference": "Patient/p1"}}]
+    # Bulk Data and Provider Access: a provider's attributed members (Da Vinci ATR's Group).
+    resources.append({"resourceType": "Group", "id": "attributed", "type": "person", "actual": True, "name": "Dr Brown's attributed members",
+                      "member": [{"entity": {"reference": "Patient/pmember"}}, {"entity": {"reference": "Patient/p1"}}]})
     for res in resources:
         put(token, res)
 

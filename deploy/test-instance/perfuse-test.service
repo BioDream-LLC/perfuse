@@ -10,7 +10,7 @@ WorkingDirectory=/opt/perfuse
 ExecStart=/opt/perfuse/perfuse serve -db /opt/perfuse/data/perfuse.db -channels /opt/perfuse/channels \
   -addr :443 -tls-cert /opt/perfuse/tls/fullchain.pem -tls-key /opt/perfuse/tls/privkey.pem \
   -public-url https://test.perfuse.health -fleet-label "Perfuse public test" \
-  -fhir -pas -fhir-subscriptions \
+  -fhir -pas -fhir-subscriptions -fhir-bulk-export -fhir-payer-apis \
   -crd-rules /opt/perfuse/conf/rules.yaml -cds-clients /opt/perfuse/conf/cds-clients.yaml \
   -smart-clients /opt/perfuse/conf/clients.yaml -smart-users /opt/perfuse/conf/users.yaml \
   -smart-key /opt/perfuse/data/smart-signing.key
