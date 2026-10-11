@@ -71,7 +71,7 @@ func TestAddingAFleetPeer(t *testing.T) {
 			t.Fatal(err)
 		}
 		// The tokens in it are credentials for other servers.
-		if perm := info.Mode().Perm(); perm&0o077 != 0 {
+		if perm := info.Mode().Perm(); unixModes && perm&0o077 != 0 {
 			t.Errorf("the peers file is mode %o; it holds tokens for other instances", perm)
 		}
 	})

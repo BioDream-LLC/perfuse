@@ -1,16 +1,17 @@
 #!/bin/sh
-# kit.sh <crd|dtr|pas|uscore> - checks out the Inferno test kit at the version Perfuse was verified with, starts it in Docker,
+# kit.sh <crd|dtr|pas|smart|uscore> - checks out the Inferno test kit at the version Perfuse was verified with, starts it in Docker,
 # and makes its containers trust the test CA that signs Perfuse's certificate (certs.sh). Only one kit runs at a time: they
 # all answer on http://localhost.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 work="$here/.work"
-name=${1:?usage: kit.sh crd|dtr|pas|uscore}
+name=${1:?usage: kit.sh crd|dtr|pas|smart|uscore}
 
 case "$name" in
   crd)    repo=davinci-crd-test-kit tag=v0.14.2 ;;
   dtr)    repo=davinci-dtr-test-kit tag=v0.18.0 ;;
   pas)    repo=davinci-pas-test-kit tag=v0.15.2 ;;
+  smart)  repo=smart-app-launch-test-kit tag=v1.0.3 ;;
   uscore) repo=us-core-test-kit    tag=v1.1.6 ;;
   *) echo "kit.sh: no kit called $name" >&2; exit 2 ;;
 esac

@@ -107,7 +107,7 @@ func TestTheAuditFileIsNotWorldReadable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mode := info.Mode().Perm(); mode&0o077 != 0 {
+	if mode := info.Mode().Perm(); unixModes && mode&0o077 != 0 {
 		t.Errorf("the audit file is mode %o; it names patients and who asked about them", mode)
 	}
 }

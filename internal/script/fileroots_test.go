@@ -1,6 +1,7 @@
 package script
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -218,7 +219,10 @@ func TestTheRefusalNamesTheDirectories(t *testing.T) {
 	if err == nil {
 		t.Fatal("no error")
 	}
-	if !strings.Contains(err.Error(), dir) {
+	// The roots are resolved, so the refusal names the directory as the system spells it in full: on macOS /private/var for
+	// /var, on Windows C:\Users\runneradmin for the short name C:\Users\RUNNER~1 a temporary directory can have.
+	resolved, _ := filepath.EvalSymlinks(dir)
+	if !strings.Contains(err.Error(), dir) && !strings.Contains(err.Error(), resolved) {
 		t.Errorf("the refusal does not name the permitted directory: %v", err)
 	}
 }
@@ -245,7 +249,7 @@ func TestFileUtilCannotReachOutsideTheRootFromAScript(t *testing.T) {
 	}
 
 	// Reading outside the root is refused.
-	s, err := e.Compile("read", `FileUtil.read('`+secret+`');`, Transformer)
+	s, err := e.Compile("read", `FileUtil.read(`+jsString(secret)+`);`, Transformer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +260,7 @@ func TestFileUtilCannotReachOutsideTheRootFromAScript(t *testing.T) {
 	// Writing outside it is refused too.
 	target := filepath.Join(outside, "written.txt")
 	root2, _ := hl7xml.FromRaw([]byte(adt))
-	s2, err := e.Compile("write", `FileUtil.write('`+target+`', false, 'x');`, Transformer)
+	s2, err := e.Compile("write", `FileUtil.write(`+jsString(target)+`, false, 'x');`, Transformer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +274,7 @@ func TestFileUtilCannotReachOutsideTheRootFromAScript(t *testing.T) {
 	// And inside it still works, so this is a confinement rather than a removal.
 	inside := filepath.Join(allowed, "ok.txt")
 	root3, _ := hl7xml.FromRaw([]byte(adt))
-	s3, err := e.Compile("ok", `FileUtil.write('`+inside+`', false, 'written');`, Transformer)
+	s3, err := e.Compile("ok", `FileUtil.write(`+jsString(inside)+`, false, 'written');`, Transformer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,4 +284,10 @@ func TestFileUtilCannotReachOutsideTheRootFromAScript(t *testing.T) {
 	if _, err := os.Stat(inside); err != nil {
 		t.Errorf("the permitted write did not happen: %v", err)
 	}
+}
+
+// jsString is s as a JavaScript string literal, so a Windows path's backslashes reach the script as backslashes.
+func jsString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }

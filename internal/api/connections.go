@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/config"
@@ -244,9 +243,9 @@ func plainDNS(host string, err error) string {
 
 func plainTCP(target string, err error) string {
 	switch {
-	case errors.Is(err, syscall.ECONNREFUSED):
+	case isRefused(err):
 		return fmt.Sprintf("%s refused the connection: the host is up, but nothing is listening on that port. The partner's interface engine is probably stopped, or the port is wrong.", target)
-	case errors.Is(err, syscall.EHOSTUNREACH), errors.Is(err, syscall.ENETUNREACH):
+	case isUnreachable(err):
 		return fmt.Sprintf("There is no route to %s. If this partner is reached over a VPN, the tunnel is probably down.", target)
 	}
 	var ne net.Error

@@ -248,3 +248,29 @@ func TestPADecisionFollowsTheRules(t *testing.T) {
 		t.Errorf("an unknown pa_decision should be refused: %v", err)
 	}
 }
+
+func TestWithPAIsSentOnlyWhenTheRulesFileAllowsIt(t *testing.T) {
+	rule := Rule{Codes: []string{"E0424"}, Covered: "covered", PA: "auth-needed", Documentation: []string{"clinical"},
+		Reason: "Home oxygen needs a prior authorization", DocPurpose: []string{"withpa"}}
+	if err := (&Rules{Payer: "P", Rules: []Rule{rule}}).Validate(); err == nil || !strings.Contains(err.Error(), "crd-ci-q4") {
+		t.Fatalf("withpa without allow_withpa: %v", err)
+	}
+	r := &Rules{Payer: "P", AllowWithPA: true, Rules: []Rule{rule}}
+	if err := r.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	resp, err := r.Evaluate(request(t, order), time.Date(2026, 10, 3, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ext, _ := json.Marshal(resp.SystemActions[0].Resource["extension"])
+	if !strings.Contains(string(ext), `"doc-purpose","valueCode":"withpa"`) {
+		t.Errorf("withpa was not sent:\n%s", ext)
+	}
+
+	// What crd-ci-q4 means to forbid is still refused: documentation for a prior authorization nobody needs.
+	rule.PA = "no-auth"
+	if err := (&Rules{Payer: "P", AllowWithPA: true, Rules: []Rule{rule}}).Validate(); err == nil || !strings.Contains(err.Error(), "says none is needed") {
+		t.Errorf("withpa beside no-auth: %v", err)
+	}
+}

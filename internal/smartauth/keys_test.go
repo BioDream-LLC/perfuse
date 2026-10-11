@@ -16,7 +16,7 @@ func TestAKeyIsCreatedOnceAndItsTokensVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info, _ := os.Stat(path); info.Mode().Perm() != 0o600 {
+	if info, _ := os.Stat(path); unixModes && info.Mode().Perm() != 0o600 {
 		t.Errorf("key file mode %v, want 0600", info.Mode().Perm())
 	}
 	k2, err := LoadOrCreateKey(path)
@@ -41,6 +41,9 @@ func TestAKeyIsCreatedOnceAndItsTokensVerify(t *testing.T) {
 }
 
 func TestAKeyOthersCanReadIsRefused(t *testing.T) {
+	if !unixModes {
+		t.Skip("Windows has no Unix modes; the key's privacy there is its directory's ACL")
+	}
 	path := filepath.Join(t.TempDir(), "smart.key")
 	if _, err := LoadOrCreateKey(path); err != nil {
 		t.Fatal(err)

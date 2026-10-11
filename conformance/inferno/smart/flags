@@ -1,0 +1,5 @@
+port=8474
+-fhir
+-smart-clients clients.yaml
+-smart-users users.yaml
+-smart-key smart-signing.key

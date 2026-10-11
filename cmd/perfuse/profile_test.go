@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,7 +17,7 @@ func writeCorpus(t *testing.T, messages ...string) string {
 
 	dir := t.TempDir()
 	for i, m := range messages {
-		name := filepath.Join(dir, "m"+string(rune('a'+i))+".hl7")
+		name := filepath.Join(dir, fmt.Sprintf("m%03d.hl7", i))
 		if err := os.WriteFile(name, []byte(m), 0o600); err != nil {
 			t.Fatal(err)
 		}

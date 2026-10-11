@@ -1,0 +1,14 @@
+  # Inferno as a public app, and as a confidential app whose secret is "correct horse".
+  - id: inferno-public
+    name: Inferno (public)
+    kind: public
+    redirect_uris: ["http://localhost/custom/smart_stu2_2/redirect"]
+    launch_url: http://localhost/custom/smart_stu2_2/launch
+    scopes: ["openid", "fhirUser", "profile", "launch", "launch/patient", "offline_access", "online_access", "patient/*", "user/*"]
+  - id: inferno-confidential
+    name: Inferno (confidential)
+    kind: confidential-symmetric
+    secret_hash: "pbkdf2-sha256$600000$wmeuACyxBb2uvYQj4/dFIw$GFmZXUDAYfiT8xGYNIVm5YiY+WXL2o3gwhA7Hj9yQfg"
+    redirect_uris: ["http://localhost/custom/smart_stu2_2/redirect"]
+    launch_url: http://localhost/custom/smart_stu2_2/launch
+    scopes: ["openid", "fhirUser", "profile", "launch", "launch/patient", "offline_access", "online_access", "patient/*", "user/*"]

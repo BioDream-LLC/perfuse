@@ -1,0 +1,4 @@
+# Throwaway test people; both passwords are "correct horse". amy is a patient (standalone launch), drb a clinician (EHR launch).
+users:
+  - {username: amy, name: Amy Member, password_hash: "pbkdf2-sha256$600000$wmeuACyxBb2uvYQj4/dFIw$GFmZXUDAYfiT8xGYNIVm5YiY+WXL2o3gwhA7Hj9yQfg", fhir_user: Patient/p1}
+  - {username: drb, name: Dr B, password_hash: "pbkdf2-sha256$600000$wmeuACyxBb2uvYQj4/dFIw$GFmZXUDAYfiT8xGYNIVm5YiY+WXL2o3gwhA7Hj9yQfg", fhir_user: Practitioner/d1}

@@ -30,7 +30,9 @@ import (
 var syntheticSurnames = map[string]bool{
 	// Placeholders, in the several conventions the fixtures grew up with.
 	"SURNAME": true, "NAME": true, "FAMILY": true, "LAST": true,
-	"TEST": true, "TESTPATIENT": true, "PATIENT": true, "SAMPLE": true, "EXAMPLE": true,
+	// Invented so that a test can prove a report leaves it out (cmd/perfuse/fhirreport_test.go).
+	"WRENFEATHER": true,
+	"TEST":        true, "TESTPATIENT": true, "PATIENT": true, "SAMPLE": true, "EXAMPLE": true,
 	// From synthetic test messages posted publicly on chat.fhir.org (testdata/hard).
 	"NGUYEN": true,
 	"DOE":    true, "ROE": true, "SMITH": true, "JONES": true, "BLOGGS": true,

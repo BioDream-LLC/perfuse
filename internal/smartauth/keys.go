@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"runtime"
 )
 
 // Key is the server's signing key.
@@ -47,7 +48,9 @@ func LoadOrCreateKey(path string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	if info, err := os.Stat(path); err == nil && info.Mode().Perm()&0o077 != 0 {
+	// Windows has no Unix modes: Go reports 0666 for every writable file there, and who may read it is the ACL's business,
+	// inherited from the directory. Refusing on that mode would refuse every key on Windows, the one this server wrote too.
+	if info, err := os.Stat(path); err == nil && runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
 		return nil, fmt.Errorf("%s can be read by other users (mode %v); it signs tokens, so make it 0600", path, info.Mode().Perm())
 	}
 	block, _ := pem.Decode(raw)

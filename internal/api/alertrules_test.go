@@ -275,7 +275,7 @@ func TestSavingRulesDoesNotWidenFilePermissions(t *testing.T) {
 
 	// Writing through a temporary file is what makes the reload safe, and a temporary file is created with the process umask. Without
 	// carrying the mode across, saving a rule from the interface would quietly make an operations file world-readable.
-	if perm := info.Mode().Perm(); perm != 0o600 {
+	if perm := info.Mode().Perm(); unixModes && perm != 0o600 {
 		t.Errorf("permissions became %o after saving, want 600", perm)
 	}
 }

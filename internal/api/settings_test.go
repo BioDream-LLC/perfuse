@@ -287,7 +287,7 @@ func TestTheSettingsFileIsWrittenPrivately(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if perm := info.Mode().Perm(); perm&0o077 != 0 {
+	if perm := info.Mode().Perm(); unixModes && perm&0o077 != 0 {
 		t.Errorf("the file is mode %o; it should not be readable by group or others", perm)
 	}
 }

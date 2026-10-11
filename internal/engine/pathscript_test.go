@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestADelimitedScriptChangesTheDeliveredRow(t *testing.T) {
 	sink := &recordingSender{}
 	sink.name = "out"
 
-	cfg, err := config.Load(strings.NewReader(`
+	cfg, err := config.Load(tempConfig(t, `
 name: delimited-scripted
 dataType: delimited
 delimited:
@@ -33,13 +34,13 @@ scripts:
 source:
   type: file
   file:
-    root: /tmp
+    root: TMPROOT
     dir: in
     raw: true
 destinations:
   - name: out
     type: file
-    dir: /tmp/delimscript
+    dir: TMPROOT/delimscript
 `), "delimscript.yaml")
 	if err != nil {
 		t.Fatalf("loading: %v", err)
@@ -79,7 +80,7 @@ func TestADelimitedFilterScriptDropsRowsIndividually(t *testing.T) {
 	sink := &recordingSender{}
 	sink.name = "out"
 
-	cfg, err := config.Load(strings.NewReader(`
+	cfg, err := config.Load(tempConfig(t, `
 name: delimited-filtered
 dataType: delimited
 delimited:
@@ -93,13 +94,13 @@ scripts:
 source:
   type: file
   file:
-    root: /tmp
+    root: TMPROOT
     dir: in
     raw: true
 destinations:
   - name: out
     type: file
-    dir: /tmp/delimfilter
+    dir: TMPROOT/delimfilter
 `), "delimfilter.yaml")
 	if err != nil {
 		t.Fatalf("loading: %v", err)
@@ -136,7 +137,7 @@ func TestAnNcpdpScriptChangesTheDeliveredClaim(t *testing.T) {
 	sink := &recordingSender{}
 	sink.name = "out"
 
-	cfg, err := config.Load(strings.NewReader(`
+	cfg, err := config.Load(tempConfig(t, `
 name: ncpdp-scripted
 dataType: ncpdp
 scripts:
@@ -191,7 +192,7 @@ func TestAnNcpdpFilterScriptDecidesDelivery(t *testing.T) {
 			sink := &recordingSender{}
 			sink.name = "out"
 
-			cfg, err := config.Load(strings.NewReader(`
+			cfg, err := config.Load(tempConfig(t, `
 name: ncpdp-filtered
 dataType: ncpdp
 scripts:
@@ -224,4 +225,10 @@ destinations:
 			}
 		})
 	}
+}
+
+// tempConfig is a channel definition with TMPROOT replaced by a directory of the test's own, which exists on every system.
+func tempConfig(t *testing.T, yaml string) *strings.Reader {
+	t.Helper()
+	return strings.NewReader(strings.ReplaceAll(yaml, "TMPROOT", filepath.ToSlash(t.TempDir())))
 }

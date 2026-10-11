@@ -234,7 +234,7 @@ func (s *SFTPSender) fileName(raw []byte) (string, error) {
 	if controlID == "" {
 		// A name collision would overwrite a message, so a missing control ID gets
 		// something unique rather than an empty string.
-		controlID = fmt.Sprintf("noid-%d", time.Now().UnixNano())
+		controlID = "noid-" + uniqueStamp()
 	}
 
 	now := time.Now().UTC()
@@ -273,7 +273,7 @@ func sanitiseFileName(name string) string {
 
 	out := strings.Trim(b.String(), ".")
 	if out == "" {
-		return fmt.Sprintf("message-%d.hl7", time.Now().UnixNano())
+		return "message-" + uniqueStamp() + ".hl7"
 	}
 	return out
 }

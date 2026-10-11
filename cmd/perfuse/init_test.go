@@ -158,7 +158,7 @@ func TestTheEnvironmentFileIsNotWorldReadable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mode := info.Mode().Perm(); mode&0o077 != 0 {
+	if mode := info.Mode().Perm(); unixModes && mode&0o077 != 0 {
 		t.Errorf("perfuse.env is mode %o; it holds the session key", mode)
 	}
 }

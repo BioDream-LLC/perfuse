@@ -285,6 +285,17 @@ perfuse fhir serve -addr 127.0.0.1:8080 -db ./fhir.db
 perfuse fhir versions
 ```
 
+### Trying it on your own feed
+
+`-report` writes how a feed converted, in counts and paths only: message types, the resources produced, validation errors by
+rule and path, and the mapping notes by kind, in each rule's own wording with `%s` where a message's values were. Nothing from a
+message is in it - no name, identifier, code, value, control id, or sending application or facility - so it can be sent to
+Perfuse's developers without sending a single message. Point it at a day's archive of the feed:
+
+```sh
+perfuse fhir convert -quiet -us-core -report feed-report.md archive/2026-10-09/*.hl7
+```
+
 ### How the mapper behaves
 
 One rule underpins it: **a value that cannot be mapped is preserved as text, never
@@ -497,7 +508,8 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 | `serve -fhir-member-match-without-consent` | Lets `$member-match` answer without an active Consent; for testing only |
 | `serve -crd-rules <file>` | Da Vinci CRD 2.2.1 over CDS Hooks at `/cds-services` (order-sign, order-select, order-dispatch, appointment-book). See `examples/crd/rules.yaml` |
 | CRD rules: `members: fhir` | Resolve the coverage against this server's FHIR store: `no-member-found`, `coverage-not-found`, `no-active-coverage`, and `satisfied` with the number of an approved ClaimResponse |
-| CRD rule fields | `billing_codes`, `details` (crd-coverage-detail codes), `contact`, `expiry_days`, `depends_on`, `doc_purpose` (not `withpa`) |
+| CRD rule fields | `billing_codes`, `details` (crd-coverage-detail codes), `contact`, `expiry_days`, `depends_on`, `doc_purpose` |
+| CRD rules: `allow_withpa: true` | Lets `doc_purpose` name `withpa`, with a `pa` that needs an authorization. CRD 2.2.1's invariant crd-ci-q4 rejects every `withpa`; its authors agree it is broken. Until the correction, the HL7 validator and Inferno reject these responses, so leave it off unless a partner checks against the corrected guide |
 | `serve -cds-clients <file>` | EHRs trusted to call it with signed JWTs: `clients: [{issuer, jwks_url}]`. A Perfuse API token is also accepted |
 | `POST /fhir/Questionnaire/$questionnaire-package` | Da Vinci DTR 2.2.0: the questionnaires named, named on the order's coverage-information, or asked for by CRD's coverage assertion id (`context`), each as a package bundle with a QuestionnaireResponse and the Libraries it needs |
 | `POST /fhir/Questionnaire/$log-questionnaire-errors` | DTR 2.2.0: problems a DTR app met with a questionnaire, written to the server log |

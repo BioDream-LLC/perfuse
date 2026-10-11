@@ -87,6 +87,9 @@ type Note struct {
 	Target string `json:"target,omitempty"`
 	// Message explains the decision.
 	Message string `json:"message"`
+	// Template is Message before the message's own values were put into it, so notes can be counted by kind without
+	// carrying anything from the message (perfuse fhir convert -report).
+	Template string `json:"-"`
 }
 
 // Result is the outcome of a conversion.
@@ -508,6 +511,7 @@ func (c *converter) note(severity, source, target, format string, args ...any) {
 		Source:   source,
 		Target:   target,
 		Message:  fmt.Sprintf(format, args...),
+		Template: format,
 	})
 }
 

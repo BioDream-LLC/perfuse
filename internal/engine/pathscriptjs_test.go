@@ -31,7 +31,7 @@ func TestAnNcpdpScriptCanBeWrittenInJavaScript(t *testing.T) {
 		t.Helper()
 		sink.name = "out"
 
-		cfg, err := config.Load(strings.NewReader(`
+		cfg, err := config.Load(tempConfig(t, `
 name: ncpdp-js
 dataType: ncpdp
 `+scripts+`
@@ -141,7 +141,7 @@ func TestADelimitedScriptCanBeWrittenInJavaScript(t *testing.T) {
 		t.Helper()
 		sink.name = "out"
 
-		cfg, err := config.Load(strings.NewReader(`
+		cfg, err := config.Load(tempConfig(t, `
 name: delimited-js
 dataType: delimited
 delimited:
@@ -152,13 +152,13 @@ delimited:
 source:
   type: file
   file:
-    root: /tmp
+    root: TMPROOT
     dir: in
     raw: true
 destinations:
   - name: out
     type: file
-    dir: /tmp/delimjs
+    dir: TMPROOT/delimjs
 `), "delimjs.yaml")
 		if err != nil {
 			t.Fatalf("loading: %v", err)

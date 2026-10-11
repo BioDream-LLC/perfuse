@@ -10,7 +10,7 @@ real PostgreSQL, a real OpenSSH server, real OpenSSL. This document says what wa
 it was verified against, and what the verification found — because a claim of verification with no record
 behind it is exactly the kind of assertion this project exists to distrust.
 
-The Inferno runs (CRD, DTR, PAS and US Core 7) can be repeated from this repository: `conformance/inferno/run.sh <suite>` checks
+The Inferno runs (CRD, DTR, PAS, SMART App Launch and US Core 7) can be repeated from this repository: `conformance/inferno/run.sh <suite>` checks
 out the kit at the version recorded here, starts Perfuse with the same flags and data, and prints the results. See
 [conformance/inferno](https://github.com/biodream-llc/perfuse/tree/main/conformance/inferno).
 
@@ -476,8 +476,8 @@ adjusted for the run. encounter-start and encounter-discharge are not served.
   and q8 when they load.
 - CRD 2.2.1's own invariant crd-ci-q4 rejects every coverage-information carrying `doc-purpose` `withpa`, even with `pa-needed`
   `auth-needed`: its left side is a `where()` with no `exists()`, so it is empty, and "empty implies false" is not true. It also tests
-  for `noauth` where the code is `no-auth`. Perfuse does not send `doc-purpose` (it is optional), so its output stays valid; the fault
-  is reported to the guide's authors.
+  for `noauth` where the code is `no-auth`. Perfuse does not send `withpa` unless a rules file sets `allow_withpa`, so its output stays valid. The
+  guide's authors agree the invariant is broken (chat.fhir.org, October 2026) and a technical correction is due.
 
 What this does not show: CRD against a production EHR (Inferno's simulated CRD client is the stand-in), and DTR against a real SMART on FHIR documentation app.
 
@@ -762,7 +762,8 @@ What this does not show is an agency's endpoint accepting Perfuse's eICR. AIMS o
 
 ## Vendor-shaped v2 from two national programmes, against the HL7 validator
 
-These are not a live EHR feed; no site has run one through Perfuse. They are the nearest public equivalent: 81 messages from the
+These are not a live EHR feed; no site has run one through Perfuse. For the site that does, `perfuse fhir convert -report` writes
+the result in counts and paths only, nothing from a message, so it can be shared. They are the nearest public equivalent: 81 messages from the
 French national agency's IHE PAM-FR and document-exchange examples (ansforge/hl7V2-exemples) and the NHS Wales v2 examples
 (GIG-Cymru-NHS-Wales/hl7-v2-examples), covering ADT, ORU, MDM, SIU and VXU in v2.3 to v2.5.1. All 81 converted, and the HL7
 validator found 34 errors in the bundles. The fixes:
