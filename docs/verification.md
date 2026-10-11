@@ -1035,6 +1035,23 @@ gave the same results as the local runs:
 The first DTR run found one difference, in the run rather than the server: the order it asks CRD about named a patient no
 member record matches, which the local payer never checks and the public one does. The order is now Amy Shaw's.
 
+### Bulk Data Access v2.0.0, the first run
+
+The first run of Inferno's Bulk Data v2.0.0 Server suite gave 17 pass, 18 skip and 13 fail, and every failure but one was
+the server's:
+
+- **A client could start an export and not cancel it.** Cancelling is DELETE on the status URL, which the scope check
+  treated as a write; Bulk Data clients hold read scopes, so every cancel was refused, and the abandoned exports then
+  blocked new ones. Cancelling now needs only read access, and answers 202, as the specification says (it answered 204).
+- **The CapabilityStatement listed no system or Patient export**, though both were served.
+- **The manifest was sent as `application/fhir+json`.** It is not a FHIR resource; it is now `application/json`.
+- **An R4 server exported R5.** Export files held the internal shape, so Encounters had R5's list of classes and status
+  `completed`. Each exported resource now goes through the same version conversion as a read.
+- One fixture was ours: the approved authorization had an `addItem` without the `adjudication` R4 requires.
+
+Now 46 pass and 2 fail. Both failures are one resource, Inferno's own adaptive DTR questionnaire, whose
+`artifact-versionAlgorithm` extension uses a code system R4's validator does not know.
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was
