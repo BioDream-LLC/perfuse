@@ -988,14 +988,45 @@ Checked and found correct: subscription notification Bundles carry `request` and
 `request.url` is the interaction rather than the history URL, `$log-questionnaire-errors` pairs questionnaires and outcomes by
 position, DTR accepts `referenced`, and bulk export says `requiresAccessToken: true`.
 
+## Windows, on GitHub's Windows runners
+
+Every push now runs the whole test suite on Windows Server (x64) and on Windows 11 on Arm, starts `perfuse serve` on a fresh
+database on both, and on x64 installs the service the way the manual says: `perfuse init -service windows`, then the generated
+`install-service.ps1` as an administrator. The check is that the service runs as LocalService, answers, has written the
+one-time administrator password to its log, has shut ordinary users out of its folder, stops when asked, and is removed.
+
+The first run failed in eleven packages. Most were the tests' own Unix assumptions (file modes, `|` in file names, paths
+pasted into JavaScript, CRLF checkouts), but five were in the product:
+
+- **Two FHIR creates in quick succession could get the same id, and the second overwrote the first.** The id fallback came
+  from the clock, and Windows' clock is coarse enough for two requests to read the same value. Ids are now random. The same
+  flaw named files written by the S3, FTP, SFTP, document and CDA senders and the file poller; those now add random bytes.
+- **The SMART signing key was refused when the server restarted,** because Windows reports every file as readable by others.
+  Windows has no Unix modes; the key's privacy there is its folder's access list.
+- **A refused or unreachable connection was reported as a bare error.** The connection test now recognises Winsock's codes.
+- **The service install left the data folder readable by every local user,** because it inherited the drive's access list.
+  It now cuts inheritance and grants only SYSTEM, Administrators and the service account.
+- **A service has no console, so its log and the one-time administrator password went nowhere** - a fresh install nobody
+  could sign in to. Found by the service step's first run. `serve -log-file` writes both to a 0600 file, under the service
+  manager it defaults to `perfuse.log` beside the database, and the generated script names `logs\perfuse.log`.
+
+Not covered: a Windows desktop session, an installer, and a hospital's group policy. The xmlsec1 interoperability tests skip
+there, because the runner's Docker runs Windows containers and xmlsec1 comes in a Linux one.
+
+## The public test instance, test.perfuse.health
+
+A Perfuse anyone can test against, with test data only: FHIR, CRD, DTR, PAS and SMART, on the released binary (checked
+against `SHA256SUMS`), with a Let's Encrypt certificate. It is built from the repository by `deploy/test-instance`, and a
+workflow checks every half hour that it answers and that its certificate has more than 14 days left. Certificate renewal was
+tested (`certbot renew --dry-run`). The data are the conformance runs' fixtures; Inferno's backend client may read everything
+and write only Claims and Subscriptions, and a write to anything else was checked to be refused.
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was
 checked.
 
-- **The Windows binaries have never been run.** They cross-compile, `go vet` passes for `GOOS=windows`,
-  and they are valid PE32+ executables — but no Windows machine was available. `perfuse service`, which
-  runs Perfuse as a Windows service, is likewise untested on Windows.
+- **Windows has been tested only on GitHub's runners** (above): no desktop session, installer or hospital group policy.
 - **The Linux arm64 binary has been built and not run.** The amd64 binary was verified inside Alpine,
   which has no glibc, confirming the static-linking claim; it serves the embedded web interface and
   answers a JSON 404 for unknown API paths.
