@@ -19,8 +19,10 @@ func TestXmlsecVerifiesWhatThisSigns(t *testing.T) {
 	if _, err := exec.LookPath("docker"); err != nil {
 		t.Skip("docker is not available")
 	}
-	if err := exec.Command("docker", "info").Run(); err != nil {
+	if out, err := exec.Command("docker", "info", "--format", "{{.OSType}}").Output(); err != nil {
 		t.Skip("docker is not running")
+	} else if strings.TrimSpace(string(out)) != "linux" {
+		t.Skip("docker runs " + strings.TrimSpace(string(out)) + " containers here, and xmlsec1 comes in a Linux one")
 	}
 	home, _ := os.UserHomeDir()
 	dir, err := os.MkdirTemp(home, ".perfuse-xmlsec-")

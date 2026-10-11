@@ -230,6 +230,9 @@ ess_cert_id_chain = no
 	if !need("docker") || exec.Command("docker", "info").Run() != nil {
 		t.Skip("docker is not running, for the xmlsec1 half")
 	}
+	if out, _ := exec.Command("docker", "info", "--format", "{{.OSType}}").Output(); strings.TrimSpace(string(out)) != "linux" {
+		t.Skip("docker runs " + strings.TrimSpace(string(out)) + " containers here, and xmlsec1 comes in a Linux one")
+	}
 	// xmlsec1 verifies the signature in place of the signatureText that carries it. The participant is subtracted from the
 	// digest, so the document it digests is the same.
 	plain := replaceSignatureText(t, res.Document, sigXML)

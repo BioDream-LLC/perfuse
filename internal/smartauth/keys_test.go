@@ -41,6 +41,9 @@ func TestAKeyIsCreatedOnceAndItsTokensVerify(t *testing.T) {
 }
 
 func TestAKeyOthersCanReadIsRefused(t *testing.T) {
+	if !unixModes {
+		t.Skip("Windows has no Unix modes; the key's privacy there is its directory's ACL")
+	}
 	path := filepath.Join(t.TempDir(), "smart.key")
 	if _, err := LoadOrCreateKey(path); err != nil {
 		t.Fatal(err)
