@@ -762,7 +762,8 @@ What this does not show is an agency's endpoint accepting Perfuse's eICR. AIMS o
 
 ## Vendor-shaped v2 from two national programmes, against the HL7 validator
 
-These are not a live EHR feed; no site has run one through Perfuse. They are the nearest public equivalent: 81 messages from the
+These are not a live EHR feed; no site has run one through Perfuse. For the site that does, `perfuse fhir convert -report` writes
+the result in counts and paths only, nothing from a message, so it can be shared. They are the nearest public equivalent: 81 messages from the
 French national agency's IHE PAM-FR and document-exchange examples (ansforge/hl7V2-exemples) and the NHS Wales v2 examples
 (GIG-Cymru-NHS-Wales/hl7-v2-examples), covering ADT, ORU, MDM, SIU and VXU in v2.3 to v2.5.1. All 81 converted, and the HL7
 validator found 34 errors in the bundles. The fixes:

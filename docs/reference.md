@@ -285,6 +285,17 @@ perfuse fhir serve -addr 127.0.0.1:8080 -db ./fhir.db
 perfuse fhir versions
 ```
 
+### Trying it on your own feed
+
+`-report` writes how a feed converted, in counts and paths only: message types, the resources produced, validation errors by
+rule and path, and the mapping notes by kind, in each rule's own wording with `%s` where a message's values were. Nothing from a
+message is in it - no name, identifier, code, value, control id, or sending application or facility - so it can be sent to
+Perfuse's developers without sending a single message. Point it at a day's archive of the feed:
+
+```sh
+perfuse fhir convert -quiet -us-core -report feed-report.md archive/2026-10-09/*.hl7
+```
+
 ### How the mapper behaves
 
 One rule underpins it: **a value that cannot be mapped is preserved as text, never

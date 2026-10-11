@@ -47,6 +47,9 @@ convert flags:
   -notes            print mapping notes
   -quiet            print only the summary
   -out string       write bundles to this directory instead of stdout
+  -report file      write how the feed converted, in counts and paths only, to
+                    file: safe to send to Perfuse's developers, nothing from a
+                    message is in it
 `
 
 func cmdFHIR(args []string, stdout, stderr io.Writer) error {
@@ -106,6 +109,7 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 	showNotes := fset.Bool("notes", false, "print mapping notes")
 	quiet := fset.Bool("quiet", false, "print only the summary")
 	outDir := fset.String("out", "", "write bundles to this directory")
+	reportPath := fset.String("report", "", "write a report of how the feed converted, counts and paths only, to this file")
 	if err := fset.Parse(args); err != nil {
 		return err
 	}
@@ -147,6 +151,7 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 		invalid    int
 		resources  = map[string]int{}
 		noteCounts = map[string]int{}
+		report     = newFeedReport()
 	)
 
 	for _, path := range fset.Args() {
@@ -161,6 +166,7 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 			m, err := hl7.Parse(chunk)
 			if err != nil {
 				failed++
+				report.failedMessage("")
 				fmt.Fprintf(stderr, "%s message %d: %v\n", path, i+1, err)
 				continue
 			}
@@ -168,6 +174,12 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 			result, err := v2fhir.Convert(m, opts)
 			if err != nil {
 				failed++
+				kind, _ := m.Get("MSH-9.1")
+				kind = sanitise(kind)
+				if trigger, _ := m.Get("MSH-9.2"); trigger != "" {
+					kind += "^" + sanitise(trigger)
+				}
+				report.failedMessage(kind)
 				fmt.Fprintf(stderr, "%s message %d: %v\n", path, i+1, err)
 				continue
 			}
@@ -184,6 +196,7 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 			if !validation.Valid() {
 				invalid++
 			}
+			report.add(result, validation)
 
 			body, err := result.JSON()
 			if err != nil {
@@ -225,6 +238,13 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 	}
 	if len(noteCounts) > 0 {
 		fmt.Fprintf(stdout, "mapping notes: %s\n", countSummary(noteCounts))
+	}
+
+	if *reportPath != "" {
+		if err := report.save(*reportPath); err != nil {
+			return err
+		}
+		fmt.Fprintf(stdout, "report: %s (counts and paths only; nothing from the messages)\n", *reportPath)
 	}
 
 	if failed > 0 || invalid > 0 {
