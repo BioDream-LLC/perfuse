@@ -542,6 +542,15 @@ type unmodelledKeeper interface {
 	setUnmodelledMembers(map[string]any)
 }
 
+// UnmodelledMember is a member the resource carried that its struct has no field for (an ExplanationOfBenefit's items, say),
+// as decoded JSON, or nil. For reading only: search indexing needs a few of them.
+func UnmodelledMember(r Resource, name string) any {
+	if keeper, ok := r.(unmodelledKeeper); ok {
+		return keeper.unmodelledMembers()[name]
+	}
+	return nil
+}
+
 // keepUnmodelled records the parts of a resource its struct cannot hold, so Marshal can write them back.
 //
 // The structs model the fields this engine reads and writes, not the whole specification - and for years the package said

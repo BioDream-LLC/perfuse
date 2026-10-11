@@ -535,6 +535,20 @@ func indexEntries(r fhir.Resource) []indexEntry {
 			addPeriod("service-date", v.BillablePeriod)
 			add("billable-period-start", v.BillablePeriod.Start, "")
 		}
+		// And each item's serviced[x], which R4's service-date also covers (billablePeriod | item.serviced). A search for the
+		// day an item was performed otherwise misses a month-long billable period. Found by Inferno's PDex suite.
+		items, _ := fhir.UnmodelledMember(v, "item").([]any)
+		for _, it := range items {
+			item, _ := it.(map[string]any)
+			if d, _ := item["servicedDate"].(string); d != "" {
+				addPeriod("service-date", &fhir.Period{Start: d, End: d})
+			}
+			if p, _ := item["servicedPeriod"].(map[string]any); p != nil {
+				start, _ := p["start"].(string)
+				end, _ := p["end"].(string)
+				addPeriod("service-date", &fhir.Period{Start: start, End: end})
+			}
+		}
 
 	case *fhir.CarePlan:
 		addRef("patient", v.Subject)

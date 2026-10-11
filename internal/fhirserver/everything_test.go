@@ -290,3 +290,17 @@ func TestAnR4StatusSearchFindsTheEncounter(t *testing.T) {
 		}
 	}
 }
+
+// TestAnItemsServiceDateFindsTheEOB covers service-date indexing only the billable period: R4 defines it as billablePeriod |
+// item.serviced, so a search for the day an item was performed found nothing. Inferno's PDex suite found it.
+func TestAnItemsServiceDateFindsTheEOB(t *testing.T) {
+	srv, h := newTestServer(t)
+	put(t, srv.Store, `{"resourceType": "ExplanationOfBenefit", "id": "eob1", "status": "active", "use": "preauthorization",
+		"patient": {"reference": "Patient/p1"}, "billablePeriod": {"start": "2021-10-01", "end": "2021-10-31"},
+		"item": [{"sequence": 1, "servicedDate": "2021-10-12"}]}`)
+	for _, q := range []string{"service-date=2021-10-12", "service-date=2021-10"} {
+		if rec := do(t, h, http.MethodGet, "/ExplanationOfBenefit?patient=p1&"+q, nil); !strings.Contains(rec.Body.String(), `"id": "eob1"`) {
+			t.Errorf("%s found nothing: %d", q, rec.Code)
+		}
+	}
+}
