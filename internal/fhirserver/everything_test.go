@@ -2,6 +2,11 @@ package fhirserver
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"io"
+	"log/slog"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -219,4 +224,44 @@ func TestCompartmentTypesComeFromTheSearchRegistry(t *testing.T) {
 			break
 		}
 	}
+}
+
+// TestEverythingOnAnR4ServerIsR4 covers $everything written without the per-entry version conversion a search applies: an
+// R4 server returned R5 Encounters (class a list). Inferno's PDex suite found it.
+func TestEverythingOnAnR4ServerIsR4(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { db.Close() })
+	store, err := NewStore(db, fhir.R4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, store, `{"resourceType": "Patient", "id": "p1"}`)
+	put(t, store, `{"resourceType": "Encounter", "id": "e1", "status": "finished", "subject": {"reference": "Patient/p1"},
+		"class": {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"}}`)
+	srv := NewServer(store, "http://example.test/fhir", slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv.Auth = OpenAuth{}
+
+	rec := do(t, srv.Handler(), http.MethodGet, "/Patient/p1/$everything", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	var b struct {
+		Entry []struct{ Resource map[string]any } `json:"entry"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &b); err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range b.Entry {
+		if e.Resource["resourceType"] == "Encounter" {
+			if _, ok := e.Resource["class"].(map[string]any); !ok || e.Resource["status"] != "finished" {
+				t.Errorf("the Encounter is not R4: class %T, status %v", e.Resource["class"], e.Resource["status"])
+			}
+			return
+		}
+	}
+	t.Fatal("no Encounter in $everything")
 }

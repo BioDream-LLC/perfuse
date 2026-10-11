@@ -82,7 +82,8 @@ func TestMemberMatch(t *testing.T) {
 	}
 	out := MatchResponse(got, "pt-1")
 	raw, _ := json.Marshal(out)
-	if !strings.Contains(string(raw), "MemberIdentifier") || !strings.Contains(string(raw), "Patient/pt-1") {
+	// MemberIdentifier alone, which every HRex version accepts; HRex 1.0.0 refuses MemberId.
+	if !strings.Contains(string(raw), "MemberIdentifier") || strings.Contains(string(raw), "MemberId\"") {
 		t.Fatalf("response: %s", raw)
 	}
 

@@ -183,6 +183,10 @@ func TestAReadOnlyTokenCanCancelItsExport(t *testing.T) {
 	if status, _ := probe(t, s, http.MethodDelete, "/_export/abc123/status", "Bearer "+testToken); status == http.StatusForbidden {
 		t.Error("a read-only token could not cancel an export")
 	}
+	// HRex $member-match only searches, and PDex's payer calls it with read scopes.
+	if status, _ := probe(t, s, http.MethodPost, "/Patient/$member-match", "Bearer "+testToken); status == http.StatusForbidden {
+		t.Error("a read-only token could not call $member-match")
+	}
 	for _, path := range []string{"/Patient/abc123", "/_export/abc123", "/Patient/_export/status", "/_export//status"} {
 		if status, reached := probe(t, s, http.MethodDelete, path, "Bearer "+testToken); status != http.StatusForbidden || reached {
 			t.Errorf("DELETE %s with a read-only token: status %d, reached=%v, want 403 and false", path, status, reached)

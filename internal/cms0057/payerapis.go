@@ -317,10 +317,11 @@ func MatchResponse(c *MatchCandidate, patientID string) map[string]any {
 			"value": sub,
 		}
 	}
+	// MemberIdentifier only. HRex 1.2.0 also allows MemberId, a reference to the Patient, but HRex 1.0.0 - the version
+	// PDex 2.0.0 and its Inferno suite use - closes the slicing at MemberIdentifier, so a response carrying MemberId fails
+	// there. The identifier alone is valid under every version, and finds the member by search.
+	_ = patientID
 	params := []any{map[string]any{"name": "MemberIdentifier", "valueIdentifier": ident}}
-	if patientID != "" {
-		params = append(params, map[string]any{"name": "MemberId", "valueReference": map[string]any{"reference": "Patient/" + patientID}})
-	}
 
 	return map[string]any{
 		"resourceType": "Parameters",

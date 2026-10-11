@@ -87,7 +87,7 @@ const matchBody = `{"resourceType":"Parameters","parameter":[
 func TestMemberMatchOverHTTP(t *testing.T) {
 	_, h := payerFixture(t)
 	rec := payerDo(t, h, "POST", "/Patient/$member-match", matchBody, nil)
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "MBR123456") || !strings.Contains(rec.Body.String(), "Patient/pt-MBR123456") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "MBR123456") || strings.Contains(rec.Body.String(), "MemberId\"") {
 		t.Fatalf("%d %s", rec.Code, rec.Body)
 	}
 

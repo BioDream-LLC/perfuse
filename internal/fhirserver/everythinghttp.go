@@ -71,5 +71,7 @@ func (s *Server) handleEverything(w http.ResponseWriter, r *http.Request) {
 		URL:      s.BaseURL + "/Patient/" + id + "/$everything",
 	}}
 
-	s.writeResource(w, r, http.StatusOK, bundle)
+	// writeBundle, as a search writes one: it converts each entry to the version the client asked for. Written as a plain
+	// resource, an R4 server's $everything carried R5 Encounters (class a list, actualPeriod); Inferno's PDex suite found it.
+	s.writeBundle(w, r, http.StatusOK, bundle)
 }

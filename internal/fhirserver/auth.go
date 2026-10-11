@@ -366,6 +366,8 @@ func resourceTypeOf(r *http.Request) string {
 var readOperations = map[string]bool{
 	"$inquire": true, "$questionnaire-package": true, "$next-question": true, "$log-questionnaire-errors": true,
 	"$expand": true, "$validate-code": true, "$translate": true, "$lookup": true, "$everything": true,
+	// HRex's $member-match finds a member and stores nothing, and the payer calling it holds read scopes (PDex).
+	"$member-match": true,
 	// POST [type]/_search is a search, which FHIR offers by POST so long queries need not go in a URL.
 	"_search": true,
 }
