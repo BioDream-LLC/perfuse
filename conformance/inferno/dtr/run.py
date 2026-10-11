@@ -88,8 +88,9 @@ def adaptive():
     src["id"] = "DinnerOrderAdaptive"
     src.pop("meta", None)
     src["version"] = "1.0.0"
-    src["extension"].append({"url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm",
-                             "valueCoding": {"system": "http://hl7.org/fhir/version-algorithm", "code": "semver"}})
+    # DTR's must-support versionAlgorithm, as the string its definition allows: R4's validator does not know the
+    # version-algorithm code system the Coding form names, and rejects any resource that uses it.
+    src["extension"].append({"url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm", "valueString": "semver"})
     src["effectivePeriod"] = {"start": "2026-01-01"}
     rules = {
         "3": [{"question": "LOC.1", "operator": "exists", "answerBoolean": True}],

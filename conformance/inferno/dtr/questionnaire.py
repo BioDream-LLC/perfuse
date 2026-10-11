@@ -38,7 +38,7 @@ QUESTIONNAIRE = {
     "extension": [
         {"url": EXT + "cqf-library", "valueCanonical": LIB},
         {"url": EXT + "preferredTerminologyServer", "valueUrl": "https://tx.fhir.org/r4"},
-        {"url": EXT + "artifact-versionAlgorithm", "valueCoding": {"system": "http://hl7.org/fhir/version-algorithm", "code": "semver"}},
+        {"url": EXT + "artifact-versionAlgorithm", "valueString": "semver"},  # the string form: R4 does not know the Coding's system
         {"url": SDC + "sdc-questionnaire-performerType", "valueCode": "Practitioner"},
         {"url": DTR + "estimated-completion-time", "extension": [
             {"url": "totalTime", "valueCode": "under-3min"}, {"url": "clinicalTime", "valueCode": "under-1min"}]},
