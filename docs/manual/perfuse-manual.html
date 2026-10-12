@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 9273b8f</p>
+<p class="version">version 0.1 · 9bd9ec9</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -1336,6 +1336,10 @@ roles: {viewer: manager}</code></pre>
 <p>Drop in a Mirth or OIE channel export and see how many of your channels would run here unchanged. The same analysis as <code>perfuse explain</code> and <code>perfuse translate</code>, without needing a terminal. See <a href="#s15-migration-from-mirth">migration</a>.</p>
 <h4 id="s3-5-6-settings"><span class="num">3.5.6</span> Settings</h4>
 <p>Every setting the server has, with a control for each — including the ones that would traditionally live only in a file. Each says whether it takes effect at once or needs a restart, and whether it has been set explicitly or is sitting at its default.</p>
+<p>The settings cover every <code>perfuse serve</code> option that turns on a feature: the FHIR endpoint and its version, the payer APIs, PAS and the CRD rules, the X12 278 bridge, eCR, the SMART authorization server, TLS and signing, metrics, fleet and VPN. They are grouped as FHIR, Payers, Public health, SMART, Security and so on. Each is also shown with the flag it corresponds to.</p>
+<p><strong>Restarting from the console.</strong> A setting marked *Needs a restart* is saved at once but read only when the server starts. While any are waiting, a banner at the top of Settings lists them with a <strong>Restart the server</strong> button (the sign-on editor and the settings files offer the same button after a save). It asks first, because every channel stops for a few seconds: each finishes the message it is handling, as it does when the service is stopped, and senders resend whatever arrives meanwhile. The console then waits for the server to answer again and reads the settings afresh. Only an administrator can restart, and each restart is recorded in the activity log as <code>server.restart</code>.</p>
+<p>On Linux and macOS the process replaces itself with a fresh copy of the same program and arguments, keeping its process id, so systemd, launchd or a container runtime sees nothing happen. On Windows the server starts again inside the same process, which keeps a Windows service under the service manager. If the server has not answered after two minutes, the console says so; the reason is in the server&#39;s log.</p>
+<p><strong>Flags and the settings file.</strong> The first time the server starts, the flags it was given are written into the settings file. From then on the file wins over the flags, so changing a setting is done in the console (or the file), not by editing the service&#39;s command line. A flag the file does not yet mention is recorded when the server starts with it. Removing a flag from the command line later does not turn its feature off: turn it off in Settings.</p>
 <p><strong>Branding</strong> is here too: a site can set the product name, a tagline, an accent colour, and upload a logo. The logo then appears in the header, on the sign-in page, on the dashboard and on the reporting screens. If none is uploaded, nothing is substituted — an unbranded installation stays unbranded rather than acquiring decoration.</p>
 <h3 id="s3-6-what-the-colours-mean"><span class="num">3.6</span> What the colours mean</h3>
 <p>Four registers, and each says something different. The distinction is worth stating because it is the difference between a screen you can read at a glance and one where everything competes for attention.</p>

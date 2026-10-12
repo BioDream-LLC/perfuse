@@ -1,4 +1,5 @@
 import { SignonEditor } from './SignonEditor'
+import { RestartServer } from './RestartServer'
 import { CodeArea } from './CodeArea'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SettingsFile, SettingsResponse, StartupSettings } from './api'
@@ -320,6 +321,7 @@ function SettingsFileEditor({
               A restart is needed before this takes effect.
             </span>
           )}
+          {file.restartRequired && savedContent === content && <RestartServer compact />}
         </div>
 
         <p className="text-xs text-slate-500">

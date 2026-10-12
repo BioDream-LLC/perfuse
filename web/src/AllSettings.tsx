@@ -12,6 +12,7 @@ import {
 import type { UiError } from './store'
 import { toUiError } from './store'
 import { ErrorBox } from './ui'
+import { RestartServer } from './RestartServer'
 
 /** AllSettings is one place to change everything about this server.
  *
@@ -168,6 +169,14 @@ export function AllSettings() {
           <p className="mt-1 text-xs leading-relaxed text-amber-300/90">
             {schema.restartRequired.join(', ')}
           </p>
+          {/* The banner goes away once the restart has applied everything, taking the button's own
+              message with it, so the confirmation is shown where the save notices are. */}
+          <RestartServer
+            onBack={() => {
+              setNotice('The server restarted and is running with the saved settings.')
+              void load()
+            }}
+          />
         </div>
       )}
 
@@ -183,7 +192,7 @@ export function AllSettings() {
 
       {error && <ErrorBox error={error} />}
       {notice && (
-        <p className="rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">
+        <p role="status" className="rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">
           {notice}
         </p>
       )}

@@ -147,7 +147,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 
 	switch args[0] {
 	case "serve":
-		return cmdServe(args[1:], stdout, stderr)
+		return serveUntilDone(args[1:], stdout, stderr)
 	case "fhir":
 		return cmdFHIR(args[1:], stdout, stderr)
 	case "run":
@@ -400,7 +400,7 @@ func collectXML(paths []string) ([]string, error) {
 func dispatchLongRunning(args []string, stdout, stderr io.Writer) error {
 	switch args[0] {
 	case "serve":
-		return cmdServe(args[1:], stdout, stderr)
+		return serveUntilDone(args[1:], stdout, stderr)
 	case "fhir":
 		return cmdFHIR(args[1:], stdout, stderr)
 	case "run":

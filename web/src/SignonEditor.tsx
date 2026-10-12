@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { RestartServer } from './RestartServer'
 import { SamlMetadataImport } from './SamlMetadataImport'
 
 import {
@@ -539,6 +540,7 @@ export function SignonEditor() {
             {note}
           </p>
         )}
+        {note && !dirty && <RestartServer />}
 
         {!state.configured && (
           <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">

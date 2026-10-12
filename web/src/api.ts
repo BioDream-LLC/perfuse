@@ -893,6 +893,9 @@ export const api = {
   }) => request<{ suggestions: unknown[] }>('POST', '/api/mapper/suggest', input),
 
   settingsSchema: () => request<SettingsSchema>('GET', '/api/settings/schema'),
+  /** Restart the server so settings that apply at a restart take effect. Answers before anything stops. */
+  restartServer: () => request<{ restarting: boolean; pending: string[] }>('POST', '/api/server/restart'),
+
   saveSettingValues: (changes: Record<string, unknown>) =>
     request<{ applied: string[]; restartRequired: string[]; unchanged: string[] }>(
       'PUT',

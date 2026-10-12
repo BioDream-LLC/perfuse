@@ -936,6 +936,7 @@ oidcDone:
 
 	// Who may read /metrics, read per request so a change applies to the next scrape. The flags remain the fallback
 	// inside the server, so a deployment that has never touched the setting behaves exactly as it did.
+	srv.Restart = requestRestart
 	srv.MetricsAccessFn = func() string {
 		return settingsStore.String("security.metricsAccess")
 	}
@@ -1476,53 +1477,62 @@ oidcDone:
 	ctx, stop := shutdownContext()
 	defer stop()
 
+	restarting := false
 	select {
 	case err := <-errc:
 		return err
-
+	case <-restartRequests:
+		restarting = true
+		log.Info("restarting, as asked from the console")
 	case <-ctx.Done():
-		log.Info("shutting down")
-
-		// Readiness goes false first, before anything is actually stopped. That
-		// leaves a window in which a load balancer notices and stops routing
-		// while this instance is still fully able to finish what it accepted.
-		// Without the gap, a rolling update closes the listener under a sender
-		// that had a healthy connection a moment earlier.
-		srv.BeginDraining()
-		if *drainFor > 0 {
-			log.Info("draining before shutdown", "for", *drainFor)
-			select {
-			case <-time.After(*drainFor):
-			case <-ctx.Done():
-			}
-		}
-
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
-
-		// Channels stop first and are given time to finish the message in flight.
-		// Cutting a connection mid-message loses the acknowledgement and makes the
-		// sender resend work that was already done.
-		if runtime != nil {
-			runtime.StopAll(shutdownCtx)
-		}
-		if err := httpSrv.Shutdown(shutdownCtx); err != nil {
-			log.Warn("the HTTP server did not shut down cleanly", "err", err)
-		}
-
-		if messages != nil {
-			// The main tenant, because this is the shutdown summary of a single process and a multi-tenant
-			// instance would need one line per tenant to be honest - which belongs in the platform view rather
-			// than in a farewell message.
-			if stats, err := messages.Stats(context.Background(), "main", time.Time{}); err == nil {
-				fmt.Fprintf(stdout, "\nrecorded %d message(s)\n", stats.Total)
-				for outcome, n := range stats.ByOutcome {
-					fmt.Fprintf(stdout, "  %-12s %d\n", outcome, n)
-				}
-			}
-		}
-		return nil
 	}
+
+	if !restarting {
+		log.Info("shutting down")
+	}
+
+	// Readiness goes false first, before anything is actually stopped. That
+	// leaves a window in which a load balancer notices and stops routing
+	// while this instance is still fully able to finish what it accepted.
+	// Without the gap, a rolling update closes the listener under a sender
+	// that had a healthy connection a moment earlier.
+	srv.BeginDraining()
+	if *drainFor > 0 {
+		log.Info("draining before shutdown", "for", *drainFor)
+		select {
+		case <-time.After(*drainFor):
+		case <-ctx.Done():
+		}
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	// Channels stop first and are given time to finish the message in flight.
+	// Cutting a connection mid-message loses the acknowledgement and makes the
+	// sender resend work that was already done.
+	if runtime != nil {
+		runtime.StopAll(shutdownCtx)
+	}
+	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+		log.Warn("the HTTP server did not shut down cleanly", "err", err)
+	}
+
+	if messages != nil {
+		// The main tenant, because this is the shutdown summary of a single process and a multi-tenant
+		// instance would need one line per tenant to be honest - which belongs in the platform view rather
+		// than in a farewell message.
+		if stats, err := messages.Stats(context.Background(), "main", time.Time{}); err == nil {
+			fmt.Fprintf(stdout, "\nrecorded %d message(s)\n", stats.Total)
+			for outcome, n := range stats.ByOutcome {
+				fmt.Fprintf(stdout, "  %-12s %d\n", outcome, n)
+			}
+		}
+	}
+	if restarting {
+		return errRestart
+	}
+	return nil
 }
 
 // addressOrDefault returns given when set, and otherwise the default for the scheme.

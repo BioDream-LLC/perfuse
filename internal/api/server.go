@@ -85,6 +85,10 @@ type Server struct {
 	// "is this legitimate", and the origin binding does the security work either way.
 	PasskeyAttestation webauthn.AttestationPolicy
 
+	// Restart asks the server to stop cleanly and start again, reading its settings afresh. Nil when the process cannot
+	// restart itself, and the console then says so rather than offering a button that does nothing.
+	Restart func()
+
 	// MetricsAccessFn supplies the configured metrics access mode, superseding MetricsOpen when set.
 	//
 	// A function so the setting applies without a restart, read at request time. Nil falls back to the flags.
@@ -695,6 +699,7 @@ func (s *Server) Handler() http.Handler {
 		mux.Handle("PUT /api/settings/values", s.require(store.RoleAdmin, s.handleSettingsUpdate))
 	}
 
+	mux.Handle("POST /api/server/restart", s.require(store.RoleAdmin, s.handleRestart))
 	mux.Handle("GET /api/settings", s.require(store.RoleAdmin, s.handleSettings))
 	mux.Handle("PUT /api/settings/{kind}", s.require(store.RoleAdmin, s.handleUpdateSettings))
 
