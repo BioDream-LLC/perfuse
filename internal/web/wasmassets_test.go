@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -151,6 +152,31 @@ func TestEverythingBuiltIsEmbedded(t *testing.T) {
 		if !seen[want] {
 			t.Errorf("%q is part of the built front end but is not embedded in the binary. "+
 				"Add it to the go:embed directive in embed.go", want)
+		}
+	}
+}
+
+// TestEveryFileTheIndexLinksIsServed covers what index.html names directly: the favicon was left out of the embed, so every
+// page of the console asked for /favicon.svg and got a 404.
+func TestEveryFileTheIndexLinksIsServed(t *testing.T) {
+	h, err := Handler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assets, _ := Assets()
+	index, err := fs.ReadFile(assets, "index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	refs := regexp.MustCompile(`(?:href|src)="\.?(/[^"]+)"`).FindAllStringSubmatch(string(index), -1)
+	if len(refs) == 0 {
+		t.Fatal("index.html links nothing; this guard would check nothing")
+	}
+	for _, r := range refs {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", r[1], nil))
+		if rec.Code != http.StatusOK {
+			t.Errorf("index.html links %s, which answers %d", r[1], rec.Code)
 		}
 	}
 }

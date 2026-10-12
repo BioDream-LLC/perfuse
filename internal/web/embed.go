@@ -34,7 +34,7 @@ import (
 // in the binary, the SPA fallback answered with index.html, and Chrome refused to execute HTML as a script. The tab rendered, which
 // is why the tab sweep passed - the feature simply could not run.
 //
-//go:embed dist/index.html dist/assets dist/wasm
+//go:embed dist/index.html dist/favicon.svg dist/assets dist/wasm
 var embedded embed.FS
 
 // Assets returns the built front end as a filesystem.
