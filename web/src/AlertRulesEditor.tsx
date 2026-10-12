@@ -33,7 +33,9 @@ function directionWords(info: AlertKindInfo): string {
 function unitWords(info: AlertKindInfo): string {
   switch (info.unit) {
     case 'share':
-      return '% of normal'
+      // Two kinds measure a share of different things: failing messages are a share of all messages, a quiet feed a share of
+      // its usual traffic. The box said "% of normal" for both, which is wrong for the error rate.
+      return info.kind === 'error-rate' ? '% of messages' : '% of normal'
     case 'messages':
       return 'messages'
     case 'seconds':

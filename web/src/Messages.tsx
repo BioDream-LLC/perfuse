@@ -394,10 +394,22 @@ function MessageDetail({
     }
   }
 
+  // Escape closes the drawer, as it does every other dialog here. It did not, so a keyboard user had to tab to Close.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60" onClick={onClose}>
       <div
         className="h-full w-full max-w-4xl overflow-y-auto border-l border-slate-800 bg-slate-950 p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Message"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-start justify-between gap-4">

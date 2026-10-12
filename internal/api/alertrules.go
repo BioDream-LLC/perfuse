@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -121,6 +122,10 @@ func (s *Server) handleAlertRules(w http.ResponseWriter, r *http.Request, _ *sto
 	path := s.SettingsPaths.Alerts
 
 	rules, err := alerts.LoadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		// The file beside the database is written at the first save; until then the built-in rules apply.
+		rules, err = alerts.DefaultRules(), nil
+	}
 	if err != nil {
 		// A file that cannot be read is worth reporting rather than showing as an empty list, which would invite somebody to
 		// "add" rules and overwrite a file that has content in it.

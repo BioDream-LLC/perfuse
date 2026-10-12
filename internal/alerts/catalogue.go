@@ -90,7 +90,7 @@ func KindCatalogue() []KindInfo {
 			Kind:    KindErrorRate,
 			Label:   "Messages are failing",
 			Summary: "Fires when too large a share of a channel's messages do not get through.",
-			Detail: "The threshold is a share of messages, not a count and not a percentage - 0.05 means five in a hundred. " +
+			Detail: "The threshold is a share of messages, not a count: 5 per cent on the screen, 0.05 in the file, means five in a hundred. " +
 				"A channel is ignored until it has carried ten messages in the window, because one failure out of one message " +
 				"is a hundred per cent error rate and almost never worth waking somebody for.",
 			Unit:      UnitShare,
@@ -147,8 +147,8 @@ func KindCatalogue() []KindInfo {
 			Label:   "A feed is far below normal",
 			Summary: "Fires when a channel carries far less than it usually does at this hour of this weekday.",
 			Detail: "Compares a channel against its own history rather than a fixed number, so a clinic feed going quiet at 2pm " +
-				"on a Tuesday is an alert and the same silence on Sunday is not. The threshold is a share of normal - 0.8 means " +
-				"fire when it drops below four fifths of usual. This is the only rule that can report silence on a feed that is " +
+				"on a Tuesday is an alert and the same silence on Sunday is not. The threshold is a share of normal: 80 per cent on the " +
+				"screen, 0.8 in the file, fires when it drops below four fifths of usual. This is the only rule that can report silence on a feed that is " +
 				"legitimately quiet most of the week, which is the case of a stopped lab feed: a patient-safety problem that " +
 				"raises no error anywhere else.",
 			Unit:      UnitShare,

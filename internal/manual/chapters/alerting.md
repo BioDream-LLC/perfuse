@@ -32,7 +32,7 @@ There is no single number that is both. That is not a tuning problem; it is that
 
 Perfuse learns each channel's week from its own recorded history: 168 hourly buckets, Monday first so a working week is contiguous. For each bucket it holds a median, a low and a high, a floor, and how many observations it is based on.
 
-The threshold is a fraction, defaulting to `0.8` — alert when traffic falls more than eighty per cent below normal for this hour.
+The threshold is a share of normal, defaulting to `0.8` (80 per cent in the console) — alert when traffic falls below four fifths of what is normal for this hour.
 
 ### Median, not mean
 
@@ -54,7 +54,7 @@ Where the history is too thin or too erratic to support a judgement, the rule de
 
 ## Setting alerts up
 
-From the interface, per channel or across all of them. Each rule has a kind, a threshold and where to send the alert.
+From the interface, under Alerts, per channel or across all of them. Each rule has a kind, a threshold and where to send the alert. The rules are saved to `alerts.yaml` beside the database (or the file `-alerts` names) and take effect without a restart; until the first save the built-in rules apply.
 
 Worth doing before a feed goes live rather than after the first incident. The specific set worth having on any clinical feed:
 

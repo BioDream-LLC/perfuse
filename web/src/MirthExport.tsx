@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { api } from './api'
 
@@ -17,6 +17,15 @@ import { api } from './api'
  */
 export function MirthExportButton({ channel }: { channel: string }) {
   const [open, setOpen] = useState(false)
+  // Escape closes the dialog, as it does the others.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
   const [loading, setLoading] = useState(false)
   const [notes, setNotes] = useState<string[]>([])
   const [refusal, setRefusal] = useState('')

@@ -153,7 +153,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 			"Alertmanager or anything that accepts a webhook. The payload carries "+
 			"channel names, counts and thresholds; never message content")
 	alertsFile := fset.String("alerts", "",
-		"YAML file of alert rules. Without it a conservative default set is used")
+		"YAML file of alert rules. Default: alerts.yaml beside the database, written when the rules are first saved in the console; until then a conservative default set is used")
 	alertSeverity := fset.String("alert-severity", "warning",
 		"minimum severity to send to the webhook: warning or critical")
 
@@ -632,7 +632,17 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		// notification is what requires a webhook. Those are different things, and
 		// tying them together would mean a deployment without a chat integration
 		// also had no alert page.
-		rules, err := loadAlertRules(*alertsFile)
+		// Without -alerts the rules live beside the database, so they can be edited in the console. Before, a server started
+		// without the flag showed the rules and could not save a change, which made alerting the one thing the GUI could not set.
+		// A rules file named with -alerts must exist; the one beside the database is written at the first save.
+		rulesFrom := *alertsFile
+		if *alertsFile == "" {
+			*alertsFile = filepath.Join(filepath.Dir(*dbPath), "alerts.yaml")
+			if _, err := os.Stat(*alertsFile); err == nil {
+				rulesFrom = *alertsFile
+			}
+		}
+		rules, err := loadAlertRules(rulesFrom)
 		if err != nil {
 			return err
 		}
