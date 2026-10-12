@@ -1,6 +1,7 @@
 package priorauth
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -103,20 +104,7 @@ func TestFromFHIR_ParsesClaimResponse(t *testing.T) {
 			"start": "2026-08-05T00:00:00Z",
 			"end":   "2026-11-05T00:00:00Z",
 		},
-		"item": []interface{}{
-			map[string]interface{}{
-				"adjudication": []interface{}{
-					map[string]interface{}{
-						"category": map[string]interface{}{
-							"coding": []interface{}{
-								map[string]interface{}{"code": "benefit"},
-							},
-						},
-						"value": float64(12),
-					},
-				},
-			},
-		},
+		"item": []interface{}{paItem(1, "A1", 12)},
 		"extension": []interface{}{
 			map[string]interface{}{
 				"url": "http://example.org/fhir/reviewer",
@@ -162,21 +150,100 @@ func TestFromFHIR_ParsesClaimResponse(t *testing.T) {
 func TestFromFHIR_DeniedOutcome(t *testing.T) {
 	data := map[string]interface{}{
 		"id":          "resp-002",
-		"outcome":     "error",
+		"outcome":     "complete",
 		"disposition": "Not medically necessary",
 		"created":     "2026-08-04T12:00:00Z",
+		"item":        []interface{}{paItem(1, "A3", 0)},
 	}
-
 	resp, err := FromFHIR(data)
 	if err != nil {
 		t.Fatalf("FromFHIR error: %v", err)
 	}
-	if resp.Decision != "denied" {
-		t.Errorf("Decision = %v, want denied", resp.Decision)
+	if resp.Decision != DecisionDenied {
+		t.Errorf("Decision = %v, want denied (A3 is not certified)", resp.Decision)
 	}
-	if resp.Reason != "Not medically necessary" {
-		t.Errorf("Reason = %v, want 'Not medically necessary'", resp.Reason)
+}
+
+// outcome=error is the payer failing to process the request. It is not a denial.
+func TestFromFHIR_ErrorIsNotADecision(t *testing.T) {
+	_, err := FromFHIR(map[string]interface{}{"id": "resp-err", "outcome": "error", "disposition": "Member not found"})
+	if err == nil || !strings.Contains(err.Error(), "could not process") {
+		t.Fatalf("err = %v, want the payer-could-not-process error", err)
 	}
+}
+
+// A4 is pended. It was once read as a denial.
+func TestFromFHIR_A4IsPended(t *testing.T) {
+	resp, err := FromFHIR(map[string]interface{}{"id": "r", "outcome": "complete", "item": []interface{}{paItem(1, "A4", 0)}})
+	if err != nil || resp.Decision != DecisionPended {
+		t.Fatalf("Decision = %v, err = %v; want pended", resp, err)
+	}
+}
+
+// No decision code is not an approval.
+func TestFromFHIR_CompleteWithoutACodeIsUnknown(t *testing.T) {
+	resp, err := FromFHIR(map[string]interface{}{"id": "r", "outcome": "complete"})
+	if err != nil || resp.Decision != DecisionUnknown {
+		t.Fatalf("got %+v, %v; want unknown", resp, err)
+	}
+}
+
+func TestFromFHIR_UnknownOutcomeOrCodeIsUnknown(t *testing.T) {
+	for _, data := range []map[string]interface{}{
+		{"id": "r", "outcome": "approved-ish"},
+		{"id": "r", "outcome": "complete", "item": []interface{}{paItem(1, "ZZ", 0)}},
+	} {
+		resp, err := FromFHIR(data)
+		if err != nil || resp.Decision != DecisionUnknown {
+			t.Errorf("%v: got %+v, %v; want unknown", data, resp, err)
+		}
+	}
+}
+
+// Every item is read, and the request's decision summarises them.
+func TestFromFHIR_EveryItemIsRead(t *testing.T) {
+	resp, err := FromFHIR(map[string]interface{}{
+		"id": "r", "outcome": "complete", "disposition": "see items",
+		"item": []interface{}{paItem(1, "A1", 10), paItem(2, "A3", 0), paItem(3, "A6", 4)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Decision != DecisionPartial || len(resp.Items) != 3 {
+		t.Fatalf("Decision = %v with %d items, want partial with 3", resp.Decision, len(resp.Items))
+	}
+	if resp.Items[1].Decision != DecisionDenied || resp.Items[2].Decision != DecisionModified || resp.Items[2].ApprovedUnits != 4 {
+		t.Errorf("items = %+v", resp.Items)
+	}
+	if resp.ApprovedUnits != 0 {
+		t.Errorf("ApprovedUnits = %d for a three-item request; it is per item", resp.ApprovedUnits)
+	}
+}
+
+// paItem is a ClaimResponse item in the PAS 2.x form Perfuse's own PAS server writes.
+func paItem(seq int, code string, qty float64) map[string]interface{} {
+	item := map[string]interface{}{
+		"itemSequence": float64(seq),
+		"adjudication": []interface{}{map[string]interface{}{
+			"category": map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": "submitted"}}},
+			"extension": []interface{}{map[string]interface{}{
+				"url": "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-reviewAction",
+				"extension": []interface{}{
+					map[string]interface{}{
+						"url":                  "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-reviewActionCode",
+						"valueCodeableConcept": map[string]interface{}{"coding": []interface{}{map[string]interface{}{"system": "https://codesystem.x12.org/005010/306", "code": code}}},
+					},
+				},
+			}},
+		}},
+	}
+	if qty > 0 {
+		item["extension"] = []interface{}{map[string]interface{}{
+			"url":       "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-itemAuthorizedDetail",
+			"extension": []interface{}{map[string]interface{}{"url": "quantity", "valueQuantity": map[string]interface{}{"value": qty}}},
+		}}
+	}
+	return item
 }
 
 func TestFromFHIR_PendedOutcome(t *testing.T) {
@@ -378,7 +445,7 @@ func TestFromFHIR_CompleteWithDenyAdjudication(t *testing.T) {
 							"coding": []interface{}{
 								map[string]interface{}{
 									"system": "http://codesystem.x12.org/005010/306",
-									"code":   "A4", // denied
+									"code":   "A3", // not certified
 								},
 							},
 						},
@@ -406,16 +473,8 @@ func TestFromFHIR_CompleteWithDenyAdjudication(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFromFHIR_DenialRequiresReason(t *testing.T) {
-	data := map[string]interface{}{
-		"id":      "resp-no-reason",
-		"outcome": "error", // maps to "denied"
-		// NOTE: no "disposition" field and no adjudication reason
-	}
-
-	resp, err := FromFHIR(data)
-	// Should return an error because a denial without a reason code is invalid
-	// per CMS-0057.
-	if err == nil && resp.Reason == "" {
+	_, err := FromFHIR(map[string]interface{}{"id": "resp-no-reason", "outcome": "complete", "item": []interface{}{paItem(1, "A3", 0)}})
+	if err == nil {
 		t.Errorf("FromFHIR accepted a denial without a reason code; CMS-0057 requires denials to include a reason for appeal")
 	}
 }
@@ -429,6 +488,7 @@ func TestFromFHIR_PartialOutcomeIsPended(t *testing.T) {
 	data := map[string]interface{}{
 		"id":      "resp-partial",
 		"outcome": "partial",
+		"item":    []interface{}{paItem(1, "A1", 0), paItem(2, "A4", 0)},
 	}
 
 	resp, err := FromFHIR(data)

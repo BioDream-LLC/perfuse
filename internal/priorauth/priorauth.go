@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -29,10 +30,32 @@ type PriorAuthRequest struct {
 	SupportingDocs     []string
 }
 
+// Decisions a PriorAuthResponse can carry.
+const (
+	DecisionApproved = "approved" // A1: certified in total
+	DecisionPartial  = "partial"  // A2, or some items approved and some denied
+	DecisionModified = "modified" // A6: certified, but not as requested
+	DecisionDenied   = "denied"   // A3: not certified
+	DecisionPended   = "pended"   // A4, or queued: no decision yet
+	DecisionCanceled = "canceled" // C: the request was cancelled
+	DecisionUnknown  = "unknown"  // no decision code, or one this package does not know
+)
+
+// ItemDecision is the payer's decision on one item of a request.
+type ItemDecision struct {
+	Sequence      int
+	Code          string // the X12 306 code as sent
+	Decision      string
+	Reason        string
+	AuthNumber    string
+	ApprovedUnits int
+}
+
 // PriorAuthResponse represents a payer's decision on a prior auth request.
 type PriorAuthResponse struct {
 	RequestID     string
-	Decision      string // "approved", "denied", or "pended"
+	Decision      string // one of the Decision constants
+	Items         []ItemDecision
 	Reason        string
 	ValidFrom     time.Time
 	ValidTo       time.Time
@@ -161,6 +184,9 @@ func (c *PriorAuthClient) Cancel(ctx context.Context, requestID string) error {
 }
 
 // PriorAuthTracker tracks all prior auth requests and their statuses.
+//
+// It is held in memory and is lost when the process ends. Nothing in Perfuse uses it today; a caller that needs pending and
+// expiring authorisations to survive a restart must store them itself.
 type PriorAuthTracker struct {
 	mu      sync.Mutex
 	entries []trackerEntry
@@ -326,97 +352,81 @@ func ToFHIR(req PriorAuthRequest) map[string]interface{} {
 }
 
 // FromFHIR parses a FHIR ClaimResponse resource into a PriorAuthResponse.
+//
+// The decision is read item by item from each item's PAS reviewAction extension (X12 306 codes: A1 certified, A2 certified in
+// part, A3 not certified, A4 pended, A6 modified). The older form, a "reviewAction" adjudication whose reason carries the code, is
+// read too. Nothing is assumed: a response with no decision code, an outcome this package does not know, or a code it does not
+// know comes back as DecisionUnknown, so a provider is never told "approved" for care the payer did not approve. A ClaimResponse
+// with outcome "error" means the payer could not process the request, not that it denied it, and is returned as an error.
 func FromFHIR(data map[string]interface{}) (*PriorAuthResponse, error) {
 	resp := &PriorAuthResponse{}
 
 	if id, ok := data["id"].(string); ok {
 		resp.RequestID = id
 	}
-
-	// Extract the item-level reviewAction adjudication code if present.
-	// Da Vinci PAS uses item adjudication with category "reviewAction" to carry
-	// the actual approve/deny/pend decision when outcome is "complete".
-	reviewAction := extractReviewAction(data)
-
-	// Map FHIR outcome to our decision vocabulary.
-	if outcome, ok := data["outcome"].(string); ok {
-		switch outcome {
-		case "complete":
-			// outcome=complete means adjudication is finished, but the decision
-			// is in the item-level reviewAction. We must check it.
-			switch reviewAction {
-			case "A1", "A2", "A3", "A6": // approved codes per X12 306
-				resp.Decision = "approved"
-			case "A4", "A5": // denied codes per X12 306
-				resp.Decision = "denied"
-			case "": // No reviewAction present — fall back to approved for
-				// backward compatibility with simple ClaimResponses that use
-				// outcome=complete to mean approved (no item adjudication).
-				resp.Decision = "approved"
-			default:
-				// Unknown review action code — treat as pended to be safe.
-				resp.Decision = "pended"
-			}
-		case "error":
-			resp.Decision = "denied"
-		case "partial", "queued":
-			resp.Decision = "pended"
-		default:
-			resp.Decision = outcome
-		}
-	}
-
-	// Extract disposition as reason.
 	if disposition, ok := data["disposition"].(string); ok {
 		resp.Reason = disposition
 	}
 
+	outcome, _ := data["outcome"].(string)
+	if outcome == "error" {
+		why := resp.Reason
+		if why == "" {
+			why = "no reason given"
+		}
+		return nil, fmt.Errorf("priorauth: the payer could not process request %q (outcome=error): %s", resp.RequestID, why)
+	}
+
+	if items, ok := data["item"].([]interface{}); ok {
+		for _, it := range items {
+			item, ok := it.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			resp.Items = append(resp.Items, itemDecision(item))
+		}
+	}
+
+	switch outcome {
+	case "queued":
+		resp.Decision = DecisionPended
+	case "complete", "partial":
+		// "partial" is what PAS sends when some items are still pended, so the item codes decide in both cases.
+		resp.Decision = overallDecision(resp.Items)
+	default:
+		resp.Decision = DecisionUnknown
+	}
+
 	// CMS-0057 requires that a denial include a reason code so the provider
 	// can appeal. A denial without a reason is non-compliant.
-	if resp.Decision == "denied" && resp.Reason == "" {
-		return nil, fmt.Errorf("priorauth: ClaimResponse %q has outcome=denied but no reason/disposition; CMS-0057 requires a denial reason for appeal", resp.RequestID)
-	}
-
-	// Parse created date as response date.
-	if created, ok := data["created"].(string); ok {
-		t, err := time.Parse(time.RFC3339, created)
-		if err == nil {
-			resp.ResponseDate = t
+	if resp.Decision == DecisionDenied && resp.Reason == "" {
+		for _, it := range resp.Items {
+			if it.Reason != "" {
+				resp.Reason = it.Reason
+				break
+			}
+		}
+		if resp.Reason == "" {
+			return nil, fmt.Errorf("priorauth: ClaimResponse %q is a denial with no reason; CMS-0057 requires a denial reason for appeal", resp.RequestID)
 		}
 	}
 
-	// Extract pre-auth period if present.
+	if created, ok := data["created"].(string); ok {
+		resp.ResponseDate = parseFHIRTime(created)
+	}
 	if period, ok := data["preAuthPeriod"].(map[string]interface{}); ok {
 		if start, ok := period["start"].(string); ok {
-			t, err := time.Parse(time.RFC3339, start)
-			if err == nil {
-				resp.ValidFrom = t
-			}
+			resp.ValidFrom = parseFHIRTime(start)
 		}
 		if end, ok := period["end"].(string); ok {
-			t, err := time.Parse(time.RFC3339, end)
-			if err == nil {
-				resp.ValidTo = t
-			}
+			resp.ValidTo = parseFHIRTime(end)
 		}
 	}
 
-	// Extract approved units from first item adjudication if present.
-	if items, ok := data["item"].([]interface{}); ok && len(items) > 0 {
-		if item, ok := items[0].(map[string]interface{}); ok {
-			if adjs, ok := item["adjudication"].([]interface{}); ok {
-				for _, adj := range adjs {
-					a, ok := adj.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					if val, ok := a["value"].(float64); ok {
-						resp.ApprovedUnits = int(val)
-						break
-					}
-				}
-			}
-		}
+	// ApprovedUnits is kept for a single-item request, where it is unambiguous; a request with several items has each item's
+	// own count in Items.
+	if len(resp.Items) == 1 {
+		resp.ApprovedUnits = resp.Items[0].ApprovedUnits
 	}
 
 	// Extract reviewer from extension if present.
@@ -438,60 +448,129 @@ func FromFHIR(data map[string]interface{}) (*PriorAuthResponse, error) {
 	return resp, nil
 }
 
-// extractReviewAction inspects item-level adjudication entries for a
-// "reviewAction" category and returns the X12 306 code if found.
-func extractReviewAction(data map[string]interface{}) string {
-	items, ok := data["item"].([]interface{})
-	if !ok || len(items) == 0 {
-		return ""
+// itemDecision reads one ClaimResponse item.
+func itemDecision(item map[string]interface{}) ItemDecision {
+	d := ItemDecision{}
+	if seq, ok := item["itemSequence"].(float64); ok {
+		d.Sequence = int(seq)
 	}
-	item, ok := items[0].(map[string]interface{})
-	if !ok {
-		return ""
+	code := ""
+	for _, ext := range asList(item["extension"]) {
+		e, _ := ext.(map[string]interface{})
+		if strings.HasSuffix(str(e["url"]), "extension-itemAuthorizedDetail") {
+			for _, sub := range asList(e["extension"]) {
+				se, _ := sub.(map[string]interface{})
+				if str(se["url"]) == "quantity" {
+					if q, ok := se["valueQuantity"].(map[string]interface{}); ok {
+						if v, ok := q["value"].(float64); ok {
+							d.ApprovedUnits = int(v)
+						}
+					}
+				}
+			}
+		}
 	}
-	adjs, ok := item["adjudication"].([]interface{})
-	if !ok {
-		return ""
-	}
-	for _, adj := range adjs {
-		a, ok := adj.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		cat, ok := a["category"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		codings, ok := cat["coding"].([]interface{})
-		if !ok {
-			continue
-		}
-		for _, c := range codings {
-			coding, ok := c.(map[string]interface{})
-			if !ok {
+	for _, adj := range asList(item["adjudication"]) {
+		a, _ := adj.(map[string]interface{})
+		// PAS 2.x: the code is in the reviewAction extension on the adjudication.
+		for _, ext := range asList(a["extension"]) {
+			e, _ := ext.(map[string]interface{})
+			if !strings.HasSuffix(str(e["url"]), "extension-reviewAction") {
 				continue
 			}
-			code, _ := coding["code"].(string)
-			if code == "reviewAction" {
-				// The decision code is in the "reason" field of this adjudication.
-				reason, ok := a["reason"].(map[string]interface{})
-				if !ok {
-					return ""
-				}
-				rCodings, ok := reason["coding"].([]interface{})
-				if !ok {
-					return ""
-				}
-				for _, rc := range rCodings {
-					rcMap, ok := rc.(map[string]interface{})
-					if !ok {
-						continue
+			for _, sub := range asList(e["extension"]) {
+				se, _ := sub.(map[string]interface{})
+				switch {
+				case strings.HasSuffix(str(se["url"]), "extension-reviewActionCode") || str(se["url"]) == "reviewActionCode":
+					if c := firstCode(se["valueCodeableConcept"]); c != "" {
+						code = c
 					}
-					if rCode, ok := rcMap["code"].(string); ok {
-						return rCode
+				case str(se["url"]) == "number":
+					d.AuthNumber = str(se["valueString"])
+				case strings.HasSuffix(str(se["url"]), "extension-reviewActionReason") || str(se["url"]) == "reasonCode":
+					if c := firstCode(se["valueCodeableConcept"]); c != "" {
+						d.Reason = c
 					}
 				}
 			}
+		}
+		// The older form: an adjudication of category reviewAction whose reason holds the code.
+		if code == "" && firstCode(a["category"]) == "reviewAction" {
+			code = firstCode(a["reason"])
+		}
+	}
+	d.Code = code
+	d.Decision = decisionForCode(code)
+	return d
+}
+
+// decisionForCode maps an X12 306 review action code. Anything else, including no code, is DecisionUnknown.
+func decisionForCode(code string) string {
+	switch code {
+	case "A1":
+		return DecisionApproved
+	case "A2":
+		return DecisionPartial
+	case "A3":
+		return DecisionDenied
+	case "A4":
+		return DecisionPended
+	case "A6":
+		return DecisionModified
+	case "C":
+		return DecisionCanceled
+	default:
+		return DecisionUnknown
+	}
+}
+
+// overallDecision summarises the items. No items, or any item undecided, is unknown; any pended item makes the request pended;
+// every item alike is that decision; a mix of approvals and denials is partial.
+func overallDecision(items []ItemDecision) string {
+	if len(items) == 0 {
+		return DecisionUnknown
+	}
+	all := items[0].Decision
+	pended := false
+	for _, it := range items {
+		if it.Decision == DecisionUnknown {
+			return DecisionUnknown
+		}
+		if it.Decision == DecisionPended {
+			pended = true
+		}
+		if it.Decision != all {
+			all = ""
+		}
+	}
+	if all != "" {
+		return all
+	}
+	if pended {
+		return DecisionPended
+	}
+	return DecisionPartial
+}
+
+func parseFHIRTime(s string) time.Time {
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05", "2006-01-02", "2006-01", "2006"} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
+}
+
+func asList(v interface{}) []interface{} { l, _ := v.([]interface{}); return l }
+
+func str(v interface{}) string { s, _ := v.(string); return s }
+
+// firstCode returns the first coding's code of a CodeableConcept.
+func firstCode(v interface{}) string {
+	cc, _ := v.(map[string]interface{})
+	for _, c := range asList(cc["coding"]) {
+		if m, ok := c.(map[string]interface{}); ok && str(m["code"]) != "" {
+			return str(m["code"])
 		}
 	}
 	return ""

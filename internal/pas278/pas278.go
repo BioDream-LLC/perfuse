@@ -38,8 +38,8 @@ import (
 //
 // # Why this type exists rather than reusing the one in priorauth
 //
-// priorauth.PriorAuthResponse.Decision has three states: approved, denied, pended. The 278 has seven, and three of the differences
-// matter to what somebody does next:
+// priorauth.PriorAuthResponse.Decision once had three states: approved, denied, pended (it now also has partial, modified,
+// canceled and unknown). The 278 has seven, and three of the differences matter to what somebody does next:
 //
 //   - Partial certification is approval of less than was asked for. Collapsing it into approved means the quantity reduction is
 //     invisible, and it surfaces as a denied claim at the fourth session.
