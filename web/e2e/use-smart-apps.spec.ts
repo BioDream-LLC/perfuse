@@ -27,7 +27,7 @@ test("SMART apps and the people who authorize them are added and removed", async
   await expect(page.getByText(/redirect_uris/)).toBeVisible();
 
   const users = page.getByTestId("smart-users");
-  await page.getByLabel("Username").last().fill("drbrown");
+  await page.getByLabel("Their username for authorizing apps").fill("drbrown");
   await page.getByLabel("Full name").fill("Dr Brown");
   await page.getByLabel("FHIR user").fill("Practitioner/example-clinician");
   await page.getByLabel("New password").fill("correct horse battery");

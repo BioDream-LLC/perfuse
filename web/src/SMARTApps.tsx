@@ -150,7 +150,7 @@ export function SMARTApps() {
               </div>
             </div>
           )}
-          <table className="min-w-full text-sm" data-testid="smart-clients">
+          <div className="overflow-x-auto"><table className="min-w-full text-sm" data-testid="smart-clients">
             <thead>
               <tr className="border-b border-slate-800 text-left text-xs text-slate-400">
                 <th className="py-2 pr-4">App</th>
@@ -179,7 +179,7 @@ export function SMARTApps() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="App id" hint="client_id; saving an existing id replaces that app">
               <input className="input" value={client.id} onChange={(e) => setClient({ ...client, id: e.target.value })} />
@@ -256,7 +256,7 @@ export function SMARTApps() {
           }
         >
           <div className="space-y-4">
-            <table className="min-w-full text-sm" data-testid="smart-users">
+            <div className="overflow-x-auto"><table className="min-w-full text-sm" data-testid="smart-users">
               <thead>
                 <tr className="border-b border-slate-800 text-left text-xs text-slate-400">
                   <th className="py-2 pr-4">Person</th>
@@ -289,9 +289,9 @@ export function SMARTApps() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Username">
+              <Field label="Their username for authorizing apps">
                 <input className="input" value={user.username} onChange={(e) => setUser({ ...user, username: e.target.value })} />
               </Field>
               <Field label="Full name">

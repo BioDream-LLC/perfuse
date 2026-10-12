@@ -25,6 +25,9 @@ test("every section heading in the interface carries an icon", async ({ page }) 
       continue; // A view this build does not present is not this test's business.
     }
 
+    // Counted once the view has finished loading: a view still fetching re-renders, and a heading counted before then can
+    // be gone by the time it is read.
+    await page.waitForLoadState("networkidle");
     const headings = page.locator("section.card h2");
     const count = await headings.count();
 

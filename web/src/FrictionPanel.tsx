@@ -125,7 +125,7 @@ export function FrictionPanel() {
               Nothing has been refused yet. That is either a good sign or a new installation.
             </p>
           ) : (
-            <div className="card overflow-hidden">
+            <div className="card overflow-x-auto">
               <table className="w-full text-sm">
                 <caption className="sr-only">
                   Refusals grouped by message, most frequent first

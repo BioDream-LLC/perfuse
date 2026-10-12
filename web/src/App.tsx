@@ -725,7 +725,7 @@ function Console() {
   return (
     <div className="min-h-screen relative">
       {/* Ambient gradient — gives depth without being distracting */}
-      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-sky-900/10 blur-3xl" />
         <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-emerald-900/8 blur-3xl" />
       </div>
