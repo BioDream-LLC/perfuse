@@ -204,6 +204,38 @@ func describeTransport(d config.Destination) string {
 		}
 		return "sent over AMQP 1.0"
 
+	case config.DestinationMQTT:
+		if d.MQTT != nil {
+			return fmt.Sprintf("published over MQTT to %s at %s, at QoS %d", d.MQTT.Topic, d.MQTT.Addr, d.MQTT.ResolvedQoS())
+		}
+		return "published over MQTT"
+
+	case config.DestinationIBMMQ:
+		if d.IBMMQ != nil {
+			return "put on the IBM MQ queue " + d.IBMMQ.Queue + " of queue manager " + d.IBMMQ.QueueManager
+		}
+		return "put on an IBM MQ queue"
+
+	case config.DestinationPubSub:
+		if d.PubSub != nil {
+			out := "published to the Pub/Sub topic " + d.PubSub.Topic + " in project " + d.PubSub.Project
+			if d.PubSub.OrderBy != "" {
+				out += ", ordered by " + d.PubSub.OrderBy
+			}
+			return out
+		}
+		return "published to a Pub/Sub topic"
+
+	case config.DestinationGCS:
+		if d.GCS != nil {
+			out := "stored as an object in the Cloud Storage bucket " + d.GCS.Bucket
+			if d.GCS.StorageClass != "" {
+				out += " (" + d.GCS.StorageClass + ")"
+			}
+			return out
+		}
+		return "stored in Google Cloud Storage"
+
 	case config.DestinationAzureBlob:
 		if d.AzureBlob != nil {
 			out := "stored as a blob in the " + d.AzureBlob.Container + " container of " + d.AzureBlob.Account
@@ -492,6 +524,35 @@ func describeArrival(c *config.Channel) string {
 		}
 		return "messages are received over AMQP 1.0 from " + src.AMQP.Address + " at " + src.AMQP.Addr +
 			", each accepted only once handled"
+
+	case config.SourceMQTT:
+		if src.MQTT == nil {
+			return "messages are received over MQTT"
+		}
+		return "messages are received over MQTT from " + src.MQTT.Topic + " at " + src.MQTT.Addr +
+			", each acknowledged only once handled"
+
+	case config.SourceIBMMQ:
+		if src.IBMMQ == nil {
+			return "messages are read from an IBM MQ queue"
+		}
+		return "messages are read from the IBM MQ queue " + src.IBMMQ.Queue + " of queue manager " + src.IBMMQ.QueueManager +
+			", each removed only once handled"
+
+	case config.SourcePubSub:
+		if src.PubSub == nil {
+			return "messages are pulled from a Pub/Sub subscription"
+		}
+		return "messages are pulled from the Pub/Sub subscription " + src.PubSub.Subscription + " in project " +
+			src.PubSub.Project + ", each acknowledged only once handled"
+
+	case config.SourceGCS:
+		if src.GCS == nil {
+			return "objects are read from Google Cloud Storage"
+		}
+		return "objects are read from gs://" + src.GCS.Bucket + "/" + src.GCS.Prefix + ", and " + map[string]string{
+			config.S3AfterReadMove: "moved to " + src.GCS.MoveTo, config.S3AfterReadDelete: "deleted"}[src.GCS.AfterRead] +
+			" once handled"
 
 	case config.SourceAzureBlob:
 		if src.AzureBlob == nil {

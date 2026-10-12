@@ -38,6 +38,10 @@ var respondingSenders = map[config.DestinationType]Sender{
 	config.DestinationSNS:        (*SNSSender)(nil),
 	config.DestinationAMQP:       (*AMQPSender)(nil),
 	config.DestinationAzureBlob:  (*AzureBlobSender)(nil),
+	config.DestinationMQTT:       (*MQTTSender)(nil),
+	config.DestinationIBMMQ:      (*IBMMQSender)(nil),
+	config.DestinationPubSub:     (*PubSubSender)(nil),
+	config.DestinationGCS:        (*GCSSender)(nil),
 }
 
 // TestTheResponseTransformerListMatchesReality is a drift guard.

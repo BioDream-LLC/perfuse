@@ -317,6 +317,12 @@ type buildSource struct {
 	// AzureBlob picks blobs up from a container prefix.
 	AzureBlob *buildAzureBlobSource `json:"azureBlob,omitempty" yaml:"azure_blob,omitempty"`
 
+	// MQTT, IBMMQ, PubSub and GCS are the MQTT, IBM MQ, Google Cloud Pub/Sub and Cloud Storage sources.
+	MQTT   *buildMQTTSource   `json:"mqtt,omitempty" yaml:"mqtt,omitempty"`
+	IBMMQ  *buildIBMMQSource  `json:"ibmMq,omitempty" yaml:"ibm_mq,omitempty"`
+	PubSub *buildPubSubSource `json:"pubsub,omitempty" yaml:"pubsub,omitempty"`
+	GCS    *buildGCSSource    `json:"gcs,omitempty" yaml:"gcs,omitempty"`
+
 	// DICOMQuery polls an imaging archive.
 	//
 	// This was missing until the graphical builder needed it, and the drift guard did not notice - it checks destinations
@@ -840,7 +846,13 @@ type buildDest struct {
 
 	// AzureBlob applies to an azure_blob destination.
 	AzureBlob *buildAzureBlobDest `json:"azureBlob,omitempty" yaml:"azure_blob,omitempty"`
-	TLS       *buildTLS           `json:"tls,omitempty" yaml:"tls,omitempty"`
+
+	// MQTT, IBMMQ, PubSub and GCS are the MQTT, IBM MQ, Google Cloud Pub/Sub and Cloud Storage destinations.
+	MQTT   *buildMQTTDest   `json:"mqtt,omitempty" yaml:"mqtt,omitempty"`
+	IBMMQ  *buildIBMMQDest  `json:"ibmMq,omitempty" yaml:"ibm_mq,omitempty"`
+	PubSub *buildPubSubDest `json:"pubsub,omitempty" yaml:"pubsub,omitempty"`
+	GCS    *buildGCSDest    `json:"gcs,omitempty" yaml:"gcs,omitempty"`
+	TLS    *buildTLS        `json:"tls,omitempty" yaml:"tls,omitempty"`
 
 	Timeout string      `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	Retry   *buildRetry `json:"retry,omitempty" yaml:"retry,omitempty"`
@@ -1128,6 +1140,92 @@ type buildAzureBlobSource struct {
 	PollInterval         string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
 	MaxObjectSize        int64  `json:"maxObjectSize,omitempty" yaml:"max_object_size,omitempty"`
 	Framed               bool   `json:"framed,omitempty" yaml:"framed,omitempty"`
+}
+
+// buildMQTTConnection is an MQTT broker.
+type buildMQTTConnection struct {
+	Addr     string    `json:"addr,omitempty" yaml:"addr,omitempty"`
+	ClientID string    `json:"clientId,omitempty" yaml:"client_id,omitempty"`
+	Username string    `json:"username,omitempty" yaml:"username,omitempty"`
+	Password string    `json:"password,omitempty" yaml:"password,omitempty"`
+	TLS      *buildTLS `json:"tls,omitempty" yaml:"tls,omitempty"`
+	QoS      *int      `json:"qos,omitempty" yaml:"qos,omitempty"`
+	Timeout  string    `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
+type buildMQTTSource struct {
+	buildMQTTConnection `yaml:",inline"`
+	Topic               string `json:"topic,omitempty" yaml:"topic,omitempty"`
+	Reconnect           string `json:"reconnect,omitempty" yaml:"reconnect,omitempty"`
+}
+
+type buildMQTTDest struct {
+	buildMQTTConnection `yaml:",inline"`
+	Topic               string `json:"topic,omitempty" yaml:"topic,omitempty"`
+	Retain              bool   `json:"retain,omitempty" yaml:"retain,omitempty"`
+}
+
+// buildIBMMQConnection is an IBM MQ queue through mqweb.
+type buildIBMMQConnection struct {
+	URL          string    `json:"url,omitempty" yaml:"url,omitempty"`
+	QueueManager string    `json:"queueManager,omitempty" yaml:"queue_manager,omitempty"`
+	Queue        string    `json:"queue,omitempty" yaml:"queue,omitempty"`
+	Username     string    `json:"username,omitempty" yaml:"username,omitempty"`
+	Password     string    `json:"password,omitempty" yaml:"password,omitempty"`
+	TLS          *buildTLS `json:"tls,omitempty" yaml:"tls,omitempty"`
+	APIVersion   string    `json:"apiVersion,omitempty" yaml:"api_version,omitempty"`
+	Timeout      string    `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
+type buildIBMMQSource struct {
+	buildIBMMQConnection `yaml:",inline"`
+	PollInterval         string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
+}
+
+type buildIBMMQDest struct {
+	buildIBMMQConnection `yaml:",inline"`
+	NonPersistent        bool `json:"nonPersistent,omitempty" yaml:"non_persistent,omitempty"`
+}
+
+// buildGCPAccess is a Google Cloud project and credential.
+type buildGCPAccess struct {
+	Project         string `json:"project,omitempty" yaml:"project,omitempty"`
+	CredentialsFile string `json:"credentialsFile,omitempty" yaml:"credentials_file,omitempty"`
+	Endpoint        string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+}
+
+type buildPubSubSource struct {
+	buildGCPAccess `yaml:",inline"`
+	Subscription   string `json:"subscription,omitempty" yaml:"subscription,omitempty"`
+	MaxMessages    int    `json:"maxMessages,omitempty" yaml:"max_messages,omitempty"`
+	Reconnect      string `json:"reconnect,omitempty" yaml:"reconnect,omitempty"`
+}
+
+type buildPubSubDest struct {
+	buildGCPAccess `yaml:",inline"`
+	Topic          string `json:"topic,omitempty" yaml:"topic,omitempty"`
+	OrderBy        string `json:"orderBy,omitempty" yaml:"order_by,omitempty"`
+}
+
+type buildGCSDest struct {
+	buildGCPAccess `yaml:",inline"`
+	Bucket         string `json:"bucket,omitempty" yaml:"bucket,omitempty"`
+	Object         string `json:"object,omitempty" yaml:"object,omitempty"`
+	StorageClass   string `json:"storageClass,omitempty" yaml:"storage_class,omitempty"`
+	ContentType    string `json:"contentType,omitempty" yaml:"content_type,omitempty"`
+}
+
+type buildGCSSource struct {
+	buildGCPAccess `yaml:",inline"`
+	Bucket         string `json:"bucket,omitempty" yaml:"bucket,omitempty"`
+	Prefix         string `json:"prefix,omitempty" yaml:"prefix,omitempty"`
+	Suffix         string `json:"suffix,omitempty" yaml:"suffix,omitempty"`
+	AfterRead      string `json:"afterRead,omitempty" yaml:"after_read,omitempty"`
+	MoveTo         string `json:"moveTo,omitempty" yaml:"move_to,omitempty"`
+	ErrorPrefix    string `json:"errorPrefix,omitempty" yaml:"error_prefix,omitempty"`
+	PollInterval   string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
+	MaxObjectSize  int64  `json:"maxObjectSize,omitempty" yaml:"max_object_size,omitempty"`
+	Framed         bool   `json:"framed,omitempty" yaml:"framed,omitempty"`
 }
 
 // buildFTPDest is an FTP destination in the form.

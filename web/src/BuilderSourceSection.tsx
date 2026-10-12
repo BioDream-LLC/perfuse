@@ -43,6 +43,10 @@ const SOURCE_OPTIONS: { value: SourceKind; label: string }[] = [
   { value: 's3', label: 'We collect objects from an Amazon S3 bucket' },
   { value: 'amqp', label: 'We read from an AMQP 1.0 queue (Azure Service Bus, RabbitMQ 4)' },
   { value: 'azure_blob', label: 'We collect blobs from Azure Blob Storage' },
+  { value: 'mqtt', label: 'We subscribe to an MQTT topic (Mosquitto, AWS IoT Core, HiveMQ)' },
+  { value: 'ibm_mq', label: 'We read from an IBM MQ queue' },
+  { value: 'pubsub', label: 'We read from a Google Cloud Pub/Sub subscription' },
+  { value: 'gcs', label: 'We collect objects from Google Cloud Storage' },
 ]
 
 export function SourceSection({
@@ -490,6 +494,228 @@ export function SourceSection({
             placeholder="Leave empty for Azure"
             mono
             hint="Only for Azurite or a private endpoint, e.g. http://127.0.0.1:10000/devstoreaccount1."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 'mqtt' && (
+        <>
+          <Pair>
+            <Text
+              label="Broker address"
+              required
+              value={draft.mqttSrcAddr}
+              onChange={(v) => set('mqttSrcAddr', v)}
+              placeholder="broker.hospital.local:8883"
+              mono
+              hint="host:port. 8883 is MQTT over TLS, 1883 plain."
+            />
+            <Text
+              label="Topic filter"
+              required
+              value={draft.mqttSrcTopic}
+              onChange={(v) => set('mqttSrcTopic', v)}
+              placeholder="hl7/+/adt"
+              mono
+              hint="+ matches one level and # every level below, e.g. lab/#."
+            />
+          </Pair>
+          <Pair>
+            <Text label="Username" value={draft.mqttSrcUsername} onChange={(v) => set('mqttSrcUsername', v)} mono />
+            <Secret
+              label="Password"
+              value={draft.mqttSrcPassword}
+              onChange={(v) => set('mqttSrcPassword', v)}
+              hint="Or ${MQTT_PASSWORD} to read it from the environment."
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Client id"
+              value={draft.mqttSrcClientId}
+              onChange={(v) => set('mqttSrcClientId', v)}
+              placeholder="perfuse-<channel name>"
+              mono
+              hint="The broker keeps messages for this id while Perfuse is away. Keep it unique and unchanged."
+            />
+            <Choose
+              label="Quality of service"
+              value={draft.mqttSrcQos}
+              onChange={(v) => set('mqttSrcQos', v)}
+              options={[
+                { value: '1', label: 'At least once (QoS 1)' },
+                { value: '0', label: 'At most once (QoS 0): may lose messages' },
+              ]}
+            />
+          </Pair>
+          <Check
+            label="Encrypt the connection with TLS"
+            value={draft.mqttSrcTls}
+            onChange={(v) => set('mqttSrcTls', v)}
+            hint="A message is acknowledged only after this channel has handled it. One that fails is not acknowledged; Perfuse reconnects and the broker sends it again."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 'ibm_mq' && (
+        <>
+          <Pair>
+            <Text
+              label="mqweb address"
+              required
+              value={draft.ibmSrcUrl}
+              onChange={(v) => set('ibmSrcUrl', v)}
+              placeholder="https://mq.hospital.local:9443"
+              mono
+              hint="The queue manager's web server, which serves the messaging REST API (IBM MQ 9.1.5 and later)."
+            />
+            <Choose
+              label="REST API version"
+              value={draft.ibmSrcApiVersion}
+              onChange={(v) => set('ibmSrcApiVersion', v)}
+              options={[
+                { value: '', label: 'v3 (MQ 9.3 and later)' },
+                { value: 'v2', label: 'v2 (MQ 9.1.5 to 9.2)' },
+                { value: 'v1', label: 'v1' },
+              ]}
+            />
+          </Pair>
+          <Pair>
+            <Text label="Queue manager" required value={draft.ibmSrcQmgr} onChange={(v) => set('ibmSrcQmgr', v)} placeholder="QM1" mono />
+            <Text label="Queue" required value={draft.ibmSrcQueue} onChange={(v) => set('ibmSrcQueue', v)} placeholder="HL7.ADT.IN" mono />
+          </Pair>
+          <Pair>
+            <Text
+              label="Username"
+              value={draft.ibmSrcUsername}
+              onChange={(v) => set('ibmSrcUsername', v)}
+              mono
+              hint="An mqweb user with the MQWebUser role and get and browse authority on the queue."
+            />
+            <Secret
+              label="Password"
+              value={draft.ibmSrcPassword}
+              onChange={(v) => set('ibmSrcPassword', v)}
+              hint="Or ${IBM_MQ_PASSWORD}."
+            />
+          </Pair>
+          <Num
+            label="When the queue is empty, look again every, seconds"
+            value={draft.ibmSrcPollSeconds}
+            onChange={(v) => set('ibmSrcPollSeconds', v ?? 2)}
+            placeholder="2"
+            hint="Each message is read, handled, and only then removed. One that fails stays first on the queue."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 'pubsub' && (
+        <>
+          <Pair>
+            <Text label="Project" required value={draft.psSrcProject} onChange={(v) => set('psSrcProject', v)} placeholder="hospital-integration" mono />
+            <Text
+              label="Subscription"
+              required
+              value={draft.psSrcSubscription}
+              onChange={(v) => set('psSrcSubscription', v)}
+              placeholder="adt-to-perfuse"
+              mono
+              hint="A pull subscription. Turn on message ordering there to keep one patient's messages in order."
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Service account key file"
+              value={draft.psSrcCredentialsFile}
+              onChange={(v) => set('psSrcCredentialsFile', v)}
+              placeholder="/etc/perfuse/gcp-key.json"
+              mono
+              hint="Empty on Google Cloud: the machine's own service account is used. It needs the Pub/Sub Subscriber role."
+            />
+            <Text
+              label="Messages per pull"
+              value={draft.psSrcMaxMessages}
+              onChange={(v) => set('psSrcMaxMessages', v)}
+              placeholder="10"
+              hint="Still handled one at a time, in order."
+            />
+          </Pair>
+          <Text
+            label="Endpoint"
+            value={draft.psSrcEndpoint}
+            onChange={(v) => set('psSrcEndpoint', v)}
+            placeholder="Leave empty for Google"
+            mono
+            hint="Only for the Pub/Sub emulator (http://127.0.0.1:8085) or a regional or private endpoint."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 'gcs' && (
+        <>
+          <Pair>
+            <Text label="Bucket" required value={draft.gcsSrcBucket} onChange={(v) => set('gcsSrcBucket', v)} mono />
+            <Text
+              label="Service account key file"
+              value={draft.gcsSrcCredentialsFile}
+              onChange={(v) => set('gcsSrcCredentialsFile', v)}
+              placeholder="/etc/perfuse/gcp-key.json"
+              mono
+              hint="Empty on Google Cloud: the machine's own service account is used."
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Prefix to read"
+              required
+              value={draft.gcsSrcPrefix}
+              onChange={(v) => set('gcsSrcPrefix', v)}
+              placeholder="inbound/"
+              mono
+            />
+            <Text label="Only names ending in" value={draft.gcsSrcSuffix} onChange={(v) => set('gcsSrcSuffix', v)} placeholder=".hl7" mono />
+          </Pair>
+          <Pair>
+            <Choose
+              label="After an object is handled"
+              value={draft.gcsSrcAfterRead}
+              onChange={(v) => set('gcsSrcAfterRead', v)}
+              options={[
+                { value: 'move', label: 'Move it to another prefix' },
+                { value: 'delete', label: 'Delete it' },
+              ]}
+            />
+            <Num
+              label="Poll every, seconds"
+              value={draft.gcsSrcPollSeconds}
+              onChange={(v) => set('gcsSrcPollSeconds', v ?? 30)}
+              placeholder="30"
+            />
+          </Pair>
+          <Pair>
+            {draft.gcsSrcAfterRead === 'move' && (
+              <Text label="Move to" value={draft.gcsSrcMoveTo} onChange={(v) => set('gcsSrcMoveTo', v)} placeholder="processed/" mono />
+            )}
+            <Text
+              label="Failed objects go to"
+              value={draft.gcsSrcErrorPrefix}
+              onChange={(v) => set('gcsSrcErrorPrefix', v)}
+              placeholder="error/"
+              mono
+            />
+          </Pair>
+          <Check
+            label="Each object holds several MLLP-framed messages"
+            value={draft.gcsSrcFramed}
+            onChange={(v) => set('gcsSrcFramed', v)}
+          />
+          <Text
+            label="Endpoint"
+            value={draft.gcsSrcEndpoint}
+            onChange={(v) => set('gcsSrcEndpoint', v)}
+            placeholder="Leave empty for Google"
+            mono
+            hint="Only for an emulator such as fake-gcs-server, or a private endpoint."
           />
         </>
       )}

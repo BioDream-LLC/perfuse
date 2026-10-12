@@ -355,6 +355,74 @@ queue name, or `<topic>/subscriptions/<name>` to receive.
 and an `azure_blob` source picks blobs up from a prefix, moving them to `processed/` or `error/` as the S3 source does. Prefer a SAS
 token limited to the container over the account key.
 
+## MQTT
+
+An `mqtt` source subscribes to a topic filter (`+` matches one level, `#` every level below) on any MQTT 3.1.1 broker: Mosquitto,
+EMQX, HiveMQ, AWS IoT Core, Azure Event Grid. At QoS 1, the default, each message is acknowledged only once the channel has handled
+it. MQTT has no way to refuse a single message, so one that could not be handled is left unacknowledged and the connection is made
+again; the broker keeps the session under the client id (`perfuse-<channel>` unless `client_id` says otherwise) and sends it again,
+first in line. QoS 0 is at most once: anything sent while Perfuse is down is lost. An `mqtt` destination publishes and, at QoS 1,
+reports success when the broker has the message.
+
+```yaml
+source:
+  type: mqtt
+  mqtt:
+    addr: broker.hospital.local:8883
+    topic: hl7/+/adt
+    username: perfuse
+    password: ${MQTT_PASSWORD}
+    tls: {enabled: true, ca_file: /etc/perfuse/broker-ca.pem}
+```
+
+AWS IoT Core wants a client certificate: give `tls.cert_file` and `tls.key_file`.
+
+## IBM MQ
+
+`ibm_mq` reads and writes IBM MQ queues through the queue manager's messaging REST API (mqweb), which IBM MQ 9.1.5 and later ship on
+every platform, z/OS included, so no MQ client is installed beside Perfuse. The user needs the `MQWebUser` role and put, get and browse
+authority on the queue. A source browses the first message, hands it to the channel, and removes it by its message id only once it
+was handled; a message that fails stays first on the queue. Run one reader per queue. A destination puts persistent messages (unless
+`non_persistent`), with the HL7 control id as the correlation id.
+
+```yaml
+destinations:
+  - name: to-mainframe
+    type: ibm_mq
+    ibm_mq:
+      url: https://mq.hospital.local:9443
+      queue_manager: QM1
+      queue: HL7.ADT.OUT
+      username: perfuse
+      password: ${IBM_MQ_PASSWORD}
+      tls: {enabled: true, ca_file: /etc/perfuse/mq-ca.pem}
+```
+
+`api_version` is `v3` for MQ 9.3 and later (the default), `v2` for 9.1.5 to 9.2. A queue manager with an AMQP channel can also be
+reached with the `amqp` connector.
+
+## Google Cloud Pub/Sub and Cloud Storage
+
+A `pubsub` source pulls from a subscription and acknowledges each message once handled; one that fails is handed back at once
+(its acknowledgement deadline set to zero), with the rest of its batch, so Pub/Sub delivers it again and, past the subscription's
+dead-letter policy, dead-letters it. A `pubsub` destination publishes with the HL7 message type and control id as attributes;
+`order_by: patient` sets the ordering key from PID-3.1, so a subscription with message ordering keeps each patient's messages in order.
+
+A `gcs` destination writes an object per message, named as an S3 key is, in the storage class chosen (STANDARD, NEARLINE, COLDLINE,
+ARCHIVE). A `gcs` source picks objects up from a prefix and moves them to `processed/` or `error/` as the S3 source does.
+
+Both sign in as a service account: `credentials_file` is its JSON key. Leave it empty on Google Cloud (a VM, GKE or Cloud Run) to use
+the service account attached there. `endpoint` names an emulator (the Pub/Sub emulator, fake-gcs-server), which takes no credentials.
+
+```yaml
+source:
+  type: pubsub
+  pubsub:
+    project: hospital-integration
+    subscription: adt-to-perfuse
+    credentials_file: /etc/perfuse/gcp-key.json
+```
+
 ## Delivery to another channel
 
 A channel destination hands the message to another channel by name. The receiving channel treats it like any other arrival: it records it, filters it, transforms it and fans it out.

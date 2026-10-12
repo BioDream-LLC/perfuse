@@ -85,6 +85,38 @@ start localstack -p 4566:4566 -e SERVICES=s3,sqs,sns localstack/localstack:4
 start rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER=perfuse -e RABBITMQ_DEFAULT_PASS=perfuse rabbitmq:4-management
 start azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0
 
+# MQTT 3.1.1: Mosquitto with a password (user perfuse) and persistence, so a source's session survives a reconnect.
+mq_dir="$HOME/.cache/perfuse-interop/mosquitto"
+mkdir -p "$mq_dir"
+printf 'listener 1883\nallow_anonymous false\npassword_file /mosquitto/config/passwd\npersistence true\n' > "$mq_dir/mosquitto.conf"
+[ -f "$mq_dir/passwd" ] || docker run --rm -v "$mq_dir:/mosquitto/config" eclipse-mosquitto:2.0.20 \
+  mosquitto_passwd -b -c /mosquitto/config/passwd perfuse perfuse
+start mosquitto -p 1883:1883 -v "$mq_dir:/mosquitto/config" eclipse-mosquitto:2.0.20
+
+# Azure Service Bus: Microsoft's emulator, which keeps its state in Azure SQL Edge. AMQP on 5674 (5672 is RabbitMQ's); the queues are
+# perfuse-in and perfuse-out, the policy RootManageSharedAccessKey with key SAS_KEY_VALUE. Test it with
+#   PERFUSE_AMQP="servicebus-emulator,127.0.0.1:5674,RootManageSharedAccessKey,SAS_KEY_VALUE,perfuse-in" go test ./internal/amqp
+sb_dir="$HOME/.cache/perfuse-interop/servicebus"
+mkdir -p "$sb_dir"
+q='{"Name":"%s","Properties":{"DeadLetteringOnMessageExpiration":false,"DefaultMessageTimeToLive":"PT1H","DuplicateDetectionHistoryTimeWindow":"PT20S","ForwardDeadLetteredMessagesTo":"","ForwardTo":"","LockDuration":"PT1M","MaxDeliveryCount":10,"RequiresDuplicateDetection":false,"RequiresSession":false}}'
+printf '{"UserConfig":{"Namespaces":[{"Name":"sbemulatorns","Queues":['"$q,$q"'],"Topics":[]}],"Logging":{"Type":"File"}}}' \
+  perfuse-in perfuse-out > "$sb_dir/Config.json"
+docker network create perfuse-sb >/dev/null 2>&1 || true
+start sqledge --network perfuse-sb -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=Perfuse-Test-1 mcr.microsoft.com/azure-sql-edge:latest
+start sbemu --network perfuse-sb -p 5674:5672 -v "$sb_dir/Config.json:/ServiceBus_Emulator/ConfigFiles/Config.json" \
+  -e SQL_SERVER=sqledge -e MSSQL_SA_PASSWORD=Perfuse-Test-1 -e ACCEPT_EULA=Y mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+
+# Google Cloud: the Pub/Sub emulator and fake-gcs-server. Neither checks credentials.
+start pubsub -p 8085:8085 gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators \
+  gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 --project=perfuse-test
+start fakegcs -p 4443:4443 fsouza/fake-gcs-server:1.52.2 -scheme http -port 4443 -public-host 127.0.0.1:4443
+
+# IBM MQ Advanced for Developers, with the messaging REST API on 9443 (user app, password passw0rd). IBM publishes no arm64
+# image and its amd64 image will not start emulated, so on Apple silicon build one first from github.com/ibm-messaging/mq-container
+# (MQ_VERSION=10.0.0.0 make build-devserver) and set PERFUSE_MQ_IMAGE to it.
+start ibmmq -p 9443:9443 -p 1414:1414 -e LICENSE=accept -e MQ_QMGR_NAME=QM1 -e MQ_APP_PASSWORD=passw0rd \
+  -e MQ_ADMIN_PASSWORD=passw0rd "${PERFUSE_MQ_IMAGE:-icr.io/ibm-messaging/mq:latest}"
+
 # The Mirth family: where a site leaving Mirth goes. Mirth 4.5.2 is the last open-source release; the Open Integration Engine (the
 # Eclipse fork) and BridgeLink (Innovar's fork) continue it. OIE publishes images only up to 4.5.2, so 4.6.0 is built locally from
 # the project's signed release tarball, with its checksum verified first. OIE's image is amd64 only and runs emulated on Apple silicon.
@@ -137,5 +169,5 @@ Ready. What each one unlocks:
 Every one of those tests skips rather than fails when its container is absent, so `make check` passes on a
 machine with no Docker. That is deliberate: a check that needs Docker is a check people stop running.
 
-Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460 localstack rabbitmq azurite
+Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460 localstack rabbitmq azurite mosquitto pubsub fakegcs ibmmq sqledge sbemu
 MSG

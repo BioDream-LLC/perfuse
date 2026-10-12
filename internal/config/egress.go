@@ -93,6 +93,28 @@ func (d *Destination) OutboundHosts() []string {
 		if d.AMQP != nil {
 			add(d.AMQP.Addr)
 		}
+	case DestinationMQTT:
+		if d.MQTT != nil {
+			add(d.MQTT.Addr)
+		}
+	case DestinationIBMMQ:
+		if d.IBMMQ != nil {
+			addURL(d.IBMMQ.URL)
+		}
+	case DestinationPubSub:
+		if d.PubSub != nil {
+			if d.PubSub.Endpoint == "" {
+				add("pubsub.googleapis.com")
+			}
+			addURL(d.PubSub.Endpoint)
+		}
+	case DestinationGCS:
+		if d.GCS != nil {
+			if d.GCS.Endpoint == "" {
+				add("storage.googleapis.com")
+			}
+			addURL(d.GCS.Endpoint)
+		}
 	case DestinationSNS:
 		if d.SNS != nil {
 			addURL(d.SNS.Endpoint)

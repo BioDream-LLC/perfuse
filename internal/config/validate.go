@@ -329,6 +329,46 @@ func (s *Source) validate() []error {
 			errs = append(errs, errors.New("source.listen does not apply to an amqp source; it connects out to the broker"))
 		}
 
+	case SourceMQTT:
+		if s.MQTT == nil {
+			errs = append(errs, errors.New("an mqtt source needs an mqtt section with addr and topic"))
+		} else {
+			errs = append(errs, s.MQTT.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to an mqtt source; it connects out to the broker"))
+		}
+
+	case SourceIBMMQ:
+		if s.IBMMQ == nil {
+			errs = append(errs, errors.New("an ibm_mq source needs an ibm_mq section with url, queue_manager and queue"))
+		} else {
+			errs = append(errs, s.IBMMQ.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to an ibm_mq source; it polls the queue"))
+		}
+
+	case SourcePubSub:
+		if s.PubSub == nil {
+			errs = append(errs, errors.New("a pubsub source needs a pubsub section with project and subscription"))
+		} else {
+			errs = append(errs, s.PubSub.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to a pubsub source; it pulls from the subscription"))
+		}
+
+	case SourceGCS:
+		if s.GCS == nil {
+			errs = append(errs, errors.New("a gcs source needs a gcs section with bucket and prefix"))
+		} else {
+			errs = append(errs, s.GCS.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to a gcs source; it polls the bucket"))
+		}
+
 	case SourceAzureBlob:
 		if s.AzureBlob == nil {
 			errs = append(errs, errors.New("an azure_blob source needs an azure_blob section with account, container and prefix"))
@@ -504,7 +544,7 @@ func (s *Source) validate() []error {
 	default:
 		errs = append(errs, fmt.Errorf(
 			"source.type %q is not supported; use mllp, tcp, http, file, database, sftp, ftp, smb, webdav, "+
-				"soap, dicom, dicom_query, broker, kafka, amqp, sqs, s3, azure_blob, serial or javascript", s.Type))
+				"soap, dicom, dicom_query, broker, kafka, amqp, mqtt, ibm_mq, sqs, s3, azure_blob, pubsub, gcs, serial or javascript", s.Type))
 	}
 
 	if s.Type != SourceSerial && s.Serial != nil {
@@ -638,6 +678,34 @@ func (d *Destination) validate(dataType DataType) []error {
 			errs = append(errs, errors.New("an azure_blob destination needs an azure_blob section with account and container"))
 		} else {
 			errs = append(errs, d.AzureBlob.Validate()...)
+		}
+
+	case DestinationMQTT:
+		if d.MQTT == nil {
+			errs = append(errs, errors.New("an mqtt destination needs an mqtt section with addr and topic"))
+		} else {
+			errs = append(errs, d.MQTT.Validate()...)
+		}
+
+	case DestinationIBMMQ:
+		if d.IBMMQ == nil {
+			errs = append(errs, errors.New("an ibm_mq destination needs an ibm_mq section with url, queue_manager and queue"))
+		} else {
+			errs = append(errs, d.IBMMQ.Validate()...)
+		}
+
+	case DestinationPubSub:
+		if d.PubSub == nil {
+			errs = append(errs, errors.New("a pubsub destination needs a pubsub section with project and topic"))
+		} else {
+			errs = append(errs, d.PubSub.Validate()...)
+		}
+
+	case DestinationGCS:
+		if d.GCS == nil {
+			errs = append(errs, errors.New("a gcs destination needs a gcs section with bucket"))
+		} else {
+			errs = append(errs, d.GCS.Validate()...)
 		}
 
 	case DestinationAMQP:
@@ -776,7 +844,7 @@ func (d *Destination) validate(dataType DataType) []error {
 		switch d.Type {
 		case DestinationMLLP, DestinationFile, DestinationHTTP, DestinationSFTP, DestinationFTP, DestinationTCP, DestinationS3,
 			DestinationAzureBlob, DestinationSOAP, DestinationBroker, DestinationKafka, DestinationSQS, DestinationSNS,
-			DestinationAMQP, DestinationChannel:
+			DestinationAMQP, DestinationMQTT, DestinationIBMMQ, DestinationPubSub, DestinationGCS, DestinationChannel:
 		default:
 			// These convert or interpret the message rather than deliver it, so an ELR message would never reach anyone.
 			errs = append(errs, fmt.Errorf("an elr block applies to a destination that delivers the HL7 v2 message itself, not a %s destination", d.Type))

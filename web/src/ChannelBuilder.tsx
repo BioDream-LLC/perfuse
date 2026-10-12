@@ -743,7 +743,7 @@ export function ChannelBuilder({
 }
 
 // The destination types an elr block may sit on: those that deliver the HL7 v2 message as it is (config.validate agrees).
-const elrDestinationTypes = new Set(['mllp', 'file', 'http', 'sftp', 'ftp', 'tcp', 's3', 'azure_blob', 'soap', 'broker', 'kafka',
+const elrDestinationTypes = new Set(['mllp', 'file', 'http', 'sftp', 'ftp', 'tcp', 's3', 'azure_blob', 'mqtt', 'ibm_mq', 'pubsub', 'gcs', 'soap', 'broker', 'kafka',
   'sqs', 'sns', 'amqp', 'channel'])
 
 function DestinationCard({
@@ -2140,6 +2140,212 @@ function DestinationCard({
               />
             </Field>
             <Toggle label="Encrypt with TLS" checked={dest.destAmqpTls} onChange={(v) => onChange({ destAmqpTls: v })} />
+          </>
+        )}
+
+        {dest.type === 'mqtt' && (
+          <>
+            <Field label="Broker address" hint="host:port. 8883 is MQTT over TLS.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destMqttAddr}
+                onChange={(e) => onChange({ destMqttAddr: e.target.value })}
+                placeholder="broker.hospital.local:8883"
+              />
+            </Field>
+            <Field label="Topic" hint="No wildcards when publishing.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destMqttTopic}
+                onChange={(e) => onChange({ destMqttTopic: e.target.value })}
+                placeholder="hl7/adt/out"
+              />
+            </Field>
+            <Field label="Username">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destMqttUsername}
+                onChange={(e) => onChange({ destMqttUsername: e.target.value })}
+              />
+            </Field>
+            <Field label="Password" hint="Or ${MQTT_PASSWORD}.">
+              <input
+                type={dest.destMqttPassword.startsWith('${') ? 'text' : 'password'}
+                className="input font-mono text-xs"
+                value={dest.destMqttPassword}
+                onChange={(e) => onChange({ destMqttPassword: e.target.value })}
+              />
+            </Field>
+            <Field label="Client id" hint="Optional. Each connection to a broker needs its own.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destMqttClientId}
+                onChange={(e) => onChange({ destMqttClientId: e.target.value })}
+                placeholder="perfuse-<destination>-<host>"
+              />
+            </Field>
+            <Field label="Quality of service">
+              <select className="input" value={dest.destMqttQos} onChange={(e) => onChange({ destMqttQos: e.target.value as '0' | '1' })}>
+                <option value="1">At least once (QoS 1): confirmed by the broker</option>
+                <option value="0">At most once (QoS 0)</option>
+              </select>
+            </Field>
+            <Toggle label="Encrypt with TLS" checked={dest.destMqttTls} onChange={(v) => onChange({ destMqttTls: v })} />
+            <Toggle label="Retain the last message for late subscribers" checked={dest.destMqttRetain} onChange={(v) => onChange({ destMqttRetain: v })} />
+          </>
+        )}
+
+        {dest.type === 'ibm_mq' && (
+          <>
+            <Field label="mqweb address" hint="The queue manager's web server (IBM MQ 9.1.5 and later).">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destIbmUrl}
+                onChange={(e) => onChange({ destIbmUrl: e.target.value })}
+                placeholder="https://mq.hospital.local:9443"
+              />
+            </Field>
+            <Field label="Queue manager">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destIbmQmgr}
+                onChange={(e) => onChange({ destIbmQmgr: e.target.value })}
+                placeholder="QM1"
+              />
+            </Field>
+            <Field label="Queue">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destIbmQueue}
+                onChange={(e) => onChange({ destIbmQueue: e.target.value })}
+                placeholder="HL7.ADT.OUT"
+              />
+            </Field>
+            <Field label="Username" hint="An mqweb user with the MQWebUser role and put authority on the queue.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destIbmUsername}
+                onChange={(e) => onChange({ destIbmUsername: e.target.value })}
+              />
+            </Field>
+            <Field label="Password" hint="Or ${IBM_MQ_PASSWORD}.">
+              <input
+                type={dest.destIbmPassword.startsWith('${') ? 'text' : 'password'}
+                className="input font-mono text-xs"
+                value={dest.destIbmPassword}
+                onChange={(e) => onChange({ destIbmPassword: e.target.value })}
+              />
+            </Field>
+            <Field label="REST API version">
+              <select
+                className="input"
+                value={dest.destIbmApiVersion}
+                onChange={(e) => onChange({ destIbmApiVersion: e.target.value as typeof dest.destIbmApiVersion })}
+              >
+                <option value="">v3 (MQ 9.3 and later)</option>
+                <option value="v2">v2 (MQ 9.1.5 to 9.2)</option>
+                <option value="v1">v1</option>
+              </select>
+            </Field>
+            <Toggle
+              label="Non-persistent (lost if the queue manager restarts)"
+              checked={dest.destIbmNonPersistent}
+              onChange={(v) => onChange({ destIbmNonPersistent: v })}
+            />
+          </>
+        )}
+
+        {dest.type === 'pubsub' && (
+          <>
+            <Field label="Project">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destPsProject}
+                onChange={(e) => onChange({ destPsProject: e.target.value })}
+                placeholder="hospital-integration"
+              />
+            </Field>
+            <Field label="Topic">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destPsTopic}
+                onChange={(e) => onChange({ destPsTopic: e.target.value })}
+                placeholder="adt-events"
+              />
+            </Field>
+            <Field label="Service account key file" hint="Empty on Google Cloud: the machine's own service account is used. It needs the Pub/Sub Publisher role.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destPsCredentialsFile}
+                onChange={(e) => onChange({ destPsCredentialsFile: e.target.value })}
+                placeholder="/etc/perfuse/gcp-key.json"
+              />
+            </Field>
+            <Field label="Order by" hint="Optional: patient (PID-3.1), channel, or a path such as MSH-4. Needs message ordering on the subscription.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destPsOrderBy}
+                onChange={(e) => onChange({ destPsOrderBy: e.target.value })}
+                placeholder="patient"
+              />
+            </Field>
+            <Field label="Endpoint" hint="Only for the emulator or a regional or private endpoint.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destPsEndpoint}
+                onChange={(e) => onChange({ destPsEndpoint: e.target.value })}
+                placeholder="http://127.0.0.1:8085"
+              />
+            </Field>
+          </>
+        )}
+
+        {dest.type === 'gcs' && (
+          <>
+            <Field label="Bucket">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destGcsBucket}
+                onChange={(e) => onChange({ destGcsBucket: e.target.value })}
+              />
+            </Field>
+            <Field label="Service account key file" hint="Empty on Google Cloud: the machine's own service account is used.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destGcsCredentialsFile}
+                onChange={(e) => onChange({ destGcsCredentialsFile: e.target.value })}
+                placeholder="/etc/perfuse/gcp-key.json"
+              />
+            </Field>
+            <Field label="Object name" hint="Placeholders: ${date} ${date_iso} ${timestamp} ${control_id} ${message_type} ${channel}">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destGcsObject}
+                onChange={(e) => onChange({ destGcsObject: e.target.value })}
+                placeholder="${date}/${channel}/${control_id}.hl7"
+              />
+            </Field>
+            <Field label="Storage class" hint="Archive is the cheapest to keep, and objects in it are billed for at least a year.">
+              <select
+                className="input"
+                value={dest.destGcsStorageClass}
+                onChange={(e) => onChange({ destGcsStorageClass: e.target.value as typeof dest.destGcsStorageClass })}
+              >
+                <option value="">The bucket's default</option>
+                <option value="STANDARD">Standard</option>
+                <option value="NEARLINE">Nearline</option>
+                <option value="COLDLINE">Coldline</option>
+                <option value="ARCHIVE">Archive</option>
+              </select>
+            </Field>
+            <Field label="Endpoint" hint="Only for an emulator or a private endpoint.">
+              <input
+                className="input font-mono text-xs"
+                value={dest.destGcsEndpoint}
+                onChange={(e) => onChange({ destGcsEndpoint: e.target.value })}
+                placeholder="http://127.0.0.1:4443"
+              />
+            </Field>
           </>
         )}
 

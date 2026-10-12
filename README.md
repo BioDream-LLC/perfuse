@@ -42,8 +42,8 @@ SMART Health Links and Cards ·
 C-CDA and CDA · HL7 v3 · delimited and raw formats.
 
 **How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, Kafka, message
-brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ 4), Azure Blob Storage, and AWS — S3, SQS and SNS — twenty source types and
-twenty-two destination types, in both directions.
+brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ 4), MQTT, IBM MQ, Azure Blob Storage, Google Cloud (Pub/Sub and Cloud
+Storage), and AWS — S3, SQS and SNS — twenty-four source types and twenty-six destination types, in both directions.
 
 **What it does beyond moving messages.** A **durable on-disk queue** that keeps ordering and survives a
 restart. **Shadow mode**, so a channel can be changed against real traffic while delivering nothing.
@@ -123,10 +123,10 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"></th><th align="left" valign="middle">20 source types, 22 destination types, in both directions</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"></th><th align="left" valign="middle">24 source types, 26 destination types, in both directions</th></tr></thead>
 <tbody>
-<tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · JavaScript Reader · serial</td></tr>
-<tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</td></tr>
+<tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · JavaScript Reader · serial</td></tr>
+<tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> (any storage class) · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</td></tr>
 <tr><td colspan="2"><b>US Core 9.0.0 for USCDI v6</b>: HL7 v2 converted to FHIR claims US Core only after checking the resource against the profile - Patient, Encounter, labs, diagnoses, allergies, immunizations, notes and more - and the output passes the official HL7 validator with no errors</td></tr>
 <tr><td colspan="2"><b>Signed claims attachments (CMS-0053)</b>: C-CDAs in an X12 275 signed to the HL7 Digital Signatures and Delegation of Rights guide - XAdES-X-L with OCSP and RFC 3161 time-stamps - and checked on the way in. Verified by xmlsec1 and OpenSSL</td></tr>
 <tr><td colspan="2"><b>Da Vinci CRD and DTR</b>: a coverage requirements service over CDS Hooks, answering from the payer's rules file whether an order is covered, needs prior authorization, and which questionnaire gathers the documentation - with DTR's <code>$questionnaire-package</code> on the FHIR endpoint. With PAS, the whole CMS-0057 Prior Authorization API. Validated against the official HL7 validator</td></tr>

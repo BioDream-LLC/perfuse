@@ -531,6 +531,34 @@ func (c *Channel) Start() error {
 		c.resumeQueues(context.Background())
 		return nil
 
+	case config.SourceMQTT:
+		if err := c.startMQTTSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
+	case config.SourceIBMMQ:
+		if err := c.startIBMMQSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
+	case config.SourcePubSub:
+		if err := c.startPubSubSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
+	case config.SourceGCS:
+		if err := c.startGCSSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
 	case config.SourceAMQP:
 		if err := c.startAMQPSource(); err != nil {
 			return err

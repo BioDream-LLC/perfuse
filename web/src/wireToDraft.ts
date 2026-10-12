@@ -189,6 +189,51 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.amqpTls = source.amqp?.tls?.enabled ?? false
       draft.amqpPrefetch = source.amqp?.prefetch ? String(source.amqp.prefetch) : ''
       break
+    case 'mqtt': {
+      const m = source.mqtt
+      draft.mqttSrcAddr = m?.addr ?? ''
+      draft.mqttSrcTopic = m?.topic ?? ''
+      draft.mqttSrcClientId = m?.clientId ?? ''
+      draft.mqttSrcUsername = m?.username ?? ''
+      draft.mqttSrcPassword = m?.password ?? ''
+      draft.mqttSrcTls = m?.tls?.enabled ?? false
+      draft.mqttSrcQos = m?.qos === 0 ? '0' : '1'
+      break
+    }
+    case 'ibm_mq': {
+      const m = source.ibmMq
+      draft.ibmSrcUrl = m?.url ?? ''
+      draft.ibmSrcQmgr = m?.queueManager ?? ''
+      draft.ibmSrcQueue = m?.queue ?? ''
+      draft.ibmSrcUsername = m?.username ?? ''
+      draft.ibmSrcPassword = m?.password ?? ''
+      draft.ibmSrcApiVersion = (m?.apiVersion ?? '') as ChannelDraft['ibmSrcApiVersion']
+      draft.ibmSrcPollSeconds = readSeconds(m?.pollInterval) || 2
+      break
+    }
+    case 'pubsub': {
+      const m = source.pubsub
+      draft.psSrcProject = m?.project ?? ''
+      draft.psSrcSubscription = m?.subscription ?? ''
+      draft.psSrcCredentialsFile = m?.credentialsFile ?? ''
+      draft.psSrcEndpoint = m?.endpoint ?? ''
+      draft.psSrcMaxMessages = m?.maxMessages ? String(m.maxMessages) : ''
+      break
+    }
+    case 'gcs': {
+      const g = source.gcs
+      draft.gcsSrcBucket = g?.bucket ?? ''
+      draft.gcsSrcCredentialsFile = g?.credentialsFile ?? ''
+      draft.gcsSrcEndpoint = g?.endpoint ?? ''
+      draft.gcsSrcPrefix = g?.prefix ?? ''
+      draft.gcsSrcSuffix = g?.suffix ?? ''
+      draft.gcsSrcAfterRead = g?.afterRead === 'delete' ? 'delete' : 'move'
+      draft.gcsSrcMoveTo = g?.moveTo ?? ''
+      draft.gcsSrcErrorPrefix = g?.errorPrefix ?? ''
+      draft.gcsSrcPollSeconds = readSeconds(g?.pollInterval) || 30
+      draft.gcsSrcFramed = g?.framed ?? false
+      break
+    }
     case 'azure_blob': {
       const a = source.azureBlob
       draft.azSrcAccount = a?.account ?? ''
@@ -830,6 +875,39 @@ function readDestination(d: WireDest): Destination {
       dest.destAmqpPassword = d.amqp?.password ?? ''
       dest.destAmqpTls = d.amqp?.tls?.enabled ?? false
       break
+    case 'mqtt':
+      dest.destMqttAddr = d.mqtt?.addr ?? ''
+      dest.destMqttTopic = d.mqtt?.topic ?? ''
+      dest.destMqttClientId = d.mqtt?.clientId ?? ''
+      dest.destMqttUsername = d.mqtt?.username ?? ''
+      dest.destMqttPassword = d.mqtt?.password ?? ''
+      dest.destMqttTls = d.mqtt?.tls?.enabled ?? false
+      dest.destMqttQos = d.mqtt?.qos === 0 ? '0' : '1'
+      dest.destMqttRetain = d.mqtt?.retain ?? false
+      break
+    case 'ibm_mq':
+      dest.destIbmUrl = d.ibmMq?.url ?? ''
+      dest.destIbmQmgr = d.ibmMq?.queueManager ?? ''
+      dest.destIbmQueue = d.ibmMq?.queue ?? ''
+      dest.destIbmUsername = d.ibmMq?.username ?? ''
+      dest.destIbmPassword = d.ibmMq?.password ?? ''
+      dest.destIbmApiVersion = (d.ibmMq?.apiVersion ?? '') as Destination['destIbmApiVersion']
+      dest.destIbmNonPersistent = d.ibmMq?.nonPersistent ?? false
+      break
+    case 'pubsub':
+      dest.destPsProject = d.pubsub?.project ?? ''
+      dest.destPsTopic = d.pubsub?.topic ?? ''
+      dest.destPsCredentialsFile = d.pubsub?.credentialsFile ?? ''
+      dest.destPsEndpoint = d.pubsub?.endpoint ?? ''
+      dest.destPsOrderBy = d.pubsub?.orderBy ?? ''
+      break
+    case 'gcs':
+      dest.destGcsBucket = d.gcs?.bucket ?? ''
+      dest.destGcsCredentialsFile = d.gcs?.credentialsFile ?? ''
+      dest.destGcsEndpoint = d.gcs?.endpoint ?? ''
+      dest.destGcsObject = d.gcs?.object ?? ''
+      dest.destGcsStorageClass = (d.gcs?.storageClass ?? '') as Destination['destGcsStorageClass']
+      break
     case 'azure_blob':
       dest.azAccount = d.azureBlob?.account ?? ''
       dest.azContainer = d.azureBlob?.container ?? ''
@@ -1012,12 +1090,50 @@ interface WireAzureBlob {
   endpoint?: string
 }
 
+interface WireMQTT {
+  addr?: string
+  clientId?: string
+  username?: string
+  password?: string
+  tls?: { enabled?: boolean }
+  qos?: number
+}
+
+interface WireIBMMQ {
+  url?: string
+  queueManager?: string
+  queue?: string
+  username?: string
+  password?: string
+  tls?: { enabled?: boolean }
+  apiVersion?: string
+}
+
+interface WireGCP {
+  project?: string
+  credentialsFile?: string
+  endpoint?: string
+}
+
 interface WireSource {
   type?: string
   listen?: string
 
   sqs?: WireAWSAccess & { queueUrl?: string; waitSeconds?: number; maxMessages?: number; visibilityTimeout?: string }
   amqp?: WireAMQP & { prefetch?: number }
+  mqtt?: WireMQTT & { topic?: string }
+  ibmMq?: WireIBMMQ & { pollInterval?: string }
+  pubsub?: WireGCP & { subscription?: string; maxMessages?: number }
+  gcs?: WireGCP & {
+    bucket?: string
+    prefix?: string
+    suffix?: string
+    afterRead?: string
+    moveTo?: string
+    errorPrefix?: string
+    pollInterval?: string
+    framed?: boolean
+  }
   azureBlob?: WireAzureBlob & {
     prefix?: string
     suffix?: string
@@ -1240,6 +1356,10 @@ interface WireDest {
   sns?: WireAWSAccess & { topicArn?: string; subject?: string; groupBy?: string }
   amqp?: WireAMQP
   azureBlob?: WireAzureBlob & { blob?: string; tier?: string }
+  mqtt?: WireMQTT & { topic?: string; retain?: boolean }
+  ibmMq?: WireIBMMQ & { nonPersistent?: boolean }
+  pubsub?: WireGCP & { topic?: string; orderBy?: string }
+  gcs?: WireGCP & { bucket?: string; object?: string; storageClass?: string }
   name?: string
   type?: string
   enabled?: boolean

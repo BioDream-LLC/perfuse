@@ -238,6 +238,18 @@ const (
 
 	// SourceAzureBlob picks blobs up from an Azure Blob Storage container prefix.
 	SourceAzureBlob SourceType = "azure_blob"
+
+	// SourceMQTT subscribes to an MQTT 3.1.1 topic filter: Mosquitto, EMQX, HiveMQ, AWS IoT Core, Azure Event Grid.
+	SourceMQTT SourceType = "mqtt"
+
+	// SourceIBMMQ reads an IBM MQ queue through the queue manager's messaging REST API.
+	SourceIBMMQ SourceType = "ibm_mq"
+
+	// SourcePubSub pulls from a Google Cloud Pub/Sub subscription.
+	SourcePubSub SourceType = "pubsub"
+
+	// SourceGCS picks objects up from a Google Cloud Storage bucket prefix.
+	SourceGCS SourceType = "gcs"
 )
 
 // Source is where a channel receives messages.
@@ -311,6 +323,18 @@ type Source struct {
 
 	// AzureBlob applies to an azure_blob source.
 	AzureBlob *AzureBlobSource `yaml:"azure_blob,omitempty"`
+
+	// MQTT applies to an mqtt source.
+	MQTT *MQTTSource `yaml:"mqtt,omitempty"`
+
+	// IBMMQ applies to an ibm_mq source.
+	IBMMQ *IBMMQSource `yaml:"ibm_mq,omitempty"`
+
+	// PubSub applies to a pubsub source.
+	PubSub *PubSubSource `yaml:"pubsub,omitempty"`
+
+	// GCS applies to a gcs source.
+	GCS *GCSSource `yaml:"gcs,omitempty"`
 
 	// Database configures a database source.
 	Database *DatabaseSource `yaml:"database,omitempty"`
@@ -414,6 +438,18 @@ const (
 
 	// DestinationAzureBlob writes each message as a blob in Azure Blob Storage, in the access tier chosen.
 	DestinationAzureBlob DestinationType = "azure_blob"
+
+	// DestinationMQTT publishes to an MQTT 3.1.1 topic.
+	DestinationMQTT DestinationType = "mqtt"
+
+	// DestinationIBMMQ puts each message on an IBM MQ queue through the messaging REST API.
+	DestinationIBMMQ DestinationType = "ibm_mq"
+
+	// DestinationPubSub publishes to a Google Cloud Pub/Sub topic.
+	DestinationPubSub DestinationType = "pubsub"
+
+	// DestinationGCS writes each message as an object in Google Cloud Storage.
+	DestinationGCS DestinationType = "gcs"
 	// DestinationSMTP sends the message, or a note about it, as email. Its usual
 	// purpose is not integration but notification: a coordinator told when a
 	// particular order type arrives, or a daily report that a feed produced
@@ -454,6 +490,10 @@ var allDestinationTypes = []DestinationType{
 	DestinationSNS,
 	DestinationAMQP,
 	DestinationAzureBlob,
+	DestinationMQTT,
+	DestinationIBMMQ,
+	DestinationPubSub,
+	DestinationGCS,
 	DestinationJavaScript,
 	DestinationChannel,
 }
@@ -552,6 +592,18 @@ type Destination struct {
 
 	// AzureBlob applies to an azure_blob destination.
 	AzureBlob *AzureBlobDestination `yaml:"azure_blob,omitempty"`
+
+	// MQTT applies to an mqtt destination.
+	MQTT *MQTTDestination `yaml:"mqtt,omitempty"`
+
+	// IBMMQ applies to an ibm_mq destination.
+	IBMMQ *IBMMQDestination `yaml:"ibm_mq,omitempty"`
+
+	// PubSub applies to a pubsub destination.
+	PubSub *PubSubDestination `yaml:"pubsub,omitempty"`
+
+	// GCS applies to a gcs destination.
+	GCS *GCSDestination `yaml:"gcs,omitempty"`
 
 	// ELR makes this a public health lab reporting destination: each lab result (ORU^R01) is reshaped into an ELR 2.5.1
 	// message holding only the orders with a reportable result, and that is what is delivered; a message with nothing

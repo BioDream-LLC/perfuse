@@ -166,7 +166,34 @@ Azure Blob (`internal/azblob`) against Azurite, which checks Shared Key signatur
 from the blob. A channel took blobs from one container to another, moving the good one to `processed/` and the unparseable one to
 `error/`.
 
-What this does not show: Azure Service Bus itself, whose emulator needs SQL Server beside it; Event Hubs; SAS tokens against Azure.
+Azure Service Bus, against Microsoft's Service Bus emulator (with Azure SQL Edge beside it): the same send, release, redeliver and
+accept run passed unchanged, signing in with SASL PLAIN as the policy name and key, as Service Bus itself accepts.
+
+What this does not show: Service Bus in Azure, over TLS on 5671; Event Hubs; SAS tokens against Azure.
+
+## MQTT, IBM MQ and Google Cloud, against Mosquitto, IBM MQ 10 and Google's emulators
+
+Four connectors added together, each tested against the real software or the vendor's own emulator, and each in a channel that read
+from one place and delivered to another, leaving nothing behind at the source.
+
+- **MQTT** (`internal/mqtt`, written to the MQTT 3.1.1 standard), against Mosquitto 2.0 with a password file and persistence: a wrong
+  password refused by the broker; a persistent session subscribed and left; three messages published while it was away, one 260 KB;
+  the session returned and took the first without acknowledging it (a failed handling); on the next return the broker sent it again,
+  then the other two, in order.
+- **IBM MQ** (`internal/ibmmq`, the messaging REST API), against IBM MQ Advanced for Developers 10.0.0.0, built for arm64 from IBM's
+  mq-container repository because IBM's published amd64 image will not start under emulation: put, browse twice (the same message,
+  not removed), remove by message id, removing it again reported as gone, a 260 KB message, and a wrong password refused with 401. The
+  channel spoke TLS and checked the queue manager's certificate against a CA file, as a site would.
+- **Google Cloud Pub/Sub** (`internal/gcp`), against Google's Pub/Sub emulator: publish with attributes and an ordering key, pull, a
+  nack redelivering the same message, an ack leaving the subscription empty.
+- **Google Cloud Storage**, against fake-gcs-server: multipart upload with a storage class, list, get (a name with a space, a 650 KB
+  object, one refused over the size limit), delete, deleting again not an error. The channel moved the object to `processed/`.
+- **Service account sign-in**: the JWT Google's token endpoint takes, checked by a test endpoint that verifies the RS256 signature,
+  the key id, the scope and the audience, and the token reused until it nears expiry.
+
+What this does not show: Google Cloud itself (the emulators take no credentials, so the signed sign-in is held only to the test
+endpoint); fake-gcs-server does not page a listing, so paging is untested; AWS IoT Core and Azure Event Grid's MQTT broker; IBM MQ on
+z/OS; the REST API's v1 and v2.
 
 ## SMART Health Links and Cards, against kill-the-clipboard and the specification's examples
 

@@ -212,6 +212,26 @@ func describeSource(c *config.Channel) string {
 		}
 		return "sqs " + src.SQS.QueueURL
 
+	case config.SourceMQTT:
+		if src.MQTT == nil {
+			return "an MQTT topic"
+		}
+		return "mqtt " + src.MQTT.Topic + " at " + src.MQTT.Addr
+	case config.SourceIBMMQ:
+		if src.IBMMQ == nil {
+			return "an IBM MQ queue"
+		}
+		return "ibm mq " + src.IBMMQ.QueueManager + "/" + src.IBMMQ.Queue
+	case config.SourcePubSub:
+		if src.PubSub == nil {
+			return "a Pub/Sub subscription"
+		}
+		return "pubsub " + src.PubSub.Project + "/" + src.PubSub.Subscription
+	case config.SourceGCS:
+		if src.GCS == nil {
+			return "a Cloud Storage bucket"
+		}
+		return "gcs gs://" + src.GCS.Bucket + "/" + src.GCS.Prefix
 	case config.SourceAMQP:
 		if src.AMQP == nil {
 			return "an AMQP queue"
@@ -419,6 +439,30 @@ func describeDestination(d config.Destination) string {
 			out = "an SNS topic"
 		}
 
+	case config.DestinationMQTT:
+		if d.MQTT != nil {
+			out = "mqtt " + d.MQTT.Topic + " at " + d.MQTT.Addr
+		} else {
+			out = "an MQTT topic"
+		}
+	case config.DestinationIBMMQ:
+		if d.IBMMQ != nil {
+			out = "ibm mq " + d.IBMMQ.QueueManager + "/" + d.IBMMQ.Queue
+		} else {
+			out = "an IBM MQ queue"
+		}
+	case config.DestinationPubSub:
+		if d.PubSub != nil {
+			out = "pubsub " + d.PubSub.Project + "/" + d.PubSub.Topic
+		} else {
+			out = "a Pub/Sub topic"
+		}
+	case config.DestinationGCS:
+		if d.GCS != nil {
+			out = "gcs gs://" + d.GCS.Bucket + "/" + d.GCS.Object
+		} else {
+			out = "a Cloud Storage bucket"
+		}
 	case config.DestinationAMQP:
 		if d.AMQP != nil {
 			out = "amqp " + d.AMQP.Address + " at " + d.AMQP.Addr

@@ -26,6 +26,10 @@ export type DestinationType =
   | 'sns'
   | 'amqp'
   | 'azure_blob'
+  | 'mqtt'
+  | 'ibm_mq'
+  | 'pubsub'
+  | 'gcs'
   | 'ftp'
   | 'document'
   | 'soap'
@@ -55,6 +59,10 @@ export const destinationLabels: Record<DestinationType, string> = {
   sns: 'An Amazon SNS topic',
   amqp: 'An AMQP 1.0 queue (Azure Service Bus, RabbitMQ)',
   'azure_blob': 'Azure Blob Storage',
+  mqtt: 'An MQTT topic',
+  'ibm_mq': 'An IBM MQ queue',
+  pubsub: 'A Google Cloud Pub/Sub topic',
+  gcs: 'Google Cloud Storage',
 }
 
 export const destinationHints: Record<DestinationType, string> = {
@@ -93,6 +101,12 @@ export const destinationHints: Record<DestinationType, string> = {
   amqp: 'Sends over AMQP 1.0, the protocol of Azure Service Bus and Event Hubs, RabbitMQ 4, ActiveMQ and Artemis. A delivery counts only once the broker accepts the message. For Service Bus: the namespace on port 5671 with TLS, the shared access policy name and key, and the queue name.',
   'azure_blob':
     'Writes each message as a blob, in the access tier you choose. Archive is the cheapest to keep and is offline: reading a blob back means rehydrating it, which takes hours. Prefer a SAS token limited to the container over the account key.',
+  mqtt: 'Publishes to an MQTT topic: Mosquitto, EMQX, HiveMQ, AWS IoT Core, Azure Event Grid. At QoS 1 (the default) a delivery counts only once the broker has the message. Use port 8883 with TLS; AWS IoT Core also wants a client certificate.',
+  'ibm_mq':
+    'Puts each message on an IBM MQ queue through the queue manager\'s messaging REST API (mqweb, MQ 9.1.5 and later), so no MQ client needs installing. The user needs the MQWebUser role and put authority on the queue. Messages are persistent unless you turn that off.',
+  pubsub:
+    'Publishes to a Google Cloud Pub/Sub topic. Order by patient to keep one patient\'s messages in order at a subscription with message ordering on. Without a credentials file, the service account of the Google Cloud machine Perfuse runs on is used.',
+  gcs: 'Writes each message as an object in a Cloud Storage bucket, in the storage class you choose. Archive is the cheapest to keep; objects there are billed for at least a year.',
   sns: 'Publishes each message to an SNS topic, for fanning out to several subscribers - queues, Lambda functions, email. Email and SMS subscribers receive patient data in the clear, so subscribe queues rather than people.',
 }
 
@@ -514,6 +528,37 @@ export interface Destination {
   azBlob: string
   azTier: '' | 'Hot' | 'Cool' | 'Cold' | 'Archive'
 
+  // MQTT.
+  destMqttAddr: string
+  destMqttTopic: string
+  destMqttClientId: string
+  destMqttUsername: string
+  destMqttPassword: string
+  destMqttTls: boolean
+  destMqttQos: '0' | '1'
+  destMqttRetain: boolean
+
+  // IBM MQ.
+  destIbmUrl: string
+  destIbmQmgr: string
+  destIbmQueue: string
+  destIbmUsername: string
+  destIbmPassword: string
+  destIbmApiVersion: '' | 'v1' | 'v2' | 'v3'
+  destIbmNonPersistent: boolean
+
+  // Google Cloud.
+  destPsProject: string
+  destPsTopic: string
+  destPsCredentialsFile: string
+  destPsEndpoint: string
+  destPsOrderBy: string
+  destGcsBucket: string
+  destGcsCredentialsFile: string
+  destGcsEndpoint: string
+  destGcsObject: string
+  destGcsStorageClass: '' | 'STANDARD' | 'NEARLINE' | 'COLDLINE' | 'ARCHIVE'
+
   /** routeTo is the name of another channel to hand the message to. */
   routeTo: string
   smtpUsername: string
@@ -544,6 +589,10 @@ export type SourceKind =
   | 's3'
   | 'amqp'
   | 'azure_blob'
+  | 'mqtt'
+  | 'ibm_mq'
+  | 'pubsub'
+  | 'gcs'
   | 'soap'
   | 'file'
   | 'ftp'
@@ -1124,6 +1173,39 @@ export interface ChannelDraft {
   azSrcPollSeconds: number
   azSrcFramed: boolean
 
+  mqttSrcAddr: string
+  mqttSrcTopic: string
+  mqttSrcClientId: string
+  mqttSrcUsername: string
+  mqttSrcPassword: string
+  mqttSrcTls: boolean
+  mqttSrcQos: '0' | '1'
+
+  ibmSrcUrl: string
+  ibmSrcQmgr: string
+  ibmSrcQueue: string
+  ibmSrcUsername: string
+  ibmSrcPassword: string
+  ibmSrcApiVersion: '' | 'v1' | 'v2' | 'v3'
+  ibmSrcPollSeconds: number
+
+  psSrcProject: string
+  psSrcSubscription: string
+  psSrcCredentialsFile: string
+  psSrcEndpoint: string
+  psSrcMaxMessages: string
+
+  gcsSrcBucket: string
+  gcsSrcCredentialsFile: string
+  gcsSrcEndpoint: string
+  gcsSrcPrefix: string
+  gcsSrcSuffix: string
+  gcsSrcAfterRead: 'move' | 'delete'
+  gcsSrcMoveTo: string
+  gcsSrcErrorPrefix: string
+  gcsSrcPollSeconds: number
+  gcsSrcFramed: boolean
+
   ftpSrcHost: string
   ftpSrcUser: string
   ftpSrcPassword: string
@@ -1400,6 +1482,52 @@ export function draftToWire(draft: ChannelDraft): unknown {
         password: draft.amqpPassword || undefined,
         tls: draft.amqpTls ? { enabled: true } : undefined,
         prefetch: positiveOrNone(draft.amqpPrefetch),
+      }
+      break
+    case 'mqtt':
+      source.mqtt = {
+        addr: draft.mqttSrcAddr || undefined,
+        topic: draft.mqttSrcTopic || undefined,
+        clientId: draft.mqttSrcClientId || undefined,
+        username: draft.mqttSrcUsername || undefined,
+        password: draft.mqttSrcPassword || undefined,
+        tls: draft.mqttSrcTls ? { enabled: true } : undefined,
+        qos: draft.mqttSrcQos === '0' ? 0 : undefined,
+      }
+      break
+    case 'ibm_mq':
+      source.ibmMq = {
+        url: draft.ibmSrcUrl || undefined,
+        queueManager: draft.ibmSrcQmgr || undefined,
+        queue: draft.ibmSrcQueue || undefined,
+        username: draft.ibmSrcUsername || undefined,
+        password: draft.ibmSrcPassword || undefined,
+        tls: draft.ibmSrcUrl.startsWith('https://') ? { enabled: true } : undefined,
+        apiVersion: draft.ibmSrcApiVersion || undefined,
+        pollInterval: secondsOrNone(draft.ibmSrcPollSeconds),
+      }
+      break
+    case 'pubsub':
+      source.pubsub = {
+        project: draft.psSrcProject || undefined,
+        subscription: draft.psSrcSubscription || undefined,
+        credentialsFile: draft.psSrcCredentialsFile || undefined,
+        endpoint: draft.psSrcEndpoint || undefined,
+        maxMessages: positiveOrNone(draft.psSrcMaxMessages),
+      }
+      break
+    case 'gcs':
+      source.gcs = {
+        bucket: draft.gcsSrcBucket || undefined,
+        credentialsFile: draft.gcsSrcCredentialsFile || undefined,
+        endpoint: draft.gcsSrcEndpoint || undefined,
+        prefix: draft.gcsSrcPrefix || undefined,
+        suffix: draft.gcsSrcSuffix || undefined,
+        afterRead: draft.gcsSrcAfterRead === 'delete' ? 'delete' : undefined,
+        moveTo: draft.gcsSrcAfterRead === 'move' ? draft.gcsSrcMoveTo || undefined : undefined,
+        errorPrefix: draft.gcsSrcErrorPrefix || undefined,
+        pollInterval: secondsOrNone(draft.gcsSrcPollSeconds),
+        framed: draft.gcsSrcFramed || undefined,
       }
       break
     case 'azure_blob':
@@ -2170,6 +2298,48 @@ function destinationToWire(d: Destination): unknown {
         tls: d.destAmqpTls ? { enabled: true } : undefined,
       }
       break
+    case 'mqtt':
+      out.mqtt = {
+        addr: d.destMqttAddr || undefined,
+        topic: d.destMqttTopic || undefined,
+        clientId: d.destMqttClientId || undefined,
+        username: d.destMqttUsername || undefined,
+        password: d.destMqttPassword || undefined,
+        tls: d.destMqttTls ? { enabled: true } : undefined,
+        qos: d.destMqttQos === '0' ? 0 : undefined,
+        retain: d.destMqttRetain || undefined,
+      }
+      break
+    case 'ibm_mq':
+      out.ibmMq = {
+        url: d.destIbmUrl || undefined,
+        queueManager: d.destIbmQmgr || undefined,
+        queue: d.destIbmQueue || undefined,
+        username: d.destIbmUsername || undefined,
+        password: d.destIbmPassword || undefined,
+        tls: d.destIbmUrl.startsWith('https://') ? { enabled: true } : undefined,
+        apiVersion: d.destIbmApiVersion || undefined,
+        nonPersistent: d.destIbmNonPersistent || undefined,
+      }
+      break
+    case 'pubsub':
+      out.pubsub = {
+        project: d.destPsProject || undefined,
+        topic: d.destPsTopic || undefined,
+        credentialsFile: d.destPsCredentialsFile || undefined,
+        endpoint: d.destPsEndpoint || undefined,
+        orderBy: d.destPsOrderBy || undefined,
+      }
+      break
+    case 'gcs':
+      out.gcs = {
+        bucket: d.destGcsBucket || undefined,
+        credentialsFile: d.destGcsCredentialsFile || undefined,
+        endpoint: d.destGcsEndpoint || undefined,
+        object: d.destGcsObject || undefined,
+        storageClass: d.destGcsStorageClass || undefined,
+      }
+      break
     case 'azure_blob':
       out.azureBlob = {
         account: d.azAccount || undefined,
@@ -2414,6 +2584,31 @@ export function newDestination(): Destination {
     azEndpoint: '',
     azBlob: '',
     azTier: '',
+    destMqttAddr: '',
+    destMqttTopic: '',
+    destMqttClientId: '',
+    destMqttUsername: '',
+    destMqttPassword: '',
+    destMqttTls: true,
+    destMqttQos: '1',
+    destMqttRetain: false,
+    destIbmUrl: '',
+    destIbmQmgr: '',
+    destIbmQueue: '',
+    destIbmUsername: '',
+    destIbmPassword: '',
+    destIbmApiVersion: '',
+    destIbmNonPersistent: false,
+    destPsProject: '',
+    destPsTopic: '',
+    destPsCredentialsFile: '',
+    destPsEndpoint: '',
+    destPsOrderBy: '',
+    destGcsBucket: '',
+    destGcsCredentialsFile: '',
+    destGcsEndpoint: '',
+    destGcsObject: '',
+    destGcsStorageClass: '',
     routeTo: '',
     smtpUsername: '',
     smtpPassword: '',
@@ -2699,6 +2894,39 @@ export function emptyDraft(): ChannelDraft {
     azSrcErrorPrefix: '',
     azSrcPollSeconds: 30,
     azSrcFramed: false,
+
+    mqttSrcAddr: '',
+    mqttSrcTopic: '',
+    mqttSrcClientId: '',
+    mqttSrcUsername: '',
+    mqttSrcPassword: '',
+    mqttSrcTls: true,
+    mqttSrcQos: '1',
+
+    ibmSrcUrl: '',
+    ibmSrcQmgr: '',
+    ibmSrcQueue: '',
+    ibmSrcUsername: '',
+    ibmSrcPassword: '',
+    ibmSrcApiVersion: '',
+    ibmSrcPollSeconds: 2,
+
+    psSrcProject: '',
+    psSrcSubscription: '',
+    psSrcCredentialsFile: '',
+    psSrcEndpoint: '',
+    psSrcMaxMessages: '',
+
+    gcsSrcBucket: '',
+    gcsSrcCredentialsFile: '',
+    gcsSrcEndpoint: '',
+    gcsSrcPrefix: 'inbound/',
+    gcsSrcSuffix: '',
+    gcsSrcAfterRead: 'move',
+    gcsSrcMoveTo: '',
+    gcsSrcErrorPrefix: '',
+    gcsSrcPollSeconds: 30,
+    gcsSrcFramed: false,
 
     ftpSrcHost: '',
     ftpSrcUser: '',
