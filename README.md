@@ -48,15 +48,16 @@ Storage), and AWS — S3, SQS and SNS — twenty-four source types and twenty-si
 **What it does beyond moving messages.** A **durable on-disk queue** that keeps ordering and survives a
 restart. **Shadow mode**, so a channel can be changed against real traffic while delivering nothing.
 **Feed contracts** that tell you when a sender quietly changes something. **TEFCA and UDAP** for exchanging
-records with organisations you have no direct connection to. **The four CMS-0057 payer APIs**, with claims
+records with organisations you have no direct connection to. **The four CMS-0057 payer APIs** and a **Plan-Net provider directory**, with claims
 as CARIN Blue Button, prior authorisations as Da Vinci PDex and the yearly metrics page. **eCR** public health case reporting. **SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual
 TLS** for sign-on. Metrics, alerting, tracing, an audit log, and a searchable message store.
 
 **And it is one file.** Written in Go, licensed under **Apache 2.0**, running on **Linux, macOS and Windows**
 with nothing installed beside it — no Java runtime, no application server, no database to stand up first. The
 web console is compiled into the binary, and **everything the configuration files can express can also be done
-from the browser.** That is a rule this project holds itself to, not an aspiration: a feature reachable only
-from YAML is treated as a bug.
+from the browser,** start-up options included: each `perfuse serve` flag that turns on a feature is also a setting in the
+console, applied at the next restart. That is a rule this project holds itself to, not an aspiration: a feature reachable
+only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
@@ -200,6 +201,8 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2">Or be the payer: a <b>Da Vinci PAS 2.2.1 server</b> with <code>Claim/$submit</code>, <code>$inquire</code> and a reviewer's <code>$decide</code>, pended decisions delivered by subscription, and a <b>reviewer queue</b> in the console that reads each pended request with the documents sent for it (<code>$submit-attachment</code>) and approves, denies or certifies fewer units. <b>Inferno PAS Server suite 82 of 84</b>; the two left are must-support elements PAS's own extension contexts forbid there</td></tr>
 <tr><td colspan="2">Da Vinci <b>CRD 2.2.1</b> over CDS Hooks and <b>DTR 2.2.0</b> questionnaire packages, so the order, its documentation and the request all have an answer. Drugs are out of scope, as they are in the rule</td></tr>
 <tr><td colspan="2">Inferno's <b>CRD Server 2.2.1 suite passes</b>, and the <b>DTR Payer Server 2.2.0 suite 43 of 45</b>; the two left require an extension DTR's base profile allows zero times</td></tr>
+<tr><td colspan="2">Payer-to-Payer and Provider Access tested too: Inferno's <b>PDex 2.0 payer-to-payer workflow 19 of 19</b> and API coverage 312 pass, 1 skip; <b>Bulk Data 2.0 48 of 48</b></td></tr>
+<tr><td colspan="2">A <b>Da Vinci Plan-Net 1.1.0 provider directory</b>: every Plan-Net search, include and reverse chain (<code>_has</code>). Inferno 199 pass; the 10 left are the kit's choice of search values (its issue 34)</td></tr>
 </tbody></table>
 
 <table width="100%">
@@ -463,7 +466,7 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | **The FHIR R4 specification's own examples** | All 2,912 example files the standard's authors published. 13,723 resources validated, none reported wrongly. Found a bundle whose invalid content was being reported as a missing feature, exiting zero under `-strict` |
 | **The HAPI HL7 v2 test corpus** | 59 of the reference Java implementation's own awkward messages — uuencoded payloads, escaped delimiters, repeating groups — all parsed |
 | **SIGKILL, mid-batch** | 255 messages acknowledged across five hard kills, 255 present downstream, none lost and none duplicated. The numbers for the weaker acknowledgement mode are published too |
-| **Inferno, ONC's test kits** (run locally) | SMART App Launch STU2.2 80/80 · Da Vinci CRD Server 2.2.1 passes · PAS Server 2.2.1 82/84 · DTR Payer Server 2.2.0 43/45 · US Core 6.1.0 FHIR API 225 → 323 passing. Every failure left is explained in the record |
+| **Inferno, ONC's test kits** (hosted, against [test.perfuse.health](https://test.perfuse.health)) | SMART App Launch STU2.2 80/80 · Bulk Data 2.0 48/48 · PDex 2.0 payer-to-payer 19/19, coverage 312 + 1 skip · Da Vinci CRD Server 2.2.1 passes · PAS Server 2.2.1 82/84 · DTR Payer Server 2.2.0 43/45 · Plan-Net 1.1.0 199 pass, 10 fail · US Core 6.1.0 FHIR API 323 passing (locally). Every failure left is explained in the record |
 | **The HL7 validator, on other people's v2** | Microsoft FHIR-Converter's 139 samples, 81 French national and NHS Wales samples, the NHS nw-gmsa set and messages posted on chat.fhir.org, converted and validated as whole bundles. What is left are codes the senders sent |
 
 Interoperability tests run against containers, not stubs. Where a real product's behaviour contradicted
