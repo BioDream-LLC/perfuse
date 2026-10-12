@@ -176,4 +176,3 @@ func (s *Server) requireRuntimeFor(w http.ResponseWriter, r *http.Request, sess 
 	_, ok := s.runtimeFor(w, r, sess)
 	return ok
 }
-

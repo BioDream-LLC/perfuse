@@ -53,7 +53,7 @@ type navItem struct {
 
 type navSection struct {
 	key, title, href string
-	items           []navItem
+	items            []navItem
 }
 
 // menu is the site's top menu. key matches a page's section, so the menu marks where the reader is.
