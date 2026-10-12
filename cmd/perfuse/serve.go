@@ -88,9 +88,9 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	logFile := fset.String("log-file", "", "append the log, and the first administrator's one-time password, to this file (mode 0600) "+
 		"instead of the console. A Windows service has no console, so there it defaults to perfuse.log beside the database")
 	peersFile := fset.String("peers", "", "YAML file listing other Perfuse instances to show in a fleet view")
-	oidcFile := fset.String("oidc", "", "YAML file configuring OpenID Connect sign-in")
-	ldapFile := fset.String("ldap", "", "YAML file configuring directory (LDAP) sign-in")
-	samlFile := fset.String("saml", "", "YAML file configuring SAML 2.0 sign-in")
+	oidcFile := fset.String("oidc", "", "YAML file configuring OpenID Connect sign-in (default: oidc.yaml beside the database, once saved in the console)")
+	ldapFile := fset.String("ldap", "", "YAML file configuring directory (LDAP) sign-in (default: ldap.yaml beside the database, once saved in the console)")
+	samlFile := fset.String("saml", "", "YAML file configuring SAML 2.0 sign-in (default: saml.yaml beside the database, once saved in the console)")
 	fleetLabel := fset.String("fleet-label", "", "how this instance names itself in a fleet view (default: hostname)")
 	publicURL := fset.String("public-url", "", "the https address patients' phones and other organisations reach this server at, for the "+
 		"SMART Health Links it hosts (default: the listen address)")
@@ -724,6 +724,24 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 
 	// Discovered at startup, so a wrong issuer or an unreachable provider stops the server rather than surfacing when
 	// somebody cannot sign in.
+	// Sign-on files default to beside the database, as the settings file does, so sign-on can be set up in the console. Without
+	// the flags there was nowhere to save, and single sign-on was configurable only by writing a file and restarting.
+	// A file named with a flag must exist; a default one is read only once it has been saved.
+	ldapSave, samlSave, oidcSave := *ldapFile, *samlFile, *oidcFile
+	for _, f := range []struct {
+		flag *string
+		save *string
+		name string
+	}{{ldapFile, &ldapSave, "ldap.yaml"}, {samlFile, &samlSave, "saml.yaml"}, {oidcFile, &oidcSave, "oidc.yaml"}} {
+		if *f.flag != "" {
+			continue
+		}
+		*f.save = filepath.Join(filepath.Dir(*dbPath), f.name)
+		if _, err := os.Stat(*f.save); err == nil {
+			*f.flag = *f.save
+		}
+	}
+
 	var oidcCfg *api.OIDCConfig
 	var ldapCfg *api.LDAPConfig
 	if *ldapFile != "" {
@@ -867,9 +885,9 @@ oidcDone:
 		},
 		SettingsPaths: api.SettingsFiles{
 			Alerts: *alertsFile,
-			OIDC:   *oidcFile,
-			LDAP:   *ldapFile,
-			SAML:   *samlFile,
+			OIDC:   oidcSave,
+			LDAP:   ldapSave,
+			SAML:   samlSave,
 			Peers:  *peersFile,
 		},
 		Runtime:            runtime,
