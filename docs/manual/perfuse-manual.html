@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 3836208</p>
+<p class="version">version 0.1 · d68fb9e</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2361,7 +2361,7 @@ filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, typ
 <h3 id="s11-3-rhythm-aware-detection"><span class="num">11.3</span> Rhythm-aware detection</h3>
 <p><code>below-rhythm</code> compares current traffic against what this channel normally does <strong>in this hour of this day of the week</strong>.</p>
 <p>Perfuse learns each channel&#39;s week from its own recorded history: 168 hourly buckets, Monday first so a working week is contiguous. For each bucket it holds a median, a low and a high, a floor, and how many observations it is based on.</p>
-<p>The threshold is a fraction, defaulting to <code>0.8</code> — alert when traffic falls more than eighty per cent below normal for this hour.</p>
+<p>The threshold is a share of normal, defaulting to <code>0.8</code> (80 per cent in the console) — alert when traffic falls below four fifths of what is normal for this hour.</p>
 <h4 id="s11-3-1-median-not-mean"><span class="num">11.3.1</span> Median, not mean</h4>
 <p>A single backlog flush of forty thousand messages against a normal three hundred moves a mean far enough that the feed can go completely silent afterwards without ever falling below it. The median is unmoved by one extraordinary hour, which is exactly the property needed.</p>
 <h4 id="s11-3-2-the-floor-is-a-percentile-not-the-minimum"><span class="num">11.3.2</span> The floor is a percentile, not the minimum</h4>
@@ -2372,7 +2372,7 @@ filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, typ
 <p>Where the history is too thin or too erratic to support a judgement, the rule declines to fire rather than guessing. &#34;I cannot honestly say&#34; is a first-class answer here, and it is preferred to an alert that is right slightly more often than chance.</p>
 <div class="note">Absent hours inside the learning window are recorded as real zeroes, not as missing data. Half the signal in a clinic feed is *when it is legitimately quiet*, and treating those hours as unknown would throw it away.</div>
 <h3 id="s11-4-setting-alerts-up"><span class="num">11.4</span> Setting alerts up</h3>
-<p>From the interface, per channel or across all of them. Each rule has a kind, a threshold and where to send the alert.</p>
+<p>From the interface, under Alerts, per channel or across all of them. Each rule has a kind, a threshold and where to send the alert. The rules are saved to <code>alerts.yaml</code> beside the database (or the file <code>-alerts</code> names) and take effect without a restart; until the first save the built-in rules apply.</p>
 <p>Worth doing before a feed goes live rather than after the first incident. The specific set worth having on any clinical feed:</p>
 <ol>
 <li><code>below-rhythm</code> — the feed has gone quiet when it should not be quiet.</li>
