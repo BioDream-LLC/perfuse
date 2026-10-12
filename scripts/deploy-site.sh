@@ -45,7 +45,8 @@ for spec in \
   "*.pdf:application/pdf:$DOC_CACHE" \
   "*.xml:application/xml; charset=utf-8:$DOC_CACHE" \
   "*.txt:text/plain; charset=utf-8:$DOC_CACHE" \
-  "*.json:application/json; charset=utf-8:$DOC_CACHE"
+  "*.json:application/json; charset=utf-8:$DOC_CACHE" \
+  "*.css:text/css; charset=utf-8:$ASSET_CACHE"
 do
   pattern=$(echo "$spec" | cut -d: -f1)
   type=$(echo "$spec" | cut -d: -f2)
@@ -66,7 +67,7 @@ cd - >/dev/null
 # and simply be missing from the site. Better to say so than to leave a hole.
 missing=$(find "$DIR" -type f \
   ! -name "*.html" ! -name "*.svg" ! -name "*.png" ! -name "*.webp" ! -name "*.ico" \
-  ! -name "*.pdf" ! -name "*.xml" ! -name "*.txt" ! -name "*.json")
+  ! -name "*.pdf" ! -name "*.xml" ! -name "*.txt" ! -name "*.json" ! -name "*.css")
 if [ -n "$missing" ]; then
   echo "these files have no Content-Type rule and were NOT uploaded:" >&2
   echo "$missing" >&2
