@@ -409,7 +409,6 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-
 	// One database file for everything, so a deployment has one thing to back up
 	// rather than several that can be restored out of step with each other.
 	//
