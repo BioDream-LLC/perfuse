@@ -1052,6 +1052,43 @@ the server's:
 Now 46 pass and 2 fail. Both failures are one resource, Inferno's own adaptive DTR questionnaire, whose
 `artifact-versionAlgorithm` extension uses a code system R4's validator does not know.
 
+That questionnaire turned out to be ours: the DTR run adds the extension to Inferno's fixture, in its Coding form. Written
+as the string its definition also allows, the suite passes 48 of 48.
+
+### Da Vinci PDex 2.0.0 Payer Server
+
+The Payer-to-Payer workflow passes 19 of 19, and the API and must-support coverage 312, with 1 skip. The data are Inferno's
+public reference patients 85 and 355 (synthetic), plus PDex prior authorizations, a Device, MedicationDispense and
+Provenance built from the PDex package's examples, each validated against its profile first.
+
+The first runs found five server faults:
+
+- **`$everything` on an R4 server returned R5 Encounters**, skipping the per-entry conversion a search applies.
+- **`$member-match` was refused for read scopes.** It finds a member and stores nothing.
+- **Its response carried `MemberId`**, which HRex 1.2.0 allows and HRex 1.0.0 (PDex 2.0.0's) refuses. It now sends the
+  identifier alone, valid under both.
+- **An R4 client's `Encounter?status=finished` found nothing**, because the index holds R5's `completed`.
+- **`ExplanationOfBenefit?service-date` read only the billable period**; R4 defines it as `billablePeriod | item.serviced`.
+
+The skip is the prior authorization's must-support list: the PAS item extensions (whose definitions do not allow
+`ExplanationOfBenefit.item`) and three adjudication slices (whose category codes are outside the value set the same profile
+requires). A resource that carries them does not validate.
+
+### Da Vinci Plan-Net 1.1.0 Server
+
+The provider directory was new: Plan-Net's search parameters and includes, `_has`, and its profiles in the
+CapabilityStatement. The data are the Plan-Net package's own examples. The suite now gives 199 pass, 44 skip and 10 fail.
+Building it found three faults in searches that already existed:
+
+- **A path into an extension never indexed**, because the URL's dots split the path. Condition's `asserted-date` had
+  never worked.
+- **A chain whose inner condition matched several resources found nothing**: the matches were ANDed.
+- **`_id=a,b` looked for an id spelled "a,b"**, and `_id=a&_id=b` found either.
+
+The 10 failures are forward chains through `partof`, `network` and a service's organization, where the kit takes its value
+from the first Organization it has seen rather than one the searched resources refer to; the network case is reported
+upstream (davinci-plan-net-test-kit issue 34).
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was
