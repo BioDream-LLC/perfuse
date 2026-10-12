@@ -116,6 +116,25 @@ var referenceTargets = map[string]map[string][]string{
 			"Observation", "Organization", "Practitioner", "PractitionerRole", "Procedure", "QuestionnaireResponse", "RelatedPerson",
 			"ServiceRequest", "Specimen"},
 	},
+
+	// Da Vinci Plan-Net 1.1.0's provider directory: every _include its CapabilityStatement lists, and so every _revinclude.
+	"Endpoint": {"organization": {"Organization"}},
+	"HealthcareService": {
+		"location": {"Location"}, "coverage-area": {"Location"}, "organization": {"Organization"}, "endpoint": {"Endpoint"},
+	},
+	"InsurancePlan": {
+		"administered-by": {"Organization"}, "owned-by": {"Organization"}, "coverage-area": {"Location"},
+	},
+	"Location":     {"endpoint": {"Endpoint"}, "organization": {"Organization"}, "partof": {"Location"}},
+	"Organization": {"partof": {"Organization"}, "endpoint": {"Endpoint"}, "coverage-area": {"Location"}},
+	"OrganizationAffiliation": {
+		"primary-organization": {"Organization"}, "participating-organization": {"Organization"}, "location": {"Location"},
+		"service": {"HealthcareService"}, "endpoint": {"Endpoint"}, "network": {"Organization"},
+	},
+	"PractitionerRole": {
+		"practitioner": {"Practitioner"}, "organization": {"Organization"}, "location": {"Location"},
+		"service": {"HealthcareService"}, "network": {"Organization"}, "endpoint": {"Endpoint"},
+	},
 }
 
 // ParseInclude reads one _include or _revinclude value.

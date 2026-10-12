@@ -64,8 +64,8 @@ var SearchParams = map[string][]string{
 		"code", "category", "status", "date",
 	},
 	"Practitioner":   {"_id", "_lastUpdated", "identifier", "family", "given", "name"},
-	"Organization":   {"_id", "_lastUpdated", "identifier", "name", "address"},
-	"Location":       {"_id", "_lastUpdated", "identifier", "name", "status", "address", "address-city", "address-state", "address-postalcode"},
+	"Organization":   {"_id", "_lastUpdated", "identifier", "name", "address", "partof", "endpoint", "type", "coverage-area"},
+	"Location":       {"_id", "_lastUpdated", "identifier", "name", "status", "address", "address-city", "address-state", "address-postalcode", "partof", "organization", "endpoint", "type"},
 	"Specimen":       {"_id", "_lastUpdated", "identifier", "patient", "subject", "status", "type"},
 	"ServiceRequest": {"_id", "_lastUpdated", "identifier", "patient", "subject", "status", "code", "category", "authored"},
 
@@ -113,7 +113,7 @@ var SearchParams = map[string][]string{
 	"Goal":                  {"_id", "_lastUpdated", "patient", "subject", "lifecycle-status", "target-date", "description"},
 	"Device":                {"_id", "_lastUpdated", "identifier", "patient", "type", "status"},
 	"RelatedPerson":         {"_id", "_lastUpdated", "identifier", "patient", "name"},
-	"PractitionerRole":      {"_id", "_lastUpdated", "identifier", "practitioner", "organization", "specialty"},
+	"PractitionerRole":      {"_id", "_lastUpdated", "identifier", "practitioner", "organization", "specialty", "location", "service", "network", "endpoint", "role", "period"},
 	"Appointment":           {"_id", "_lastUpdated", "patient", "status", "date"},
 	"Consent":               {"_id", "_lastUpdated", "patient", "status", "category"},
 	"Composition":           {"_id", "_lastUpdated", "patient", "subject", "encounter", "type", "status", "date"},
@@ -182,7 +182,7 @@ var SearchParams = map[string][]string{
 	"ChargeItem":                  {"_id", "_lastUpdated", "identifier", "subject", "code", "status"},
 	"ChargeItemDefinition":        {"_id", "_lastUpdated", "url", "status"},
 	"Contract":                    {"_id", "_lastUpdated", "identifier", "status"},
-	"InsurancePlan":               {"_id", "_lastUpdated", "identifier", "status", "name"},
+	"InsurancePlan":               {"_id", "_lastUpdated", "identifier", "status", "name", "administered-by", "owned-by", "coverage-area", "plan-type", "type"},
 	"Invoice":                     {"_id", "_lastUpdated", "identifier", "subject", "status", "date"},
 
 	// Workflow & scheduling
@@ -207,8 +207,8 @@ var SearchParams = map[string][]string{
 	"EffectEvidenceSynthesis": {"_id", "_lastUpdated", "identifier", "url", "name", "status"},
 
 	// Additional clinical & admin
-	"Endpoint":               {"_id", "_lastUpdated", "identifier", "status", "name", "connection-type"},
-	"HealthcareService":      {"_id", "_lastUpdated", "identifier", "name"},
+	"Endpoint":               {"_id", "_lastUpdated", "identifier", "status", "name", "connection-type", "organization"},
+	"HealthcareService":      {"_id", "_lastUpdated", "identifier", "name", "location", "coverage-area", "organization", "endpoint", "service-category", "service-type", "specialty"},
 	"Group":                  {"_id", "_lastUpdated", "identifier", "type", "name", "code", "member"},
 	"Person":                 {"_id", "_lastUpdated", "identifier", "gender", "birthdate"},
 	"Linkage":                {"_id", "_lastUpdated"},
@@ -241,7 +241,7 @@ var SearchParams = map[string][]string{
 	"MedicinalProductAuthorization":     {"_id", "_lastUpdated", "identifier", "subject"},
 	"CommunicationRequest":              {"_id", "_lastUpdated", "identifier", "subject", "encounter", "status", "authored"},
 	"VerificationResult":                {"_id", "_lastUpdated", "status"},
-	"OrganizationAffiliation":           {"_id", "_lastUpdated", "identifier", "primary-organization"},
+	"OrganizationAffiliation":           {"_id", "_lastUpdated", "identifier", "primary-organization", "participating-organization", "location", "service", "network", "endpoint", "role", "specialty", "period"},
 	"CatalogEntry":                      {"_id", "_lastUpdated", "identifier", "status", "date"},
 	"TestScript":                        {"_id", "_lastUpdated", "url", "name", "status"},
 	"TestReport":                        {"_id", "_lastUpdated", "name", "status", "result"},
@@ -1736,7 +1736,10 @@ func isReferenceParam(param string) bool {
 		"individual", "study", "target",
 		"source", "device", "insurer", "request", "provider",
 		"schedule", "appointment", "actor",
-		"primary-organization", "For", "coverage", "payor", "member", "location", "medication":
+		"primary-organization", "For", "coverage", "payor", "member", "location", "medication",
+		// Plan-Net's directory references.
+		"participating-organization", "network", "service", "endpoint", "coverage-area", "administered-by", "owned-by",
+		"partof":
 		return true
 	}
 
@@ -1858,6 +1861,45 @@ var pathParams = map[string][]pathParam{
 	"Organization":       {{"address", "string", []string{"address.line", "address.city", "address.state", "address.postalCode", "address.country", "address.text"}}},
 	"Patient":            {{"death-date", "date", []string{"deceasedDateTime"}}},
 	"ServiceRequest":     {{"category", "token", []string{"category"}}, {"authored", "date", []string{"authoredOn"}}},
+
+	// Da Vinci Plan-Net 1.1.0's provider directory: its SearchParameter definitions, each a plain path. The parameters the
+	// typed indexer already covers (identifier, name, practitioner, organization, specialty, primary-organization) are not
+	// repeated.
+	"Endpoint": {{"organization", "reference", []string{"managingOrganization"}}},
+	"HealthcareService": {
+		{"location", "reference", []string{"location"}}, {"coverage-area", "reference", []string{"coverageArea"}},
+		{"organization", "reference", []string{"providedBy"}}, {"endpoint", "reference", []string{"endpoint"}},
+		{"service-category", "token", []string{"category"}}, {"service-type", "token", []string{"type"}},
+		{"specialty", "token", []string{"specialty"}},
+	},
+	"InsurancePlan": {
+		{"administered-by", "reference", []string{"administeredBy"}}, {"owned-by", "reference", []string{"ownedBy"}},
+		{"coverage-area", "reference", []string{"coverageArea"}}, {"plan-type", "token", []string{"plan.type"}},
+		{"type", "token", []string{"type"}}, {"name", "string", []string{"alias"}},
+	},
+	"OrganizationAffiliation": {
+		{"participating-organization", "reference", []string{"participatingOrganization"}},
+		{"location", "reference", []string{"location"}}, {"service", "reference", []string{"healthcareService"}},
+		{"network", "reference", []string{"network"}}, {"endpoint", "reference", []string{"endpoint"}},
+		{"role", "token", []string{"code"}}, {"specialty", "token", []string{"specialty"}}, {"period", "date", []string{"period"}},
+	},
+	"PractitionerRole": {
+		{"location", "reference", []string{"location"}}, {"service", "reference", []string{"healthcareService"}},
+		{"network", "reference", []string{"extension[http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference].valueReference"}},
+		{"endpoint", "reference", []string{"endpoint"}}, {"role", "token", []string{"code"}}, {"period", "date", []string{"period"}},
+	},
+}
+
+// Plan-Net's Location and Organization parameters, added to the US Core entries above rather than written into them so
+// those stay readable.
+func init() {
+	pathParams["Location"] = append(pathParams["Location"],
+		pathParam{"partof", "reference", []string{"partOf"}}, pathParam{"organization", "reference", []string{"managingOrganization"}},
+		pathParam{"endpoint", "reference", []string{"endpoint"}}, pathParam{"type", "token", []string{"type"}})
+	pathParams["Organization"] = append(pathParams["Organization"],
+		pathParam{"partof", "reference", []string{"partOf"}}, pathParam{"endpoint", "reference", []string{"endpoint"}},
+		pathParam{"type", "token", []string{"type"}}, pathParam{"name", "string", []string{"alias"}},
+		pathParam{"coverage-area", "reference", []string{"extension[http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference].valueReference"}})
 }
 
 func pathEntries(r fhir.Resource) []indexEntry {
@@ -1876,7 +1918,7 @@ func pathEntries(r fhir.Resource) []indexEntry {
 	var out []indexEntry
 	for _, d := range defs {
 		for _, path := range d.paths {
-			for _, v := range walkPath(tree, strings.Split(path, ".")) {
+			for _, v := range walkPath(tree, splitPath(path)) {
 				switch d.kind {
 				case "token":
 					cc, _ := v.(map[string]any)
@@ -1931,6 +1973,28 @@ func pathEntries(r fhir.Resource) []indexEntry {
 
 // walkPath follows a dotted path through FHIR JSON, fanning out over arrays. A segment "extension[url]" picks the extensions
 // with that url.
+// splitPath splits a path at its dots, except inside an extension's [url]: every extension URL has dots in it, and splitting
+// there turned extension[http://hl7.org/...].valueX into segments that matched nothing, so Condition's asserted-date and
+// Plan-Net's network and coverage-area indexed nothing at all.
+func splitPath(path string) []string {
+	var out []string
+	depth, start := 0, 0
+	for i := 0; i < len(path); i++ {
+		switch path[i] {
+		case '[':
+			depth++
+		case ']':
+			depth--
+		case '.':
+			if depth == 0 {
+				out = append(out, path[start:i])
+				start = i + 1
+			}
+		}
+	}
+	return append(out, path[start:])
+}
+
 func walkPath(v any, path []string) []any {
 	if len(path) == 0 {
 		if list, ok := v.([]any); ok {
