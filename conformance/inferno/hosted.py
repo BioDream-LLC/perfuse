@@ -4,7 +4,7 @@
 The inputs are the local runs' own (crd/run.py, dtr/run.py, pas/run.py), pointed at the public instance, whose data
 deploy/test-instance/load.py put in. Nothing runs in Docker. Results go to .work/hosted-<kit>/results.json.
 
-Usage: hosted.py <crd|dtr|pas|bulk|smart> [base URL] [public|confidential ...]
+Usage: hosted.py <crd|dtr|pas|bulk|pdex|plannet|smart> [base URL] [public|confidential ...]
 """
 import importlib.util
 import json
@@ -139,6 +139,115 @@ def pdex(group=None):
     return inferno.run(suite, inputs, group_id=f"{suite}-{group}" if group else None)
 
 
+PLAN_NET_NETWORK = "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference"
+
+
+def plan_net_reference_inputs(resources):
+    """The suite's _revinclude and reverse-chain inputs, read from the directory: which ids each reference names, and for
+    the reverse chains one value from a resource that also has the reference the chain goes through."""
+    def refs(res, field):
+        if field == "network" and res["resourceType"] == "PractitionerRole":
+            vals = [e.get("valueReference") for e in res.get("extension", []) if e.get("url") == PLAN_NET_NETWORK]
+        else:
+            v = res.get(field)
+            vals = v if isinstance(v, list) else [v]
+        return [r["reference"].split("/")[-1] for r in vals if isinstance(r, dict) and r.get("reference")]
+
+    def code(res, field):
+        for cc in res.get(field, []):
+            for c in cc.get("coding", []):
+                return c.get("code")
+
+    def ids_of(rtype, field):
+        out = []
+        for res in resources:
+            if res["resourceType"] == rtype:
+                out += [i for i in refs(res, field) if i not in out]
+        return ",".join(out)
+
+    def first(rtype, needs, field, kind="ref"):
+        for res in resources:
+            if res["resourceType"] == rtype and refs(res, needs):
+                value = refs(res, field)[0] if kind == "ref" and refs(res, field) else code(res, field) if kind == "code" else None
+                if value:
+                    return value
+        return ""
+
+    pr, oa, hs, ip = "PractitionerRole", "OrganizationAffiliation", "HealthcareService", "InsurancePlan"
+    out = {
+        "practitioner_role_practitioner_input": ids_of(pr, "practitioner"),
+        "practitioner_role_service_input": ids_of(pr, "healthcareService"),
+        "organization_affiliation_service_input": ids_of(oa, "healthcareService"),
+        "healthcare_service_location_input": ids_of(hs, "location"),
+        "insurance_plan_coverage_area_input": ids_of(ip, "coverageArea"),
+        "organization_affiliation_location_input": ids_of(oa, "location"),
+        "practitioner_role_location_input": ids_of(pr, "location"),
+        "practitioner_role_network_input": ids_of(pr, "network"),
+        "endpoint_organization_input": ids_of("Endpoint", "managingOrganization"),
+        "healthcare_service_organization_input": ids_of(hs, "providedBy"),
+        "insurance_plan_administered_by_input": ids_of(ip, "administeredBy"),
+        "insurance_plan_owned_by_input": ids_of(ip, "ownedBy"),
+        "organization_affiliation_primary_organization_input": ids_of(oa, "organization"),
+        "practitioner_role_organization_input": ids_of(pr, "organization"),
+        "organization_affiliation_participating_organization_input": ids_of(oa, "participatingOrganization"),
+        "practitioner_role_practitioner_location_input": "Location/" + first(pr, "practitioner", "location"),
+        "practitioner_role_practitioner_network_input": "Organization/" + first(pr, "practitioner", "network"),
+        "practitioner_role_practitioner_specialty_input": first(pr, "practitioner", "specialty", "code"),
+        "practitioner_role_practitioner_role_input": first(pr, "practitioner", "code", "code"),
+        "practitioner_role_network_location_input": "Location/" + first(pr, "network", "location"),
+        "insurance_plan_coverage_area_owned_by_input": "Organization/" + first(ip, "coverageArea", "ownedBy"),
+        "insurance_plan_owned_by_coverage_area_input": "Location/" + first(ip, "ownedBy", "coverageArea"),
+        "org_affil_participating_organization_location_input": "Location/" + first(oa, "participatingOrganization", "location"),
+        "org_affil_participating_organization_network_input": "Organization/" + first(oa, "participatingOrganization", "network"),
+        "org_affil_participating_organization_specialty_input": first(oa, "participatingOrganization", "specialty", "code"),
+        "combination_list_specialty_covered_by_network_input": "Organization/" + first(oa, "healthcareService", "network"),
+    }
+    return {k: v for k, v in out.items() if v and not v.endswith("/")}
+
+
+def plan_net():
+    """Da Vinci Plan-Net 1.1.0 Server: the provider directory, over the Plan-Net package's own examples (loaded by
+    deploy/test-instance/load.py). The instances are named rather than gathered by parameterless search, which would also
+    gather the reference patients' Organizations and Practitioners: US Core resources, not Plan-Net ones."""
+    spec = importlib.util.spec_from_file_location("load", os.path.join(HERE, "..", "..", "deploy", "test-instance", "load.py"))
+    load = importlib.util.module_from_spec(spec)
+    argv, sys.argv = sys.argv, ["load.py"]
+    spec.loader.exec_module(load)
+    sys.argv = argv
+    ids = {}
+    for res in load.plan_net():
+        ids.setdefault(res["resourceType"], []).append(res["id"])
+    network = [i for i in ids["Organization"] if i.endswith("Net")]
+    groups = {"endpoint": "Endpoint", "insurance_plan": "InsurancePlan", "org_affil": "OrganizationAffiliation",
+              "practitioner_role": "PractitionerRole", "practitioner": "Practitioner", "healthcare_service": "HealthcareService",
+              "location": "Location"}
+    # Reference targets first. The chain tests take their value from the first resource of the type they have seen, so it
+    # has to be one something refers to: the Location others are part of, the Organization others are part of, a
+    # HealthcareService a network's affiliation offers.
+    first = {"Location": "HospLoc1", "Organization": "Hospital", "HealthcareService": "BurrClinicServices"}
+    for t, i in first.items():
+        ids[t].sort(key=lambda x: x != i)
+    inputs = {f"davinci_plan_net_v110_{g}_no_params_search_test_ids": ",".join(ids[t]) for g, t in groups.items()}
+    inputs["davinci_plan_net_v110_network_no_params_search_test_ids"] = ",".join(network)
+    inputs["davinci_plan_net_v110_organization_no_params_search_test_ids"] = ",".join(
+        i for i in ids["Organization"] if i not in network)
+    inputs.update(plan_net_reference_inputs(load.plan_net()))
+    tok = inferno.backend_token(BASE + "/auth/token", scope="system/*.read")
+    auth = json.dumps({"auth_type": "backend_services", "access_token": tok, "expires_in": 3600,
+                       "issue_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "token_url": BASE + "/auth/token",
+                       "client_id": "inferno-backend", "requested_scopes": "system/*.read", "encryption_algorithm": "RS384",
+                       "use_discovery": "false"})
+    # One session per group. A session shares what earlier groups found, and the forward-chain tests take their value from
+    # the first resource of the type found anywhere (an InsurancePlan's Acme, say) rather than one the group's resources
+    # refer to, so in one session they search PractitionerRole?organization.type=payer and find, rightly, nothing.
+    suite = "davinci_plan_net_server_v110"
+    inputs.update({"url": BASE + "/fhir", "smart_auth_info": auth, "no_param_search": "false", "max_instances": "200",
+                   "max_pages": "20"})
+    groups = ["capability_statement", "endpoint", "insurance_plan", "org_affil", "practitioner_role", "practitioner",
+              "healthcare_service", "location", "network", "organization"]
+    return [inferno.run(suite, inputs, group_id=f"{suite}-davinci_plan_net_v110_{g}") for g in groups]
+
+
 def smart(name):
     """smart/run.py's own driver: it signs amy and drb in at the instance's authorization pages as a browser would."""
     m = module("smart")
@@ -154,6 +263,10 @@ if __name__ == "__main__":
     if KIT == "pdex":
         for group in sys.argv[3:] or ["payer_to_payer_workflow", "api_and_ms_coverage"]:
             inferno.report(pdex(group), f"hosted-pdex-{group}")
+        raise SystemExit
+    if KIT == "plannet":
+        for i, sid in enumerate(plan_net()):
+            inferno.report(sid, f"hosted-plannet-{i}")
         raise SystemExit
     runs = {"crd": crd, "dtr": dtr, "pas": pas, "bulk": bulk}
     if KIT not in runs:

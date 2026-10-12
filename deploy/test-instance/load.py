@@ -91,8 +91,39 @@ def main():
     for res in resources:
         put(token, res)
     if "--no-reference" not in sys.argv:
-        for res in reference_patients() + pdex_extras():
+        for res in reference_patients() + pdex_extras() + plan_net():
             put(token, res)
+
+
+def package(name, version):
+    """A published FHIR package's files, from packages.fhir.org."""
+    with urllib.request.urlopen(f"https://packages.fhir.org/{name}/{version}", timeout=60) as r:
+        raw = r.read()
+    return tarfile.open(fileobj=io.BytesIO(raw if raw[:2] != b"\x1f\x8b" else gzip.decompress(raw)))
+
+
+def plan_net():
+    """Da Vinci Plan-Net 1.1.0's own example directory (Acme of CT's networks, plans, practices and practitioners): 49
+    resources that refer only to one another."""
+    with package("hl7.fhir.us.davinci-pdex-plan-net", "1.1.0") as t:
+        out = []
+        for m in t.getmembers():
+            if m.name.startswith("package/example/") and m.name.endswith(".json"):
+                res = json.load(t.extractfile(m))
+                if "resourceType" in res:  # the folder also holds the package's index
+                    res.pop("text", None)
+                    out.append(res)
+        # The two networks get their owner Acme's address. Inferno's suite validates every Organization it is given
+        # against plannet-Organization too, which requires one; plannet-Network allows it.
+        acme = next(r for r in out if r["resourceType"] == "Organization" and r["id"] == "Acme")
+        for r in out:
+            if r["resourceType"] == "Organization" and r["id"].endswith("Net"):
+                r.setdefault("address", acme["address"])
+            # No example Location is part of another, so Location's partof searches had nothing to find. HospLoc2 becomes
+            # a wing on HospLoc1's campus.
+            if r["resourceType"] == "Location" and r["id"] == "HospLoc2":
+                r["partOf"] = {"reference": "Location/HospLoc1"}
+        return out
 
 
 def pdex_extras():
