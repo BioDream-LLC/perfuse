@@ -66,7 +66,7 @@ func startupSettings() []Setting {
 			Help: "Accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived from the eICR it answers.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: false, Flag: "ecr-responses"},
 		{Key: "publicHealth.rctc", Group: "Public health", Subgroup: "Case reporting", Label: "Trigger codes file (RCTC or eRSD)",
-			Help: "ECR trigger codes for the case report preview: a FHIR ValueSet or Bundle of them, such as the eRSD.",
+			Help: "The eCR trigger codes for the case report preview: a FHIR ValueSet or Bundle of them, such as the eRSD.",
 			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "rctc"},
 		{Key: "publicHealth.shlAllowHTTP", Group: "Public health", Subgroup: "Health links", Label: "Allow SMART Health Links over plain HTTP",
 			Help: "Let a received SMART Health Link point at plain HTTP; for testing only.",
