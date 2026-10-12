@@ -179,7 +179,10 @@ func (s *Store) resolveChains(ctx context.Context, q *SearchQuery) error {
 		// Appended rather than assigned, so a chain and an explicit reference on the same parameter both apply. The
 		// two OR together within the parameter, which is what FHIR specifies for repeated values - and is why a
 		// client sending both gets the union rather than one silently replacing the other.
-		q.Criteria[crit.Param] = append(q.Criteria[crit.Param], values...)
+		// One value, the matches joined by commas: any of them. Appended as separate values they were ANDed - the way two
+		// occurrences of one parameter combine - so a chain matching two resources found only what pointed at both, which
+		// is nothing. Found by Inferno's Plan-Net suite (two practitioners named Smith).
+		q.Criteria[crit.Param] = append(q.Criteria[crit.Param], strings.Join(values, ","))
 	}
 
 	return nil

@@ -1185,6 +1185,9 @@ type SearchQuery struct {
 	// folding them in would mean the rest of Search had to know which entries were real parameters.
 	Chains []ChainedCriterion
 
+	// Has holds the _has (reverse chain) conditions, resolved to _id conditions before the query runs.
+	Has []HasCriterion
+
 	// Modified are criteria carrying a modifier: name:exact, name:contains, birthdate:missing.
 	//
 	// Kept apart from Criteria for the same reason Chains are. The launch context narrowing writes directly into Criteria to
@@ -1303,6 +1306,20 @@ func ParseSearch(resourceType string, values map[string][]string) (*SearchQuery,
 		// A chained parameter is recognised before the modifier check below, because a chain may legitimately
 		// carry a colon - subject:Patient.name - and the modifier check would otherwise refuse it as an
 		// unsupported modifier, which is a confusing thing to be told about a valid query.
+		if h, isHas, err := parseHas(resourceType, key); isHas {
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range vals {
+				if strings.TrimSpace(v) != "" {
+					h.Values = append(h.Values, v)
+				}
+			}
+			if len(h.Values) > 0 {
+				q.Has = append(q.Has, h)
+			}
+			continue
+		}
 		if crit, chained, err := parseChain(resourceType, key); chained {
 			if err != nil {
 				return nil, err
@@ -1411,6 +1428,12 @@ func (s *Store) Search(ctx context.Context, q *SearchQuery) (*SearchResult, erro
 			return nil, err
 		}
 	}
+	// And _has, into _id criteria.
+	if len(q.Has) > 0 {
+		if err := s.resolveHas(ctx, q); err != nil {
+			return nil, err
+		}
+	}
 
 	args := []any{q.ResourceType}
 	var where strings.Builder
@@ -1420,9 +1443,14 @@ func (s *Store) Search(ctx context.Context, q *SearchQuery) (*SearchResult, erro
 	for param, values := range q.Criteria {
 		switch param {
 		case "_id":
-			where.WriteString(" AND resource_id IN (" + placeholders(len(values)) + ")")
+			// Each occurrence is a condition of its own (ANDed), and the ids within one, comma-separated, are any of. Both
+			// were wrong: _id=a,b looked for an id spelled "a,b", and _id=a&_id=b found either.
 			for _, v := range values {
-				args = append(args, v)
+				ids := splitOr(v)
+				where.WriteString(" AND resource_id IN (" + placeholders(len(ids)) + ")")
+				for _, id := range ids {
+					args = append(args, id)
+				}
 			}
 
 		case "_lastUpdated":
