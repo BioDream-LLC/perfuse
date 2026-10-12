@@ -83,6 +83,62 @@ def bulk():
                                           "since_timestamp": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(time.time() - 86400 * 30))})
 
 
+def pdex_member_match(patient, coverage_id_value, consent=True):
+    """An HRex $member-match request for a member of the old payer, the shape PDex's Payer-to-Payer workflow sends."""
+    params = [
+        {"name": "MemberPatient", "resource": {"resourceType": "Patient", "id": "1", "identifier": [{
+            "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/v2-0203", "code": "MB"}]},
+            "system": "https://www.springfield-health-plan.example/member-id", "value": coverage_id_value}], **patient}},
+        {"name": "CoverageToMatch", "resource": {
+            "resourceType": "Coverage", "id": "match", "status": "active", "subscriberId": coverage_id_value,
+            "beneficiary": {"reference": "Patient/1"}, "payor": [{"display": "Springfield Health Plan"}]}},
+        {"name": "CoverageToLink", "resource": {
+            "resourceType": "Coverage", "id": "link", "status": "active", "subscriberId": "NEW-" + coverage_id_value,
+            "beneficiary": {"reference": "Patient/1"}, "payor": [{"display": "Another Health Plan"}]}},
+    ]
+    if consent:
+        params.append({"name": "Consent", "resource": {
+            "resourceType": "Consent", "id": "consent", "status": "active",
+            "scope": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/consentscope", "code": "patient-privacy"}]},
+            "category": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "IDSCL"}]}],
+            "patient": {"reference": "Patient/1"}, "performer": [{"reference": "Patient/1"}],
+            "sourceReference": {"reference": "http://example.org/DocumentReference/consent-form"},
+            "policy": [{"uri": "http://hl7.org/fhir/us/davinci-hrex/StructureDefinition-hrex-consent.html#regular"}],
+            "provision": {"type": "permit", "period": {"start": "2026-01-01", "end": "2027-12-31"},
+                          "actor": [{"role": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/provenance-participant-type", "code": "performer"}]},
+                                     "reference": {"identifier": {"system": "http://hl7.org/fhir/sid/us-npi", "value": "9876543210"},
+                                                   "display": "Springfield Health Plan"}},
+                                    {"role": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType", "code": "IRCP"}]},
+                                     "reference": {"identifier": {"system": "http://hl7.org/fhir/sid/us-npi", "value": "0123456789"},
+                                                   "display": "Another Health Plan"}}],
+                          "action": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/consentaction", "code": "disclose"}]}]}}})
+    return json.dumps({"resourceType": "Parameters", "id": "member-match-in", "parameter": params})
+
+
+def pdex(group=None):
+    """Da Vinci PDex Payer Server: $member-match (one, none and several matches), then the matched member's data.
+
+    The attestation group is left out: it asks the developer to attest, which a script must not do on anybody's behalf."""
+    # A token got here rather than by Inferno: the suite reads auth_info's access_token and does not fetch one itself.
+    def auth(scope):
+        return json.dumps({"auth_type": "backend_services", "access_token": inferno.backend_token(BASE + "/auth/token", scope=scope),
+                           "expires_in": 3600, "issue_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                           "token_url": BASE + "/auth/token", "client_id": "inferno-backend", "requested_scopes": scope,
+                           "encryption_algorithm": "RS384", "use_discovery": "false"})
+    amy = {"name": [{"family": "Shaw", "given": ["Amy"]}], "birthDate": "1987-02-20", "gender": "female"}
+    twin = {"name": [{"family": "Lee", "given": ["Jordan"]}], "birthDate": "1990-01-01", "gender": "male"}
+    stranger = {"name": [{"family": "Nobody", "given": ["Neither"]}], "birthDate": "1950-06-06", "gender": "female"}
+    inputs = {
+        "url": BASE + "/fhir", "smart_auth_info": auth("system/*.read"), "bulk_auth_info": auth("system/*.read"),
+        "bulk_timeout": "180", "lines_to_validate": "100", "patient_ids": "85,355",  # Inferno reference server patients, loaded by deploy/test-instance/load.py
+        "member_match_request": pdex_member_match(amy, "123"),
+        "no_member_match_request": pdex_member_match(stranger, "999"),
+        "multiple_member_match_request": pdex_member_match(twin, "777"),
+    }
+    suite = "pdex_payer_server"
+    return inferno.run(suite, inputs, group_id=f"{suite}-{group}" if group else None)
+
+
 def smart(name):
     """smart/run.py's own driver: it signs amy and drb in at the instance's authorization pages as a browser would."""
     m = module("smart")
@@ -94,6 +150,10 @@ if __name__ == "__main__":
     if KIT.startswith("smart"):
         for name in sys.argv[3:] or ["public", "confidential"]:
             smart(name)
+        raise SystemExit
+    if KIT == "pdex":
+        for group in sys.argv[3:] or ["payer_to_payer_workflow", "api_and_ms_coverage"]:
+            inferno.report(pdex(group), f"hosted-pdex-{group}")
         raise SystemExit
     runs = {"crd": crd, "dtr": dtr, "pas": pas, "bulk": bulk}
     if KIT not in runs:

@@ -123,7 +123,9 @@ def mock_ehr():
 
 
 MEMBERS = [
-    {"resourceType": "Patient", "id": "pmember", "birthDate": "1987-02-20", "gender": "female", "name": [{"family": "Shaw", "given": ["Amy"]}]},
+    {"resourceType": "Patient", "id": "pmember", "birthDate": "1987-02-20", "gender": "female", "name": [{"family": "Shaw", "given": ["Amy"]}],
+     "identifier": [{"type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/v2-0203", "code": "MB"}]},
+                     "system": "https://www.springfield-health-plan.example/member-id", "value": "123"}]},
     {"resourceType": "Coverage", "id": "cmember", "status": "active", "subscriberId": "123", "beneficiary": {"reference": "Patient/pmember"},
      "payor": [{"display": "Springfield Health Plan"}]},
     {"resourceType": "ClaimResponse", "id": "pa1", "status": "active", "use": "preauthorization", "outcome": "complete", "created": "2026-09-01",
