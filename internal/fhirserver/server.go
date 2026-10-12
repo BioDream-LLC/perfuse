@@ -284,6 +284,22 @@ var usCoreProfiles = map[string][]string{
 	"Specimen":              {"us-core-specimen"},
 }
 
+// Da Vinci Plan-Net 1.1.0's provider-directory profiles, whose searches and includes this server serves (search.go,
+// include.go). Inferno's Plan-Net suite fails a server whose CapabilityStatement does not list them.
+func init() {
+	const pn = "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-"
+	for t, profiles := range map[string][]string{
+		"Endpoint": {"Endpoint"}, "HealthcareService": {"HealthcareService"}, "InsurancePlan": {"InsurancePlan"},
+		"Location": {"Location"}, "Organization": {"Organization", "Network"},
+		"OrganizationAffiliation": {"OrganizationAffiliation"}, "Practitioner": {"Practitioner"},
+		"PractitionerRole": {"PractitionerRole"},
+	} {
+		for _, p := range profiles {
+			usCoreProfiles[t] = append(usCoreProfiles[t], pn+p)
+		}
+	}
+}
+
 func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 	version := s.resolveVersion(r)
 
