@@ -1,0 +1,96 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Proof</p>
+    <h1>How Perfuse is tested, and what the tests found</h1>
+    <p class="lede">A test that only checks Perfuse against itself proves little. Perfuse is tested against the official
+      conformance suites and against the real software it talks to, and the results, failures included, are published.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Inferno</p>
+        <h2>The official FHIR test kits, run in public</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>Inferno is the testing tool ONC and HL7 publish for FHIR servers. Its test kits check a server
+            against each implementation guide, request by request.</p></div>
+          <div><h4>Why it matters</h4><p>CMS points payers to the Da Vinci guides; Inferno is how anyone checks a server follows
+            them.</p></div>
+          <div><h4>How to check it yourself</h4><p>Open inferno.healthit.gov, choose a kit, and point it at
+            test.perfuse.health. The settings we use are in the repository.</p></div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <thead><tr><th>Test kit</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>SMART App Launch 2.2, public app</td><td class="num pass">80 of 80</td></tr>
+            <tr><td>SMART App Launch 2.2, confidential app</td><td class="num pass">67 pass, 3 omitted</td></tr>
+            <tr><td>Bulk Data Access 2.0</td><td class="num pass">48 of 48</td></tr>
+            <tr><td>Da Vinci PDex 2.0, payer-to-payer</td><td class="num pass">19 of 19</td></tr>
+            <tr><td>Da Vinci PDex 2.0, API coverage</td><td class="num pass">312 pass, 1 skip</td></tr>
+            <tr><td>Da Vinci CRD 2.2.1</td><td class="num pass">92 pass, 0 fail</td></tr>
+            <tr><td>Da Vinci PAS 2.2.1</td><td class="num">82 pass, 2 fail</td></tr>
+            <tr><td>Da Vinci DTR 2.2.0</td><td class="num">43 pass, 2 fail</td></tr>
+            <tr><td>Da Vinci Plan-Net 1.1.0</td><td class="num">199 pass, 10 fail</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="intro"><p class="eyebrow">What is left</p><h2>Every remaining failure, explained</h2>
+      <p>Where a failure is the test kit's rather than Perfuse's, the upstream report is linked. None is hidden by leaving a test out.</p></div>
+    <div class="grid">
+      <div class="card"><h3>PAS, 2 fail</h3><p>The kit asks for must-support extensions on ClaimResponse that the extensions' own
+        definitions do not allow there, so a valid resource cannot carry them. Reported upstream:
+        <a href="https://github.com/inferno-framework/davinci-pas-test-kit/issues/11">davinci-pas-test-kit #11</a>.</p></div>
+      <div class="card"><h3>DTR, 2 fail</h3><p>The same kind of finding in DTR's kit, fixed upstream and waiting for a release:
+        <a href="https://github.com/inferno-framework/davinci-dtr-test-kit/issues/130">davinci-dtr-test-kit #130</a>.</p></div>
+      <div class="card"><h3>Plan-Net, 10 fail</h3><p>The kit picks the value for a chained search from the first organization it has
+        seen, not one the searched resources refer to, so the search rightly finds nothing.
+        <a href="https://github.com/inferno-framework/davinci-plan-net-test-kit/issues/34">davinci-plan-net-test-kit #34</a>.</p></div>
+      <div class="card"><h3>PDex, 1 skip</h3><p>A list of elements the guide asks for that cannot appear in a resource that also
+        passes the same guide's profile.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro"><p class="eyebrow">Real software, not mocks</p><h2>Tested against what it talks to</h2>
+      <p>A client and server written by the same people agreeing only proves they agree with each other. So each connector is
+        tested against someone else's software.</p></div>
+    <div class="chips">
+      <span>Mirth Connect 4.5.2</span><span>Open Integration Engine 4.5.2 and 4.6.0</span><span>BridgeLink</span><span>HAPI FHIR</span>
+      <span>Orthanc PACS</span><span>Keycloak 26</span><span>Microsoft Entra</span><span>OpenSSH</span><span>OpenSSL</span>
+      <span>PostgreSQL</span><span>Apache Kafka</span><span>RabbitMQ 4</span><span>ActiveMQ 6.2</span><span>LocalStack</span>
+      <span>Azurite</span><span>Azure Service Bus emulator</span><span>Google Pub/Sub emulator</span><span>fake-gcs-server</span>
+      <span>Mosquitto</span><span>IBM MQ 10</span><span>strongSwan</span><span>HL7 FHIR validator</span><span>NIST HL7 v2 validator</span>
+      <span>ONC ELR tool</span><span>xmlsec1</span>
+    </div>
+    <p style="margin-top:24px">The full record of what each test did, what it found, and what has never been tested is the
+      <a href="/verification/">verification record</a>.</p>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Be honest about it</p>
+        <h2>What has not been proven</h2>
+        <p>Perfuse has not yet run in production at a hospital or health plan. Every test above used test data. We say so here because
+          it is the first thing a careful buyer should ask, and the answer should be easy to find.</p>
+        <p>If you would like to be one of the first sites, <a href="https://github.com/biodream-llc/perfuse/discussions">get in touch</a>.</p>
+      </div>
+      <div class="card"><h3>The public test server</h3><p><a href="https://test.perfuse.health/">test.perfuse.health</a> runs the FHIR,
+        CRD, DTR, PAS, Bulk Data and SMART endpoints with test data only, and is checked every half hour.</p></div>
+    </div>
+  </div>
+</section>

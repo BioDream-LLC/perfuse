@@ -41,7 +41,7 @@ OLD=$(sed -n 's/^VERSION ?= //p' Makefile)
 echo "publish: $OLD -> $NEW"
 
 # ---- 2. Move every mention of the version, and check none was missed -------------------------------------
-FILES="Makefile README.md site/index.html site/mirth-connect-alternative/index.html"
+FILES="Makefile README.md site/pages/download.html site/pages/mirth.html"
 for f in $FILES; do
   OLD="$OLD" NEW="$NEW" python3 - "$f" <<'PY'
 import os, sys

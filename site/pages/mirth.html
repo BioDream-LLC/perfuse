@@ -1,0 +1,102 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Leaving Mirth Connect</p>
+    <h1>A free alternative to Mirth Connect that runs your channels</h1>
+    <p class="lede">From version 4.6, Mirth Connect is commercial only. Perfuse is free under Apache 2.0, reads your Mirth exports,
+      runs your existing JavaScript unchanged, and runs beside Mirth on your real traffic until you can prove the two agree.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/download/">Download Perfuse</a>
+      <a class="btn btn-ghost" href="/migrate-mirth-channels/">The step-by-step guide</a>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Why sites look elsewhere</p>
+      <h2>Mirth works. Its licence changed.</h2>
+      <p>Mirth Connect has run interfaces at thousands of sites for nearly twenty years. Teams start looking for other reasons:</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:key</div><h3>The licence</h3><p>NextGen no longer publishes open-source releases. The
+        free engine many hospitals run has no upgrade path that stays free.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>The Java runtime</h3><p>A JVM to install, patch and keep supported
+        on every server the engine touches.</p></div>
+      <div class="card"><div class="icon">ICON:chart</div><h3>The footprint</h3><p>A 254 MB install plus OpenJDK, holding 383 MB of
+        memory while idle.</p></div>
+      <div class="card"><div class="icon">ICON:engine</div><h3>Restarts</h3><p>An engine that needs to warm up is one you think twice
+        about restarting in the working day.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="intro"><p class="eyebrow">Side by side</p><h2>Perfuse and Mirth Connect</h2></div>
+    <table>
+      <thead><tr><th></th><th>Perfuse</th><th>Mirth Connect</th></tr></thead>
+      <tbody>
+        <tr><td>Licence</td><td>Apache 2.0, no tiers</td><td>Commercial only since 4.6</td></tr>
+        <tr><td>Memory at rest</td><td>31 MB</td><td>383 MB</td></tr>
+        <tr><td>Runtime required</td><td>None: one program</td><td>OpenJDK 17</td></tr>
+        <tr><td>Your Mirth JavaScript</td><td>Runs unchanged, E4X included</td><td>Native</td></tr>
+        <tr><td>Formats</td><td>HL7 v2, FHIR, DICOM, X12, CDA in the one program</td><td>HL7 v2 and FHIR core; others by extension</td></tr>
+        <tr><td>Kafka, MQTT, IBM MQ, Google Cloud</td><td>Built in</td><td>Not built in</td></tr>
+        <tr><td>CMS-0057-F payer APIs</td><td>All four, tested with Inferno</td><td>Not provided</td></tr>
+        <tr><td>Find a patient across formats</td><td>One search box over HL7 v2, FHIR, DICOM and X12</td><td>Search per format</td></tr>
+        <tr><td>Production track record</td><td class="caveat">None yet (v0.1.9)</td><td>Twenty years, thousands of sites</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">The last row should weigh more than the first. Perfuse has not yet processed production clinical traffic.
+      Everything that was tested is written down, and so is everything that was not, in the <a href="/verification/">verification
+      record</a>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">The usual blocker</p>
+        <h2>E4X runs here</h2>
+        <p>Mirth transformers are JavaScript, and many use E4X, the syntax that lets a script write
+          <code>msg['PID']['PID.5']['PID.5.1']</code>. Modern JavaScript engines removed E4X years ago, so most migrations discover on
+          the first transformer that they are really a rewrite. Perfuse runs E4X, along with <code>channelMap</code>, <code>$()</code>,
+          <code>DateUtil</code> and <code>SerializerFactory</code>.</p>
+        <p>That is why a Mirth migration here is a conversion, not a rewrite of every transformer you own.</p>
+      </div>
+      <div class="frame"><img src="/assets/articles/mirth-migration-steps.svg" loading="lazy"
+        alt="Five steps: explain, translate, test, run in shadow beside Mirth, prove they agree."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="intro"><p class="eyebrow">How the move works</p><h2>Five steps, each one reversible</h2></div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:eye</div><h3>1. Explain</h3><p><code>perfuse explain server-backup.xml</code> says by
+        name what converts, what converts with caveats, and what does not, before you commit to anything.</p></div>
+      <div class="card"><div class="icon">ICON:swap</div><h3>2. Translate</h3><p><code>perfuse translate</code> turns a channel, a
+        group, a code template library or a whole server backup into Perfuse channels.</p></div>
+      <div class="card"><div class="icon">ICON:flask</div><h3>3. Test</h3><p><code>perfuse test</code> runs each channel on sample
+        messages and checks what comes out.</p></div>
+      <div class="card"><div class="icon">ICON:layers</div><h3>4. Run beside Mirth</h3><p>Mirth forwards a copy of live traffic;
+        Perfuse writes its results to a folder and delivers nothing. No patient is affected, so nobody needs to approve it.</p></div>
+      <div class="card"><div class="icon">ICON:check</div><h3>5. Prove</h3><p><code>perfuse compare</code> pairs the two engines'
+        outputs by message and reports every difference, grouped by cause.</p></div>
+    </div>
+    <p style="margin-top:28px">The same tools work for the Open Integration Engine and BridgeLink, the open-source forks of Mirth,
+      and Perfuse can write channels back out as Mirth files, so the door stays open both ways.</p>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>Find out what your channels need, today</h2>
+    <p>Run <code style="color:#fff">perfuse explain</code> on your Mirth export. It changes nothing and takes a minute.</p>
+    <div class="actions"><a class="btn btn-primary" href="/download/">Download</a>
+      <a class="btn btn-ghost" href="/migrate-mirth-channels/">Read the migration guide</a></div>
+  </div>
+</section>

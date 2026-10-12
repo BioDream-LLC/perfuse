@@ -205,3 +205,6 @@ func RenderStandalonePage(title, description, canonical, src string) string {
 
 	return b.String()
 }
+
+// RenderProse renders markdown in the manual's dialect to an HTML fragment, for the website's own page layout.
+func RenderProse(src string) string { return renderProse(src, nil) }

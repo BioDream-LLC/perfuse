@@ -1,0 +1,176 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Platform</p>
+    <h1>An engine, a builder and a control room, in one program</h1>
+    <p class="lede">Hospitals run dozens of systems that each speak their own dialect. An integration engine sits in the middle and
+      translates. This page explains each part of Perfuse: what it is, why it exists, and how you use it.</p>
+  </div>
+</section>
+
+<section class="band" id="engine">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">The integration engine</p>
+        <h2>Channels: one job each, done reliably</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>A channel is one interface: "take admissions from the hospital system and send them to the lab".
+            It receives a message, checks it, changes it if needed, and delivers it to one or more places.</p></div>
+          <div><h4>Why it exists</h4><p>Without an engine every pair of systems needs its own custom link. With twenty systems that is
+            hundreds of links, each failing in its own way at three in the morning.</p></div>
+          <div><h4>How you use it</h4><p>Pick where messages come from, where they go, and what should change on the way, in the
+            browser or in a short text file. Perfuse does the rest and keeps a record.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Every destination has its own queue on disk, so one slow receiver never holds up the others</li>
+          <li>Messages are delivered in order, and retried with back-off, and a message that cannot be delivered is kept, never deleted</li>
+          <li>The sender is told "received" only after delivery, unless you choose otherwise</li>
+          <li>Every message is stored as it arrived, so it can be searched, compared and sent again</li>
+        </ul>
+      </div>
+      <div class="frame"><img src="/assets/screens/web/channels.webp" loading="lazy" width="1600" height="1002"
+        alt="The channel list: each channel, what it listens on, when it acknowledges, where it sends, and the file it lives in."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="builder">
+  <div class="wrap">
+    <div class="split flip">
+      <div>
+        <p class="eyebrow">Channel builder</p>
+        <h2>Build interfaces by answering questions</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>A guided form in the console. It asks where messages come from in plain words ("A sender connects
+            to us over MLLP", "We read from an IBM MQ queue") and only shows the settings that apply.</p></div>
+          <div><h4>Why it exists</h4><p>Most interface changes are small: a new field, a code mapped differently, a second
+            destination. They should not need a programmer.</p></div>
+          <div><h4>How you use it</h4><p>Open Channels, choose New, answer the questions, try it in the playground, then save.
+            The result is a readable file you can keep in Git.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Eleven declarative steps: set, copy, remove, clear, default, case, date, pad, trim, replace and map, each with an optional condition</li>
+          <li>Shared mapping tables, with a record of who decided each mapping and why</li>
+          <li>JavaScript, including Mirth's dialect, or sandboxed Lua, when a step is not enough</li>
+          <li>Fields shown by name ("the patient's family name"), not only by position (PID-5.1)</li>
+        </ul>
+      </div>
+      <div class="frame"><img src="/assets/screens/web/playground.webp" loading="lazy" width="1600" height="1002"
+        alt="The playground running a channel's transformation on a pasted message."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="monitoring">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Monitoring and alerts</p>
+        <h2>A control room for every interface</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>A live dashboard, a flow map, metrics, team dashboards and alerts, built into the console.</p></div>
+          <div><h4>Why it exists</h4><p>Most interface outages are noticed by a nurse or a billing clerk, hours late. An engine
+            should notice first and say so.</p></div>
+          <div><h4>How you use it</h4><p>Open the dashboard. Set alert rules once (error rate, no traffic, queue age and more), and
+            send them to email, chat or your paging system.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Eleven alert kinds, including "quieter than usual", which catches a half-broken sender a fixed threshold misses</li>
+          <li>Team dashboards for operations, partner connections, prior authorization, imaging, revenue cycle, lab and privacy</li>
+          <li>Metrics for Prometheus and Grafana, and tracing over OpenTelemetry</li>
+          <li>A fleet view across several Perfuse servers, sharing counts only, never patient data</li>
+        </ul>
+      </div>
+      <div class="frame"><img src="/assets/screens/web/metrics.webp" loading="lazy" width="1600" height="1002"
+        alt="The metrics view: message volumes, delivery times and error rates over time."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="safe-change">
+  <div class="wrap">
+    <div class="split flip">
+      <div>
+        <p class="eyebrow">Changing live interfaces</p>
+        <h2>Change a working interface without guessing</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>Shadow mode runs a new version of a channel beside the live one on real traffic, delivering
+            nothing, and shows field by field where the two differ.</p></div>
+          <div><h4>Why it exists</h4><p>Test messages never contain the odd cases real traffic does. The only safe test of a change
+            is the real feed, without the risk.</p></div>
+          <div><h4>How you use it</h4><p>Start a shadow from the channel's page, let it run for a day, and read the differences. When
+            there are none you did not intend, promote it.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Feed contracts: write down what a feed should contain and be told the day a sender changes it</li>
+          <li><code>perfuse profile</code> reports what a feed really contains</li>
+          <li><code>perfuse compare</code> proves two engines agree on the same traffic</li>
+          <li>Channel history read from Git: what changed, when, and by whom</li>
+        </ul>
+        <a href="/shadow-mode/">Guide: shadow mode</a> · <a href="/feed-contracts/">Guide: feed contracts</a>
+      </div>
+      <div class="frame"><img src="/assets/articles/shadow-mode.svg" loading="lazy"
+        alt="Live traffic reaches both the live channel and its shadow; only the live one delivers, and the differences are reported."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="security">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Security and sign-on</p>
+      <h2>Built for patient data from the first line</h2>
+      <p>Health data is the most sensitive data most organisations hold. Perfuse refuses to serve it over plain HTTP to anything
+        but the machine itself, and records who looked at what.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:users</div><h3>Single sign-on</h3><p>SAML 2.0, OpenID Connect and LDAP or Active
+        Directory, tested against Keycloak and Microsoft Entra. Configure SAML by pasting your provider's metadata.</p></div>
+      <div class="card"><div class="icon">ICON:key</div><h3>Passkeys</h3><p>Sign in with a fingerprint, a face or a security key:
+        nothing a fake login page can capture.</p></div>
+      <div class="card"><div class="icon">ICON:shield</div><h3>Roles and audit</h3><p>Viewer, editor and admin roles, API tokens for
+        machines, and an audit log of every change and every patient search.</p></div>
+      <div class="card"><div class="icon">ICON:eye</div><h3>Privacy monitoring</h3><p>Access is watched for volume, after-hours and
+        bulk access, and sign-in attempts are rate-limited.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>Provisioning</h3><p>SCIM 2.0, so your identity provider creates and
+        removes accounts by itself.</p></div>
+      <div class="card"><div class="icon">ICON:plug</div><h3>Mutual TLS</h3><p>Certificates both ways on any connection, checked
+        against OpenSSL rather than against our own client.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="operations">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Running it</p>
+        <h2>One file, every platform</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>Perfuse is a single program of about 60 MB with the web console inside it. There is no Java to
+            install and no application server.</p></div>
+          <div><h4>Why it exists</h4><p>The fewer moving parts an engine has, the fewer things break during an upgrade, and the
+            smaller the machine it needs.</p></div>
+          <div><h4>How you use it</h4><p>Download it, run <code>perfuse serve</code>, open the console. <code>perfuse init</code>
+            installs it as a service on Linux, macOS or Windows.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Linux, macOS and Windows, on Intel and Arm, plus a container image</li>
+          <li>31 MB of memory at rest, against Mirth Connect's 383 MB</li>
+          <li>Several organisations on one engine, isolated from each other (<a href="https://github.com/biodream-llc/perfuse/blob/main/docs/multi-facility.md">multi-tenant</a>)</li>
+          <li>Also a Go library, for teams who want HL7 parsing in their own programs</li>
+        </ul>
+      </div>
+      <div class="frame"><img src="/assets/articles/memory-at-rest.svg" loading="lazy"
+        alt="Memory at rest: Perfuse 31 MB, Mirth Connect 383 MB."></div>
+    </div>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>See it for yourself</h2>
+    <p>Download Perfuse and build your first channel in the browser, or read the manual first.</p>
+    <div class="actions"><a class="btn btn-primary" href="/download/">Download</a><a class="btn btn-ghost" href="/manual/">The manual</a></div>
+  </div>
+</section>

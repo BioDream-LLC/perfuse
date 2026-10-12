@@ -1,0 +1,96 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Connectors</p>
+    <h1>Every way in, every way out</h1>
+    <p class="lede">A connector is how Perfuse reaches another system: the cable, the folder, the queue or the web address messages
+      travel through. Perfuse has 24 kinds of source and 26 kinds of destination, and the healthcare formats that travel over them.</p>
+  </div>
+</section>
+
+<section class="band" id="formats">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Healthcare formats</p>
+      <h2>The languages health systems speak</h2>
+      <p>A format is the shape of the message itself. Hospitals use several at once, often for the same patient: the admission in
+        HL7 v2, the record in FHIR, the X-ray in DICOM, the bill in X12. Perfuse reads, checks, writes and converts all of them.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:doc</div><h3>HL7 v2</h3><p>The workhorse of hospital interfaces since the 1990s:
+        admissions, orders, results, scheduling. Parsed fast, every quirk handled, acknowledgements generated.</p></div>
+      <div class="card"><div class="icon">ICON:layers</div><h3>FHIR R4, R4B and R5</h3><p>The modern web standard for health data. A
+        full FHIR server, a validator, and conversion from HL7 v2 to FHIR and US Core.</p></div>
+      <div class="card"><div class="icon">ICON:image</div><h3>DICOM</h3><p>Medical images. All five network services, sending and
+        receiving, with de-identification as a step in the channel.</p></div>
+      <div class="card"><div class="icon">ICON:payer</div><h3>X12</h3><p>Insurance transactions: 837 claims, 835 remittances,
+        270/271 eligibility, 278 prior authorization and 275 attachments.</p></div>
+      <div class="card"><div class="icon">ICON:book</div><h3>CDA and C-CDA</h3><p>Clinical documents, including those hidden inside
+        HL7 v2 messages. Checked, signed, repaired and rendered to PDF.</p></div>
+      <div class="card"><div class="icon">ICON:flask</div><h3>NCPDP, JSON, XML and delimited</h3><p>Pharmacy messages, and the
+        general formats partners invent for themselves.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="transports">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Transports</p>
+        <h2>The classic hospital connections</h2>
+        <p>Most interfaces in a hospital still travel over a few well-worn routes. Perfuse speaks each in both directions, with
+          encryption where the route allows it.</p>
+        <div class="chips">
+          <span>MLLP, with TLS</span><span>TCP</span><span>HTTP and REST</span><span>SOAP web services</span><span>Files and folders</span>
+          <span>FTP and FTPS</span><span>SFTP</span><span>Windows shares (SMB)</span><span>WebDAV</span><span>Email (SMTP)</span>
+          <span>Serial cables</span><span>DICOM</span><span>DICOM query (C-FIND)</span><span>PostgreSQL</span><span>MySQL</span>
+          <span>SQL Server</span><span>Oracle</span><span>SQLite</span><span>Another channel</span><span>JavaScript reader and writer</span>
+        </div>
+        <p style="margin-top:18px">Each is tested against the real thing: SFTP against OpenSSH, databases against PostgreSQL, mutual
+          TLS against OpenSSL, DICOM against the Orthanc archive.</p>
+      </div>
+      <div class="frame"><img src="/assets/architecture.svg" loading="lazy"
+        alt="Perfuse in the middle: a lab system over MLLP, radiology over DICOM and a payer over X12 on one side; the EHR, a FHIR API and an archive on the other."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="cloud">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Cloud and message queues</p>
+      <h2>Straight into the cloud, without the cloud's toolkits</h2>
+      <p>Perfuse talks to AWS, Azure and Google Cloud over their own web interfaces, with the signing done inside Perfuse, so
+        nothing extra is installed. A message taken from a queue is confirmed only once it has been handled, so a crash means it is
+        read again, never lost.</p>
+    </div>
+    <table>
+      <thead><tr><th>Service</th><th>Read from it</th><th>Send to it</th><th>Tested against</th></tr></thead>
+      <tbody>
+        <tr><td>Amazon S3</td><td class="pass">Yes</td><td class="pass">Yes, any storage class, Glacier included</td><td>LocalStack, AWS's signature example</td></tr>
+        <tr><td>Amazon SQS</td><td class="pass">Yes</td><td class="pass">Yes, FIFO in patient order</td><td>LocalStack</td></tr>
+        <tr><td>Amazon SNS</td><td>—</td><td class="pass">Yes</td><td>LocalStack</td></tr>
+        <tr><td>Azure Service Bus and Event Hubs (AMQP 1.0)</td><td class="pass">Yes</td><td class="pass">Yes</td><td>Microsoft's Service Bus emulator</td></tr>
+        <tr><td>Azure Blob Storage</td><td class="pass">Yes</td><td class="pass">Yes, Hot to Archive</td><td>Azurite</td></tr>
+        <tr><td>Google Cloud Pub/Sub</td><td class="pass">Yes</td><td class="pass">Yes, in patient order</td><td>Google's Pub/Sub emulator</td></tr>
+        <tr><td>Google Cloud Storage</td><td class="pass">Yes</td><td class="pass">Yes, any storage class</td><td>fake-gcs-server</td></tr>
+        <tr><td>Kafka</td><td class="pass">Yes</td><td class="pass">Yes, keyed by patient</td><td>Apache Kafka 3.9</td></tr>
+        <tr><td>RabbitMQ, ActiveMQ, Artemis (AMQP 1.0, STOMP)</td><td class="pass">Yes</td><td class="pass">Yes</td><td>RabbitMQ 4, ActiveMQ 6.2</td></tr>
+        <tr><td>MQTT (Mosquitto, EMQX, HiveMQ, AWS IoT Core)</td><td class="pass">Yes</td><td class="pass">Yes</td><td>Mosquitto 2.0</td></tr>
+        <tr><td>IBM MQ</td><td class="pass">Yes</td><td class="pass">Yes, persistent</td><td>IBM MQ 10 for developers</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">"Tested against" means a channel read from one place and delivered to another on that software. Emulators
+      stand in where the service itself needs a paid account; the <a href="/verification/">verification record</a> says exactly what
+      each test did and did not show.</p>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>Need a connector that is not here?</h2>
+    <p>Tell us on GitHub. The JavaScript reader and writer cover the rest in the meantime.</p>
+    <div class="actions"><a class="btn btn-primary" href="https://github.com/biodream-llc/perfuse/discussions">Ask on GitHub</a>
+      <a class="btn btn-ghost" href="/manual/">Connector settings in the manual</a></div>
+  </div>
+</section>

@@ -206,46 +206,65 @@ func run(root, out, base string) error {
 	var urls []sitemapEntry
 
 	// The hand-written landing pages, copied with their URLs pointed at the new home.
-	landing := []struct {
-		src, dst, priority string
-	}{
-		{"site/index.html", "index.html", "1.0"},
-		{"site/mirth-connect-alternative/index.html", "mirth-connect-alternative/index.html", "0.9"},
-	}
-	for _, l := range landing {
-		b, err := os.ReadFile(filepath.Join(root, l.src))
+	// The section pages: HTML fragments in site/pages, each wrapped in the shared layout.
+	for _, sp := range sitePages {
+		frag, err := os.ReadFile(filepath.Join(root, "site/pages", sp.src))
 		if err != nil {
-			return fmt.Errorf("reading %s: %w", l.src, err)
+			return fmt.Errorf("reading %s: %w", sp.src, err)
 		}
-		if err := writeFile(filepath.Join(out, l.dst), []byte(rewriteHost(string(b), base))); err != nil {
+		body := iconRE.ReplaceAllStringFunc(rewriteHost(string(frag), base), func(m string) string { return icon(m[5:]) })
+		if sp.path == "/learn/" {
+			body = strings.Replace(body, "<!--GUIDES-->", guideCards(root), 1)
+		}
+		page := layout(base, sp.path, sp.section, sp.title, sp.description, body, "website")
+		if err := writeFile(filepath.Join(out, strings.TrimPrefix(sp.path, "/"), "index.html"), []byte(page)); err != nil {
 			return err
 		}
-		u := base + "/" + strings.TrimSuffix(l.dst, "index.html")
-		urls = append(urls, sitemapEntry{Loc: u, Priority: l.priority})
+		urls = append(urls, sitemapEntry{Loc: base + sp.path, Priority: sp.priority})
 	}
 
-	// The markdown documents, rendered.
+	// Guides and documents: markdown, rendered into the article layout with a contents list beside it.
 	for _, p := range pages {
 		raw, err := os.ReadFile(filepath.Join(root, p.src))
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", p.src, err)
 		}
-
-		canonical := base + "/" + p.dir + "/"
-		body := stripShieldsBadges(rewriteLinks(rewriteHost(string(raw), base)))
-		out2 := filepath.Join(out, p.dir, "index.html")
-		if err := writeFile(out2, []byte(manual.RenderStandalonePage(p.title, p.description, canonical, body))); err != nil {
+		md := stripShieldsBadges(rewriteLinks(rewriteHost(string(raw), base)))
+		// The byline is in the page header; the guide's own line would say it twice.
+		md = strings.Replace(md, "By **BioDream Developer**, BioDream LLC\n", "", 1)
+		prose := manual.RenderProse(md)
+		words := len(strings.Fields(md))
+		section := "learn"
+		if !strings.HasPrefix(p.src, "site/articles/") {
+			section = ""
+		}
+		body := fmt.Sprintf(`<div class="article-head"><div class="wrap"><p class="eyebrow">%s</p><h1>%s</h1>`+
+			`<p class="meta">By BioDream Developer, BioDream LLC · about %d minutes to read</p></div></div>`+
+			`<div class="wrap article"><aside><b>On this page</b>%s</aside><div class="prose">%s</div></div>`,
+			map[bool]string{true: "Guide", false: "Documentation"}[section == "learn"], html.EscapeString(p.title),
+			max(1, words/220), toc(prose), prose)
+		page := layout(base, "/"+p.dir+"/", section, p.title, p.description, body, "article")
+		if err := writeFile(filepath.Join(out, p.dir, "index.html"), []byte(page)); err != nil {
 			return err
 		}
-		urls = append(urls, sitemapEntry{Loc: canonical, Priority: p.priority})
+		urls = append(urls, sitemapEntry{Loc: base + "/" + p.dir + "/", Priority: p.priority})
 	}
 
-	// The manual, which is already self-contained HTML, plus the PDF beside it.
-	//
-	// The host rewrite matters here as much as anywhere: perfusedoc writes a canonical tag and an
-	// og:url into the manual, and copying it verbatim published a page that named a different
-	// address as its own canonical URL. That is an instruction to search engines to credit the old
-	// location for the page they are looking at.
+	// The stylesheet and anything else the pages share.
+	if err := filepath.WalkDir(filepath.Join(root, "site/static"), func(p string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		rel, _ := filepath.Rel(filepath.Join(root, "site/static"), p)
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		return writeFile(filepath.Join(out, rel), b)
+	}); err != nil {
+		return fmt.Errorf("copying site/static: %w", err)
+	}
+
 	man, err := os.ReadFile(filepath.Join(root, "docs/manual/perfuse-manual.html"))
 	if err != nil {
 		return fmt.Errorf("reading the manual: %w", err)

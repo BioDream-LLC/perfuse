@@ -1,0 +1,108 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Exchange</p>
+    <h1>Reporting, national exchange, apps and images</h1>
+    <p class="lede">Beyond the hospital's own interfaces, data has to reach public health agencies, other organisations across the
+      country, patients' apps and imaging archives. Each has its own rules. Perfuse follows them.</p>
+  </div>
+</section>
+
+<section class="band" id="public-health">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Public health reporting</p>
+        <h2>Reports that go because a code matched</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>Electronic case reporting (eCR) tells the health department about a reportable condition.
+            Electronic lab reporting (ELR) sends it the lab results it must see.</p></div>
+          <div><h4>Why it exists</h4><p>Outbreaks are found from these reports. Sent by hand, they arrive late or not at all.</p></div>
+          <div><h4>How you use it</h4><p>Load the trigger code list, add an eCR or ELR destination to a channel, and only the
+            messages that should be reported are sent. The agency's answer is stored with the report.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>HL7 eCR 2.1.2 eICR documents, validated with the HL7 validator</li>
+          <li>Reportability Responses received and stored where the report said to look</li>
+          <li>ELR 2.5.1: ONC's ELR certification tool reports all 28 of its example messages valid</li>
+        </ul>
+        <a href="/ecr-elr/">Guide: eCR and ELR explained</a>
+      </div>
+      <div class="frame"><img src="/assets/articles/ecr-elr-flow.svg" loading="lazy"
+        alt="A clinical message with a trigger code becomes an eICR to the health department, which answers with a Reportability Response."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="tefca">
+  <div class="wrap">
+    <div class="split flip">
+      <div>
+        <p class="eyebrow">TEFCA and UDAP</p>
+        <h2>Records from organisations you have never connected to</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>TEFCA is the US national framework for exchanging health records. UDAP is how two systems that
+            have never met prove who they are, with certificates from a trust community.</p></div>
+          <div><h4>Why it exists</h4><p>A patient treated in another state should not have to carry their records by hand.</p></div>
+          <div><h4>How you use it</h4><p>Register with your network's trust community, give Perfuse its certificate, and request or
+            answer Facilitated FHIR exchanges. Every exchange is written to disk for audit.</p></div>
+        </div>
+        <a href="/tefca-udap/">Guide: TEFCA and UDAP explained</a>
+      </div>
+      <div class="frame"><img src="/assets/articles/tefca-udap.svg" loading="lazy"
+        alt="Two TEFCA participants exchanging FHIR data after UDAP discovery, registration and signed metadata checks."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="smart">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">SMART on FHIR</p>
+        <h2>Let apps in, safely</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>SMART on FHIR is how an app asks a patient or clinician to sign in and gets only the access they
+            agree to.</p></div>
+          <div><h4>Why it exists</h4><p>CMS requires patient apps to be able to reach health plan data. Each app must get exactly the
+            access granted, and no more.</p></div>
+          <div><h4>How you use it</h4><p>Register the app in the console under Users, SMART apps. Perfuse is the sign-in server and
+            the data server, so there is nothing else to run.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Standalone and EHR launch, PKCE, consent, refresh tokens and Backend Services</li>
+          <li>Granular scopes enforced, for example only lab results</li>
+          <li>Inferno SMART App Launch 2.2: 80 of 80</li>
+        </ul>
+        <a href="/smart-on-fhir/">Guide: SMART on FHIR explained</a>
+      </div>
+      <div class="frame"><img src="/assets/articles/smart-flow.svg" loading="lazy"
+        alt="An app sends the user to sign in, receives a code, trades it for a token, and reads FHIR data."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="imaging">
+  <div class="wrap">
+    <div class="split flip">
+      <div>
+        <p class="eyebrow">Imaging</p>
+        <h2>Images routed, and stripped of names where they must be</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>DICOM is the standard for medical images and the network services that move them between
+            scanners and archives.</p></div>
+          <div><h4>Why it exists</h4><p>Images go to many places: the archive, a specialist, a research team. Some must never carry
+            the patient's name.</p></div>
+          <div><h4>How you use it</h4><p>Make a channel with a DICOM source, add a de-identification step, and send to one or more
+            archives or onward as HL7 or FHIR.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>C-STORE, C-FIND, C-ECHO, C-MOVE and C-GET, in both directions</li>
+          <li>Tested against the Orthanc archive, checked in Orthanc's own catalogue</li>
+        </ul>
+        <a href="/dicom-routing/">Guide: DICOM routing and de-identification</a>
+      </div>
+      <div class="frame"><img src="/assets/articles/dicom-flow.svg" loading="lazy"
+        alt="A scanner sends a study to Perfuse, which de-identifies it and routes it to an archive and a research store."></div>
+    </div>
+  </div>
+</section>

@@ -20,12 +20,12 @@ import (
 // opinion; it can be read out of the file.
 
 var (
-	chipRef   = regexp.MustCompile(`<img src="assets/chips/([a-z0-9]+)\.svg"[^>]*alt="([^"]*)"`)
+	chipRef   = regexp.MustCompile(`<img src="docs/assets/chips/([a-z0-9]+)\.svg"[^>]*alt="([^"]*)"`)
 	chipLabel = regexp.MustCompile(`>([^<>]{2,24})</text>`)
 )
 
 func TestChipAltTextMatchesTheChip(t *testing.T) {
-	page, err := os.ReadFile(filepath.Join("..", "..", "site", "index.html"))
+	page, err := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	if err != nil {
 		t.Skipf("landing page not readable from here: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestChipAltTextMatchesTheChip(t *testing.T) {
 // capability the project drew an icon for and then left off its own front page, which is how the
 // fleet view came to be built, working and documented nowhere.
 func TestEveryChipIsUsed(t *testing.T) {
-	page, err := os.ReadFile(filepath.Join("..", "..", "site", "index.html"))
+	page, err := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	if err != nil {
 		t.Skipf("landing page not readable from here: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestEveryChipIsUsed(t *testing.T) {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".svg") {
 			continue
 		}
-		if !strings.Contains(body, "assets/chips/"+e.Name()) {
+		if !strings.Contains(body, "docs/assets/chips/"+e.Name()) {
 			t.Errorf("docs/assets/chips/%s exists but the landing page does not show it", e.Name())
 		}
 	}
@@ -92,12 +92,12 @@ func TestEveryChipIsUsed(t *testing.T) {
 // it fails in a normal test run rather than only when somebody builds the site. The screenshots
 // were absent from the published site for a day because the build dropped them silently.
 func TestScreenshotsReferencedOnThePageExist(t *testing.T) {
-	page, err := os.ReadFile(filepath.Join("..", "..", "site", "index.html"))
+	page, err := os.ReadFile(filepath.Join("..", "..", "site", "pages", "home.html"))
 	if err != nil {
 		t.Skipf("landing page not readable from here: %v", err)
 	}
 
-	shot := regexp.MustCompile(`src="(assets/screens/[a-z0-9/]+\.(?:png|webp))"`)
+	shot := regexp.MustCompile(`src="/(assets/screens/[a-z0-9/]+\.(?:png|webp))"`)
 	refs := shot.FindAllStringSubmatch(string(page), -1)
 	if len(refs) == 0 {
 		t.Fatal("the landing page shows no screenshots of the product it is selling")

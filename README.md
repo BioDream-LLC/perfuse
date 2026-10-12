@@ -113,7 +113,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/cda.svg" width="168" height="40" alt="Clinical documents"></th><th align="left" valign="middle">C-CDA and CDA, including the ones hidden inside v2 messages</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/cda.svg" width="168" height="40" alt="Documents"></th><th align="left" valign="middle">C-CDA and CDA, including the ones hidden inside v2 messages</th></tr></thead>
 <tbody>
 <tr><td colspan="2">Read, validate and convert <b>C-CDA and CDA</b>, including documents arriving <b>base64-encoded inside an <code>MDM^T02</code></b>, which is how they usually turn up</td></tr>
 <tr><td colspan="2"><b>The narrative text is compared against the coded entries.</b> A document whose human-readable section disagrees with its structured data is flagged. Nothing else does this</td></tr>
@@ -140,7 +140,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/transform.svg" width="168" height="40" alt="Transformation"></th><th align="left" valign="middle">Eleven declarative steps, or full JavaScript or Lua when you need it</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/transform.svg" width="168" height="40" alt="Transform"></th><th align="left" valign="middle">Eleven declarative steps, or full JavaScript or Lua when you need it</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>Lua</b> as well as JavaScript: <code>scripts.language: lua</code> runs a channel's filter, transformer and other scripts in a sandboxed Lua 5.1 - no files, no shell, no environment, no code loading, a deadline that cannot be switched off - with the same message tree, maps and logger JavaScript has</td></tr>
 <tr><td colspan="2">Declarative steps that need no code: <b>set, copy, remove, clear, default, case, date, pad, trim, replace, map</b> — each with an optional <code>when</code> condition</td></tr>
@@ -163,7 +163,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/security.svg" width="168" height="40" alt="Security and sign-on"></th><th align="left" valign="middle">SAML, OIDC, LDAP, passkeys, SCIM, mutual TLS</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/security.svg" width="168" height="40" alt="Security"></th><th align="left" valign="middle">SAML, OIDC, LDAP, passkeys, SCIM, mutual TLS</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>SAML 2.0</b>, verified end to end against <b>a real Keycloak 26 and a real Microsoft Entra tenant</b>. Configure it by pasting the provider's metadata — no hunting for a certificate in XML and stripping its line breaks</td></tr>
 <tr><td colspan="2"><b>OpenID Connect</b>, with discovery, and <b>LDAP / Active Directory</b></td></tr>
@@ -177,7 +177,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/tefca.svg" width="168" height="40" alt="TEFCA and national exchange"></th><th align="left" valign="middle">UDAP, Facilitated FHIR, and the auditing TEFCA requires</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/tefca.svg" width="168" height="40" alt="TEFCA"></th><th align="left" valign="middle">UDAP, Facilitated FHIR, and the auditing TEFCA requires</th></tr></thead>
 <tbody>
 <tr><td colspan="2">This is the part that lets hospitals share records with organisations they have no direct connection to.</td></tr>
 <tr><td colspan="2"><b>UDAP</b> — dynamic client registration, discovery, and <b>signed metadata verification</b>, checked against a real authorisation server and a real trust community</td></tr>
@@ -188,7 +188,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/priorauth.svg" width="168" height="40" alt="CMS-0057 for payers"></th><th align="left" valign="middle">CMS-0057: the four payer APIs, ready-made</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/priorauth.svg" width="168" height="40" alt="Prior auth"></th><th align="left" valign="middle">CMS-0057: the four payer APIs, ready-made</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b> — the four FHIR APIs CMS-0057 requires of payers from 1 January 2027, served by the built-in FHIR endpoint, with a screen that says which are ready on this instance and what each still needs</td></tr>
 <tr><td colspan="2"><b>Paid claims to CARIN Blue Button 2.2.0</b>: an 837 and its 835 become professional, inpatient or outpatient ExplanationOfBenefits with their Patient, Coverage, Organizations and Practitioners — <b>no errors from the official HL7 validator</b> on any of the three</td></tr>
@@ -203,7 +203,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health reporting"></th><th align="left" valign="middle">eCR and ELR</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health"></th><th align="left" valign="middle">eCR and ELR</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>Electronic case reporting (eCR)</b>: a FHIR destination that sends an HL7 eCR 2.1.2 eICR for each message carrying a reportable-condition trigger code, and nothing for the rest</td></tr>
 <tr><td colspan="2">Triggers from the RCTC you load (or a built-in sample for testing), so a report goes because a code matched rather than because somebody remembered. Validated against the eCR guide with the HL7 validator</td></tr>
@@ -212,7 +212,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/liveinterface.svg" width="168" height="40" alt="Changing a live interface"></th><th align="left" valign="middle">Shadow mode, feed contracts, drift detection</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/liveinterface.svg" width="168" height="40" alt="Live changes"></th><th align="left" valign="middle">Shadow mode, feed contracts, drift detection</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>Shadow mode</b>: run a candidate version of a channel beside the live one <b>on real traffic</b>, delivering nothing, and read exactly where the two differ field by field. This is how you change a working interface without guessing</td></tr>
 <tr><td colspan="2"><b>Feed contracts</b>: declare what a feed is supposed to contain — which fields, which code sets, which cardinalities — and be told when reality drifts. Most interface outages are a sender quietly changing something</td></tr>
@@ -237,7 +237,7 @@ depends on something outside this software that is stated too.
 </tbody></table>
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/mirth.svg" width="168" height="40" alt="Leaving Mirth"></th><th align="left" valign="middle">Both directions, verified against Mirth 4.5.2, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0</th></tr></thead>
+<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/mirth.svg" width="168" height="40" alt="Mirth"></th><th align="left" valign="middle">Both directions, verified against Mirth 4.5.2, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0</th></tr></thead>
 <tbody>
 <tr><td colspan="2"><b>Existing Mirth JavaScript runs unchanged</b> — E4X, <code>msg['PID']['PID.5']['PID.5.1']</code>, <code>for each</code>, XML literals, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, <code>SerializerFactory</code></td></tr>
 <tr><td colspan="2"><code>perfuse explain</code> reads a Mirth channel export and says <b>by name</b> what converts, what converts with caveats, and what does not convert at all — before you commit to anything</td></tr>

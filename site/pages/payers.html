@@ -1,0 +1,119 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">For health plans</p>
+    <h1>CMS-0057-F, prior authorization and the provider directory, ready to run</h1>
+    <p class="lede">US health plans in Medicare Advantage, Medicaid, CHIP and the federal exchanges must run four FHIR APIs from
+      January 2027 and answer prior authorization requests faster from 2026. Perfuse has all four, passes the official tests, and
+      costs nothing to license.</p>
+  </div>
+</section>
+
+<section class="band" id="cms-0057">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">CMS-0057-F</p>
+        <h2>The four APIs the rule requires</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>CMS-0057-F, the Interoperability and Prior Authorization rule, tells payers to share data with
+            patients, doctors and other plans over FHIR, and to make prior authorization electronic.</p></div>
+          <div><h4>Why it exists</h4><p>Prior authorization by fax and phone delays care. Patients changing plans lose their history.
+            The rule sets deadlines to fix both.</p></div>
+          <div><h4>How you use it</h4><p>Start Perfuse with its FHIR server on, load your members and claims through channels, and
+            open the CMS-0057 screen: it says which APIs are ready and what each still needs.</p></div>
+        </div>
+      </div>
+      <div class="frame"><img src="/assets/articles/cms-0057-apis.svg" loading="lazy"
+        alt="The four CMS-0057-F APIs: Patient Access, Provider Access, Payer-to-Payer and Prior Authorization."></div>
+    </div>
+    <div class="grid" style="margin-top:40px">
+      <div class="card"><div class="icon">ICON:users</div><h3>Patient Access</h3><p>Members see their claims, clinical records and
+        prior authorizations in the app they choose, signed in with SMART on FHIR. Paid claims become CARIN Blue Button 2.2.0
+        Explanations of Benefit.</p></div>
+      <div class="card"><div class="icon">ICON:heart</div><h3>Provider Access</h3><p>In-network doctors fetch their attributed
+        patients' data in bulk, with Da Vinci's <code>$davinci-data-export</code>, honouring members who opted out.</p></div>
+      <div class="card"><div class="icon">ICON:swap</div><h3>Payer-to-Payer</h3><p>A new plan asks the old one for a member's
+        history: HRex <code>$member-match</code> finds them, and PDex data follows. Inferno's PDex workflow: 19 of 19.</p></div>
+      <div class="card"><div class="icon">ICON:check</div><h3>Prior Authorization</h3><p>Da Vinci CRD, DTR and PAS, from the order to
+        the decision, with the yearly metrics page the rule requires, in CMS's own layout.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="prior-auth">
+  <div class="wrap">
+    <div class="split flip">
+      <div>
+        <p class="eyebrow">Electronic prior authorization</p>
+        <h2>From the doctor's order to the decision, without a fax</h2>
+        <p>Three Da Vinci guides work in sequence. <b>CRD</b> tells the doctor, while ordering, whether approval is needed.
+          <b>DTR</b> gathers the documentation with a questionnaire filled from the record. <b>PAS</b> sends the request and returns
+          the decision.</p>
+        <ul class="ticks">
+          <li>A coverage rules file the payer writes in plain YAML, answered over CDS Hooks</li>
+          <li>A reviewer's queue in the console: read the request and its documents, then approve, deny or approve fewer units</li>
+          <li>Pended decisions sent back by subscription the moment they are made</li>
+          <li>The X12 278 converted to and from PAS, so payers on either side are reachable</li>
+          <li>Inferno: CRD 92 pass and none failed, PAS 82 of 84, DTR 43 pass and 2 fail</li>
+        </ul>
+        <a href="/da-vinci-prior-authorization/">Guide: CRD, DTR and PAS explained</a>
+      </div>
+      <div class="frame"><img src="/assets/articles/da-vinci-flow.svg" loading="lazy"
+        alt="The Da Vinci flow: CRD at the order, DTR for documentation, PAS for the request and decision."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="directory">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Provider directory</p>
+        <h2>Who is in network, where, and for what</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>Da Vinci Plan-Net is the FHIR form of a plan's provider directory: practitioners, their roles,
+            locations, networks, services and insurance plans.</p></div>
+          <div><h4>Why it exists</h4><p>CMS requires plans to publish their directory as an open API, so apps can tell members which
+            doctors near them take their plan.</p></div>
+          <div><h4>How you use it</h4><p>Load the directory through a channel from your credentialing system, and apps search
+            it on the built-in FHIR server.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Every Plan-Net search, include and reverse chain, for example "practitioners who work at this location"</li>
+          <li>Inferno Plan-Net 1.1.0: 199 pass; the 10 left are the test kit choosing its search values (<a href="/proof/">details</a>)</li>
+        </ul>
+      </div>
+      <div class="frame"><img src="/assets/screens/web/fhirlab.webp" loading="lazy" width="1600" height="1002"
+        alt="The FHIR lab in the console."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="claims">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Claims and attachments</p>
+      <h2>The money side, understood as structure</h2>
+      <p>X12 is parsed as loops and segments, not split on punctuation and hoped over.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:payer</div><h3>837 and 835</h3><p>Professional and institutional claims, and the
+        remittances that pay them, turned into CARIN Blue Button Explanations of Benefit.</p></div>
+      <div class="card"><div class="icon">ICON:shield</div><h3>Signed attachments (CMS-0053)</h3><p>C-CDA documents in an X12 275,
+        signed to HL7's digital signature guide and checked on the way in.</p></div>
+      <div class="card"><div class="icon">ICON:chart</div><h3>Prior authorization metrics</h3><p>Approvals, denials, extensions,
+        appeals and turnaround times, published as a public page, CSV or JSON.</p></div>
+      <div class="card"><div class="icon">ICON:check</div><h3>Eligibility</h3><p>270/271 eligibility questions and answers, routed
+        and converted like any other message.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>Try the payer APIs today</h2>
+    <p>test.perfuse.health runs every API on this page with test data. Point Inferno, or your own app, at it.</p>
+    <div class="actions"><a class="btn btn-primary" href="https://test.perfuse.health/">Public test server</a>
+      <a class="btn btn-ghost" href="/cms-0057-explained/">Guide: CMS-0057-F explained</a></div>
+  </div>
+</section>

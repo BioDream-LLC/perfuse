@@ -1,0 +1,159 @@
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Free and open source · Apache 2.0</p>
+    <h1>The healthcare integration engine that shows its work</h1>
+    <p class="lede">Perfuse moves information between the systems a hospital, lab, imaging centre or health plan runs: admissions,
+      lab results, images, claims, prior authorizations. It speaks HL7 v2, FHIR, DICOM, X12 and CDA, runs as one small program, and
+      every claim on this site links to the test that backs it.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/download/">Download Perfuse</a>
+      <a class="btn btn-ghost" href="/platform/">See what it does</a>
+      <a class="btn btn-ghost" href="https://test.perfuse.health/">Try the public test server</a>
+    </div>
+    <img class="shot" src="/assets/screens/web/dashboard.webp" width="1600" height="1002"
+      alt="The Perfuse dashboard: messages in the last 24 hours, channels running, throughput and a breakdown by message type.">
+  </div>
+</section>
+
+<div class="strip"><div class="wrap">
+  <div><b>$0</b><span>No licence, no per-channel fee, ever</span></div>
+  <div><b>31 MB</b><span>Memory at rest, against Mirth's 383 MB</span></div>
+  <div><b>50</b><span>Ways in and out: 24 sources, 26 destinations</span></div>
+  <div><b>Inferno</b><span>Official FHIR test suites, run in public</span></div>
+</div></div>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Everything in one program</p>
+      <h2>What Perfuse does</h2>
+      <p>Most sites buy an interface engine, then a FHIR server, then a prior authorization product, then a monitoring tool. Perfuse
+        is all of them, in a single download, with one console to run them from.</p>
+    </div>
+    <div class="grid">
+      <a class="card" href="/platform/#engine"><div class="icon">ICON:engine</div><h3>Interfaces that do not lose messages</h3>
+        <p>Receive, check, change and deliver HL7 v2 and more. Each destination has its own queue on disk, and the sender is told
+        "received" only when it is true.</p></a>
+      <a class="card" href="/platform/#builder"><div class="icon">ICON:layers</div><h3>Build it in the browser</h3>
+        <p>A guided channel builder, declarative steps, JavaScript or Lua when you need it, and a playground to try a change
+        on a real message first.</p></a>
+      <a class="card" href="/connectors/"><div class="icon">ICON:plug</div><h3>Connects to almost anything</h3>
+        <p>MLLP, files, FTP and SFTP, databases, web services, AWS, Azure, Google Cloud, Kafka, MQTT and IBM MQ.</p></a>
+      <a class="card" href="/connectors/#formats"><div class="icon">ICON:doc</div><h3>Every healthcare format</h3>
+        <p>HL7 v2, FHIR R4 and R5, DICOM, X12 837, 835, 270/271 and 278, C-CDA, and the conversions between them.</p></a>
+      <a class="card" href="/payers/"><div class="icon">ICON:payer</div><h3>CMS-0057-F, all four APIs</h3>
+        <p>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization, plus the provider directory, ready to run.</p></a>
+      <a class="card" href="/payers/#prior-auth"><div class="icon">ICON:check</div><h3>Electronic prior authorization</h3>
+        <p>Da Vinci CRD, DTR and PAS, a reviewer's queue, and the X12 278 on the other side.</p></a>
+      <a class="card" href="/exchange/#public-health"><div class="icon">ICON:heart</div><h3>Public health reporting</h3>
+        <p>Electronic case reports and lab reports, triggered by the codes that matter, with the agency's answer stored.</p></a>
+      <a class="card" href="/exchange/#tefca"><div class="icon">ICON:globe</div><h3>National exchange</h3>
+        <p>TEFCA Facilitated FHIR with UDAP trust, and the audit trail TEFCA expects.</p></a>
+      <a class="card" href="/exchange/#smart"><div class="icon">ICON:key</div><h3>SMART on FHIR built in</h3>
+        <p>An authorization server for patient and clinician apps, 80 of 80 on Inferno's SMART suite.</p></a>
+      <a class="card" href="/platform/#monitoring"><div class="icon">ICON:chart</div><h3>See what is happening</h3>
+        <p>A live dashboard, a flow map you can rewind, eleven kinds of alert, and a search that finds a patient across formats.</p></a>
+      <a class="card" href="/platform/#safe-change"><div class="icon">ICON:eye</div><h3>Change without guessing</h3>
+        <p>Run a new version beside the live one on real traffic, delivering nothing, and read every difference.</p></a>
+      <a class="card" href="/mirth-connect-alternative/"><div class="icon">ICON:swap</div><h3>Bring your Mirth channels</h3>
+        <p>Your Mirth Connect exports convert, your JavaScript runs unchanged, and you can prove both engines agree.</p></a>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Monitoring</p>
+        <h2>Know where every message went</h2>
+        <p>Every message is stored as it arrived, before anything changes it. Search by patient, control number, type or content,
+          open any message to see each step it took, and resend it if you need to.</p>
+        <ul class="ticks">
+          <li>Find a patient's messages by typing what you know: a record number, a name, a date of birth</li>
+          <li>Searches HL7 v2, FHIR, DICOM and X12 at once</li>
+          <li>Every search is written to the audit trail</li>
+        </ul>
+        <a href="/platform/#monitoring">More about monitoring</a>
+      </div>
+      <div class="frame"><img src="/assets/screens/web/messages.webp" loading="lazy" width="1600" height="1002"
+        alt="The message browser with search by channel, outcome, type and control number."></div>
+    </div>
+    <div class="split flip">
+      <div>
+        <p class="eyebrow">The flow map</p>
+        <h2>Rewind to the moment something stopped</h2>
+        <p>The flow map draws every channel and where it sends. Drag the scrubber back through the last hour and the strands that
+          went dark show you which partner stopped and when, without reading a log.</p>
+        <a href="/platform/#monitoring">See the dashboards</a>
+      </div>
+      <div class="frame"><img src="/assets/screens/web/flowmap.webp" loading="lazy" width="1600" height="1002"
+        alt="The flow map: channels, their destinations, a sparkline of traffic on each, and a time scrubber."></div>
+    </div>
+    <div class="split">
+      <div>
+        <p class="eyebrow">Try before you change</p>
+        <h2>Test a change on a real message first</h2>
+        <p>The playground runs a channel's filter and transformer on a message you paste in and shows the result field by field,
+          in the browser, before anything is saved.</p>
+        <a href="/platform/#builder">How channels are built</a>
+      </div>
+      <div class="frame"><img src="/assets/screens/web/playground.webp" loading="lazy" width="1600" height="1002"
+        alt="The playground, running a transformation on a pasted HL7 message and showing the output."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Proof, not promises</p>
+      <h2>Tested against the official suites, in public</h2>
+      <p>Inferno is the test kit ONC and HL7 use to check FHIR servers. These results are runs of Inferno's hosted test kits
+        against <a href="https://test.perfuse.health/">test.perfuse.health</a>, a public Perfuse server anyone can try.</p>
+    </div>
+    <table>
+      <thead><tr><th>Inferno test kit</th><th>What it checks</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>SMART App Launch 2.2</td><td>Apps signing patients and clinicians in</td><td class="num pass">80 of 80</td></tr>
+        <tr><td>Bulk Data Access 2.0</td><td>Exporting whole populations</td><td class="num pass">48 of 48</td></tr>
+        <tr><td>Da Vinci PDex 2.0, payer-to-payer</td><td>A member's records moving between health plans</td><td class="num pass">19 of 19</td></tr>
+        <tr><td>Da Vinci PDex 2.0, API coverage</td><td>Every resource and element the guide requires</td><td class="num pass">312 pass, 1 skip</td></tr>
+        <tr><td>Da Vinci CRD 2.2.1</td><td>Telling a doctor, at the order, whether approval is needed</td><td class="num pass">92 pass, none failed</td></tr>
+        <tr><td>Da Vinci PAS 2.2.1</td><td>Requesting and deciding prior authorizations</td><td class="num">82 of 84</td></tr>
+        <tr><td>Da Vinci DTR 2.2.0</td><td>Gathering the documentation an approval needs</td><td class="num">43 pass, 2 fail</td></tr>
+        <tr><td>Da Vinci Plan-Net 1.1.0</td><td>The provider directory</td><td class="num">199 pass, 10 fail</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">Every failure left is explained on the <a href="/proof/">proof page</a>, with the upstream issue where the
+      test kit itself is wrong.</p>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Leaving Mirth Connect</p>
+        <h2>Your channels come with you</h2>
+        <p>From version 4.6, Mirth Connect needs a paid licence. Perfuse reads your Mirth channel exports, says before you start what
+          converts and what does not, runs your existing JavaScript unchanged, and runs beside Mirth on your real traffic until you
+          can prove the two agree.</p>
+        <a class="btn btn-line" href="/mirth-connect-alternative/">How the move works</a>
+      </div>
+      <div class="frame"><img src="/assets/articles/mirth-migration-steps.svg" loading="lazy"
+        alt="Five steps: explain the export, translate it, test on samples, run in shadow beside Mirth, prove they agree."></div>
+    </div>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>One file. No licence. Running in a minute.</h2>
+    <p>Download it, start it, and open the console in your browser. Nothing else to install.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/download/">Download</a>
+      <a class="btn btn-ghost" href="/manual/">Read the manual</a>
+    </div>
+  </div>
+</section>
