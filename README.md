@@ -172,7 +172,8 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2"><b>Passkeys (WebAuthn)</b> — fingerprint, face or a security key, and nothing a fake login page can capture</td></tr>
 <tr><td colspan="2"><b>SCIM 2.0</b>, so an identity provider can provision and deprovision accounts directly</td></tr>
 <tr><td colspan="2"><b>Mutual TLS</b>, verified against <b>OpenSSL</b> rather than against our own client</td></tr>
-<tr><td colspan="2">Role-based access control, API tokens for machines, session management, and an <b>audit log of who changed what</b></td></tr>
+<tr><td colspan="2">Role-based access control with six roles — <b>monitor</b> (status and alerts, no message contents), viewer, <b>operator</b> (resend and replay, no edits), editor, admin and platform — API tokens for machines, session management, and an <b>audit log of who changed what</b></td></tr>
+<tr><td colspan="2"><b>Channel groups</b> for a hospital group on one engine: a person or token limited to some groups sees and acts on those channels only, in every list, count, chart, alert and search, and an administrator limited to groups manages their own people and channels</td></tr>
 <tr><td colspan="2">Refuses to serve patient data over plain HTTP on a non-loopback address unless explicitly overridden</td></tr>
 <tr><td colspan="2">A rate limiter on authentication, and PHI access auditing with volume, after-hours and bulk-access detection</td></tr>
 </tbody></table>
@@ -235,7 +236,8 @@ depends on something outside this software that is stated too.
 <tr><td colspan="2">A <b>message store</b> with retention, full search, and search <i>inside</i> message content using the same expression language channels filter with — so anything that works in the search box can be pasted into a channel</td></tr>
 <tr><td colspan="2"><b>Find a patient's messages by typing what you know</b> — an MRN, a name, a date of birth, an accession or a claim number — across <b>HL7 v2, FHIR, DICOM and X12 at once</b>, without naming a field in any of them. Matched however it is written, so a message holding <code>SAMPLESON^BRAVO</code> is found by typing <i>Sampleson, Bravo</i>. An index lookup rather than a scan, switchable off, and every search is written to the audit trail with the term</td></tr>
 <tr><td colspan="2">Replay and reprocessing, because the message is stored <b>as received</b> before anything modifies it</td></tr>
-<tr><td colspan="2"><b>Fleet view</b> across multiple instances, and <b>multi-tenancy</b> with isolation rules</td></tr>
+<tr><td colspan="2"><b>Fleet view</b> across multiple instances, and <b>multi-tenancy</b> with isolation rules and <b>limits per tenant</b> on channels, messages a minute and storage; over a limit, work is refused the way a busy receiver refuses it, never dropped</td></tr>
+<tr><td colspan="2"><b>Restart from the console</b>: settings that apply at a restart are applied with one button, audited, without a shell</td></tr>
 <tr><td colspan="2">Runs as a <b>systemd unit, a launchd service or a Windows service</b>; <code>perfuse init</code> writes the right one</td></tr>
 </tbody></table>
 

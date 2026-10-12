@@ -128,8 +128,12 @@
         Directory, tested against Keycloak and Microsoft Entra. Configure SAML by pasting your provider's metadata.</p></div>
       <div class="card"><div class="icon">ICON:key</div><h3>Passkeys</h3><p>Sign in with a fingerprint, a face or a security key:
         nothing a fake login page can capture.</p></div>
-      <div class="card"><div class="icon">ICON:shield</div><h3>Roles and audit</h3><p>Viewer, editor and admin roles, API tokens for
-        machines, and an audit log of every change and every patient search.</p></div>
+      <div class="card"><div class="icon">ICON:shield</div><h3>Roles and audit</h3><p>Six roles, from a monitor who sees status but no
+        message contents to an operator who can resend but not edit. API tokens for machines, and an audit log of every change
+        and every patient search.</p></div>
+      <div class="card"><div class="icon">ICON:layers</div><h3>Channel groups</h3><p>For a hospital group on one engine: limit a
+        person to their facility's channels, and they see only those, in every list, chart, alert and search. Their own
+        administrator manages their own people.</p></div>
       <div class="card"><div class="icon">ICON:eye</div><h3>Privacy monitoring</h3><p>Access is watched for volume, after-hours and
         bulk access, and sign-in attempts are rate-limited.</p></div>
       <div class="card"><div class="icon">ICON:server</div><h3>Provisioning</h3><p>SCIM 2.0, so your identity provider creates and
@@ -157,7 +161,8 @@
         <ul class="ticks">
           <li>Linux, macOS and Windows, on Intel and Arm, plus a container image</li>
           <li>31 MB of memory at rest, against Mirth Connect's 383 MB</li>
-          <li>Several organisations on one engine, isolated from each other (<a href="https://github.com/biodream-llc/perfuse/blob/main/docs/multi-facility.md">multi-tenant</a>)</li>
+          <li>Several organisations on one engine, isolated from each other (<a href="https://github.com/biodream-llc/perfuse/blob/main/docs/multi-facility.md">multi-tenant</a>), each with its own limits on channels, messages a minute and storage</li>
+          <li>Settings that need a restart are applied with a button in the console</li>
           <li>Also a Go library, for teams who want HL7 parsing in their own programs</li>
         </ul>
       </div>
