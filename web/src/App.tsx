@@ -1286,7 +1286,7 @@ function Users() {
 
       {loading && <Spinner label="Loading users…" />}
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-800 bg-slate-900/60 text-left">
             <tr className="text-xs tracking-wide text-slate-500 uppercase">
@@ -1424,7 +1424,7 @@ function Audit() {
       */}
       {me?.role === 'admin' && <FrictionPanel />}
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-800 bg-slate-900/60 text-left">
             <tr className="text-xs tracking-wide text-slate-500 uppercase">

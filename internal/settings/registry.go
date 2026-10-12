@@ -40,7 +40,9 @@ func intp(v int) *int { return &v }
 // Deliberately absent: the listen address, the database path and the channel directory. All three decide where the process
 // finds the thing it is editing, so changing them through the interface would mean the interface saving a change to a file it
 // would then stop being able to read. They stay flags and are shown read-only.
-func Default() []Setting {
+func Default() []Setting { return append(baseSettings(), startupSettings()...) }
+
+func baseSettings() []Setting {
 	return []Setting{
 		// ---------------------------------------------------------------- Data
 		{

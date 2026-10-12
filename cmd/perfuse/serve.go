@@ -258,6 +258,66 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		stdout, stderr = f, f
 	}
 
+	// Settings are prepared before anything reads one.
+	//
+	// Defaulted next to the database rather than left empty, because an empty path means the settings area can show
+	// every value and save none - and a settings page whose save button does not work is worse than no settings page.
+	// Next to the database specifically, rather than in the channels directory, so the channel loader never has to
+	// decide whether a file is a channel.
+	settingsPath := *settingsFile
+	if settingsPath == "" {
+		settingsPath = filepath.Join(filepath.Dir(*dbPath), "perfuse-settings.yaml")
+	}
+
+	settingsRegistry, err := settings.NewRegistry(settings.Default())
+	if err != nil {
+		// A malformed registry is a programming error, and it is refused here rather than at first use so that it
+		// cannot ship as a settings area with a control missing.
+		return fmt.Errorf("preparing settings: %w", err)
+	}
+
+	settingsStore, err := settings.NewStore(settingsRegistry, settingsPath)
+	if err != nil {
+		// A settings file with one bad line is refused rather than partly applied, or the server runs with a
+		// configuration that is neither what the file says nor what the operator meant.
+		return err
+	}
+
+	// The logo lives beside the settings file rather than in it, because it is binary and that file is
+	// meant to stay readable and hand-editable. With no settings file there is nowhere to put it, and
+	// an upload is then refused rather than kept in memory until the next restart.
+	var brandingStore *branding.Store
+	if settingsPath != "" {
+		brandingStore, err = branding.NewStore(filepath.Dir(settingsPath))
+		if err != nil {
+			// A logo that cannot be read is a startup failure rather than a silent fallback to the
+			// default mark: a customer whose branding vanished after a restart would reasonably want
+			// to know at the restart.
+			return fmt.Errorf("preparing branding: %w", err)
+		}
+	}
+
+	// Existing installations keep working: their flags become the initial file on first start, and from then on the
+	// interface can manage them without anybody editing a service definition.
+	if err := settingsStore.SeedFromFlags(flagSettings(fset)); err != nil {
+		return fmt.Errorf("writing the initial settings file: %w", err)
+	}
+	if err := settingsStore.SeedMissing(flagSettings(fset)); err != nil {
+		return fmt.Errorf("recording start-up flags in the settings file: %w", err)
+	}
+
+	// A flag the file overrides does nothing, and saying so is the whole point. Left silent, it stays in the service
+	// definition for years and everyone who reads it believes it.
+	for _, conflict := range settingsStore.Conflicts(flagSettings(fset)) {
+		fmt.Fprintf(os.Stderr, "perfuse: note: %s\n", conflict)
+	}
+
+	// The file wins, so make it win: a setting saved in the console that takes effect at a restart is applied to the
+	// flag it stands for. Before, the file's value was recorded and reported as winning, and the flag's value was used.
+	if err := applyFileSettings(fset, settingsStore); err != nil {
+		return err
+	}
+
 	// A misconfigured passkey domain is refused at startup rather than at the first request.
 	//
 	// The commonest mistake is giving a URL where a bare domain is wanted, and it produces credentials that never work.
@@ -349,56 +409,6 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	// Settings are prepared before anything reads one.
-	//
-	// Defaulted next to the database rather than left empty, because an empty path means the settings area can show
-	// every value and save none - and a settings page whose save button does not work is worse than no settings page.
-	// Next to the database specifically, rather than in the channels directory, so the channel loader never has to
-	// decide whether a file is a channel.
-	settingsPath := *settingsFile
-	if settingsPath == "" {
-		settingsPath = filepath.Join(filepath.Dir(*dbPath), "perfuse-settings.yaml")
-	}
-
-	settingsRegistry, err := settings.NewRegistry(settings.Default())
-	if err != nil {
-		// A malformed registry is a programming error, and it is refused here rather than at first use so that it
-		// cannot ship as a settings area with a control missing.
-		return fmt.Errorf("preparing settings: %w", err)
-	}
-
-	settingsStore, err := settings.NewStore(settingsRegistry, settingsPath)
-	if err != nil {
-		// A settings file with one bad line is refused rather than partly applied, or the server runs with a
-		// configuration that is neither what the file says nor what the operator meant.
-		return err
-	}
-
-	// The logo lives beside the settings file rather than in it, because it is binary and that file is
-	// meant to stay readable and hand-editable. With no settings file there is nowhere to put it, and
-	// an upload is then refused rather than kept in memory until the next restart.
-	var brandingStore *branding.Store
-	if settingsPath != "" {
-		brandingStore, err = branding.NewStore(filepath.Dir(settingsPath))
-		if err != nil {
-			// A logo that cannot be read is a startup failure rather than a silent fallback to the
-			// default mark: a customer whose branding vanished after a restart would reasonably want
-			// to know at the restart.
-			return fmt.Errorf("preparing branding: %w", err)
-		}
-	}
-
-	// Existing installations keep working: their flags become the initial file on first start, and from then on the
-	// interface can manage them without anybody editing a service definition.
-	if err := settingsStore.SeedFromFlags(flagSettings(fset)); err != nil {
-		return fmt.Errorf("writing the initial settings file: %w", err)
-	}
-
-	// A flag the file overrides does nothing, and saying so is the whole point. Left silent, it stays in the service
-	// definition for years and everyone who reads it believes it.
-	for _, conflict := range settingsStore.Conflicts(flagSettings(fset)) {
-		fmt.Fprintf(os.Stderr, "perfuse: note: %s\n", conflict)
-	}
 
 	// One database file for everything, so a deployment has one thing to back up
 	// rather than several that can be restored out of step with each other.

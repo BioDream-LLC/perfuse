@@ -491,6 +491,25 @@ func (s *Store) SeedFromFlags(flagValues map[string]any) error {
 	return s.Set(flagValues)
 }
 
+// SeedMissing records the flags the process was started with that the file has no value for yet. A setting added after the
+// file was first written (or a flag added to the service later) would otherwise read as its default in the console while
+// the server ran with the flag's value.
+func (s *Store) SeedMissing(flagValues map[string]any) error {
+	if s.path == "" {
+		return nil
+	}
+	missing := map[string]any{}
+	for k, v := range flagValues {
+		if _, ok := s.registry.Lookup(k); ok && !s.IsSet(k) {
+			missing[k] = v
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return s.Set(missing)
+}
+
 // Conflicts reports flags whose values disagree with the file.
 //
 // The file wins, so a disagreement means the flag does nothing. Reported at startup by name and with both values, because
