@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" role="img" aria-label="A prior authorization journey in five steps. One, a doctor orders a test or treatment. Two, the plan is asked whether it needs approval. Three, the needed paperwork is gathered. Four, the request is sent to the plan. Five, the plan answers approved, denied with a reason, or needs more time. The old way was phone calls and faxes taking days; the new way is computer to computer, often in seconds.">
+  <title>A prior authorization journey, step by step</title>
+  <defs>
+    <linearGradient id="box2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#eef4fb"/>
+    </linearGradient>
+    <filter id="soft2" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0b1f3a" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0891b2"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="520" rx="18" fill="#f5f8fc"/>
+  <text x="600" y="56" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="700" fill="#0b1f3a" text-anchor="middle">Asking the plan to say yes, step by step</text>
+
+  <circle cx="130" cy="190" r="30" fill="#0891b2"/>
+  <text x="130" y="199" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#ffffff" text-anchor="middle">1</text>
+  <rect x="80" y="236" width="200" height="110" rx="14" fill="url(#box2)" stroke="#0891b2" stroke-width="2" filter="url(#soft2)"/>
+  <text x="180" y="278" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Doctor orders</text>
+  <text x="180" y="304" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">a test, scan or</text>
+  <text x="180" y="324" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">treatment</text>
+
+  <circle cx="360" cy="190" r="30" fill="#0891b2"/>
+  <text x="360" y="199" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#ffffff" text-anchor="middle">2</text>
+  <rect x="310" y="236" width="200" height="110" rx="14" fill="url(#box2)" stroke="#0891b2" stroke-width="2" filter="url(#soft2)"/>
+  <text x="410" y="278" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Is approval</text>
+  <text x="410" y="300" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">needed?</text>
+  <text x="410" y="326" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">the plan is asked</text>
+
+  <circle cx="590" cy="190" r="30" fill="#0891b2"/>
+  <text x="590" y="199" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#ffffff" text-anchor="middle">3</text>
+  <rect x="540" y="236" width="200" height="110" rx="14" fill="url(#box2)" stroke="#0891b2" stroke-width="2" filter="url(#soft2)"/>
+  <text x="640" y="278" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Gather proof</text>
+  <text x="640" y="304" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">the paperwork the</text>
+  <text x="640" y="324" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">plan wants</text>
+
+  <circle cx="820" cy="190" r="30" fill="#0891b2"/>
+  <text x="820" y="199" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#ffffff" text-anchor="middle">4</text>
+  <rect x="770" y="236" width="200" height="110" rx="14" fill="url(#box2)" stroke="#0891b2" stroke-width="2" filter="url(#soft2)"/>
+  <text x="870" y="278" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Send request</text>
+  <text x="870" y="304" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">to the plan, with</text>
+  <text x="870" y="324" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">the proof attached</text>
+
+  <circle cx="1050" cy="190" r="30" fill="#0b1f3a"/>
+  <text x="1050" y="199" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#ffffff" text-anchor="middle">5</text>
+  <rect x="1000" y="236" width="130" height="110" rx="14" fill="#e0f2f7" stroke="#0b1f3a" stroke-width="2" filter="url(#soft2)"/>
+  <text x="1065" y="278" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Answer</text>
+  <text x="1065" y="304" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">yes, no with</text>
+  <text x="1065" y="324" font-family="system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="middle">a reason</text>
+
+  <line x1="285" y1="291" x2="305" y2="291" stroke="#0891b2" stroke-width="3" marker-end="url(#arr)"/>
+  <line x1="515" y1="291" x2="535" y2="291" stroke="#0891b2" stroke-width="3" marker-end="url(#arr)"/>
+  <line x1="745" y1="291" x2="765" y2="291" stroke="#0891b2" stroke-width="3" marker-end="url(#arr)"/>
+  <line x1="975" y1="291" x2="995" y2="291" stroke="#0891b2" stroke-width="3" marker-end="url(#arr)"/>
+
+  <rect x="80" y="400" width="1050" height="84" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="104" y="436" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Old way:</text>
+  <text x="200" y="436" font-family="system-ui, sans-serif" font-size="16" fill="#334155">phone calls, faxes and waiting, often several days.</text>
+  <text x="104" y="466" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#0e7490">New way:</text>
+  <text x="200" y="466" font-family="system-ui, sans-serif" font-size="16" fill="#334155">computer to computer, with the answer often back in seconds.</text>
+</svg>

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="The journey of one lab result. A lab machine produces an HL7 v2 ORU message. Perfuse reads it, converts dates, codes, identifiers and units, and produces FHIR resources: a DiagnosticReport and an Observation. A doctor's app then displays the result.">
+  <title>How one lab result travels from HL7 v2 to FHIR</title>
+  <defs>
+    <marker id="tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0891b2"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="560" rx="18" fill="#f5f8fc"/>
+  <text x="60" y="56" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a">The journey of one lab result</text>
+  <text x="60" y="88" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" fill="#334155">From the laboratory machine to the doctor's screen</text>
+
+  <!-- Step 1: lab machine -->
+  <rect x="60" y="130" width="250" height="130" rx="16" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <text x="185" y="172" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Lab machine</text>
+  <text x="185" y="202" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" fill="#334155" text-anchor="middle">measures the blood</text>
+  <text x="185" y="228" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" fill="#334155" text-anchor="middle">sample</text>
+
+  <!-- v2 message chip -->
+  <rect x="340" y="150" width="180" height="90" rx="12" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
+  <text x="430" y="188" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" fill="#0e7490" text-anchor="middle">HL7 v2</text>
+  <text x="430" y="214" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155" text-anchor="middle">ORU message</text>
+
+  <!-- Step 2: Perfuse converts -->
+  <rect x="550" y="120" width="310" height="300" rx="16" fill="#ffffff" stroke="#0e7490" stroke-width="2.5"/>
+  <text x="705" y="158" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0e7490" text-anchor="middle">Perfuse converts</text>
+  <rect x="578" y="178" width="254" height="40" rx="9" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="705" y="204" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#0b1f3a" text-anchor="middle">fixes the dates and times</text>
+  <rect x="578" y="226" width="254" height="40" rx="9" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="705" y="252" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#0b1f3a" text-anchor="middle">adds the identifier systems</text>
+  <rect x="578" y="274" width="254" height="40" rx="9" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="705" y="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#0b1f3a" text-anchor="middle">translates the codes</text>
+  <rect x="578" y="322" width="254" height="40" rx="9" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="705" y="348" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#0b1f3a" text-anchor="middle">checks the units</text>
+  <rect x="578" y="370" width="254" height="40" rx="9" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="705" y="396" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#0b1f3a" text-anchor="middle">writes a mapping report</text>
+
+  <!-- FHIR resources -->
+  <rect x="890" y="150" width="250" height="90" rx="12" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
+  <text x="1015" y="186" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" fill="#0e7490" text-anchor="middle">FHIR</text>
+  <text x="1015" y="212" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#334155" text-anchor="middle">DiagnosticReport</text>
+  <text x="1015" y="232" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#334155" text-anchor="middle">+ Observation</text>
+
+  <!-- Step 3: app -->
+  <rect x="890" y="300" width="250" height="120" rx="16" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <text x="1015" y="344" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Doctor's app</text>
+  <text x="1015" y="376" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" fill="#334155" text-anchor="middle">shows the result</text>
+  <text x="1015" y="400" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" fill="#334155" text-anchor="middle">on the screen</text>
+
+  <!-- arrows -->
+  <line x1="312" y1="195" x2="336" y2="195" stroke="#0891b2" stroke-width="3" marker-end="url(#tip)"/>
+  <line x1="522" y1="195" x2="546" y2="230" stroke="#0891b2" stroke-width="3" marker-end="url(#tip)"/>
+  <line x1="862" y1="230" x2="886" y2="195" stroke="#0891b2" stroke-width="3" marker-end="url(#tip)"/>
+  <line x1="1015" y1="242" x2="1015" y2="296" stroke="#0891b2" stroke-width="3" marker-end="url(#tip)"/>
+
+  <text x="60" y="500" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">The hard work is in the middle box: getting the dates, codes, identifiers and units right so the</text>
+  <text x="60" y="526" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">receiving app shows the same result the lab machine measured.</text>
+</svg>

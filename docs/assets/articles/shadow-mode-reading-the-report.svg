@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="How to read a shadow report. The report shows a difference rate and lists differences field by field at component level. One row says PID-5.1 differs on 12 messages, live produced SMITH and candidate produced Smith, a single mapping decision. Another says a filter disagreement where the live channel kept a message the candidate dropped, counted on its own because it decides whether a receiving system hears about a patient. Timestamps and control IDs such as MSH-7 and MSH-10 are ignored as expected differences. When everything matches, the report says the candidate changed nothing on the traffic seen so far.">
+  <title>Reading a shadow report, field by field</title>
+  <rect width="1200" height="560" rx="16" fill="#ffffff"/>
+  <text x="600" y="48" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="25" font-weight="700" fill="#0b1f3a" text-anchor="middle">What the Shadow tab tells you</text>
+
+  <!-- summary band -->
+  <rect x="60" y="80" width="1080" height="70" rx="11" fill="#f5f8fc" stroke="#0e7490" stroke-width="1.6"/>
+  <text x="100" y="112" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a">Difference rate</text>
+  <text x="100" y="136" font-family="system-ui, sans-serif" font-size="15" fill="#475569">over the real traffic seen so far</text>
+  <text x="1030" y="124" font-family="system-ui, sans-serif" font-size="30" font-weight="800" fill="#0e7490" text-anchor="end">0.4%</text>
+
+  <!-- rows -->
+  <!-- field diff: one mapping decision -->
+  <rect x="60" y="172" width="1080" height="92" rx="11" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="92" y="206" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="18" font-weight="700" fill="#0b1f3a">PID-5.1</text>
+  <text x="92" y="232" font-family="system-ui, sans-serif" font-size="15" fill="#475569">reported at component level, so you see exactly which piece changed</text>
+  <text x="92" y="254" font-family="system-ui, sans-serif" font-size="15" fill="#475569">live produced "SMITH" &#183; candidate produced "Smith" &#8212; one mapping decision</text>
+  <text x="1108" y="222" font-family="system-ui, sans-serif" font-size="22" font-weight="800" fill="#b45309" text-anchor="end">12 msgs</text>
+
+  <!-- filter disagreement -->
+  <rect x="60" y="282" width="1080" height="92" rx="11" fill="#fef2f2" stroke="#dc2626" stroke-width="1.4"/>
+  <text x="92" y="316" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a">Filter disagreement</text>
+  <text x="92" y="342" font-family="system-ui, sans-serif" font-size="15" fill="#475569">the live channel kept a message the candidate dropped</text>
+  <text x="92" y="364" font-family="system-ui, sans-serif" font-size="15" fill="#dc2626">counted on its own: it decides whether a receiving system hears about a patient at all</text>
+  <text x="1108" y="332" font-family="system-ui, sans-serif" font-size="22" font-weight="800" fill="#dc2626" text-anchor="end">1 msg</text>
+
+  <!-- ignored -->
+  <rect x="60" y="392" width="1080" height="78" rx="11" fill="#eef2f6" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="92" y="424" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a">Ignored on purpose</text>
+  <text x="92" y="450" font-family="system-ui, sans-serif" font-size="15" fill="#475569">timestamps and control IDs change on every message &#8212; MSH-7 and MSH-10 are the common pair to ignore</text>
+
+  <text x="600" y="512" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">When everything matches, the report says so plainly: the candidate changed nothing on the traffic seen so far.</text>
+  <text x="600" y="538" font-family="system-ui, sans-serif" font-size="15" fill="#64748b" text-anchor="middle">That is evidence you can act on &#8212; not a single pass-or-fail, but a list of real changes, each one click from the message that caused it.</text>
+</svg>

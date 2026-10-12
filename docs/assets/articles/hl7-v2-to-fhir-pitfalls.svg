@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="1200" height="620" role="img" aria-label="Five things that quietly go wrong in a conversion, each shown as a wrong example beside the right one: a time with no time zone, an identifier with no system, an invented default for missing data, a wrong result status, and a comparison value turned into a plain number.">
+  <title>Five quiet mistakes in HL7 v2 to FHIR conversion</title>
+  <rect width="1200" height="620" rx="18" fill="#ffffff"/>
+  <text x="60" y="56" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a">Five quiet mistakes — and how it should look</text>
+
+  <!-- Column headers -->
+  <text x="430" y="104" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" fill="#b91c1c" text-anchor="middle">What goes wrong</text>
+  <text x="870" y="104" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" fill="#0e7490" text-anchor="middle">What it should be</text>
+
+  <!-- Row 1 -->
+  <text x="60" y="156" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Time zone</text>
+  <rect x="210" y="132" width="440" height="44" rx="9" fill="#fef2f2" stroke="#b91c1c" stroke-width="1.5"/>
+  <text x="430" y="160" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#7f1d1d" text-anchor="middle">a time with no zone — could be anywhere</text>
+  <rect x="650" y="132" width="490" height="44" rx="9" fill="#f0fdfa" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="895" y="160" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">use the sender's zone from the message header</text>
+
+  <!-- Row 2 -->
+  <text x="60" y="226" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Identifier</text>
+  <rect x="210" y="202" width="440" height="44" rx="9" fill="#fef2f2" stroke="#b91c1c" stroke-width="1.5"/>
+  <text x="430" y="230" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#7f1d1d" text-anchor="middle">a record number with no owner</text>
+  <rect x="650" y="202" width="490" height="44" rx="9" fill="#f0fdfa" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="895" y="230" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">give each identifier the system that issued it</text>
+
+  <!-- Row 3 -->
+  <text x="60" y="296" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Missing data</text>
+  <rect x="210" y="272" width="440" height="44" rx="9" fill="#fef2f2" stroke="#b91c1c" stroke-width="1.5"/>
+  <text x="430" y="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#7f1d1d" text-anchor="middle">invent a default to fill the gap</text>
+  <rect x="650" y="272" width="490" height="44" rx="9" fill="#f0fdfa" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="895" y="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">mark it &quot;unknown&quot; or &quot;data absent&quot;, honestly</text>
+
+  <!-- Row 4 -->
+  <text x="60" y="366" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Result status</text>
+  <rect x="210" y="342" width="440" height="44" rx="9" fill="#fef2f2" stroke="#b91c1c" stroke-width="1.5"/>
+  <text x="430" y="370" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#7f1d1d" text-anchor="middle">treat a blank status as &quot;final&quot;</text>
+  <rect x="650" y="342" width="490" height="44" rx="9" fill="#f0fdfa" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="895" y="370" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">a blank status is not final; a deleted result is &quot;in error&quot;</text>
+
+  <!-- Row 5 -->
+  <text x="60" y="436" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Less-than value</text>
+  <rect x="210" y="412" width="440" height="44" rx="9" fill="#fef2f2" stroke="#b91c1c" stroke-width="1.5"/>
+  <text x="430" y="440" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#7f1d1d" text-anchor="middle">turn &quot;less than 5&quot; into the number 5</text>
+  <rect x="650" y="412" width="490" height="44" rx="9" fill="#f0fdfa" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="895" y="440" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">keep the &quot;less than&quot; sign beside the number</text>
+
+  <rect x="60" y="498" width="1080" height="86" rx="12" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="84" y="534" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" font-weight="700" fill="#0e7490">Why these are dangerous:</text>
+  <text x="84" y="562" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">none of them is an error. The message still looks valid, so nothing complains — the result on the</text>
+  <text x="84" y="584" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">screen is simply wrong, and no one knows until a person notices.</text>
+</svg>

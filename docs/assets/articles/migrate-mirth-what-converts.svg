@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="What comes across from a Mirth channel. On the left, parts that convert directly: sources and destinations such as MLLP, HTTP, file, database and DICOM, filters, and the ordinary transformer steps, and JavaScript transformers that run unchanged. In the middle, parts carried across as scripts, such as code template libraries. On the right, parts reported by name for a decision rather than guessed, such as JMS, the Document Writer and server-wide global scripts. Nothing is dropped silently.">
+  <title>What converts, what is carried as a script, and what is reported</title>
+  <rect width="1200" height="600" rx="16" fill="#ffffff"/>
+  <text x="600" y="50" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a" text-anchor="middle">A Mirth channel, taken apart</text>
+  <text x="600" y="80" font-family="system-ui, sans-serif" font-size="17" fill="#475569" text-anchor="middle">Every part is converted, carried across as a script, or listed for you. Nothing is dropped silently.</text>
+
+  <!-- column 1: converts directly -->
+  <rect x="40" y="110" width="360" height="430" rx="12" fill="#ecfdf5" stroke="#10b981" stroke-width="1.8"/>
+  <text x="220" y="148" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Converts directly</text>
+  <g font-family="system-ui, sans-serif" font-size="16" fill="#0b1f3a">
+    <text x="70" y="196">&#8226;&#160; Sources &amp; destinations:</text>
+    <text x="92" y="222" fill="#475569">MLLP, TCP, HTTP, SOAP, file,</text>
+    <text x="92" y="246" fill="#475569">FTP, SFTP, database, DICOM, SMTP</text>
+    <text x="70" y="286">&#8226;&#160; Filters</text>
+    <text x="70" y="326">&#8226;&#160; The ordinary transformer steps</text>
+    <text x="70" y="366">&#8226;&#160; Mapper variables (into channelMap)</text>
+    <text x="70" y="406">&#8226;&#160; Code template libraries</text>
+    <text x="92" y="430" fill="#475569">become shared lib/ script files</text>
+    <text x="70" y="470">&#8226;&#160; Your Mirth JavaScript, E4X and all,</text>
+    <text x="92" y="494" fill="#475569">runs unchanged</text>
+  </g>
+
+  <!-- column 2: carried as script -->
+  <rect x="420" y="110" width="360" height="430" rx="12" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+  <text x="600" y="148" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Carried across as a script</text>
+  <g font-family="system-ui, sans-serif" font-size="16" fill="#0b1f3a">
+    <text x="450" y="200">&#8226;&#160; A heavy JavaScript transformer</text>
+    <text x="472" y="224" fill="#475569">keeps running as a script</text>
+    <text x="450" y="268">&#8226;&#160; A site function such as</text>
+    <text x="472" y="292" fill="#475569">formatMRN() still resolves</text>
+    <text x="450" y="336">&#8226;&#160; A Channel Writer becomes a</text>
+    <text x="472" y="360" fill="#475569">channel destination when the</text>
+    <text x="472" y="384" fill="#475569">target is in the same export</text>
+  </g>
+  <text x="600" y="470" font-family="system-ui, sans-serif" font-size="15" fill="#2563eb" text-anchor="middle">A script that must stay a script</text>
+  <text x="600" y="492" font-family="system-ui, sans-serif" font-size="15" fill="#2563eb" text-anchor="middle">runs, at the cost of the</text>
+  <text x="600" y="514" font-family="system-ui, sans-serif" font-size="15" fill="#2563eb" text-anchor="middle">step-by-step trace.</text>
+
+  <!-- column 3: reported -->
+  <rect x="800" y="110" width="360" height="430" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.6"/>
+  <text x="980" y="148" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Reported for a decision</text>
+  <g font-family="system-ui, sans-serif" font-size="16" fill="#0b1f3a">
+    <text x="830" y="200">&#8226;&#160; JMS and the Document Writer</text>
+    <text x="852" y="224" fill="#475569">have no Perfuse equivalent</text>
+    <text x="830" y="268">&#8226;&#160; Server-wide global scripts</text>
+    <text x="830" y="312">&#8226;&#160; A Channel Writer from a single-</text>
+    <text x="852" y="336" fill="#475569">channel export (target unknown)</text>
+    <text x="830" y="380">&#8226;&#160; Anything else without a true</text>
+    <text x="852" y="404" fill="#475569">equivalent</text>
+  </g>
+  <text x="980" y="460" font-family="system-ui, sans-serif" font-size="15" fill="#b45309" text-anchor="middle">Each is listed by name, never</text>
+  <text x="980" y="482" font-family="system-ui, sans-serif" font-size="15" fill="#b45309" text-anchor="middle">approximated into something</text>
+  <text x="980" y="504" font-family="system-ui, sans-serif" font-size="15" fill="#b45309" text-anchor="middle">that looks close and is wrong.</text>
+
+  <text x="600" y="578" font-family="system-ui, sans-serif" font-size="15" fill="#64748b" text-anchor="middle">The report says, per channel, whether it converted cleanly, converted with a note, or could not be read &#8212; as a fraction, like "37 of 40 ready".</text>
+</svg>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="Scopes work like a hotel key card. A broad key opens many doors; a narrow key opens only one. Three example scopes are shown: read one patient's records, read only that patient's lab results, and read everything the signed-in user may see.">
+  <title>Scopes are like a hotel key card</title>
+  <rect width="1200" height="560" rx="18" fill="#ffffff"/>
+  <text x="60" y="56" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a">Scopes are like a key card</text>
+  <text x="60" y="88" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" fill="#334155">A scope says exactly which doors an app may open — and no others</text>
+
+  <!-- Key card graphic -->
+  <rect x="60" y="128" width="300" height="180" rx="16" fill="#f0fdfa" stroke="#0e7490" stroke-width="2.5"/>
+  <rect x="90" y="160" width="150" height="30" rx="6" fill="#0891b2"/>
+  <circle cx="320" cy="160" r="14" fill="#0b1f3a"/>
+  <text x="90" y="236" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a">Access key</text>
+  <text x="90" y="266" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">granted to the app at</text>
+  <text x="90" y="288" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">sign-in, checked every time</text>
+
+  <!-- Three doors -->
+  <text x="470" y="150" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a">The scope the app asks for</text>
+
+  <rect x="470" y="170" width="330" height="90" rx="10" fill="#ffffff" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="490" y="202" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="700" fill="#0e7490">patient/Observation.rs</text>
+  <text x="490" y="232" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#334155">read one patient's test results</text>
+
+  <rect x="470" y="276" width="330" height="90" rx="10" fill="#ffffff" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="490" y="308" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#0e7490">...?category=laboratory</text>
+  <text x="490" y="338" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#334155">read only the lab results, nothing else</text>
+
+  <rect x="470" y="382" width="330" height="90" rx="10" fill="#ffffff" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="490" y="414" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="700" fill="#0e7490">user/*.rs</text>
+  <text x="490" y="444" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#334155">read everything this user may see</text>
+
+  <!-- Right side meaning -->
+  <rect x="830" y="170" width="310" height="90" rx="10" fill="#f5f8fc" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="985" y="208" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">a key to one patient's</text>
+  <text x="985" y="232" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">results room</text>
+
+  <rect x="830" y="276" width="310" height="90" rx="10" fill="#f5f8fc" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="985" y="314" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">a narrower key — labs</text>
+  <text x="985" y="338" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">only, not vital signs</text>
+
+  <rect x="830" y="382" width="310" height="90" rx="10" fill="#f5f8fc" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="985" y="420" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">a staff key — every room</text>
+  <text x="985" y="444" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#0b1f3a" text-anchor="middle">this person may enter</text>
+
+  <text x="60" y="512" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">Reading the code: patient or user says whose data; the resource name says what kind; .rs means read and search.</text>
+  <text x="60" y="538" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">Granular scopes let an app ask for less — only lab results, say — so it is given the smallest key that does the job.</text>
+</svg>

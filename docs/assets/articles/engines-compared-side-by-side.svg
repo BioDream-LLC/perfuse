@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="1200" height="620" role="img" aria-label="A side-by-side comparison of four engines across six rows. Mirth 4.5.2, the Open Integration Engine and BridgeLink all run on Java, install an application plus a Java runtime, use the Mozilla Public License and store channels as Mirth XML. Perfuse runs on Go, installs as one file, uses the Apache 2.0 licence, and reads and writes Mirth XML while adding FHIR, DICOM, X12, CMS-0057, shadow mode and feed contracts. The Perfuse column is highlighted.">
+  <title>Mirth 4.5.2, OIE, BridgeLink and Perfuse side by side</title>
+  <rect width="1200" height="620" rx="16" fill="#f5f8fc"/>
+  <text x="600" y="48" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="25" font-weight="700" fill="#0b1f3a" text-anchor="middle">Four engines, side by side</text>
+
+  <!-- column headers -->
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <rect x="330" y="78" width="200" height="54" rx="9" fill="#eef2f6" stroke="#cbd5e1"/>
+    <text x="430" y="104" font-size="17" font-weight="700" fill="#0b1f3a">Mirth 4.5.2</text>
+    <text x="430" y="124" font-size="13" fill="#64748b">last open release</text>
+
+    <rect x="540" y="78" width="140" height="54" rx="9" fill="#eef2f6" stroke="#cbd5e1"/>
+    <text x="610" y="104" font-size="17" font-weight="700" fill="#0b1f3a">OIE</text>
+    <text x="610" y="124" font-size="13" fill="#64748b">fork</text>
+
+    <rect x="690" y="78" width="150" height="54" rx="9" fill="#eef2f6" stroke="#cbd5e1"/>
+    <text x="765" y="104" font-size="17" font-weight="700" fill="#0b1f3a">BridgeLink</text>
+    <text x="765" y="124" font-size="13" fill="#64748b">fork</text>
+
+    <rect x="850" y="78" width="310" height="54" rx="9" fill="#0e7490"/>
+    <text x="1005" y="104" font-size="17" font-weight="700" fill="#ffffff">Perfuse</text>
+    <text x="1005" y="124" font-size="13" fill="#d7f0f6">a new engine</text>
+  </g>
+
+  <!-- row labels and cells -->
+  <g font-family="system-ui, sans-serif" font-size="15">
+    <!-- row backgrounds -->
+    <rect x="40" y="146" width="1120" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="40" y="220" width="1120" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="40" y="294" width="1120" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="40" y="368" width="1120" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="40" y="442" width="1120" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+
+    <!-- highlight the perfuse column faintly -->
+    <rect x="850" y="146" width="310" height="362" rx="8" fill="#0e7490" fill-opacity="0.06"/>
+
+    <g fill="#0b1f3a" font-weight="600">
+      <text x="64" y="186">Runs on</text>
+      <text x="64" y="260">You install</text>
+      <text x="64" y="334">Licence</text>
+      <text x="64" y="408">Channels</text>
+      <text x="64" y="482">Standards built in</text>
+    </g>
+
+    <g text-anchor="middle" fill="#475569">
+      <!-- Runs on -->
+      <text x="430" y="186">Java</text>
+      <text x="610" y="186">Java</text>
+      <text x="765" y="186">Java</text>
+      <text x="1005" y="186" fill="#0e7490" font-weight="700">Go</text>
+      <!-- You install -->
+      <text x="430" y="254">app +</text><text x="430" y="272">Java runtime</text>
+      <text x="610" y="254">app +</text><text x="610" y="272">Java runtime</text>
+      <text x="765" y="254">app +</text><text x="765" y="272">Java runtime</text>
+      <text x="1005" y="260" fill="#0e7490" font-weight="700">one file</text>
+      <!-- Licence -->
+      <text x="430" y="334">MPL 2.0</text>
+      <text x="610" y="334">MPL 2.0</text>
+      <text x="765" y="334">from 4.5.2</text>
+      <text x="1005" y="334" fill="#0e7490" font-weight="700">Apache 2.0</text>
+      <!-- Channels -->
+      <text x="430" y="408">Mirth XML</text>
+      <text x="610" y="408">Mirth XML</text>
+      <text x="765" y="408">Mirth XML</text>
+      <text x="1005" y="400" fill="#0e7490" font-weight="700">YAML files;</text>
+      <text x="1005" y="418" fill="#0e7490" font-weight="700">reads &amp; writes Mirth XML</text>
+      <!-- Standards -->
+      <text x="430" y="482">add-on / manual</text>
+      <text x="610" y="482">add-on / manual</text>
+      <text x="765" y="482">add-on / manual</text>
+      <text x="1005" y="474" fill="#0e7490" font-weight="700">FHIR, DICOM, X12,</text>
+      <text x="1005" y="492" fill="#0e7490" font-weight="700">CMS-0057, shadow mode</text>
+    </g>
+  </g>
+
+  <text x="600" y="552" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">The three Java engines come from one code base, so moving between them is easy and the skills carry over.</text>
+  <text x="600" y="578" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">Perfuse reads and writes their channel files, so it can run alongside any of them, one channel at a time.</text>
+  <text x="600" y="604" font-family="system-ui, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Mirth Connect, Open Integration Engine and BridgeLink are the names of their respective projects, used here only to compare them.</text>
+</svg>

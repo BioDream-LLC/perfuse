@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640" role="img" aria-label="A decision tree of the four options after the Mirth Connect 4.6 licence change. From the starting question, four branches: buy the 4.6 licence (recurring cost), stay on 4.5.2 (no more updates), move to an open-source fork such as OIE or BridgeLink (same Java model), or move to a modern engine that reads Mirth channels (Perfuse), which is highlighted.">
+  <title>Four options after the Mirth 4.6 licence change</title>
+  <rect width="1200" height="640" rx="16" fill="#f5f8fc"/>
+  <text x="600" y="52" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a" text-anchor="middle">Mirth moved to a paid licence at 4.6. What now?</text>
+
+  <!-- root -->
+  <rect x="470" y="86" width="260" height="66" rx="12" fill="#ffffff" stroke="#0e7490" stroke-width="2"/>
+  <text x="600" y="118" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Your starting point</text>
+  <text x="600" y="140" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">interfaces built on Mirth</text>
+
+  <!-- connectors -->
+  <g stroke="#94a3b8" stroke-width="2" fill="none">
+    <path d="M600 152 V186 H165 V232"/>
+    <path d="M600 152 V186 H455 V232"/>
+    <path d="M600 152 V186 H745 V232"/>
+    <path d="M600 152 V186 H1035 V232"/>
+  </g>
+
+  <!-- option 1 -->
+  <rect x="40" y="232" width="250" height="150" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="165" y="266" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a" text-anchor="middle">1. Buy the 4.6 licence</text>
+  <text x="165" y="300" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">Keep everything you have.</text>
+  <text x="165" y="324" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">Take on a recurring</text>
+  <text x="165" y="346" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">yearly cost.</text>
+
+  <!-- option 2 -->
+  <rect x="330" y="232" width="250" height="150" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="455" y="266" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a" text-anchor="middle">2. Stay on 4.5.2</text>
+  <text x="455" y="300" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">It keeps running.</text>
+  <text x="455" y="324" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">No more updates ever,</text>
+  <text x="455" y="346" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">security fixes included.</text>
+
+  <!-- option 3 -->
+  <rect x="620" y="232" width="250" height="150" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="745" y="266" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a" text-anchor="middle">3. Open-source fork</text>
+  <text x="745" y="300" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">OIE or BridgeLink.</text>
+  <text x="745" y="324" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">Same Java model you</text>
+  <text x="745" y="346" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">know, continued openly.</text>
+
+  <!-- option 4 highlighted -->
+  <rect x="910" y="232" width="250" height="150" rx="12" fill="#e0f2f7" stroke="#0e7490" stroke-width="2.4"/>
+  <text x="1035" y="266" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a" text-anchor="middle">4. A modern engine</text>
+  <text x="1035" y="300" font-family="system-ui, sans-serif" font-size="16" fill="#0e7490" text-anchor="middle" font-weight="600">that reads Mirth channels</text>
+  <text x="1035" y="324" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">Your channels and scripts</text>
+  <text x="1035" y="346" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">come across. Perfuse.</text>
+
+  <!-- outcome band -->
+  <rect x="40" y="430" width="830" height="64" rx="12" fill="#eef2f6" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="455" y="462" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#0b1f3a" text-anchor="middle">Options 1 to 3 keep you where you are.</text>
+  <text x="455" y="484" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">Same place, different bill or a frozen version.</text>
+
+  <rect x="910" y="430" width="250" height="64" rx="12" fill="#0e7490"/>
+  <text x="1035" y="462" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">Option 4 moves</text>
+  <text x="1035" y="484" font-family="system-ui, sans-serif" font-size="16" fill="#d7f0f6" text-anchor="middle">you forward.</text>
+
+  <g stroke="#94a3b8" stroke-width="2" fill="none">
+    <path d="M165 382 V430"/>
+    <path d="M455 382 V430"/>
+    <path d="M745 382 V430"/>
+    <path d="M1035 382 V430"/>
+  </g>
+
+  <text x="600" y="556" font-family="system-ui, sans-serif" font-size="17" fill="#475569" text-anchor="middle">With Perfuse you can move one channel at a time, prove each one on your own traffic,</text>
+  <text x="600" y="580" font-family="system-ui, sans-serif" font-size="17" fill="#475569" text-anchor="middle">and export a channel back to a Mirth file if you ever want to return.</text>
+  <text x="600" y="612" font-family="system-ui, sans-serif" font-size="15" fill="#64748b" text-anchor="middle">Mirth Connect is a trademark of its owner, named here only to describe compatibility.</text>
+</svg>

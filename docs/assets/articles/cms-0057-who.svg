@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="Who the CMS-0057-F rule covers. On the left, the impacted payers: Medicare Advantage organizations, state Medicaid and CHIP fee-for-service programs, Medicaid and CHIP managed care plans, and Qualified Health Plan issuers on the federal exchanges. On the right, who else is affected: doctors and hospitals who report an electronic prior authorization measure, and patients who get faster decisions and can see their requests.">
+  <title>Who CMS-0057-F covers</title>
+  <defs>
+    <linearGradient id="box" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#eef4fb"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0b1f3a" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="560" rx="18" fill="#f5f8fc"/>
+  <text x="600" y="56" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="700" fill="#0b1f3a" text-anchor="middle">Who the rule covers</text>
+
+  <text x="320" y="112" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#0e7490" text-anchor="middle">Payers who must follow it</text>
+
+  <rect x="80" y="140" width="480" height="80" rx="14" fill="url(#box)" stroke="#0891b2" stroke-width="2" filter="url(#soft)"/>
+  <text x="104" y="178" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">Medicare Advantage</text>
+  <text x="104" y="204" font-family="system-ui, sans-serif" font-size="16" fill="#334155">health plans that run Medicare for the government</text>
+
+  <rect x="80" y="236" width="480" height="80" rx="14" fill="url(#box)" stroke="#0891b2" stroke-width="2" filter="url(#soft)"/>
+  <text x="104" y="274" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">Medicaid and CHIP, fee-for-service</text>
+  <text x="104" y="300" font-family="system-ui, sans-serif" font-size="16" fill="#334155">state programs that pay doctors directly</text>
+
+  <rect x="80" y="332" width="480" height="80" rx="14" fill="url(#box)" stroke="#0891b2" stroke-width="2" filter="url(#soft)"/>
+  <text x="104" y="370" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">Medicaid and CHIP, managed care</text>
+  <text x="104" y="396" font-family="system-ui, sans-serif" font-size="16" fill="#334155">plans a state hires to run those programs</text>
+
+  <rect x="80" y="428" width="480" height="80" rx="14" fill="url(#box)" stroke="#0891b2" stroke-width="2" filter="url(#soft)"/>
+  <text x="104" y="466" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">QHP issuers on the exchanges</text>
+  <text x="104" y="492" font-family="system-ui, sans-serif" font-size="16" fill="#334155">plans sold on the federal HealthCare.gov market</text>
+
+  <text x="880" y="112" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#0e7490" text-anchor="middle">Who else it touches</text>
+
+  <rect x="640" y="140" width="480" height="110" rx="14" fill="url(#box)" stroke="#0b1f3a" stroke-width="2" filter="url(#soft)"/>
+  <text x="664" y="180" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">Doctors and hospitals</text>
+  <text x="664" y="208" font-family="system-ui, sans-serif" font-size="16" fill="#334155">from 2027 they report how much of their</text>
+  <text x="664" y="230" font-family="system-ui, sans-serif" font-size="16" fill="#334155">prior authorization is done electronically</text>
+
+  <rect x="640" y="266" width="480" height="110" rx="14" fill="url(#box)" stroke="#0b1f3a" stroke-width="2" filter="url(#soft)"/>
+  <text x="664" y="306" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">Patients and families</text>
+  <text x="664" y="334" font-family="system-ui, sans-serif" font-size="16" fill="#334155">faster answers, a reason for every denial,</text>
+  <text x="664" y="356" font-family="system-ui, sans-serif" font-size="16" fill="#334155">and a way to see their own requests</text>
+
+  <rect x="640" y="392" width="480" height="116" rx="14" fill="#e0f2f7" stroke="#0891b2" stroke-width="2" filter="url(#soft)"/>
+  <text x="664" y="432" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0e7490">Not covered by the rule</text>
+  <text x="664" y="460" font-family="system-ui, sans-serif" font-size="16" fill="#334155">prescription drugs are left out of the prior</text>
+  <text x="664" y="482" font-family="system-ui, sans-serif" font-size="16" fill="#334155">authorization parts, so they are not counted here</text>
+</svg>

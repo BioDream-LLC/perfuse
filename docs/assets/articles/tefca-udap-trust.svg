@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 540" width="1200" height="540" role="img" aria-label="How UDAP lets two strangers trust each other. An app arrives with a certificate issued by a trusted community. The server checks the certificate chains back to the community's authority, checks the app's signed registration, and publishes its own signed details so the app can check it too. Both sides end up trusting each other without having met.">
+  <title>How UDAP builds trust between strangers</title>
+  <defs>
+    <marker id="tip2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0891b2"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="540" rx="18" fill="#ffffff"/>
+  <text x="60" y="54" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a">Trusting a stranger, like checking a passport</text>
+
+  <!-- App -->
+  <rect x="60" y="190" width="250" height="150" rx="16" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <text x="185" y="240" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">An app from</text>
+  <text x="185" y="266" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">another state</text>
+  <text x="185" y="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155" text-anchor="middle">never seen before</text>
+
+  <!-- Server -->
+  <rect x="890" y="190" width="250" height="150" rx="16" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <text x="1015" y="240" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Your server</text>
+  <text x="1015" y="274" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155" text-anchor="middle">holding the records</text>
+
+  <!-- Trusted community -->
+  <rect x="440" y="60" width="320" height="88" rx="14" fill="#0e7490"/>
+  <text x="600" y="98" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="19" font-weight="700" fill="#ffffff" text-anchor="middle">Trusted community</text>
+  <text x="600" y="126" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#e0f7fa" text-anchor="middle">the passport office both sides trust</text>
+
+  <!-- certificates chain up -->
+  <line x1="250" y1="188" x2="470" y2="150" stroke="#0891b2" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#tip2)"/>
+  <text x="300" y="172" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#0e7490">certificate issued by</text>
+  <line x1="950" y1="188" x2="730" y2="150" stroke="#0891b2" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#tip2)"/>
+  <text x="820" y="172" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#0e7490" text-anchor="end">trusts the same office</text>
+
+  <!-- middle steps -->
+  <rect x="360" y="236" width="480" height="58" rx="10" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="600" y="261" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a" text-anchor="middle">1  the app registers itself and shows its certificate</text>
+  <text x="600" y="283" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#334155" text-anchor="middle">(dynamic client registration)</text>
+  <line x1="312" y1="258" x2="356" y2="258" stroke="#0891b2" stroke-width="3" marker-end="url(#tip2)"/>
+
+  <rect x="360" y="312" width="480" height="40" rx="10" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="600" y="338" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a" text-anchor="middle">2  the server checks it leads back to the trusted office</text>
+  <line x1="838" y1="332" x2="884" y2="300" stroke="#0891b2" stroke-width="3" marker-end="url(#tip2)"/>
+
+  <rect x="360" y="372" width="480" height="40" rx="10" fill="#f5f8fc" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="600" y="398" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a" text-anchor="middle">3  the server publishes its own signed details to check in return</text>
+
+  <rect x="60" y="446" width="1080" height="68" rx="12" fill="#f0fdfa" stroke="#0e7490" stroke-width="1.5"/>
+  <text x="84" y="478" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" font-weight="700" fill="#0e7490">The result:</text>
+  <text x="200" y="478" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">neither side had to arrange anything in advance. The shared trusted office vouches for both,</text>
+  <text x="84" y="502" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">so a hospital in one state can safely accept an app from a clinic in another.</text>
+</svg>

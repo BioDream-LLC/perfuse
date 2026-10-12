@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="The three ways a SMART app starts. First, standalone launch: a patient opens an app and signs in. Second, EHR launch: a clinician opens an app from inside the medical record and it already knows the patient. Third, backend services: a computer program with no person signs in with a signed digital token.">
+  <title>The three ways a SMART app starts</title>
+  <rect width="1200" height="560" rx="18" fill="#f5f8fc"/>
+  <text x="60" y="56" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a">Three ways a SMART app starts</text>
+
+  <!-- Card 1 -->
+  <rect x="60" y="100" width="350" height="400" rx="16" fill="#ffffff" stroke="#0e7490" stroke-width="2.5"/>
+  <circle cx="110" cy="150" r="22" fill="#0e7490"/>
+  <text x="110" y="158" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">1</text>
+  <text x="150" y="146" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">Standalone</text>
+  <text x="150" y="172" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">launch</text>
+  <text x="88" y="228" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">A patient opens an app</text>
+  <text x="88" y="256" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">on their phone.</text>
+  <text x="88" y="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">They pick their hospital</text>
+  <text x="88" y="328" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">or health plan, sign in,</text>
+  <text x="88" y="356" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">and allow access.</text>
+  <rect x="88" y="398" width="294" height="78" rx="10" fill="#f0fdfa" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="104" y="428" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a">Who signs in: the patient</text>
+  <text x="104" y="456" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a">Example: a diabetes app</text>
+
+  <!-- Card 2 -->
+  <rect x="425" y="100" width="350" height="400" rx="16" fill="#ffffff" stroke="#0e7490" stroke-width="2.5"/>
+  <circle cx="475" cy="150" r="22" fill="#0e7490"/>
+  <text x="475" y="158" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">2</text>
+  <text x="515" y="146" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">EHR launch</text>
+  <text x="453" y="200" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">A clinician opens an app</text>
+  <text x="453" y="228" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">from a button inside the</text>
+  <text x="453" y="256" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">medical record.</text>
+  <text x="453" y="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">The app already knows</text>
+  <text x="453" y="328" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">which patient is open,</text>
+  <text x="453" y="356" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">so no searching.</text>
+  <rect x="453" y="398" width="294" height="78" rx="10" fill="#f0fdfa" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="469" y="428" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a">Who signs in: the clinician</text>
+  <text x="469" y="456" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a">Example: a risk calculator</text>
+
+  <!-- Card 3 -->
+  <rect x="790" y="100" width="350" height="400" rx="16" fill="#ffffff" stroke="#0e7490" stroke-width="2.5"/>
+  <circle cx="840" cy="150" r="22" fill="#0e7490"/>
+  <text x="840" y="158" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">3</text>
+  <text x="880" y="146" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">Backend</text>
+  <text x="880" y="172" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">services</text>
+  <text x="818" y="228" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">A computer program</text>
+  <text x="818" y="256" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">with no person at all.</text>
+  <text x="818" y="300" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">It proves who it is with</text>
+  <text x="818" y="328" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">a signed digital token</text>
+  <text x="818" y="356" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="17" fill="#334155">instead of a sign-in.</text>
+  <rect x="818" y="398" width="294" height="78" rx="10" fill="#f0fdfa" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="834" y="428" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a">Who signs in: nobody</text>
+  <text x="834" y="456" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" fill="#0b1f3a">Example: a nightly export</text>
+
+  <text x="60" y="534" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#334155">All three end the same way: the app receives a token and uses it to read data, within the limits it was granted.</text>
+</svg>

@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="A migration timeline across six weeks for an example 300-bed hospital running 40 Mirth channels. Week 1: look at what you have with perfuse explain. Week 2: translate the channels. Week 3: check and test. Weeks 4 to 5: run beside Mirth on real traffic, delivering nothing, and compare. Week 6: switch over one channel at a time. Nothing is a cut-over weekend; each step is reversible.">
+  <title>An example migration timeline, one feed at a time</title>
+  <rect width="1200" height="560" rx="16" fill="#ffffff"/>
+  <text x="600" y="50" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a" text-anchor="middle">A calm migration, not a cut-over weekend</text>
+  <text x="600" y="80" font-family="system-ui, sans-serif" font-size="17" fill="#475569" text-anchor="middle">Example: a 300-bed hospital with 40 Mirth channels, moving over about six weeks</text>
+
+  <!-- timeline spine -->
+  <line x1="110" y1="300" x2="1090" y2="300" stroke="#0e7490" stroke-width="4"/>
+
+  <!-- nodes -->
+  <g>
+    <circle cx="150" cy="300" r="14" fill="#0e7490"/>
+    <circle cx="340" cy="300" r="14" fill="#0e7490"/>
+    <circle cx="530" cy="300" r="14" fill="#0e7490"/>
+    <circle cx="760" cy="300" r="14" fill="#0e7490"/>
+    <circle cx="1000" cy="300" r="14" fill="#0891b2"/>
+  </g>
+
+  <!-- week labels -->
+  <g font-family="system-ui, sans-serif" font-size="15" fill="#64748b" text-anchor="middle">
+    <text x="150" y="340">Week 1</text>
+    <text x="340" y="340">Week 2</text>
+    <text x="530" y="340">Week 3</text>
+    <text x="760" y="340">Weeks 4&#8211;5</text>
+    <text x="1000" y="340">Week 6</text>
+  </g>
+
+  <!-- cards above -->
+  <g>
+    <rect x="60" y="120" width="180" height="150" rx="11" fill="#f5f8fc" stroke="#cbd5e1" stroke-width="1.4"/>
+    <text x="150" y="152" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Look</text>
+    <text x="150" y="182" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">perfuse explain</text>
+    <text x="150" y="206" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">reads the export</text>
+    <text x="150" y="228" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">and lists, by name,</text>
+    <text x="150" y="250" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">what converts.</text>
+  </g>
+  <line x1="150" y1="270" x2="150" y2="286" stroke="#94a3b8" stroke-width="2"/>
+
+  <g>
+    <rect x="250" y="120" width="180" height="150" rx="11" fill="#f5f8fc" stroke="#cbd5e1" stroke-width="1.4"/>
+    <text x="340" y="152" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Translate</text>
+    <text x="340" y="182" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">perfuse translate</text>
+    <text x="340" y="206" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">turns all 40 into</text>
+    <text x="340" y="228" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">Perfuse channels.</text>
+    <text x="340" y="250" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">Scripts run as-is.</text>
+  </g>
+  <line x1="340" y1="270" x2="340" y2="286" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- card below for week 3 -->
+  <g>
+    <rect x="440" y="360" width="180" height="150" rx="11" fill="#f5f8fc" stroke="#cbd5e1" stroke-width="1.4"/>
+    <text x="530" y="392" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Check &amp; test</text>
+    <text x="530" y="422" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">perfuse check</text>
+    <text x="530" y="446" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">and perfuse test:</text>
+    <text x="530" y="468" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">a message in,</text>
+    <text x="530" y="490" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">expected out.</text>
+  </g>
+  <line x1="530" y1="314" x2="530" y2="360" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- week 4-5 above -->
+  <g>
+    <rect x="650" y="110" width="220" height="160" rx="11" fill="#e0f2f7" stroke="#0e7490" stroke-width="1.8"/>
+    <text x="760" y="142" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#0b1f3a" text-anchor="middle">Prove it</text>
+    <text x="760" y="172" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">Run beside Mirth on</text>
+    <text x="760" y="194" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">real traffic, delivering</text>
+    <text x="760" y="216" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">nothing. perfuse compare</text>
+    <text x="760" y="238" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">shows where the two</text>
+    <text x="760" y="260" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">engines disagree.</text>
+  </g>
+  <line x1="760" y1="270" x2="760" y2="286" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- week 6 below -->
+  <g>
+    <rect x="900" y="360" width="200" height="150" rx="11" fill="#0e7490"/>
+    <text x="1000" y="392" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">Switch over</text>
+    <text x="1000" y="422" font-family="system-ui, sans-serif" font-size="15" fill="#d7f0f6" text-anchor="middle">Point one sender at</text>
+    <text x="1000" y="444" font-family="system-ui, sans-serif" font-size="15" fill="#d7f0f6" text-anchor="middle">Perfuse. Watch it.</text>
+    <text x="1000" y="466" font-family="system-ui, sans-serif" font-size="15" fill="#d7f0f6" text-anchor="middle">Move the next one.</text>
+    <text x="1000" y="488" font-family="system-ui, sans-serif" font-size="15" fill="#d7f0f6" text-anchor="middle">Never all at once.</text>
+  </g>
+  <line x1="1000" y1="314" x2="1000" y2="360" stroke="#94a3b8" stroke-width="2"/>
+
+  <text x="600" y="542" font-family="system-ui, sans-serif" font-size="15" fill="#64748b" text-anchor="middle">Every step is reversible, and a channel can be exported back to a Mirth file at any time. The weeks are an example, not a rule.</text>
+</svg>

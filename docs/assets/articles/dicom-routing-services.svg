@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" role="img" aria-label="The five DICOM network services explained in plain words: C-ECHO is a hello, C-STORE sends an image, C-FIND asks a question, C-MOVE asks for images to be sent elsewhere, and C-GET fetches images over the same connection.">
+  <title>The five DICOM services in plain words</title>
+  <rect width="1200" height="520" rx="18" fill="#f5f8fc"/>
+  <text x="60" y="56" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a">The five ways imaging systems talk to each other</text>
+
+  <rect x="48" y="96" width="1104" height="110" rx="14" fill="#ffffff" stroke="#0e7490" stroke-width="2"/>
+  <text x="72" y="134" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0e7490">C-ECHO</text>
+  <text x="72" y="166" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">"Are you there?" The imaging version of a phone test call. Nothing is sent but a hello.</text>
+
+  <rect x="48" y="218" width="1104" height="110" rx="14" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
+  <text x="72" y="256" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0891b2">C-STORE</text>
+  <text x="72" y="288" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">"Here is an image." A scanner hands a study to another system, like handing over an envelope.</text>
+
+  <rect x="48" y="340" width="356" height="150" rx="14" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <text x="72" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">C-FIND</text>
+  <text x="72" y="410" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">"Do you have any</text>
+  <text x="72" y="434" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">studies for this</text>
+  <text x="72" y="458" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">patient?" A question.</text>
+
+  <rect x="422" y="340" width="356" height="150" rx="14" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <text x="446" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">C-MOVE</text>
+  <text x="446" y="410" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">"Please send those</text>
+  <text x="446" y="434" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">studies over to that</text>
+  <text x="446" y="458" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">reading station."</text>
+
+  <rect x="796" y="340" width="356" height="150" rx="14" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <text x="820" y="378" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">C-GET</text>
+  <text x="820" y="410" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">"Send them to me,</text>
+  <text x="820" y="434" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">right here, on this</text>
+  <text x="820" y="458" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">same connection."</text>
+</svg>

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" role="img" aria-label="The electronic case reporting journey: a patient visit produces a record, a trigger code is spotted, an electronic initial case report is sent to public health, public health decides, and a Reportability Response comes back to the clinic.">
+  <title>The electronic case reporting journey, step by step</title>
+  <rect width="1200" height="520" rx="18" fill="#f5f8fc"/>
+  <text x="60" y="56" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="700" fill="#0b1f3a">From a visit to a case report, and the answer back</text>
+
+  <!-- Step 1 -->
+  <rect x="48" y="110" width="200" height="150" rx="14" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <circle cx="78" cy="142" r="16" fill="#0e7490"/>
+  <text x="78" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">1</text>
+  <text x="68" y="190" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">The visit</text>
+  <text x="68" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">A patient is seen.</text>
+  <text x="68" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">A record is made.</text>
+
+  <!-- Step 2 -->
+  <rect x="296" y="110" width="200" height="150" rx="14" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+  <circle cx="326" cy="142" r="16" fill="#0e7490"/>
+  <text x="326" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">2</text>
+  <text x="316" y="190" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">The flag</text>
+  <text x="316" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">A trigger code</text>
+  <text x="316" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">is spotted.</text>
+
+  <!-- Step 3 -->
+  <rect x="544" y="110" width="200" height="150" rx="14" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
+  <circle cx="574" cy="142" r="16" fill="#0e7490"/>
+  <text x="574" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">3</text>
+  <text x="564" y="190" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">The report</text>
+  <text x="564" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">An eICR is sent</text>
+  <text x="564" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">to public health.</text>
+
+  <!-- Step 4 -->
+  <rect x="792" y="110" width="200" height="150" rx="14" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
+  <circle cx="822" cy="142" r="16" fill="#0e7490"/>
+  <text x="822" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">4</text>
+  <text x="812" y="190" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">The decision</text>
+  <text x="812" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">Public health</text>
+  <text x="812" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">decides.</text>
+
+  <!-- Step 5 -->
+  <rect x="1000" y="110" width="152" height="150" rx="14" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
+  <circle cx="1030" cy="142" r="16" fill="#0e7490"/>
+  <text x="1030" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">5</text>
+  <text x="1020" y="190" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a">The answer</text>
+  <text x="1020" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">A response</text>
+  <text x="1020" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">comes back.</text>
+
+  <!-- forward arrows -->
+  <line x1="248" y1="185" x2="294" y2="185" stroke="#0e7490" stroke-width="4" stroke-linecap="round" marker-end="url(#a)"/>
+  <line x1="496" y1="185" x2="542" y2="185" stroke="#0e7490" stroke-width="4" stroke-linecap="round" marker-end="url(#a)"/>
+  <line x1="744" y1="185" x2="790" y2="185" stroke="#0e7490" stroke-width="4" stroke-linecap="round" marker-end="url(#a)"/>
+  <line x1="992" y1="185" x2="998" y2="185" stroke="#0e7490" stroke-width="4" stroke-linecap="round" marker-end="url(#a)"/>
+
+  <!-- return arrow -->
+  <path d="M1076 262 L1076 330 L148 330 L148 262" fill="none" stroke="#0891b2" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" marker-end="url(#a)"/>
+  <text x="612" y="320" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#0891b2" text-anchor="middle">the Reportability Response is stored back with the patient record</text>
+
+  <rect x="48" y="398" width="1104" height="80" rx="14" fill="#ffffff" stroke="#0e7490" stroke-width="2"/>
+  <text x="72" y="436" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a">In plain words:</text>
+  <text x="72" y="462" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#334155">a report is sent because a code matched, not because a busy person remembered to send it.</text>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0e7490"/>
+    </marker>
+  </defs>
+</svg>

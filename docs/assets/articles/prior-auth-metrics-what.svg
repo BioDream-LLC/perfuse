@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="What a plan must publish each year on its public website. A list of everything that needs approval, in plain language. The share of requests approved and the share denied. The share approved only after the plan took extra time. The share approved after the patient appealed. The average and the middle wait time. All of these shown separately for urgent requests and standard requests.">
+  <title>What the yearly metrics page must show</title>
+  <defs>
+    <linearGradient id="b7" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#eef4fb"/>
+    </linearGradient>
+    <filter id="s7" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0b1f3a" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="560" rx="18" fill="#f5f8fc"/>
+  <text x="600" y="56" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="700" fill="#0b1f3a" text-anchor="middle">What the plan must publish every year</text>
+
+  <rect x="80" y="100" width="500" height="90" rx="14" fill="url(#b7)" stroke="#0891b2" stroke-width="2" filter="url(#s7)"/>
+  <text x="104" y="140" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a">A list of what needs approval</text>
+  <text x="104" y="168" font-family="system-ui, sans-serif" font-size="16" fill="#334155">every item and service, in plain language</text>
+
+  <rect x="80" y="206" width="500" height="90" rx="14" fill="url(#b7)" stroke="#0891b2" stroke-width="2" filter="url(#s7)"/>
+  <text x="104" y="246" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a">How often it says yes, and no</text>
+  <text x="104" y="274" font-family="system-ui, sans-serif" font-size="16" fill="#334155">the share approved and the share denied</text>
+
+  <rect x="80" y="312" width="500" height="90" rx="14" fill="url(#b7)" stroke="#0891b2" stroke-width="2" filter="url(#s7)"/>
+  <text x="104" y="352" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a">How often it took extra time</text>
+  <text x="104" y="380" font-family="system-ui, sans-serif" font-size="16" fill="#334155">the share approved only after an extension</text>
+
+  <rect x="80" y="418" width="500" height="90" rx="14" fill="url(#b7)" stroke="#0891b2" stroke-width="2" filter="url(#s7)"/>
+  <text x="104" y="458" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a">How often an appeal won</text>
+  <text x="104" y="486" font-family="system-ui, sans-serif" font-size="16" fill="#334155">the share approved after the patient appealed</text>
+
+  <rect x="620" y="100" width="500" height="196" rx="14" fill="url(#b7)" stroke="#0891b2" stroke-width="2" filter="url(#s7)"/>
+  <text x="644" y="140" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0b1f3a">How long it took</text>
+  <text x="644" y="172" font-family="system-ui, sans-serif" font-size="16" fill="#334155">the average wait, and the middle wait</text>
+  <text x="644" y="196" font-family="system-ui, sans-serif" font-size="16" fill="#334155">(the point where half were faster and</text>
+  <text x="644" y="218" font-family="system-ui, sans-serif" font-size="16" fill="#334155">half slower), from when the request</text>
+  <text x="644" y="240" font-family="system-ui, sans-serif" font-size="16" fill="#334155">arrived to when it was decided</text>
+  <text x="644" y="276" font-family="system-ui, sans-serif" font-size="15" fill="#0e7490">always with the unit written, hours or days</text>
+
+  <rect x="620" y="312" width="500" height="196" rx="14" fill="#e0f2f7" stroke="#0b1f3a" stroke-width="2.5" filter="url(#s7)"/>
+  <text x="644" y="352" font-family="system-ui, sans-serif" font-size="19" font-weight="700" fill="#0e7490">All of it, split two ways</text>
+  <text x="644" y="388" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Urgent requests</text>
+  <text x="644" y="412" font-family="system-ui, sans-serif" font-size="16" fill="#334155">decided within 72 hours</text>
+  <text x="644" y="450" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#0b1f3a">Standard requests</text>
+  <text x="644" y="474" font-family="system-ui, sans-serif" font-size="16" fill="#334155">decided within 7 calendar days</text>
+</svg>

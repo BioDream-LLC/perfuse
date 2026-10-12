@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" role="img" aria-label="Why tests alone are not enough. On the left, a small set of test cases covers the messages somebody thought of. On the right, the real feed carries many more shapes of message, including odd ones nobody catalogued: a patient with two identifiers, a result with an empty units field, an A08 that arrives before its A01. Shadow mode checks the change against the real feed, covering the cases that actually arrive, not only the ones imagined.">
+  <title>Tests cover what you imagined; shadow mode covers what arrives</title>
+  <rect width="1200" height="520" rx="16" fill="#f5f8fc"/>
+  <text x="600" y="50" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="25" font-weight="700" fill="#0b1f3a" text-anchor="middle">The case that breaks is the one nobody thought of</text>
+
+  <!-- tests side -->
+  <rect x="60" y="96" width="470" height="360" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6"/>
+  <text x="295" y="132" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Tests you wrote</text>
+  <text x="295" y="156" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">the cases somebody thought of</text>
+  <g fill="#0e7490">
+    <circle cx="150" cy="220" r="18"/>
+    <circle cx="230" cy="220" r="18"/>
+    <circle cx="310" cy="220" r="18"/>
+    <circle cx="390" cy="220" r="18"/>
+    <circle cx="190" cy="290" r="18"/>
+    <circle cx="270" cy="290" r="18"/>
+    <circle cx="350" cy="290" r="18"/>
+  </g>
+  <text x="295" y="372" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">A handful of known shapes.</text>
+  <text x="295" y="398" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">All green. The change looks right.</text>
+  <text x="295" y="430" font-family="system-ui, sans-serif" font-size="15" fill="#94a3b8" text-anchor="middle">perfuse test &#183; a message in, the expected out</text>
+
+  <!-- real feed side -->
+  <rect x="620" y="96" width="520" height="360" rx="12" fill="#ffffff" stroke="#0e7490" stroke-width="2"/>
+  <text x="880" y="132" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">The real feed</text>
+  <text x="880" y="156" font-family="system-ui, sans-serif" font-size="15" fill="#475569" text-anchor="middle">the messages that actually arrive</text>
+  <!-- many dots -->
+  <g fill="#94a3b8">
+    <circle cx="680" cy="206" r="11"/><circle cx="724" cy="206" r="11"/><circle cx="768" cy="206" r="11"/><circle cx="812" cy="206" r="11"/><circle cx="900" cy="206" r="11"/><circle cx="944" cy="206" r="11"/><circle cx="1032" cy="206" r="11"/><circle cx="1076" cy="206" r="11"/>
+    <circle cx="680" cy="250" r="11"/><circle cx="724" cy="250" r="11"/><circle cx="856" cy="250" r="11"/><circle cx="900" cy="250" r="11"/><circle cx="988" cy="250" r="11"/><circle cx="1076" cy="250" r="11"/>
+    <circle cx="724" cy="294" r="11"/><circle cx="768" cy="294" r="11"/><circle cx="812" cy="294" r="11"/><circle cx="944" cy="294" r="11"/><circle cx="988" cy="294" r="11"/><circle cx="1032" cy="294" r="11"/>
+  </g>
+  <!-- the odd ones in red -->
+  <g fill="#dc2626">
+    <circle cx="856" cy="206" r="11"/>
+    <circle cx="812" cy="250" r="11"/>
+    <circle cx="680" cy="294" r="11"/>
+  </g>
+  <text x="880" y="356" font-family="system-ui, sans-serif" font-size="15" fill="#dc2626" text-anchor="middle">the patient with two identifiers &#183; the result with no units</text>
+  <text x="880" y="380" font-family="system-ui, sans-serif" font-size="15" fill="#dc2626" text-anchor="middle">the A08 that arrives before its A01</text>
+  <text x="880" y="420" font-family="system-ui, sans-serif" font-size="16" fill="#0e7490" text-anchor="middle" font-weight="600">Shadow mode checks the change against all of this.</text>
+
+  <text x="600" y="494" font-family="system-ui, sans-serif" font-size="16" fill="#475569" text-anchor="middle">Tests prove the cases somebody imagined. Shadow mode proves the cases that actually arrive, before anything is delivered.</text>
+</svg>

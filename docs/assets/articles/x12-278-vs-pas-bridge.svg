@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500" role="img" aria-label="A translator in the middle. On the left, a doctor's software speaks the new FHIR PAS language. In the middle, Perfuse translates. On the right, a health plan that still speaks only the older X12 278 language. An arrow goes left to right carrying the request, translated from FHIR to X12; an arrow goes right to left carrying the plan's decision, translated from X12 back to FHIR. Both sides keep the software they already have.">
+  <title>Perfuse bridges FHIR PAS and X12 278 in both directions</title>
+  <defs>
+    <linearGradient id="b6" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#eef4fb"/>
+    </linearGradient>
+    <filter id="s6" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0b1f3a" flood-opacity="0.14"/>
+    </filter>
+    <marker id="a6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0891b2"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="500" rx="18" fill="#f5f8fc"/>
+  <text x="600" y="56" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="700" fill="#0b1f3a" text-anchor="middle">A translator between the two languages</text>
+
+  <rect x="70" y="180" width="250" height="150" rx="16" fill="url(#b6)" stroke="#0891b2" stroke-width="2" filter="url(#s6)"/>
+  <text x="195" y="238" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Doctor's software</text>
+  <text x="195" y="268" font-family="system-ui, sans-serif" font-size="16" fill="#334155" text-anchor="middle">speaks the new</text>
+  <text x="195" y="290" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#0e7490" text-anchor="middle">FHIR PAS</text>
+
+  <rect x="475" y="160" width="250" height="190" rx="16" fill="#0b1f3a" stroke="#0e7490" stroke-width="2.5" filter="url(#s6)"/>
+  <text x="600" y="232" font-family="system-ui, sans-serif" font-size="24" font-weight="800" fill="#ffffff" text-anchor="middle">Perfuse</text>
+  <text x="600" y="266" font-family="system-ui, sans-serif" font-size="16" fill="#bae6fd" text-anchor="middle">translates between</text>
+  <text x="600" y="290" font-family="system-ui, sans-serif" font-size="16" fill="#bae6fd" text-anchor="middle">the two, both ways</text>
+
+  <rect x="880" y="180" width="250" height="150" rx="16" fill="url(#b6)" stroke="#64748b" stroke-width="2" filter="url(#s6)"/>
+  <text x="1005" y="238" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#0b1f3a" text-anchor="middle">Health plan</text>
+  <text x="1005" y="268" font-family="system-ui, sans-serif" font-size="16" fill="#334155" text-anchor="middle">speaks only the</text>
+  <text x="1005" y="290" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#475569" text-anchor="middle">older X12 278</text>
+
+  <line x1="325" y1="212" x2="470" y2="212" stroke="#0891b2" stroke-width="3.5" marker-end="url(#a6)"/>
+  <text x="397" y="198" font-family="system-ui, sans-serif" font-size="14" fill="#0e7490" text-anchor="middle">request</text>
+  <line x1="725" y1="212" x2="875" y2="212" stroke="#0891b2" stroke-width="3.5" marker-end="url(#a6)"/>
+  <text x="800" y="198" font-family="system-ui, sans-serif" font-size="14" fill="#0e7490" text-anchor="middle">as X12</text>
+
+  <line x1="875" y1="298" x2="725" y2="298" stroke="#0b1f3a" stroke-width="3.5" marker-end="url(#a6)"/>
+  <text x="800" y="326" font-family="system-ui, sans-serif" font-size="14" fill="#334155" text-anchor="middle">decision</text>
+  <line x1="470" y1="298" x2="325" y2="298" stroke="#0b1f3a" stroke-width="3.5" marker-end="url(#a6)"/>
+  <text x="397" y="326" font-family="system-ui, sans-serif" font-size="14" fill="#334155" text-anchor="middle">as FHIR</text>
+
+  <rect x="150" y="400" width="900" height="64" rx="14" fill="#e0f2f7" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="600" y="440" font-family="system-ui, sans-serif" font-size="17" fill="#0b1f3a" text-anchor="middle">Both sides keep the software they already have. Neither has to change to talk to the other.</text>
+</svg>
