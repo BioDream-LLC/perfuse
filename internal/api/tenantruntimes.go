@@ -35,6 +35,9 @@ type TenantRuntimes struct {
 	metrics  *metrics.Collector
 	log      *slog.Logger
 
+	// LimitsFor reads a tenant's limits. Nil: no limits are enforced.
+	LimitsFor func(context.Context, tenant.ID) (tenant.Limits, error)
+
 	mu       sync.Mutex
 	runtimes map[tenant.ID]*Runtime
 }
@@ -76,9 +79,26 @@ func (tr *TenantRuntimes) For(id tenant.ID) (*Runtime, error) {
 	// Set before anything can start a channel, because a runtime that starts channels while claiming the wrong
 	// tenant would label its metrics and traces for somebody else - and a label is how those get attributed.
 	rt.Tenant = id
+	if tr.LimitsFor != nil {
+		gate := &tenant.Gate{
+			Limits: func() (tenant.Limits, error) { return tr.LimitsFor(context.Background(), id) },
+		}
+		if tr.messages != nil {
+			gate.StoredBytes = func() (int64, error) { return tr.messages.StoredBytes(context.Background(), string(id)) }
+		}
+		rt.Admission = gate.Admit
+	}
 
 	tr.runtimes[id] = rt
 	return rt, nil
+}
+
+// StoredBytes is how much message content a tenant holds, for the platform's list of tenants and their limits.
+func (tr *TenantRuntimes) StoredBytes(ctx context.Context, id tenant.ID) (int64, error) {
+	if tr.messages == nil {
+		return 0, nil
+	}
+	return tr.messages.StoredBytes(ctx, string(id))
 }
 
 // Started lists the tenants with a live runtime, sorted.

@@ -180,3 +180,22 @@ func TestTheStatsEndpointCountsOnlyOnesOwnMessages(t *testing.T) {
 		t.Errorf("clinic-a's stats report %d messages when one is theirs", body.Total)
 	}
 }
+
+func TestContentSearchStaysInsideTheTenant(t *testing.T) {
+	// The content search narrowed by channel, type and time, and by no tenant at all: on a shared server it read and
+	// returned every customer's messages.
+	h := newMessageHarness(t)
+
+	recordFor(t, h, "clinic-a", "a-feed", "A001")
+	recordFor(t, h, "clinic-b", "b-feed", "B001")
+
+	rec := h.doAs(t, "clinic-a", store.RoleAdmin, http.MethodPost, "/api/messages/search",
+		map[string]any{"where": `MSH-9.1 == "ADT"`})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search returned %d: %s", rec.Code, rec.Body)
+	}
+	res := decodeBody[msgstore.ExpressionResult](t, rec)
+	if len(res.Matches) != 1 || res.Matches[0].ControlID != "A001" {
+		t.Errorf("clinic-a's search found %+v, want only A001", res.Matches)
+	}
+}

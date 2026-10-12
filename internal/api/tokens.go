@@ -26,6 +26,8 @@ type apiTokenResponse struct {
 	RevokedAt string `json:"revokedAt,omitempty"`
 	// FHIRGroups are the FHIR Groups the token is limited to; empty means no limit.
 	FHIRGroups []string `json:"fhirGroups"`
+	// ChannelGroups are the channel groups the token is limited to; empty means every channel.
+	ChannelGroups []string `json:"channelGroups,omitempty"`
 }
 
 // handleListAPITokens lists tokens without their values.
@@ -41,12 +43,16 @@ func (s *Server) handleListAPITokens(w http.ResponseWriter, r *http.Request, ses
 
 	out := make([]apiTokenResponse, 0, len(tokens))
 	for _, t := range tokens {
+		if !manages(sess, t.ChannelGroups) {
+			continue
+		}
 		entry := apiTokenResponse{
-			Label:      t.Label,
-			Role:       string(t.Role),
-			CreatedBy:  t.CreatedBy,
-			Revoked:    t.Revoked(),
-			FHIRGroups: t.FHIRGroups,
+			ChannelGroups: t.ChannelGroups,
+			Label:         t.Label,
+			Role:          string(t.Role),
+			CreatedBy:     t.CreatedBy,
+			Revoked:       t.Revoked(),
+			FHIRGroups:    t.FHIRGroups,
 		}
 		if entry.FHIRGroups == nil {
 			entry.FHIRGroups = []string{}
@@ -72,6 +78,8 @@ type createTokenRequest struct {
 	Role  string `json:"role"`
 	// FHIRGroups limits the token to these FHIR Group ids: a provider's CMS-0057 Provider Access token.
 	FHIRGroups []string `json:"fhirGroups"`
+	// ChannelGroups limits the token to the channels in these groups. A limited administrator's token gets their groups.
+	ChannelGroups []string `json:"channelGroups,omitempty"`
 }
 
 // createTokenResponse carries the one and only sight of the value.
@@ -107,7 +115,11 @@ func (s *Server) handleCreateAPIToken(w http.ResponseWriter, r *http.Request, se
 		role = store.RoleViewer
 	}
 	if !role.Valid() {
-		s.fail(w, r, http.StatusBadRequest, "role must be viewer, editor, admin or platform")
+		s.fail(w, r, http.StatusBadRequest, "role must be monitor, viewer, operator, editor, admin or platform")
+		return
+	}
+	channelGroups, ok := s.groupsToGrant(w, r, sess, req.ChannelGroups)
+	if !ok {
 		return
 	}
 
@@ -135,6 +147,14 @@ func (s *Server) handleCreateAPIToken(w http.ResponseWriter, r *http.Request, se
 			return
 		}
 		detail += ", limited to FHIR Groups " + strings.Join(req.FHIRGroups, ", ")
+	}
+	if len(channelGroups) > 0 {
+		if err := s.storeFor(sess).LimitAPITokenToChannelGroups(r.Context(), label, channelGroups); err != nil {
+			_ = s.storeFor(sess).RevokeAPIToken(r.Context(), label)
+			s.failErr(w, r, err)
+			return
+		}
+		detail += groupsDetail(channelGroups)
 	}
 
 	s.log().Info("an API token was created",
@@ -164,6 +184,25 @@ func (s *Server) handleRevokeAPIToken(w http.ResponseWriter, r *http.Request, se
 	if strings.TrimSpace(label) == "" {
 		s.fail(w, r, http.StatusBadRequest, "which token?")
 		return
+	}
+
+	if len(sess.ChannelGroups) > 0 {
+		// A limited administrator revokes the tokens of their own groups, not the central team's.
+		tokens, err := s.storeFor(sess).ListAPITokens(r.Context())
+		if err != nil {
+			s.failErr(w, r, err)
+			return
+		}
+		mine := false
+		for _, t := range tokens {
+			if t.Label == label && manages(sess, t.ChannelGroups) {
+				mine = true
+			}
+		}
+		if !mine {
+			s.fail(w, r, http.StatusNotFound, "no token called "+label)
+			return
+		}
 	}
 
 	if err := s.storeFor(sess).RevokeAPIToken(r.Context(), label); err != nil {

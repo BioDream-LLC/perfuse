@@ -450,6 +450,23 @@ var migrations = []migration{
 			`CREATE INDEX IF NOT EXISTS smart_grants_expiry ON smart_grants(expires_at)`,
 		},
 	},
+	{
+		// Channel-group limits: a person or a token sees only the channels in their groups, inside one tenant.
+		name: "channel-groups",
+		addColumns: []columnAdd{
+			{"users", "channel_groups", "TEXT NOT NULL DEFAULT ''"},
+			{"api_tokens", "channel_groups", "TEXT NOT NULL DEFAULT ''"},
+		},
+	},
+	{
+		// Per-tenant limits a platform operator sets for each customer. Zero means no limit.
+		name: "tenant-limits",
+		addColumns: []columnAdd{
+			{"tenants", "max_channels", "INTEGER NOT NULL DEFAULT 0"},
+			{"tenants", "max_messages_per_minute", "INTEGER NOT NULL DEFAULT 0"},
+			{"tenants", "max_storage_mb", "INTEGER NOT NULL DEFAULT 0"},
+		},
+	},
 }
 
 // applyMigrations runs whatever has not run yet.

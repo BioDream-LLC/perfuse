@@ -72,7 +72,7 @@ destinations:
 	}
 
 	// And the status payload must carry the count, because that is what the dashboard reads.
-	body := statusBody(NewRuntime(repo, nil, nil))
+	body := statusBody(NewRuntime(repo, nil, nil), nil)
 
 	raw, err := json.Marshal(body)
 	if err != nil {

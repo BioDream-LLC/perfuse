@@ -125,6 +125,9 @@ func (s *Server) handleFlow(w http.ResponseWriter, r *http.Request, sess *store.
 	}
 
 	for _, name := range s.flowChannelNames(rt, traffic) {
+		if !visibleChannel(r, name) {
+			continue
+		}
 		out.Nodes = append(out.Nodes, s.flowNodeFor(rt, name, traffic[name], since, bucket))
 	}
 

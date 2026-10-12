@@ -148,6 +148,9 @@ func (s *Store) SearchByIdentity(ctx context.Context, q IdentitySearch) (*Identi
 		args = append(args, dbtime.Format(q.Until))
 	}
 	clause := strings.Join(where, " AND ")
+	scope, scopeArgs := channelScope(ctx, "m.channel")
+	clause += scope
+	args = append(args, scopeArgs...)
 
 	// Counted over distinct messages, not over index rows. A message that matches on both its
 	// MRN and its account number is one message, and reporting two would make the total

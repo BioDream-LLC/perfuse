@@ -1,7 +1,7 @@
 import { SiteLogo } from './Branding'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { api } from './api'
+import { api, atLeast } from './api'
 import type {
   Bucket,
   ChannelState,
@@ -23,7 +23,7 @@ import { Confirm, ErrorBox, Section, Spinner } from './ui'
  */
 export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
   const me = useSelector((s: RootState) => s.session.me)!
-  const canControl = me.role === 'admin'
+  const canControl = atLeast(me.role, 'admin')
 
   const [status, setStatus] = useState<StatusResponse | null>(null)
   const [stats, setStats] = useState<MessageStats | null>(null)

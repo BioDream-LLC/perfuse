@@ -211,3 +211,42 @@ func contains(haystack, needle string) bool {
 		return false
 	})()
 }
+
+func TestAPlatformOperatorSetsATenantsLimits(t *testing.T) {
+	h := platformHarness(t)
+
+	if rec := h.do("platform", http.MethodPost, "/api/tenants",
+		map[string]any{"id": "riverside", "name": "Riverside", "limits": map[string]int{"maxChannels": 5}}); rec.Code != http.StatusOK {
+		t.Fatalf("creating a tenant with limits: %d %s", rec.Code, rec.Body)
+	}
+	rec := h.do("platform", http.MethodPut, "/api/tenants/riverside", map[string]any{
+		"name": "Riverside", "limits": map[string]int{"maxChannels": 10, "maxMessagesPerMinute": 600, "maxStorageMB": 2048},
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("setting limits: %d %s", rec.Code, rec.Body)
+	}
+	got, err := h.store.Tenant(t.Context(), "riverside")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Limits.MaxChannels != 10 || got.Limits.MaxMessagesPerMinute != 600 || got.Limits.MaxStorageMB != 2048 {
+		t.Errorf("limits stored as %+v", got.Limits)
+	}
+
+	// An update that leaves limits out leaves them alone.
+	if rec := h.do("platform", http.MethodPut, "/api/tenants/riverside", map[string]any{"name": "Riverside Clinics"}); rec.Code != http.StatusOK {
+		t.Fatalf("renaming: %d", rec.Code)
+	}
+	if got, _ := h.store.Tenant(t.Context(), "riverside"); got.Limits.MaxChannels != 10 {
+		t.Errorf("renaming cleared the limits: %+v", got.Limits)
+	}
+
+	if rec := h.do("platform", http.MethodPut, "/api/tenants/riverside",
+		map[string]any{"name": "Riverside", "limits": map[string]int{"maxChannels": -1}}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a negative limit: %d, want 400", rec.Code)
+	}
+	if rec := h.do("admin", http.MethodPut, "/api/tenants/riverside",
+		map[string]any{"name": "Riverside", "limits": map[string]int{"maxChannels": 1000}}); rec.Code != http.StatusForbidden {
+		t.Errorf("a tenant's own administrator raised its limits: %d", rec.Code)
+	}
+}

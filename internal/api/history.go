@@ -152,6 +152,9 @@ func (s *Server) handleRestoreChannelVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	if !s.groupAllowed(w, r, sess, channels, raw) {
+		return
+	}
 	updated, err := channels.Update(name, raw)
 	if err != nil {
 		s.failErr(w, r, err)
@@ -186,7 +189,12 @@ func (s *Server) handleChannelRepoStatus(w http.ResponseWriter, r *http.Request,
 	}
 
 	repo := &vcs.Repo{Dir: channels.Dir}
-	s.ok(w, repo.Status())
+	st := repo.Status()
+	if visibleFrom(r.Context()) != nil {
+		// File names are channel names; a limited person is told whether there are uncommitted edits, not whose.
+		st.Untracked, st.Modified = nil, nil
+	}
+	s.ok(w, st)
 }
 
 func baseName(path string) string {

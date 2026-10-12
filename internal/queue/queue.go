@@ -25,6 +25,8 @@
 package queue
 
 import (
+	"github.com/biodream-llc/perfuse/internal/chanscope"
+
 	"context"
 	"database/sql"
 	"errors"
@@ -310,6 +312,10 @@ func (s *Store) List(ctx context.Context, q Query) ([]Item, int, error) {
 		where = append(where, "state = ?")
 		args = append(args, string(q.State))
 	}
+	if scope, scopeArgs := chanscope.SQL(ctx, "channel"); scope != "" {
+		where = append(where, strings.TrimPrefix(scope, " AND "))
+		args = append(args, scopeArgs...)
+	}
 	clause := ""
 	if len(where) > 0 {
 		clause = " WHERE " + strings.Join(where, " AND ")
@@ -362,9 +368,10 @@ func (s *Store) List(ctx context.Context, q Query) ([]Item, int, error) {
 
 // Payload returns the stored bytes for one item, for the inspector.
 func (s *Store) Payload(ctx context.Context, id int64) ([]byte, error) {
+	payloadScope, payloadArgs := chanscope.SQL(ctx, "channel")
 	var raw []byte
 	err := s.querier().QueryRowContext(ctx,
-		"SELECT raw FROM queue WHERE id = ?", id).Scan(&raw)
+		"SELECT raw FROM queue WHERE id = ?"+payloadScope, append([]any{id}, payloadArgs...)...).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("queue item %d not found", id)
 	}
@@ -389,6 +396,7 @@ type DepthRow struct {
 
 // Depth summarises the queue per destination.
 func (s *Store) Depth(ctx context.Context) ([]DepthRow, error) {
+	depthScope, depthArgs := chanscope.SQL(ctx, "channel")
 	rows, err := s.querier().QueryContext(ctx, `
 		SELECT channel, destination,
 		       sum(CASE WHEN state = 'pending' THEN 1 ELSE 0 END),
@@ -396,9 +404,9 @@ func (s *Store) Depth(ctx context.Context) ([]DepthRow, error) {
 		       min(CASE WHEN state = 'pending' THEN enqueued_at END),
 		       max(CASE WHEN state = 'pending' THEN attempts ELSE 0 END)
 		FROM queue
-		WHERE state IN ('pending', 'failed')
+		WHERE state IN ('pending', 'failed')`+depthScope+`
 		GROUP BY channel, destination
-		ORDER BY channel, destination`)
+		ORDER BY channel, destination`, depthArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -435,27 +443,29 @@ func (s *Store) Depth(ctx context.Context) ([]DepthRow, error) {
 // just fixed something, and counting the failures from before the fix against the
 // new attempt budget would abandon the message immediately.
 func (s *Store) RetryNow(ctx context.Context, id int64, channel, destination string) (int64, error) {
+	scope, scopeArgs := chanscope.SQL(ctx, "channel")
 	if id != 0 {
 		res, err := s.db.ExecContext(ctx, `
 			UPDATE queue SET state = ?, next_attempt = ?, attempts = 0
-			WHERE id = ? AND state IN ('pending', 'failed')`,
-			string(Pending), nowText(), id)
+			WHERE id = ? AND state IN ('pending', 'failed')`+scope,
+			append([]any{string(Pending), nowText(), id}, scopeArgs...)...)
 		return affected(res, err)
 	}
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE queue SET state = ?, next_attempt = ?, attempts = 0
-		WHERE channel = ? AND destination = ? AND state IN ('pending', 'failed')`,
-		string(Pending), nowText(), channel, destination)
+		WHERE channel = ? AND destination = ? AND state IN ('pending', 'failed')`+scope,
+		append([]any{string(Pending), nowText(), channel, destination}, scopeArgs...)...)
 	return affected(res, err)
 }
 
 // Skip abandons an item without delivering it, recording that a person decided
 // to. The message stays in the table so the decision is auditable.
 func (s *Store) Skip(ctx context.Context, id int64, who string) (int64, error) {
+	scope, scopeArgs := chanscope.SQL(ctx, "channel")
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE queue SET state = ?, last_error = ?, last_attempt = ?
-		WHERE id = ? AND state IN ('pending', 'failed')`,
-		string(Skipped), "skipped by "+who, nowText(), id)
+		WHERE id = ? AND state IN ('pending', 'failed')`+scope,
+		append([]any{string(Skipped), "skipped by " + who, nowText(), id}, scopeArgs...)...)
 	return affected(res, err)
 }
 
@@ -463,10 +473,11 @@ func (s *Store) Skip(ctx context.Context, id int64, who string) (int64, error) {
 // down long enough that the backlog is no longer clinically useful — a week of
 // stale admissions replayed at once can do more harm than never sending them.
 func (s *Store) Drain(ctx context.Context, channel, destination, who string) (int64, error) {
+	scope, scopeArgs := chanscope.SQL(ctx, "channel")
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE queue SET state = ?, last_error = ?, last_attempt = ?
-		WHERE channel = ? AND destination = ? AND state IN ('pending', 'failed')`,
-		string(Skipped), "drained by "+who, nowText(), channel, destination)
+		WHERE channel = ? AND destination = ? AND state IN ('pending', 'failed')`+scope,
+		append([]any{string(Skipped), "drained by " + who, nowText(), channel, destination}, scopeArgs...)...)
 	return affected(res, err)
 }
 
@@ -476,8 +487,9 @@ func (s *Store) Drain(ctx context.Context, channel, destination, who string) (in
 // delivered and has not been explicitly abandoned would lose it silently, so it
 // has to be skipped first — which records that somebody chose to.
 func (s *Store) Remove(ctx context.Context, id int64) (int64, error) {
+	scope, scopeArgs := chanscope.SQL(ctx, "channel")
 	res, err := s.db.ExecContext(ctx,
-		"DELETE FROM queue WHERE id = ? AND state != ?", id, string(Pending))
+		"DELETE FROM queue WHERE id = ? AND state != ?"+scope, append([]any{id, string(Pending)}, scopeArgs...)...)
 	return affected(res, err)
 }
 

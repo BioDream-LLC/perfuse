@@ -25,6 +25,7 @@ export function Tokens() {
   const [label, setLabel] = useState('')
   const [role, setRole] = useState('viewer')
   const [groups, setGroups] = useState('')
+  const [channelGroups, setChannelGroups] = useState('')
   const [creating, setCreating] = useState(false)
 
   // Held in state rather than shown in the list, because this is the only time the value
@@ -56,10 +57,15 @@ export function Tokens() {
         .split(',')
         .map((g) => g.trim())
         .filter(Boolean)
-      const res = await api.createToken(label.trim(), role, limit)
+      const channels = channelGroups
+        .split(',')
+        .map((g) => g.trim())
+        .filter(Boolean)
+      const res = await api.createToken(label.trim(), role, limit, channels)
       setIssued(res)
       setLabel('')
       setGroups('')
+      setChannelGroups('')
       await load()
     } catch (err) {
       setError(toUiError(err))
@@ -133,7 +139,9 @@ export function Tokens() {
 
           <Field label="Role" hint="The most this token can do">
             <select className="input" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="monitor">monitor — status and counts, no message contents</option>
               <option value="viewer">viewer — read only</option>
+              <option value="operator">operator — also resend and retry</option>
               <option value="editor">editor — change channels</option>
               <option value="admin">admin — start and stop channels, manage users</option>
             </select>
@@ -144,6 +152,18 @@ export function Tokens() {
             hint="For a provider's CMS-0057 Provider Access token: comma-separated Group ids. The token can then read those Groups and export them, and nothing else on the FHIR endpoint. Leave empty for no limit."
           >
             <input className="input" value={groups} placeholder="riverside-attributed" onChange={(e) => setGroups(e.target.value)} />
+          </Field>
+
+          <Field
+            label="Limit to channel groups"
+            hint="Comma-separated: the token sees and acts on the channels filed under these groups only, like a person limited to them. Leave empty for every channel (an administrator limited to groups always gives their own)."
+          >
+            <input
+              className="input"
+              value={channelGroups}
+              placeholder="every channel"
+              onChange={(e) => setChannelGroups(e.target.value)}
+            />
           </Field>
 
           <button
@@ -188,6 +208,11 @@ export function Tokens() {
                     <td className="py-2 pr-4 font-mono text-xs">{t.label}</td>
                     <td className="py-2 pr-4">
                       {t.role}
+                      {t.channelGroups && t.channelGroups.length > 0 && (
+                        <span className="block text-xs text-slate-400">
+                          Channel groups: {t.channelGroups.join(', ')}
+                        </span>
+                      )}
                       {t.fhirGroups && t.fhirGroups.length > 0 && (
                         <span className="block text-xs text-slate-400">FHIR Groups: {t.fhirGroups.join(', ')}</span>
                       )}

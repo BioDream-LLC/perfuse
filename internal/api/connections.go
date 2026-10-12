@@ -105,7 +105,7 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request, sess 
 	filter := r.URL.Query().Get("channel")
 	var checks []*connectionCheck
 	for _, summary := range valid {
-		if filter != "" && summary.Name != filter {
+		if (filter != "" && summary.Name != filter) || !visibleChannel(r, summary.Name) {
 			continue
 		}
 		c, err := rt.Repo.Get(summary.Name)

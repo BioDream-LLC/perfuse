@@ -79,7 +79,7 @@ func (s *Store) GetUser(ctx context.Context, username string) (*User, error) {
 // getUserIn reads a user within one tenant.
 func (s *Store) getUserIn(ctx context.Context, tid tenant.ID, username string) (*User, error) {
 	return s.scanUser(s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
 		 FROM users WHERE tenant_id = ? AND username = ? COLLATE NOCASE`,
 		string(tid), username))
 }
@@ -91,7 +91,7 @@ func (s *Store) getUserIn(ctx context.Context, tid tenant.ID, username string) (
 // direct object reference, and the fix is one clause.
 func (s *Store) userIn(ctx context.Context, tid tenant.ID, id int64) (*User, error) {
 	return s.scanUser(s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
 		 FROM users WHERE tenant_id = ? AND id = ?`, string(tid), id))
 }
 
@@ -111,12 +111,12 @@ func (s *Store) GetUserByID(ctx context.Context, id int64) (*User, error) {
 func (s *Store) getUserByIDIn(ctx context.Context, tid tenant.ID, id int64) (*User, error) {
 	if tid == "" {
 		return s.scanUser(s.db.QueryRowContext(ctx,
-			`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id
+			`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
 			 FROM users WHERE id = ?`, id))
 	}
 
 	return s.scanUser(s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
 		 FROM users WHERE id = ? AND tenant_id = ?`, id, string(tid)))
 }
 
@@ -128,8 +128,9 @@ func (s *Store) scanUser(row *sql.Row) (*User, error) {
 		created  string
 		last     sql.NullString
 		external sql.NullString
+		groups   string
 	)
-	err := row.Scan(&u.ID, &u.Username, &u.hash, &role, &disabled, &created, &last, &external)
+	err := row.Scan(&u.ID, &u.Username, &u.hash, &role, &disabled, &created, &last, &external, &groups)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -147,6 +148,7 @@ func (s *Store) scanUser(row *sql.Row) (*User, error) {
 	if external.Valid {
 		u.ExternalID = external.String
 	}
+	u.ChannelGroups = splitGroups(groups)
 	return &u, nil
 }
 
@@ -158,7 +160,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]*User, error) {
 // listUsersIn returns one tenant's users and nobody else's.
 func (s *Store) listUsersIn(ctx context.Context, tid tenant.ID) ([]*User, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
 		 FROM users WHERE tenant_id = ? ORDER BY username`, string(tid))
 	if err != nil {
 		return nil, err
@@ -174,9 +176,10 @@ func (s *Store) listUsersIn(ctx context.Context, tid tenant.ID) ([]*User, error)
 			created  string
 			last     sql.NullString
 			external sql.NullString
+			groups   string
 		)
 		if err := rows.Scan(&u.ID, &u.Username, &u.hash, &role, &disabled, &created, &last,
-			&external); err != nil {
+			&external, &groups); err != nil {
 			return nil, err
 		}
 		u.Role = Role(role)
@@ -189,6 +192,7 @@ func (s *Store) listUsersIn(ctx context.Context, tid tenant.ID) ([]*User, error)
 		if external.Valid {
 			u.ExternalID = external.String
 		}
+		u.ChannelGroups = splitGroups(groups)
 		out = append(out, &u)
 	}
 	return out, rows.Err()
@@ -215,6 +219,19 @@ func (s *Store) SetRole(ctx context.Context, userID int64, role Role) error {
 	}
 	res, err := s.db.ExecContext(ctx,
 		`UPDATE users SET role = ? WHERE id = ?`, string(role), userID)
+	if err != nil {
+		return err
+	}
+	return requireOneRow(res)
+}
+
+// SetChannelGroups limits an account to the channels in these groups. An empty list removes the limit.
+//
+// The limit is the Rhapsody "locker" idea inside one tenant: a facility's own staff see and act on their facility's channels,
+// while a central team with no limit sees everything. It is read on every request, so it takes effect at once.
+func (s *Store) SetChannelGroups(ctx context.Context, userID int64, groups []string) error {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE users SET channel_groups = ? WHERE id = ?`, joinGroups(groups), userID)
 	if err != nil {
 		return err
 	}
@@ -385,15 +402,16 @@ func (s *Store) Lookup(ctx context.Context, token string) (*Session, error) {
 		// rather than at login, or somebody suspended for non-payment keeps
 		// operating until their session happens to expire.
 		tenantDisabled int
+		groups         string
 	)
 	err := s.db.QueryRowContext(ctx,
 		`SELECT s.user_id, u.username, u.role, u.disabled, s.expires_at, u.tenant_id,
-		        COALESCE(t.disabled, 0)
+		        COALESCE(t.disabled, 0), u.channel_groups
 		 FROM sessions s
 		 JOIN users u ON u.id = s.user_id
 		 LEFT JOIN tenants t ON t.id = u.tenant_id
 		 WHERE s.token_hash = ?`, hash).
-		Scan(&userID, &username, &role, &disabled, &expires, &tenantID, &tenantDisabled)
+		Scan(&userID, &username, &role, &disabled, &expires, &tenantID, &tenantDisabled, &groups)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -432,6 +450,8 @@ func (s *Store) Lookup(ctx context.Context, token string) (*Session, error) {
 		Username:  username,
 		Role:      Role(role),
 		ExpiresAt: newExpiry,
+		// Read on every request, like the role, so narrowing somebody's groups takes effect at their next click.
+		ChannelGroups: splitGroups(groups),
 	}, nil
 }
 

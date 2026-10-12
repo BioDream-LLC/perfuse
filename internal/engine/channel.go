@@ -152,6 +152,9 @@ type Channel struct {
 	// recorder is optional. When nil, nothing is stored.
 	recorder Recorder
 
+	// intake is asked before each received message is processed; nil admits everything. A tenant's limits live here.
+	intake func() error
+
 	// metrics is optional; nil disables recording.
 	metrics *metrics.Collector
 
@@ -274,6 +277,14 @@ type DataTypeAware interface {
 
 // SetRecorder attaches a recorder. It must be called before Start.
 func (c *Channel) SetRecorder(r Recorder) { c.recorder = r }
+
+// ErrNotAdmitted wraps the reason a received message was refused before it was processed: a tenant's rate or storage
+// limit. The message was not read, stored or delivered, and the sender is expected to resend it - so MLLP sends no
+// acknowledgement, HTTP answers 429, and a queue or file source leaves the message where it was.
+var ErrNotAdmitted = errors.New("not admitted")
+
+// SetAdmission sets what is asked before each received message is processed. It must be called before Start.
+func (c *Channel) SetAdmission(intake func() error) { c.intake = intake }
 
 // SetTracer attaches a tracer. A nil tracer is valid and disables tracing, which
 // is why nothing on the message path guards against it.
@@ -734,6 +745,13 @@ func (c *Channel) closeSenders() {
 
 // handle processes one received message and returns the acknowledgement.
 func (c *Channel) handle(ctx context.Context, raw []byte) ([]byte, error) {
+	if c.intake != nil {
+		if err := c.intake(); err != nil {
+			c.log.Warn("a received message was refused; the sender should resend it", "reason", err.Error())
+			return nil, fmt.Errorf("%w: %w", ErrNotAdmitted, err)
+		}
+	}
+
 	// X12 is handled separately, before anything else here runs.
 	//
 	// The two differ in the place that matters most: X12 has no synchronous

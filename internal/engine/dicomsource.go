@@ -67,6 +67,14 @@ func (c *Channel) handleDICOMObject(ds *dicom.DataSet, raw []byte) error {
 		"sop_instance", ds.Text(dicom.TagSOPInstanceUID),
 		"bytes", len(raw))
 
+	// A tenant over its limits is told to retry, like any other busy store, so the modality keeps the study and resends.
+	if c.intake != nil {
+		if err := c.intake(); err != nil {
+			c.log.Warn("an imaging object was refused; the sender should resend it", "reason", err.Error())
+			return &dicom.Retryable{Err: fmt.Errorf("%w: %w", ErrNotAdmitted, err)}
+		}
+	}
+
 	// The bytes arrive already wrapped into a file representation carrying the negotiated transfer syntax, so everything
 	// downstream can read them without being told anything.
 	if _, err := c.handleDICOMParsed(context.Background(), raw, ds); err != nil {

@@ -34,6 +34,10 @@ import (
 
 // ExpressionSearch describes a search by message content.
 type ExpressionSearch struct {
+	// TenantID is whose messages are searched. Like every other query here it is unconditional: empty means the default
+	// tenant, never every tenant.
+	TenantID string
+
 	// Where is a filter expression, in the same language channel filters use.
 	Where string
 
@@ -114,15 +118,17 @@ func (s *Store) SearchByExpression(ctx context.Context, q ExpressionSearch) (*Ex
 	// nobody tests by hand.
 	res := &ExpressionResult{Paths: e.Paths(), Matches: []Message{}}
 
+	scope, scopeArgs := channelScope(ctx, "channel")
+
 	// Narrow in SQL, ordered newest first so a bounded scan looks at recent traffic.
 	rows, err := s.querier().QueryContext(ctx, `
 		SELECT id, channel, received_at, control_id, message_type, trigger_event,
 		       sender, remote, outcome, ack_code, size, segments, duration_ms, error, raw
 		  FROM messages
-		 WHERE `+narrowClause(q)+`
+		 WHERE `+narrowClause(q)+scope+`
 		   AND raw IS NOT NULL AND length(raw) > 0
 		 ORDER BY id DESC
-		 LIMIT ?`, append(narrowArgs(q), examine)...)
+		 LIMIT ?`, append(append(narrowArgs(q), scopeArgs...), examine)...)
 	if err != nil {
 		return nil, err
 	}
@@ -178,9 +184,9 @@ func (s *Store) SearchByExpression(ctx context.Context, q ExpressionSearch) (*Ex
 
 	// How many could have been examined, so a reader can judge the answer.
 	if err := s.querier().QueryRowContext(ctx,
-		`SELECT count(*) FROM messages WHERE `+narrowClause(q)+
+		`SELECT count(*) FROM messages WHERE `+narrowClause(q)+scope+
 			` AND raw IS NOT NULL AND length(raw) > 0`,
-		narrowArgs(q)...).Scan(&res.Available); err != nil {
+		append(narrowArgs(q), scopeArgs...)...).Scan(&res.Available); err != nil {
 		res.Available = res.Examined
 	}
 
@@ -189,7 +195,7 @@ func (s *Store) SearchByExpression(ctx context.Context, q ExpressionSearch) (*Ex
 
 // narrowClause builds the SQL that runs before anything is parsed.
 func narrowClause(q ExpressionSearch) string {
-	clause := "1=1"
+	clause := "tenant_id = ?"
 	if q.Channel != "" {
 		clause += " AND channel = ?"
 	}
@@ -209,7 +215,7 @@ func narrowClause(q ExpressionSearch) string {
 }
 
 func narrowArgs(q ExpressionSearch) []any {
-	var args []any
+	args := []any{tenantOrDefault(q.TenantID)}
 	if q.Channel != "" {
 		args = append(args, q.Channel)
 	}

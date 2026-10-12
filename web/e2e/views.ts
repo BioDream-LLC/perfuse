@@ -16,7 +16,13 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const app = readFileSync(join(here, "..", "src", "App.tsx"), "utf8");
 
-export const VIEWS: string[] = [...app.matchAll(/id: '[a-z]+',\s*\n\s*label: '([^']+)'/g)].map((m) => m[1]);
+// The e2e server signs in as an administrator, so views for the platform role (a shared server's operator) are left out:
+// that account is not shown them, and saying it was would be the drifting claim this file exists to prevent.
+export const VIEWS: string[] = [
+  ...app.matchAll(/id: '[a-z0-9]+',\s*\n\s*label: '([^']+)',\s*\n\s*minRole: '([a-z]+)'/g),
+]
+  .filter((m) => m[2] !== "platform")
+  .map((m) => m[1]);
 
 if (VIEWS.length < 20) {
   throw new Error(`views.ts found only ${VIEWS.length} views in App.tsx; the pattern no longer matches how tabs are declared`);

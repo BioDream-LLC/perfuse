@@ -27,6 +27,7 @@ func (s *Server) handleCertificates(w http.ResponseWriter, r *http.Request, sess
 		s.failErr(w, r, err)
 		return
 	}
+	list, broken = visibleSummaries(r, list, broken)
 
 	type endpoint struct {
 		Channel     string          `json:"channel"`

@@ -221,7 +221,9 @@ export function RoleBadge({ role }: { role: string }) {
   const colours: Record<string, string> = {
     admin: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
     editor: 'bg-sky-500/15 text-sky-300 border border-sky-500/30',
+    operator: 'bg-teal-500/15 text-teal-300 border border-teal-500/30',
     viewer: 'bg-slate-500/15 text-slate-300 border border-slate-500/30',
+    monitor: 'bg-violet-500/15 text-violet-300 border border-violet-500/30',
   }
   return <span className={`badge ${colours[role] ?? colours.viewer}`}>{role}</span>
 }

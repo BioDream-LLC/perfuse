@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useBranding, logoURL, BrandMark } from './Branding'
-import { IconUpload, IconTrash, IconCheck, IconWarning } from './Icons'
+import { IconUpload, IconTrash, IconCheck, IconWarning, IconSettings } from './Icons'
 
 /**
  * BrandingPanel is where a customer makes this their product.
@@ -83,7 +83,10 @@ export function BrandingPanel() {
   return (
     <section className="card p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
+        <span className="mt-0.5 shrink-0 text-slate-500" aria-hidden="true">
+          <IconSettings size={15} />
+        </span>
+        <div className="flex-1">
           <h2 className="text-sm font-semibold tracking-wide text-slate-200 uppercase">Make it yours</h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500">
             Upload a logo and set the name, and this becomes your product everywhere it appears —

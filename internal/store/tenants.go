@@ -21,11 +21,16 @@ func (s *Store) CreateTenant(ctx context.Context, t *tenant.Tenant) (*tenant.Ten
 	if err := t.Validate(); err != nil {
 		return nil, err
 	}
+	if err := t.Limits.Validate(); err != nil {
+		return nil, err
+	}
 
 	created := time.Now().UTC().Format(time.RFC3339)
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO tenants (id, name, disabled, created_at, notes) VALUES (?, ?, ?, ?, ?)`,
-		string(t.ID), t.Name, boolToInt(t.Disabled), created, t.Notes)
+		`INSERT INTO tenants (id, name, disabled, created_at, notes, max_channels, max_messages_per_minute, max_storage_mb)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		string(t.ID), t.Name, boolToInt(t.Disabled), created, t.Notes,
+		t.Limits.MaxChannels, t.Limits.MaxMessagesPerMinute, t.Limits.MaxStorageMB)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return nil, fmt.Errorf("%w: %s", ErrTenantExists, t.ID)
@@ -41,12 +46,13 @@ func (s *Store) CreateTenant(ctx context.Context, t *tenant.Tenant) (*tenant.Ten
 // Tenant reads one tenant.
 func (s *Store) Tenant(ctx context.Context, id tenant.ID) (*tenant.Tenant, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, name, disabled, created_at, COALESCE(notes, '') FROM tenants WHERE id = ?`,
+		`SELECT id, name, disabled, created_at, COALESCE(notes, ''), max_channels, max_messages_per_minute, max_storage_mb FROM tenants WHERE id = ?`,
 		string(id))
 
 	var t tenant.Tenant
 	var disabled int
-	if err := row.Scan(&t.ID, &t.Name, &disabled, &t.CreatedAt, &t.Notes); err != nil {
+	if err := row.Scan(&t.ID, &t.Name, &disabled, &t.CreatedAt, &t.Notes,
+		&t.Limits.MaxChannels, &t.Limits.MaxMessagesPerMinute, &t.Limits.MaxStorageMB); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%w: %s", ErrTenantNotFound, id)
 		}
@@ -60,7 +66,7 @@ func (s *Store) Tenant(ctx context.Context, id tenant.ID) (*tenant.Tenant, error
 // requests. An unstable order makes a paginated interface repeat and skip rows.
 func (s *Store) ListTenants(ctx context.Context) ([]*tenant.Tenant, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, name, disabled, created_at, COALESCE(notes, '') FROM tenants ORDER BY id`)
+		`SELECT id, name, disabled, created_at, COALESCE(notes, ''), max_channels, max_messages_per_minute, max_storage_mb FROM tenants ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("store: listing tenants: %w", err)
 	}
@@ -70,7 +76,8 @@ func (s *Store) ListTenants(ctx context.Context) ([]*tenant.Tenant, error) {
 	for rows.Next() {
 		var t tenant.Tenant
 		var disabled int
-		if err := rows.Scan(&t.ID, &t.Name, &disabled, &t.CreatedAt, &t.Notes); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &disabled, &t.CreatedAt, &t.Notes,
+			&t.Limits.MaxChannels, &t.Limits.MaxMessagesPerMinute, &t.Limits.MaxStorageMB); err != nil {
 			return nil, err
 		}
 		t.Disabled = disabled != 0
@@ -94,6 +101,23 @@ func (s *Store) UpdateTenant(ctx context.Context, id tenant.ID, name string, dis
 		name, boolToInt(disabled), notes, string(id))
 	if err != nil {
 		return nil, fmt.Errorf("store: updating tenant: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, fmt.Errorf("%w: %s", ErrTenantNotFound, id)
+	}
+	return s.Tenant(ctx, id)
+}
+
+// SetTenantLimits replaces a tenant's limits. Zero means no limit.
+func (s *Store) SetTenantLimits(ctx context.Context, id tenant.ID, l tenant.Limits) (*tenant.Tenant, error) {
+	if err := l.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE tenants SET max_channels = ?, max_messages_per_minute = ?, max_storage_mb = ? WHERE id = ?`,
+		l.MaxChannels, l.MaxMessagesPerMinute, l.MaxStorageMB, string(id))
+	if err != nil {
+		return nil, fmt.Errorf("store: setting tenant limits: %w", err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, fmt.Errorf("%w: %s", ErrTenantNotFound, id)

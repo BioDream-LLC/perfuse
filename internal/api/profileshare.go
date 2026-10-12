@@ -184,6 +184,10 @@ func (s *Server) profileForSharing(
 
 		return nil, "", false
 	}
+	if !visibleChannel(r, channel) {
+		s.fail(w, r, http.StatusNotFound, "no channel called "+channel)
+		return nil, "", false
+	}
 
 	rt, ok := s.runtimeFor(w, r, sess)
 	if !ok {

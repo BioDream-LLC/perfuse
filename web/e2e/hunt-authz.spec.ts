@@ -20,7 +20,12 @@ const source = readdirSync(apiDir)
 
 const guarded = [...source.matchAll(/mux\.Handle\("(GET|POST|PUT|DELETE|PATCH) (\/api\/[^"]*)", s\.require\(store\.Role(\w+)/g)].map(
   (m) => ({ method: m[1], path: m[2].replace(/\{[^}]+\}/g, "no-such-thing-9f3a"), role: m[3] }),
-).filter((r) => !/\/logout$/.test(r.path) && r.path !== "/api/events"); // events is the live stream: 200, then it never ends
+).filter(
+  (r) =>
+    !/\/logout$/.test(r.path) &&
+    r.path !== "/api/events" && // events is the live stream: 200, then it never ends
+    r.path !== "/api/server/restart", // as admin it restarts the server under every test after this one
+);
 
 test("a viewer is refused every route above viewer, and nobody is refused every guarded route", async ({ browser, baseURL }) => {
   test.setTimeout(300_000);
@@ -64,7 +69,8 @@ test("a viewer is refused every route above viewer, and nobody is refused every 
     const nobody = await anon.request.fetch(r.path, opts);
     if (asAdmin.status() === 404 && nobody.status() === 404) continue;
     if (nobody.status() !== 401) problems.push(`no session: ${r.method} ${r.path} (${r.role}) -> ${nobody.status()}, want 401`);
-    if (r.role !== "Viewer") {
+    // Monitor sits below viewer, so a viewer may use those routes too.
+    if (r.role !== "Viewer" && r.role !== "Monitor") {
       const v = await viewer.request.fetch(r.path, opts);
       if (v.status() !== 403) problems.push(`viewer: ${r.method} ${r.path} (${r.role}) -> ${v.status()}, want 403`);
     }

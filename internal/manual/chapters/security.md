@@ -14,17 +14,48 @@ TLS on channel transports is per source and per destination, under a `tls` block
 
 ## Authentication and roles
 
-Users are held in the database, with three roles:
+Users are held in the database. Each has one of five roles, and each role includes everything in the ones above it:
 
 | Role | Can |
 |---|---|
-| Viewer | See channels, messages, statistics and traces. |
+| Monitor | See whether things are working: channel status, counts, the flow map, alerts, dashboards, metrics and the queue's depth. No message contents, channel files or queued messages. |
+| Viewer | Also read messages, channel files, traces and the activity log. |
+| Operator | Also resend: reprocess a message, replay a channel and retry queued deliveries. |
 | Editor | Also create and change channels, and run comparisons. |
-| Admin | Also manage users, settings and tenants. |
+| Admin | Also start and stop channels, clear queues, and manage people, tokens and the server's settings. |
 
-The split that matters is Viewer and Editor. A great deal of useful work — investigating why a message failed, tracing it, searching the store — needs no ability to change anything, and giving somebody Editor so they can look at a message is how configuration gets changed by accident.
+A sixth role, Platform, belongs to whoever runs a shared server: it creates tenants and sets their limits, and holds no
+channels of its own.
 
-Note that Viewer can read message content, which is clinical data. It is not a low-privilege role in any sense that matters for privacy; it is a low-privilege role for *configuration*.
+Monitor is for a help desk, or for an operations screen on a wall: everything needed to see that a feed has stopped, and
+nothing that names a patient. Viewer can read message content, which is clinical data; it is a low-privilege role for
+*configuration*, not for privacy. Operator separates fixing a failed delivery at night from changing what a feed does: the
+person who resends need not be able to rewrite the channel.
+
+### Channel groups
+
+A person (or an API token) can be limited to some **channel groups**: they then see and act on only the channels whose
+`group` is one of theirs. This is the arrangement of a hospital group on one server, each facility's analysts looking after
+their own feeds and a central team, with no limit, looking after all of them. Rhapsody calls it a locker.
+
+The limit applies everywhere at once, because it is applied to the request rather than remembered by each screen: the
+channel list, the dashboard and flow map, messages and their search, counts and charts, the queue, alerts, metrics,
+certificates, contracts and code-set use. A channel outside the person's groups does not exist for them; asking for it by
+name answers *not found*, so its name is not confirmed either. A channel with no group is seen only by people with no limit.
+
+Saving a channel keeps it inside the person's groups: they cannot create a channel in another group, or move one out of
+their own. What every facility shares - code tables, script libraries, prior-authorisation decisions - they can read but not
+change. Server-wide figures (prior authorisation, token use, tunnels) are shown only to people with no limit, and so are
+metrics and alerts about the whole server rather than a channel.
+
+An administrator limited to groups is a facility's own administrator. They manage the people and tokens of their groups,
+start and stop their channels and clear their queues. A colleague they add gets their groups unless they name some of them,
+they cannot give a group they do not have, and they never see or change anybody with no limit. Everything else an
+administrator can do changes the whole server - settings, sign-on, restarting, alert rules, branding, fleet, the SMART
+server - and is refused to them.
+
+Groups are set in **Users** (and for tokens in **Tokens**), as a comma-separated list. Each change is recorded in the
+activity log and takes effect at the person's next request.
 
 ## Who may call the FHIR endpoint
 
@@ -70,7 +101,24 @@ The message store holds messages as received, which for a clinical feed means pa
 
 A tenant is an isolation boundary: channels, messages, users and settings belong to one, and nothing crosses.
 
-This exists for a service provider running feeds for several practices. Do not use it to separate departments within one organisation that need to see each other's traffic — the isolation is real and there is no cross-tenant view.
+This exists for a service provider running feeds for several practices. Do not use it to separate departments within one
+organisation that need to see each other's traffic: the isolation is real and there is no cross-tenant view. For that, use
+channel groups (above), which divide the people of one organisation while letting a central team see everything.
+
+### Limits
+
+A platform operator sets each tenant's limits in **Tenants**, so one customer cannot crowd out the rest of a shared server.
+Leave a limit empty for none.
+
+- **Channels**: how many channels the tenant may have. Creating one more is refused, with the count and the limit.
+- **Messages a minute**: how many messages its channels together may receive in a minute.
+- **Storage**: how much stored message content it may keep, in megabytes.
+
+None of them loses a message. Over the rate or the storage limit, a received message is refused the way a busy receiver
+refuses one, before anything is stored or delivered: MLLP gets no acknowledgement (not a rejection, which some senders take
+as "do not resend"), HTTP gets 429 with `Retry-After`, SOAP gets 503, DICOM gets a retryable status, and a queue, bucket or
+file is left where it was. The sender resends, as every interface engine and EHR does. Nothing already stored is deleted to
+make room. A raised limit takes effect within a minute, and every change of limits is recorded in the activity log.
 
 ## Test data
 

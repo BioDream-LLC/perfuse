@@ -18,22 +18,18 @@ facility's interfaces in its own Locker, and a central integration team that see
 |---|---|---|
 | Several organisations in one engine | Tenants (`-multi-tenant`): channels, users, messages, queues, audit trail, FHIR resources and metrics labels belong to one tenant, and the store cannot be read without a tenant handle | Stronger isolation: a tenant cannot see another's data even through a mistake in a query |
 | Administration per organisation | A tenant's admin manages its users and settings; platform accounts create tenants | Equivalent |
-| Roles | Viewer, editor, admin per tenant; SSO (OIDC, SAML, LDAP) with group-to-role mapping | Coarser: one role for the whole tenant |
-| Grouping inside one organisation | Channel `group`, for organising the list | Organising only; no rights attach to it |
+| Roles | Monitor (status and counts, no message contents), viewer, operator (resend without changing), editor, admin; SSO (OIDC, SAML, LDAP) maps directory groups to viewer, editor and admin | Equivalent: monitoring is separate from seeing content, and resending from changing |
+| Rights inside one organisation | Channel groups: a person or token limited to some groups sees and acts on those channels only, in every list, message view and search, count, chart, queue, alert and metric; a central team with no limit sees all | Equivalent to rights per Locker, with one difference: a person's groups apply to every role they hold rather than a different role per group |
+| Administration per facility | An administrator limited to groups manages their groups' people and tokens, starts and stops their channels and clears their queues; server-wide settings stay with administrators who see every channel | Equivalent |
+| Limits per organisation | Each tenant's channels, messages a minute and stored megabytes, set by the platform operator; over a limit work is refused (senders resend), never dropped | Not part of Lockers |
 | Deployment between environments | Each tenant's channels are a directory of plain files, kept in Git, so changes are reviewed and promoted as commits | Equivalent, through Git rather than export files |
 
-## Gaps, queued
+## What is still different
 
-1. **One account with rights in several partitions.** A Perfuse user belongs to one tenant, and the manual advises against tenants
-   for departments that must see each other's traffic, because there is no cross-tenant view. A health system wants exactly what
-   Lockers give: each facility separate, and a central team that sees all. Proposed: access rights on channel groups within one
-   tenant (a user or SSO group allowed groups A and B; empty means all), applied to every list, message view, queue and metric, with
-   the tenant boundary kept for separate organisations.
-2. **Finer rights than the three roles.** Lockers separate "may monitor" from "may see message content". Perfuse's viewer sees
-   content. Proposed: a monitor role (status, counts and errors, no message bodies), and the right to change a channel separate from
-   the right to resend messages.
-3. **A dashboard per partition.** Perfuse's dashboard covers the tenant. With group rights, the dashboard, alerts and metrics should
-   filter to the groups a user holds.
-
-Not part of Lockers, but asked by service providers and also queued: limits per tenant (message rate, storage, number of channels),
-so one customer cannot exhaust a shared engine.
+- **SSO and the new roles.** OIDC, SAML and LDAP map directory groups to viewer, editor and admin; there is no mapping yet to
+  monitor or operator, or from a directory group to channel groups. Channel groups set on a federated person in Users are kept
+  across sign-ins.
+- **One role per person.** A Locker can give somebody change rights in one facility and view rights in another. In Perfuse a
+  person has one role, applied to all of their groups; two accounts give the split.
+- **Shared resources.** Code tables, script libraries and prior-authorisation decisions are shared by the whole tenant; a person
+  limited to groups can read them but not change them, rather than having a shared locker of their own.

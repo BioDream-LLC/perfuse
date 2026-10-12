@@ -52,6 +52,8 @@ func (s *Server) handleSearchMessages(w http.ResponseWriter, r *http.Request, se
 	}
 
 	q := msgstore.ExpressionSearch{
+		// From the session: before this, the content search read every tenant's messages on a shared server.
+		TenantID:    string(sess.TenantID),
 		Where:       req.Where,
 		Channel:     req.Channel,
 		MessageType: req.MessageType,

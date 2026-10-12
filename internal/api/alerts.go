@@ -26,6 +26,7 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request, _ *store.S
 	if resolved == nil {
 		resolved = []alerts.Alert{}
 	}
+	firing, resolved = alertsVisible(r, firing), alertsVisible(r, resolved)
 
 	critical, warning := 0, 0
 	for _, a := range firing {
@@ -66,7 +67,7 @@ func (s *Server) handleAcknowledgeAlert(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if !s.Alerts.Acknowledge(body.Key, sess.Username) {
+	if !alertKeyVisible(r, s.Alerts.Firing(), body.Key) || !s.Alerts.Acknowledge(body.Key, sess.Username) {
 		s.fail(w, r, http.StatusNotFound,
 			"that alert is not currently firing; it may have resolved itself")
 		return

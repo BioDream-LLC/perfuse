@@ -1,7 +1,7 @@
 import { IconMessages } from './Icons'
 import { useCallback, useEffect, useState } from 'react'
-import { api } from './api'
-import type { QueueItem, QueueDepth, QueueSnapshot, MessageView } from './api'
+import { api, atLeast } from './api'
+import type { QueueItem, QueueDepth, QueueSnapshot, MessageView, Role } from './api'
 import { Confirm, ErrorBox, Section, Spinner } from './ui'
 import { ParsedMessage } from './Messages'
 
@@ -19,7 +19,6 @@ import { ParsedMessage } from './Messages'
  * message, which also interrupts everything that was working.
  */
 
-type Role = 'viewer' | 'editor' | 'admin'
 
 export function Queue({ role }: { role: Role }) {
   const [snapshot, setSnapshot] = useState<QueueSnapshot | null>(null)
@@ -450,12 +449,12 @@ function DestinationRow({
             </span>
           )}
 
-          {role !== 'viewer' && (
+          {atLeast(role, 'operator') && (
             <button className="btn-ghost py-1 text-xs" onClick={onRetry} disabled={busy}>
               Retry all now
             </button>
           )}
-          {role === 'admin' && (
+          {atLeast(role, 'admin') && (
             <button
               className="rounded-lg border border-rose-800 px-2 py-1 text-xs text-rose-300 transition hover:bg-rose-950/40"
               onClick={onDrain}
@@ -498,7 +497,7 @@ function ItemActions({
   onSkip: () => void
   onRemove: () => void
 }) {
-  if (role === 'viewer') return null
+  if (!atLeast(role, 'operator')) return null
 
   const finished = item.state === 'delivered' || item.state === 'skipped'
 
@@ -513,7 +512,7 @@ function ItemActions({
           Retry
         </button>
       )}
-      {!finished && role === 'admin' && (
+      {!finished && atLeast(role, 'admin') && (
         <button
           className="rounded px-2 py-1 text-xs text-rose-400 hover:bg-rose-950/40"
           onClick={onSkip}
@@ -522,7 +521,7 @@ function ItemActions({
           Abandon
         </button>
       )}
-      {finished && role === 'admin' && (
+      {finished && atLeast(role, 'admin') && (
         <button
           className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-800"
           onClick={onRemove}

@@ -28,6 +28,9 @@ type APIToken struct {
 	// FHIRGroups limits the token, on the FHIR endpoint, to these Group ids. Empty means no limit.
 	FHIRGroups []string `json:"fhirGroups"`
 
+	// ChannelGroups limits the token to the channels in these groups, as for a person. Empty means every channel.
+	ChannelGroups []string `json:"channelGroups,omitempty"`
+
 	// hash identifies the row without exposing the token.
 	hash string
 }
@@ -87,10 +90,11 @@ func (s *Store) LookupAPIToken(ctx context.Context, token string) (*Session, err
 		role      string
 		revokedAt sql.NullString
 		groups    string
+		channels  string
 	)
 	err := s.db.QueryRowContext(ctx,
-		`SELECT tenant_id, label, role, revoked_at, fhir_groups FROM api_tokens WHERE token_hash = ?`,
-		hash).Scan(&tid, &label, &role, &revokedAt, &groups)
+		`SELECT tenant_id, label, role, revoked_at, fhir_groups, channel_groups FROM api_tokens WHERE token_hash = ?`,
+		hash).Scan(&tid, &label, &role, &revokedAt, &groups, &channels)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTokenNotFound
 	}
@@ -114,6 +118,8 @@ func (s *Store) LookupAPIToken(ctx context.Context, token string) (*Session, err
 		Role:       Role(role),
 		TenantID:   tenant.ID(tid),
 		FHIRGroups: splitGroups(groups),
+		// A token can be limited to channel groups like a person, so a facility's script sees only its own channels.
+		ChannelGroups: splitGroups(channels),
 	}, nil
 }
 
@@ -147,6 +153,29 @@ func (s *Store) limitAPITokenIn(ctx context.Context, tid tenant.ID, label string
 	return nil
 }
 
+// joinGroups is splitGroups' inverse: trimmed, empty entries dropped, duplicates removed, order kept.
+func joinGroups(groups []string) string {
+	seen := map[string]bool{}
+	var out []string
+	for _, g := range groups {
+		if g = strings.TrimSpace(g); g != "" && !seen[g] && !strings.Contains(g, ",") {
+			seen[g] = true
+			out = append(out, g)
+		}
+	}
+	return strings.Join(out, ",")
+}
+
+// LimitAPITokenToChannelGroups limits a token to the channels in these groups; an empty list removes the limit.
+func (sc *Scoped) LimitAPITokenToChannelGroups(ctx context.Context, label string, groups []string) error {
+	res, err := sc.store.db.ExecContext(ctx,
+		`UPDATE api_tokens SET channel_groups = ? WHERE tenant_id = ? AND label = ?`, joinGroups(groups), string(sc.id), label)
+	if err != nil {
+		return err
+	}
+	return requireOneRow(res)
+}
+
 func splitGroups(v string) []string {
 	var out []string
 	for _, g := range strings.Split(v, ",") {
@@ -168,7 +197,7 @@ func (s *Store) ListAPITokens(ctx context.Context) ([]APIToken, error) {
 
 func (s *Store) listAPITokensIn(ctx context.Context, tid tenant.ID) ([]APIToken, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT token_hash, label, role, created_at, created_by, last_used, revoked_at, fhir_groups
+		`SELECT token_hash, label, role, created_at, created_by, last_used, revoked_at, fhir_groups, channel_groups
 		 FROM api_tokens WHERE tenant_id = ?
 		 ORDER BY revoked_at IS NOT NULL, label`,
 		string(tid))
@@ -183,11 +212,13 @@ func (s *Store) listAPITokensIn(ctx context.Context, tid tenant.ID) ([]APIToken,
 			t                   APIToken
 			created, createdBy  string
 			lastUsed, revokedAt sql.NullString
-			groups              string
+			groups, channels    string
 		)
-		if err := rows.Scan(&t.hash, &t.Label, &t.Role, &created, &createdBy, &lastUsed, &revokedAt, &groups); err != nil {
+		if err := rows.Scan(&t.hash, &t.Label, &t.Role, &created, &createdBy, &lastUsed, &revokedAt, &groups,
+			&channels); err != nil {
 			return nil, err
 		}
+		t.ChannelGroups = splitGroups(channels)
 		t.FHIRGroups = splitGroups(groups)
 		if t.FHIRGroups == nil {
 			t.FHIRGroups = []string{}

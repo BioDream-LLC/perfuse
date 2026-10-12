@@ -40,6 +40,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"github.com/biodream-llc/perfuse/internal/store"
+	"github.com/biodream-llc/perfuse/internal/tenant"
 	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/web"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
@@ -1089,6 +1090,14 @@ oidcDone:
 			collector = runtime.Metrics
 		}
 		srv.Runtimes = api.NewTenantRuntimes(repos, messages, fhirStore, collector, log)
+		// Each tenant's limits, set by a platform operator in the console, refuse what is over them.
+		srv.Runtimes.LimitsFor = func(ctx context.Context, id tenant.ID) (tenant.Limits, error) {
+			t, err := st.Tenant(ctx, id)
+			if err != nil {
+				return tenant.Limits{}, err
+			}
+			return t.Limits, nil
+		}
 		defer srv.Runtimes.StopAll(context.Background())
 
 		log.Info("multi-tenant mode: each tenant's channels live in a subdirectory",

@@ -96,7 +96,7 @@ export const NAV_GROUPS: NavGroup[] = [
       ring: 'border-t-amber-500/60',
       dot: 'bg-amber-400',
     },
-    members: ['users', 'certificates', 'audit', 'fleet', 'migrate', 'settings'],
+    members: ['users', 'tenants', 'certificates', 'audit', 'fleet', 'migrate', 'settings'],
   },
 ]
 

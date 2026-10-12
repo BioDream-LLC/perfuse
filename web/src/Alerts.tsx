@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AlertRulesEditor } from './AlertRulesEditor'
-import { ApiError, api } from './api'
-import type { Alert, AlertSnapshot } from './api'
+import { ApiError, api, atLeast } from './api'
+import type { Alert, AlertSnapshot, Role } from './api'
 
 /**
  * Alerts.
@@ -158,7 +158,7 @@ export function Alerts({
   role,
   alerts,
 }: {
-  role: 'viewer' | 'editor' | 'admin'
+  role: Role
   alerts: AlertsState
 }) {
   // Taken as a prop rather than polled again. App already polls for the banner, and
@@ -184,7 +184,7 @@ export function Alerts({
   // firing, so it is mounted independently of the snapshot. Keeping it inside the
   // snapshot branch meant a single failed poll unmounted it and discarded whatever
   // was half-typed.
-  const rulesEditor = role === 'admin' ? <AlertRulesEditor /> : null
+  const rulesEditor = atLeast(role, 'admin') ? <AlertRulesEditor /> : null
 
   // One return, and the editor always sits in the same place in the tree.
   // Returning a different shape per state remounts everything below the point the
@@ -240,7 +240,7 @@ export function Alerts({
             <AlertCard
               key={alert.key}
               alert={alert}
-              canAcknowledge={role !== 'viewer'}
+              canAcknowledge={atLeast(role, 'editor')}
               busy={busy}
               onAcknowledge={() => acknowledge(alert)}
             />

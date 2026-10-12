@@ -99,6 +99,7 @@ func (s *Server) handleSpecBundle(w http.ResponseWriter, r *http.Request, sess *
 
 		return
 	}
+	summaries, broken = visibleSummaries(r, summaries, broken)
 
 	all := make([]*config.Channel, 0, len(summaries))
 	for _, sum := range summaries {

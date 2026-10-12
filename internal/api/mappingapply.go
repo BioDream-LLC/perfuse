@@ -68,6 +68,10 @@ func (s *Server) handleApproveMappings(w http.ResponseWriter, r *http.Request, s
 
 		return
 	}
+	if !visibleChannel(r, name) {
+		s.fail(w, r, http.StatusNotFound, "no channel called "+name)
+		return
+	}
 
 	if len(req.Mappings) == 0 {
 		s.fail(w, r, http.StatusBadRequest,

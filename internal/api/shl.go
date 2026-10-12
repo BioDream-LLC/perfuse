@@ -360,6 +360,10 @@ func (s *Server) handleResolveSHL(w http.ResponseWriter, r *http.Request, sess *
 	// The tenant's own runtime, resolved before fetching anything: delivering a patient's records into another tenant's channel is
 	// the failure that matters here.
 	var runtime *Runtime
+	if req.Channel != "" && !visibleChannel(r, req.Channel) {
+		s.fail(w, r, http.StatusNotFound, "no channel called "+req.Channel)
+		return
+	}
 	if req.Channel != "" {
 		rt, ok := s.runtimeFor(w, r, sess)
 		if !ok {

@@ -27,7 +27,8 @@ const routes = [...source.matchAll(/mux\.Handle(?:Func)?\("(GET|POST|PUT|DELETE|
   // /api/events is the live event stream: it answers 200 and then never ends, which is its job. It is the only
   // handler that sets text/event-stream (checked with grep when this was written), and it is excluded rather
   // than given a short timeout, because a timeout would also swallow a real hang anywhere else.
-  .filter((r) => r.path !== "/api/logout" && r.path !== "/api/events");
+  // /api/server/restart restarts the server under every test that follows, so it is left to use-restart.spec.ts.
+  .filter((r) => r.path !== "/api/logout" && r.path !== "/api/events" && r.path !== "/api/server/restart");
 
 const bodies: [string, string | undefined][] = [
   ["no body", undefined],

@@ -1,6 +1,8 @@
 package priorauth
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -497,5 +499,58 @@ func TestFromFHIR_PartialOutcomeIsPended(t *testing.T) {
 	}
 	if resp.Decision != "pended" {
 		t.Errorf("Decision = %q, want %q (partial outcome is still-deciding)", resp.Decision, "pended")
+	}
+}
+
+func TestAnOpenedTrackerSurvivesARestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "priorauth.json")
+	tr, err := OpenTracker(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	soon := time.Now().Add(48 * time.Hour)
+	if err := tr.Track(PriorAuthRequest{ID: "pa-1", PatientID: "p1"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := tr.Track(PriorAuthRequest{ID: "pa-2", PatientID: "p2"},
+		&PriorAuthResponse{RequestID: "pa-2", Decision: DecisionModified, ValidTo: soon}); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("the tracker file is %v (%v), want readable by its owner only", info, err)
+	}
+
+	// The process ends; a new one opens the same file.
+	again, err := OpenTracker(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := again.Pending(); len(p) != 1 || p[0].ID != "pa-1" {
+		t.Errorf("after a restart pending is %+v, want pa-1", p)
+	}
+	if e := again.Expiring(72 * time.Hour); len(e) != 1 || e[0].RequestID != "pa-2" {
+		t.Errorf("after a restart expiring is %+v, want pa-2 (modified is certified too)", e)
+	}
+
+	// A decision for a pending request replaces it rather than sitting beside it.
+	if err := again.Track(PriorAuthRequest{ID: "pa-1", PatientID: "p1"},
+		&PriorAuthResponse{RequestID: "pa-1", Decision: DecisionDenied}); err != nil {
+		t.Fatal(err)
+	}
+	if p := again.Pending(); len(p) != 0 {
+		t.Errorf("a decided request is still pending: %+v", p)
+	}
+	if s := again.Stats(); s.TotalRequests != 2 {
+		t.Errorf("tracking a decision added a request: %d tracked, want 2", s.TotalRequests)
+	}
+}
+
+func TestAnUnreadableTrackerFileIsNotOverwritten(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "priorauth.json")
+	if err := os.WriteFile(path, []byte("{not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := OpenTracker(path); err == nil {
+		t.Fatal("a damaged tracker file was opened as empty, and would have been overwritten at the next change")
 	}
 }

@@ -452,10 +452,11 @@ func (s *Store) Get(ctx context.Context, tenantID string, id int64) (*Message, e
 		errText    sql.NullString
 	)
 
+	getScope, getArgs := channelScope(ctx, "channel")
 	err := s.querier().QueryRowContext(ctx,
 		`SELECT id, channel, received_at, control_id, message_type, trigger_event,
 				sender, remote, outcome, ack_code, size, segments, duration_ms, error, raw
-		 FROM messages WHERE id = ? AND tenant_id = ?`, id, tenantOrDefault(tenantID)).
+		 FROM messages WHERE id = ? AND tenant_id = ?`+getScope, append([]any{id, tenantOrDefault(tenantID)}, getArgs...)...).
 		Scan(&m.ID, &m.Channel, &receivedAt, &controlID, &msgType, &event,
 			&sender, &remote, &outcome, &ackCode, &m.Size, &m.Segments,
 			&m.DurationMS, &errText, &raw)
@@ -553,6 +554,10 @@ type Query struct {
 	Until  time.Time
 	Limit  int
 	Offset int
+
+	// scope and scopeArgs carry the context's channel scope into build; set by List.
+	scope     string
+	scopeArgs []any
 }
 
 // DefaultLimit is the page size when none is given.
@@ -564,6 +569,8 @@ const MaxLimit = 1000
 
 // List returns matching messages, newest first, without their payloads.
 func (s *Store) List(ctx context.Context, q Query) ([]Message, int, error) {
+	q.scope, q.scopeArgs = channelScope(ctx, "channel")
+	q.scope = strings.TrimPrefix(q.scope, " AND ")
 	where, args := q.build()
 
 	var total int
@@ -617,6 +624,10 @@ func (q Query) build() (string, []any) {
 	// is patient data, and exactly the bug this replaced.
 	clauses := []string{"tenant_id = ?"}
 	args := []any{tenantOrDefault(q.TenantID)}
+	if q.scope != "" {
+		clauses = append(clauses, q.scope)
+		args = append(args, q.scopeArgs...)
+	}
 
 	if q.Channel != "" {
 		clauses = append(clauses, "channel = ?")
@@ -699,6 +710,9 @@ func (s *Store) Stats(ctx context.Context, tenantID string, since time.Time) (*S
 		where += " AND received_at >= ?"
 		args = append(args, dbtime.Format(since))
 	}
+	scope, scopeArgs := channelScope(ctx, "channel")
+	where += scope
+	args = append(args, scopeArgs...)
 
 	if err := s.querier().QueryRowContext(ctx,
 		`SELECT COUNT(*), COALESCE(SUM(size), 0) FROM messages WHERE `+where, args...).
@@ -840,6 +854,9 @@ func (s *Store) Throughput(ctx context.Context, tenantID string, since time.Time
 		where += " AND channel = ?"
 		args = append(args, channel)
 	}
+	scope, scopeArgs := channelScope(ctx, "channel")
+	where += scope
+	args = append(args, scopeArgs...)
 
 	rows, err := s.querier().QueryContext(ctx,
 		`SELECT
@@ -930,6 +947,7 @@ type DestinationStats struct {
 
 // DestinationStats returns per-destination counts since a time.
 func (s *Store) DestinationStats(ctx context.Context, tenantID string, since time.Time) ([]DestinationStats, error) {
+	destScope, destArgs := channelScope(ctx, "m.channel")
 	rows, err := s.querier().QueryContext(ctx,
 		`SELECT d.destination,
 			SUM(CASE WHEN d.status = 'delivered' THEN 1 ELSE 0 END),
@@ -938,9 +956,9 @@ func (s *Store) DestinationStats(ctx context.Context, tenantID string, since tim
 			AVG(d.attempts), AVG(d.duration_ms)
 		 FROM message_deliveries d
 		 JOIN messages m ON m.id = d.message_id
-		 WHERE m.tenant_id = ? AND m.received_at >= ?
+		 WHERE m.tenant_id = ? AND m.received_at >= ?`+destScope+`
 		 GROUP BY d.destination ORDER BY d.destination`,
-		tenantOrDefault(tenantID), dbtime.Format(since))
+		append([]any{tenantOrDefault(tenantID), dbtime.Format(since)}, destArgs...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -1072,11 +1090,20 @@ func (s *Store) StartPruner(ctx context.Context, every time.Duration, onResult f
 	}
 }
 
+// StoredBytes is how much message content one tenant holds, for its storage limit.
+func (s *Store) StoredBytes(ctx context.Context, tenantID string) (int64, error) {
+	var n int64
+	err := s.querier().QueryRowContext(ctx,
+		`SELECT COALESCE(SUM(size), 0) FROM messages WHERE tenant_id = ?`, tenantOrDefault(tenantID)).Scan(&n)
+	return n, err
+}
+
 // Channels lists the channels that have recorded messages, for filter dropdowns.
 func (s *Store) Channels(ctx context.Context, tenantID string) ([]string, error) {
+	chScope, chArgs := channelScope(ctx, "channel")
 	rows, err := s.querier().QueryContext(ctx,
-		`SELECT DISTINCT channel FROM messages WHERE tenant_id = ? ORDER BY channel`,
-		tenantOrDefault(tenantID))
+		`SELECT DISTINCT channel FROM messages WHERE tenant_id = ?`+chScope+` ORDER BY channel`,
+		append([]any{tenantOrDefault(tenantID)}, chArgs...)...)
 	if err != nil {
 		return nil, err
 	}

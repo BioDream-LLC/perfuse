@@ -1641,6 +1641,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Shadow': IconShadow,
   'Certificates': IconCertificates,
   'Users': IconUsers,
+  'Tenants': IconUsers,
   'Activity': IconActivity,
   'Settings': IconSettings,
 }
@@ -1734,6 +1735,10 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
 
   // Alerting.
   'Alert rules': IconAlerts,
+  'Single sign-on': IconKey,
+  'Directory sign-in': IconUsers,
+  'Fleet peers': IconFleet,
+  'Make it yours': IconSettings,
 
   // Who may sign in.
   'Sign-on': IconUsers,
@@ -1789,6 +1794,7 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   Passkeys: IconKey,
   'Shared mapping tables': IconTables,
   'Add someone': IconUsers,
+  'Add a tenant': IconUsers,
 
   // Found by the drift test rather than by reading, which is the point of having it.
   'Not encrypted': IconWarning,

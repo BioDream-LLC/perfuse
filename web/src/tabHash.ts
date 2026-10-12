@@ -2,7 +2,7 @@
 export const TAB_IDS = [
   'dashboard', 'teams', 'channels', 'messages', 'queue', 'alerts', 'metrics', 'fhir', 'subscriptions', 'documents', 'payer',
   'cms0057', 'shl', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
-  'mapper', 'users', 'audit', 'settings',
+  'mapper', 'users', 'audit', 'settings', 'tenants',
 ] as const
 
 // viewFromHash reads a view's id out of the address bar (#/<id>), or null when it names no view.

@@ -82,6 +82,7 @@ func (s *Server) handleCodesets(w http.ResponseWriter, r *http.Request, sess *st
 		s.failErr(w, r, err)
 		return
 	}
+	summaries, _ = visibleSummaries(r, summaries, nil)
 
 	// Keyed by table name and the file it came from, because two files may legitimately define tables with the same
 	// name for different channels and merging them would report an impact that does not exist.

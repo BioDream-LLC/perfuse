@@ -144,6 +144,12 @@ func (c *Channel) handlePostedMessage(src *config.HTTPSource, maxSize int) http.
 		ctx := trace.WithRemote(r.Context(), trace.ParseTraceparent(r.Header.Get(trace.TraceparentHeader)))
 
 		ack, err := c.handle(ctx, message)
+		if errors.Is(err, ErrNotAdmitted) {
+			// Busy, not broken: the sender is told to come back, which it will.
+			w.Header().Set("Retry-After", "60")
+			http.Error(w, err.Error(), http.StatusTooManyRequests)
+			return
+		}
 		if err != nil {
 			c.log.Error("handling a posted message failed", "error", err)
 			http.Error(w, "the message could not be processed", http.StatusInternalServerError)

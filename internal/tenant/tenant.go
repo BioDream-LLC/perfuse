@@ -24,6 +24,7 @@
 package tenant
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -125,6 +126,31 @@ type Tenant struct {
 	CreatedAt string `json:"createdAt"`
 	// Notes is free text for whoever operates the platform.
 	Notes string `json:"notes,omitempty"`
+	// Limits caps what the tenant may use. Zero values mean no limit.
+	Limits Limits `json:"limits"`
+}
+
+// Limits are what a platform operator allows one tenant, so one customer cannot crowd out the rest of a shared server.
+//
+// None of them ever drops a message silently. Over the rate or the storage limit a received message is refused the way a
+// busy receiver refuses it - MLLP gets no acknowledgement, HTTP gets 429, a queue or a file is left where it was - and the
+// sender resends, which every interface engine and EHR already does. The channel limit refuses a new channel. Nothing
+// already stored is deleted to make room.
+type Limits struct {
+	// MaxChannels is how many channels the tenant may have.
+	MaxChannels int `json:"maxChannels,omitempty"`
+	// MaxMessagesPerMinute is how many messages its channels together may receive in a minute.
+	MaxMessagesPerMinute int `json:"maxMessagesPerMinute,omitempty"`
+	// MaxStorageMB is how much stored message content the tenant may keep, in megabytes.
+	MaxStorageMB int `json:"maxStorageMB,omitempty"`
+}
+
+// Validate refuses negative limits.
+func (l Limits) Validate() error {
+	if l.MaxChannels < 0 || l.MaxMessagesPerMinute < 0 || l.MaxStorageMB < 0 {
+		return errors.New("a limit cannot be negative; use 0 for no limit")
+	}
+	return nil
 }
 
 // Validate checks a tenant before it is stored.

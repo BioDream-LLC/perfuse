@@ -143,6 +143,11 @@ func (c *Channel) handleSOAPRequest(src *config.SOAPSource, maxSize int) http.Ha
 		}
 
 		ack, err := c.handle(r.Context(), raw)
+		if errors.Is(err, ErrNotAdmitted) {
+			w.Header().Set("Retry-After", "60")
+			c.writeSOAPFault(w, src, soap.ServerFault, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
 		if err != nil {
 			c.writeSOAPFault(w, src, soap.ServerFault,
 				"the message could not be processed: "+err.Error(), http.StatusInternalServerError)

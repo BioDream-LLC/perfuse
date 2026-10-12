@@ -26,11 +26,18 @@ import (
 // Role is what a user is allowed to do.
 type Role string
 
-// Roles, from least to most privileged. Kept to three because a permission
-// system nobody understands is one nobody configures correctly.
+// Roles, from least to most privileged. Each includes everything below it, so a role is one word an administrator can
+// reason about rather than a matrix of permissions nobody configures correctly.
 const (
+	// RoleMonitor can see whether things are working - channel status, counts, alerts, dashboards and metrics - and
+	// nothing that holds patient data or credentials: no message contents, no channel files, no queue items. It is for a
+	// help desk or an operations screen on a wall.
+	RoleMonitor Role = "monitor"
 	// RoleViewer can see channels, their status and the audit log.
 	RoleViewer Role = "viewer"
+	// RoleOperator can additionally resend: reprocess a message, replay a channel and retry queued deliveries. It cannot
+	// change a channel, so the people who fix a failed delivery at night need not be the people who can rewrite the feed.
+	RoleOperator Role = "operator"
 	// RoleEditor can additionally create, change and delete channels.
 	RoleEditor Role = "editor"
 	// RoleAdmin can additionally manage users and start or stop channels.
@@ -51,7 +58,7 @@ const (
 // Valid reports whether the role is one we know.
 func (r Role) Valid() bool {
 	switch r {
-	case RoleViewer, RoleEditor, RoleAdmin, RolePlatform:
+	case RoleMonitor, RoleViewer, RoleOperator, RoleEditor, RoleAdmin, RolePlatform:
 		return true
 	}
 	return false
@@ -60,14 +67,18 @@ func (r Role) Valid() bool {
 // rank orders roles for permission checks.
 func (r Role) rank() int {
 	switch r {
-	case RoleViewer:
+	case RoleMonitor:
 		return 1
-	case RoleEditor:
+	case RoleViewer:
 		return 2
-	case RoleAdmin:
+	case RoleOperator:
 		return 3
-	case RolePlatform:
+	case RoleEditor:
 		return 4
+	case RoleAdmin:
+		return 5
+	case RolePlatform:
+		return 6
 	default:
 		return 0
 	}
@@ -118,6 +129,8 @@ type User struct {
 	// provider owns should be changed there rather than here, because a local change is overwritten at the next sync
 	// and a local role grant silently disappears.
 	ExternalID string `json:"externalId,omitempty"`
+	// ChannelGroups limits the account to the channels in these groups (a channel's `group:`). Empty: every channel.
+	ChannelGroups []string `json:"channelGroups,omitempty"`
 	// hash is never serialised.
 	hash string
 }
@@ -139,6 +152,23 @@ type Session struct {
 	// FHIRGroups limits an API token to these FHIR Group ids on the FHIR endpoint. Empty means no limit, and it is always
 	// empty for a person's session.
 	FHIRGroups []string
+
+	// ChannelGroups limits the session to channels in these groups. Empty means every channel of the tenant.
+	ChannelGroups []string
+}
+
+// SeesChannelGroup reports whether the session may see a channel in this group. A limited session never sees a channel
+// with no group, because nobody chose to share it with them.
+func (s *Session) SeesChannelGroup(group string) bool {
+	if s == nil || len(s.ChannelGroups) == 0 {
+		return true
+	}
+	for _, g := range s.ChannelGroups {
+		if g == group {
+			return true
+		}
+	}
+	return false
 }
 
 // AuditEntry is one recorded action.

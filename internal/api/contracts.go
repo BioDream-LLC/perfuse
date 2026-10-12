@@ -83,6 +83,7 @@ func (s *Server) handleContracts(w http.ResponseWriter, r *http.Request, sess *s
 		s.failErr(w, r, err)
 		return
 	}
+	summaries, _ = visibleSummaries(r, summaries, nil)
 
 	resp := contractListResponse{
 		Contracts: []contractStatus{},

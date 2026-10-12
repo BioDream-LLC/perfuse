@@ -152,6 +152,14 @@ func (sc *Scoped) SetRole(ctx context.Context, userID int64, role Role) error {
 	return sc.store.SetRole(ctx, userID, role)
 }
 
+// SetChannelGroups limits one of this tenant's users to the channels in these groups.
+func (sc *Scoped) SetChannelGroups(ctx context.Context, userID int64, groups []string) error {
+	if _, err := sc.GetUserByID(ctx, userID); err != nil {
+		return err
+	}
+	return sc.store.SetChannelGroups(ctx, userID, groups)
+}
+
 // SetPassword changes one of this tenant's users' passwords.
 func (sc *Scoped) SetPassword(ctx context.Context, userID int64, password string) error {
 	if _, err := sc.GetUserByID(ctx, userID); err != nil {

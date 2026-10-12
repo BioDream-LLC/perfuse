@@ -73,6 +73,11 @@ var figureFuncs = map[string]func(*figureContext) Figure{
 	"vpn-tunnels":            figVPNTunnels,
 }
 
+// serverWideFigures are the tiles not drawn from channels: prior authorization, the audit log, tokens and tunnels.
+var serverWideFigures = map[string]bool{
+	"pas-timeliness": true, "pas-decisions": true, "privacy-patient-access": true, "token-use": true, "vpn-tunnels": true,
+}
+
 // FigureTiles are the tiles this endpoint draws.
 func FigureTiles() []string {
 	out := make([]string, 0, len(figureFuncs))
@@ -89,6 +94,12 @@ func (s *Server) handleDashboardFigures(w http.ResponseWriter, r *http.Request, 
 	out := map[string]Figure{}
 	for _, id := range strings.Split(r.URL.Query().Get("tiles"), ",") {
 		if f, ok := figureFuncs[strings.TrimSpace(id)]; ok {
+			if serverWideFigures[strings.TrimSpace(id)] && visibleFrom(r.Context()) != nil {
+				// Not about channels, so not divided by channel group: counted across every facility.
+				out[strings.TrimSpace(id)] = Figure{Rows: []FigureRow{},
+					Unavailable: "counted across the whole server, so shown only to people who see every channel"}
+				continue
+			}
 			fig := f(fc)
 			if fig.Rows == nil {
 				fig.Rows = []FigureRow{}
@@ -169,6 +180,9 @@ func (fc *figureContext) channelsOfSource(types ...config.SourceType) []string {
 	}
 	var out []string
 	for _, c := range list {
+		if !visibleChannel(fc.r, c.Name) {
+			continue
+		}
 		for _, t := range types {
 			if c.SourceType == string(t) {
 				out = append(out, c.Name)

@@ -185,9 +185,17 @@ A trust anchor bundle is required and its absence is refused at startup. Checkin
 
 ### Users
 
-Accounts, roles, and what each role is allowed to do. See [security](#security).
+Accounts, roles (monitor, viewer, operator, editor, admin) and channel groups. Each person's channel groups are edited in
+place in the list; empty means every channel. An administrator limited to some groups sees only the people of those groups.
+The header shows your own groups beside your role when you have any. See [security](#security).
 
 **Machine credentials** are also here. A token is for a machine rather than a person: it does not expire and is not affected by anybody signing out, which is what a server polling its neighbour needs. Only a hash is stored, so a token is shown once when it is created and cannot be recovered — a stolen database yields no usable token. Give one the lowest role that does the job.
+
+### Tenants
+
+On a shared server, the platform operator's list of organisations: each one's channel count and stored size beside its
+limits (channels, messages a minute, storage), which are set in place. Shown only to the platform role. See
+[security](#security) for what each limit does.
 
 ### Certificates
 

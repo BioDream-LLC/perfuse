@@ -46,6 +46,9 @@ type RecentMessage struct {
 func (s *Store) Recent(ctx context.Context, tenantID string, since time.Time, f RecentFilter) ([]RecentMessage, error) {
 	args := []any{tenantOrDefault(tenantID), dbtime.Format(since)}
 	where := "m.tenant_id = ? AND m.received_at >= ?"
+	scope, scopeArgs := channelScope(ctx, "m.channel")
+	where += scope
+	args = append(args, scopeArgs...)
 	if len(f.Channels) > 0 {
 		where += " AND m.channel IN (" + placeholders(len(f.Channels)) + ")"
 		for _, c := range f.Channels {

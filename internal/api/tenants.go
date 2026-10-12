@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/biodream-llc/perfuse/internal/store"
@@ -21,6 +22,8 @@ type tenantResponse struct {
 	// have" is the first thing anybody wants from this list and fetching it per row
 	// would be a request each.
 	ChannelCounts map[string]int `json:"channelCounts"`
+	// StoredMB is each tenant's stored message content, in megabytes, beside its storage limit.
+	StoredMB map[string]float64 `json:"storedMB"`
 }
 
 func (s *Server) handleListTenants(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -48,13 +51,23 @@ func (s *Server) handleListTenants(w http.ResponseWriter, r *http.Request, sess 
 		}
 	}
 
-	s.ok(w, tenantResponse{Tenants: tenants, ChannelCounts: counts})
+	stored := map[string]float64{}
+	if s.Runtimes != nil {
+		for _, t := range tenants {
+			if b, err := s.Runtimes.StoredBytes(r.Context(), t.ID); err == nil {
+				stored[string(t.ID)] = float64(b) / (1024 * 1024)
+			}
+		}
+	}
+
+	s.ok(w, tenantResponse{Tenants: tenants, ChannelCounts: counts, StoredMB: stored})
 }
 
 type createTenantRequest struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Notes string `json:"notes,omitempty"`
+	ID     string        `json:"id"`
+	Name   string        `json:"name"`
+	Notes  string        `json:"notes,omitempty"`
+	Limits tenant.Limits `json:"limits"`
 }
 
 func (s *Server) handleCreateTenant(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -63,7 +76,7 @@ func (s *Server) handleCreateTenant(w http.ResponseWriter, r *http.Request, sess
 		return
 	}
 
-	t := &tenant.Tenant{ID: tenant.ID(req.ID), Name: req.Name, Notes: req.Notes}
+	t := &tenant.Tenant{ID: tenant.ID(req.ID), Name: req.Name, Notes: req.Notes, Limits: req.Limits}
 	created, err := s.Store.CreateTenant(r.Context(), t)
 	if err != nil {
 		if errors.Is(err, store.ErrTenantExists) {
@@ -98,6 +111,8 @@ type updateTenantRequest struct {
 	Name     string `json:"name"`
 	Disabled bool   `json:"disabled"`
 	Notes    string `json:"notes,omitempty"`
+	// Limits replaces the tenant's limits when present; omitted leaves them as they are.
+	Limits *tenant.Limits `json:"limits,omitempty"`
 }
 
 func (s *Server) handleUpdateTenant(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -108,6 +123,12 @@ func (s *Server) handleUpdateTenant(w http.ResponseWriter, r *http.Request, sess
 		return
 	}
 
+	if req.Limits != nil {
+		if err := req.Limits.Validate(); err != nil {
+			s.fail(w, r, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 	updated, err := s.Store.UpdateTenant(r.Context(), id, req.Name, req.Disabled, req.Notes)
 	if err != nil {
 		if errors.Is(err, store.ErrTenantNotFound) {
@@ -116,6 +137,18 @@ func (s *Server) handleUpdateTenant(w http.ResponseWriter, r *http.Request, sess
 		}
 		s.fail(w, r, http.StatusBadRequest, err.Error())
 		return
+	}
+	if req.Limits != nil && *req.Limits != updated.Limits {
+		if updated, err = s.Store.SetTenantLimits(r.Context(), id, *req.Limits); err != nil {
+			s.failErr(w, r, err)
+			return
+		}
+		_ = s.Store.Audit(r.Context(), store.AuditEntry{
+			ID: sess.UserID, Username: sess.Username, Action: "tenant.limits", Target: string(id),
+			Detail: fmt.Sprintf("channels %d, messages a minute %d, storage %d MB (0 is no limit)",
+				req.Limits.MaxChannels, req.Limits.MaxMessagesPerMinute, req.Limits.MaxStorageMB),
+			IP: clientIP(r),
+		})
 	}
 
 	action := "tenant.update"
@@ -175,4 +208,28 @@ func (s *Server) handleTenancyStatus(w http.ResponseWriter, r *http.Request, ses
 		"tenant":      string(sess.TenantID),
 		"isPlatform":  sess.Role == store.RolePlatform,
 	})
+}
+
+// underChannelLimit refuses a new channel when the tenant has as many as its limit allows. Broken files count, as they do
+// in the tenant list: a file that will not load is still a channel somebody wrote.
+func (s *Server) underChannelLimit(w http.ResponseWriter, r *http.Request, sess *store.Session, channels *ChannelRepo) bool {
+	id := sess.TenantID
+	if id == "" {
+		id = tenant.ID(store.DefaultTenant)
+	}
+	t, err := s.Store.Tenant(r.Context(), id)
+	if err != nil || t.Limits.MaxChannels <= 0 {
+		return true
+	}
+	valid, broken, err := channels.List()
+	if err != nil {
+		return true
+	}
+	if n := len(valid) + len(broken); n >= t.Limits.MaxChannels {
+		s.fail(w, r, http.StatusConflict,
+			fmt.Sprintf("this organisation has %d channels and its limit is %d", n, t.Limits.MaxChannels),
+			"delete a channel you no longer need, or ask whoever runs this server to raise the limit")
+		return false
+	}
+	return true
 }

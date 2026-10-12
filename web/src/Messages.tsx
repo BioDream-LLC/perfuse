@@ -3,7 +3,7 @@ import { ContentSearch } from './ContentSearch'
 import { FindPatient } from './FindPatient'
 import { TracePanel } from './TracePanel'
 import { useSelector } from 'react-redux'
-import { api } from './api'
+import { api, atLeast } from './api'
 import { SyntaxBlock } from './SyntaxHighlight'
 import type { FieldView, MessageView, SegmentView, StoredMessage } from './api'
 import { outcomeColours } from './charts'
@@ -19,7 +19,7 @@ import { Confirm, ErrorBox, Field, Section, Spinner } from './ui'
  */
 export function Messages() {
   const me = useSelector((s: RootState) => s.session.me)!
-  const canReprocess = me.role === 'editor' || me.role === 'admin'
+  const canReprocess = atLeast(me.role, 'operator')
 
   const [messages, setMessages] = useState<StoredMessage[]>([])
   const [channels, setChannels] = useState<string[]>([])

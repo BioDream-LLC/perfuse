@@ -1,6 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import { openTab } from "./nav";
 
+// Named to run last: a restart stops every channel the earlier specs started from the console (as restarting the service
+// would), and the specs after it would find nothing listening.
+//
 // A setting that applies at a restart can be applied from the console. Before the restart button, somebody had to reach the
 // machine to restart the service, which made "everything from the browser" untrue for every start-up setting.
 async function toggleAndRestart(page: Page) {

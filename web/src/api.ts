@@ -4,11 +4,22 @@
 // state-changing requests without it, which is what makes the SameSite session
 // cookie sufficient protection against a cross-site form submission.
 
-export type Role = 'viewer' | 'editor' | 'admin'
+export type Role = 'monitor' | 'viewer' | 'operator' | 'editor' | 'admin' | 'platform'
+
+/** Roles in order. Each includes everything below it. */
+export const roleRank: Record<string, number> = { monitor: 1, viewer: 2, operator: 3, editor: 4, admin: 5, platform: 6 }
+
+/** Whether a role includes another's rights. An unknown role includes nothing. */
+export function atLeast(role: string | undefined, minimum: Role): boolean {
+  const mine = roleRank[role ?? ''] ?? 0
+  return mine > 0 && mine >= (roleRank[minimum] ?? Infinity)
+}
 
 export interface Me {
   username: string
   role: Role
+  /** The channel groups this person is limited to; absent means every channel. */
+  channelGroups?: string[]
 }
 
 /** How this server allows people to sign in. */
@@ -131,6 +142,25 @@ export interface User {
   disabled: boolean
   createdAt: string
   lastLogin?: string
+  /** The channel groups this account is limited to; absent means every channel. */
+  channelGroups?: string[]
+}
+
+/** What a platform operator allows one tenant. 0 or absent: no limit. */
+export interface TenantLimits {
+  maxChannels?: number
+  maxMessagesPerMinute?: number
+  maxStorageMB?: number
+}
+
+/** An organisation on a shared server. */
+export interface Tenant {
+  id: string
+  name: string
+  disabled: boolean
+  createdAt: string
+  notes?: string
+  limits?: TenantLimits
 }
 
 export interface ChannelState {
@@ -731,6 +761,8 @@ export interface ApiToken {
   revokedAt?: string
   /** The FHIR Groups the token is limited to: a provider's CMS-0057 Provider Access token. Empty means no limit. */
   fhirGroups?: string[]
+  /** The channel groups the token is limited to; absent means every channel. */
+  channelGroups?: string[]
 }
 
 /** The one and only sight of a new token's value. */
@@ -973,8 +1005,8 @@ export const api = {
     request<Me>('POST', '/api/passkeys/signin/finish', { challenge, response }),
 
   tokens: () => request<{ tokens: ApiToken[] }>('GET', '/api/tokens'),
-  createToken: (label: string, role: string, fhirGroups: string[] = []) =>
-    request<NewApiToken>('POST', '/api/tokens', { label, role, fhirGroups }),
+  createToken: (label: string, role: string, fhirGroups: string[] = [], channelGroups: string[] = []) =>
+    request<NewApiToken>('POST', '/api/tokens', { label, role, fhirGroups, channelGroups }),
   revokeToken: (label: string) =>
     request<{ status: string }>('DELETE', `/api/tokens/${encodeURIComponent(label)}`),
 
@@ -1294,10 +1326,24 @@ export const api = {
 
   listUsers: () => request<{ users: User[] }>('GET', '/api/users'),
 
-  createUser: (username: string, password: string, role: Role) =>
-    request<User>('POST', '/api/users', { username, password, role }),
+  listTenants: () =>
+    request<{ tenants: Tenant[]; channelCounts: Record<string, number>; storedMB: Record<string, number> }>(
+      'GET',
+      '/api/tenants',
+    ),
+  createTenant: (id: string, name: string) => request<Tenant>('POST', '/api/tenants', { id, name }),
+  updateTenant: (
+    id: string,
+    body: { name: string; disabled: boolean; notes: string; limits?: TenantLimits },
+  ) => request<Tenant>('PUT', `/api/tenants/${encodeURIComponent(id)}`, body),
 
-  updateUser: (id: number, patch: { role?: Role; password?: string; disabled?: boolean }) =>
+  createUser: (username: string, password: string, role: Role, channelGroups: string[] = []) =>
+    request<User>('POST', '/api/users', { username, password, role, channelGroups }),
+
+  updateUser: (
+    id: number,
+    patch: { role?: Role; password?: string; disabled?: boolean; channelGroups?: string[] },
+  ) =>
     request<User>('PUT', `/api/users/${id}`, patch),
 
   deleteUser: (id: number) => request<{ status: string }>('DELETE', `/api/users/${id}`),

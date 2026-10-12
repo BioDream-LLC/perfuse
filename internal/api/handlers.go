@@ -41,6 +41,9 @@ func (s *Server) handleListChannels(w http.ResponseWriter, r *http.Request, sess
 		s.failErr(w, r, err)
 		return
 	}
+	// A limited person sees their groups' channels. A file that will not load has no group anyone can read, so it is shown
+	// to those who see every channel, not to a facility that may not own it.
+	valid, broken = visibleSummaries(r, valid, broken)
 	if valid == nil {
 		valid = []ChannelSummary{}
 	}
@@ -154,6 +157,12 @@ func (s *Server) handleCreateChannel(w http.ResponseWriter, r *http.Request, ses
 		return
 	}
 
+	if !s.groupAllowed(w, r, sess, channels, []byte(req.YAML)) {
+		return
+	}
+	if !s.underChannelLimit(w, r, sess, channels) {
+		return
+	}
 	c, err := channels.Create([]byte(req.YAML))
 	if err != nil {
 		s.failErr(w, r, err)
@@ -185,6 +194,9 @@ func (s *Server) handleUpdateChannel(w http.ResponseWriter, r *http.Request, ses
 	// Keep the previous text so the audit entry can say what actually changed.
 	before, _ := channels.RawYAML(name)
 
+	if !s.groupAllowed(w, r, sess, channels, []byte(req.YAML)) {
+		return
+	}
 	c, err := channels.Update(name, []byte(req.YAML))
 	if err != nil {
 		s.failErr(w, r, err)
@@ -247,15 +259,18 @@ func (s *Server) handleDeleteChannel(w http.ResponseWriter, r *http.Request, ses
 // ---------- users ----------
 
 type createUserRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	Username      string   `json:"username"`
+	Password      string   `json:"password"`
+	Role          string   `json:"role"`
+	ChannelGroups []string `json:"channelGroups,omitempty"`
 }
 
 type updateUserRequest struct {
 	Role     *string `json:"role,omitempty"`
 	Password *string `json:"password,omitempty"`
 	Disabled *bool   `json:"disabled,omitempty"`
+	// ChannelGroups replaces the account's channel groups; an empty list removes the limit.
+	ChannelGroups *[]string `json:"channelGroups,omitempty"`
 }
 
 func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -263,6 +278,16 @@ func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request, sess *s
 	if err != nil {
 		s.failErr(w, r, err)
 		return
+	}
+	if len(sess.ChannelGroups) > 0 {
+		// A facility's administrator sees the people they look after: those inside their own groups.
+		mine := users[:0]
+		for _, u := range users {
+			if manages(sess, u.ChannelGroups) {
+				mine = append(mine, u)
+			}
+		}
+		users = mine
 	}
 	if users == nil {
 		users = []*store.User{}
@@ -277,8 +302,12 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, sess *
 	}
 
 	role := store.Role(req.Role)
-	if !role.Valid() {
-		s.fail(w, r, http.StatusBadRequest, "role must be viewer, editor or admin")
+	if !role.Valid() || role == store.RolePlatform {
+		s.fail(w, r, http.StatusBadRequest, roleChoices)
+		return
+	}
+	groups, ok := s.groupsToGrant(w, r, sess, req.ChannelGroups)
+	if !ok {
 		return
 	}
 
@@ -287,11 +316,21 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, sess *
 		s.failErr(w, r, err)
 		return
 	}
+	if len(groups) > 0 {
+		// Removed rather than left unlimited if the limit cannot be recorded: an account meant for one facility must
+		// never exist, even briefly, with every facility's channels.
+		if err := s.storeFor(sess).SetChannelGroups(r.Context(), u.ID, groups); err != nil {
+			_ = s.storeFor(sess).DeleteUser(r.Context(), u.ID)
+			s.failErr(w, r, err)
+			return
+		}
+		u.ChannelGroups = groups
+	}
 
 	s.log().Info("user created", "user", u.Username, "role", string(u.Role), "by", sess.Username)
 	_ = s.Store.Audit(r.Context(), store.AuditEntry{
 		Username: sess.Username, Action: "user.create",
-		Target: u.Username, Detail: "role " + string(u.Role), IP: clientIP(r),
+		Target: u.Username, Detail: "role " + string(u.Role) + groupsDetail(u.ChannelGroups), IP: clientIP(r),
 	})
 
 	s.ok(w, u)
@@ -312,6 +351,10 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, sess *
 	target, err := s.storeFor(sess).GetUserByID(r.Context(), id)
 	if err != nil {
 		s.failErr(w, r, err)
+		return
+	}
+	if !manages(sess, target.ChannelGroups) {
+		s.fail(w, r, http.StatusNotFound, "no such user")
 		return
 	}
 
@@ -359,10 +402,33 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, sess *
 		}
 	}
 
+	if req.ChannelGroups != nil {
+		if target.ID == sess.UserID && len(sess.ChannelGroups) > 0 {
+			s.fail(w, r, http.StatusConflict, "you cannot change your own channel groups; ask an administrator who sees every channel")
+			return
+		}
+		groups, ok := s.groupsToGrant(w, r, sess, *req.ChannelGroups)
+		if !ok {
+			return
+		}
+		if err := s.storeFor(sess).SetChannelGroups(r.Context(), id, groups); err != nil {
+			s.failErr(w, r, err)
+			return
+		}
+		detail := "every channel"
+		if len(groups) > 0 {
+			detail = "channel groups " + strings.Join(groups, ", ")
+		}
+		_ = s.Store.Audit(r.Context(), store.AuditEntry{
+			Username: sess.Username, Action: "user.channel_groups",
+			Target: target.Username, Detail: "set to " + detail, IP: clientIP(r),
+		})
+	}
+
 	if req.Role != nil {
 		role := store.Role(*req.Role)
-		if !role.Valid() {
-			s.fail(w, r, http.StatusBadRequest, "role must be viewer, editor or admin")
+		if !role.Valid() || role == store.RolePlatform {
+			s.fail(w, r, http.StatusBadRequest, roleChoices)
 			return
 		}
 		if err := s.storeFor(sess).SetRole(r.Context(), id, role); err != nil {
@@ -431,6 +497,10 @@ func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, sess *
 		return
 	}
 
+	if !manages(sess, target.ChannelGroups) {
+		s.fail(w, r, http.StatusNotFound, "no such user")
+		return
+	}
 	if target.ID == sess.UserID {
 		s.fail(w, r, http.StatusConflict, "you cannot delete your own account")
 		return

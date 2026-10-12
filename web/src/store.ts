@@ -1,7 +1,7 @@
 import { configureStore, createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { api, ApiError } from './api'
-import type { AuditEntry, ChannelSummary, Me, User } from './api'
+import type { AuditEntry, ChannelSummary, Me, Role, User } from './api'
 
 // Errors from the server are stored as a message plus the individual problems,
 // so a validation failure can be shown as a list rather than one line of text
@@ -216,11 +216,11 @@ export const loadUsers = createAsyncThunk('users/load', async (_, { rejectWithVa
 export const addUser = createAsyncThunk(
   'users/add',
   async (
-    args: { username: string; password: string; role: 'viewer' | 'editor' | 'admin' },
+    args: { username: string; password: string; role: Role; channelGroups?: string[] },
     { rejectWithValue, dispatch },
   ) => {
     try {
-      const u = await api.createUser(args.username, args.password, args.role)
+      const u = await api.createUser(args.username, args.password, args.role, args.channelGroups ?? [])
       await dispatch(loadUsers())
       return u
     } catch (err) {
@@ -232,7 +232,10 @@ export const addUser = createAsyncThunk(
 export const patchUser = createAsyncThunk(
   'users/patch',
   async (
-    args: { id: number; patch: { role?: 'viewer' | 'editor' | 'admin'; password?: string; disabled?: boolean } },
+    args: {
+      id: number
+      patch: { role?: Role; password?: string; disabled?: boolean; channelGroups?: string[] }
+    },
     { rejectWithValue, dispatch },
   ) => {
     try {

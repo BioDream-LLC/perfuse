@@ -125,6 +125,7 @@ type strandKey struct {
 
 // flowReceived counts arrivals per channel per bucket.
 func (s *Store) flowReceived(ctx context.Context, tenantID string, since time.Time, seconds int64) (map[string]map[int64]Bucket, error) {
+	scope, scopeArgs := channelScope(ctx, "channel")
 	rows, err := s.querier().QueryContext(ctx,
 		`SELECT channel,
 		        (CAST(strftime('%s', received_at) AS INTEGER) / ?) * ? AS bucket_start,
@@ -134,10 +135,10 @@ func (s *Store) flowReceived(ctx context.Context, tenantID string, since time.Ti
 		        SUM(CASE WHEN outcome IN ('failed','partial') THEN 1 ELSE 0 END),
 		        SUM(CASE WHEN outcome = 'unparseable' THEN 1 ELSE 0 END)
 		   FROM messages
-		  WHERE tenant_id = ? AND received_at >= ?
+		  WHERE tenant_id = ? AND received_at >= ?`+scope+`
 		  GROUP BY channel, bucket_start
 		  ORDER BY channel, bucket_start`,
-		seconds, seconds, tenantOrDefault(tenantID), dbtime.Format(since))
+		append([]any{seconds, seconds, tenantOrDefault(tenantID), dbtime.Format(since)}, scopeArgs...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +164,7 @@ func (s *Store) flowReceived(ctx context.Context, tenantID string, since time.Ti
 
 // flowStrands counts deliveries per channel, destination and bucket.
 func (s *Store) flowStrands(ctx context.Context, tenantID string, since time.Time, seconds int64) (map[strandKey]map[int64]Bucket, error) {
+	scope, scopeArgs := channelScope(ctx, "m.channel")
 	rows, err := s.querier().QueryContext(ctx,
 		`SELECT m.channel,
 		        d.destination,
@@ -173,10 +175,10 @@ func (s *Store) flowStrands(ctx context.Context, tenantID string, since time.Tim
 		        SUM(CASE WHEN d.status = 'failed' THEN 1 ELSE 0 END)
 		   FROM message_deliveries d
 		   JOIN messages m ON m.id = d.message_id
-		  WHERE m.tenant_id = ? AND m.received_at >= ?
+		  WHERE m.tenant_id = ? AND m.received_at >= ?`+scope+`
 		  GROUP BY m.channel, d.destination, bucket_start
 		  ORDER BY m.channel, d.destination, bucket_start`,
-		seconds, seconds, tenantOrDefault(tenantID), dbtime.Format(since))
+		append([]any{seconds, seconds, tenantOrDefault(tenantID), dbtime.Format(since)}, scopeArgs...)...)
 	if err != nil {
 		return nil, err
 	}

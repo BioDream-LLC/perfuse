@@ -21,14 +21,15 @@ type LastDelivery struct {
 // LastDeliveries reports, for every channel and destination with traffic since a time, its last delivery and last failure.
 // It carries no message content: the error is the transport's, the times are the message's arrival.
 func (s *Store) LastDeliveries(ctx context.Context, tenantID string, since time.Time) ([]LastDelivery, error) {
+	scope, scopeArgs := channelScope(ctx, "m.channel")
 	rows, err := s.querier().QueryContext(ctx,
 		`SELECT m.channel, d.destination,
 			MAX(CASE WHEN d.status = 'delivered' THEN m.received_at END),
 			MAX(CASE WHEN d.status = 'failed' THEN m.received_at END)
 		 FROM message_deliveries d JOIN messages m ON m.id = d.message_id
-		 WHERE m.tenant_id = ? AND m.received_at >= ?
+		 WHERE m.tenant_id = ? AND m.received_at >= ?`+scope+`
 		 GROUP BY m.channel, d.destination ORDER BY m.channel, d.destination`,
-		tenantOrDefault(tenantID), dbtime.Format(since))
+		append([]any{tenantOrDefault(tenantID), dbtime.Format(since)}, scopeArgs...)...)
 	if err != nil {
 		return nil, err
 	}

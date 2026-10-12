@@ -1,9 +1,9 @@
 import { Fragment, useEffect, useState, lazy, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { api } from './api'
+import { api, atLeast } from './api'
 import { MirthExportButton } from './MirthExport'
 import { isPlaygroundFragment } from './playgroundLink'
-import type { AuthMethods, ChannelSummary } from './api'
+import type { AuthMethods, ChannelSummary, Role, User } from './api'
 import { Dashboard } from './Dashboard'
 import { AlertBanner, Alerts, useAlerts } from './Alerts'
 import { ChannelHistoryPanel } from './ChannelHistory'
@@ -26,6 +26,7 @@ import {
   type RootState,
 } from './store'
 import { Confirm, ErrorBox, Field, RoleBadge, Section, Spinner, StatusDot } from './ui'
+import { Tenants } from './Tenants'
 
 // Lazily loaded, because the editor is the one part of this interface with a large
 // dependency. CodeMirror is roughly seven hundred kilobytes and this is one tab of
@@ -91,6 +92,7 @@ export type Tab =
   | 'users'
   | 'audit'
   | 'settings'
+  | 'tenants'
 
 
 // A compile error when a view is added to Tab and not here, so its URL cannot silently open the dashboard instead.
@@ -484,13 +486,13 @@ function Console() {
     {
       id: 'dashboard',
       label: 'Dashboard',
-      minRole: 'viewer',
+      minRole: 'monitor',
       about: 'Whether everything is running, and what has gone wrong recently',
     },
     {
       id: 'teams',
       label: 'Team dashboards',
-      minRole: 'viewer',
+      minRole: 'monitor',
       about: 'A dashboard for each kind of person who watches the interfaces, from connections to department managers',
     },
     {
@@ -508,19 +510,19 @@ function Console() {
     {
       id: 'queue',
       label: 'Queue',
-      minRole: 'viewer',
+      minRole: 'monitor',
       about: 'Messages waiting to be delivered because a receiver is down',
     },
     {
       id: 'alerts',
       label: 'Alerts',
-      minRole: 'viewer',
+      minRole: 'monitor',
       about: 'What you get told about, and what is firing now',
     },
     {
       id: 'metrics',
       label: 'Metrics',
-      minRole: 'viewer',
+      minRole: 'monitor',
       about: 'Volumes, timings and error rates over time',
     },
     {
@@ -611,7 +613,7 @@ function Console() {
     {
       id: 'flow',
       label: 'Flow map',
-      minRole: 'viewer',
+      minRole: 'monitor',
       about:
         'Every feed and destination on one map, with a scrubber — drag back to the moment a ward complained and see which strand was dark',
     },
@@ -648,6 +650,12 @@ function Console() {
       about: 'Who changed what, and when',
     },
     {
+      id: 'tenants',
+      label: 'Tenants',
+      minRole: 'platform',
+      about: 'The organisations on this server, and the limits each one has',
+    },
+    {
       id: 'settings',
       label: 'Settings',
       minRole: 'admin',
@@ -660,9 +668,7 @@ function Console() {
   // ignored and the tab shown to everybody - which for a tab whose endpoints require
   // editor means a viewer clicking it gets a 403 and concludes the product is broken.
   // Platform outranks admin, so it must not be excluded either.
-  const roleRank: Record<string, number> = { viewer: 1, editor: 2, admin: 3, platform: 4 }
-  const mine = roleRank[me.role] ?? 0
-  const visible = tabs.filter((t) => mine >= (roleRank[t.minRole] ?? 0))
+  const visible = tabs.filter((t) => atLeast(me.role, t.minRole as Role))
 
   // A URL cannot open a view above the signed-in role: the view is hidden from them, so an address naming it lands on the
   // dashboard rather than on a screen full of refusals.
@@ -825,6 +831,14 @@ function Console() {
           <div className="flex items-center gap-3">
             <span className="text-sm text-slate-400">{me.username}</span>
             <RoleBadge role={me.role} />
+            {me.channelGroups && me.channelGroups.length > 0 && (
+              <span
+                className="badge hidden border border-slate-600 text-slate-300 md:inline"
+                title="You see and act on the channels in these groups only"
+              >
+                {me.channelGroups.join(', ')}
+              </span>
+            )}
             <button
               className="btn-ghost hidden items-center gap-1.5 sm:flex"
               onClick={() => setPaletteOpen(true)}
@@ -874,9 +888,9 @@ function Console() {
           {tab === 'teams' && <TeamDashboards />}
           {tab === 'channels' && <Channels />}
           {tab === 'messages' && <Messages />}
-          {tab === 'queue' && <Queue role={me.role as 'viewer' | 'editor' | 'admin'} />}
+          {tab === 'queue' && <Queue role={me.role} />}
           {tab === 'alerts' && (
-            <Alerts role={me.role as 'viewer' | 'editor' | 'admin'} alerts={alerts} />
+            <Alerts role={me.role} alerts={alerts} />
           )}
           {tab === 'metrics' && <Metrics />}
           {tab === 'fhir' && <FhirLab />}
@@ -913,10 +927,12 @@ function Console() {
               <Passkeys />
               <Users />
               <Tokens />
-              <SMARTApps />
+              {/* The SMART server is the whole server's, so it is for administrators who see every channel. */}
+              {!me.channelGroups?.length && <SMARTApps />}
             </div>
           )}
           {tab === 'audit' && <Audit />}
+          {tab === 'tenants' && <Tenants />}
           {tab === 'settings' && <Settings />}
         </Suspense>
       </main>
@@ -937,7 +953,7 @@ function Channels() {
   const [query, setQuery] = useState('')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
-  const canEdit = me.role === 'editor' || me.role === 'admin'
+  const canEdit = atLeast(me.role, 'editor')
 
   // Search is hidden below a threshold. A box that filters nine items is clutter pretending to be a
   // feature, and every control that earns nothing costs attention on the ones that earn something.
@@ -1226,7 +1242,8 @@ function Users() {
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'viewer' | 'editor' | 'admin'>('viewer')
+  const [role, setRole] = useState<Role>('viewer')
+  const [groups, setGroups] = useState(me.channelGroups?.join(', ') ?? '')
   const [deleting, setDeleting] = useState<{ id: number; username: string } | null>(null)
 
   useEffect(() => {
@@ -1238,7 +1255,17 @@ function Users() {
       <div>
         <h1 className="text-lg font-semibold text-slate-100">Users</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Viewers can look. Editors can change channels. Admins can also manage people.
+          Each role includes the ones before it. <strong className="text-slate-300">Monitor</strong>: is
+          everything working (status, counts, alerts, charts), with no message contents.{' '}
+          <strong className="text-slate-300">Viewer</strong>: also reads messages and channel files.{' '}
+          <strong className="text-slate-300">Operator</strong>: also resends and retries.{' '}
+          <strong className="text-slate-300">Editor</strong>: also changes channels.{' '}
+          <strong className="text-slate-300">Admin</strong>: also manages people and the server.
+        </p>
+        <p className="mt-1 text-sm text-slate-500">
+          <strong className="text-slate-300">Channel groups</strong> limit someone to the channels filed under
+          those groups (a channel&apos;s <code className="font-mono">group</code>), so each facility looks after its
+          own feeds. Leave it empty for someone who sees every channel.
         </p>
       </div>
 
@@ -1246,10 +1273,10 @@ function Users() {
 
       <Section title="Add someone">
         <form
-          className="grid gap-4 sm:grid-cols-4"
+          className="grid gap-4 sm:grid-cols-5"
           onSubmit={(e) => {
             e.preventDefault()
-            dispatch(addUser({ username, password, role })).then(() => {
+            dispatch(addUser({ username, password, role, channelGroups: splitGroups(groups) })).then(() => {
               setUsername('')
               setPassword('')
             })
@@ -1273,10 +1300,19 @@ function Users() {
               value={role}
               onChange={(e) => setRole(e.target.value as typeof role)}
             >
-              <option value="viewer">Viewer</option>
-              <option value="editor">Editor</option>
-              <option value="admin">Admin</option>
+              <RoleOptions />
             </select>
+          </Field>
+          <Field
+            label="Channel groups"
+            hint={me.channelGroups?.length ? `Yours: ${me.channelGroups.join(', ')}.` : 'Empty: every channel.'}
+          >
+            <input
+              className="input"
+              value={groups}
+              placeholder="every channel"
+              onChange={(e) => setGroups(e.target.value)}
+            />
           </Field>
           <div className="flex items-end">
             <button className="btn-primary w-full">Add user</button>
@@ -1292,6 +1328,7 @@ function Users() {
             <tr className="text-xs tracking-wide text-slate-500 uppercase">
               <th className="px-5 py-3">User</th>
               <th className="px-5 py-3">Role</th>
+              <th className="px-5 py-3">Channel groups</th>
               <th className="px-5 py-3">Last signed in</th>
               <th className="px-5 py-3 text-right">Actions</th>
             </tr>
@@ -1333,10 +1370,15 @@ function Users() {
                       )
                     }
                   >
-                    <option value="viewer">viewer</option>
-                    <option value="editor">editor</option>
-                    <option value="admin">admin</option>
+                    <RoleOptions />
                   </select>
+                </td>
+                <td className="px-5 py-3">
+                  <ChannelGroupsCell
+                    user={u}
+                    self={u.username === me.username}
+                    onSave={(channelGroups) => dispatch(patchUser({ id: u.id, patch: { channelGroups } }))}
+                  />
                 </td>
                 <td className="px-5 py-3 text-slate-500">
                   {u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'never'}
@@ -1391,6 +1433,60 @@ function Users() {
   )
 }
 
+/** The roles, least first; the option values are what the server stores. */
+function RoleOptions() {
+  return (
+    <>
+      <option value="monitor">Monitor</option>
+      <option value="viewer">Viewer</option>
+      <option value="operator">Operator</option>
+      <option value="editor">Editor</option>
+      <option value="admin">Admin</option>
+    </>
+  )
+}
+
+/** Comma-separated group names as a list, blanks dropped. */
+function splitGroups(text: string): string[] {
+  return text
+    .split(',')
+    .map((g) => g.trim())
+    .filter((g) => g !== '')
+}
+
+/** One person's channel groups, edited in place and saved on Enter or when the field loses focus. */
+function ChannelGroupsCell({
+  user,
+  self,
+  onSave,
+}: {
+  user: User
+  self: boolean
+  onSave: (groups: string[]) => void
+}) {
+  const saved = (user.channelGroups ?? []).join(', ')
+  const [text, setText] = useState(saved)
+  useEffect(() => setText(saved), [saved])
+  const save = () => {
+    if (text.trim() !== saved) onSave(splitGroups(text))
+  }
+  return (
+    <input
+      aria-label={`Channel groups for ${user.username}`}
+      className="input w-44 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+      value={text}
+      placeholder="every channel"
+      disabled={self}
+      title={self ? 'Ask another administrator to change your own channel groups.' : undefined}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') save()
+      }}
+    />
+  )
+}
+
 function Audit() {
   const dispatch = useDispatch<AppDispatch>()
   const { entries, loading, error } = useSelector((s: RootState) => s.audit)
@@ -1422,7 +1518,7 @@ function Audit() {
         says what happened; this says what was refused, which is the only evidence in the product that did
         not come from whoever wrote it. Admin only, so it renders empty for anybody else.
       */}
-      {me?.role === 'admin' && <FrictionPanel />}
+      {atLeast(me?.role, 'admin') && <FrictionPanel />}
 
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">

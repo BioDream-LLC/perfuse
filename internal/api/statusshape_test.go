@@ -46,7 +46,7 @@ func TestTheStatusPayloadCarriesEveryFieldTheDashboardReads(t *testing.T) {
 		t.Fatalf("could not create a channel repository: %v", err)
 	}
 
-	body := statusBody(NewRuntime(repo, nil, nil))
+	body := statusBody(NewRuntime(repo, nil, nil), nil)
 
 	// Marshalled and re-read, so this checks what actually goes over the wire rather than what is in the map.
 	raw, err := json.Marshal(body)

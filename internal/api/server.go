@@ -351,7 +351,7 @@ func (s *Server) Handler() http.Handler {
 	// Neither endpoint reveals anything a port scan does not already prove.
 	// Tenant administration. Platform role throughout, not admin: a customer's own
 	// administrator must not be able to create tenants or see that the others exist.
-	mux.Handle("GET /api/tenancy", s.require(store.RoleViewer, s.handleTenancyStatus))
+	mux.Handle("GET /api/tenancy", s.require(store.RoleMonitor, s.handleTenancyStatus))
 	mux.Handle("GET /api/tenants", s.require(store.RolePlatform, s.handleListTenants))
 	mux.Handle("POST /api/tenants", s.require(store.RolePlatform, s.handleCreateTenant))
 	mux.Handle("PUT /api/tenants/{id}", s.require(store.RolePlatform, s.handleUpdateTenant))
@@ -365,12 +365,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /readyz", s.handleReadiness)
 
 	// Session.
-	mux.Handle("POST /api/logout", s.require(store.RoleViewer, s.handleLogout))
-	mux.Handle("GET /api/me", s.require(store.RoleViewer, s.handleMe))
-	mux.Handle("POST /api/me/password", s.require(store.RoleViewer, s.handleChangeOwnPassword))
+	mux.Handle("POST /api/logout", s.require(store.RoleMonitor, s.handleLogout))
+	mux.Handle("GET /api/me", s.require(store.RoleMonitor, s.handleMe))
+	mux.Handle("POST /api/me/password", s.require(store.RoleMonitor, s.handleChangeOwnPassword))
 
 	// Channels. Reading needs viewer, changing needs editor.
-	mux.Handle("GET /api/channels", s.require(store.RoleViewer, s.handleListChannels))
+	mux.Handle("GET /api/channels", s.require(store.RoleMonitor, s.handleListChannels))
 	mux.Handle("GET /api/channels/{name}", s.require(store.RoleViewer, s.handleGetChannel))
 	mux.Handle("GET /api/channels/{name}/yaml", s.require(store.RoleViewer, s.handleGetChannelYAML))
 	mux.Handle("GET /api/channels/{name}/mirth", s.require(store.RoleViewer, s.handleExportMirth))
@@ -427,8 +427,8 @@ func (s *Server) Handler() http.Handler {
 
 	// Engine status and control. Reading status needs viewer; starting or stopping
 	// a channel moves patient data, so it needs admin.
-	mux.Handle("GET /api/status", s.require(store.RoleViewer, s.handleStatus))
-	mux.Handle("GET /api/events", s.require(store.RoleViewer, s.handleEvents))
+	mux.Handle("GET /api/status", s.require(store.RoleMonitor, s.handleStatus))
+	mux.Handle("GET /api/events", s.require(store.RoleMonitor, s.handleEvents))
 	mux.Handle("POST /api/channels/{name}/start", s.require(store.RoleAdmin, s.handleStartChannel))
 	mux.Handle("POST /api/channels/{name}/stop", s.require(store.RoleAdmin, s.handleStopChannel))
 
@@ -447,19 +447,19 @@ func (s *Server) Handler() http.Handler {
 	// meant from which fields were filled in.
 	mux.Handle("POST /api/messages/find", s.require(store.RoleViewer, s.handleIdentitySearch))
 	mux.Handle("GET /api/messages/{id}", s.require(store.RoleViewer, s.handleGetMessage))
-	mux.Handle("POST /api/messages/{id}/reprocess", s.require(store.RoleEditor, s.handleReprocessMessage))
-	mux.Handle("GET /api/stats", s.require(store.RoleViewer, s.handleStats))
-	mux.Handle("GET /api/throughput", s.require(store.RoleViewer, s.handleThroughput))
-	mux.Handle("GET /api/flow", s.require(store.RoleViewer, s.handleFlow))
+	mux.Handle("POST /api/messages/{id}/reprocess", s.require(store.RoleOperator, s.handleReprocessMessage))
+	mux.Handle("GET /api/stats", s.require(store.RoleMonitor, s.handleStats))
+	mux.Handle("GET /api/throughput", s.require(store.RoleMonitor, s.handleThroughput))
+	mux.Handle("GET /api/flow", s.require(store.RoleMonitor, s.handleFlow))
 
 	// Inspectors. These transform what the caller supplies and store nothing.
 	mux.Handle("POST /api/inspect/hl7", s.require(store.RoleViewer, s.handleInspectHL7))
 	mux.Handle("POST /api/inspect/fhir", s.require(store.RoleViewer, s.handleConvertToFHIR))
 	mux.Handle("GET /api/fhir/versions", s.require(store.RoleViewer, s.handleFHIRVersions))
 	mux.Handle("POST /api/publichealth/eicr", s.require(store.RoleViewer, s.handleEICR))
-	mux.Handle("GET /api/connections", s.require(store.RoleViewer, s.handleConnections))
-	mux.Handle("GET /api/dashboards", s.require(store.RoleViewer, s.handleDashboards))
-	mux.Handle("PUT /api/dashboards/view", s.require(store.RoleViewer, s.handleSaveDashboardView))
+	mux.Handle("GET /api/connections", s.require(store.RoleMonitor, s.handleConnections))
+	mux.Handle("GET /api/dashboards", s.require(store.RoleMonitor, s.handleDashboards))
+	mux.Handle("PUT /api/dashboards/view", s.require(store.RoleMonitor, s.handleSaveDashboardView))
 	mux.Handle("GET /api/dashboards/{id}/grafana", s.require(store.RoleViewer, s.handleGrafanaExport))
 
 	// Subscriptions and their delivery state. Viewer: it shows where notifications go and whether they arrive, which is
@@ -496,7 +496,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("DELETE /api/smart/users/{username}", s.require(store.RoleAdmin, s.handleSMARTUserDelete))
 	mux.Handle("GET /api/vpn", s.require(store.RoleViewer, s.handleVPN))
 	mux.Handle("GET /api/vpn/{name}/sheet", s.require(store.RoleViewer, s.handleVPNSheet))
-	mux.Handle("GET /api/dashboards/figures", s.require(store.RoleViewer, s.handleDashboardFigures))
+	mux.Handle("GET /api/dashboards/figures", s.require(store.RoleMonitor, s.handleDashboardFigures))
 	mux.Handle("GET /api/pas/cases", s.require(store.RoleViewer, s.handlePASCases))
 	mux.Handle("GET /api/pas/cases/{id}", s.require(store.RoleViewer, s.handlePASCase))
 	mux.Handle("POST /api/pas/cases/{id}/decide", s.require(store.RoleEditor, s.handlePASDecide))
@@ -506,8 +506,8 @@ func (s *Server) Handler() http.Handler {
 	// deliberately outside the session, because a scraper cannot hold a cookie and
 	// what it exposes is counts and timings labelled from configuration, with no
 	// message content.
-	mux.Handle("GET /api/metrics", s.require(store.RoleViewer, s.handleMetrics))
-	mux.Handle("GET /api/metrics/names", s.require(store.RoleViewer, s.handleMetricNames))
+	mux.Handle("GET /api/metrics", s.require(store.RoleMonitor, s.handleMetrics))
+	mux.Handle("GET /api/metrics/names", s.require(store.RoleMonitor, s.handleMetricNames))
 	mux.HandleFunc("GET /metrics", s.handlePrometheus)
 
 	// Clinical documents. Reading one means reading patient data, so viewer is the
@@ -554,7 +554,7 @@ func (s *Server) Handler() http.Handler {
 	// Certificates. Reading the summary is a viewer action because expiry is
 	// operational information everybody needs; inspecting an arbitrary path is
 	// administrative, since probing the filesystem is not a viewer's business.
-	mux.Handle("GET /api/certificates", s.require(store.RoleViewer, s.handleCertificates))
+	mux.Handle("GET /api/certificates", s.require(store.RoleMonitor, s.handleCertificates))
 	mux.Handle("POST /api/certificates/inspect", s.require(store.RoleAdmin, s.handleInspectCertificate))
 
 	// Channel history, read from git. Viewing is a viewer action; restoring an
@@ -566,7 +566,7 @@ func (s *Server) Handler() http.Handler {
 
 	// Alerts. Reading is a viewer action; acknowledging one is a decision that
 	// something can wait, so it needs editor rights and is audited by name.
-	mux.Handle("GET /api/alerts", s.require(store.RoleViewer, s.handleAlerts))
+	mux.Handle("GET /api/alerts", s.require(store.RoleMonitor, s.handleAlerts))
 	mux.Handle("POST /api/alerts/acknowledge", s.require(store.RoleEditor, s.handleAcknowledgeAlert))
 	// Viewer may read the rules, because knowing what is being watched is part of reading the state of the system. Only an
 	// administrator may change them: a rule is the difference between being told about an outage and not.
@@ -581,7 +581,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/signon/saml/test", s.require(store.RoleAdmin, s.handleTestSAML))
 	mux.Handle("POST /api/signon/saml/metadata", s.require(store.RoleAdmin, s.handleReadSAMLMetadata))
 
-	mux.Handle("GET /api/alerts/rules", s.require(store.RoleViewer, s.handleAlertRules))
+	mux.Handle("GET /api/alerts/rules", s.require(store.RoleMonitor, s.handleAlertRules))
 	mux.Handle("PUT /api/alerts/rules", s.require(store.RoleAdmin, s.handleSaveAlertRules))
 
 	// The queue.
@@ -592,8 +592,8 @@ func (s *Server) Handler() http.Handler {
 	//
 	// Skip, drain and remove abandon clinical messages that a sender was told we
 	// had accepted. Those are administrative, and audited by name.
-	mux.Handle("GET /api/queue", s.require(store.RoleViewer, s.handleQueue))
-	mux.Handle("GET /api/shadows", s.require(store.RoleViewer, s.handleShadows))
+	mux.Handle("GET /api/queue", s.require(store.RoleMonitor, s.handleQueue))
+	mux.Handle("GET /api/shadows", s.require(store.RoleMonitor, s.handleShadows))
 	mux.Handle("GET /api/channels/{name}/shadow", s.require(store.RoleViewer, s.handleShadow))
 	mux.Handle("PUT /api/channels/{name}/shadow", s.require(store.RoleEditor, s.handleSaveShadow))
 	mux.Handle("DELETE /api/channels/{name}/shadow", s.require(store.RoleEditor, s.handleStopShadow))
@@ -601,7 +601,7 @@ func (s *Server) Handler() http.Handler {
 	// Editor, not viewer. It compiles arbitrary filter expressions and scripts from the
 	// request body, and the fact that a replay cannot deliver anything does not make
 	// compiling somebody else's script a read operation.
-	mux.Handle("POST /api/channels/{name}/replay", s.require(store.RoleEditor, s.handleReplayChannel))
+	mux.Handle("POST /api/channels/{name}/replay", s.require(store.RoleOperator, s.handleReplayChannel))
 
 	// Viewer, because a profile carries no message content by construction: counts, rates
 	// and shapes, with coded values as the deliberate exception since a code table value is
@@ -624,7 +624,7 @@ func (s *Server) Handler() http.Handler {
 	// reading.
 	mux.Handle("POST /api/channels/{name}/trace", s.require(store.RoleEditor, s.handleTraceMessage))
 	mux.Handle("GET /api/queue/{id}", s.require(store.RoleViewer, s.handleQueueItem))
-	mux.Handle("POST /api/queue/retry", s.require(store.RoleEditor, s.handleQueueRetry))
+	mux.Handle("POST /api/queue/retry", s.require(store.RoleOperator, s.handleQueueRetry))
 	mux.Handle("POST /api/queue/skip", s.require(store.RoleAdmin, s.handleQueueSkip))
 	mux.Handle("POST /api/queue/drain", s.require(store.RoleAdmin, s.handleQueueDrain))
 	mux.Handle("POST /api/queue/remove", s.require(store.RoleAdmin, s.handleQueueRemove))
@@ -644,14 +644,14 @@ func (s *Server) Handler() http.Handler {
 	// through to the web application and answered 200 with HTML - so the users screen opened showing "the server sent a response that could not
 	// be read". The conditional was written to avoid an endpoint that always fails being debugged for an afternoon; what it produced instead was
 	// an error message on a screen everybody visits, which is the same afternoon with a worse starting point.
-	mux.Handle("GET /api/passkeys", s.require(store.RoleViewer, s.handleListPasskeys))
+	mux.Handle("GET /api/passkeys", s.require(store.RoleMonitor, s.handleListPasskeys))
 
 	if s.PasskeyRPID != "" {
 		mux.Handle("POST /api/passkeys/register/begin",
-			s.require(store.RoleViewer, s.handleBeginPasskeyRegistration))
+			s.require(store.RoleMonitor, s.handleBeginPasskeyRegistration))
 		mux.Handle("POST /api/passkeys/register/finish",
-			s.require(store.RoleViewer, s.handleFinishPasskeyRegistration))
-		mux.Handle("DELETE /api/passkeys/{id}", s.require(store.RoleViewer, s.handleDeletePasskey))
+			s.require(store.RoleMonitor, s.handleFinishPasskeyRegistration))
+		mux.Handle("DELETE /api/passkeys/{id}", s.require(store.RoleMonitor, s.handleDeletePasskey))
 
 		// Signing in is necessarily unauthenticated, which is why these two are the ones with a throttle and with a
 		// single indistinguishable failure message.
@@ -807,6 +807,11 @@ func (s *Server) require(minimum store.Role, h func(http.ResponseWriter, *http.R
 			return
 		}
 
+		r, ok = s.scopeChannels(w, r, sess, minimum)
+		if !ok {
+			return
+		}
+
 		h(w, r, sess)
 	})}
 }
@@ -838,6 +843,8 @@ type loginRequest struct {
 type meResponse struct {
 	Username string `json:"username"`
 	Role     string `json:"role"`
+	// ChannelGroups are the channel groups the session is limited to; absent means every channel.
+	ChannelGroups []string `json:"channelGroups,omitempty"`
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -971,7 +978,7 @@ func (s *Server) finishLogin(w http.ResponseWriter, r *http.Request, token strin
 		Username: user.Username, Action: "login", IP: clientIP(r),
 	})
 
-	s.ok(w, meResponse{Username: user.Username, Role: string(user.Role)})
+	s.ok(w, meResponse{Username: user.Username, Role: string(user.Role), ChannelGroups: user.ChannelGroups})
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -998,7 +1005,7 @@ func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request, sess *store.Session) {
-	s.ok(w, meResponse{Username: sess.Username, Role: string(sess.Role)})
+	s.ok(w, meResponse{Username: sess.Username, Role: string(sess.Role), ChannelGroups: sess.ChannelGroups})
 }
 
 type changePasswordRequest struct {

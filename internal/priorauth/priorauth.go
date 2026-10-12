@@ -7,9 +7,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -183,13 +186,16 @@ func (c *PriorAuthClient) Cancel(ctx context.Context, requestID string) error {
 	return nil
 }
 
-// PriorAuthTracker tracks all prior auth requests and their statuses.
+// PriorAuthTracker tracks prior auth requests and their statuses.
 //
-// It is held in memory and is lost when the process ends. Nothing in Perfuse uses it today; a caller that needs pending and
-// expiring authorisations to survive a restart must store them itself.
+// A zero tracker is held in memory only. One from OpenTracker is kept in a file as well, so pending and expiring
+// authorisations survive a restart: every change is written to a temporary file and renamed over the old one, so a crash
+// mid-write leaves the previous state rather than half a file. The file names patients and services, so it is written
+// readable by this user only (0600) and belongs wherever the site keeps other patient data at rest.
 type PriorAuthTracker struct {
 	mu      sync.Mutex
 	entries []trackerEntry
+	path    string
 }
 
 type trackerEntry struct {
@@ -197,12 +203,83 @@ type trackerEntry struct {
 	resp *PriorAuthResponse
 }
 
-// Track records a prior auth request and its response (which may be nil if
-// still pending).
-func (t *PriorAuthTracker) Track(req PriorAuthRequest, resp *PriorAuthResponse) {
+// savedEntry is a tracker entry as stored in the file.
+type savedEntry struct {
+	Request  PriorAuthRequest   `json:"request"`
+	Response *PriorAuthResponse `json:"response,omitempty"`
+}
+
+// OpenTracker returns a tracker kept in the file at path, reading what is already there. A missing file is an empty
+// tracker; one that cannot be read is an error, rather than starting empty and overwriting what it held at the next change.
+func OpenTracker(path string) (*PriorAuthTracker, error) {
+	t := &PriorAuthTracker{path: path}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return t, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("priorauth: reading the tracker: %w", err)
+	}
+	var saved []savedEntry
+	if err := json.Unmarshal(raw, &saved); err != nil {
+		return nil, fmt.Errorf("priorauth: the tracker file %s is not readable (%v); move it aside to start empty", path, err)
+	}
+	for _, e := range saved {
+		t.entries = append(t.entries, trackerEntry{req: e.Request, resp: e.Response})
+	}
+	return t, nil
+}
+
+// save writes the entries to the tracker's file, if it has one. Called with t.mu held.
+func (t *PriorAuthTracker) save() error {
+	if t.path == "" {
+		return nil
+	}
+	saved := make([]savedEntry, 0, len(t.entries))
+	for _, e := range t.entries {
+		saved = append(saved, savedEntry{Request: e.req, Response: e.resp})
+	}
+	raw, err := json.MarshalIndent(saved, "", "  ")
+	if err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(t.path), ".priorauth-*.tmp")
+	if err != nil {
+		return fmt.Errorf("priorauth: saving the tracker: %w", err)
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(raw); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), t.path)
+}
+
+// Track records a prior auth request and its response (nil while there is none). A request already tracked, by ID, is
+// updated rather than added again, so a decision that arrives later replaces the pending entry instead of sitting beside
+// it. The error is from saving; the entry is recorded in memory either way.
+func (t *PriorAuthTracker) Track(req PriorAuthRequest, resp *PriorAuthResponse) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	for i := range t.entries {
+		if req.ID != "" && t.entries[i].req.ID == req.ID {
+			t.entries[i] = trackerEntry{req: req, resp: resp}
+			return t.save()
+		}
+	}
 	t.entries = append(t.entries, trackerEntry{req: req, resp: resp})
+	return t.save()
 }
 
 // Pending returns all requests that have no decision yet (response is nil or
@@ -213,15 +290,15 @@ func (t *PriorAuthTracker) Pending() []PriorAuthRequest {
 
 	var pending []PriorAuthRequest
 	for _, e := range t.entries {
-		if e.resp == nil || e.resp.Decision == "pended" {
+		if e.resp == nil || e.resp.Decision == DecisionPended {
 			pending = append(pending, e.req)
 		}
 	}
 	return pending
 }
 
-// Expiring returns all approved authorizations whose ValidTo falls within the
-// given duration from now.
+// Expiring returns the certified authorizations (approved, partly approved or modified) whose ValidTo falls within
+// the given duration from now.
 func (t *PriorAuthTracker) Expiring(within time.Duration) []PriorAuthResponse {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -234,7 +311,9 @@ func (t *PriorAuthTracker) Expiring(within time.Duration) []PriorAuthResponse {
 		if e.resp == nil {
 			continue
 		}
-		if e.resp.Decision == "approved" && !e.resp.ValidTo.IsZero() &&
+		certified := e.resp.Decision == DecisionApproved || e.resp.Decision == DecisionPartial ||
+			e.resp.Decision == DecisionModified
+		if certified && !e.resp.ValidTo.IsZero() &&
 			e.resp.ValidTo.After(now) && e.resp.ValidTo.Before(deadline) {
 			expiring = append(expiring, *e.resp)
 		}

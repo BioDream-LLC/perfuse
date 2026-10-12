@@ -78,6 +78,10 @@ type Runtime struct {
 	// which reports as the default tenant in metrics rather than as an empty label.
 	Tenant tenant.ID
 
+	// Admission is asked before each received message on every channel of this runtime; nil admits everything. It is
+	// the tenant's limits (tenant.Gate), so one customer cannot crowd out the rest of a shared server.
+	Admission func() error
+
 	mu      sync.RWMutex
 	running map[string]*engine.Channel
 	started map[string]time.Time
@@ -153,6 +157,9 @@ func (rt *Runtime) Start(name string, log *slog.Logger) error {
 
 	if rt.Messages != nil {
 		ch.SetRecorder(msgstore.NewRecorder(rt.Messages, log))
+	}
+	if rt.Admission != nil {
+		ch.SetAdmission(rt.Admission)
 	}
 	if rt.Metrics != nil {
 		ch.SetMetrics(rt.Metrics)
@@ -367,7 +374,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request, sess *stor
 		return
 	}
 
-	body := statusBody(rt)
+	body := statusBody(rt, seeFunc(r))
 
 	if rt.FHIR != nil {
 		counts, err := rt.FHIR.Counts(r.Context())
@@ -754,7 +761,8 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request, sess *stor
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	if !send("status", statusBody(rt)) {
+	see := seeFunc(r)
+	if !send("status", statusBody(rt, see)) {
 		return
 	}
 
@@ -763,7 +771,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request, sess *stor
 		case <-r.Context().Done():
 			return
 		case <-ticker.C:
-			if !send("status", statusBody(rt)) {
+			if !send("status", statusBody(rt, see)) {
 				return
 			}
 		}
@@ -1282,8 +1290,10 @@ func (rt *Runtime) Route(ctx context.Context, name string, raw []byte) error {
 // something has a shape, and this one was false.
 //
 // One builder, so a field added for one transport cannot be missing from the other.
-func statusBody(rt *Runtime) map[string]any {
-	states := rt.States()
+//
+// see narrows it to the channels a limited session may see; nil means every channel.
+func statusBody(rt *Runtime, see func(string) bool) map[string]any {
+	states := visibleStates(rt.States(), see)
 
 	var running int
 	for _, st := range states {
@@ -1301,7 +1311,7 @@ func statusBody(rt *Runtime) map[string]any {
 	// An error reading the directory is deliberately not fatal here: this payload is also the live event, and a status stream that
 	// stops because of a transient directory read would take the console down with it.
 	broken := 0
-	if _, b, err := rt.Repo.List(); err == nil {
+	if _, b, err := rt.Repo.List(); err == nil && see == nil {
 		broken = len(b)
 	}
 
@@ -1313,6 +1323,20 @@ func statusBody(rt *Runtime) map[string]any {
 		"fhirVersion":    nil,
 		"time":           time.Now().UTC(),
 	}
+}
+
+// visibleStates keeps the channels see allows; all of them when see is nil.
+func visibleStates(states []ChannelState, see func(string) bool) []ChannelState {
+	if see == nil {
+		return states
+	}
+	shown := []ChannelState{}
+	for _, st := range states {
+		if see(st.Name) {
+			shown = append(shown, st)
+		}
+	}
+	return shown
 }
 
 func (s *Server) handleFHIRSubscriptions(w http.ResponseWriter, r *http.Request, sess *store.Session) {

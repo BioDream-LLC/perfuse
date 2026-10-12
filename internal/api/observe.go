@@ -50,12 +50,14 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request, _ *store.
 	if name := r.URL.Query().Get("metric"); name != "" {
 		s.ok(w, map[string]any{
 			"metric": name,
-			"series": collector.Query(name, since),
+			"series": seriesVisible(r, collector.Query(name, since)),
 		})
 		return
 	}
 
-	s.ok(w, collector.SnapshotSince(since))
+	snap := collector.SnapshotSince(since)
+	snap.Metrics = seriesVisible(r, snap.Metrics)
+	s.ok(w, snap)
 }
 
 // handleMetricNames lists what is available, so the dashboard does not hard-code
