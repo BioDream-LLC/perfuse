@@ -187,6 +187,9 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.amqpUsername = source.amqp?.username ?? ''
       draft.amqpPassword = source.amqp?.password ?? ''
       draft.amqpTls = source.amqp?.tls?.enabled ?? false
+      draft.connTlsCaFile = source.amqp?.tls?.caFile ?? ''
+      draft.connTlsCertFile = source.amqp?.tls?.certFile ?? ''
+      draft.connTlsKeyFile = source.amqp?.tls?.keyFile ?? ''
       draft.amqpPrefetch = source.amqp?.prefetch ? String(source.amqp.prefetch) : ''
       break
     case 'mqtt': {
@@ -197,6 +200,9 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.mqttSrcUsername = m?.username ?? ''
       draft.mqttSrcPassword = m?.password ?? ''
       draft.mqttSrcTls = m?.tls?.enabled ?? false
+      draft.connTlsCaFile = m?.tls?.caFile ?? ''
+      draft.connTlsCertFile = m?.tls?.certFile ?? ''
+      draft.connTlsKeyFile = m?.tls?.keyFile ?? ''
       draft.mqttSrcQos = m?.qos === 0 ? '0' : '1'
       break
     }
@@ -207,6 +213,9 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.ibmSrcQueue = m?.queue ?? ''
       draft.ibmSrcUsername = m?.username ?? ''
       draft.ibmSrcPassword = m?.password ?? ''
+      draft.connTlsCaFile = m?.tls?.caFile ?? ''
+      draft.connTlsCertFile = m?.tls?.certFile ?? ''
+      draft.connTlsKeyFile = m?.tls?.keyFile ?? ''
       draft.ibmSrcApiVersion = (m?.apiVersion ?? '') as ChannelDraft['ibmSrcApiVersion']
       draft.ibmSrcPollSeconds = readSeconds(m?.pollInterval) || 2
       break
@@ -874,6 +883,9 @@ function readDestination(d: WireDest): Destination {
       dest.destAmqpUsername = d.amqp?.username ?? ''
       dest.destAmqpPassword = d.amqp?.password ?? ''
       dest.destAmqpTls = d.amqp?.tls?.enabled ?? false
+      dest.destTlsCaFile = d.amqp?.tls?.caFile ?? ''
+      dest.destTlsCertFile = d.amqp?.tls?.certFile ?? ''
+      dest.destTlsKeyFile = d.amqp?.tls?.keyFile ?? ''
       break
     case 'mqtt':
       dest.destMqttAddr = d.mqtt?.addr ?? ''
@@ -882,6 +894,9 @@ function readDestination(d: WireDest): Destination {
       dest.destMqttUsername = d.mqtt?.username ?? ''
       dest.destMqttPassword = d.mqtt?.password ?? ''
       dest.destMqttTls = d.mqtt?.tls?.enabled ?? false
+      dest.destTlsCaFile = d.mqtt?.tls?.caFile ?? ''
+      dest.destTlsCertFile = d.mqtt?.tls?.certFile ?? ''
+      dest.destTlsKeyFile = d.mqtt?.tls?.keyFile ?? ''
       dest.destMqttQos = d.mqtt?.qos === 0 ? '0' : '1'
       dest.destMqttRetain = d.mqtt?.retain ?? false
       break
@@ -891,6 +906,9 @@ function readDestination(d: WireDest): Destination {
       dest.destIbmQueue = d.ibmMq?.queue ?? ''
       dest.destIbmUsername = d.ibmMq?.username ?? ''
       dest.destIbmPassword = d.ibmMq?.password ?? ''
+      dest.destTlsCaFile = d.ibmMq?.tls?.caFile ?? ''
+      dest.destTlsCertFile = d.ibmMq?.tls?.certFile ?? ''
+      dest.destTlsKeyFile = d.ibmMq?.tls?.keyFile ?? ''
       dest.destIbmApiVersion = (d.ibmMq?.apiVersion ?? '') as Destination['destIbmApiVersion']
       dest.destIbmNonPersistent = d.ibmMq?.nonPersistent ?? false
       break
@@ -1079,7 +1097,7 @@ interface WireAMQP {
   address?: string
   username?: string
   password?: string
-  tls?: { enabled?: boolean }
+  tls?: WireClientTLS
 }
 
 interface WireAzureBlob {
@@ -1090,12 +1108,19 @@ interface WireAzureBlob {
   endpoint?: string
 }
 
+interface WireClientTLS {
+  enabled?: boolean
+  caFile?: string
+  certFile?: string
+  keyFile?: string
+}
+
 interface WireMQTT {
   addr?: string
   clientId?: string
   username?: string
   password?: string
-  tls?: { enabled?: boolean }
+  tls?: WireClientTLS
   qos?: number
 }
 
@@ -1105,7 +1130,7 @@ interface WireIBMMQ {
   queue?: string
   username?: string
   password?: string
-  tls?: { enabled?: boolean }
+  tls?: WireClientTLS
   apiVersion?: string
 }
 

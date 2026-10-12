@@ -720,6 +720,37 @@ export function SourceSection({
         </>
       )}
 
+      {(draft.sourceKind === 'amqp' || draft.sourceKind === 'mqtt' || draft.sourceKind === 'ibm_mq') &&
+        (draft.sourceKind === 'amqp' ? draft.amqpTls : draft.sourceKind === 'mqtt' ? draft.mqttSrcTls : draft.ibmSrcUrl.startsWith('https://')) && (
+          <Pair>
+            <Text
+              label="CA certificate file"
+              value={draft.connTlsCaFile}
+              onChange={(v) => set('connTlsCaFile', v)}
+              placeholder="/etc/perfuse/broker-ca.pem"
+              mono
+              hint="Only for a server certificate from a private CA. Empty trusts the system's certificate store."
+            />
+            <Text
+              label="Client certificate file"
+              value={draft.connTlsCertFile}
+              onChange={(v) => set('connTlsCertFile', v)}
+              placeholder="/etc/perfuse/client.pem"
+              mono
+              hint="Only when the server asks for one, as AWS IoT Core does."
+            />
+          </Pair>
+        )}
+      {(draft.sourceKind === 'amqp' || draft.sourceKind === 'mqtt' || draft.sourceKind === 'ibm_mq') && draft.connTlsCertFile && (
+        <Text
+          label="Client key file"
+          value={draft.connTlsKeyFile}
+          onChange={(v) => set('connTlsKeyFile', v)}
+          placeholder="/etc/perfuse/client.key"
+          mono
+        />
+      )}
+
       {draft.sourceKind === 'kafka' && (
         <>
           <Pair>

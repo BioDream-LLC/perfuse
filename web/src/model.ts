@@ -528,6 +528,11 @@ export interface Destination {
   azBlob: string
   azTier: '' | 'Hot' | 'Cool' | 'Cold' | 'Archive'
 
+  /** destTlsCaFile, destTlsCertFile and destTlsKeyFile are the TLS files of an amqp, mqtt or ibm_mq destination. */
+  destTlsCaFile: string
+  destTlsCertFile: string
+  destTlsKeyFile: string
+
   // MQTT.
   destMqttAddr: string
   destMqttTopic: string
@@ -1173,6 +1178,11 @@ export interface ChannelDraft {
   azSrcPollSeconds: number
   azSrcFramed: boolean
 
+  /** connTlsCaFile, connTlsCertFile and connTlsKeyFile are the TLS files of an amqp, mqtt or ibm_mq source. */
+  connTlsCaFile: string
+  connTlsCertFile: string
+  connTlsKeyFile: string
+
   mqttSrcAddr: string
   mqttSrcTopic: string
   mqttSrcClientId: string
@@ -1349,6 +1359,15 @@ export function newStep(kind: StepKind = 'set'): DraftStep {
 //
 // Distinct from the existing seconds helper, which always returns a value. Here zero has
 // to mean "not stated" so the key is left out of the generated file entirely.
+/**
+ * clientTls is the TLS block of a connector that connects out: on or off, and the files a private CA or a client certificate
+ * needs. Without the CA file a broker or queue manager with an internal certificate could not be reached from the form at all.
+ */
+function clientTls(on: boolean, ca: string, cert: string, key: string) {
+  if (!on) return undefined
+  return { enabled: true, caFile: ca || undefined, certFile: cert || undefined, keyFile: key || undefined }
+}
+
 function secondsOrNone(n: number): string | undefined {
   return n > 0 ? `${n}s` : undefined
 }
@@ -1480,7 +1499,7 @@ export function draftToWire(draft: ChannelDraft): unknown {
         address: draft.amqpAddress || undefined,
         username: draft.amqpUsername || undefined,
         password: draft.amqpPassword || undefined,
-        tls: draft.amqpTls ? { enabled: true } : undefined,
+        tls: clientTls(draft.amqpTls, draft.connTlsCaFile, draft.connTlsCertFile, draft.connTlsKeyFile),
         prefetch: positiveOrNone(draft.amqpPrefetch),
       }
       break
@@ -1491,7 +1510,7 @@ export function draftToWire(draft: ChannelDraft): unknown {
         clientId: draft.mqttSrcClientId || undefined,
         username: draft.mqttSrcUsername || undefined,
         password: draft.mqttSrcPassword || undefined,
-        tls: draft.mqttSrcTls ? { enabled: true } : undefined,
+        tls: clientTls(draft.mqttSrcTls, draft.connTlsCaFile, draft.connTlsCertFile, draft.connTlsKeyFile),
         qos: draft.mqttSrcQos === '0' ? 0 : undefined,
       }
       break
@@ -1502,7 +1521,7 @@ export function draftToWire(draft: ChannelDraft): unknown {
         queue: draft.ibmSrcQueue || undefined,
         username: draft.ibmSrcUsername || undefined,
         password: draft.ibmSrcPassword || undefined,
-        tls: draft.ibmSrcUrl.startsWith('https://') ? { enabled: true } : undefined,
+        tls: clientTls(draft.ibmSrcUrl.startsWith('https://'), draft.connTlsCaFile, draft.connTlsCertFile, draft.connTlsKeyFile),
         apiVersion: draft.ibmSrcApiVersion || undefined,
         pollInterval: secondsOrNone(draft.ibmSrcPollSeconds),
       }
@@ -2295,7 +2314,7 @@ function destinationToWire(d: Destination): unknown {
         address: d.destAmqpAddress || undefined,
         username: d.destAmqpUsername || undefined,
         password: d.destAmqpPassword || undefined,
-        tls: d.destAmqpTls ? { enabled: true } : undefined,
+        tls: clientTls(d.destAmqpTls, d.destTlsCaFile, d.destTlsCertFile, d.destTlsKeyFile),
       }
       break
     case 'mqtt':
@@ -2305,7 +2324,7 @@ function destinationToWire(d: Destination): unknown {
         clientId: d.destMqttClientId || undefined,
         username: d.destMqttUsername || undefined,
         password: d.destMqttPassword || undefined,
-        tls: d.destMqttTls ? { enabled: true } : undefined,
+        tls: clientTls(d.destMqttTls, d.destTlsCaFile, d.destTlsCertFile, d.destTlsKeyFile),
         qos: d.destMqttQos === '0' ? 0 : undefined,
         retain: d.destMqttRetain || undefined,
       }
@@ -2317,7 +2336,7 @@ function destinationToWire(d: Destination): unknown {
         queue: d.destIbmQueue || undefined,
         username: d.destIbmUsername || undefined,
         password: d.destIbmPassword || undefined,
-        tls: d.destIbmUrl.startsWith('https://') ? { enabled: true } : undefined,
+        tls: clientTls(d.destIbmUrl.startsWith('https://'), d.destTlsCaFile, d.destTlsCertFile, d.destTlsKeyFile),
         apiVersion: d.destIbmApiVersion || undefined,
         nonPersistent: d.destIbmNonPersistent || undefined,
       }
@@ -2584,6 +2603,9 @@ export function newDestination(): Destination {
     azEndpoint: '',
     azBlob: '',
     azTier: '',
+    destTlsCaFile: '',
+    destTlsCertFile: '',
+    destTlsKeyFile: '',
     destMqttAddr: '',
     destMqttTopic: '',
     destMqttClientId: '',
@@ -2894,6 +2916,10 @@ export function emptyDraft(): ChannelDraft {
     azSrcErrorPrefix: '',
     azSrcPollSeconds: 30,
     azSrcFramed: false,
+
+    connTlsCaFile: '',
+    connTlsCertFile: '',
+    connTlsKeyFile: '',
 
     mqttSrcAddr: '',
     mqttSrcTopic: '',

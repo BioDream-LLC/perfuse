@@ -20,6 +20,9 @@ type channelPayload struct {
 type channelResponse struct {
 	Channel ChannelSummary `json:"channel"`
 	YAML    string         `json:"yaml"`
+	// Restarted says a running channel was restarted to apply the change; RestartError why that did not work.
+	Restarted    bool   `json:"restarted,omitempty"`
+	RestartError string `json:"restartError,omitempty"`
 }
 
 type channelListResponse struct {
@@ -201,7 +204,22 @@ func (s *Server) handleUpdateChannel(w http.ResponseWriter, r *http.Request, ses
 		Target: c.Name, Detail: detail, IP: clientIP(r),
 	})
 
-	s.ok(w, channelResponse{Channel: summarise(c, c.Path()), YAML: req.YAML})
+	// A running channel is restarted so the change applies. Saving used to write the file and leave the old version running,
+	// so a changed address or certificate took effect only at the next server restart, with nothing to say so: found by
+	// changing a destination's CA file in the builder and watching delivery keep failing on the old one.
+	resp := channelResponse{Channel: summarise(c, c.Path()), YAML: req.YAML}
+	if rt := s.optionalRuntime(sess); rt != nil && rt.IsRunning(name) {
+		if err := rt.Stop(r.Context(), name); err != nil {
+			resp.RestartError = "saved, but the running version could not be stopped: " + err.Error()
+		} else if err := rt.Start(c.Name, s.log()); err != nil {
+			resp.RestartError = "saved and stopped, but it did not start again: " + err.Error()
+		} else {
+			resp.Restarted = true
+			s.log().Info("channel restarted to apply the change", "channel", c.Name, "user", sess.Username)
+		}
+	}
+
+	s.ok(w, resp)
 }
 
 func (s *Server) handleDeleteChannel(w http.ResponseWriter, r *http.Request, sess *store.Session) {

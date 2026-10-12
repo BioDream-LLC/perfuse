@@ -114,6 +114,9 @@ export interface ProposedContract {
 export interface ChannelResponse {
   channel: ChannelSummary
   yaml: string
+  /** restarted: a running channel was restarted to apply the save; restartError: why that failed. */
+  restarted?: boolean
+  restartError?: string
 }
 
 export interface ChannelListResponse {

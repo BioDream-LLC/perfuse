@@ -238,6 +238,11 @@ export function ChannelBuilder({
     }
     const result = await dispatch(saveChannel({ name: editing?.name, yaml }))
     if (!saveChannel.fulfilled.match(result)) return
+    // A running channel is restarted by the server to apply the change; say so when that did not work.
+    if (result.payload?.restartError) {
+      setStartError(result.payload.restartError)
+      return
+    }
 
     // Start it, if it was built to run.
     //

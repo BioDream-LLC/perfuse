@@ -123,6 +123,10 @@ func summarise(c *config.Channel, path string) ChannelSummary {
 		Reads:       c.Paths(),
 		File:        filepath.Base(path),
 	}
+	// A source that connects out (a queue, a bucket, a topic) listens on nothing, and the list showed an empty "Listens on".
+	if s.Listen == "" {
+		s.Listen = describeSource(c)
+	}
 	for _, d := range c.Destinations {
 		s.Destinations = append(s.Destinations, d.Name)
 	}
@@ -217,6 +221,10 @@ func (r *ChannelRepo) Create(raw []byte) (*config.Channel, error) {
 	if err := writeFileAtomic(path, raw); err != nil {
 		return nil, err
 	}
+	// Read back from where it now lives, so its path (and the file the list shows) is the real one, not "(unsaved)".
+	if saved, err := config.LoadFile(path); err == nil {
+		return saved, nil
+	}
 	return c, nil
 }
 
@@ -257,6 +265,9 @@ func (r *ChannelRepo) Update(name string, raw []byte) (*config.Channel, error) {
 		if err := os.Remove(oldPath); err != nil {
 			return nil, err
 		}
+	}
+	if saved, err := config.LoadFile(newPath); err == nil {
+		return saved, nil
 	}
 	return c, nil
 }

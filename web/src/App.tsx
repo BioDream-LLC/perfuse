@@ -1151,7 +1151,7 @@ function Channels() {
 
             <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <dt className="label">Listens on</dt>
+                <dt className="label">{c.listen && /^[\[\w.-]*:\d+$/.test(c.listen) ? 'Listens on' : 'Receives from'}</dt>
                 <dd className="font-mono text-slate-300">{c.listen}</dd>
               </div>
               <div>
