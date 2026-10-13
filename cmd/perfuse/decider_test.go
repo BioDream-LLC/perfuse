@@ -39,7 +39,7 @@ func deciderAgainst(t *testing.T, status int, body string) (fhirserver.PASAnswer
 		t.Fatal(err)
 	}
 	req, svc := deciderRequest()
-	a, ok := decide(context.Background(), req, svc)
+	a, ok := decide(fhirserver.WithPASRequestID(context.Background(), "resp-1"), req, svc)
 	return a, ok, seen, sent
 }
 
@@ -50,6 +50,9 @@ func TestDeciderSendsTheBundleForOneItem(t *testing.T) {
 	}
 	if seen.Header.Get("Authorization") != "Bearer s3cret" || seen.Header.Get("Content-Type") != "application/fhir+json" {
 		t.Errorf("headers: %v", seen.Header)
+	}
+	if seen.Header.Get("X-PAS-Request-Id") != "resp-1" {
+		t.Errorf("X-PAS-Request-Id = %q, want the response's id", seen.Header.Get("X-PAS-Request-Id"))
 	}
 	if sent["id"] != "b1" {
 		t.Errorf("the service was sent %v, not the request Bundle", sent)
@@ -147,5 +150,16 @@ func TestChainLeavesTheRulesCoveragePolicyAlone(t *testing.T) {
 	})
 	if a := none(context.Background(), req, pas.Service{Sequence: "9"}); a.Decision != "pend" {
 		t.Fatalf("no rules and no decision: %+v, want pend", a)
+	}
+}
+
+func TestADeciderOverPlainHTTPMustBeOnThisMachine(t *testing.T) {
+	if _, err := newPASDecider("http://vaglio.example/api/pas/decide", "", nil); err == nil {
+		t.Error("plain http to another host was accepted")
+	}
+	for _, ok := range []string{"http://127.0.0.1:9000/d", "http://localhost/d", "http://[::1]:9000/d", "https://vaglio.example/d"} {
+		if _, err := newPASDecider(ok, "", nil); err != nil {
+			t.Errorf("%s refused: %v", ok, err)
+		}
 	}
 }

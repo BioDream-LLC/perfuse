@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,6 +26,7 @@ import (
 //
 //	POST <-pas-decider-url>?item=<Claim.item.sequence>
 //	Content-Type: application/fhir+json         the PAS request Bundle, exactly as the provider sent it
+//	X-PAS-Request-Id: <id>                      the ClaimResponse id this server gives the request
 //
 //	200 {"decision": "approve" | "deny" | "pend", "why": "...", "requested": ["...", ...]}
 //	404 the service decides nothing for this item (no policy covers it)
@@ -33,6 +35,9 @@ import (
 // specific reason for every denial, and a denial without one is pended instead. requested lists, in words, the information
 // a pended request needs. Anything else - an error, a timeout, a decision this protocol does not define - pends the item
 // for a reviewer, and the reason goes to the log, not to the provider. Nothing here can turn a failure into an approval.
+//
+// A service with its own reviewers can decide later what it pends here: X-PAS-Request-Id is the claimResponse parameter
+// Claim/$decide takes, with the item's sequence and the reviewer's decision and reason, as any reviewer's decision is.
 
 // deciderAnswer is the decision service's response body.
 type deciderAnswer struct {
@@ -51,6 +56,10 @@ func newPASDecider(target, tokenEnv string, log *slog.Logger) (func(ctx context.
 	u, err := url.Parse(target)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.RawQuery != "" {
 		return nil, fmt.Errorf("-pas-decider-url %q is not an http(s) URL without a query", target)
+	}
+	// The request Bundle is a patient's clinical record and the token is a credential: plain http only to this machine.
+	if u.Scheme == "http" && !loopbackHost(u.Hostname()) {
+		return nil, fmt.Errorf("-pas-decider-url %q sends patient records and a token unencrypted; use https (plain http is allowed only to localhost)", target)
 	}
 	token := ""
 	if tokenEnv != "" {
@@ -78,6 +87,10 @@ func newPASDecider(target, tokenEnv string, log *slog.Logger) (func(ctx context.
 		}
 		hreq.Header.Set("Content-Type", "application/fhir+json")
 		hreq.Header.Set("Accept", "application/json")
+		if id, ok := fhirserver.PASRequestID(ctx); ok {
+			// The ClaimResponse id: what a service that pends this item later sends Claim/$decide its reviewer's decision with.
+			hreq.Header.Set("X-PAS-Request-Id", id)
+		}
 		if token != "" {
 			hreq.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -125,6 +138,15 @@ func newPASDecider(target, tokenEnv string, log *slog.Logger) (func(ctx context.
 			return fail(svc, fmt.Sprintf("decision %q is not approve, deny or pend", a.Decision), nil)
 		}
 	}, nil
+}
+
+// loopbackHost reports whether host names this machine.
+func loopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // chainPASDecide answers from the rules file first, and asks the decision service only what the rules leave to a reviewer:
