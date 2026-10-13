@@ -1082,6 +1082,16 @@ Now 46 pass and 2 fail. Both failures are one resource, Inferno's own adaptive D
 That questionnaire turned out to be ours: the DTR run adds the extension to Inferno's fixture, in its Coding form. Written
 as the string its definition also allows, the suite passes 48 of 48.
 
+### A PAS decision service, end to end
+
+`serve -pas -pas-decider-url` was run against a decision service (Vaglio, an optional BioDream decision engine; Perfuse needs
+none) on this machine, with Perfuse's rules leaving lumbar MRI to a reviewer. Four synthetic PAS requests went to `Claim/$submit`:
+one approved and one denied on the service's policy, each with its reason in the process note, one pended naming the information
+it lacked, and one pended because its record contradicted itself. Each call carried `X-PAS-Request-Id`. A reviewer then approved
+the pended case in the service, which sent `Claim/$decide` under that id, and Perfuse's ClaimResponse for the request read A1
+(certified in total). The failures - the service down, an error, a timeout, a denial with no reason, an unknown decision - are
+covered by `cmd/perfuse/decider_test.go`, and each pends the item.
+
 ### Da Vinci PDex 2.0.0 Payer Server
 
 The Payer-to-Payer workflow passes 19 of 19, and the API and must-support coverage 312, with 1 skip. The data are Inferno's
