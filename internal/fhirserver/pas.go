@@ -50,7 +50,8 @@ type PAS struct {
 	// It is given the whole request, not only the service's codes, because a medical necessity decision rests on the clinical
 	// evidence the provider sent with it - the conditions, the questionnaire answers, the documents in the Bundle. A rule
 	// that looks only at svc.Codes is still a correct Decide. ctx is the provider's request: a Decide that calls out (to a
-	// decision service such as Vaglio) must give up when it does.
+	// decision service such as Vaglio) must give up when it does. PASRequestID(ctx) is the id this server gives the request,
+	// the ClaimResponse id Claim/$decide takes, so whatever a Decide pends can be decided later from outside.
 	Decide func(ctx context.Context, req *pas.Request, svc pas.Service) PASAnswer
 	// Now is the clock, for tests. Nil is time.Now.
 	Now func() time.Time
@@ -522,8 +523,24 @@ func (c *pasContext) addedItem(item map[string]any, d itemDecision) map[string]a
 	return add
 }
 
+type pasRequestIDKey struct{}
+
+// PASRequestID is the id of the PAS request a Decide is deciding: the ClaimResponse id that Claim/$decide and the
+// reviewer queue know it by. A decision service that pends an item and later has a person decide it sends that decision
+// to Claim/$decide with this id.
+func PASRequestID(ctx context.Context) (string, bool) {
+	id, ok := ctx.Value(pasRequestIDKey{}).(string)
+	return id, ok && id != ""
+}
+
+// WithPASRequestID is ctx carrying a PAS request's id, as the server gives it to Decide; for calling a Decide elsewhere.
+func WithPASRequestID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, pasRequestIDKey{}, id)
+}
+
 // pasRespond builds the PAS Response Bundle. pended says whether any item waits for a reviewer.
 func (s *Server) pasRespond(ctx context.Context, req *pasRequest, id string, now time.Time) (map[string]any, bool) {
+	ctx = WithPASRequestID(ctx, id)
 	claim := req.Claim
 	c := &pasContext{req: req, id: id, authNumber: "PA-" + strings.ToUpper(id[:8]),
 		today: now.Format("2006-01-02"), until: now.AddDate(0, 0, pasAuthDays).Format("2006-01-02")}

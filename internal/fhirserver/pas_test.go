@@ -375,12 +375,13 @@ func TestDecideSeesTheWholeRequest(t *testing.T) {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	srv := NewServer(f.store, "http://example.test/fhir", log)
 	srv.Auth = OpenAuth{}
-	var gotSequence string
+	var gotSequence, gotID string
 	srv.PAS = &PAS{Now: newPASFixtureClock, Decide: func(ctx context.Context, req *pas.Request, svc pas.Service) PASAnswer {
 		if ctx == nil {
 			t.Error("Decide was given no context")
 		}
 		gotSequence = svc.Sequence
+		gotID, _ = PASRequestID(ctx)
 		for _, e := range req.Resources("Condition") {
 			if str(asMapAny(e["resource"])["id"]) == "red-flag" {
 				return PASAnswer{Decision: "approve", Why: "A red-flag condition is documented."}
@@ -407,6 +408,10 @@ func TestDecideSeesTheWholeRequest(t *testing.T) {
 	}
 	if gotSequence != "1" {
 		t.Fatalf("Decide was given item %q, want 1", gotSequence)
+	}
+	// The id Decide is told is the one the response is known by, which is what Claim/$decide takes.
+	if cr := claimResponseOf(t, out); gotID == "" || str(cr["id"]) != gotID {
+		t.Fatalf("Decide was told request id %q; the ClaimResponse is %q", gotID, str(cr["id"]))
 	}
 
 	code, out = pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("hook-2", "3"))
