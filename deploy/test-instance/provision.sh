@@ -51,6 +51,7 @@ echo "$host is $ip"
 
 ssh_opts="-i $key -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$keys/known_hosts -o ConnectTimeout=10"
 until ssh $ssh_opts admin@"$ip" true 2>/dev/null; do sleep 5; done
-ssh $ssh_opts admin@"$ip" 'rm -rf /tmp/perfuse-test && mkdir /tmp/perfuse-test'
-scp -q $ssh_opts "$here"/setup.sh "$here"/perfuse-*.service "$here"/perfuse-backup.timer "$here"/*.yaml admin@"$ip":/tmp/perfuse-test/
+ssh $ssh_opts admin@"$ip" 'rm -rf /tmp/perfuse-test && mkdir -p /tmp/perfuse-test/channels'
+scp -q $ssh_opts "$here"/setup.sh "$here"/perfuse-*.service "$here"/perfuse-*.timer "$here"/*.yaml admin@"$ip":/tmp/perfuse-test/
+scp -q $ssh_opts "$here"/channels/*.yaml admin@"$ip":/tmp/perfuse-test/channels/
 ssh $ssh_opts admin@"$ip" "sudo sh /tmp/perfuse-test/setup.sh $version"

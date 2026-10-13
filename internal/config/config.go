@@ -530,6 +530,20 @@ type Destination struct {
 	// Dir is the output directory for a file destination.
 	Dir string `yaml:"dir,omitempty"`
 
+	// FileName, for a file destination, templates one file per message (${timestamp}, ${date}, ${control_id},
+	// ${message_type}, ${destination}). Empty keeps the default: one file per day and message type, appended to.
+	FileName string `yaml:"file_name,omitempty"`
+
+	// TempSuffix is the name a per-message file carries while it is written, removed by a rename once it is complete,
+	// so whatever collects the files never reads half of one. Defaults to ".part".
+	TempSuffix string `yaml:"temp_suffix,omitempty"`
+
+	// Append writes every message into the file FileName names, rather than a file per message.
+	Append bool `yaml:"append,omitempty"`
+
+	// RetainHours deletes files in Dir older than this. Zero keeps them forever.
+	RetainHours int `yaml:"retain_hours,omitempty"`
+
 	// TLS encrypts the connection to this destination.
 	TLS *tlsconf.Settings `yaml:"tls,omitempty"`
 

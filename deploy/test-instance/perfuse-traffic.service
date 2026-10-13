@@ -1,0 +1,16 @@
+[Unit]
+Description=Synthetic HL7 traffic for the Perfuse test instance's demonstration channels (invented data only)
+After=perfuse-test.service
+Requires=perfuse-test.service
+
+[Service]
+Type=oneshot
+User=perfuse
+Group=perfuse
+# A few messages of every kind into hospital-feed, which listens on 127.0.0.1 only. Everything is invented: fictional
+# names, sequential identifiers, made-up addresses. About one in twelve has a legal but awkward shape, as real feeds do.
+ExecStart=/opt/perfuse/perfuse generate -kind mixed -n 3 -patients 40 -send 127.0.0.1:6660 -quiet
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

@@ -627,6 +627,16 @@ func (d *Destination) validate(dataType DataType) []error {
 		if d.Address != "" {
 			errs = append(errs, errors.New("address does not apply to a file destination"))
 		}
+		if d.RetainHours < 0 {
+			errs = append(errs, errors.New("retain_hours cannot be negative; zero keeps files forever"))
+		}
+		if strings.ContainsAny(d.TempSuffix, `/\`) {
+			errs = append(errs, errors.New("temp_suffix is added to a file name, so it cannot hold a path separator"))
+		}
+		if d.Append && strings.TrimSpace(d.FileName) == "" {
+			errs = append(errs, errors.New("append needs file_name, the file to append to; without file_name a file "+
+				"destination already appends, one file per day and message type"))
+		}
 
 	case DestinationFHIR:
 		if d.FHIR == nil {

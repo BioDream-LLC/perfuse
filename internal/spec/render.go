@@ -128,7 +128,17 @@ func describeTransport(d config.Destination) string {
 		return out
 
 	case config.DestinationFile:
-		return "written as files to " + d.Dir
+		out := "written as files to " + d.Dir
+		switch {
+		case d.FileName != "" && d.Append:
+			out += ", appended to " + d.FileName
+		case d.FileName != "":
+			out += ", one per message named " + d.FileName
+		}
+		if d.RetainHours > 0 {
+			out += fmt.Sprintf(", deleted after %d hours", d.RetainHours)
+		}
+		return out
 
 	case config.DestinationHTTP:
 		if d.HTTP != nil {

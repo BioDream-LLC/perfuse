@@ -178,8 +178,18 @@ func (s *MLLPSender) Close() error { return s.client.Close() }
 type FileSender struct {
 	dir string
 
+	// Set from the destination's file_name, temp_suffix, append and retain_hours.
+	name       string
+	fileName   string
+	tempSuffix string
+	appendTo   bool
+	retain     time.Duration
+	lastPrune  time.Time
+	now        func() time.Time
+
 	mu       sync.Mutex
 	files    map[string]*os.File
+	day      string
 	dataType config.DataType
 }
 
@@ -188,7 +198,15 @@ func NewFileSender(d config.Destination) (*FileSender, error) {
 	if err := os.MkdirAll(d.Dir, 0o750); err != nil {
 		return nil, err
 	}
-	return &FileSender{dir: d.Dir, files: map[string]*os.File{}, dataType: config.DataHL7}, nil
+	suffix := d.TempSuffix
+	if suffix == "" {
+		suffix = ".part"
+	}
+	return &FileSender{
+		dir: d.Dir, name: d.Name, fileName: strings.TrimSpace(d.FileName), tempSuffix: suffix, appendTo: d.Append,
+		retain: time.Duration(d.RetainHours) * time.Hour, now: time.Now,
+		files: map[string]*os.File{}, dataType: config.DataHL7,
+	}, nil
 }
 
 // SetDataType tells the sender what format it is writing.
@@ -211,8 +229,30 @@ func (s *FileSender) Send(ctx context.Context, msg []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	now := s.now().UTC()
+	s.prune(now)
+
 	name, ext := s.describe(msg)
-	filename := fmt.Sprintf("%s-%s.%s", time.Now().UTC().Format("20060102"), sanitise(name), ext)
+	if s.fileName != "" && !s.appendTo {
+		return s.writeOne(filepath.Join(s.dir, s.render(now, name, ext, msg)), s.frame(msg))
+	}
+
+	var filename string
+	if s.fileName != "" {
+		filename = s.render(now, name, ext, msg)
+	} else {
+		filename = fmt.Sprintf("%s-%s.%s", now.Format("20060102"), sanitise(name), ext)
+	}
+
+	// A new day closes yesterday's files: they are never written again, and an archive kept for months would otherwise
+	// hold a descriptor open for every day and message type it has seen.
+	if day := now.Format("20060102"); day != s.day {
+		for k, f := range s.files {
+			_ = f.Close()
+			delete(s.files, k)
+		}
+		s.day = day
+	}
 
 	f, ok := s.files[filename]
 	if !ok {
@@ -224,14 +264,25 @@ func (s *FileSender) Send(ctx context.Context, msg []byte) error {
 		}
 		s.files[filename] = f
 	}
+	if _, err := f.Write(s.frame(msg)); err != nil {
+		return err
+	}
+	// Sync before reporting success. Without it, "delivered" means the bytes
+	// reached a buffer that a power cut discards, which is not what an
+	// acknowledgement should promise.
+	return f.Sync()
+}
 
-	// HL7 is MLLP-framed so the archive is a valid MLLP stream and can be replayed
-	// straight back through `perfuse send`. X12 must not be: the control characters are
-	// not part of the format, and several interchanges written back to back is already
-	// exactly what an X12 batch file looks like.
-	// Delimited data must not be framed either, and for a sharper reason than X12: a CSV with control characters around
-	// every row will not open in a spreadsheet, so the failure is immediate and total rather than subtle. Found by sending a
-	// real file through and looking at what was written.
+// frame applies the framing the archive is written in.
+
+// HL7 is MLLP-framed so the archive is a valid MLLP stream and can be replayed
+// straight back through `perfuse send`. X12 must not be: the control characters are
+// not part of the format, and several interchanges written back to back is already
+// exactly what an X12 batch file looks like.
+// Delimited data must not be framed either, and for a sharper reason than X12: a CSV with control characters around
+// every row will not open in a spreadsheet, so the failure is immediate and total rather than subtle. Found by sending a
+// real file through and looking at what was written.
+func (s *FileSender) frame(msg []byte) []byte {
 	out := msg
 	// Raw must not be framed for the sharpest reason of the four: the payload may be a PDF or a zip, and control
 	// characters wrapped around it produce a file no reader will open. The point of a raw channel is that what
@@ -246,13 +297,96 @@ func (s *FileSender) Send(ctx context.Context, msg []byte) error {
 		s.dataType != config.DataNCPDP && s.dataType != config.DataScript {
 		out = mllp.Frame(msg)
 	}
-	if _, err := f.Write(out); err != nil {
+	return out
+}
+
+// render fills in a file_name template for one message.
+func (s *FileSender) render(now time.Time, name, ext string, msg []byte) string {
+	controlID := ""
+	if s.dataType == config.DataHL7 || s.dataType == "" {
+		if m, err := hl7.Parse(msg); err == nil {
+			if msh, ok := m.Segment("MSH", 1); ok {
+				controlID = msh.Field(10).String()
+			}
+		}
+	}
+	if controlID == "" {
+		controlID = "noid-" + uniqueStamp()
+	}
+	out := s.fileName
+	for k, v := range map[string]string{
+		"${timestamp}": now.Format("20060102150405"), "${date}": now.Format("20060102"), "${control_id}": controlID,
+		"${message_type}": name, "${destination}": s.name,
+	} {
+		out = strings.ReplaceAll(out, k, v)
+	}
+	out = sanitiseFileName(out)
+	if filepath.Ext(out) == "" {
+		out += "." + ext
+	}
+	return out
+}
+
+// writeOne writes a file for one message under a temporary name and renames it into place, so whatever collects the
+// folder never reads half a message. A name already taken (the same control ID twice) gets a unique suffix rather than
+// overwriting the message that was there.
+func (s *FileSender) writeOne(final string, body []byte) error {
+	if _, err := os.Lstat(final); err == nil {
+		e := filepath.Ext(final)
+		final = strings.TrimSuffix(final, e) + "-" + uniqueStamp() + e
+	}
+	temp := final + s.tempSuffix
+	f, err := os.OpenFile(temp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
 		return err
 	}
-	// Sync before reporting success. Without it, "delivered" means the bytes
-	// reached a buffer that a power cut discards, which is not what an
-	// acknowledgement should promise.
-	return f.Sync()
+	if _, err := f.Write(body); err != nil {
+		_ = f.Close()
+		_ = os.Remove(temp)
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		_ = f.Close()
+		_ = os.Remove(temp)
+		return err
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(temp)
+		return err
+	}
+	if err := os.Rename(temp, final); err != nil {
+		_ = os.Remove(temp)
+		return err
+	}
+	return nil
+}
+
+// prune deletes files older than retain_hours, at most every ten minutes. Only plain files directly in the folder:
+// never a subfolder, and never anything a link points at.
+func (s *FileSender) prune(now time.Time) {
+	if s.retain <= 0 || now.Sub(s.lastPrune) < 10*time.Minute {
+		return
+	}
+	s.lastPrune = now
+	entries, err := os.ReadDir(s.dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.Type().IsRegular() {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil || now.Sub(info.ModTime()) < s.retain {
+			continue
+		}
+		p := filepath.Join(s.dir, e.Name())
+		if f, ok := s.files[e.Name()]; ok {
+			_ = f.Close()
+			delete(s.files, e.Name())
+		}
+		_ = os.Remove(p)
+	}
 }
 
 // describe picks the filename stem and extension for a message.

@@ -1,0 +1,18 @@
+name: orders
+description: Orders from the hospital, kept for a day.
+
+source:
+  type: mllp
+  listen: "127.0.0.1:6663"
+  ack:
+    when: on_delivery
+
+filter: MSH-9.1 == "ORM"
+
+destinations:
+  - name: orders-archive
+    type: file
+    dir: /opt/perfuse/data/demo-archive/orders
+    file_name: ${date}-ORM.hl7
+    append: true
+    retain_hours: 24

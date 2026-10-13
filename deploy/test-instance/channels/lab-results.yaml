@@ -1,0 +1,26 @@
+name: lab-results
+description: >
+  Laboratory results. The ordering system's code for the lab is replaced with the one the
+  results archive uses, and each day's results are kept in one file for a day.
+
+source:
+  type: mllp
+  listen: "127.0.0.1:6662"
+  ack:
+    when: on_delivery
+
+filter: MSH-9.1 == "ORU"
+
+transformations:
+  - description: The results archive's name for the sending lab
+    set:
+      path: MSH-4
+      value: RIVERSIDE-LAB
+
+destinations:
+  - name: results-archive
+    type: file
+    dir: /opt/perfuse/data/demo-archive/lab
+    file_name: ${date}-ORU.hl7
+    append: true
+    retain_hours: 24

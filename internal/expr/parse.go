@@ -175,6 +175,25 @@ func lex(src string) ([]token, error) {
 			continue
 		}
 
+		// The C spellings of and, or and not, which the manual and the builder's own examples use and which somebody coming
+		// from JavaScript or Mirth writes without thinking. Before != is matched, so "!" alone is only taken when "=" does
+		// not follow it.
+		if strings.HasPrefix(src[i:], "&&") {
+			toks = append(toks, token{tokAnd, "and", i})
+			i += 2
+			continue
+		}
+		if strings.HasPrefix(src[i:], "||") {
+			toks = append(toks, token{tokOr, "or", i})
+			i += 2
+			continue
+		}
+		if c == '!' && !strings.HasPrefix(src[i:], "!=") {
+			toks = append(toks, token{tokNot, "not", i})
+			i++
+			continue
+		}
+
 		if op, ok := matchOperator(src, i); ok {
 			toks = append(toks, token{tokOp, op, i})
 			i += len(op)

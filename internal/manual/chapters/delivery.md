@@ -126,13 +126,21 @@ An HTTP destination has three settings that decide whether a message is treated 
 
 ## Naming and pruning an archive folder
 
-A file destination writes one file per message by default, named with a timestamp and the message's control ID. Three settings on the destination change that.
+A file destination appends to one file per day and message type by default (`20261012-ADT_A01.hl7`), MLLP-framed so the file
+replays with `perfuse send`. Four settings on the destination change that.
 
-**File name** takes `${...}` placeholders, so a name can carry the date or the message type. This is worth setting: the default is correct and unfindable, and a folder of timestamps is one nobody searches.
+**File name** (`file_name`) makes one file per message instead, named from `${date}`, `${timestamp}`, `${control_id}`,
+`${message_type}` and `${destination}`. A name that is already taken (the same control ID twice) gets a unique suffix rather than
+overwriting the message there.
 
-**Suffix while writing** defaults to `.part` and is removed by a rename once the file is complete. Whoever collects these files should not pick up a half-written one, and a rename within a folder is atomic. Change it only if the collector filters on a different extension.
+**Append** (`append: true`) writes every message into the file **File name** names, so `${date}.hl7` is one file a day for every type.
 
-**Delete after** prunes files older than the given number of hours. Empty or zero keeps them forever, which is the default and is a decision rather than an oversight — but an archive nobody prunes fills the disk, and a full disk stops the channel rather than the archiving.
+**Suffix while writing** (`temp_suffix`, one file per message only) defaults to `.part` and is removed by a rename once the file is
+complete. Whoever collects these files should not pick up a half-written one, and a rename within a folder is atomic. Change it only
+if the collector filters on a different extension.
+
+**Delete after** (`retain_hours`) prunes files in the folder older than the given number of hours, checked at most every ten minutes
+while messages arrive. Only plain files directly in the folder are deleted, never a subfolder. Empty or zero keeps them forever, which is the default and is a decision rather than an oversight — but an archive nobody prunes fills the disk, and a full disk stops the channel rather than the archiving.
 
 ## Sending to a FHIR server
 

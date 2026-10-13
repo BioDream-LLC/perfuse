@@ -1,0 +1,39 @@
+name: adt-to-registry
+description: >
+  Admissions, discharges and transfers. Identifier merges (A28) are declined, the hospital's
+  record number is labelled with its assigning authority, and the rest goes to the patient
+  registry over MLLP, with a copy kept for a day.
+
+source:
+  type: mllp
+  listen: "127.0.0.1:6661"
+  ack:
+    when: on_delivery
+
+filter: MSH-9.1 == "ADT" && MSH-9.2 != "A28"
+
+transformations:
+  - description: Say whose record number this is
+    set:
+      path: PID-3.4
+      value: RIVERSIDE
+  - description: The registry wants the receiving application named
+    set:
+      path: MSH-5
+      value: REGISTRY
+
+destinations:
+  - name: registry
+    type: mllp
+    address: 127.0.0.1:6671
+    timeout: 10s
+    retry:
+      attempts: 3
+      backoff: 1s
+      max_backoff: 10s
+  - name: archive
+    type: file
+    dir: /opt/perfuse/data/demo-archive/adt
+    file_name: ${date}-${message_type}.hl7
+    append: true
+    retain_hours: 24

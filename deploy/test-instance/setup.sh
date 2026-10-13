@@ -23,6 +23,10 @@ tar xzf perfuse.tgz
 install -m 0755 "perfuse-$version-linux-amd64/perfuse-linux-amd64" /opt/perfuse/perfuse
 rm -rf perfuse.tgz SHA256SUMS "perfuse-$version-linux-amd64"
 
+# The demonstration channels. Replaced on every run, so the instance always shows what is in the repository; anything else
+# in the folder (a channel somebody added by hand) is left alone.
+install -o perfuse -g perfuse -m 0640 "$here"/channels/*.yaml /opt/perfuse/channels/
+
 install -o root -g perfuse -m 0640 "$here/rules.yaml" "$here/clients.yaml" "$here/users.yaml" "$here/cds-clients.yaml" /opt/perfuse/conf/
 
 # Let's Encrypt on port 80 (Perfuse does not use it); the renewal hook copies the certificate and restarts the service.
@@ -37,9 +41,11 @@ HOOK
 chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/perfuse.sh
 install -o root -g perfuse -m 0640 "/etc/letsencrypt/live/$host/fullchain.pem" "/etc/letsencrypt/live/$host/privkey.pem" /opt/perfuse/tls/
 
-install -m 0644 "$here/perfuse-test.service" "$here/perfuse-backup.service" "$here/perfuse-backup.timer" /etc/systemd/system/
+install -m 0644 "$here/perfuse-test.service" "$here/perfuse-backup.service" "$here/perfuse-backup.timer" \
+  "$here/perfuse-traffic.service" "$here/perfuse-traffic.timer" /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now perfuse-backup.timer
+systemctl enable --now perfuse-traffic.timer
 systemctl enable --now perfuse-test
 systemctl restart perfuse-test
 sleep 3

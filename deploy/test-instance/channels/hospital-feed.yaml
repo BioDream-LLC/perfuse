@@ -1,0 +1,34 @@
+# The public test server's demonstration traffic. Everything here is invented (perfuse generate) and stays on the
+# instance: every listener is on 127.0.0.1, and every file is deleted after a day.
+name: hospital-feed
+description: >
+  One feed from an imaginary hospital carrying every kind of message, split by type and handed to the
+  channel that deals with it. Fed once a minute by perfuse-traffic.timer with synthetic messages.
+
+source:
+  type: mllp
+  listen: "127.0.0.1:6660"
+  ack:
+    when: on_delivery
+
+destinations:
+  - name: admissions
+    type: channel
+    filter: MSH-9.1 == "ADT"
+    channel:
+      name: adt-to-registry
+  - name: lab
+    type: channel
+    filter: MSH-9.1 == "ORU"
+    channel:
+      name: lab-results
+  - name: orders
+    type: channel
+    filter: MSH-9.1 == "ORM"
+    channel:
+      name: orders
+  - name: documents
+    type: channel
+    filter: MSH-9.1 == "MDM"
+    channel:
+      name: clinical-documents

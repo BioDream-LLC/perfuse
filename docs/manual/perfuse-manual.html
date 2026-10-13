@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 404d741</p>
+<p class="version">version 0.1 · 446b0f8</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -850,9 +850,12 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s22-7-5-max-open-conns"><span class="num">22.7.5</span> max_open_conns</a></div>
 <div class="toc-d2"><a href="#s22-8-destination"><span class="num">22.8</span> Destination</a></div>
 <div class="toc-d3"><a href="#s22-8-1-name"><span class="num">22.8.1</span> name</a></div>
-<div class="toc-d3"><a href="#s22-8-2-elr"><span class="num">22.8.2</span> elr</a></div>
-<div class="toc-d3"><a href="#s22-8-3-response-transformer"><span class="num">22.8.3</span> response_transformer</a></div>
-<div class="toc-d3"><a href="#s22-8-4-queue"><span class="num">22.8.4</span> queue</a></div>
+<div class="toc-d3"><a href="#s22-8-2-file-name"><span class="num">22.8.2</span> file_name</a></div>
+<div class="toc-d3"><a href="#s22-8-3-temp-suffix"><span class="num">22.8.3</span> temp_suffix</a></div>
+<div class="toc-d3"><a href="#s22-8-4-retain-hours"><span class="num">22.8.4</span> retain_hours</a></div>
+<div class="toc-d3"><a href="#s22-8-5-elr"><span class="num">22.8.5</span> elr</a></div>
+<div class="toc-d3"><a href="#s22-8-6-response-transformer"><span class="num">22.8.6</span> response_transformer</a></div>
+<div class="toc-d3"><a href="#s22-8-7-queue"><span class="num">22.8.7</span> queue</a></div>
 <div class="toc-d2"><a href="#s22-9-document-destination"><span class="num">22.9</span> Document Destination</a></div>
 <div class="toc-d3"><a href="#s22-9-1-format"><span class="num">22.9.1</span> format</a></div>
 <div class="toc-d3"><a href="#s22-9-2-template"><span class="num">22.9.2</span> template</a></div>
@@ -2151,10 +2154,11 @@ roles: {viewer: manager}</code></pre>
 <p><strong>Follow redirects.</strong> Off by default, and deliberately. A redirect can point at a different host, so following one sends the message somewhere nobody configured and reports success.</p>
 <p><strong>Bearer token.</strong> Sent as an <code>Authorization</code> header. It is stored with the channel and never shown again, so leaving the box empty when editing an existing channel keeps the token already saved rather than clearing it.</p>
 <h3 id="s10-7-naming-and-pruning-an-archive-folder"><span class="num">10.7</span> Naming and pruning an archive folder</h3>
-<p>A file destination writes one file per message by default, named with a timestamp and the message&#39;s control ID. Three settings on the destination change that.</p>
-<p><strong>File name</strong> takes <code>${...}</code> placeholders, so a name can carry the date or the message type. This is worth setting: the default is correct and unfindable, and a folder of timestamps is one nobody searches.</p>
-<p><strong>Suffix while writing</strong> defaults to <code>.part</code> and is removed by a rename once the file is complete. Whoever collects these files should not pick up a half-written one, and a rename within a folder is atomic. Change it only if the collector filters on a different extension.</p>
-<p><strong>Delete after</strong> prunes files older than the given number of hours. Empty or zero keeps them forever, which is the default and is a decision rather than an oversight — but an archive nobody prunes fills the disk, and a full disk stops the channel rather than the archiving.</p>
+<p>A file destination appends to one file per day and message type by default (<code>20261012-ADT_A01.hl7</code>), MLLP-framed so the file replays with <code>perfuse send</code>. Four settings on the destination change that.</p>
+<p><strong>File name</strong> (<code>file_name</code>) makes one file per message instead, named from <code>${date}</code>, <code>${timestamp}</code>, <code>${control_id}</code>, <code>${message_type}</code> and <code>${destination}</code>. A name that is already taken (the same control ID twice) gets a unique suffix rather than overwriting the message there.</p>
+<p><strong>Append</strong> (<code>append: true</code>) writes every message into the file <strong>File name</strong> names, so <code>${date}.hl7</code> is one file a day for every type.</p>
+<p><strong>Suffix while writing</strong> (<code>temp_suffix</code>, one file per message only) defaults to <code>.part</code> and is removed by a rename once the file is complete. Whoever collects these files should not pick up a half-written one, and a rename within a folder is atomic. Change it only if the collector filters on a different extension.</p>
+<p><strong>Delete after</strong> (<code>retain_hours</code>) prunes files in the folder older than the given number of hours, checked at most every ten minutes while messages arrive. Only plain files directly in the folder are deleted, never a subfolder. Empty or zero keeps them forever, which is the default and is a decision rather than an oversight — but an archive nobody prunes fills the disk, and a full disk stops the channel rather than the archiving.</p>
 <h3 id="s10-8-sending-to-a-fhir-server"><span class="num">10.8</span> Sending to a FHIR server</h3>
 <p>Three settings decide how much is checked before a bundle leaves.</p>
 <p><strong>Claim US Core conformance</strong> adds the profile to each resource. Only claim it when the resource carries what the profile requires, because a receiver may validate against the claim and reject a bundle that would otherwise have been accepted.</p>
@@ -4272,6 +4276,10 @@ rules:
 <tr><td><code>filter</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>address</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>dir</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>file_name</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>temp_suffix</code></td><td>text</td><td>no</td><td>&#34;</td></tr>
+<tr><td><code>append</code></td><td>true or false</td><td>no</td><td>—</td></tr>
+<tr><td><code>retain_hours</code></td><td>whole number</td><td>no</td><td>—</td></tr>
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>fhir</code></td><td>FHIRDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>cda</code></td><td>CDADestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
@@ -4307,14 +4315,23 @@ rules:
 <h4 id="s22-8-1-name"><span class="num">22.8.1</span> name</h4>
 <p>Name identifies the destination in logs and metrics.</p>
 <p>Required within a channel.</p>
-<h4 id="s22-8-2-elr"><span class="num">22.8.2</span> elr</h4>
+<h4 id="s22-8-2-file-name"><span class="num">22.8.2</span> file_name</h4>
+<p>FileName, for a file destination, templates one file per message (${timestamp}, ${date}, ${control_id}, ${message_type}, ${destination}).</p>
+<p>Empty keeps the default: one file per day and message type, appended to.</p>
+<h4 id="s22-8-3-temp-suffix"><span class="num">22.8.3</span> temp_suffix</h4>
+<p>TempSuffix is the name a per-message file carries while it is written, removed by a rename once it is complete, so whatever collects the files never reads half of one.</p>
+<p>Defaults to &#34;.part&#34;.</p>
+<h4 id="s22-8-4-retain-hours"><span class="num">22.8.4</span> retain_hours</h4>
+<p>RetainHours deletes files in Dir older than this.</p>
+<p>Zero keeps them forever.</p>
+<h4 id="s22-8-5-elr"><span class="num">22.8.5</span> elr</h4>
 <p>ELR makes this a public health lab reporting destination: each lab result (ORU^R01) is reshaped into an ELR 2.5.1 message holding only the orders with a reportable result, and that is what is delivered; a message with nothing reportable is not sent at all.</p>
 <p>Applies to destinations that deliver an HL7 v2 message as it is (mllp, http, file, sftp and the rest), on an hl7 channel.</p>
-<h4 id="s22-8-3-response-transformer"><span class="num">22.8.3</span> response_transformer</h4>
+<h4 id="s22-8-6-response-transformer"><span class="num">22.8.6</span> response_transformer</h4>
 <p>ResponseTransformer inspects what the receiver said back and may mark the delivery failed.</p>
 <p>It exists because &#34;did this arrive&#34; is often not a question the transport can answer: an MLLP receiver returns an application acknowledgement whose meaning is in its text, and an HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.</p>
 <p>Only meaningful on a destination that receives a reply. On one that cannot, it is refused at load rather than left never running.</p>
-<h4 id="s22-8-4-queue"><span class="num">22.8.4</span> queue</h4>
+<h4 id="s22-8-7-queue"><span class="num">22.8.7</span> queue</h4>
 <p>Queue makes delivery durable: a message that cannot be delivered now is kept on disk and retried until it can be.</p>
 <p>Off by default.</p>
 <h3 id="s22-9-document-destination"><span class="num">22.9</span> Document Destination</h3>
@@ -6177,7 +6194,7 @@ rules:
 <tr><td><code>allowed_calling_ae</code></td><td>DICOM Source</td></tr>
 <tr><td><code>amqp</code></td><td>Destination, Source</td></tr>
 <tr><td><code>api_version</code></td><td>IBMMQ Connection</td></tr>
-<tr><td><code>append</code></td><td>SFTP Destination</td></tr>
+<tr><td><code>append</code></td><td>Destination, SFTP Destination</td></tr>
 <tr><td><code>application</code></td><td>Ack</td></tr>
 <tr><td><code>attach</code></td><td>SMTP Destination</td></tr>
 <tr><td><code>attach_name</code></td><td>SMTP Destination</td></tr>
@@ -6252,7 +6269,7 @@ rules:
 <tr><td><code>fault_on_nak</code></td><td>SOAP Source</td></tr>
 <tr><td><code>fhir</code></td><td>Destination</td></tr>
 <tr><td><code>file</code></td><td>Contract Ref, Source</td></tr>
-<tr><td><code>file_name</code></td><td>Document Destination, FTP Destination, SFTP Destination</td></tr>
+<tr><td><code>file_name</code></td><td>Destination, Document Destination, FTP Destination, SFTP Destination</td></tr>
 <tr><td><code>file_roots</code></td><td>Scripts</td></tr>
 <tr><td><code>filter</code></td><td>Channel, Delimited, Destination, HL7v3 Options, Scripts</td></tr>
 <tr><td><code>flow_control</code></td><td>Serial Source</td></tr>
@@ -6373,7 +6390,7 @@ rules:
 <tr><td><code>response_namespace</code></td><td>SOAP Source</td></tr>
 <tr><td><code>response_transformer</code></td><td>Destination</td></tr>
 <tr><td><code>retain</code></td><td>MQTT Destination</td></tr>
-<tr><td><code>retain_hours</code></td><td>Queue Config</td></tr>
+<tr><td><code>retain_hours</code></td><td>Destination, Queue Config</td></tr>
 <tr><td><code>retry</code></td><td>Destination</td></tr>
 <tr><td><code>return</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>root</code></td><td>FTP Source, File Source, SMB Source</td></tr>
@@ -6420,7 +6437,7 @@ rules:
 <tr><td><code>suffix</code></td><td>Azure Blob Source, GCS Source, S3 Source</td></tr>
 <tr><td><code>tables</code></td><td>Channel</td></tr>
 <tr><td><code>tcp</code></td><td>Destination, Source</td></tr>
-<tr><td><code>temp_suffix</code></td><td>Document Destination, FTP Destination, SFTP Destination</td></tr>
+<tr><td><code>temp_suffix</code></td><td>Destination, Document Destination, FTP Destination, SFTP Destination</td></tr>
 <tr><td><code>template</code></td><td>Database Source, Document Destination</td></tr>
 <tr><td><code>tenant_id</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>tier</code></td><td>Azure Blob Destination</td></tr>

@@ -18,6 +18,11 @@ Subscriptions), Inferno as a public and as a confidential app at inferno.healthi
 (`cds-clients.yaml`). The test people in `users.yaml` sign in with the password "correct horse". To test with a client of your
 own, open an issue on https://github.com/biodream-llc/perfuse with its JWKS URL or redirect URIs.
 
+Six demonstration channels (`channels/`) carry invented HL7 v2 traffic so the console has something to show: `hospital-feed`
+receives a few messages of every kind each minute from `perfuse-traffic.timer` (`perfuse generate`) and routes them by type to
+`adt-to-registry` (which relabels the record number and forwards over MLLP to `patient-registry`), `lab-results`, `orders` and
+`clinical-documents`. Every listener is on 127.0.0.1, and the archive files are deleted after a day.
+
 Writes to the FHIR endpoint are limited to 300 a minute from one client address and 200,000 resources in all, so one client in
 a loop cannot fill the disk. The instance requires IMDSv2, and the Lightsail role on its metadata service belongs to AWS's own
 Lightsail account, not ours.

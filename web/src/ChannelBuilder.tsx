@@ -1223,19 +1223,19 @@ function DestinationCard({
 
             <Field
               label="File name"
-              hint="Leave empty for a timestamp and the message's control ID. Placeholders written as ${...} are filled in, so a name can carry the date or the message type — which is the difference between a folder somebody can find a message in and one they cannot."
+              hint="Leave empty for one file per day and message type, appended to. A name here makes one file per message instead, with ${date}, ${timestamp}, ${control_id}, ${message_type} and ${destination} filled in — which is the difference between a folder somebody can find a message in and one they cannot."
             >
               <input
                 className="input font-mono"
                 value={dest.fileName}
                 onChange={(e) => onChange({ fileName: e.target.value })}
-                placeholder="${date}-${messageType}.hl7"
+                placeholder="${date}-${message_type}-${control_id}.hl7"
               />
             </Field>
 
             <Field
               label="Suffix while writing"
-              hint="Defaults to .part, and removed by a rename once the file is complete. Whoever collects these files should not pick up a half-written one, and a rename within a folder is atomic."
+              hint="For one file per message: defaults to .part, and removed by a rename once the file is complete. Whoever collects these files should not pick up a half-written one, and a rename within a folder is atomic."
             >
               <input
                 className="input font-mono"

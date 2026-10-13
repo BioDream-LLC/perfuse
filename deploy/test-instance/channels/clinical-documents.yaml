@@ -1,0 +1,18 @@
+name: clinical-documents
+description: Clinical documents (MDM), kept for a day.
+
+source:
+  type: mllp
+  listen: "127.0.0.1:6664"
+  ack:
+    when: on_delivery
+
+filter: MSH-9.1 == "MDM"
+
+destinations:
+  - name: documents-archive
+    type: file
+    dir: /opt/perfuse/data/demo-archive/documents
+    file_name: ${date}-MDM.hl7
+    append: true
+    retain_hours: 24

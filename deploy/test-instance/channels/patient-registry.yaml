@@ -1,0 +1,18 @@
+name: patient-registry
+description: >
+  Stands in for the hospital's patient registry: it receives what adt-to-registry sends it and
+  acknowledges it, so the first hop is a real MLLP connection with a real acknowledgement.
+
+source:
+  type: mllp
+  listen: "127.0.0.1:6671"
+  ack:
+    when: on_receipt
+
+destinations:
+  - name: registry-store
+    type: file
+    dir: /opt/perfuse/data/demo-archive/registry
+    file_name: ${date}.hl7
+    append: true
+    retain_hours: 24

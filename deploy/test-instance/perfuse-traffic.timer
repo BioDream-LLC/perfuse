@@ -1,0 +1,11 @@
+[Unit]
+Description=Feed the Perfuse test instance's demonstration channels every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+RandomizedDelaySec=20s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
