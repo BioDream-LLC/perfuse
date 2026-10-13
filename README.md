@@ -289,7 +289,7 @@ to deploy into. Restarting a channel is not an event you schedule.
 
 [test.perfuse.health](https://test.perfuse.health) is a public Perfuse with test data only. Sign in to the console with username
 **`demo`** and password **`try-perfuse-demo`**: it can look at every screen and change nothing. Its FHIR, CRD, DTR, PAS, Bulk Data and
-SMART endpoints are the ones Inferno's hosted test kits run against; see [deploy/test-instance](deploy/test-instance/README.md).
+SMART endpoints are the ones Inferno's hosted test kits run against; see [deploy/test-instance](https://github.com/biodream-llc/perfuse/tree/main/deploy/test-instance).
 
 ## Download
 
