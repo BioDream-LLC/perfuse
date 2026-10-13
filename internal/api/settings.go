@@ -255,8 +255,8 @@ func (s *Server) startupSettings() StartupSettings {
 
 	if !out.AllowMetadata {
 		out.MetadataReason = "destinations pointed at cloud instance metadata addresses are refused; " +
-			"this is set with -allow-metadata-egress and deliberately cannot be changed here, because a " +
-			"channel author is the person it restrains"
+			"an administrator can allow them under Security, or with -allow-metadata-egress, never a " +
+			"channel author, who is the person this restrains"
 	}
 
 	return out

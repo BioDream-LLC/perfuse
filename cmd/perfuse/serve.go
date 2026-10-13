@@ -359,7 +359,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	if *scimEnabled {
 		role := store.Role(strings.TrimSpace(*scimDefaultRole))
 		if !role.Valid() || role == store.RolePlatform {
-			return fmt.Errorf("-scim-default-role %q is not usable; give viewer, editor or admin. Platform is "+
+			return fmt.Errorf("-scim-default-role %q is not usable; give monitor, viewer, operator, editor or admin. Platform is "+
 				"refused because it crosses tenant boundaries, and a role handed out by default should be the "+
 				"narrowest one that is useful", *scimDefaultRole)
 		}

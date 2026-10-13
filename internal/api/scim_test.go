@@ -473,6 +473,8 @@ func TestARoleArrivesFromAGroupName(t *testing.T) {
 		`"groups":[{"value":"g1","display":"perfuse-admins"}]`:     store.RoleAdmin,
 		`"groups":[{"value":"g2","display":"APP-Perfuse-Editor"}]`: store.RoleEditor,
 		`"groups":[{"value":"g3","display":"Perfuse Viewers"}]`:    store.RoleViewer,
+		`"groups":[{"value":"g5","display":"Perfuse Operators"}]`:  store.RoleOperator,
+		`"groups":[{"value":"g6","display":"perfuse-monitor"}]`:    store.RoleMonitor,
 		`"roles":[{"value":"admin","primary":true}]`:               store.RoleAdmin,
 		`"groups":[{"value":"g4","display":"Finance Department"}]`: store.RoleViewer, // no match, so the default
 	}

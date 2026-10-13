@@ -629,9 +629,15 @@ func scimRoleName(name string) (store.Role, bool) {
 		return store.RoleAdmin, true
 	case strings.Contains(normalised, "editor"), strings.Contains(normalised, "edit"):
 		return store.RoleEditor, true
+	// Operator and monitor came after the first three roles, and until they were added here a directory group named
+	// "Perfuse Operators" fell through to the default: somebody meant to resend messages could only read them.
+	case strings.Contains(normalised, "operator"):
+		return store.RoleOperator, true
 	case strings.Contains(normalised, "viewer"), strings.Contains(normalised, "readonly"),
 		strings.Contains(normalised, "read-only"):
 		return store.RoleViewer, true
+	case strings.Contains(normalised, "monitor"):
+		return store.RoleMonitor, true
 	}
 
 	return "", false

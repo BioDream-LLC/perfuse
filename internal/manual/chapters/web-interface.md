@@ -46,58 +46,6 @@ A picture of how messages actually move: which sources feed which channels, and 
 
 Its value is not decoration. Every estate accumulates a channel nobody remembers commissioning and a destination nobody realised was still receiving, and both are visible here in a way they are not in a list of channel files.
 
-### Sharing what a feed actually contains
-
-**Profile this feed** reports what is really arriving: which trigger events, which fields are populated and how often, what shapes the values take, and which codes a sender actually uses. That last one is usually the most useful single fact in it.
-
-A profile can be downloaded and sent to somebody else. It needs a name and — required — which system produced the feed, because the question a stranger asks of a shared profile is whether it describes their system, and an optional field would make "Unknown" the commonest answer in any shared collection.
-
-**It carries no patient data**, and that is checked rather than assumed. A profile is statistical: counts, rates, lengths, shapes. Values are kept only for fields the standard defines as code tables, because a code table value is not identifying. Identifier values are never listed.
-
-Two things follow from that being a promise rather than a hope. The server rebuilds the profile from the stored messages when you export it, rather than sending the one on your screen — so what leaves the building was assembled by the profiler, which has a test proving this property, not by a browser. And the export refuses outright if a profile ever does list values for a field that is not a code table, naming the field but not the values.
-
-A profile that arrives from elsewhere is checked the same way on the way in, for a different reason: it was produced by somebody whose care is unknown, and showing their patients' identifiers would be this server's disclosure. Importing one changes nothing — a profile describes a feed, and what to do about it is a separate decision.
-
-## Build — change what a channel does, and try it before it is live
-
-### Channels
-
-The channel builder. Sources, destinations, filters, transformations, scripts and tests, with the generated YAML shown beside the form as you work — so the file is never a mystery, and anybody who prefers the file can read along.
-
-See [channels](#channels) for what the parts are, and [transformation](#transformation) for what the steps do.
-
-### Scripts
-
-A workbench for scripts, separate from the builder because writing a script and wiring a script are different activities.
-
-All seven slots are offered — filter, transformer, preprocessor, postprocessor, writer, lifecycle and reader — and choosing the right one matters, because the slot decides what the script receives and what it is expected to return. Checking a script as the wrong kind is not a workaround; it compiles a different thing.
-
-JavaScript, Lua and WebAssembly are all available. See [transformation](#transformation).
-
-### Contracts
-
-Expectations about what a feed must look like, created and checked here as well as from `perfuse contract`. See [the command line](#the-command-line).
-
-### Tables
-
-Lookup tables and code sets: the mappings that turn one system's codes into another's. Editable here so that adding a code is not a deployment.
-
-### Mapper
-
-Proposes a channel from a single sample message, and states explicitly what the sample cannot tell it. That second half is the part that makes it trustworthy — a proposal that looked complete would invite you to believe things the message never said.
-
-### Playground
-
-A scratchpad for messages and transformations. Paste a message, apply steps, see the result.
-
-Nothing is sent anywhere once the page has loaded, which is the reason it exists in this form: it is safe to paste something real into, on the understanding that it stays in the browser.
-
-### Shadow
-
-Runs traffic through a candidate configuration alongside the live one and reports the differences, so a change can be evidenced before it is trusted. The same idea as `perfuse compare`, applied to a change rather than to a migration. See [testing](#testing).
-
-## Exchange — other formats and other organisations
-
 ### Team dashboards
 
 A dashboard for each kind of person who watches the interfaces: Operations, Connections, Interface analyst, Prior authorization,
@@ -145,6 +93,60 @@ The department dashboards compute their own figures on the server, and each one 
   the audit log (opening a message is audited as `message.read`). Also each live API token and when it was last used; a token
   unused for 90 days is flagged.
 
+### Sharing what a feed actually contains
+
+**Profile this feed** reports what is really arriving: which trigger events, which fields are populated and how often, what shapes the values take, and which codes a sender actually uses. That last one is usually the most useful single fact in it.
+
+A profile can be downloaded and sent to somebody else. It needs a name and — required — which system produced the feed, because the question a stranger asks of a shared profile is whether it describes their system, and an optional field would make "Unknown" the commonest answer in any shared collection.
+
+**It carries no patient data**, and that is checked rather than assumed. A profile is statistical: counts, rates, lengths, shapes. Values are kept only for fields the standard defines as code tables, because a code table value is not identifying. Identifier values are never listed.
+
+Two things follow from that being a promise rather than a hope. The server rebuilds the profile from the stored messages when you export it, rather than sending the one on your screen — so what leaves the building was assembled by the profiler, which has a test proving this property, not by a browser. And the export refuses outright if a profile ever does list values for a field that is not a code table, naming the field but not the values.
+
+A profile that arrives from elsewhere is checked the same way on the way in, for a different reason: it was produced by somebody whose care is unknown, and showing their patients' identifiers would be this server's disclosure. Importing one changes nothing — a profile describes a feed, and what to do about it is a separate decision.
+
+## Build — change what a channel does, and try it before it is live
+
+### Channels
+
+The channel builder. Sources, destinations, filters, transformations, scripts and tests, with the generated YAML shown beside the form as you work — so the file is never a mystery, and anybody who prefers the file can read along.
+
+See [channels](#channels) for what the parts are, and [transformation](#transformation) for what the steps do.
+
+### Scripts
+
+A workbench for scripts, separate from the builder because writing a script and wiring a script are different activities.
+
+All seven slots are offered — filter, transformer, preprocessor, postprocessor, writer, lifecycle and reader — and choosing the right one matters, because the slot decides what the script receives and what it is expected to return. Checking a script as the wrong kind is not a workaround; it compiles a different thing.
+
+JavaScript, Lua and WebAssembly are all available. See [transformation](#transformation).
+
+### Contracts
+
+Expectations about what a feed must look like, created and checked here as well as from `perfuse contract`. See [the command line](#the-command-line).
+
+### Tables
+
+Lookup tables and code sets: the mappings that turn one system's codes into another's. Editable here so that adding a code is not a deployment.
+
+### AI Mapper
+
+Proposes field mappings with a confidence score for each, and abstains rather than guessing. Despite the name it uses no language
+model and makes no network call: the suggestions come from rules, field names and the sample's contents, on this server. It also
+proposes a channel from a single sample message, and states explicitly what the sample cannot tell it. That second half is the part that makes it trustworthy — a proposal that looked complete would invite you to believe things the message never said.
+
+### Playground
+
+A scratchpad for messages and transformations. Paste a message, apply steps, see the result.
+
+Nothing is sent anywhere once the page has loaded, which is the reason it exists in this form: it is safe to paste something real into, on the understanding that it stays in the browser.
+
+### Shadow
+
+Runs traffic through a candidate configuration alongside the live one and reports the differences, so a change can be evidenced before it is trusted. The same idea as `perfuse compare`, applied to a change rather than to a migration. See [testing](#testing).
+
+## Exchange — the standards this server speaks to other organisations
+
 ### FHIR lab
 
 Convert HL7 v2 to FHIR, validate a resource, and inspect the result. The samples cover admissions, lab results, appointments, clinical notes, immunizations and a reportable visit. The validation includes US Core, which is the profile American regulation is written against, so this answers "is what they sent us actually conformant" without adopting anything.
@@ -162,6 +164,28 @@ Clinical documents — CDA and the printable form of a document. Useful when the
 ### Claims & auth
 
 Build an X12 `275` claims attachment in the `006020` form CMS-0053-F adopts, from a pasted C-CDA or an uploaded PDF, TIFF or JPEG, and see it read back. Read a `275` and download the document inside. Convert an X12 `278` decision into a Da Vinci PAS `ClaimResponse`. Nothing on this page is stored or sent. See [message formats](#message-formats) for what the `275` is built from and what it does not do.
+
+### Health links
+
+SMART Health Links and Cards, for CMS's *Kill the Clipboard*. **Receive a SMART Health Link** reads the link or QR code a patient
+shows at check-in, verifies the health cards inside and **sends it on** to a channel. **Share a visit record** makes a
+link this server hosts, optionally with a passcode, and a QR code **for the patient**. **Links this server hosts** lists them
+with how often each was fetched, when it expires and the passcode tries left, and revokes one. **Verify a SMART Health Card** checks a card's signature and issuer on its own. See
+[CMS-0057](#cms-0057) for the server options it needs.
+
+### CMS-0057
+
+The payer side of the CMS Interoperability and Prior Authorization rule, as five tools:
+
+- **The four APIs:** whether Patient Access, Provider Access, Payer-to-Payer and Prior Authorization are ready on this instance,
+  and what each still needs.
+- **Reviewer queue:** the PAS requests waiting for a person, soonest due first, with the documents sent for each; approve, deny or
+  certify fewer units. See [the reviewer queue](#cms-0057).
+- **Claims to CARIN BB:** an 837 and its 835 converted to CARIN Blue Button bundles.
+- **Prior auth to PDex:** a PAS response converted to a PDex prior authorization.
+- **Prior auth metrics:** the yearly public prior authorization metrics page, previewed from a CSV of decisions.
+
+The conversions store nothing and send nothing.
 
 ### TEFCA
 
@@ -186,7 +210,7 @@ A trust anchor bundle is required and its absence is refused at startup. Checkin
 ### Users
 
 Accounts, roles (monitor, viewer, operator, editor, admin) and channel groups. Each person's channel groups are edited in
-place in the list; empty means every channel. An administrator limited to some groups sees only the people of those groups.
+place in the list; empty means every channel, and `lab=editor, adt` gives a different role in one group. An administrator limited to some groups sees only the people of those groups.
 The header shows your own groups beside your role when you have any. See [security](#security).
 
 **Machine credentials** are also here. A token is for a machine rather than a person: it does not expire and is not affected by anybody signing out, which is what a server polling its neighbour needs. Only a hash is stored, so a token is shown once when it is created and cannot be recovered — a stolen database yields no usable token. Give one the lowest role that does the job.

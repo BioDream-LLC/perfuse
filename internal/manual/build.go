@@ -95,6 +95,7 @@ func Build(version string, prose map[string]string, components []Component, pack
 		"security",
 		"operations",
 		"command-line",
+		"server-options",
 	}
 
 	for _, name := range written {

@@ -14,7 +14,7 @@ Run any command with `-h` for its flags. This chapter says what each one is *for
 
 Runs the web interface and the API, and by default runs the channels too. This is the command an installation uses.
 
-It refuses to serve plain HTTP to anything except loopback unless you pass `-insecure`. That is not configurable politeness: clinical traffic and a session cookie over an unencrypted LAN connection is a reportable event, and the flag exists so that saying yes is a decision somebody made rather than a default they inherited. See [security](#security).
+Every option it takes is listed in [Server Options](#server-options), generated from the program. It refuses to serve plain HTTP to anything except loopback unless you pass `-insecure`. That is not configurable politeness: clinical traffic and a session cookie over an unencrypted LAN connection is a reportable event, and the flag exists so that saying yes is a decision somebody made rather than a default they inherited. See [security](#security).
 
 ### perfuse run
 

@@ -45,6 +45,13 @@ Alerting from within Perfuse is covered in [alerting](#alerting) and is what wil
 
 From outside, monitor the process, the disk the database is on, and whether the web interface responds. The database grows and a full disk stops message recording, which is a failure mode with no other warning.
 
+### An inventory of every interface
+
+`-inventory interfaces.md` (**Settings → Monitoring → Inventory**) writes a Markdown document listing every channel - its format,
+whether it runs, what it receives from and what it sends to - followed by each channel's own description, and rewrites it every
+`-inventory-every` (a day by default). It is meant to be committed beside the channel files, or handed to an auditor, and read
+without the application running.
+
 ## Capacity
 
 Perfuse's throughput ceiling has not been measured on real hardware under real traffic, and this manual will not print a number it cannot support.

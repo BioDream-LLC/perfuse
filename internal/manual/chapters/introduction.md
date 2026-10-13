@@ -18,6 +18,33 @@ Perfuse is built on the assumption that the person configuring it has a problem 
 
 > The chapter on [testing](#testing) and the one on [migration](#migration-from-mirth) exist because the answer to "why should I trust this" has to be evidence you gather yourself, not a claim made here.
 
+## What is in it
+
+Everything below is in the one binary. Each line names the chapter that covers it.
+
+- **Formats.** HL7 v2, FHIR R4, R4B and R5, DICOM, X12 (837, 835, 270/271, 276/277, 834, 278, 275), C-CDA and CDA, HL7 v3,
+  NCPDP Telecommunication and SCRIPT, SMART Health Links and Cards, delimited and raw. See [message formats](#message-formats).
+- **Connectors.** 24 source types and 26 destination types, among them MLLP, files, SFTP, databases, DICOM, Kafka, AMQP 1.0,
+  MQTT, IBM MQ, and AWS, Azure and Google Cloud storage and messaging. See the [source reference](#source-reference) and the
+  [destination reference](#destination-reference).
+- **Changing messages.** Filters, eleven declarative transformation steps, JavaScript (Mirth's dialect included) and Lua, shared
+  mapping tables and code sets, and mapping suggestions. See [filtering](#filtering) and [transformation](#transformation).
+- **Delivering them.** A durable, ordered queue per destination, retries, dead letters that keep the message, and acknowledgements
+  sent after delivery. See [delivery](#delivery-queueing-and-retry) and [acknowledgements](#acknowledgements).
+- **Watching it run.** Dashboards, team dashboards, a flow map, eleven kinds of alert, metrics, tracing, and a message store that
+  finds a patient's messages across formats. See [alerting](#alerting), [the message store](#the-message-store) and
+  [debugging](#debugging).
+- **Changing a live interface safely.** Shadow mode, feed contracts, channel tests and engine comparison. See [testing](#testing).
+- **Leaving Mirth.** Mirth, Open Integration Engine and BridgeLink channels explained, translated and exported back. See
+  [migration](#migration-from-mirth).
+- **Payers and public health.** The four CMS-0057 APIs, Da Vinci CRD, DTR, PAS, PDex and Plan-Net, CARIN Blue Button, an optional
+  decision service, eCR and ELR. See [CMS-0057](#cms-0057-for-payers).
+- **Who may do what.** SAML, OpenID Connect, LDAP, passkeys, SCIM, mutual TLS, six roles, channel groups with a role in each,
+  tenants, a SMART authorization server, TEFCA and UDAP, and an audit log. See [security](#security).
+- **Running it.** One static binary for Linux, macOS and Windows, as a service, with a fleet view of several servers. See
+  [operations](#operations), the [web interface](#the-web-interface), the [command line](#the-command-line) and
+  [server options](#server-options).
+
 ## What it replaces
 
 Perfuse covers the ground held by Mirth Connect, and can import Mirth channel exports directly. The chapter on [migration](#migration-from-mirth) describes what translates cleanly, what needs a decision, and how to prove the result matches before cutting over.

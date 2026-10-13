@@ -262,5 +262,5 @@ site: docs
 	go run ./cmd/perfusesite -out dist-site -base "$(SITE_BASE)"
 
 docs:
-	go run ./cmd/perfusedoc -version "version 0.1 · $$(git rev-parse --short HEAD)"
+	go run ./cmd/perfusedoc -version "$$(git describe --tags --abbrev=0 2>/dev/null || echo unreleased) · $$(git rev-parse --short HEAD)"
 	cd web && node print-manual.mjs ../docs/manual/perfuse-manual.html ../docs/manual/perfuse-manual.pdf

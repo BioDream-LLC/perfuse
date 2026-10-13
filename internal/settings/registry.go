@@ -170,10 +170,11 @@ func baseSettings() []Setting {
 			Key:      "security.allowMetadataEgress",
 			Group:    GroupSecurity,
 			Subgroup: "What may leave",
-			Label:    "Allow message details in outbound notifications",
-			Help: "Lets alerts and traces carry identifiers from message content. Off by default because an alert " +
-				"goes to a chat system outside the hospital, and a medical record number in a chat message is a " +
-				"disclosure that nobody meant to make.",
+			Label:    "Allow destinations at cloud instance metadata addresses",
+			Help: "Lets a channel send to 169.254.169.254 and the other addresses where a cloud machine's own " +
+				"credentials are served. Off by default because a channel that can be pointed there can be made to " +
+				"hand this server's cloud credentials to whoever reads its output. Only an administrator can change " +
+				"it; a channel author, the person it restrains, cannot.",
 			Kind:      KindBool,
 			Widget:    WidgetToggle,
 			Effect:    EffectRestart,

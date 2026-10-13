@@ -39,7 +39,7 @@ parses each of them properly, transforms what needs transforming, and delivers w
 
 **What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM · X12 837, 835, 270/271, 276/277, 834 and 278 ·
 SMART Health Links and Cards ·
-C-CDA and CDA · HL7 v3 · delimited and raw formats.
+C-CDA and CDA · HL7 v3 · NCPDP Telecommunication and SCRIPT · delimited and raw formats.
 
 **How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, Kafka, message
 brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ 4), MQTT, IBM MQ, Azure Blob Storage, Google Cloud (Pub/Sub and Cloud
@@ -63,195 +63,211 @@ only from YAML or the command line is treated as a bug.
 
 ## Everything it does
 
-Fifteen areas, itemised. Nothing here is aspirational: where a capability is partial it says so, and where it
-depends on something outside this software that is stated too.
+Sixteen areas. Nothing here is aspirational: where something is partial it says so, and the [verification record](docs/verification.md)
+says what each claim was checked against. The [manual](https://perfuse.health/manual/) covers every one in full.
 
 <table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/hl7v2.svg" width="168" height="40" alt="HL7 v2"></th><th align="left" valign="middle">Parse, route, transform, generate, acknowledge</th></tr></thead>
-<tbody>
-<tr><td colspan="2">A parser that <b>indexes rather than decodes</b>, so reading one field does not rebuild the message</td></tr>
-<tr><td colspan="2">Segments, fields, repetitions, components and subcomponents, with <b>custom Z-segments</b> and non-standard separators</td></tr>
-<tr><td colspan="2">Escape sequences handled properly, including embedded delimiters and hex escapes</td></tr>
-<tr><td colspan="2"><b>MLLP</b> in both directions with TLS, plus TCP, HTTP and file transports</td></tr>
-<tr><td colspan="2">A <b>field dictionary</b> so the interface says "the patient's family name" rather than <code>PID-5.1</code></td></tr>
-<tr><td colspan="2">Acknowledgement generation with <code>AA</code> / <code>AE</code> / <code>AR</code>, <b>enhanced mode</b>, and control over <i>when</i> the ack is sent — after delivery by default, so a sender is never told "received" before it is true</td></tr>
-<tr><td colspan="2"><code>perfuse generate</code> makes synthetic traffic; <code>perfuse deident</code> turns real messages into a corpus you can share</td></tr>
-<tr><td colspan="2">Usable as a <b>standalone Go library</b> (<code>github.com/biodream-llc/perfuse/hl7</code>) with no dependency on the engine</td></tr>
-</tbody></table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/hl7v2.svg" width="168" height="40" alt="HL7 v2"><br>
+<b>Parse, route, transform, generate, acknowledge</b>
+<ul>
+<li>A parser that <b>indexes rather than decodes</b>: reading one field does not rebuild the message</li>
+<li>Segments, fields, repetitions, components, subcomponents, <b>Z-segments</b>, non-standard separators and every escape sequence</li>
+<li><b>MLLP</b> both ways with TLS, plus TCP, HTTP and files</li>
+<li>A <b>field dictionary</b>: "the patient's family name", not <code>PID-5.1</code></li>
+<li><code>AA</code> / <code>AE</code> / <code>AR</code> and <b>enhanced-mode</b> acknowledgements, sent <b>after delivery</b> by default</li>
+<li><code>perfuse generate</code> for synthetic traffic, <code>perfuse deident</code> for a shareable corpus, <code>send</code> and <code>listen</code> for testing</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/fhir.svg" width="168" height="40" alt="FHIR"><br>
+<b>R4, R4B and R5: mapper, server, validator</b>
+<ul>
+<li><b>HL7 v2 to FHIR</b>: ADT, ORU, SIU, MDM and VXU to Patient, Encounter, Observation, DiagnosticReport, Appointment, DocumentReference and Immunization</li>
+<li><b>US Core 9.0.0 (USCDI v6)</b> claimed only after the resource is checked against the profile; no errors from the HL7 validator</li>
+<li><b>A FHIR REST server</b>: search, chains, <code>_include</code>, <code>_has</code>, transactions, history, <b>Bulk Data <code>$export</code></b></li>
+<li><b>Subscriptions</b> (R5 Backport for R4), recorded in the same transaction as the change</li>
+<li>Write limits for a public server: writes a minute per client, and a resource cap</li>
+<li><code>fhir</code> as a destination; a <b>browser FHIR lab</b>; <code>perfuse fhir</code> to convert, validate and serve</li>
+<li><b>SMART Health Links and Cards</b> (<i>Kill the Clipboard</i>): read a patient's QR code, verify the cards, share the visit back</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/dicom.svg" width="168" height="40" alt="DICOM"><br>
+<b>All five services, both directions</b>
+<ul>
+<li><b>C-STORE, C-FIND, C-ECHO, C-MOVE and C-GET</b>, sending and receiving</li>
+<li>A <b>DICOM query source</b>: a scheduled C-FIND whose results become messages</li>
+<li><b>De-identification</b> as a pipeline step: patient removed, private tags stripped, AE title set</li>
+<li>Metadata into tags a filter can read; studies onward as <b>HL7 v2 or FHIR</b></li>
+<li>Checked against <b>Orthanc</b>, by Orthanc's own catalogue</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/x12.svg" width="168" height="40" alt="X12"><br>
+<b>Claims, payers and pharmacy, parsed as structures</b>
+<ul>
+<li><b>837</b> claims, <b>835</b> remittance, <b>270/271</b> eligibility, <b>276/277</b> claim status, <b>834</b> enrolment, <b>278</b> prior authorization</li>
+<li>Interchange, group, transaction, loops and qualifiers understood; X12 to XML and back</li>
+<li><b>275 claims attachments</b> in the 006020 form CMS-0053-F adopts, built and read</li>
+<li><b>Da Vinci PAS to and from the X12 278</b>, and 278 decisions to PAS ClaimResponses that pass the HL7 validator</li>
+<li>997 and 999 are separate, and Perfuse says so rather than pretending acknowledgement is synchronous</li>
+<li>Pharmacy too: <b>NCPDP Telecommunication</b> claims and <b>NCPDP SCRIPT</b> prescriptions, with a missing substitution flag refused</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/cda.svg" width="168" height="40" alt="Documents"><br>
+<b>C-CDA and CDA, including the ones inside v2</b>
+<ul>
+<li>Read, validate and convert <b>C-CDA and CDA</b>, including documents <b>base64-encoded inside an MDM^T02</b></li>
+<li><b>The narrative is compared with the coded entries</b>, and a document whose two halves disagree is flagged</li>
+<li>Templates reported by name; repair of malformed documents; <b>PDF rendering</b>; merging several into one</li>
+<li><b>HL7 v3</b>, delimited and raw formats, read by element and attribute</li>
+<li><b>Signed claims attachments</b> (HL7 DSDR): XAdES-X-L with OCSP and RFC 3161 time-stamps, signed and verified; checked with xmlsec1 and OpenSSL</li>
+<li>CDA and document destinations, and a browser lab</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"><br>
+<b>24 source types, 26 destination types</b>
+<ul>
+<li><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · JavaScript Reader · serial</li>
+<li><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</li>
+<li>Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle, SQLite</b>, the dialect checked when the channel is saved</li>
+<li><b>Kafka keyed per patient</b>, offsets committed after the batch; an SQS message deleted only once handled</li>
+<li>AWS, Azure and Google Cloud <b>without their SDKs</b>; S3 archives as <b>date-partitioned JSON for Athena</b></li>
+<li>Files named from the message, written under a temporary name, appended or pruned after a set time</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/transform.svg" width="168" height="40" alt="Transform"><br>
+<b>Declarative steps, or JavaScript or Lua</b>
+<ul>
+<li>Eleven steps with no code: <b>set, copy, remove, clear, default, case, date, pad, trim, replace, map</b>, each with an optional <code>when</code></li>
+<li>Filters with <code>&amp;&amp;</code>, <code>||</code> and <code>!</code>, in the same language the message search uses</li>
+<li><b>JavaScript</b>, including <b>the Mirth dialect</b> with E4X, or sandboxed <b>Lua</b>; shared script libraries</li>
+<li><b>Shared mapping tables</b> with who decided each mapping and why; code sets and value-set lookups</li>
+<li><b>AI Mapper</b>: mapping suggestions with a confidence each, from rules on this server, with no model and no network call</li>
+<li>Attachments moved out of a message and put back; an unmapped code is <b>kept</b>, a malformed date <b>stops the message</b></li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/delivery.svg" width="168" height="40" alt="Delivery"><br>
+<b>A durable queue that does not lose messages</b>
+<ul>
+<li><b>An on-disk queue per destination</b>: one slow receiver holds up nobody else, and a restart loses nothing</li>
+<li><b>Order kept</b>: message 2 waits until message 1 succeeds or is given up on</li>
+<li>Exponential backoff, and <b>dead letters that keep the message</b></li>
+<li>Inspect, retry, skip and drain from the console; replay and reprocess from the stored original</li>
+<li>Killed mid-batch five times: <b>255 acknowledged, 255 delivered</b>, none lost, none duplicated</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/security.svg" width="168" height="40" alt="Security"><br>
+<b>Sign-on, roles and channel groups</b>
+<ul>
+<li><b>SAML 2.0</b> (checked with Keycloak and Microsoft Entra), <b>OpenID Connect</b>, <b>LDAP / Active Directory</b>, <b>passkeys</b>, <b>SCIM 2.0</b>, <b>mutual TLS</b></li>
+<li>Six roles: <b>monitor</b>, viewer, <b>operator</b>, editor, admin, platform; API tokens for machines; an <b>audit log</b></li>
+<li><b>Channel groups</b> for a hospital group on one server, with a <b>different role in each group</b> if needed</li>
+<li>Directory groups map to <b>any of the six roles and to channel groups</b> at every sign-in</li>
+<li><b>A SMART on FHIR authorization server</b>: Inferno's SMART App Launch STU2.2 suite <b>80 of 80</b></li>
+<li>No patient data over plain HTTP off loopback; cloud metadata addresses refused at connect time; PHI access watched for volume, after-hours and bulk reads</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/tefca.svg" width="168" height="40" alt="TEFCA"><br>
+<b>UDAP, Facilitated FHIR and its auditing</b>
+<ul>
+<li><b>UDAP</b>: discovery, dynamic client registration and <b>signed metadata verification</b></li>
+<li><b>Facilitated FHIR</b> exchange between TEFCA participants, following the SOP</li>
+<li><b>Every exchange audited</b> and written to disk, with purpose-of-use rules</li>
+<li>Partner discovery with certificate chain verification, checked against a real trust community</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/priorauth.svg" width="168" height="40" alt="Prior auth"><br>
+<b>CMS-0057: the four payer APIs</b>
+<ul>
+<li><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b>, with a screen saying which are ready</li>
+<li><b>Da Vinci CRD 2.2.1</b> over CDS Hooks, <b>DTR 2.2.0</b> questionnaire packages, and a <b>PAS 2.2.1 server</b>: <code>$submit</code>, <code>$inquire</code>, <code>$decide</code></li>
+<li>A <b>reviewer queue</b> for pended requests, with the documents sent for each</li>
+<li>An optional <b>decision service</b> asked about what the rules leave to a reviewer; any failure pends, never approves</li>
+<li>Claims to <b>CARIN Blue Button 2.2.0</b>, decisions to <b>PDex 2.2.0</b>, <code>$member-match</code>, <code>$davinci-data-export</code>, a <b>Plan-Net</b> directory</li>
+<li>The yearly <b>prior authorization metrics page</b> in CMS's layout</li>
+<li>Inferno: CRD <b>passes</b>, DTR <b>43/45</b>, PAS <b>82/84</b>, PDex payer-to-payer <b>19/19</b>, Bulk Data <b>48/48</b></li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health"><br>
+<b>eCR and ELR</b>
+<ul>
+<li><b>eCR 2.1.2</b>: an eICR for each message with a reportable-condition trigger code, from the RCTC you load</li>
+<li><b>Reportability Responses</b> received at <code>$process-message</code>, and a test agency to try the round trip</li>
+<li><b>ELR</b>: a lab's ORU^R01 reshaped into HL7 2.5.1 ELR with only the reportable orders; ONC's tool reports all 28 of its examples valid</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/liveinterface.svg" width="168" height="40" alt="Live changes"><br>
+<b>Shadow mode, feed contracts, drift</b>
+<ul>
+<li><b>Shadow mode</b>: a candidate channel runs beside the live one <b>on real traffic</b>, delivering nothing, and every difference is shown field by field</li>
+<li><b>Feed contracts</b>: what a feed should contain, and an alert when the sender drifts</li>
+<li><code>perfuse profile</code> says what is actually in a feed; <code>perfuse compare</code> proves two engines agree</li>
+<li><code>perfuse test</code> runs a channel's tests in CI; channel history read from git</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/operations.svg" width="168" height="40" alt="Operations"><br>
+<b>Dashboards, alerts, search, fleet, tenants</b>
+<ul>
+<li>A <b>live dashboard</b>, a <b>flow map</b> with a time scrubber, and <b>team dashboards</b> (operations, connections, prior auth, imaging, revenue cycle, lab, privacy), exportable to <b>Grafana</b></li>
+<li><b>Eleven alert kinds</b>, including <b>below rhythm</b>: a feed quieter than its own history</li>
+<li><b>Prometheus</b> metrics, <b>OTLP</b> tracing, and VPN tunnel state from AWS, Azure or strongSwan</li>
+<li><b>Find a patient's messages</b> by MRN, name, birth date, accession or claim number across HL7 v2, FHIR, DICOM and X12, every search audited</li>
+<li>A <b>fleet view</b> of several servers, and <b>multi-tenancy</b> with limits per tenant</li>
+<li>Everything in the browser: <b>28 screens</b>, three themes, a <b>⌘K</b> palette, settings applied with a restart button</li>
+<li>One static binary as a <b>systemd</b>, <b>launchd</b> or <b>Windows</b> service; <code>perfuse init</code> writes it</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/mirth.svg" width="168" height="40" alt="Mirth"><br>
+<b>Both directions: Mirth 4.5.2, OIE, BridgeLink</b>
+<ul>
+<li><b>Existing Mirth JavaScript runs unchanged</b>: E4X, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, <code>SerializerFactory</code></li>
+<li><code>perfuse explain</code> says <b>by name</b> what converts, what converts with caveats and what does not</li>
+<li><code>perfuse translate</code> converts channels, groups, code template libraries or a <b>whole server backup</b></li>
+<li><b>Export back</b>: Mirth, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0 all accept the channel files Perfuse writes</li>
+<li>A <b>lock-in audit</b> of the Java your channels depend on</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/developers.svg" width="168" height="40" alt="Developers"><br>
+<b>An API for everything, and Go libraries</b>
+<ul>
+<li>Every screen is the <b>REST API</b> underneath, with API tokens for machines</li>
+<li><code>github.com/biodream-llc/perfuse/hl7</code>: the HL7 v2 parser as a standalone library</li>
+<li><code>…/perfuse/fhir</code> (the FHIR model) and <code>…/perfuse/pas</code> (the PAS request reader), standard library only</li>
+<li><code>perfuse sbom</code> lists everything linked in; every release ships an SBOM and checksums</li>
+</ul>
+</td>
+</tr>
+</table>
 
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/fhir.svg" width="168" height="40" alt="FHIR"></th><th align="left" valign="middle">R4, R4B and R5 — mapper, REST server, validator, destination type</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>An HL7 v2 to FHIR mapper</b>, not a bolt-on: <code>ADT</code> becomes Patient and Encounter, <code>ORU</code> becomes Observation and DiagnosticReport, <code>SIU</code> an Appointment, <code>MDM</code> a DocumentReference carrying the note, <code>VXU</code> an Immunization, with the date and code conversions done properly</td></tr>
-<tr><td colspan="2"><b>FHIR subscriptions</b> for encounter and appointment notifications (the R5 Backport IG for R4, CMS Interoperability Framework criterion 15), recorded in the same transaction as the change so none is lost across a restart</td></tr>
-<tr><td colspan="2"><b>X12 275 claims attachments in the 006020 form CMS-0053-F adopts</b>, built and read, and <b>X12 278 decisions converted to Da Vinci PAS 2.2.1</b> ClaimResponses that pass the official HL7 validator</td></tr>
-<tr><td colspan="2"><b>A FHIR REST server</b> you can point a client at — search parameters, bundles, transactions, references</td></tr>
-<tr><td colspan="2"><b><code>fhir</code> as a destination type</b>, so a v2 feed can deliver to a FHIR API directly</td></tr>
-<tr><td colspan="2">Validation against the specification, and a <b>browser FHIR lab</b> for pasting v2 in and reading the FHIR out</td></tr>
-<tr><td colspan="2">Bulk export, and <code>perfuse fhir</code> for converting, validating and serving from the command line</td></tr>
-<tr><td colspan="2">Verified against <b>a real HAPI FHIR server</b>, which caught an identifier system this code was fabricating</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/dicom.svg" width="168" height="40" alt="DICOM"></th><th align="left" valign="middle">All five services, both directions, with de-identification</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>C-STORE, C-FIND, C-ECHO, C-MOVE and C-GET</b> — sending and receiving</td></tr>
-<tr><td colspan="2">A <b>DICOM query source</b>: schedule a C-FIND and turn each result into a message</td></tr>
-<tr><td colspan="2"><b>De-identification as a pipeline step</b> — remove the patient, strip private tags, set the AE title</td></tr>
-<tr><td colspan="2">Window and frame selection, and metadata extraction into tags a filter can read</td></tr>
-<tr><td colspan="2">Studies converted into observations that travel onward as <b>HL7 v2 or FHIR</b></td></tr>
-<tr><td colspan="2">Verified against <b>a real Orthanc PACS</b>: the instance arrives and the patient name, identifier, study date, modality and SOP class all survive. The assertion is Orthanc's own catalogue, not the absence of an error</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/x12.svg" width="168" height="40" alt="X12"></th><th align="left" valign="middle">837, 835, 270/271, 278 — parsed structurally, not as text</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>837</b> professional and institutional claims, <b>835</b> remittance advice, <b>270/271</b> eligibility, <b>278</b> prior authorisation</td></tr>
-<tr><td colspan="2">Interchange, functional group, transaction set, loops, segments and qualifiers understood as a <b>structure</b> — not split on delimiters and hoped over</td></tr>
-<tr><td colspan="2">An X12-to-XML representation for transformation, and back again</td></tr>
-<tr><td colspan="2"><b>Da Vinci prior authorisation mapped to and from the X12 278 transaction</b>, which is what CMS-0057 requires</td></tr>
-<tr><td colspan="2">Acknowledgement is not synchronous, and Perfuse says so rather than pretending: X12 uses a 997 or 999 sent separately</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/cda.svg" width="168" height="40" alt="Documents"></th><th align="left" valign="middle">C-CDA and CDA, including the ones hidden inside v2 messages</th></tr></thead>
-<tbody>
-<tr><td colspan="2">Read, validate and convert <b>C-CDA and CDA</b>, including documents arriving <b>base64-encoded inside an <code>MDM^T02</code></b>, which is how they usually turn up</td></tr>
-<tr><td colspan="2"><b>The narrative text is compared against the coded entries.</b> A document whose human-readable section disagrees with its structured data is flagged. Nothing else does this</td></tr>
-<tr><td colspan="2">Document templates identified and reported by name</td></tr>
-<tr><td colspan="2">Signing and verification, repair of malformed documents, and PDF rendering</td></tr>
-<tr><td colspan="2">A <b>document destination type</b>, and a browser lab for inspecting one</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"></th><th align="left" valign="middle">24 source types, 26 destination types, in both directions</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · JavaScript Reader · serial</td></tr>
-<tr><td colspan="2"><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> (any storage class) · database · DICOM · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</td></tr>
-<tr><td colspan="2"><b>US Core 9.0.0 for USCDI v6</b>: HL7 v2 converted to FHIR claims US Core only after checking the resource against the profile - Patient, Encounter, labs, diagnoses, allergies, immunizations, notes and more - and the output passes the official HL7 validator with no errors</td></tr>
-<tr><td colspan="2"><b>Signed claims attachments (CMS-0053)</b>: C-CDAs in an X12 275 signed to the HL7 Digital Signatures and Delegation of Rights guide - XAdES-X-L with OCSP and RFC 3161 time-stamps - and checked on the way in. Verified by xmlsec1 and OpenSSL</td></tr>
-<tr><td colspan="2"><b>Da Vinci CRD and DTR</b>: a coverage requirements service over CDS Hooks, answering from the payer's rules file whether an order is covered, needs prior authorization, and which questionnaire gathers the documentation - with DTR's <code>$questionnaire-package</code> on the FHIR endpoint. With PAS, the whole CMS-0057 Prior Authorization API. Validated against the official HL7 validator</td></tr>
-<tr><td colspan="2"><b>SMART Health Links and Cards</b> for CMS's <i>Kill the Clipboard</i>: read the QR code a patient shows at check-in, verify the health cards inside, deliver the records to a channel - and share the visit record back as a passcode-protected link this server hosts without holding its key. Tested against the kill-the-clipboard library in both directions</td></tr>
-<tr><td colspan="2"><b>AWS without the AWS SDK</b>: S3, SQS and SNS over signed HTTP, checked against AWS's published signature example and run against LocalStack. An SQS message is deleted only once handled; a FIFO queue keeps each patient's messages in order. An S3 archive can go straight to <b>Glacier</b> by storage class, or be written as <b>date-partitioned JSON for Amazon Athena</b> to query — <code>perfuse athena</code> prints the table</td></tr>
-<tr><td colspan="2">Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle and SQLite</b>, with the dialect checked when the channel is saved rather than at three in the morning</td></tr>
-<tr><td colspan="2"><b>Kafka</b>, keyed so one patient's events stay in order while different patients go in parallel — Kafka orders within a partition and nowhere else, and records sharing a key always share one. Offsets commit <b>after</b> a batch is handled, so a crash redelivers rather than loses</td></tr>
-<tr><td colspan="2">A <b>channel destination</b> so one feed can hand off to another without a network round trip</td></tr>
-<tr><td colspan="2">A <b>fleet view</b> for a site running more than one instance — every channel on every server in one table, with a rollup that counts <b>undetermined</b> separately from <b>unreachable</b>, because a screen of zeros looks like health. Peers are read with a token they issue themselves, and the report between instances carries counts only: no message identifiers, no patient data. Mirth charges for this</td></tr>
-<tr><td colspan="2">SFTP verified against <b>OpenSSH</b>, databases against <b>real PostgreSQL</b>, mutual TLS against <b>OpenSSL</b> — a client and server from the same library agreeing only proves they agree with each other</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/transform.svg" width="168" height="40" alt="Transform"></th><th align="left" valign="middle">Eleven declarative steps, or full JavaScript or Lua when you need it</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>Lua</b> as well as JavaScript: <code>scripts.language: lua</code> runs a channel's filter, transformer and other scripts in a sandboxed Lua 5.1 - no files, no shell, no environment, no code loading, a deadline that cannot be switched off - with the same message tree, maps and logger JavaScript has</td></tr>
-<tr><td colspan="2">Declarative steps that need no code: <b>set, copy, remove, clear, default, case, date, pad, trim, replace, map</b> — each with an optional <code>when</code> condition</td></tr>
-<tr><td colspan="2"><b>Shared mapping tables</b> that outlive the channel that first needed one, with a record of who decided each mapping and why</td></tr>
-<tr><td colspan="2"><b>Code sets</b> and value-set lookups</td></tr>
-<tr><td colspan="2"><b>Attachment extraction</b>: move a large payload out of a message and put it back on the way out</td></tr>
-<tr><td colspan="2">Full JavaScript for the rest — including <b>the Mirth dialect</b>, E4X and all</td></tr>
-<tr><td colspan="2">Three defaults chosen against convenience: an unmapped code is <b>kept</b> rather than blanked, a date that does not match its stated format <b>stops the message</b>, and padding an empty field <b>does nothing</b> rather than inventing an identifier</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/delivery.svg" width="168" height="40" alt="Delivery"></th><th align="left" valign="middle">A durable queue that does not lose messages</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>A durable on-disk queue per destination</b>, so one slow receiver does not hold up the others</td></tr>
-<tr><td colspan="2"><b>Order is preserved</b>: message 2 is not attempted before message 1 succeeds or is given up on</td></tr>
-<tr><td colspan="2">Retries with exponential backoff, configurable attempts, and <b>dead-lettering that keeps the message</b>. Nothing is deleted to make a queue look healthy</td></tr>
-<tr><td colspan="2">A queue you can inspect, retry, skip and drain from the interface</td></tr>
-<tr><td colspan="2">Survives restart, because it is on disk rather than in memory</td></tr>
-<tr><td colspan="2">Acknowledge <b>after</b> delivery by default, so an upstream sender is not told a message is safe before it is</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/security.svg" width="168" height="40" alt="Security"></th><th align="left" valign="middle">SAML, OIDC, LDAP, passkeys, SCIM, mutual TLS</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>SAML 2.0</b>, verified end to end against <b>a real Keycloak 26 and a real Microsoft Entra tenant</b>. Configure it by pasting the provider's metadata — no hunting for a certificate in XML and stripping its line breaks</td></tr>
-<tr><td colspan="2"><b>OpenID Connect</b>, with discovery, and <b>LDAP / Active Directory</b></td></tr>
-<tr><td colspan="2"><b>A built-in SMART on FHIR authorization server</b>: standalone and EHR launch with PKCE, consent, refresh and ID tokens, Backend Services, granular scopes enforced, token introspection and revocation. Passes <b>Inferno's SMART App Launch STU2.2 suite, 80 of 80</b></td></tr>
-<tr><td colspan="2"><b>Passkeys (WebAuthn)</b> — fingerprint, face or a security key, and nothing a fake login page can capture</td></tr>
-<tr><td colspan="2"><b>SCIM 2.0</b>, so an identity provider can provision and deprovision accounts directly</td></tr>
-<tr><td colspan="2"><b>Mutual TLS</b>, verified against <b>OpenSSL</b> rather than against our own client</td></tr>
-<tr><td colspan="2">Role-based access control with six roles — <b>monitor</b> (status and alerts, no message contents), viewer, <b>operator</b> (resend and replay, no edits), editor, admin and platform — API tokens for machines, session management, and an <b>audit log of who changed what</b></td></tr>
-<tr><td colspan="2"><b>Channel groups</b> for a hospital group on one engine: a person or token limited to some groups sees and acts on those channels only, in every list, count, chart, alert and search, and an administrator limited to groups manages their own people and channels</td></tr>
-<tr><td colspan="2">Refuses to serve patient data over plain HTTP on a non-loopback address unless explicitly overridden</td></tr>
-<tr><td colspan="2">A rate limiter on authentication, and PHI access auditing with volume, after-hours and bulk-access detection</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/tefca.svg" width="168" height="40" alt="TEFCA"></th><th align="left" valign="middle">UDAP, Facilitated FHIR, and the auditing TEFCA requires</th></tr></thead>
-<tbody>
-<tr><td colspan="2">This is the part that lets hospitals share records with organisations they have no direct connection to.</td></tr>
-<tr><td colspan="2"><b>UDAP</b> — dynamic client registration, discovery, and <b>signed metadata verification</b>, checked against a real authorisation server and a real trust community</td></tr>
-<tr><td colspan="2"><b>Facilitated FHIR exchange</b> between TEFCA participants, following the SOP</td></tr>
-<tr><td colspan="2"><b>Every exchange is audited</b>, persisted to disk rather than held in memory — TEFCA does not treat auditing as optional and neither does this</td></tr>
-<tr><td colspan="2">Partner discovery with certificate chain verification</td></tr>
-<tr><td colspan="2">The real server refused our client <b>on trust-community membership rather than on the form of the request</b>, which is the distinction that matters: a server rejecting malformed requests would say nothing about whether the signed metadata was right</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/priorauth.svg" width="168" height="40" alt="Prior auth"></th><th align="left" valign="middle">CMS-0057: the four payer APIs, ready-made</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b> — the four FHIR APIs CMS-0057 requires of payers from 1 January 2027, served by the built-in FHIR endpoint, with a screen that says which are ready on this instance and what each still needs</td></tr>
-<tr><td colspan="2"><b>Paid claims to CARIN Blue Button 2.2.0</b>: an 837 and its 835 become professional, inpatient or outpatient ExplanationOfBenefits with their Patient, Coverage, Organizations and Practitioners — <b>no errors from the official HL7 validator</b> on any of the three</td></tr>
-<tr><td colspan="2"><b>PAS decisions to Da Vinci PDex 2.2.0</b> prior authorizations, tested on the PAS guide's own examples and validated the same way</td></tr>
-<tr><td colspan="2"><b>HRex <code>$member-match</code></b> for Payer-to-Payer — unique matches only, consent required — and <b>Da Vinci <code>$davinci-data-export</code></b> on a Group for Provider Access, honouring member opt-outs</td></tr>
-<tr><td colspan="2">The exports apply the rule's exclusions on the way out: <b>no cost-sharing or provider remittances</b> to providers or other payers, and <b>no denied prior authorizations</b> to another payer</td></tr>
-<tr><td colspan="2"><b>The yearly prior authorization metrics page</b>, in the layout of CMS's own template — approvals, denials, extensions, appeals, mean and median turnaround with the unit always written — as a self-contained public page, CSV or JSON</td></tr>
-<tr><td colspan="2">Submits prior authorization requests to payer FHIR APIs, and <b>maps Da Vinci PAS to and from the X12 278</b>, so a payer on either side is reachable</td></tr>
-<tr><td colspan="2">Or be the payer: a <b>Da Vinci PAS 2.2.1 server</b> with <code>Claim/$submit</code>, <code>$inquire</code> and a reviewer's <code>$decide</code>, pended decisions delivered by subscription, and a <b>reviewer queue</b> in the console that reads each pended request with the documents sent for it (<code>$submit-attachment</code>) and approves, denies or certifies fewer units. <b>Inferno PAS Server suite 82 of 84</b>; the two left are must-support elements PAS's own extension contexts forbid there</td></tr>
-<tr><td colspan="2">Da Vinci <b>CRD 2.2.1</b> over CDS Hooks and <b>DTR 2.2.0</b> questionnaire packages, so the order, its documentation and the request all have an answer. Drugs are out of scope, as they are in the rule</td></tr>
-<tr><td colspan="2">Inferno's <b>CRD Server 2.2.1 suite passes</b>, and the <b>DTR Payer Server 2.2.0 suite 43 of 45</b>; the two left require an extension DTR's base profile allows zero times</td></tr>
-<tr><td colspan="2">Payer-to-Payer and Provider Access tested too: Inferno's <b>PDex 2.0 payer-to-payer workflow 19 of 19</b> and API coverage 312 pass, 1 skip; <b>Bulk Data 2.0 48 of 48</b></td></tr>
-<tr><td colspan="2">A <b>Da Vinci Plan-Net 1.1.0 provider directory</b>: every Plan-Net search, include and reverse chain (<code>_has</code>). Inferno 199 pass; the 10 left are the kit's choice of search values (its issue 34)</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health"></th><th align="left" valign="middle">eCR and ELR</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>Electronic case reporting (eCR)</b>: a FHIR destination that sends an HL7 eCR 2.1.2 eICR for each message carrying a reportable-condition trigger code, and nothing for the rest</td></tr>
-<tr><td colspan="2">Triggers from the RCTC you load (or a built-in sample for testing), so a report goes because a code matched rather than because somebody remembered. Validated against the eCR guide with the HL7 validator</td></tr>
-<tr><td colspan="2">The answer comes back: <b>Reportability Responses</b> are received at <code>$process-message</code> and stored where the sent report said to look, and a <b>test agency</b> answers eICRs so the round trip can be tried without one. Proven between two Perfuse servers; the RR validates with 0 errors</td></tr>
-<tr><td colspan="2"><b>Electronic lab reporting (ELR)</b>: <code>perfuse elr</code> reshapes a lab's ORU^R01 into an HL7 2.5.1 ELR message carrying only the reportable orders, and says what the lab left out, from the command line or as a channel destination that sends the state only the reportable results. Checked with NIST's HL7 v2 validator, and ONC's ELR certification tool reports all 28 of its example messages valid</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/liveinterface.svg" width="168" height="40" alt="Live changes"></th><th align="left" valign="middle">Shadow mode, feed contracts, drift detection</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>Shadow mode</b>: run a candidate version of a channel beside the live one <b>on real traffic</b>, delivering nothing, and read exactly where the two differ field by field. This is how you change a working interface without guessing</td></tr>
-<tr><td colspan="2"><b>Feed contracts</b>: declare what a feed is supposed to contain — which fields, which code sets, which cardinalities — and be told when reality drifts. Most interface outages are a sender quietly changing something</td></tr>
-<tr><td colspan="2"><code>perfuse profile</code> reports what is <b>actually</b> in a feed, and what changed</td></tr>
-<tr><td colspan="2"><code>perfuse compare</code> proves two engines agree over the same traffic, or says precisely where they do not</td></tr>
-<tr><td colspan="2">Channel history read from git, so you can see what changed and when</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/operations.svg" width="168" height="40" alt="Operations"></th><th align="left" valign="middle">Dashboard, metrics, alerts, tracing, message store, fleet</th></tr></thead>
-<tbody>
-<tr><td colspan="2">A <b>live dashboard</b>, and a <b>flow map</b> with a scrubber — drag it back to a moment and see which strands were dark</td></tr>
-<tr><td colspan="2"><b>Metrics</b> with percentiles, exposed for <b>Prometheus</b></td></tr>
-<tr><td colspan="2"><b>Team dashboards</b> for each kind of person who watches the interfaces: operations, connections (each partner checked layer by layer, plus <b>VPN tunnel state from AWS, Azure or strongSwan</b> with a printable connection sheet), prior authorization (CMS-0057 timeframes met, late and overdue), imaging, revenue cycle, lab, privacy, exportable to <b>Grafana</b></td></tr>
-<tr><td colspan="2"><b>Alerts</b> that tell you rather than waiting to be found. Eleven rule kinds: error rate, no traffic, <b>below rhythm</b> (a feed quieter than its own history, which catches a half-broken sender that a threshold misses), channel down, queue depth, queue age, queue stuck, slow delivery, script errors, rows quarantined, and contract violations</td></tr>
-<tr><td colspan="2"><b>Distributed tracing</b> exported over OTLP</td></tr>
-<tr><td colspan="2">A <b>message store</b> with retention, full search, and search <i>inside</i> message content using the same expression language channels filter with — so anything that works in the search box can be pasted into a channel</td></tr>
-<tr><td colspan="2"><b>Find a patient's messages by typing what you know</b> — an MRN, a name, a date of birth, an accession or a claim number — across <b>HL7 v2, FHIR, DICOM and X12 at once</b>, without naming a field in any of them. Matched however it is written, so a message holding <code>SAMPLESON^BRAVO</code> is found by typing <i>Sampleson, Bravo</i>. An index lookup rather than a scan, switchable off, and every search is written to the audit trail with the term</td></tr>
-<tr><td colspan="2">Replay and reprocessing, because the message is stored <b>as received</b> before anything modifies it</td></tr>
-<tr><td colspan="2"><b>Fleet view</b> across multiple instances, and <b>multi-tenancy</b> with isolation rules and <b>limits per tenant</b> on channels, messages a minute and storage; over a limit, work is refused the way a busy receiver refuses it, never dropped</td></tr>
-<tr><td colspan="2"><b>Restart from the console</b>: settings that apply at a restart are applied with one button, audited, without a shell</td></tr>
-<tr><td colspan="2">Runs as a <b>systemd unit, a launchd service or a Windows service</b>; <code>perfuse init</code> writes the right one</td></tr>
-</tbody></table>
-
-<table width="100%">
-<thead><tr><th align="left" valign="middle" width="176"><img src="docs/assets/chips/mirth.svg" width="168" height="40" alt="Mirth"></th><th align="left" valign="middle">Both directions, verified against Mirth 4.5.2, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0</th></tr></thead>
-<tbody>
-<tr><td colspan="2"><b>Existing Mirth JavaScript runs unchanged</b> — E4X, <code>msg['PID']['PID.5']['PID.5.1']</code>, <code>for each</code>, XML literals, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, <code>SerializerFactory</code></td></tr>
-<tr><td colspan="2"><code>perfuse explain</code> reads a Mirth channel export and says <b>by name</b> what converts, what converts with caveats, and what does not convert at all — before you commit to anything</td></tr>
-<tr><td colspan="2"><code>perfuse translate</code> converts the export into Perfuse channels, not a report about them — <b>a channel, a channel group, a code template export or a whole server backup</b>. Code template libraries come across as script files the channels that used them include</td></tr>
-<tr><td colspan="2">Works the same for the <b>Open Integration Engine</b> and <b>BridgeLink</b>, the open-source forks of Mirth. Each engine wrote its own test corpus, and every build translates and runs it</td></tr>
-<tr><td colspan="2"><b>And you can export back.</b> A channel built here can be written as a Mirth channel file, and <b>Mirth, OIE and BridgeLink all accept it.</b> Ten transport pairs verified by importing into each running engine</td></tr>
-<tr><td colspan="2">What cannot convert is <b>refused by name rather than approximated</b>. Filters, transformations, contracts and shadow comparisons have nowhere to live in Mirth's format, and each is listed before the file is offered</td></tr>
-<tr><td colspan="2">A <b>lock-in audit</b> of Java dependencies in your existing channels, so you know what is holding you in place</td></tr>
-</tbody></table>
 
 ## How small it is
 

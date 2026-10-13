@@ -226,6 +226,25 @@ Group membership arriving as one comma-separated value is treated as a single gr
 
 **Test** on the sign-on screen checks everything that can be checked without a person: the settings, the certificate, and whether a sign-in request can be built. It says plainly that it cannot prove somebody can sign in, because that needs a real assertion about a real person and the only way to get one is for them to try.
 
+## Accounts provisioned by the identity provider: SCIM
+
+With `-scim` (**Settings → Sign-in → Automatic accounts**), an identity provider such as Okta, Microsoft Entra ID or Google
+Workspace creates, updates and removes Perfuse accounts itself at `/scim/v2/Users`, so a person who leaves the organisation loses
+access when their directory account is disabled, not when somebody remembers. The provider authenticates with an API token holding
+the admin role, made under **Users → Machine credentials**, sent as a bearer token.
+
+- **Disabling an account ends its sessions at once**, and the server checks that none survived before answering. A provider is
+  never told an account was disabled when it was not, because a provider does not retry what it was told succeeded.
+- **A delete disables first, then deletes**, so a failure half way leaves an account nobody can sign in with. The audit history of
+  a removed account is kept.
+- **The role comes from the person's groups or roles**, matched by name: a group whose name contains *admin*, *editor*, *operator*,
+  *viewer* (or *read-only*) or *monitor* gives that role, so `APP-Perfuse-Editor` and `Perfuse Operators` work as they are named.
+  Anything else gets `-scim-default-role`, viewer unless set otherwise. Platform can never be granted this way.
+- **No passwords.** An account made by SCIM signs in through the identity provider; a second password nobody upstream knows about
+  would survive a disable there.
+- `/scim/v2/ServiceProviderConfig` says what is supported: create, read, replace, patch and delete of Users, and filters up to 200
+  results. Bulk operations, sorting and ETags are not.
+
 ## What Perfuse does not do
 
 It does not encrypt the database at rest. Use filesystem or volume encryption.
