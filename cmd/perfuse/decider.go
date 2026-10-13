@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -28,12 +29,16 @@ import (
 //	Content-Type: application/fhir+json         the PAS request Bundle, exactly as the provider sent it
 //	X-PAS-Request-Id: <id>                      the ClaimResponse id this server gives the request
 //
-//	200 {"decision": "approve" | "deny" | "pend", "why": "...", "requested": ["...", ...]}
+//	200 {"decision": "approve" | "deny" | "pend", "why": "...", "requested": ["...", ...],
+//	     "questionnaire": "<canonical>", "attachments": ["<LOINC>", ...]}
 //	404 the service decides nothing for this item (no policy covers it)
 //
 // why is said to the provider in the ClaimResponse's process note and is required for a denial: CMS-0057 requires a
 // specific reason for every denial, and a denial without one is pended instead. requested lists, in words, the information
-// a pended request needs. Anything else - an error, a timeout, a decision this protocol does not define - pends the item
+// a pended request needs. questionnaire and attachments, on a pend, are optional: the DTR questionnaire to fill in and the
+// LOINC attachment codes of the documents to send, which this server asks for with a Da Vinci CDex Task and its
+// CommunicationRequests as it does for a rules file's (a code that is not LOINC's shape is dropped and logged; the rules
+// file's own asks are kept beside them). Anything else - an error, a timeout, a decision this protocol does not define - pends the item
 // for a reviewer, and the reason goes to the log, not to the provider. Nothing here can turn a failure into an approval.
 //
 // A service with its own reviewers can decide later what it pends here: X-PAS-Request-Id is the claimResponse parameter
@@ -41,10 +46,16 @@ import (
 
 // deciderAnswer is the decision service's response body.
 type deciderAnswer struct {
-	Decision  string   `json:"decision"`
-	Why       string   `json:"why"`
-	Requested []string `json:"requested"`
+	Decision      string   `json:"decision"`
+	Why           string   `json:"why"`
+	Requested     []string `json:"requested"`
+	Questionnaire string   `json:"questionnaire"`
+	Attachments   []string `json:"attachments"`
 }
+
+// loincCode is the shape of a LOINC code: digits, a hyphen and a check digit. An attachment code becomes part of a CDex
+// request a provider's system acts on, so a service's answer is not passed through unchecked.
+var loincCode = regexp.MustCompile(`^\d{1,7}-\d$`)
 
 // deciderTimeout bounds one call. PAS answers synchronously, and a provider's request should not wait on a slow service
 // longer than it would wait on a person to pick up the phone.
@@ -133,11 +144,43 @@ func newPASDecider(target, tokenEnv string, log *slog.Logger) (func(ctx context.
 			if why == "" {
 				why = "Pended for a reviewer."
 			}
-			return fhirserver.PASAnswer{Decision: "pend", Why: why}, true
+			out := fhirserver.PASAnswer{Decision: "pend", Why: why}
+			if q := strings.TrimSpace(a.Questionnaire); q != "" {
+				if u, err := url.Parse(q); err == nil && (u.Scheme == "http" || u.Scheme == "https" || u.Scheme == "urn") {
+					out.Questionnaire = q
+				} else if log != nil {
+					log.Warn("PAS: the decision service named a questionnaire that is not a canonical URL; not asked for",
+						"service", target, "item", svc.Sequence, "questionnaire", q)
+				}
+			}
+			for _, c := range a.Attachments {
+				if loincCode.MatchString(c) {
+					out.Attachments = append(out.Attachments, c)
+				} else if log != nil {
+					log.Warn("PAS: the decision service named an attachment code that is not LOINC's shape; not asked for",
+						"service", target, "item", svc.Sequence, "code", c)
+				}
+			}
+			return out, true
 		default:
 			return fail(svc, fmt.Sprintf("decision %q is not approve, deny or pend", a.Decision), nil)
 		}
 	}, nil
+}
+
+// union is a's codes then b's not already in a.
+func union(a, b []string) []string {
+	out := append([]string(nil), a...)
+	for _, c := range b {
+		dup := false
+		for _, d := range out {
+			dup = dup || d == c
+		}
+		if !dup {
+			out = append(out, c)
+		}
+	}
+	return out
 }
 
 // loopbackHost reports whether host names this machine.
@@ -169,7 +212,13 @@ func chainPASDecide(
 			return base
 		}
 		if a.Decision == "pend" {
-			a.Questionnaire, a.Attachments, a.AttachmentModifiers = base.Questionnaire, base.Attachments, base.AttachmentModifiers
+			// The rules file's asks are the payer's standing requirements; the service's are what this request lacks. Both
+			// are asked for, the rules file's questionnaire first: a CDex Task asks for one.
+			if base.Questionnaire != "" {
+				a.Questionnaire = base.Questionnaire
+			}
+			a.Attachments = union(base.Attachments, a.Attachments)
+			a.AttachmentModifiers = base.AttachmentModifiers
 		}
 		return a
 	}

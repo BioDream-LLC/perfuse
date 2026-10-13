@@ -73,6 +73,8 @@ func TestDeciderAnswers(t *testing.T) {
 		{"pend says what is needed", `{"decision":"pend","requested":["red-flag findings","prior imaging date"]}`, 200, "pend", true,
 			"Information needed: red-flag findings; prior imaging date."},
 		{"unknown decision is pended", `{"decision":"approved"}`, 200, "pend", true, "reviewer"},
+		{"pend asks for a questionnaire and documents", `{"decision":"pend","questionnaire":"https://payer.example/Questionnaire/q",` +
+			`"attachments":["11506-3","not a code","18748-4"]}`, 200, "pend", true, "reviewer"},
 		{"not JSON is pended", `<html>`, 200, "pend", true, "reviewer"},
 		{"a server error is pended", `boom`, 500, "pend", true, "reviewer"},
 		{"404 decides nothing", `{"error":"no policy"}`, 404, "", false, ""},
@@ -82,6 +84,10 @@ func TestDeciderAnswers(t *testing.T) {
 			a, ok, _, _ := deciderAgainst(t, c.status, c.body)
 			if ok != c.decided || a.Decision != c.want || !strings.Contains(a.Why, c.why) {
 				t.Fatalf("got %+v ok=%v; want decision %q ok=%v why containing %q", a, ok, c.want, c.decided, c.why)
+			}
+			if strings.Contains(c.body, "attachments") && (a.Questionnaire != "https://payer.example/Questionnaire/q" ||
+				strings.Join(a.Attachments, ",") != "11506-3,18748-4") {
+				t.Fatalf("asks %q %q: want the questionnaire, and the two LOINC codes only", a.Questionnaire, a.Attachments)
 			}
 		})
 	}
@@ -117,7 +123,7 @@ func TestChainLeavesTheRulesCoveragePolicyAlone(t *testing.T) {
 	asked := 0
 	decider := func(context.Context, *pas.Request, pas.Service) (fhirserver.PASAnswer, bool) {
 		asked++
-		return fhirserver.PASAnswer{Decision: "pend", Why: "Information needed: x."}, true
+		return fhirserver.PASAnswer{Decision: "pend", Why: "Information needed: x.", Attachments: []string{"11506-3", "18748-4"}}, true
 	}
 	rules := func(_ context.Context, _ *pas.Request, svc pas.Service) fhirserver.PASAnswer {
 		switch svc.Sequence {
@@ -140,8 +146,8 @@ func TestChainLeavesTheRulesCoveragePolicyAlone(t *testing.T) {
 		t.Fatalf("the decision service was asked %d times about services the rules decide", asked)
 	}
 	a := decide(context.Background(), req, pas.Service{Sequence: "3"})
-	if asked != 1 || a.Decision != "pend" || a.Questionnaire == "" || len(a.Attachments) != 1 {
-		t.Fatalf("got %+v after %d asks; want the service's pend with the rule's questionnaire and attachments", a, asked)
+	if asked != 1 || a.Decision != "pend" || a.Questionnaire == "" || strings.Join(a.Attachments, ",") != "18748-4,11506-3" {
+		t.Fatalf("got %+v after %d asks; want the service's pend with the rule's questionnaire, and both lists of attachments", a, asked)
 	}
 
 	// With no rules file, everything goes to the service; a 404 leaves it pended.
