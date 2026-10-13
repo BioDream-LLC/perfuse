@@ -102,7 +102,9 @@ func layout(base, path, section, title, description, body, ogType string) string
 	fmt.Fprintf(&b, "<meta name=\"description\" content=\"%s\">\n", html.EscapeString(description))
 	fmt.Fprintf(&b, "<link rel=\"canonical\" href=\"%s\">\n", html.EscapeString(canonical))
 	b.WriteString("<link rel=\"icon\" type=\"image/svg+xml\" href=\"/assets/perfuse-logo.svg\">\n")
-	b.WriteString("<link rel=\"stylesheet\" href=\"/site.css\">\n")
+	// The stylesheet is cached for a day, so its URL carries a hash of its contents: a changed stylesheet is a new URL, and a
+	// visitor never sees new pages drawn with yesterday's styles.
+	fmt.Fprintf(&b, "<link rel=\"stylesheet\" href=\"/site.css?v=%s\">\n", cssVersion)
 	fmt.Fprintf(&b, "<meta property=\"og:type\" content=\"%s\">\n", ogType)
 	fmt.Fprintf(&b, "<meta property=\"og:title\" content=\"%s\">\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<meta property=\"og:description\" content=\"%s\">\n", html.EscapeString(description))

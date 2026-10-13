@@ -12,6 +12,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"html"
@@ -195,9 +197,16 @@ func main() {
 	}
 }
 
+// cssVersion is a short hash of site/static/site.css, put in the stylesheet's URL by layout.
+var cssVersion = "0"
+
 func run(root, out, base string) error {
 	if err := os.RemoveAll(out); err != nil {
 		return err
+	}
+	if css, err := os.ReadFile(filepath.Join(root, "site/static/site.css")); err == nil {
+		sum := sha256.Sum256(css)
+		cssVersion = hex.EncodeToString(sum[:4])
 	}
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		return err
