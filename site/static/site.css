@@ -86,8 +86,13 @@ p { margin: 0 0 1em; }
 .hero h1 { color: #fff; max-width: 15ch; }
 .hero .lede { font-size: 1.2rem; max-width: 58ch; color: #c7d6ea; }
 .hero .actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 0; }
-.hero .shot { margin-top: 56px; border-radius: 14px 14px 0 0; box-shadow: 0 -10px 60px rgba(0,0,0,.35); display: block; width: 100%;
-  height: auto; max-height: 560px; object-fit: cover; object-position: top; }
+.hero .shot { margin-top: 56px; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.4); display: block; width: 100%; height: auto; }
+/* The home hero: words on the left, the whole console on the right, so neither leaves the other half of the screen empty
+   and the screenshot is never cropped. */
+.hero-split { padding-bottom: 72px; }
+.hero-split .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 56px; align-items: center; }
+.hero-split .shot { margin-top: 0; border: 1px solid rgba(255,255,255,.12); }
+@media (max-width: 1020px) { .hero-split .wrap { grid-template-columns: 1fr; gap: 40px; } }
 .hero.small { padding: 64px 0 56px; }
 .hero.small h1 { max-width: 24ch; }
 .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 700; color: var(--accent-2); margin: 0 0 14px; }
@@ -110,16 +115,24 @@ section.band.soft { background: var(--soft); }
 .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .card {
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
-  text-decoration: none; color: var(--body); display: block; transition: transform .15s ease, border-color .15s ease;
+  text-decoration: none; color: var(--body); display: block;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
 }
-a.card:hover { transform: translateY(-2px); border-color: #b9d9e4; color: var(--body); }
+/* Every card lights up under the pointer (or keyboard focus): a brand-coloured edge and glow, a faint tint, a small lift. */
+.card:hover, a.card:focus-visible {
+  transform: translateY(-3px); border-color: var(--accent-2); background-color: #f4fbfd; color: var(--body);
+  box-shadow: 0 0 0 1px var(--accent-2), 0 10px 30px rgba(8, 145, 178, .22);
+}
+.card:hover .icon { color: var(--accent-2); }
+.frame { transition: box-shadow .18s ease, border-color .18s ease; }
+.frame:hover { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2), 0 10px 30px rgba(8, 145, 178, .22); }
+@media (prefers-reduced-motion: reduce) { .card, .frame { transition: none; } .card:hover { transform: none; } }
 .card h3 { margin: 14px 0 6px; font-size: 1.08rem; }
 .card p { margin: 0; font-size: .95rem; color: var(--dim); }
 .card ul { margin: 10px 0 0; padding-left: 18px; font-size: .92rem; color: var(--dim); }
 .icon { width: 44px; height: 44px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
 .icon svg { width: 24px; height: 24px; }
-.split { display: grid; grid-template-columns: 1fr 1.15fr; gap: 56px; align-items: start; }
-.split > .frame, .split > .card { position: sticky; top: 100px; }
+.split { display: grid; grid-template-columns: 1fr 1.15fr; gap: 56px; align-items: center; }
 .split .wwh { grid-template-columns: 1fr; gap: 10px; }
 .split .wwh > div { padding: 14px 16px 2px; }
 .split .wwh p { margin-bottom: .6em; }
