@@ -1097,9 +1097,11 @@ The first runs found five server faults:
 - **An R4 client's `Encounter?status=finished` found nothing**, because the index holds R5's `completed`.
 - **`ExplanationOfBenefit?service-date` read only the billable period**; R4 defines it as `billablePeriod | item.serviced`.
 
-The skip is the prior authorization's must-support list: the PAS item extensions (whose definitions do not allow
-`ExplanationOfBenefit.item`) and three adjudication slices (whose category codes are outside the value set the same profile
-requires). A resource that carries them does not validate.
+The skip is the prior authorization's must-support list, which no valid resource can cover in PDex 2.0.0. The PAS item
+extensions it names resolve to PAS 2.0.1, where their context is `Claim.item` and `ClaimResponse.item` only. And the
+`allowedunits`, `denialreason` and `consumedunits` slices fix categories from `PDexAdjudicationDiscriminator`, which the
+required `PDexAdjudicationCategoryDiscriminator` value set does not include. PDex 2.2.0 with PAS 2.2.1 fixes both, so this is
+for the kit to move to 2.2.0 (reported on davinci-pdex-test-kit issue 63), not for the server.
 
 ### Da Vinci Plan-Net 1.1.0 Server
 
