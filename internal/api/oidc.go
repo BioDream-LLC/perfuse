@@ -283,7 +283,10 @@ func (s *Server) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 		Username:    federatedUsername(claims),
 		Role:        store.Role(role),
 		Groups:      claims.Groups,
+
+		ManageChannelGroups: cfg.Roles.ManagesChannelGroups(),
 	}
+	_, identity.ChannelGroups, identity.GroupRoles = accessFor(cfg.Roles, claims.Groups)
 
 	token, user, created, err := s.Store.SignInExternal(r.Context(), identity, cfg.CreateUsers,
 		clientIP(r), r.UserAgent())
@@ -437,4 +440,17 @@ func (s *Server) handleAuthMethods(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.ok(w, out)
+}
+
+// accessFor is RoleMapping.AccessFor with the store's role type.
+func accessFor(m *oidc.RoleMapping, groups []string) (store.Role, []string, map[string]store.Role) {
+	role, channelGroups, differs := m.AccessFor(groups)
+	var out map[string]store.Role
+	for g, r := range differs {
+		if out == nil {
+			out = map[string]store.Role{}
+		}
+		out[g] = store.Role(r)
+	}
+	return store.Role(role), channelGroups, out
 }

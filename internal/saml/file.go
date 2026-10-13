@@ -48,8 +48,13 @@ type FileConfig struct {
 		Platform      []string `yaml:"platform,omitempty"`
 		Admin         []string `yaml:"admin,omitempty"`
 		Editor        []string `yaml:"editor,omitempty"`
+		Operator      []string `yaml:"operator,omitempty"`
 		Viewer        []string `yaml:"viewer,omitempty"`
+		Monitor       []string `yaml:"monitor,omitempty"`
 		CaseSensitive bool     `yaml:"case_sensitive,omitempty"`
+
+		// ChannelGroups limits a directory group to these channel groups; absent or empty is every channel.
+		ChannelGroups map[string][]string `yaml:"channel_groups,omitempty"`
 	} `yaml:"roles"`
 }
 

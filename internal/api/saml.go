@@ -278,7 +278,10 @@ func (s *Server) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 		// every SAML account as OIDC until this was passed.
 		Source: store.AuthSAML,
 		Groups: groups,
+
+		ManageChannelGroups: s.SAML.Roles.ManagesChannelGroups(),
 	}
+	_, identity.ChannelGroups, identity.GroupRoles = accessFor(s.SAML.Roles, groups)
 
 	token, user, created, err := s.Store.SignInExternal(r.Context(), identity, s.SAML.CreateUsers,
 		clientIP(r), r.UserAgent())

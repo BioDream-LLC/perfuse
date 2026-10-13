@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/ldap"
+	"github.com/biodream-llc/perfuse/internal/oidc"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/tenant"
 )
@@ -66,6 +67,10 @@ func (s *Server) signInWithDirectory(r *http.Request, tid tenant.ID, username, p
 		Role:        store.Role(role),
 		Groups:      id.Groups,
 	}
+	if m := ldapRoleMapping(s.LDAP.Settings); m.ManagesChannelGroups() {
+		external.ManageChannelGroups = true
+		_, external.ChannelGroups, external.GroupRoles = accessFor(m, id.Groups)
+	}
 
 	token, u, created, err := s.Store.SignInExternal(
 		r.Context(), external, s.LDAP.Settings.CreateUsers, clientIP(r), r.UserAgent())
@@ -101,4 +106,27 @@ func (s *Server) ldapButtonLabel() string {
 		return ""
 	}
 	return s.LDAP.Settings.ButtonLabel
+}
+
+// ldapRoleMapping restates an LDAP role table as the mapping OIDC and SAML use, so channel groups are decided by one rule.
+// LDAP matches group names case-insensitively, and so does this.
+func ldapRoleMapping(c *ldap.Config) *oidc.RoleMapping {
+	m := &oidc.RoleMapping{ChannelGroups: c.ChannelGroups}
+	for group, role := range c.Roles {
+		switch role {
+		case "platform":
+			m.Platform = append(m.Platform, group)
+		case "admin":
+			m.Admin = append(m.Admin, group)
+		case "editor":
+			m.Editor = append(m.Editor, group)
+		case "operator":
+			m.Operator = append(m.Operator, group)
+		case "viewer":
+			m.Viewer = append(m.Viewer, group)
+		case "monitor":
+			m.Monitor = append(m.Monitor, group)
+		}
+	}
+	return m
 }

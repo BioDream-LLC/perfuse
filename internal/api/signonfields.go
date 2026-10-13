@@ -494,7 +494,7 @@ func ldapPresets() []ldapPreset {
 
 // signonRoles lists the roles a group can be mapped to, so the form cannot offer one that does not exist.
 func signonRoles() []string {
-	return []string{"viewer", "editor", "admin", "platform"}
+	return []string{"monitor", "viewer", "operator", "editor", "admin", "platform"}
 }
 
 // ldapDefaults reports the values applied when a field is left empty, so the form can say so rather than appearing to have set nothing.

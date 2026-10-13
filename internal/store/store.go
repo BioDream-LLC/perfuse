@@ -15,8 +15,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/biodream-llc/perfuse/internal/tenant"
+	"sort"
+	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/tenant"
 
 	_ "modernc.org/sqlite" // pure Go, so CGO_ENABLED=0 still produces one static binary
 
@@ -131,6 +134,9 @@ type User struct {
 	ExternalID string `json:"externalId,omitempty"`
 	// ChannelGroups limits the account to the channels in these groups (a channel's `group:`). Empty: every channel.
 	ChannelGroups []string `json:"channelGroups,omitempty"`
+	// GroupRoles gives the account a different role in some of its channel groups (each key one of ChannelGroups). A group
+	// absent here has the account's Role.
+	GroupRoles map[string]Role `json:"groupRoles,omitempty"`
 	// hash is never serialised.
 	hash string
 }
@@ -155,6 +161,69 @@ type Session struct {
 
 	// ChannelGroups limits the session to channels in these groups. Empty means every channel of the tenant.
 	ChannelGroups []string
+
+	// baseRole is the account's own role when GroupRoles raised Role above it.
+	baseRole Role
+
+	// GroupRoles is the role in each channel group that differs from the account's own. Role is then the strongest of them,
+	// so a route needing it is reached, and the channels it acts on are narrowed to the groups where the role is held.
+	GroupRoles map[string]Role
+}
+
+// RoleIn is the session's role for a channel in this group: its role there if it has one of its own, the account's role in its
+// other groups, and nothing outside them.
+func (s *Session) RoleIn(group string) Role {
+	if s == nil {
+		return ""
+	}
+	if !s.SeesChannelGroup(group) {
+		return ""
+	}
+	if r, ok := s.GroupRoles[group]; ok {
+		return r
+	}
+	if s.baseRole != "" {
+		return s.baseRole
+	}
+	return s.Role
+}
+
+// strongest returns the stronger of two roles.
+func strongest(a, b Role) Role {
+	if b.rank() > a.rank() {
+		return b
+	}
+	return a
+}
+
+// joinGroupRoles writes group roles as "group=role,group=role", sorted.
+func joinGroupRoles(m map[string]Role) string {
+	parts := make([]string, 0, len(m))
+	for g, r := range m {
+		g = strings.TrimSpace(g)
+		if g == "" || strings.ContainsAny(g, ",=") || !r.Valid() {
+			continue
+		}
+		parts = append(parts, g+"="+string(r))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ",")
+}
+
+// splitGroupRoles reads what joinGroupRoles wrote.
+func splitGroupRoles(v string) map[string]Role {
+	var out map[string]Role
+	for _, part := range strings.Split(v, ",") {
+		g, r, ok := strings.Cut(strings.TrimSpace(part), "=")
+		if !ok || g == "" || !Role(r).Valid() {
+			continue
+		}
+		if out == nil {
+			out = map[string]Role{}
+		}
+		out[g] = Role(r)
+	}
+	return out
 }
 
 // SeesChannelGroup reports whether the session may see a channel in this group. A limited session never sees a channel

@@ -4,6 +4,7 @@ import { api, atLeast } from './api'
 import { MirthExportButton } from './MirthExport'
 import { isPlaygroundFragment } from './playgroundLink'
 import type { AuthMethods, ChannelSummary, Role, User } from './api'
+import { formatGroups, parseGroups } from './groups'
 import { Dashboard } from './Dashboard'
 import { AlertBanner, Alerts, useAlerts } from './Alerts'
 import { ChannelHistoryPanel } from './ChannelHistory'
@@ -861,7 +862,7 @@ function Console() {
                 className="badge hidden border border-slate-600 text-slate-300 md:inline"
                 title="You see and act on the channels in these groups only"
               >
-                {me.channelGroups.join(', ')}
+                {formatGroups(me.channelGroups, me.groupRoles)}
               </span>
             )}
             <button
@@ -1269,6 +1270,7 @@ function Users() {
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<Role>('viewer')
   const [groups, setGroups] = useState(me.channelGroups?.join(', ') ?? '')
+
   const [deleting, setDeleting] = useState<{ id: number; username: string } | null>(null)
 
   useEffect(() => {
@@ -1290,7 +1292,9 @@ function Users() {
         <p className="mt-1 text-sm text-slate-500">
           <strong className="text-slate-300">Channel groups</strong> limit someone to the channels filed under
           those groups (a channel&apos;s <code className="font-mono">group</code>), so each facility looks after its
-          own feeds. Leave it empty for someone who sees every channel.
+          own feeds. Leave it empty for someone who sees every channel. Add <code className="font-mono">=role</code>{' '}
+          to give a different role in one group: <code className="font-mono">lab=editor, adt</code> edits the lab&apos;s
+          channels and has the role chosen beside it in the admissions ones.
         </p>
       </div>
 
@@ -1301,7 +1305,10 @@ function Users() {
           className="grid gap-4 sm:grid-cols-5"
           onSubmit={(e) => {
             e.preventDefault()
-            dispatch(addUser({ username, password, role, channelGroups: splitGroups(groups) })).then(() => {
+            const parsed = parseGroups(groups)
+            dispatch(
+              addUser({ username, password, role, channelGroups: parsed.groups, groupRoles: parsed.roles }),
+            ).then(() => {
               setUsername('')
               setPassword('')
             })
@@ -1402,7 +1409,9 @@ function Users() {
                   <ChannelGroupsCell
                     user={u}
                     self={u.username === me.username}
-                    onSave={(channelGroups) => dispatch(patchUser({ id: u.id, patch: { channelGroups } }))}
+                    onSave={(channelGroups, groupRoles) =>
+                      dispatch(patchUser({ id: u.id, patch: { channelGroups, groupRoles } }))
+                    }
                   />
                 </td>
                 <td className="px-5 py-3 text-slate-500">
@@ -1472,12 +1481,6 @@ function RoleOptions() {
 }
 
 /** Comma-separated group names as a list, blanks dropped. */
-function splitGroups(text: string): string[] {
-  return text
-    .split(',')
-    .map((g) => g.trim())
-    .filter((g) => g !== '')
-}
 
 /** One person's channel groups, edited in place and saved on Enter or when the field loses focus. */
 function ChannelGroupsCell({
@@ -1487,28 +1490,48 @@ function ChannelGroupsCell({
 }: {
   user: User
   self: boolean
-  onSave: (groups: string[]) => void
+  onSave: (groups: string[], roles: Record<string, Role>) => void
 }) {
-  const saved = (user.channelGroups ?? []).join(', ')
+  const saved = formatGroups(user.channelGroups, user.groupRoles)
   const [text, setText] = useState(saved)
+  const [problem, setProblem] = useState<string | null>(null)
   useEffect(() => setText(saved), [saved])
   const save = () => {
-    if (text.trim() !== saved) onSave(splitGroups(text))
+    if (text.trim() === saved) return
+    const parsed = parseGroups(text)
+    if (parsed.bad) {
+      setProblem(parsed.bad)
+      return
+    }
+    setProblem(null)
+    onSave(parsed.groups, parsed.roles)
   }
   return (
-    <input
-      aria-label={`Channel groups for ${user.username}`}
-      className="input w-44 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
-      value={text}
-      placeholder="every channel"
-      disabled={self}
-      title={self ? 'Ask another administrator to change your own channel groups.' : undefined}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={save}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') save()
-      }}
-    />
+    <div>
+      <input
+        aria-label={`Channel groups for ${user.username}`}
+        aria-invalid={problem ? true : undefined}
+        className="input w-52 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+        value={text}
+        placeholder="every channel"
+        disabled={self}
+        title={
+          self
+            ? 'Ask another administrator to change your own channel groups.'
+            : 'Channel groups, separated by commas. Add =role for a different role in one: lab=editor, adt'
+        }
+        onChange={(e) => setText(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') save()
+        }}
+      />
+      {problem && (
+        <p role="alert" className="mt-1 text-xs text-rose-300">
+          {problem}
+        </p>
+      )}
+    </div>
   )
 }
 

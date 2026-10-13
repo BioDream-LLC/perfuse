@@ -69,6 +69,13 @@ type ExternalIdentity struct {
 	// on sourceForIssuer argued for deriving rather than passing so the two could not disagree, which was right for LDAP and does not
 	// generalise to two protocols that look identical from the outside.
 	Source AuthSource
+
+	// ManageChannelGroups says the provider's groups decide the account's channel groups, set to ChannelGroups (empty: every
+	// channel) at every sign-in. False leaves them as an administrator set them.
+	ManageChannelGroups bool
+	ChannelGroups       []string
+	// GroupRoles is the role in each channel group where it differs from Role; set with the channel groups.
+	GroupRoles map[string]Role
 }
 
 // sourceForIssuer names where an identity came from.
@@ -128,6 +135,14 @@ func (s *Store) SignInExternal(ctx context.Context, id ExternalIdentity, allowCr
 		if err := s.refreshExternalProfile(ctx, u.ID, id); err != nil {
 			return "", nil, false, err
 		}
+		if id.ManageChannelGroups {
+			if err := s.SetChannelGroups(ctx, u.ID, id.ChannelGroups); err != nil {
+				return "", nil, false, err
+			}
+			if err := s.SetGroupRoles(ctx, u.ID, id.GroupRoles); err != nil {
+				return "", nil, false, err
+			}
+		}
 
 	case errors.Is(err, ErrNoExternalMatch):
 		if !allowCreate {
@@ -140,6 +155,14 @@ func (s *Store) SignInExternal(ctx context.Context, id ExternalIdentity, allowCr
 		created = true
 		if err := s.refreshExternalProfile(ctx, u.ID, id); err != nil {
 			return "", nil, false, err
+		}
+		if id.ManageChannelGroups {
+			if err := s.SetChannelGroups(ctx, u.ID, id.ChannelGroups); err != nil {
+				return "", nil, false, err
+			}
+			if err := s.SetGroupRoles(ctx, u.ID, id.GroupRoles); err != nil {
+				return "", nil, false, err
+			}
 		}
 
 	default:

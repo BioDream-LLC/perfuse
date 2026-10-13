@@ -57,6 +57,18 @@ server - and is refused to them.
 Groups are set in **Users** (and for tokens in **Tokens**), as a comma-separated list. Each change is recorded in the
 activity log and takes effect at the person's next request.
 
+#### A different role in each group
+
+A person can hold a different role in each of their groups: `lab=editor, adt` in **Users** edits the lab's channels and has the
+role chosen beside it - say viewer - in the admissions ones. They see both groups' channels on every screen. Saving, starting or
+resending one in a group where their role is too low is refused with the role they hold there; it does not pretend the channel is
+missing, since they can see it. Their role at the top of the screen is the strongest they hold, which opens the screens that role
+uses, and every action on those screens is still narrowed to the groups where they hold it.
+
+Only people limited to channel groups can have one. Somebody who sees every channel has one role, because "editor of the lab's
+channels" for a person with no limit would be editor of everything that belongs to no group, and of the server-wide pages. A
+facility's administrator can give a role per group only in the groups they administer, and never above their own role there.
+
 ## Who may call the FHIR endpoint
 
 The FHIR endpoint (`serve -fhir`) checks one of two kinds of token:
@@ -156,6 +168,32 @@ Local accounts are always available and cannot be turned off. That is deliberate
 ### What a group mapping decides
 
 All three map groups from the directory to Perfuse roles, and somebody in groups matching more than one gets the most privileged. That is the only safe direction to resolve it — the alternative is a person losing access they are entitled to because they are also in a lesser group.
+
+Any of the six roles can be granted: monitor, viewer, operator, editor, admin and platform.
+
+A group can also be limited to some channel groups, in the second box of its row (`channel_groups` in the file). Once any group
+names one, every sign-in sets the person's channel groups from the groups that granted their role: somebody in a group that edits
+the lab's channels and in another that views every channel is an editor of the lab's channels and nothing else. The strongest role
+is never joined to the widest reach, because neither group grants that. A group with an empty box gives every channel. While no
+group names any, sign-in leaves channel groups as an administrator set them in **Users**.
+
+When every group a person matches names channel groups, each channel group gets the strongest role among the groups that name
+it: with `Lab-Interfaces` (editor, lab) and `Clinical-IT` (viewer, lab and adt), the person edits the lab's channels and views
+the admissions ones, as if set by hand. When one of their groups gives every channel, there is no list to hold a role per group,
+and the rule above applies.
+
+```yaml
+roles:
+  editor: [Lab-Interfaces]
+  operator: [Night-Desk]
+  viewer: [Clinical-IT]
+  channel_groups:
+    Lab-Interfaces: [lab, pathology]
+    Night-Desk: [adt]
+```
+
+That is the OpenID Connect and SAML file. The directory's file maps each group to one role (`roles: {Lab-Interfaces: editor}`), and
+`channel_groups` sits beside `roles` there.
 
 A mapping that grants nobody anything is refused rather than saved. A configuration that authenticates people and turns all of them away looks identical to a broken product from the outside: the round trip completes and everybody is denied with nothing explaining why.
 

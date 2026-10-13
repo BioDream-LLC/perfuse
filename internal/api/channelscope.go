@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"github.com/biodream-llc/perfuse/internal/alerts"
 	"github.com/biodream-llc/perfuse/internal/metrics"
 	"net/http"
@@ -63,6 +64,9 @@ func (s *Server) scopeChannels(w http.ResponseWriter, r *http.Request, sess *sto
 			return r, false
 		}
 	}
+	// below holds channels the session sees but whose group gives it less than this route needs: somebody who edits the lab's
+	// channels and views the admissions ones sees both on a list, and changes only the first.
+	below := map[string]string{}
 	if repo != nil {
 		valid, _, err := repo.List()
 		if err != nil {
@@ -70,8 +74,13 @@ func (s *Server) scopeChannels(w http.ResponseWriter, r *http.Request, sess *sto
 			return r, false
 		}
 		for _, c := range valid {
-			if sess.SeesChannelGroup(c.Group) {
+			if !sess.SeesChannelGroup(c.Group) {
+				continue
+			}
+			if sess.RoleIn(c.Group).AtLeast(minimum) {
 				vis[c.Name] = true
+			} else {
+				below[c.Name] = c.Group
 			}
 		}
 	}
@@ -87,6 +96,12 @@ func (s *Server) scopeChannels(w http.ResponseWriter, r *http.Request, sess *sto
 	// A channel named in the path. Answered as not found rather than forbidden: a facility's analyst is not told the
 	// names of another facility's feeds by probing for them.
 	if name := r.PathValue("name"); name != "" && strings.HasPrefix(r.URL.Path, "/api/channels/") && !vis[name] {
+		if group, ok := below[name]; ok {
+			// Seen, so its existence is no secret: say why rather than pretend it is not there.
+			s.fail(w, r, http.StatusForbidden, fmt.Sprintf("this action needs the %s role, and in channel group %s you are %s",
+				minimum, group, sess.RoleIn(group)))
+			return r, false
+		}
 		s.fail(w, r, http.StatusNotFound, "no channel called "+name)
 		return r, false
 	}
@@ -96,8 +111,13 @@ func (s *Server) scopeChannels(w http.ResponseWriter, r *http.Request, sess *sto
 // mayFileUnder reports whether a session may put a channel in this group: a limited person keeps their channels inside
 // their groups, so a save cannot move a feed out of their sight or into another facility's.
 func (s *Server) mayFileUnder(w http.ResponseWriter, r *http.Request, sess *store.Session, group string) bool {
-	if sess.SeesChannelGroup(group) {
+	if sess.SeesChannelGroup(group) && sess.RoleIn(group).AtLeast(store.RoleEditor) {
 		return true
+	}
+	if sess.SeesChannelGroup(group) {
+		s.fail(w, r, http.StatusForbidden, fmt.Sprintf("in channel group %s you are %s, and saving a channel there needs editor",
+			group, sess.RoleIn(group)))
+		return false
 	}
 	s.fail(w, r, http.StatusForbidden,
 		"you can only keep channels in your own groups ("+strings.Join(sess.ChannelGroups, ", ")+")",
@@ -227,7 +247,9 @@ func manages(sess *store.Session, groups []string) bool {
 		return false
 	}
 	for _, g := range groups {
-		if !sess.SeesChannelGroup(g) {
+		// Administrator in that group, not merely able to see it: an administrator of the lab's channels who views the
+		// admissions ones looks after the lab's people only.
+		if !sess.SeesChannelGroup(g) || !sess.RoleIn(g).AtLeast(store.RoleAdmin) {
 			return false
 		}
 	}
@@ -251,15 +273,27 @@ func (s *Server) groupsToGrant(w http.ResponseWriter, r *http.Request, sess *sto
 	if len(sess.ChannelGroups) == 0 {
 		return groups, true
 	}
+	mine := adminGroups(sess)
 	if len(groups) == 0 {
-		return append([]string(nil), sess.ChannelGroups...), true
+		return mine, true
 	}
 	if !manages(sess, groups) {
 		s.fail(w, r, http.StatusForbidden,
-			"you can only give the channel groups you have yourself ("+strings.Join(sess.ChannelGroups, ", ")+")")
+			"you can only give the channel groups you administer yourself ("+strings.Join(mine, ", ")+")")
 		return nil, false
 	}
 	return groups, true
+}
+
+// adminGroups lists the channel groups a limited session administers.
+func adminGroups(sess *store.Session) []string {
+	var out []string
+	for _, g := range sess.ChannelGroups {
+		if sess.RoleIn(g).AtLeast(store.RoleAdmin) {
+			out = append(out, g)
+		}
+	}
+	return out
 }
 
 // groupsDetail is the audit wording for a set of channel groups.

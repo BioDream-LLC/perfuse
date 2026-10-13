@@ -79,7 +79,7 @@ func (s *Store) GetUser(ctx context.Context, username string) (*User, error) {
 // getUserIn reads a user within one tenant.
 func (s *Store) getUserIn(ctx context.Context, tid tenant.ID, username string) (*User, error) {
 	return s.scanUser(s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups, group_roles
 		 FROM users WHERE tenant_id = ? AND username = ? COLLATE NOCASE`,
 		string(tid), username))
 }
@@ -91,7 +91,7 @@ func (s *Store) getUserIn(ctx context.Context, tid tenant.ID, username string) (
 // direct object reference, and the fix is one clause.
 func (s *Store) userIn(ctx context.Context, tid tenant.ID, id int64) (*User, error) {
 	return s.scanUser(s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups, group_roles
 		 FROM users WHERE tenant_id = ? AND id = ?`, string(tid), id))
 }
 
@@ -111,12 +111,12 @@ func (s *Store) GetUserByID(ctx context.Context, id int64) (*User, error) {
 func (s *Store) getUserByIDIn(ctx context.Context, tid tenant.ID, id int64) (*User, error) {
 	if tid == "" {
 		return s.scanUser(s.db.QueryRowContext(ctx,
-			`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
+			`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups, group_roles
 			 FROM users WHERE id = ?`, id))
 	}
 
 	return s.scanUser(s.db.QueryRowContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups, group_roles
 		 FROM users WHERE id = ? AND tenant_id = ?`, id, string(tid)))
 }
 
@@ -129,8 +129,9 @@ func (s *Store) scanUser(row *sql.Row) (*User, error) {
 		last     sql.NullString
 		external sql.NullString
 		groups   string
+		gRoles   string
 	)
-	err := row.Scan(&u.ID, &u.Username, &u.hash, &role, &disabled, &created, &last, &external, &groups)
+	err := row.Scan(&u.ID, &u.Username, &u.hash, &role, &disabled, &created, &last, &external, &groups, &gRoles)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -149,6 +150,7 @@ func (s *Store) scanUser(row *sql.Row) (*User, error) {
 		u.ExternalID = external.String
 	}
 	u.ChannelGroups = splitGroups(groups)
+	u.GroupRoles = splitGroupRoles(gRoles)
 	return &u, nil
 }
 
@@ -160,7 +162,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]*User, error) {
 // listUsersIn returns one tenant's users and nobody else's.
 func (s *Store) listUsersIn(ctx context.Context, tid tenant.ID) ([]*User, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups
+		`SELECT id, username, password_hash, role, disabled, created_at, last_login, external_id, channel_groups, group_roles
 		 FROM users WHERE tenant_id = ? ORDER BY username`, string(tid))
 	if err != nil {
 		return nil, err
@@ -177,9 +179,10 @@ func (s *Store) listUsersIn(ctx context.Context, tid tenant.ID) ([]*User, error)
 			last     sql.NullString
 			external sql.NullString
 			groups   string
+			gRoles   string
 		)
 		if err := rows.Scan(&u.ID, &u.Username, &u.hash, &role, &disabled, &created, &last,
-			&external, &groups); err != nil {
+			&external, &groups, &gRoles); err != nil {
 			return nil, err
 		}
 		u.Role = Role(role)
@@ -193,6 +196,7 @@ func (s *Store) listUsersIn(ctx context.Context, tid tenant.ID) ([]*User, error)
 			u.ExternalID = external.String
 		}
 		u.ChannelGroups = splitGroups(groups)
+		u.GroupRoles = splitGroupRoles(gRoles)
 		out = append(out, &u)
 	}
 	return out, rows.Err()
@@ -232,6 +236,16 @@ func (s *Store) SetRole(ctx context.Context, userID int64, role Role) error {
 func (s *Store) SetChannelGroups(ctx context.Context, userID int64, groups []string) error {
 	res, err := s.db.ExecContext(ctx,
 		`UPDATE users SET channel_groups = ? WHERE id = ?`, joinGroups(groups), userID)
+	if err != nil {
+		return err
+	}
+	return requireOneRow(res)
+}
+
+// SetGroupRoles gives an account a different role in some of its channel groups; an empty map removes them.
+func (s *Store) SetGroupRoles(ctx context.Context, userID int64, roles map[string]Role) error {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE users SET group_roles = ? WHERE id = ?`, joinGroupRoles(roles), userID)
 	if err != nil {
 		return err
 	}
@@ -403,15 +417,16 @@ func (s *Store) Lookup(ctx context.Context, token string) (*Session, error) {
 		// operating until their session happens to expire.
 		tenantDisabled int
 		groups         string
+		gRoles         string
 	)
 	err := s.db.QueryRowContext(ctx,
 		`SELECT s.user_id, u.username, u.role, u.disabled, s.expires_at, u.tenant_id,
-		        COALESCE(t.disabled, 0), u.channel_groups
+		        COALESCE(t.disabled, 0), u.channel_groups, u.group_roles
 		 FROM sessions s
 		 JOIN users u ON u.id = s.user_id
 		 LEFT JOIN tenants t ON t.id = u.tenant_id
 		 WHERE s.token_hash = ?`, hash).
-		Scan(&userID, &username, &role, &disabled, &expires, &tenantID, &tenantDisabled, &groups)
+		Scan(&userID, &username, &role, &disabled, &expires, &tenantID, &tenantDisabled, &groups, &gRoles)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -444,15 +459,48 @@ func (s *Store) Lookup(ctx context.Context, token string) (*Session, error) {
 		return nil, err
 	}
 
-	return &Session{
-		TenantID:  tenant.ID(tenantID),
+	return newSession(tenant.ID(tenantID), userID, username, Role(role), newExpiry, splitGroups(groups),
+		splitGroupRoles(gRoles)), nil
+}
+
+// SessionFor is the session an account's sign-in would have, for the answer to the sign-in itself.
+func SessionFor(u *User) *Session {
+	return newSession("", u.ID, u.Username, u.Role, time.Time{}, u.ChannelGroups, u.GroupRoles)
+}
+
+// newSession builds a session, working out its role from per-group roles.
+//
+// Group roles only count for groups the account is limited to: an account that sees every channel has one role, because
+// "editor of the lab's channels and viewer of the rest" for someone who also sees every other channel at the same time is
+// "editor wherever no limit stops them" - which is every server-wide route. The Users screen and the API both refuse that
+// combination; this is the last line.
+func newSession(tid tenant.ID, userID int64, username string, role Role, expires time.Time, groups []string,
+	groupRoles map[string]Role) *Session {
+	sess := &Session{
+		TenantID:  tid,
 		UserID:    userID,
 		Username:  username,
-		Role:      Role(role),
-		ExpiresAt: newExpiry,
+		Role:      role,
+		ExpiresAt: expires,
 		// Read on every request, like the role, so narrowing somebody's groups takes effect at their next click.
-		ChannelGroups: splitGroups(groups),
-	}, nil
+		ChannelGroups: groups,
+	}
+	if len(groups) == 0 || len(groupRoles) == 0 {
+		return sess
+	}
+	sess.GroupRoles = map[string]Role{}
+	top := role
+	for _, g := range groups {
+		if r, ok := groupRoles[g]; ok && r.Valid() && r != RolePlatform {
+			sess.GroupRoles[g] = r
+			top = strongest(top, r)
+		}
+	}
+	if top != role {
+		sess.baseRole = role
+		sess.Role = top
+	}
+	return sess
 }
 
 // DeleteSession logs one session out.

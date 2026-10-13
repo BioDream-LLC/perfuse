@@ -60,6 +60,9 @@ type oidcConfigJSON struct {
 	// is actually trying to express, and four parallel lists make it easy to put one group in two of them.
 	Roles         map[string]string `json:"roles"`
 	CaseSensitive bool              `json:"caseSensitive"`
+
+	// ChannelGroups is group name to the channel groups it is limited to; a group absent or empty sees every channel.
+	ChannelGroups map[string][]string `json:"channelGroups"`
 }
 
 // samlConfigJSON is the SAML configuration as the browser exchanges it.
@@ -85,8 +88,9 @@ type samlConfigJSON struct {
 	CreateUsers      bool   `json:"createUsers"`
 	AllowUnsolicited bool   `json:"allowUnsolicited"`
 
-	Roles         map[string]string `json:"roles"`
-	CaseSensitive bool              `json:"caseSensitive"`
+	Roles         map[string]string   `json:"roles"`
+	CaseSensitive bool                `json:"caseSensitive"`
+	ChannelGroups map[string][]string `json:"channelGroups"`
 }
 
 type ldapConfigJSON struct {
@@ -110,10 +114,45 @@ type ldapConfigJSON struct {
 	GroupFilter        string `json:"groupFilter"`
 	GroupNameAttribute string `json:"groupNameAttribute"`
 
-	Roles       map[string]string `json:"roles"`
-	CreateUsers bool              `json:"createUsers"`
-	ButtonLabel string            `json:"buttonLabel"`
-	Timeout     string            `json:"timeout"`
+	Roles         map[string]string   `json:"roles"`
+	ChannelGroups map[string][]string `json:"channelGroups"`
+	CreateUsers   bool                `json:"createUsers"`
+	ButtonLabel   string              `json:"buttonLabel"`
+	Timeout       string              `json:"timeout"`
+}
+
+// cleanChannelGroups keeps only groups that name channel groups, trimmed and without duplicates, so an empty row written by the
+// form does not switch on channel-group management for the whole directory.
+func cleanChannelGroups(in map[string][]string) map[string][]string {
+	out := map[string][]string{}
+	for group, list := range in {
+		group = strings.TrimSpace(group)
+		seen := map[string]bool{}
+		var keep []string
+		for _, cg := range list {
+			cg = strings.TrimSpace(cg)
+			if cg != "" && !seen[cg] {
+				seen[cg] = true
+				keep = append(keep, cg)
+			}
+		}
+		if group != "" && len(keep) > 0 {
+			sort.Strings(keep)
+			out[group] = keep
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// channelGroupsJSON is the same map for the browser, never null.
+func channelGroupsJSON(in map[string][]string) map[string][]string {
+	if out := cleanChannelGroups(in); out != nil {
+		return out
+	}
+	return map[string][]string{}
 }
 
 type signonFile struct {
@@ -285,12 +324,15 @@ func oidcToJSON(cfg *oidc.FileConfig) oidcConfigJSON {
 		"platform": cfg.Roles.Platform,
 		"admin":    cfg.Roles.Admin,
 		"editor":   cfg.Roles.Editor,
+		"operator": cfg.Roles.Operator,
 		"viewer":   cfg.Roles.Viewer,
+		"monitor":  cfg.Roles.Monitor,
 	} {
 		for _, g := range groups {
 			out.Roles[g] = role
 		}
 	}
+	out.ChannelGroups = channelGroupsJSON(cfg.Roles.ChannelGroups)
 
 	return out
 }
@@ -321,6 +363,7 @@ func ldapToJSON(cfg *ldap.Config) ldapConfigJSON {
 	}
 	out.BindPassword.Set = cfg.BindPassword != ""
 
+	out.ChannelGroups = channelGroupsJSON(cfg.ChannelGroups)
 	for group, role := range cfg.Roles {
 		out.Roles[group] = role
 	}
@@ -392,8 +435,12 @@ func (s *Server) handleSaveOIDC(w http.ResponseWriter, r *http.Request, session 
 			cfg.Roles.Admin = append(cfg.Roles.Admin, group)
 		case "editor":
 			cfg.Roles.Editor = append(cfg.Roles.Editor, group)
+		case "operator":
+			cfg.Roles.Operator = append(cfg.Roles.Operator, group)
 		case "viewer":
 			cfg.Roles.Viewer = append(cfg.Roles.Viewer, group)
+		case "monitor":
+			cfg.Roles.Monitor = append(cfg.Roles.Monitor, group)
 		default:
 			s.fail(w, r, http.StatusBadRequest,
 				fmt.Sprintf("%q is not a role. Use one of %s.", role, strings.Join(signonRoles(), ", ")))
@@ -404,7 +451,10 @@ func (s *Server) handleSaveOIDC(w http.ResponseWriter, r *http.Request, session 
 	sort.Strings(cfg.Roles.Platform)
 	sort.Strings(cfg.Roles.Admin)
 	sort.Strings(cfg.Roles.Editor)
+	sort.Strings(cfg.Roles.Operator)
 	sort.Strings(cfg.Roles.Viewer)
+	sort.Strings(cfg.Roles.Monitor)
+	cfg.Roles.ChannelGroups = cleanChannelGroups(body.Config.ChannelGroups)
 
 	data, err := marshalYAMLWithHeader("Single sign-on through an OpenID Connect provider.", cfg)
 	if err != nil {
@@ -581,6 +631,7 @@ func (s *Server) ldapFromJSON(in ldapConfigJSON, newPassword *string, path strin
 		}
 		cfg.Roles[group] = role
 	}
+	cfg.ChannelGroups = cleanChannelGroups(in.ChannelGroups)
 
 	// The engine's own validation, which also fills defaults - so what is written down is what would run.
 	if err := cfg.Validate(); err != nil {

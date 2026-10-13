@@ -160,6 +160,14 @@ func (sc *Scoped) SetChannelGroups(ctx context.Context, userID int64, groups []s
 	return sc.store.SetChannelGroups(ctx, userID, groups)
 }
 
+// SetGroupRoles gives one of this tenant's users a different role in some of its channel groups.
+func (sc *Scoped) SetGroupRoles(ctx context.Context, userID int64, roles map[string]Role) error {
+	if _, err := sc.GetUserByID(ctx, userID); err != nil {
+		return err
+	}
+	return sc.store.SetGroupRoles(ctx, userID, roles)
+}
+
 // SetPassword changes one of this tenant's users' passwords.
 func (sc *Scoped) SetPassword(ctx context.Context, userID int64, password string) error {
 	if _, err := sc.GetUserByID(ctx, userID); err != nil {

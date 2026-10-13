@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 950ded5</p>
+<p class="version">version 0.1 · 8f87f3e</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -2902,6 +2902,9 @@ rules:
 <p>Saving a channel keeps it inside the person&#39;s groups: they cannot create a channel in another group, or move one out of their own. What every facility shares - code tables, script libraries, prior-authorisation decisions - they can read but not change. Server-wide figures (prior authorisation, token use, tunnels) are shown only to people with no limit, and so are metrics and alerts about the whole server rather than a channel.</p>
 <p>An administrator limited to groups is a facility&#39;s own administrator. They manage the people and tokens of their groups, start and stop their channels and clear their queues. A colleague they add gets their groups unless they name some of them, they cannot give a group they do not have, and they never see or change anybody with no limit. Everything else an administrator can do changes the whole server - settings, sign-on, restarting, alert rules, branding, fleet, the SMART server - and is refused to them.</p>
 <p>Groups are set in <strong>Users</strong> (and for tokens in <strong>Tokens</strong>), as a comma-separated list. Each change is recorded in the activity log and takes effect at the person&#39;s next request.</p>
+<h4 id="a-different-role-in-each-group">A different role in each group</h4>
+<p>A person can hold a different role in each of their groups: <code>lab=editor, adt</code> in <strong>Users</strong> edits the lab&#39;s channels and has the role chosen beside it - say viewer - in the admissions ones. They see both groups&#39; channels on every screen. Saving, starting or resending one in a group where their role is too low is refused with the role they hold there; it does not pretend the channel is missing, since they can see it. Their role at the top of the screen is the strongest they hold, which opens the screens that role uses, and every action on those screens is still narrowed to the groups where they hold it.</p>
+<p>Only people limited to channel groups can have one. Somebody who sees every channel has one role, because &#34;editor of the lab&#39;s channels&#34; for a person with no limit would be editor of everything that belongs to no group, and of the server-wide pages. A facility&#39;s administrator can give a role per group only in the groups they administer, and never above their own role there.</p>
 <h3 id="s17-3-who-may-call-the-fhir-endpoint"><span class="num">17.3</span> Who may call the FHIR endpoint</h3>
 <p>The FHIR endpoint (<code>serve -fhir</code>) checks one of two kinds of token:</p>
 <ul>
@@ -2956,6 +2959,17 @@ rules:
 <p>Local accounts are always available and cannot be turned off. That is deliberate: an on-premises integration engine whose only way in is an identity provider becomes unreachable exactly when the identity provider is unreachable, and a clinical interface is not a good place to learn that. The sign-on screen tells you how many local administrators exist before it encourages you to depend on anything else.</p>
 <h4 id="s17-10-1-what-a-group-mapping-decides"><span class="num">17.10.1</span> What a group mapping decides</h4>
 <p>All three map groups from the directory to Perfuse roles, and somebody in groups matching more than one gets the most privileged. That is the only safe direction to resolve it — the alternative is a person losing access they are entitled to because they are also in a lesser group.</p>
+<p>Any of the six roles can be granted: monitor, viewer, operator, editor, admin and platform.</p>
+<p>A group can also be limited to some channel groups, in the second box of its row (<code>channel_groups</code> in the file). Once any group names one, every sign-in sets the person&#39;s channel groups from the groups that granted their role: somebody in a group that edits the lab&#39;s channels and in another that views every channel is an editor of the lab&#39;s channels and nothing else. The strongest role is never joined to the widest reach, because neither group grants that. A group with an empty box gives every channel. While no group names any, sign-in leaves channel groups as an administrator set them in <strong>Users</strong>.</p>
+<p>When every group a person matches names channel groups, each channel group gets the strongest role among the groups that name it: with <code>Lab-Interfaces</code> (editor, lab) and <code>Clinical-IT</code> (viewer, lab and adt), the person edits the lab&#39;s channels and views the admissions ones, as if set by hand. When one of their groups gives every channel, there is no list to hold a role per group, and the rule above applies.</p>
+<pre class="code lang-yaml"><code>roles:
+  editor: [Lab-Interfaces]
+  operator: [Night-Desk]
+  viewer: [Clinical-IT]
+  channel_groups:
+    Lab-Interfaces: [lab, pathology]
+    Night-Desk: [adt]</code></pre>
+<p>That is the OpenID Connect and SAML file. The directory&#39;s file maps each group to one role (<code>roles: {Lab-Interfaces: editor}</code>), and <code>channel_groups</code> sits beside <code>roles</code> there.</p>
 <p>A mapping that grants nobody anything is refused rather than saved. A configuration that authenticates people and turns all of them away looks identical to a broken product from the outside: the round trip completes and everybody is denied with nothing explaining why.</p>
 <p>Creating an account on first sign-in is off by default. With it off, somebody has to exist in Perfuse before they can sign in, so the directory decides who they are and Perfuse decides who is allowed in.</p>
 <h4 id="s17-10-2-saml-specifically"><span class="num">17.10.2</span> SAML, specifically</h4>

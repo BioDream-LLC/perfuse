@@ -310,6 +310,31 @@ test("a group can be mapped, saved, and comes back", async ({ page }) => {
   await expect(page.getByRole("status")).toBeVisible({ timeout: 20_000 });
 });
 
+test("a group can be limited to channel groups, and the limit comes back", async ({ page }) => {
+  await page.goto("/");
+  await openSignon(page);
+
+  await page.getByLabel("Group name to map").fill("night-desk");
+  await page.getByRole("button", { name: "+ Map this group" }).click();
+  await page.getByRole("combobox", { name: "Role for night-desk" }).selectOption("operator");
+  await page.getByRole("textbox", { name: "Channel groups for night-desk" }).fill("adt, lab");
+
+  await page.getByRole("button", { name: "Save sign-on settings" }).click();
+  await expect(page.getByRole("status")).toContainText(/after a restart/i, { timeout: 20_000 });
+
+  await page.reload();
+  await openSignon(page);
+  await expect(page.getByRole("combobox", { name: "Role for night-desk" })).toHaveValue("operator", { timeout: 20_000 });
+  await expect(
+    page.getByRole("textbox", { name: "Channel groups for night-desk" }),
+    "a channel-group limit was saved and did not come back",
+  ).toHaveValue("adt, lab");
+
+  await page.getByRole("button", { name: "Stop mapping night-desk" }).click();
+  await page.getByRole("button", { name: "Save sign-on settings" }).click();
+  await expect(page.getByRole("status")).toBeVisible({ timeout: 20_000 });
+});
+
 test("the screen says whether sign-on is actually running", async ({ page }) => {
   await page.goto("/");
   await openSignon(page);

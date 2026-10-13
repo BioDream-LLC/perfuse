@@ -119,11 +119,16 @@ function RoleMapping({
   roles,
   available,
   onChange,
+  channelGroups,
+  onChannelGroups,
   idPrefix,
 }: {
   roles: Record<string, string>
   available: string[]
   onChange: (next: Record<string, string>) => void
+  /** Group name to the channel groups it is limited to; absent or empty is every channel. */
+  channelGroups: Record<string, string[]>
+  onChannelGroups: (next: Record<string, string[]>) => void
   idPrefix: string
 }) {
   const [newGroup, setNewGroup] = useState('')
@@ -157,6 +162,21 @@ function RoleMapping({
             ))}
           </select>
 
+          <input
+            aria-label={`Channel groups for ${group}`}
+            className="input max-w-[16rem] font-mono text-xs"
+            placeholder="every channel"
+            title="Channel groups this directory group is limited to, separated by commas. Empty: every channel."
+            value={(channelGroups[group] ?? []).join(', ')}
+            onChange={(e) => {
+              const list = e.target.value.split(',').map((v) => v.trim())
+              const next = { ...channelGroups }
+              if (list.every((v) => v === '')) delete next[group]
+              else next[group] = list
+              onChannelGroups(next)
+            }}
+          />
+
           <button
             type="button"
             className="btn-ghost py-1 text-xs"
@@ -165,12 +185,25 @@ function RoleMapping({
               const next = { ...roles }
               delete next[group]
               onChange(next)
+              if (group in channelGroups) {
+                const cg = { ...channelGroups }
+                delete cg[group]
+                onChannelGroups(cg)
+              }
             }}
           >
             Remove
           </button>
         </div>
       ))}
+
+      {rows.length > 0 && (
+        <p className="text-xs leading-relaxed text-slate-500">
+          The second box limits a group to some channel groups. Once any group names one, every sign-in sets the person's channel
+          groups from the groups that granted their role, so somebody who may edit the lab's channels and view everything else is
+          an editor of the lab's channels only. Leave every box empty to keep the channel groups an administrator sets by hand.
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <input
@@ -324,7 +357,11 @@ export function SignonEditor() {
       fields: doc.oidcFields,
       config: oidc as unknown as Record<string, unknown> | null,
       roles: oidc?.roles,
-      setRoles: (next: Record<string, string>) => setOIDC({ ...oidc!, roles: next }),
+      // Functional updates: removing a row changes the roles and the channel groups in one click, and two updates spread from
+      // the same render would each undo the other.
+      setRoles: (next: Record<string, string>) => setOIDC((prev) => ({ ...prev!, roles: next })),
+      channelGroups: oidc?.channelGroups,
+      setChannelGroups: (next: Record<string, string[]>) => setOIDC((prev) => ({ ...prev!, channelGroups: next })),
       test: oidcTest,
       // Part of the report's accessible name, so the existing wording is kept rather than tidied.
       title: 'Provider',
@@ -334,7 +371,11 @@ export function SignonEditor() {
       fields: doc.samlFields,
       config: saml as unknown as Record<string, unknown> | null,
       roles: saml?.roles,
-      setRoles: (next: Record<string, string>) => setSAML({ ...saml!, roles: next }),
+      // Functional updates: removing a row changes the roles and the channel groups in one click, and two updates spread from
+      // the same render would each undo the other.
+      setRoles: (next: Record<string, string>) => setSAML((prev) => ({ ...prev!, roles: next })),
+      channelGroups: saml?.channelGroups,
+      setChannelGroups: (next: Record<string, string[]>) => setSAML((prev) => ({ ...prev!, channelGroups: next })),
       test: samlTest,
       title: 'SAML',
     },
@@ -343,7 +384,11 @@ export function SignonEditor() {
       fields: doc.ldapFields,
       config: ldap as unknown as Record<string, unknown> | null,
       roles: ldap?.roles,
-      setRoles: (next: Record<string, string>) => setLDAP({ ...ldap!, roles: next }),
+      // Functional updates: removing a row changes the roles and the channel groups in one click, and two updates spread from
+      // the same render would each undo the other.
+      setRoles: (next: Record<string, string>) => setLDAP((prev) => ({ ...prev!, roles: next })),
+      channelGroups: ldap?.channelGroups,
+      setChannelGroups: (next: Record<string, string[]>) => setLDAP((prev) => ({ ...prev!, channelGroups: next })),
       test: ldapTest,
       title: 'Directory',
     },
@@ -370,6 +415,8 @@ export function SignonEditor() {
             roles={perTab.roles ?? {}}
             available={doc!.roles}
             onChange={(next) => perTab.setRoles(next)}
+            channelGroups={perTab.channelGroups ?? {}}
+            onChannelGroups={(next) => perTab.setChannelGroups(next)}
           />
         </div>
       )

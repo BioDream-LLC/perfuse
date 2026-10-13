@@ -173,6 +173,7 @@ func TestSignonFieldsCoverTheWholeConfigurationFile(t *testing.T) {
 			what:   "the directory",
 			keys:   yamlKeys(t, ldap.Config{}),
 			fields: described(got.LDAPFields),
+			skip:   map[string]string{"channel_groups": "a column of the role mapping, which the roles field edits"},
 		},
 		{
 			// SAML was added here after a break went uncaught. Removing allow_unsolicited from the catalogue left every test
@@ -185,6 +186,9 @@ func TestSignonFieldsCoverTheWholeConfigurationFile(t *testing.T) {
 	} {
 		t.Run(tc.what, func(t *testing.T) {
 			for _, key := range tc.keys {
+				if _, ok := tc.skip[key]; ok {
+					continue
+				}
 				if !tc.fields[key] {
 					t.Errorf("%s has a %s setting and the editor does not offer it, so it can only be set by editing the file", tc.what, key)
 				}
@@ -688,9 +692,9 @@ func TestEverySignonFieldNamesARealJSONProperty(t *testing.T) {
 			}
 
 			for property := range properties {
-				// caseSensitive is edited through the role mapping rather than as a field of its own, which is a deliberate
-				// exception and the only one: it is a property of how groups are matched, not a setting somebody sets separately.
-				if property == "caseSensitive" {
+				// caseSensitive and channelGroups are edited through the role mapping rather than as fields of their own, the only
+				// two exceptions: one is how groups are matched, the other a column of the same rows.
+				if property == "caseSensitive" || property == "channelGroups" {
 					continue
 				}
 				if !described[property] {

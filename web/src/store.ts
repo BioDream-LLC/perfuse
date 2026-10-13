@@ -216,11 +216,23 @@ export const loadUsers = createAsyncThunk('users/load', async (_, { rejectWithVa
 export const addUser = createAsyncThunk(
   'users/add',
   async (
-    args: { username: string; password: string; role: Role; channelGroups?: string[] },
+    args: {
+      username: string
+      password: string
+      role: Role
+      channelGroups?: string[]
+      groupRoles?: Record<string, Role>
+    },
     { rejectWithValue, dispatch },
   ) => {
     try {
-      const u = await api.createUser(args.username, args.password, args.role, args.channelGroups ?? [])
+      const u = await api.createUser(
+        args.username,
+        args.password,
+        args.role,
+        args.channelGroups ?? [],
+        args.groupRoles ?? {},
+      )
       await dispatch(loadUsers())
       return u
     } catch (err) {
@@ -234,7 +246,13 @@ export const patchUser = createAsyncThunk(
   async (
     args: {
       id: number
-      patch: { role?: Role; password?: string; disabled?: boolean; channelGroups?: string[] }
+      patch: {
+        role?: Role
+        password?: string
+        disabled?: boolean
+        channelGroups?: string[]
+        groupRoles?: Record<string, Role>
+      }
     },
     { rejectWithValue, dispatch },
   ) => {

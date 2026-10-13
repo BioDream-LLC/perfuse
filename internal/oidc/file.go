@@ -34,8 +34,13 @@ type FileConfig struct {
 		Platform      []string `yaml:"platform,omitempty"`
 		Admin         []string `yaml:"admin,omitempty"`
 		Editor        []string `yaml:"editor,omitempty"`
+		Operator      []string `yaml:"operator,omitempty"`
 		Viewer        []string `yaml:"viewer,omitempty"`
+		Monitor       []string `yaml:"monitor,omitempty"`
 		CaseSensitive bool     `yaml:"case_sensitive,omitempty"`
+
+		// ChannelGroups limits a directory group to these channel groups; absent or empty is every channel.
+		ChannelGroups map[string][]string `yaml:"channel_groups,omitempty"`
 	} `yaml:"roles"`
 }
 
@@ -97,7 +102,10 @@ func LoadFileWithoutDiscovery(path string) (*FileConfig, error) {
 		Platform:      cfg.Roles.Platform,
 		Admin:         cfg.Roles.Admin,
 		Editor:        cfg.Roles.Editor,
+		Operator:      cfg.Roles.Operator,
 		Viewer:        cfg.Roles.Viewer,
+		Monitor:       cfg.Roles.Monitor,
+		ChannelGroups: cfg.Roles.ChannelGroups,
 		CaseSensitive: cfg.Roles.CaseSensitive,
 	}
 	if errs := mapping.Validate(); len(errs) > 0 {
@@ -159,7 +167,10 @@ func LoadFile(ctx context.Context, path string) (*FileConfig, *Provider, *RoleMa
 		Platform:      cfg.Roles.Platform,
 		Admin:         cfg.Roles.Admin,
 		Editor:        cfg.Roles.Editor,
+		Operator:      cfg.Roles.Operator,
 		Viewer:        cfg.Roles.Viewer,
+		Monitor:       cfg.Roles.Monitor,
+		ChannelGroups: cfg.Roles.ChannelGroups,
 		CaseSensitive: cfg.Roles.CaseSensitive,
 	}
 	if errs := mapping.Validate(); len(errs) > 0 {

@@ -20,6 +20,8 @@ export interface Me {
   role: Role
   /** The channel groups this person is limited to; absent means every channel. */
   channelGroups?: string[]
+  /** The role in each channel group, present when they differ; role is then the strongest. */
+  groupRoles?: Record<string, Role>
 }
 
 /** How this server allows people to sign in. */
@@ -151,6 +153,8 @@ export interface User {
   lastLogin?: string
   /** The channel groups this account is limited to; absent means every channel. */
   channelGroups?: string[]
+  /** A different role in some of those groups; a group absent here has the account's role. */
+  groupRoles?: Record<string, Role>
 }
 
 /** What a platform operator allows one tenant. 0 or absent: no limit. */
@@ -1344,12 +1348,23 @@ export const api = {
     body: { name: string; disabled: boolean; notes: string; limits?: TenantLimits },
   ) => request<Tenant>('PUT', `/api/tenants/${encodeURIComponent(id)}`, body),
 
-  createUser: (username: string, password: string, role: Role, channelGroups: string[] = []) =>
-    request<User>('POST', '/api/users', { username, password, role, channelGroups }),
+  createUser: (
+    username: string,
+    password: string,
+    role: Role,
+    channelGroups: string[] = [],
+    groupRoles: Record<string, Role> = {},
+  ) => request<User>('POST', '/api/users', { username, password, role, channelGroups, groupRoles }),
 
   updateUser: (
     id: number,
-    patch: { role?: Role; password?: string; disabled?: boolean; channelGroups?: string[] },
+    patch: {
+      role?: Role
+      password?: string
+      disabled?: boolean
+      channelGroups?: string[]
+      groupRoles?: Record<string, Role>
+    },
   ) =>
     request<User>('PUT', `/api/users/${id}`, patch),
 
@@ -2316,6 +2331,8 @@ export interface OIDCConfig {
   /** Group name to role, one row per group. */
   roles: Record<string, string>
   caseSensitive: boolean
+  /** Group name to the channel groups it is limited to. A group absent or empty sees every channel. */
+  channelGroups: Record<string, string[]>
 }
 
 export interface LDAPConfig {
@@ -2336,6 +2353,7 @@ export interface LDAPConfig {
   groupFilter: string
   groupNameAttribute: string
   roles: Record<string, string>
+  channelGroups: Record<string, string[]>
   createUsers: boolean
   buttonLabel: string
   timeout: string
@@ -2369,6 +2387,7 @@ export interface SAMLConfig {
   allowUnsolicited: boolean
   roles: Record<string, string>
   caseSensitive: boolean
+  channelGroups: Record<string, string[]>
 }
 
 export interface SignonDocument {

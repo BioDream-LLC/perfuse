@@ -85,6 +85,10 @@ type Config struct {
 	// clinical message flow.
 	Roles map[string]string `yaml:"roles"`
 
+	// ChannelGroups limits a directory group to these Perfuse channel groups; a group absent here, or with an empty list,
+	// sees every channel. Same rule as OIDC and SAML: only once some group names channel groups does sign-in set them.
+	ChannelGroups map[string][]string `yaml:"channel_groups,omitempty"`
+
 	// CreateUsers allows a first sign-in to create a local record.
 	CreateUsers bool `yaml:"create_users,omitempty"`
 
@@ -170,10 +174,10 @@ func (c *Config) Validate() error {
 			problems = append(problems, "a role mapping has an empty group name")
 		}
 		switch role {
-		case "viewer", "editor", "admin", "platform":
+		case "monitor", "viewer", "operator", "editor", "admin", "platform":
 		default:
 			problems = append(problems, fmt.Sprintf("the group %q maps to %q, which is not a role; "+
-				"use viewer, editor, admin or platform", group, role))
+				"use monitor, viewer, operator, editor, admin or platform", group, role))
 		}
 	}
 
@@ -229,7 +233,7 @@ func (c *Config) groupFilterFor(dn, username string) string {
 // cannot be reproduced.
 func (c *Config) RoleFor(groups []string) (string, bool) {
 	best := ""
-	rank := map[string]int{"viewer": 1, "editor": 2, "admin": 3, "platform": 4}
+	rank := map[string]int{"monitor": 1, "viewer": 2, "operator": 3, "editor": 4, "admin": 5, "platform": 6}
 
 	// The comparison is case-insensitive. Directories return group names with whatever capitalisation they were
 	// created with, and a mapping written as perfuse-admins must not silently miss Perfuse-Admins.

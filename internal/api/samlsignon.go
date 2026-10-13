@@ -44,12 +44,15 @@ func samlToJSON(cfg *saml.FileConfig) samlConfigJSON {
 		{"platform", cfg.Roles.Platform},
 		{"admin", cfg.Roles.Admin},
 		{"editor", cfg.Roles.Editor},
+		{"operator", cfg.Roles.Operator},
 		{"viewer", cfg.Roles.Viewer},
+		{"monitor", cfg.Roles.Monitor},
 	} {
 		for _, g := range pair.groups {
 			out.Roles[g] = pair.role
 		}
 	}
+	out.ChannelGroups = channelGroupsJSON(cfg.Roles.ChannelGroups)
 
 	return out
 }
@@ -108,8 +111,12 @@ func (s *Server) handleSaveSAML(w http.ResponseWriter, r *http.Request, session 
 			cfg.Roles.Admin = append(cfg.Roles.Admin, name)
 		case "editor":
 			cfg.Roles.Editor = append(cfg.Roles.Editor, name)
+		case "operator":
+			cfg.Roles.Operator = append(cfg.Roles.Operator, name)
 		case "viewer":
 			cfg.Roles.Viewer = append(cfg.Roles.Viewer, name)
+		case "monitor":
+			cfg.Roles.Monitor = append(cfg.Roles.Monitor, name)
 		default:
 			s.fail(w, r, http.StatusBadRequest,
 				fmt.Sprintf("group %q is mapped to %q, which is not a role", name, body.Config.Roles[g]))
@@ -117,6 +124,8 @@ func (s *Server) handleSaveSAML(w http.ResponseWriter, r *http.Request, session 
 			return
 		}
 	}
+
+	cfg.Roles.ChannelGroups = cleanChannelGroups(body.Config.ChannelGroups)
 
 	data, err := marshalYAMLWithHeader("Single sign-on through a SAML 2.0 identity provider.", cfg)
 	if err != nil {
@@ -211,10 +220,16 @@ func (s *Server) handleTestSAML(w http.ResponseWriter, r *http.Request, _ *store
 			cfg.Roles.Admin = append(cfg.Roles.Admin, group)
 		case "editor":
 			cfg.Roles.Editor = append(cfg.Roles.Editor, group)
+		case "operator":
+			cfg.Roles.Operator = append(cfg.Roles.Operator, group)
 		case "viewer":
 			cfg.Roles.Viewer = append(cfg.Roles.Viewer, group)
+		case "monitor":
+			cfg.Roles.Monitor = append(cfg.Roles.Monitor, group)
 		}
 	}
+
+	cfg.Roles.ChannelGroups = cleanChannelGroups(body.Config.ChannelGroups)
 
 	// The settings, as a whole.
 	if err := cfg.Validate(""); err != nil {
@@ -293,7 +308,10 @@ func samlRoleMapping(cfg *saml.FileConfig) *oidc.RoleMapping {
 		Platform:      cfg.Roles.Platform,
 		Admin:         cfg.Roles.Admin,
 		Editor:        cfg.Roles.Editor,
+		Operator:      cfg.Roles.Operator,
 		Viewer:        cfg.Roles.Viewer,
+		Monitor:       cfg.Roles.Monitor,
+		ChannelGroups: cfg.Roles.ChannelGroups,
 		CaseSensitive: cfg.Roles.CaseSensitive,
 	}
 }

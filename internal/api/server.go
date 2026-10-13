@@ -848,6 +848,8 @@ type meResponse struct {
 	Role     string `json:"role"`
 	// ChannelGroups are the channel groups the session is limited to; absent means every channel.
 	ChannelGroups []string `json:"channelGroups,omitempty"`
+	// GroupRoles is the role in each channel group, when they differ; Role is then the strongest of them.
+	GroupRoles map[string]string `json:"groupRoles,omitempty"`
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -981,7 +983,7 @@ func (s *Server) finishLogin(w http.ResponseWriter, r *http.Request, token strin
 		Username: user.Username, Action: "login", IP: clientIP(r),
 	})
 
-	s.ok(w, meResponse{Username: user.Username, Role: string(user.Role), ChannelGroups: user.ChannelGroups})
+	s.ok(w, meFor(store.SessionFor(user)))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -1008,7 +1010,19 @@ func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request, sess *store.Session) {
-	s.ok(w, meResponse{Username: sess.Username, Role: string(sess.Role), ChannelGroups: sess.ChannelGroups})
+	s.ok(w, meFor(sess))
+}
+
+// meFor describes a session to the browser.
+func meFor(sess *store.Session) meResponse {
+	out := meResponse{Username: sess.Username, Role: string(sess.Role), ChannelGroups: sess.ChannelGroups}
+	if len(sess.GroupRoles) > 0 {
+		out.GroupRoles = map[string]string{}
+		for _, g := range sess.ChannelGroups {
+			out.GroupRoles[g] = string(sess.RoleIn(g))
+		}
+	}
+	return out
 }
 
 type changePasswordRequest struct {

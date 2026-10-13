@@ -1,7 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -263,6 +265,8 @@ type createUserRequest struct {
 	Password      string   `json:"password"`
 	Role          string   `json:"role"`
 	ChannelGroups []string `json:"channelGroups,omitempty"`
+	// GroupRoles gives the account a different role in some of its channel groups.
+	GroupRoles map[string]string `json:"groupRoles,omitempty"`
 }
 
 type updateUserRequest struct {
@@ -271,6 +275,65 @@ type updateUserRequest struct {
 	Disabled *bool   `json:"disabled,omitempty"`
 	// ChannelGroups replaces the account's channel groups; an empty list removes the limit.
 	ChannelGroups *[]string `json:"channelGroups,omitempty"`
+	// GroupRoles replaces the account's per-group roles; an empty map gives it its own role in every group.
+	GroupRoles *map[string]string `json:"groupRoles,omitempty"`
+}
+
+// groupRolesToGrant checks per-group roles for an account limited to these channel groups.
+//
+// Each group must be one of the account's: a role in a group the account cannot see would be a grant nobody could see either.
+// A limited administrator may set them only in groups they administer, and never above their own role there, so delegated
+// administration cannot mint a stronger account than the one doing it.
+func (s *Server) groupRolesToGrant(w http.ResponseWriter, r *http.Request, sess *store.Session, groups []string,
+	asked map[string]string) (map[string]store.Role, bool) {
+	if len(asked) == 0 {
+		return nil, true
+	}
+	if len(groups) == 0 {
+		s.fail(w, r, http.StatusBadRequest, "a role per channel group needs the account limited to channel groups; "+
+			"an account that sees every channel has one role")
+		return nil, false
+	}
+	in := map[string]bool{}
+	for _, g := range groups {
+		in[g] = true
+	}
+	out := map[string]store.Role{}
+	for g, rs := range asked {
+		g = strings.TrimSpace(g)
+		role := store.Role(strings.TrimSpace(rs))
+		if g == "" {
+			continue
+		}
+		if !in[g] {
+			s.fail(w, r, http.StatusBadRequest, "channel group "+g+" is not one of the account's channel groups")
+			return nil, false
+		}
+		if !role.Valid() || role == store.RolePlatform {
+			s.fail(w, r, http.StatusBadRequest, roleChoices)
+			return nil, false
+		}
+		if len(sess.ChannelGroups) > 0 && !sess.RoleIn(g).AtLeast(role) {
+			s.fail(w, r, http.StatusForbidden, fmt.Sprintf("in channel group %s you are %s, so you cannot make anyone %s there",
+				g, sess.RoleIn(g), role))
+			return nil, false
+		}
+		out[g] = role
+	}
+	return out, true
+}
+
+// groupRolesDetail is the audit wording for per-group roles.
+func groupRolesDetail(m map[string]store.Role) string {
+	if len(m) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(m))
+	for g, r := range m {
+		parts = append(parts, g+" "+string(r))
+	}
+	sort.Strings(parts)
+	return ", " + strings.Join(parts, ", ")
 }
 
 func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -311,10 +374,23 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, sess *
 		return
 	}
 
+	groupRoles, ok := s.groupRolesToGrant(w, r, sess, groups, req.GroupRoles)
+	if !ok {
+		return
+	}
+
 	u, err := s.storeFor(sess).CreateUser(r.Context(), req.Username, req.Password, role)
 	if err != nil {
 		s.failErr(w, r, err)
 		return
+	}
+	if len(groupRoles) > 0 {
+		if err := s.storeFor(sess).SetGroupRoles(r.Context(), u.ID, groupRoles); err != nil {
+			_ = s.storeFor(sess).DeleteUser(r.Context(), u.ID)
+			s.failErr(w, r, err)
+			return
+		}
+		u.GroupRoles = groupRoles
 	}
 	if len(groups) > 0 {
 		// Removed rather than left unlimited if the limit cannot be recorded: an account meant for one facility must
@@ -330,7 +406,8 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, sess *
 	s.log().Info("user created", "user", u.Username, "role", string(u.Role), "by", sess.Username)
 	_ = s.Store.Audit(r.Context(), store.AuditEntry{
 		Username: sess.Username, Action: "user.create",
-		Target: u.Username, Detail: "role " + string(u.Role) + groupsDetail(u.ChannelGroups), IP: clientIP(r),
+		Target: u.Username, Detail: "role " + string(u.Role) + groupsDetail(u.ChannelGroups) + groupRolesDetail(u.GroupRoles),
+		IP: clientIP(r),
 	})
 
 	s.ok(w, u)
@@ -423,6 +500,54 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, sess *
 			Username: sess.Username, Action: "user.channel_groups",
 			Target: target.Username, Detail: "set to " + detail, IP: clientIP(r),
 		})
+	}
+
+	if req.GroupRoles != nil {
+		if target.ID == sess.UserID && len(sess.ChannelGroups) > 0 {
+			s.fail(w, r, http.StatusConflict, "you cannot change your own roles; ask an administrator who sees every channel")
+			return
+		}
+		groups := target.ChannelGroups
+		if req.ChannelGroups != nil {
+			current, err := s.storeFor(sess).GetUserByID(r.Context(), id)
+			if err != nil {
+				s.failErr(w, r, err)
+				return
+			}
+			groups = current.ChannelGroups
+		}
+		groupRoles, ok := s.groupRolesToGrant(w, r, sess, groups, *req.GroupRoles)
+		if !ok {
+			return
+		}
+		if err := s.storeFor(sess).SetGroupRoles(r.Context(), id, groupRoles); err != nil {
+			s.failErr(w, r, err)
+			return
+		}
+		if err := s.storeFor(sess).DeleteUserSessions(r.Context(), id); err != nil {
+			s.failErr(w, r, err)
+			return
+		}
+		detail := "its own role in every group"
+		if len(groupRoles) > 0 {
+			detail = strings.TrimPrefix(groupRolesDetail(groupRoles), ", ")
+		}
+		_ = s.Store.Audit(r.Context(), store.AuditEntry{
+			Username: sess.Username, Action: "user.group_roles",
+			Target: target.Username, Detail: "set to " + detail, IP: clientIP(r),
+		})
+	} else if req.ChannelGroups != nil && len(target.GroupRoles) > 0 {
+		// A group dropped from the account takes its role with it, so a later re-add does not bring back a grant nobody made again.
+		current, err := s.storeFor(sess).GetUserByID(r.Context(), id)
+		if err == nil {
+			kept := map[string]store.Role{}
+			for _, g := range current.ChannelGroups {
+				if role, ok := target.GroupRoles[g]; ok {
+					kept[g] = role
+				}
+			}
+			_ = s.storeFor(sess).SetGroupRoles(r.Context(), id, kept)
+		}
 	}
 
 	if req.Role != nil {

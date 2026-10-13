@@ -467,6 +467,13 @@ var migrations = []migration{
 			{"tenants", "max_storage_mb", "INTEGER NOT NULL DEFAULT 0"},
 		},
 	},
+	{
+		// A different role in some of a person's channel groups: "lab=editor,adt=viewer". Empty: the account's role in all of them.
+		name: "group-roles",
+		addColumns: []columnAdd{
+			{"users", "group_roles", "TEXT NOT NULL DEFAULT ''"},
+		},
+	},
 }
 
 // applyMigrations runs whatever has not run yet.
