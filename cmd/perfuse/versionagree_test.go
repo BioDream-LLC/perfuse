@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // TestTheServedVersionIsDerivedFromTheResourceShapes is the guard that would have caught the defect.

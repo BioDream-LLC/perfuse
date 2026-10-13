@@ -27,7 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
+	"github.com/biodream-llc/perfuse/pas"
 )
 
 const (
@@ -45,7 +46,12 @@ const (
 type PAS struct {
 	// Decide answers one service without a reviewer. Nil pends everything, which is the honest default for a payer that has
 	// written no rules.
-	Decide func(codes ...map[string]any) PASAnswer
+	//
+	// It is given the whole request, not only the service's codes, because a medical necessity decision rests on the clinical
+	// evidence the provider sent with it - the conditions, the questionnaire answers, the documents in the Bundle. A rule
+	// that looks only at svc.Codes is still a correct Decide. ctx is the provider's request: a Decide that calls out (to a
+	// decision service such as Vaglio) must give up when it does.
+	Decide func(ctx context.Context, req *pas.Request, svc pas.Service) PASAnswer
 	// Now is the clock, for tests. Nil is time.Now.
 	Now func() time.Time
 	// UM, when set, sends every request to the payer's utilization management system as an X12 278 and answers with its
@@ -198,12 +204,9 @@ func (s *Server) pasBody(w http.ResponseWriter, r *http.Request) (map[string]any
 	return body, true
 }
 
-// pasRequest is a request Bundle, read: its Claim and how its references resolve.
+// pasRequest is a request Bundle, read by the published pas package, with what this server adds while answering it.
 type pasRequest struct {
-	bundle   map[string]any
-	claim    map[string]any
-	claimURL string
-	entries  []map[string]any
+	*pas.Request
 	// um holds the payer UM system's answers by item sequence, when the request was forwarded as an X12 278; umAuth is the
 	// authorization number it assigned, and umTraces the 278 trace numbers sent, by item sequence.
 	um       map[string]itemDecision
@@ -211,83 +214,14 @@ type pasRequest struct {
 	umTraces map[string]string
 }
 
-// readPASRequest checks what this server needs to answer and says everything missing at once. It does not repeat the
-// profile validation a client should have done; it refuses what could not be answered correctly.
+// readPASRequest reads a request with the published reader, so that a decision service reading the same Bundle through
+// package pas sees exactly what this server sees.
 func readPASRequest(b map[string]any, inquiry bool) (*pasRequest, []string) {
-	var problems []string
-	if b["resourceType"] != "Bundle" {
-		return nil, []string{"the request must be a PAS Request Bundle, and this is not a Bundle"}
+	r, problems := pas.Read(b, inquiry)
+	if r == nil {
+		return nil, problems
 	}
-	if b["type"] != "collection" {
-		problems = append(problems, fmt.Sprintf("Bundle.type must be collection, not %q", str(b["type"])))
-	}
-	req := &pasRequest{bundle: b}
-	for _, e := range asSliceAny(b["entry"]) {
-		req.entries = append(req.entries, asMapAny(e))
-	}
-	if len(req.entries) == 0 {
-		return nil, append(problems, "the Bundle has no entries; its first entry must be the Claim")
-	}
-	req.claim = asMapAny(req.entries[0]["resource"])
-	req.claimURL = str(req.entries[0]["fullUrl"])
-	if req.claim["resourceType"] != "Claim" {
-		return nil, append(problems, "the Bundle's first entry must be the Claim")
-	}
-	if req.claimURL == "" {
-		problems = append(problems, "the Claim's entry has no fullUrl")
-	}
-	if req.claim["use"] != "preauthorization" {
-		problems = append(problems, fmt.Sprintf("Claim.use must be preauthorization, not %q", str(req.claim["use"])))
-	}
-	for _, field := range []string{"patient", "insurer", "provider"} {
-		ref := str(asMapAny(req.claim[field])["reference"])
-		if ref == "" {
-			problems = append(problems, "Claim."+field+" is missing")
-		} else if req.resolve(ref) == nil {
-			problems = append(problems, fmt.Sprintf("Claim.%s %q is not in the Bundle", field, ref))
-		}
-	}
-	if !inquiry && len(asSliceAny(req.claim["item"])) == 0 {
-		problems = append(problems, "the Claim has no items: there is nothing to authorize")
-	}
-	return req, problems
-}
-
-// resolve finds the entry a reference names: by fullUrl, or relative to the Claim's base as FHIR resolves a relative reference
-// inside a Bundle.
-func (req *pasRequest) resolve(ref string) map[string]any {
-	if ref == "" {
-		return nil
-	}
-	full := ref
-	if !strings.Contains(ref, ":") && strings.Count(ref, "/") == 1 {
-		if base := fhirBaseOf(req.claimURL); base != "" {
-			full = base + "/" + ref
-		}
-	}
-	for _, e := range req.entries {
-		u := str(e["fullUrl"])
-		if u == ref || u == full {
-			return e
-		}
-		res := asMapAny(e["resource"])
-		if u == "" && ref == str(res["resourceType"])+"/"+str(res["id"]) {
-			return e
-		}
-	}
-	return nil
-}
-
-// fhirBaseOf is the base of an absolute resource URL: https://x/fhir/Claim/1 is https://x/fhir.
-func fhirBaseOf(u string) string {
-	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
-		return ""
-	}
-	parts := strings.Split(strings.TrimRight(u, "/"), "/")
-	if len(parts) < 5 {
-		return ""
-	}
-	return strings.Join(parts[:len(parts)-2], "/")
+	return &pasRequest{Request: r}, problems
 }
 
 func (s *Server) refusePAS(w http.ResponseWriter, r *http.Request, problems []string) {
@@ -316,7 +250,7 @@ func (s *Server) handlePASSubmit(w http.ResponseWriter, r *http.Request) {
 	if s.PAS.UM != nil && s.PAS.UM.Send != nil {
 		s.askUM(r.Context(), req, id, now)
 	}
-	response, pended := s.pasRespond(req, id, now)
+	response, pended := s.pasRespond(r.Context(), req, id, now)
 	if err := s.savePAS(r.Context(), req, id, response, pended, now); err != nil {
 		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
 		return
@@ -360,39 +294,11 @@ func cancels(o map[string]any) bool {
 	return false
 }
 
-// usableCode says whether a CodeableConcept names a service, rather than saying it has none (data-absent-reason).
-func usableCode(cc map[string]any) bool {
-	for _, c := range asSliceAny(cc["coding"]) {
-		cm := asMapAny(c)
-		if str(cm["code"]) != "" && str(cm["system"]) != "http://terminology.hl7.org/CodeSystem/data-absent-reason" {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Server) decideItem(req *pasRequest, item map[string]any) itemDecision {
-	if cancels(req.claim) || cancels(item) {
+func (s *Server) decideItem(ctx context.Context, req *pasRequest, item map[string]any) itemDecision {
+	if cancels(req.Claim) || cancels(item) {
 		return pasCancelled
 	}
-	var codes []map[string]any
-	if cc := asMapAny(item["productOrService"]); usableCode(cc) {
-		codes = append(codes, cc)
-	}
-	for _, e := range asSliceAny(item["extension"]) {
-		em := asMapAny(e)
-		if str(em["url"]) != pasBase+"extension-requestedService" {
-			continue
-		}
-		if order := req.resolve(str(asMapAny(em["valueReference"])["reference"])); order != nil {
-			res := asMapAny(order["resource"])
-			for _, f := range []string{"code", "codeCodeableConcept", "medicationCodeableConcept"} {
-				if cc := asMapAny(res[f]); usableCode(cc) {
-					codes = append(codes, cc)
-				}
-			}
-		}
-	}
+	codes := req.ServiceCodes(item)
 	if len(codes) == 0 {
 		// Nothing to decide about. X12 answers this with AAA, an error, not with a decision.
 		return itemDecision{missing: "productOrService"}
@@ -407,7 +313,7 @@ func (s *Server) decideItem(req *pasRequest, item map[string]any) itemDecision {
 	}
 	a := PASAnswer{Decision: "pend"}
 	if s.PAS.Decide != nil {
-		a = s.PAS.Decide(codes...)
+		a = s.PAS.Decide(ctx, req.Request, pas.Service{Sequence: fmt.Sprint(item["sequence"]), Item: item, Codes: codes})
 	}
 	var d itemDecision
 	switch a.Decision {
@@ -471,7 +377,7 @@ func certifies(d itemDecision) bool {
 // Claim.careTeam, as itemAuthorizedProvider extensions.
 func (c *pasContext) careTeamProviders(sequences []any) []any {
 	var out []any
-	for _, ct := range asSliceAny(c.req.claim["careTeam"]) {
+	for _, ct := range asSliceAny(c.req.Claim["careTeam"]) {
 		ctm := asMapAny(ct)
 		if sequences == nil {
 			whole := false
@@ -493,7 +399,7 @@ func (c *pasContext) careTeamProviders(sequences []any) []any {
 			}
 		}
 		ref := str(asMapAny(ctm["provider"])["reference"])
-		if role := c.req.resolve(ref); role != nil && asMapAny(role["resource"])["resourceType"] == "PractitionerRole" {
+		if role := c.req.Resolve(ref); role != nil && asMapAny(role["resource"])["resourceType"] == "PractitionerRole" {
 			// The authorized provider is a Practitioner or an Organization; a role names both.
 			rr := asMapAny(role["resource"])
 			ref = str(asMapAny(rr["practitioner"])["reference"])
@@ -518,12 +424,12 @@ func (c *pasContext) careTeamProviders(sequences []any) []any {
 
 // encounterPeriod is the period of the encounter the Claim names, when it has one.
 func (c *pasContext) encounterPeriod() map[string]any {
-	for _, e := range asSliceAny(c.req.claim["extension"]) {
+	for _, e := range asSliceAny(c.req.Claim["extension"]) {
 		em := asMapAny(e)
 		if !strings.HasSuffix(str(em["url"]), "extension-Claim.encounter") {
 			continue
 		}
-		if enc := c.req.resolve(str(asMapAny(em["valueReference"])["reference"])); enc != nil {
+		if enc := c.req.Resolve(str(asMapAny(em["valueReference"])["reference"])); enc != nil {
 			return asMapAny(asMapAny(enc["resource"])["period"])
 		}
 	}
@@ -598,7 +504,7 @@ func (c *pasContext) addedItem(item map[string]any, d itemDecision) map[string]a
 		}
 	}
 	var providers []any
-	for _, ct := range asSliceAny(c.req.claim["careTeam"]) {
+	for _, ct := range asSliceAny(c.req.Claim["careTeam"]) {
 		ctm := asMapAny(ct)
 		for _, seq := range asSliceAny(item["careTeamSequence"]) {
 			if fmt.Sprint(seq) == fmt.Sprint(ctm["sequence"]) {
@@ -617,8 +523,8 @@ func (c *pasContext) addedItem(item map[string]any, d itemDecision) map[string]a
 }
 
 // pasRespond builds the PAS Response Bundle. pended says whether any item waits for a reviewer.
-func (s *Server) pasRespond(req *pasRequest, id string, now time.Time) (map[string]any, bool) {
-	claim := req.claim
+func (s *Server) pasRespond(ctx context.Context, req *pasRequest, id string, now time.Time) (map[string]any, bool) {
+	claim := req.Claim
 	c := &pasContext{req: req, id: id, authNumber: "PA-" + strings.ToUpper(id[:8]),
 		today: now.Format("2006-01-02"), until: now.AddDate(0, 0, pasAuthDays).Format("2006-01-02")}
 	if req.umAuth != "" {
@@ -632,7 +538,7 @@ func (s *Server) pasRespond(req *pasRequest, id string, now time.Time) (map[stri
 	decisions := map[string]bool{}
 	for i, it := range asSliceAny(claim["item"]) {
 		item := asMapAny(it)
-		d := s.decideItem(req, item)
+		d := s.decideItem(ctx, req, item)
 		out := map[string]any{"itemSequence": item["sequence"]}
 		if d.missing != "" {
 			n := c.note(fmt.Sprintf("Item %v names no service, so it cannot be decided; send it again with the service requested.", item["sequence"]))
@@ -688,7 +594,7 @@ func (s *Server) pasRespond(req *pasRequest, id string, now time.Time) (map[stri
 	}
 
 	ref := func(field string) map[string]any {
-		e := req.resolve(str(asMapAny(claim[field])["reference"]))
+		e := req.Resolve(str(asMapAny(claim[field])["reference"]))
 		return map[string]any{"reference": str(e["fullUrl"])}
 	}
 	ext := []any{map[string]any{"url": pasBase + "extension-claimResponseReviewer",
@@ -708,7 +614,7 @@ func (s *Server) pasRespond(req *pasRequest, id string, now time.Time) (map[stri
 		"created":      now.Format(time.RFC3339),
 		"insurer":      ref("insurer"),
 		"requestor":    ref("provider"),
-		"request":      map[string]any{"reference": req.claimURL},
+		"request":      map[string]any{"reference": req.ClaimURL},
 		// Outcome is processing, not the decision: a pended request was processed and its answer is A4 (see pas278).
 		"outcome": "complete",
 		"item":    items,
@@ -748,7 +654,7 @@ func (s *Server) pasRespond(req *pasRequest, id string, now time.Time) (map[stri
 		var ins []any
 		for _, i := range asSliceAny(claim["insurance"]) {
 			im := asMapAny(i)
-			cov := req.resolve(str(asMapAny(im["coverage"])["reference"]))
+			cov := req.Resolve(str(asMapAny(im["coverage"])["reference"]))
 			ins = append(ins, map[string]any{"sequence": im["sequence"], "focal": im["focal"],
 				"coverage": map[string]any{"reference": str(cov["fullUrl"])}})
 		}
@@ -784,7 +690,7 @@ func transmissionReply(claim map[string]any) map[string]any {
 // attachments, the DTR questionnaires) and a CommunicationRequest per document.
 func (s *Server) documentationRequests(c *pasContext, pending []any) (map[string]any, []map[string]any) {
 	identifierRef := func(field string) map[string]any {
-		e := c.req.resolve(str(asMapAny(c.req.claim[field])["reference"]))
+		e := c.req.Resolve(str(asMapAny(c.req.Claim[field])["reference"]))
 		ids := asSliceAny(asMapAny(e["resource"])["identifier"])
 		if len(ids) == 0 {
 			return map[string]any{"display": str(asMapAny(e["resource"])["name"])}
@@ -813,7 +719,7 @@ func (s *Server) documentationRequests(c *pasContext, pending []any) (map[string
 			payload := map[string]any{"contentString": loinc}
 			var pext []any
 			for _, seq := range asSliceAny(item["diagnosisSequence"]) {
-				for _, dg := range asSliceAny(c.req.claim["diagnosis"]) {
+				for _, dg := range asSliceAny(c.req.Claim["diagnosis"]) {
 					if dm := asMapAny(dg); fmt.Sprint(dm["sequence"]) == fmt.Sprint(seq) && dm["diagnosisCodeableConcept"] != nil {
 						pext = append(pext, map[string]any{"url": pasBase + "extension-communicatedDiagnosis", "valueCodeableConcept": dm["diagnosisCodeableConcept"]})
 					}
@@ -833,10 +739,10 @@ func (s *Server) documentationRequests(c *pasContext, pending []any) (map[string
 				"category":  []any{map[string]any{"coding": []any{map[string]any{"system": "https://codesystem.x12.org/005010/755", "code": "OZ"}}}},
 				"medium":    []any{map[string]any{"coding": []any{map[string]any{"system": "https://codesystem.x12.org/005010/756", "code": "EL"}}}},
 				"payload":   []any{payload},
-				"requester": map[string]any{"reference": c.req.claim["insurer"].(map[string]any)["reference"]},
-				"recipient": []any{map[string]any{"reference": c.req.claim["insurer"].(map[string]any)["reference"]}},
-				"sender":    map[string]any{"reference": c.req.claim["provider"].(map[string]any)["reference"]},
-				"subject":   map[string]any{"reference": c.req.claim["patient"].(map[string]any)["reference"]},
+				"requester": map[string]any{"reference": c.req.Claim["insurer"].(map[string]any)["reference"]},
+				"recipient": []any{map[string]any{"reference": c.req.Claim["insurer"].(map[string]any)["reference"]}},
+				"sender":    map[string]any{"reference": c.req.Claim["provider"].(map[string]any)["reference"]},
+				"subject":   map[string]any{"reference": c.req.Claim["patient"].(map[string]any)["reference"]},
 			}
 			comms = append(comms, comm)
 		}
@@ -855,11 +761,11 @@ func (s *Server) documentationRequests(c *pasContext, pending []any) (map[string
 		"statusReason":    map[string]any{"text": "The prior authorization request is pended until these are received."},
 		"intent":          "order",
 		"code":            map[string]any{"coding": []any{map[string]any{"system": pasTempCodes, "code": code}}},
-		"for":             map[string]any{"reference": c.req.claim["patient"].(map[string]any)["reference"]},
+		"for":             map[string]any{"reference": c.req.Claim["patient"].(map[string]any)["reference"]},
 		"requester":       identifierRef("insurer"),
 		"owner":           identifierRef("provider"),
 		"reasonCode":      map[string]any{"coding": []any{map[string]any{"system": pasTempCodes, "code": "priorAuthorization"}}},
-		"reasonReference": map[string]any{"reference": c.req.claimURL},
+		"reasonReference": map[string]any{"reference": c.req.ClaimURL},
 		"restriction":     map[string]any{"period": map[string]any{"end": c.until}},
 		"input":           inputs,
 	}
@@ -882,13 +788,13 @@ func pasBundle(req *pasRequest, cr map[string]any, profile string, now time.Time
 					continue
 				}
 				if k == "reference" {
-					e := req.resolve(str(child))
+					e := req.Resolve(str(child))
 					if e == nil {
 						continue
 					}
 					u := str(e["fullUrl"])
 					v[k] = u
-					if !seen[u] && u != req.claimURL {
+					if !seen[u] && u != req.ClaimURL {
 						seen[u] = true
 						res := deepCopy(asMapAny(e["resource"]))
 						entries = append(entries, map[string]any{"fullUrl": u, "resource": res})
@@ -982,7 +888,7 @@ func joinedIDs(res map[string]any) string {
 }
 
 func (s *Server) savePAS(ctx context.Context, req *pasRequest, id string, response map[string]any, pended bool, now time.Time) error {
-	reqRaw, err := json.Marshal(req.bundle)
+	reqRaw, err := json.Marshal(req.Bundle)
 	if err != nil {
 		return err
 	}
@@ -990,8 +896,8 @@ func (s *Server) savePAS(ctx context.Context, req *pasRequest, id string, respon
 	if err != nil {
 		return err
 	}
-	patient := asMapAny(req.resolve(str(asMapAny(req.claim["patient"])["reference"]))["resource"])
-	provider := asMapAny(req.resolve(str(asMapAny(req.claim["provider"])["reference"]))["resource"])
+	patient := asMapAny(req.Resolve(str(asMapAny(req.Claim["patient"])["reference"]))["resource"])
+	provider := asMapAny(req.Resolve(str(asMapAny(req.Claim["provider"])["reference"]))["resource"])
 	tx, err := s.Store.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -999,7 +905,7 @@ func (s *Server) savePAS(ctx context.Context, req *pasRequest, id string, respon
 	defer func() { _ = tx.Rollback() }()
 	if _, err := tx.ExecContext(ctx, `INSERT INTO pas_requests
 		(id, trace, member, provider, claim_url, pended, version, created, updated, request) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-		id, joinedIDs(req.claim), joinedIDs(patient), joinedIDs(provider), req.claimURL, boolInt(pended),
+		id, joinedIDs(req.Claim), joinedIDs(patient), joinedIDs(provider), req.ClaimURL, boolInt(pended),
 		now.UnixMilli(), now.UnixMilli(), string(reqRaw)); err != nil {
 		return err
 	}
@@ -1039,9 +945,9 @@ func (s *Server) handlePASInquire(w http.ResponseWriter, r *http.Request) {
 		s.refusePAS(w, r, problems)
 		return
 	}
-	patient := asMapAny(req.resolve(str(asMapAny(req.claim["patient"])["reference"]))["resource"])
-	provider := asMapAny(req.resolve(str(asMapAny(req.claim["provider"])["reference"]))["resource"])
-	found, err := s.findPAS(r.Context(), identifiersOf(req.claim), identifiersOf(patient), identifiersOf(provider))
+	patient := asMapAny(req.Resolve(str(asMapAny(req.Claim["patient"])["reference"]))["resource"])
+	provider := asMapAny(req.Resolve(str(asMapAny(req.Claim["provider"])["reference"]))["resource"])
+	found, err := s.findPAS(r.Context(), identifiersOf(req.Claim), identifiersOf(patient), identifiersOf(provider))
 	if err != nil {
 		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
 		return
@@ -1271,7 +1177,7 @@ func certifiesFewer(d itemDecision, items map[int]bool, req *pasRequest) error {
 	if d.answer.AllowedQuantity <= 0 || req == nil {
 		return nil
 	}
-	for _, it := range asSliceAny(req.claim["item"]) {
+	for _, it := range asSliceAny(req.Claim["item"]) {
 		item := asMapAny(it)
 		seq, _ := item["sequence"].(float64)
 		if len(items) > 0 && !items[int(seq)] {
@@ -1305,7 +1211,7 @@ func applyDecision(bundle map[string]any, d itemDecision, items map[int]bool, re
 	until := now.AddDate(0, 0, pasAuthDays).Format("2006-01-02")
 	requested := map[string]map[string]any{}
 	if req != nil {
-		for _, it := range asSliceAny(req.claim["item"]) {
+		for _, it := range asSliceAny(req.Claim["item"]) {
 			requested[fmt.Sprint(asMapAny(it)["sequence"])] = asMapAny(it)
 		}
 	}

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // The eICR here is HL7 FHIR eCR 2.1.2 (hl7.fhir.us.ecr), the release the eCR Now and AIMS pipelines accept. It is built from

@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // Granular SMART scopes (SMART App Launch 2): patient/Observation.rs?category=laboratory reads only the Observations a search

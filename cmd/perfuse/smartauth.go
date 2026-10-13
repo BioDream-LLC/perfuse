@@ -9,7 +9,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/store"

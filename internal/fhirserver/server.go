@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // Server is the FHIR REST endpoint.

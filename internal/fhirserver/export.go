@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 
 	"github.com/biodream-llc/perfuse/internal/dbtime"
 )

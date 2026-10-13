@@ -14,8 +14,8 @@ import (
 
 	_ "modernc.org/sqlite"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"github.com/biodream-llc/perfuse/internal/v2fhir"

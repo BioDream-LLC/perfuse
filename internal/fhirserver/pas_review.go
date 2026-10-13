@@ -234,7 +234,7 @@ func scanCase(row rowScanner) (*PASCase, error) {
 	req, _ := readPASRequest(c.Request, true)
 	if req != nil {
 		resource := func(field string) map[string]any {
-			return asMapAny(req.resolve(str(asMapAny(req.claim[field])["reference"]))["resource"])
+			return asMapAny(req.Resolve(str(asMapAny(req.Claim[field])["reference"]))["resource"])
 		}
 		patient := resource("patient")
 		p := personFrom(patient)
@@ -245,12 +245,12 @@ func scanCase(row rowScanner) (*PASCase, error) {
 		if npi := firstIdentifier(resource("provider"), "http://hl7.org/fhir/sid/us-npi"); npi != "" {
 			c.Provider = strings.TrimSpace(c.Provider + " (NPI " + npi + ")")
 		}
-		for _, id := range asSliceAny(req.claim["identifier"]) {
+		for _, id := range asSliceAny(req.Claim["identifier"]) {
 			if v := str(asMapAny(id)["value"]); v != "" && c.Trace == "" {
 				c.Trace = v
 			}
 		}
-		c.Expedited = pasExpedited(req.claim)
+		c.Expedited = pasExpedited(req.Claim)
 	}
 	c.Due = c.Created.Add(pasTimeframe(c.Expedited))
 	notes := map[string]string{}
@@ -283,7 +283,7 @@ func scanCase(row rowScanner) (*PASCase, error) {
 	}
 	requested := map[string]map[string]any{}
 	if req != nil {
-		for _, it := range asSliceAny(req.claim["item"]) {
+		for _, it := range asSliceAny(req.Claim["item"]) {
 			requested[fmt.Sprint(asMapAny(it)["sequence"])] = asMapAny(it)
 		}
 	}

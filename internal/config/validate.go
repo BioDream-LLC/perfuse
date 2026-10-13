@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/expr"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 	"github.com/biodream-llc/perfuse/internal/hl7v3"
 )
 

@@ -3,7 +3,7 @@ package fhirserver
 import (
 	"context"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 	"net/http"
 	"net/http/httptest"
 	"strings"

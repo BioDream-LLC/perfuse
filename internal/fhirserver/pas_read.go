@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // pasRead answers a read of a PAS response, reporting false when the request is not one (PAS is off, the type is not Bundle

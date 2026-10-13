@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 const cdexSubmitAttachment = "http://hl7.org/fhir/us/davinci-cdex/OperationDefinition/submit-attachment"

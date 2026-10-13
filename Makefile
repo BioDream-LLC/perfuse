@@ -36,7 +36,7 @@ vet:
 	$(GO) vet ./...
 
 fmt:
-	gofmt -l -w cmd internal
+	gofmt -l -w cmd internal hl7 fhir pas
 
 # check is what CI runs: formatting must already be clean, not fixed in place.
 # The race detector is not optional here, because the server is concurrent and a
@@ -64,7 +64,7 @@ check: check-go check-cross check-web check-web-current
 GOTESTTIMEOUT ?= 600s
 
 check-go:
-	@test -z "$$(gofmt -l cmd internal)" || { echo "gofmt needed:"; gofmt -l cmd internal; exit 1; }
+	@test -z "$$(gofmt -l cmd internal hl7 fhir pas)" || { echo "gofmt needed:"; gofmt -l cmd internal hl7 fhir pas; exit 1; }
 	$(GO) vet ./...
 	$(GO) test -race -timeout $(GOTESTTIMEOUT) ./...
 

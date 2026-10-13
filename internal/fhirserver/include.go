@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // _include and _revinclude.

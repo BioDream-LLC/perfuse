@@ -16,11 +16,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/admit"
 	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/engine"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/hl7dict"
 	"github.com/biodream-llc/perfuse/internal/metrics"

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // Scheduling, documents and immunizations.

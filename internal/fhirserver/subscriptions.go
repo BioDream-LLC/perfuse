@@ -48,8 +48,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/egress"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 const (

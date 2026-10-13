@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // TestEveryServedTypeHasSearchParametersAndViceVersa is a drift guard, and it exists because the drift happened.

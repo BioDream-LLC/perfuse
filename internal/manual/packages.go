@@ -16,7 +16,9 @@ func CollectPackageDocs(root string) ([]PackageDoc, error) {
 	var out []PackageDoc
 	seen := map[string]bool{}
 
-	for _, base := range []string{"internal", "hl7"} {
+	// The published packages are components too; they are listed here because a public package lives beside internal/ rather
+	// than in it, and one missing from this list silently drops out of the manual.
+	for _, base := range []string{"internal", "hl7", "fhir", "pas"} {
 		dir := filepath.Join(root, base)
 		if _, err := os.Stat(dir); err != nil {
 			continue

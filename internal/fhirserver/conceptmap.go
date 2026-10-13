@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/codeset"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // The mapping tables, projected as FHIR ConceptMaps.

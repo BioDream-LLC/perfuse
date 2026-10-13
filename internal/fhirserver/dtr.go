@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // Da Vinci DTR 2.2.0, the payer's side: $questionnaire-package, $log-questionnaire-errors and $next-question.

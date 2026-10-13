@@ -50,6 +50,8 @@ var settingFlags = map[string]string{
 	"pas-278-sender":                    "payers.pas278Sender",
 	"pas-278-receiver":                  "payers.pas278Receiver",
 	"pas-278-production":                "payers.pas278Production",
+	"pas-decider-url":                   "payers.pasDeciderURL",
+	"pas-decider-token-env":             "payers.pasDeciderTokenEnv",
 	"pas-278-token-env":                 "payers.pas278TokenEnv",
 	"ecr-agency":                        "publicHealth.ecrAgency",
 	"ecr-responses":                     "publicHealth.ecrResponses",

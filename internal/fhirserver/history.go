@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // History, versioned reads, and the concurrency control that depends on them.

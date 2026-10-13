@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // The Reportability Response: what a public health agency (through AIMS, or its own system) answers an eICR with. It says

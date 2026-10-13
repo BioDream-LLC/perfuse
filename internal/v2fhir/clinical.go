@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // Diagnoses (DG1) and allergies (AL1), which USCDI calls Problems and Allergies and Intolerances. Mapped as the HL7 v2-to-FHIR

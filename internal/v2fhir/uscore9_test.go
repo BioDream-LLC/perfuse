@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // The messages in testdata/uscdi are the ones the official HL7 validator checked against US Core 9.0.0 (docs/verification.md).

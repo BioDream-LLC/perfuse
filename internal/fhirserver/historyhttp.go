@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // The HTTP surface for history, versioned reads, and optimistic concurrency.

@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/config"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 	"github.com/biodream-llc/perfuse/internal/v2fhir"
 )
 

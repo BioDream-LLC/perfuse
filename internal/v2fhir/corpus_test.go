@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // Conversion is validated against real message traffic the same way the parser

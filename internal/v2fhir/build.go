@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // Resource builders. Each one takes the v2 segments it needs and produces one

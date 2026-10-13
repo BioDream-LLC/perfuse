@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // handleEverything serves Patient/{id}/$everything.

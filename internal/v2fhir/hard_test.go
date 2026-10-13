@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // The two messages in testdata/hard were posted on chat.fhir.org (#v2 to FHIR, September 2026) by Marco Volpe as deliberately

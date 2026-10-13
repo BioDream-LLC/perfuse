@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/x12"
 )
 
@@ -55,7 +55,7 @@ func isHCPCS(system string) bool {
 // toServiceReview converts a PAS request to a 278 request. traces maps each 278 trace number to its item sequence.
 func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12.ServiceReviewRequest, map[string]string) {
 	resource := func(field string) map[string]any {
-		return asMapAny(req.resolve(str(asMapAny(req.claim[field])["reference"]))["resource"])
+		return asMapAny(req.Resolve(str(asMapAny(req.Claim[field])["reference"]))["resource"])
 	}
 	payer, provider, patient := resource("insurer"), resource("provider"), resource("patient")
 	out := x12.ServiceReviewRequest{
@@ -75,8 +75,8 @@ func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12
 		out.Subscriber.Gender = "U"
 	}
 	// The member ID: the Coverage's subscriber ID is the number on the card, which is what a UM system matches on.
-	for _, ins := range asSliceAny(req.claim["insurance"]) {
-		cov := asMapAny(req.resolve(str(asMapAny(asMapAny(ins)["coverage"])["reference"]))["resource"])
+	for _, ins := range asSliceAny(req.Claim["insurance"]) {
+		cov := asMapAny(req.Resolve(str(asMapAny(asMapAny(ins)["coverage"])["reference"]))["resource"])
 		if v := str(cov["subscriberId"]); v != "" && out.Subscriber.ID == "" {
 			out.Subscriber.ID = v
 		}
@@ -90,7 +90,7 @@ func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12
 
 	diagnoses := map[string]string{}
 	var order []string
-	for _, d := range asSliceAny(req.claim["diagnosis"]) {
+	for _, d := range asSliceAny(req.Claim["diagnosis"]) {
 		dm := asMapAny(d)
 		for _, c := range asSliceAny(asMapAny(dm["diagnosisCodeableConcept"])["coding"]) {
 			if cm := asMapAny(c); str(cm["system"]) == icd10System && str(cm["code"]) != "" {
@@ -102,12 +102,12 @@ func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12
 		}
 	}
 	urgent := false
-	for _, c := range asSliceAny(asMapAny(req.claim["priority"])["coding"]) {
+	for _, c := range asSliceAny(asMapAny(req.Claim["priority"])["coding"]) {
 		urgent = urgent || str(asMapAny(c)["code"]) == "stat"
 	}
 
 	traces := map[string]string{}
-	for _, it := range asSliceAny(req.claim["item"]) {
+	for _, it := range asSliceAny(req.Claim["item"]) {
 		item := asMapAny(it)
 		seq := fmt.Sprint(item["sequence"])
 		e := x12.ReviewRequestEvent{Trace: strings.ToUpper(id[:8]) + "-" + seq, Urgent: urgent}
@@ -130,7 +130,7 @@ func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12
 			// UM03 is required with UM01 HS; 1 is medical care, the general code, when only a procedure was named.
 			e.ServiceType = "1"
 		}
-		if cancels(req.claim) || cancels(item) {
+		if cancels(req.Claim) || cancels(item) {
 			e.CertificationType = "3"
 		}
 		if q, ok := asMapAny(item["quantity"])["value"].(float64); ok {

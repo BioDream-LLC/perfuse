@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // MessageHandler processes a FHIR message posted to $process-message: the raw Bundle of type message. It returns the response

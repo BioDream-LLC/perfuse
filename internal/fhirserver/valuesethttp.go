@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // handleExpand serves ValueSet/$expand.

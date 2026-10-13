@@ -3,7 +3,7 @@ package fhirserver
 import (
 	"testing"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // resourceFrom parses a literal for a launch-context test.

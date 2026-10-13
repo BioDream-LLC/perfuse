@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/admit"
 	"github.com/biodream-llc/perfuse/internal/alerts"
 	"github.com/biodream-llc/perfuse/internal/api"
@@ -28,7 +29,6 @@ import (
 	"github.com/biodream-llc/perfuse/internal/dicomstate"
 	"github.com/biodream-llc/perfuse/internal/egress"
 	"github.com/biodream-llc/perfuse/internal/engine"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/ldap"
 	"github.com/biodream-llc/perfuse/internal/metrics"
@@ -44,6 +44,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/web"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
+	"github.com/biodream-llc/perfuse/pas"
 )
 
 // Default addresses for the console.
@@ -199,6 +200,11 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	pas278TokenEnv := fset.String("pas-278-token-env", "",
 		"name of an environment variable holding a bearer token for -pas-278-url (the token itself is never a flag)")
 	pas278Production := fset.Bool("pas-278-production", false, "mark the 278s sent as production (ISA15 P) rather than test")
+	pasDeciderURL := fset.String("pas-decider-url", "",
+		"ask the decision service at this URL (such as Vaglio) to decide each PAS item on the request's clinical evidence, when "+
+			"-crd-rules leave it to a reviewer; the PAS request Bundle is POSTed to it. Cannot be combined with -pas-278-url")
+	pasDeciderTokenEnv := fset.String("pas-decider-token-env", "",
+		"name of an environment variable holding a bearer token for -pas-decider-url (the token itself is never a flag)")
 	ecrResponses := fset.Bool("ecr-responses", false,
 		"accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived "+
 			"from the eICR it answers")
@@ -1134,6 +1140,10 @@ oidcDone:
 	if fhirStore == nil && *pasOn {
 		return fmt.Errorf("-pas serves Da Vinci PAS on the FHIR endpoint, which is off; pass -fhir as well")
 	}
+	if *pasDeciderURL != "" && !*pasOn {
+		// Otherwise the flag would be accepted and do nothing, and a payer would believe its requests were being decided.
+		return fmt.Errorf("-pas-decider-url decides Da Vinci PAS requests, which are off; pass -pas as well")
+	}
 	if fhirStore == nil && srv.CRD != nil && srv.CRD.Members == "fhir" {
 		return fmt.Errorf("-crd-rules says members: fhir, so the payer's member records are this server's FHIR store, which is off; pass -fhir as well")
 	}
@@ -1185,13 +1195,26 @@ oidcDone:
 			rules := "none: every service is pended for a reviewer"
 			if srv.CRD != nil {
 				rulesFile := srv.CRD
-				fhirSrv.PAS.Decide = func(codes ...map[string]any) fhirserver.PASAnswer {
-					a := rulesFile.PADecision(codes...)
+				fhirSrv.PAS.Decide = func(_ context.Context, _ *pas.Request, svc pas.Service) fhirserver.PASAnswer {
+					a := rulesFile.PADecision(svc.Codes...)
 					return fhirserver.PASAnswer{Decision: a.Decision, Why: a.Why, AllowedQuantity: a.AllowedQuantity,
 						Questionnaire: a.Questionnaire, Attachments: a.Attachments, AttachmentModifiers: a.AttachmentModifiers,
 						Alternative: a.Alternative}
 				}
 				rules = *crdRules
+			}
+			if *pasDeciderURL != "" {
+				if *pas278URL != "" {
+					// With a UM system the 278 answers every item and Decide is never consulted, so a decision service
+					// configured beside one would silently do nothing.
+					return fmt.Errorf("-pas-decider-url and -pas-278-url both decide PAS requests; choose one")
+				}
+				decider, err := newPASDecider(*pasDeciderURL, *pasDeciderTokenEnv, log)
+				if err != nil {
+					return err
+				}
+				fhirSrv.PAS.Decide = chainPASDecide(fhirSrv.PAS.Decide, decider)
+				rules += "; what they leave to a reviewer, the decision service at " + *pasDeciderURL
 			}
 			if *pas278URL != "" {
 				um, err := newPAS278(*pas278URL, *pas278TokenEnv)

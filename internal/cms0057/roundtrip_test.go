@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // TestCARINSurvivesTheStore checks the converted resources come back from the FHIR model intact, which is what the FHIR server

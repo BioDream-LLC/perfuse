@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // includeFixture stores an observation, its patient, and its encounter, plus a decoy sharing an id across types.

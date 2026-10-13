@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // receiver is a subscriber's endpoint that records what it was sent and answers with a scripted status.

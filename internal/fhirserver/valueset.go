@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/codeset"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // ValueSet/$expand and ValueSet/$validate-code, over the codes a mapping recognises.

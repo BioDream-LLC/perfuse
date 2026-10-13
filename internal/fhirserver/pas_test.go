@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/biodream-llc/perfuse/pas"
 )
 
 const pasTestBase = "http://provider.example/fhir"
@@ -63,8 +65,8 @@ func pasRequestJSON(trace string, items ...string) string {
 }
 
 // pasRules approves consultations (3), denies dialysis (76) and leaves everything else to a reviewer.
-func pasRules(codes ...map[string]any) PASAnswer {
-	for _, cc := range codes {
+func pasRules(_ context.Context, _ *pas.Request, svc pas.Service) PASAnswer {
+	for _, cc := range svc.Codes {
 		for _, c := range asSliceAny(cc["coding"]) {
 			switch str(asMapAny(c)["code"]) {
 			case "3":
@@ -363,5 +365,55 @@ func TestAPendedRequestSaysWhatItNeeds(t *testing.T) {
 	}
 	if rv := toJSON(claimResponseOf(t, decided)["extension"]); !strings.Contains(rv, `"valueBoolean":true`) || !strings.Contains(rv, "1234567893") {
 		t.Errorf("a reviewer's decision should say a person made it: %s", rv)
+	}
+}
+
+// TestDecideSeesTheWholeRequest: the hook is given the request, so a decision can rest on what the provider sent with it - here
+// a Condition in the Bundle - and not only on the service's code. The same Bundle with the Condition removed is pended.
+func TestDecideSeesTheWholeRequest(t *testing.T) {
+	f := newPASFixture(t)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	srv := NewServer(f.store, "http://example.test/fhir", log)
+	srv.Auth = OpenAuth{}
+	var gotSequence string
+	srv.PAS = &PAS{Now: newPASFixtureClock, Decide: func(ctx context.Context, req *pas.Request, svc pas.Service) PASAnswer {
+		if ctx == nil {
+			t.Error("Decide was given no context")
+		}
+		gotSequence = svc.Sequence
+		for _, e := range req.Resources("Condition") {
+			if str(asMapAny(e["resource"])["id"]) == "red-flag" {
+				return PASAnswer{Decision: "approve", Why: "A red-flag condition is documented."}
+			}
+		}
+		return PASAnswer{Decision: "pend", Why: "No qualifying condition is documented."}
+	}}
+	f.h = srv.Handler()
+
+	var b map[string]any
+	if err := json.Unmarshal([]byte(pasRequestJSON("hook-1", "3")), &b); err != nil {
+		t.Fatal(err)
+	}
+	withCondition := append(asSliceAny(b["entry"]), map[string]any{"fullUrl": pasTestBase + "/Condition/red-flag",
+		"resource": map[string]any{"resourceType": "Condition", "id": "red-flag", "subject": map[string]any{"reference": "Patient/member"}}})
+	b["entry"] = withCondition
+	raw, _ := json.Marshal(b)
+	code, out := pasPost(t, f.h, "/Claim/$submit", string(raw))
+	if code != http.StatusOK {
+		t.Fatalf("status %d: %v", code, out)
+	}
+	if got := actionCodes(claimResponseOf(t, out)); got != "A1" {
+		t.Fatalf("with the Condition: review actions %q, want A1", got)
+	}
+	if gotSequence != "1" {
+		t.Fatalf("Decide was given item %q, want 1", gotSequence)
+	}
+
+	code, out = pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("hook-2", "3"))
+	if code != http.StatusOK {
+		t.Fatalf("status %d: %v", code, out)
+	}
+	if got := actionCodes(claimResponseOf(t, out)); got != "A4" {
+		t.Fatalf("without the Condition: review actions %q, want A4", got)
 	}
 }

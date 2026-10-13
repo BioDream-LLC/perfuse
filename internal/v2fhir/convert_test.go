@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // Fixtures are built by field number. See fixtures_test.go for why.

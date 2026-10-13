@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // DTR 2.2.0 adaptive questionnaires: the payer asks one question at a time, choosing the next from the answers so far.

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/cms0057"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // The CMS-0057 payer operations: HRex $member-match for the Payer-to-Payer API, and the Da Vinci ATR $davinci-data-export

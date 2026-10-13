@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/biodream-llc/perfuse/internal/fhir"
+	"github.com/biodream-llc/perfuse/fhir"
 )
 
 // SMART launch context.

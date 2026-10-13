@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
-	"github.com/biodream-llc/perfuse/internal/fhir"
 )
 
 // Options controls a conversion.

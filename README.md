@@ -656,6 +656,14 @@ for _, obx := range msg.Segments("OBX") {
 It indexes rather than decoding, so reading one field does not rebuild the message.
 [API documentation](docs/hl7-api.md).
 
+Two more packages are published on the same terms (standard library only, no engine), so that software working beside
+Perfuse reads the same data the same way:
+
+- `github.com/biodream-llc/perfuse/fhir`: the FHIR resource model, R4 and R5 serialisation, and validation.
+- `github.com/biodream-llc/perfuse/pas`: the Da Vinci PAS request reader Perfuse's own PAS server uses: the Claim, its
+  services and their codes, and reference resolution inside the Bundle. A decision service behind `-pas-decider-url` reads
+  requests with it.
+
 ---
 
 ## FAQ
