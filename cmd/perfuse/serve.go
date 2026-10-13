@@ -181,6 +181,10 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	fhirMatchWithoutConsent := fset.Bool("fhir-member-match-without-consent", false,
 		"let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing")
 	fhirReadOnly := fset.Bool("fhir-read-only", false, "refuse writes to the FHIR endpoint")
+	demoAccount := fset.String("demo-account", "",
+		"for a public demonstration server: username:password of a shared viewer account shown on the sign-in page")
+	fset.Int("fhir-writes-per-minute", 0, "for a public server: writes one client address may make to the FHIR endpoint a minute (0: no limit)")
+	fset.Int("fhir-max-resources", 0, "for a public server: refuse new FHIR resources once this many are held (0: no limit)")
 	fhirAPITokens := fset.Bool("fhir-api-tokens", false,
 		"with SMART configured, accept Perfuse API tokens on the FHIR endpoint as well (unscoped; the console's FHIR settings can switch it)")
 	pasOn := fset.Bool("pas", false,
@@ -506,6 +510,14 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 
 	if err := ensureAdmin(context.Background(), st, stdout, log); err != nil {
 		return err
+	}
+	// After the administrator, so the shared account is never a fresh server's first and only user.
+	demo, err := api.ParseDemoAccount(*demoAccount)
+	if err != nil {
+		return err
+	}
+	if err := api.EnsureDemoAccount(context.Background(), st, demo); err != nil {
+		return fmt.Errorf("preparing the demo account: %w", err)
 	}
 
 	var srvAlerts *alerts.Evaluator
@@ -864,6 +876,7 @@ oidcDone:
 		OIDC:            oidcCfg,
 		SAML:            samlCfg,
 		PasskeyRPID:     strings.TrimSpace(*passkeyRPID),
+		Demo:            demo,
 		PasskeyRPName:   *passkeyName,
 		PasskeyOrigins:  passkeyOriginList(*passkeyRPID, *passkeyOrigins),
 		SCIMEnabled:     *scimEnabled,
@@ -1365,6 +1378,10 @@ oidcDone:
 			// on in response to something, and "after a restart" is not an answer at that moment.
 			fhirSrv.ReadOnlyFn = func() bool {
 				return settingsStore.Bool("fhir.readOnly")
+			}
+			fhirSrv.WriteLimits = fhirserver.WriteLimits{
+				PerMinute:    settingsStore.Int("fhir.writesPerMinute"),
+				MaxResources: settingsStore.Int("fhir.maxResources"),
 			}
 		}
 

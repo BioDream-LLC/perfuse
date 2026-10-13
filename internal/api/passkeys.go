@@ -65,6 +65,9 @@ func (s *Server) passkeyConfig() (webauthn.Config, error) {
 
 // handleBeginPasskeyRegistration issues a challenge for adding a passkey.
 func (s *Server) handleBeginPasskeyRegistration(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	if s.refuseDemo(w, r, sess, "add a passkey") {
+		return
+	}
 	config, err := s.passkeyConfig()
 	if err != nil {
 		s.fail(w, r, http.StatusServiceUnavailable,
@@ -105,6 +108,9 @@ func (s *Server) handleBeginPasskeyRegistration(w http.ResponseWriter, r *http.R
 
 // handleFinishPasskeyRegistration verifies a registration and stores the credential.
 func (s *Server) handleFinishPasskeyRegistration(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	if s.refuseDemo(w, r, sess, "add a passkey") {
+		return
+	}
 	config, err := s.passkeyConfig()
 	if err != nil {
 		s.fail(w, r, http.StatusServiceUnavailable, "passkeys are not configured on this server")

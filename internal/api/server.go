@@ -60,6 +60,9 @@ type Server struct {
 	// bound to, which is the one thing the value exists to prevent.
 	PasskeyRPID string
 
+	// Demo is a shared sign-in shown on the sign-in page, for a public demonstration server. Nil: none.
+	Demo *DemoAccount
+
 	// PasskeyRPName is what the authenticator shows a person when they register.
 	PasskeyRPName string
 
@@ -1014,6 +1017,9 @@ type changePasswordRequest struct {
 }
 
 func (s *Server) handleChangeOwnPassword(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	if s.refuseDemo(w, r, sess, "change its password") {
+		return
+	}
 	var req changePasswordRequest
 	if !s.decode(w, r, &req) {
 		return

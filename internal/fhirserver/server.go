@@ -82,6 +82,9 @@ type Server struct {
 	// judgement about profile conformance rather than about validity.
 	RejectOnWarning bool
 
+	// WriteLimits caps writes per client a minute and the resources held, for a server open to strangers. Zero: none.
+	WriteLimits WriteLimits
+
 	// ReadOnly refuses every write. Useful when exposing an existing store for
 	// query only.
 	ReadOnly bool
@@ -196,7 +199,8 @@ func (s *Server) Handler() http.Handler {
 	//
 	// Wrapping the whole mux rather than each handler means a route added later is protected by default. Listing
 	// routes individually is how one gets forgotten.
-	protected := s.requireAuth(s.limitToGroups(mux))
+	// Write limits sit inside authentication, so a request without a token is refused as that and never counted.
+	protected := s.requireAuth(s.limitWrites(s.limitToGroups(mux)))
 
 	// The SMART discovery document is the one deliberate exception, and it is served outside the wrapper rather
 	// than exempted inside it.

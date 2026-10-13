@@ -15,7 +15,10 @@ package egress
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
+	"syscall"
+	"time"
 )
 
 // blockedRanges are refused by default.
@@ -251,4 +254,28 @@ func SetDefault(p Policy) Policy {
 	previous := Default
 	Default = p
 	return previous
+}
+
+// Dialer returns a dialer that applies Default to the address actually being connected to.
+//
+// A check made before connecting can be walked past by a name that resolves to an ordinary address for the check and to a
+// metadata address a moment later, when the connection is made (DNS rebinding). The dialer's Control runs after the name is
+// resolved, on the address the socket is about to reach, so there is no gap between the address checked and the address
+// used. Default is read at each dial, so a policy set at startup applies to clients built before it.
+func Dialer(timeout time.Duration) *net.Dialer {
+	return &net.Dialer{Timeout: timeout, Control: func(_, address string, _ syscall.RawConn) error {
+		host, _, err := net.SplitHostPort(address)
+		if err != nil {
+			return err
+		}
+		return Default.Check(host)
+	}}
+}
+
+// Transport is an HTTP transport whose every connection goes through Dialer.
+func Transport() *http.Transport {
+	return &http.Transport{
+		Proxy: nil, DialContext: Dialer(10 * time.Second).DialContext,
+		TLSHandshakeTimeout: 10 * time.Second, ResponseHeaderTimeout: 20 * time.Second, MaxIdleConnsPerHost: 4,
+	}
 }

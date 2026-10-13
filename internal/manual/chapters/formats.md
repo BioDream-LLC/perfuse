@@ -341,7 +341,7 @@ The properties the implementation is built around:
 What a client can make the server do is limited deliberately:
 
 - Endpoints must be `https` unless the operator passes `-fhir-subscriptions-allow-http`, which is for a test receiver.
-- The egress policy is applied when a subscription is created and again at every delivery, and redirects are not followed.
+- The egress policy is applied when a subscription is created, again at every delivery, and on the address each connection actually reaches (so a name that changes what it resolves to between the check and the connection is still refused); redirects are not followed.
 - The payload defaults to `id-only`, which says what changed and lets the receiver fetch it with its own credentials.
 - Nothing a receiver sends back is shown to anybody, only its status code.
 

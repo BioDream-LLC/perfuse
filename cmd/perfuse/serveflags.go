@@ -26,6 +26,8 @@ var settingFlags = map[string]string{
 	"drain-for":                         "engine.drainFor",
 	"fhir-read-only":                    "fhir.readOnly",
 	"fhir-api-tokens":                   "fhir.apiTokensWithSMART",
+	"fhir-writes-per-minute":            "fhir.writesPerMinute",
+	"fhir-max-resources":                "fhir.maxResources",
 	"fleet-label":                       "fleet.label",
 	"passkey-domain":                    "signin.passkeyDomain",
 	"passkey-name":                      "signin.passkeyName",

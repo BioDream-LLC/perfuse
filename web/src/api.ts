@@ -24,6 +24,13 @@ export interface Me {
 
 /** How this server allows people to sign in. */
 export interface AuthMethods {
+  /** The shared account of a public demonstration server, shown on the sign-in page so a visitor can try the
+   *  console. A viewer that cannot change its password; absent on every other server. */
+  demo?: {
+    username: string
+    password: string
+  }
+
   /** Whether the username and password form should be shown.
    *
    *  Always true today. Local accounts are the way in when the identity provider is

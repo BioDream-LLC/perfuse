@@ -288,6 +288,31 @@ function Login() {
           </div>
         )}
 
+        {methods?.demo && (
+          /* A public demonstration server publishes one shared account. Shown above the form rather than in a help
+             page, because a visitor who has to go and look for it has already left. */
+          <div className="card mb-4 border-l-4 border-l-cyan-500 p-4 text-sm text-slate-300" role="note">
+            <p className="font-medium text-slate-100">Try it with the demo account</p>
+            <p className="mt-1 text-slate-400">
+              Username <code className="text-cyan-300">{methods.demo.username}</code>, password{' '}
+              <code className="text-cyan-300">{methods.demo.password}</code>. It can look at everything and change
+              nothing. Test data only.
+            </p>
+            <button
+              type="button"
+              className="btn-primary mt-3 w-full"
+              onClick={() => {
+                const demo = methods.demo!
+                setUsername(demo.username)
+                setPassword(demo.password)
+                dispatch(signIn({ username: demo.username, password: demo.password }))
+              }}
+            >
+              Sign in as the demo user
+            </button>
+          </div>
+        )}
+
         <form
           className="card space-y-4 p-6"
           onSubmit={(e) => {

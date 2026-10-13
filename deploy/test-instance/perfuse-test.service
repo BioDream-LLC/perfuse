@@ -13,7 +13,8 @@ ExecStart=/opt/perfuse/perfuse serve -db /opt/perfuse/data/perfuse.db -channels 
   -fhir -pas -fhir-subscriptions -fhir-bulk-export -fhir-payer-apis \
   -crd-rules /opt/perfuse/conf/rules.yaml -cds-clients /opt/perfuse/conf/cds-clients.yaml \
   -smart-clients /opt/perfuse/conf/clients.yaml -smart-users /opt/perfuse/conf/users.yaml \
-  -smart-key /opt/perfuse/data/smart-signing.key
+  -smart-key /opt/perfuse/data/smart-signing.key \
+  -demo-account demo:try-perfuse-demo -fhir-writes-per-minute 300 -fhir-max-resources 200000
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=90

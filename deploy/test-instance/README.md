@@ -5,6 +5,7 @@ Services, with test data only. Nothing on it is about a real person.
 
 | What | Where |
 |---|---|
+| Console | `https://test.perfuse.health/`, username `demo`, password `try-perfuse-demo` (look at everything, change nothing) |
 | FHIR | `https://test.perfuse.health/fhir` (SMART tokens) |
 | SMART discovery | `https://test.perfuse.health/fhir/.well-known/smart-configuration` |
 | CRD (CDS Hooks) | `https://test.perfuse.health/cds-services` |
@@ -16,6 +17,10 @@ Inferno's Backend Services client with Inferno's published test keys (it reads e
 Subscriptions), Inferno as a public and as a confidential app at inferno.healthit.gov, and Inferno's CRD client
 (`cds-clients.yaml`). The test people in `users.yaml` sign in with the password "correct horse". To test with a client of your
 own, open an issue on https://github.com/biodream-llc/perfuse with its JWKS URL or redirect URIs.
+
+Writes to the FHIR endpoint are limited to 300 a minute from one client address and 200,000 resources in all, so one client in
+a loop cannot fill the disk. The instance requires IMDSv2, and the Lightsail role on its metadata service belongs to AWS's own
+Lightsail account, not ours.
 
 ## Running it
 

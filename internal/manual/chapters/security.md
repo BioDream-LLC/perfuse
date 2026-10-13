@@ -77,6 +77,25 @@ is written to the audit log. A token is told apart by its shape: a SMART token i
 never checked as the other. Where you can, give such a system a SMART Backend Services client instead, with only the system scopes
 it needs.
 
+### A FHIR endpoint open to strangers
+
+A public test server gives out credentials that can write, because testing prior authorization or subscriptions needs writes.
+Two limits keep one client from spoiling it for everybody, both under **Settings → FHIR** and both off by default:
+
+- **Writes a minute from one client** (`-fhir-writes-per-minute`): creates, updates and deletes from one client address. Over it, a
+  write is answered 429 with `Retry-After: 60`. Reads and searches, including searches by POST, are never counted.
+- **Most resources held** (`-fhir-max-resources`): past it, new resources are refused with 507, while updates and deletes still work.
+
+A hospital's own endpoint needs neither.
+
+## A demonstration account
+
+`serve -demo-account demo:PASSWORD` creates a shared account for a public demonstration server, and the sign-in page shows its
+username and password with a button that signs in with them. The account is a viewer, so it can look at everything and change
+nothing. It cannot change its password or add a passkey, because the first visitor to do either would lock out everyone after them.
+Each start puts it back as a viewer with the published password. The password must be at least 12 characters, like any other.
+Only use it on a server holding test data: anyone who reads the sign-in page can read every message on the server.
+
 ## Audit
 
 Configuration changes, logins, and access to message content are recorded with who, what and when.

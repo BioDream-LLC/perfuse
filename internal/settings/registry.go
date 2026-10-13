@@ -543,6 +543,42 @@ func baseSettings() []Setting {
 			Unit:     "resources",
 			Advanced: true,
 		},
+		{
+			Key:      "fhir.writesPerMinute",
+			Group:    GroupFHIR,
+			Subgroup: "Access",
+			Label:    "Writes a minute from one client",
+			Help: "For a FHIR endpoint open to people you do not know, such as a public test server: how many creates, " +
+				"updates and deletes one client address may make a minute. Over it, a write is answered 429 with " +
+				"Retry-After. Reads and searches are never counted. Zero is no limit, right for a hospital's own endpoint.",
+			Kind:     KindInt,
+			Widget:   WidgetNumber,
+			Effect:   EffectRestart,
+			Default:  0,
+			Min:      intp(0),
+			Max:      intp(100000),
+			Unit:     "writes",
+			Flag:     "fhir-writes-per-minute",
+			Advanced: true,
+		},
+		{
+			Key:      "fhir.maxResources",
+			Group:    GroupFHIR,
+			Subgroup: "Access",
+			Label:    "Most resources held",
+			Help: "For a public test server: once the FHIR store holds this many resources, new ones are refused " +
+				"(507) while updates and deletes still work, so one client in a loop cannot fill the disk. Zero is " +
+				"no limit.",
+			Kind:     KindInt,
+			Widget:   WidgetNumber,
+			Effect:   EffectRestart,
+			Default:  0,
+			Min:      intp(0),
+			Max:      intp(100000000),
+			Unit:     "resources",
+			Flag:     "fhir-max-resources",
+			Advanced: true,
+		},
 
 		// --------------------------------------------------------------- Fleet
 		{

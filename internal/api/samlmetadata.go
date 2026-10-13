@@ -165,7 +165,8 @@ func (s *Server) fetchMetadata(target string) ([]byte, error) {
 	}
 
 	client := &http.Client{
-		Timeout: 20 * time.Second,
+		Timeout:   20 * time.Second,
+		Transport: egress.Transport(), // the check above, again at the connection itself
 
 		// Redirects are not followed. A permitted host redirecting to a blocked one would walk straight past the check above, and a
 		// metadata endpoint has no reason to redirect.

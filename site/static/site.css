@@ -97,6 +97,8 @@ p { margin: 0 0 1em; }
 .hero.small h1 { max-width: 24ch; }
 .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 700; color: var(--accent-2); margin: 0 0 14px; }
 .hero .eyebrow { color: #67d4ea; }
+.hero-note { margin: 18px 0 0; font-size: .92rem; color: #9fb6d3; max-width: 58ch; }
+.hero-note code { color: #67d4ea; background: rgba(103, 212, 234, .1); padding: 1px 6px; border-radius: 5px; }
 
 /* ---- Trust strip */
 .strip { border-bottom: 1px solid var(--line); background: #fff; }

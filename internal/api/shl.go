@@ -7,11 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/egress"
@@ -261,15 +259,7 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 func (s *Server) OutboundClient() *http.Client { return s.shlClient() }
 
 func (s *Server) shlClient() *http.Client {
-	dialer := &net.Dialer{Timeout: 10 * time.Second, Control: func(_, address string, _ syscall.RawConn) error {
-		host, _, err := net.SplitHostPort(address)
-		if err != nil {
-			return err
-		}
-		return egress.Default.Check(host)
-	}}
-	transport := &http.Transport{DialContext: dialer.DialContext, TLSHandshakeTimeout: 10 * time.Second,
-		ResponseHeaderTimeout: 20 * time.Second}
+	transport := egress.Transport()
 	allowHTTP := s.SHLAllowHTTP
 	return &http.Client{Timeout: 30 * time.Second, Transport: transport,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {

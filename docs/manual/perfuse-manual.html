@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">version 0.1 · 43e676b</p>
+<p class="version">version 0.1 · b6e2903</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -584,17 +584,19 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s17-2-authentication-and-roles"><span class="num">17.2</span> Authentication and roles</a></div>
 <div class="toc-d3"><a href="#s17-2-1-channel-groups"><span class="num">17.2.1</span> Channel groups</a></div>
 <div class="toc-d2"><a href="#s17-3-who-may-call-the-fhir-endpoint"><span class="num">17.3</span> Who may call the FHIR endpoint</a></div>
-<div class="toc-d2"><a href="#s17-4-audit"><span class="num">17.4</span> Audit</a></div>
-<div class="toc-d2"><a href="#s17-5-secrets-in-configuration"><span class="num">17.5</span> Secrets in configuration</a></div>
-<div class="toc-d2"><a href="#s17-6-what-is-in-the-database"><span class="num">17.6</span> What is in the database</a></div>
-<div class="toc-d2"><a href="#s17-7-tenants"><span class="num">17.7</span> Tenants</a></div>
-<div class="toc-d3"><a href="#s17-7-1-limits"><span class="num">17.7.1</span> Limits</a></div>
-<div class="toc-d2"><a href="#s17-8-test-data"><span class="num">17.8</span> Test data</a></div>
-<div class="toc-d2"><a href="#s17-9-single-sign-on"><span class="num">17.9</span> Single sign-on</a></div>
-<div class="toc-d3"><a href="#s17-9-1-what-a-group-mapping-decides"><span class="num">17.9.1</span> What a group mapping decides</a></div>
-<div class="toc-d3"><a href="#s17-9-2-saml-specifically"><span class="num">17.9.2</span> SAML, specifically</a></div>
-<div class="toc-d3"><a href="#s17-9-3-what-each-provider-sends"><span class="num">17.9.3</span> What each provider sends</a></div>
-<div class="toc-d2"><a href="#s17-10-what-perfuse-does-not-do"><span class="num">17.10</span> What Perfuse does not do</a></div>
+<div class="toc-d3"><a href="#s17-3-1-a-fhir-endpoint-open-to-strangers"><span class="num">17.3.1</span> A FHIR endpoint open to strangers</a></div>
+<div class="toc-d2"><a href="#s17-4-a-demonstration-account"><span class="num">17.4</span> A demonstration account</a></div>
+<div class="toc-d2"><a href="#s17-5-audit"><span class="num">17.5</span> Audit</a></div>
+<div class="toc-d2"><a href="#s17-6-secrets-in-configuration"><span class="num">17.6</span> Secrets in configuration</a></div>
+<div class="toc-d2"><a href="#s17-7-what-is-in-the-database"><span class="num">17.7</span> What is in the database</a></div>
+<div class="toc-d2"><a href="#s17-8-tenants"><span class="num">17.8</span> Tenants</a></div>
+<div class="toc-d3"><a href="#s17-8-1-limits"><span class="num">17.8.1</span> Limits</a></div>
+<div class="toc-d2"><a href="#s17-9-test-data"><span class="num">17.9</span> Test data</a></div>
+<div class="toc-d2"><a href="#s17-10-single-sign-on"><span class="num">17.10</span> Single sign-on</a></div>
+<div class="toc-d3"><a href="#s17-10-1-what-a-group-mapping-decides"><span class="num">17.10.1</span> What a group mapping decides</a></div>
+<div class="toc-d3"><a href="#s17-10-2-saml-specifically"><span class="num">17.10.2</span> SAML, specifically</a></div>
+<div class="toc-d3"><a href="#s17-10-3-what-each-provider-sends"><span class="num">17.10.3</span> What each provider sends</a></div>
+<div class="toc-d2"><a href="#s17-11-what-perfuse-does-not-do"><span class="num">17.11</span> What Perfuse does not do</a></div>
 <div class="toc-d1"><a href="#s18-operations"><span class="num">18</span> Operations</a></div>
 <div class="toc-d2"><a href="#s18-1-deployment"><span class="num">18.1</span> Deployment</a></div>
 <div class="toc-d2"><a href="#s18-2-configuration-as-files"><span class="num">18.2</span> Configuration as files</a></div>
@@ -1943,7 +1945,7 @@ roles: {viewer: manager}</code></pre>
 <p>What a client can make the server do is limited deliberately:</p>
 <ul>
 <li>Endpoints must be <code>https</code> unless the operator passes <code>-fhir-subscriptions-allow-http</code>, which is for a test receiver.</li>
-<li>The egress policy is applied when a subscription is created and again at every delivery, and redirects are not followed.</li>
+<li>The egress policy is applied when a subscription is created, again at every delivery, and on the address each connection actually reaches (so a name that changes what it resolves to between the check and the connection is still refused); redirects are not followed.</li>
 <li>The payload defaults to <code>id-only</code>, which says what changed and lets the receiver fetch it with its own credentials.</li>
 <li>Nothing a receiver sends back is shown to anybody, only its status code.</li>
 </ul>
@@ -2908,20 +2910,32 @@ rules:
 <p>  carries scopes, and the endpoint holds every request to them.</p>
 <p>With SMART configured, only SMART tokens are accepted, so every caller is held to its scopes. An API token has a role and no scopes: a viewer token can read every patient&#39;s record. A payer who turned SMART on to limit each app to what it was granted should not have a way in that is not limited.</p>
 <p>Some sites need both all the same - an internal claims feed that holds an API token and has no SMART client, beside member apps that sign in through SMART. For those, <strong>Settings → FHIR → Accept Perfuse API tokens beside SMART tokens</strong> (<code>-fhir-api-tokens</code> at start-up) lets API tokens in as well. It is off by default, it takes effect on the next request in either direction, and changing it is written to the audit log. A token is told apart by its shape: a SMART token is a signed JWT, and an API token never is, so one is never checked as the other. Where you can, give such a system a SMART Backend Services client instead, with only the system scopes it needs.</p>
-<h3 id="s17-4-audit"><span class="num">17.4</span> Audit</h3>
+<h4 id="s17-3-1-a-fhir-endpoint-open-to-strangers"><span class="num">17.3.1</span> A FHIR endpoint open to strangers</h4>
+<p>A public test server gives out credentials that can write, because testing prior authorization or subscriptions needs writes. Two limits keep one client from spoiling it for everybody, both under <strong>Settings → FHIR</strong> and both off by default:</p>
+<ul>
+<li><strong>Writes a minute from one client</strong> (<code>-fhir-writes-per-minute</code>): creates, updates and deletes from one client address. Over it, a</li>
+</ul>
+<p>  write is answered 429 with <code>Retry-After: 60</code>. Reads and searches, including searches by POST, are never counted.</p>
+<ul>
+<li><strong>Most resources held</strong> (<code>-fhir-max-resources</code>): past it, new resources are refused with 507, while updates and deletes still work.</li>
+</ul>
+<p>A hospital&#39;s own endpoint needs neither.</p>
+<h3 id="s17-4-a-demonstration-account"><span class="num">17.4</span> A demonstration account</h3>
+<p><code>serve -demo-account demo:PASSWORD</code> creates a shared account for a public demonstration server, and the sign-in page shows its username and password with a button that signs in with them. The account is a viewer, so it can look at everything and change nothing. It cannot change its password or add a passkey, because the first visitor to do either would lock out everyone after them. Each start puts it back as a viewer with the published password. The password must be at least 12 characters, like any other. Only use it on a server holding test data: anyone who reads the sign-in page can read every message on the server.</p>
+<h3 id="s17-5-audit"><span class="num">17.5</span> Audit</h3>
 <p>Configuration changes, logins, and access to message content are recorded with who, what and when.</p>
 <p>The audit log is in the same database as the messages. That is convenient and it is a limitation: somebody who can modify the database can modify the audit log. If your requirements include tamper-evident audit, the log needs shipping somewhere append-only, and Perfuse&#39;s own log output is the way to do that.</p>
-<h3 id="s17-5-secrets-in-configuration"><span class="num">17.5</span> Secrets in configuration</h3>
+<h3 id="s17-6-secrets-in-configuration"><span class="num">17.6</span> Secrets in configuration</h3>
 <p>Passwords, passcodes and keys appear in channel configuration, which means they are in the YAML files.</p>
 <p>Two consequences. The files need filesystem permissions that reflect what they contain, and if they are in version control — which is otherwise recommended — the repository holds credentials and must be treated accordingly.</p>
 <p>Where a value is a secret, the interface renders it as a secret and the API does not return it once saved. That protects it from being read over somebody&#39;s shoulder or leaked in a screenshot. It does not protect the file.</p>
-<h3 id="s17-6-what-is-in-the-database"><span class="num">17.6</span> What is in the database</h3>
+<h3 id="s17-7-what-is-in-the-database"><span class="num">17.7</span> What is in the database</h3>
 <p>The message store holds messages as received, which for a clinical feed means patient-identifiable data. It should be on encrypted storage, backed up as clinical data with the retention that implies, and access-controlled at the filesystem level as well as through Perfuse&#39;s own roles.</p>
 <p><code>cleanup.periodDays</code> limits how long it is kept. See <a href="#s12-the-message-store">the message store</a> for the tension between that and having enough history for rhythm-aware alerting.</p>
-<h3 id="s17-7-tenants"><span class="num">17.7</span> Tenants</h3>
+<h3 id="s17-8-tenants"><span class="num">17.8</span> Tenants</h3>
 <p>A tenant is an isolation boundary: channels, messages, users and settings belong to one, and nothing crosses.</p>
 <p>This exists for a service provider running feeds for several practices. Do not use it to separate departments within one organisation that need to see each other&#39;s traffic: the isolation is real and there is no cross-tenant view. For that, use channel groups (above), which divide the people of one organisation while letting a central team see everything.</p>
-<h4 id="s17-7-1-limits"><span class="num">17.7.1</span> Limits</h4>
+<h4 id="s17-8-1-limits"><span class="num">17.8.1</span> Limits</h4>
 <p>A platform operator sets each tenant&#39;s limits in <strong>Tenants</strong>, so one customer cannot crowd out the rest of a shared server. Leave a limit empty for none.</p>
 <ul>
 <li><strong>Channels</strong>: how many channels the tenant may have. Creating one more is refused, with the count and the limit.</li>
@@ -2929,18 +2943,18 @@ rules:
 <li><strong>Storage</strong>: how much stored message content it may keep, in megabytes.</li>
 </ul>
 <p>None of them loses a message. Over the rate or the storage limit, a received message is refused the way a busy receiver refuses one, before anything is stored or delivered: MLLP gets no acknowledgement (not a rejection, which some senders take as &#34;do not resend&#34;), HTTP gets 429 with <code>Retry-After</code>, SOAP gets 503, DICOM gets a retryable status, and a queue, bucket or file is left where it was. The sender resends, as every interface engine and EHR does. Nothing already stored is deleted to make room. A raised limit takes effect within a minute, and every change of limits is recorded in the activity log.</p>
-<h3 id="s17-8-test-data"><span class="num">17.8</span> Test data</h3>
+<h3 id="s17-9-test-data"><span class="num">17.9</span> Test data</h3>
 <p>The generated messages described in <a href="#s14-testing">testing</a> exist partly as a privacy control. Reproducing a problem elsewhere, sending an example to a vendor, or populating a test environment are all things that otherwise get done with real messages.</p>
 <p>The generator&#39;s output contains no patient data by construction rather than by redaction. Prefer it to hand-stripped real messages, which is a process that can be done incompletely and usually is.</p>
-<h3 id="s17-9-single-sign-on"><span class="num">17.9</span> Single sign-on</h3>
+<h3 id="s17-10-single-sign-on"><span class="num">17.10</span> Single sign-on</h3>
 <p>Three mechanisms, and local accounts alongside all of them.</p>
 <p><strong>OpenID Connect</strong> (<code>-oidc</code>), <strong>a directory over LDAP</strong> (<code>-ldap</code>), and <strong>SAML 2.0</strong> (<code>-saml</code>). Each is configured from <strong>Administer → Sign-on</strong> and written to the file the flag names, so the screen and the file are two views of one thing rather than two places to keep in step.</p>
 <p>Local accounts are always available and cannot be turned off. That is deliberate: an on-premises integration engine whose only way in is an identity provider becomes unreachable exactly when the identity provider is unreachable, and a clinical interface is not a good place to learn that. The sign-on screen tells you how many local administrators exist before it encourages you to depend on anything else.</p>
-<h4 id="s17-9-1-what-a-group-mapping-decides"><span class="num">17.9.1</span> What a group mapping decides</h4>
+<h4 id="s17-10-1-what-a-group-mapping-decides"><span class="num">17.10.1</span> What a group mapping decides</h4>
 <p>All three map groups from the directory to Perfuse roles, and somebody in groups matching more than one gets the most privileged. That is the only safe direction to resolve it — the alternative is a person losing access they are entitled to because they are also in a lesser group.</p>
 <p>A mapping that grants nobody anything is refused rather than saved. A configuration that authenticates people and turns all of them away looks identical to a broken product from the outside: the round trip completes and everybody is denied with nothing explaining why.</p>
 <p>Creating an account on first sign-in is off by default. With it off, somebody has to exist in Perfuse before they can sign in, so the directory decides who they are and Perfuse decides who is allowed in.</p>
-<h4 id="s17-9-2-saml-specifically"><span class="num">17.9.2</span> SAML, specifically</h4>
+<h4 id="s17-10-2-saml-specifically"><span class="num">17.10.2</span> SAML, specifically</h4>
 <p>The parts worth knowing before you configure it:</p>
 <ul>
 <li><strong>Only the certificate you configure is trusted.</strong> A certificate carried inside a response is never used. An attacker who can send a document can also put their own certificate in it, and a verifier that reads it is one anybody can authenticate to as anybody.</li>
@@ -2949,7 +2963,7 @@ rules:
 <li><strong>The group attribute has no default and is required.</strong> Entra sends <code>groups</code>, Okta sends whatever the application was configured with, ADFS sends a claim URI. A guess would produce a sign-in that works and grants nobody anything. If a sign-in is refused for having no role, the server log names the attributes that did arrive — which is usually the whole answer.</li>
 <li><strong>The reply URL must match exactly</strong> what is registered at the provider. A response says where it was destined and one addressed elsewhere is refused, because accepting it would mean accepting a response meant for a different service.</li>
 </ul>
-<h4 id="s17-9-3-what-each-provider-sends"><span class="num">17.9.3</span> What each provider sends</h4>
+<h4 id="s17-10-3-what-each-provider-sends"><span class="num">17.10.3</span> What each provider sends</h4>
 <p>The group attribute is where sign-ins go wrong, and the three common providers each name it differently.</p>
 <table>
 <thead><tr><th>Provider</th><th>Usually sends</th><th>Notes</th></tr></thead>
@@ -2963,7 +2977,7 @@ rules:
 <p>A claim URI may be entered by its final segment: typing <code>groups</code> finds <code>http://schemas.microsoft.com/ws/2008/06/identity/claims/groups</code>. A name that merely ends with the word does not match — <code>excluded_groups</code> is not <code>groups</code>.</p>
 <p>Group membership arriving as one comma-separated value is treated as a single group name and matches nothing. That is the correct reading of the standard, and splitting on commas would mean a group legitimately containing one silently became two. If that is what your provider sends, change it there.</p>
 <p><strong>Test</strong> on the sign-on screen checks everything that can be checked without a person: the settings, the certificate, and whether a sign-in request can be built. It says plainly that it cannot prove somebody can sign in, because that needs a real assertion about a real person and the only way to get one is for them to try.</p>
-<h3 id="s17-10-what-perfuse-does-not-do"><span class="num">17.10</span> What Perfuse does not do</h3>
+<h3 id="s17-11-what-perfuse-does-not-do"><span class="num">17.11</span> What Perfuse does not do</h3>
 <p>It does not encrypt the database at rest. Use filesystem or volume encryption.</p>
 <p>It does not manage its own certificates or renew them. Point it at files and manage those files with whatever you already use.</p>
 <p>SAML has been verified against two independent providers, each with a real browser sign-in, a real assertion and a real session: Keycloak 26 and Microsoft Entra. Two matters more than twice as much as one, because the two disagree in a way that turned out to be load-bearing — Keycloak writes its assertion with namespace prefixes and Entra writes the same elements without them, and the one defect this area has had was in prefix handling.</p>

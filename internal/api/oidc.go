@@ -388,6 +388,15 @@ type authMethodsResponse struct {
 	// form says, so somebody knows to type their hospital credentials rather than looking for an account nobody
 	// created for them.
 	Directory *authMethodDirectory `json:"directory,omitempty"`
+
+	// Demo is the shared account of a public demonstration server, shown on the sign-in page. Its password is public by
+	// design, which is why it is a viewer that cannot change its password; absent on every other server.
+	Demo *authMethodDemo `json:"demo,omitempty"`
+}
+
+type authMethodDemo struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type authMethodDirectory struct {
@@ -421,6 +430,10 @@ func (s *Server) handleAuthMethods(w http.ResponseWriter, r *http.Request) {
 
 	if s.SAML.Enabled() {
 		out.SAML = &authMethodOIDC{Label: s.SAML.ButtonLabel(), StartAt: "/auth/saml/start"}
+	}
+
+	if s.Demo != nil {
+		out.Demo = &authMethodDemo{Username: s.Demo.Username, Password: s.Demo.Password}
 	}
 
 	s.ok(w, out)

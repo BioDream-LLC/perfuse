@@ -186,6 +186,9 @@ func (s *Store) EnableSubscriptions(ctx context.Context, opts SubscriptionOption
 	if opts.Client == nil {
 		opts.Client = &http.Client{
 			Timeout: 10 * time.Second,
+			// The endpoint is checked again where the connection is made, so a name that changes what it resolves to
+			// between the check in post and the dial is still refused.
+			Transport: egress.Transport(),
 			// A redirect is a second destination the egress check never saw.
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		}
