@@ -25,6 +25,8 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-ecr-agency` | string | — | play a public health agency for testing eCR: answer case reports at $process-message with a Reportability Response, using the agency YAML file given (name, phone, address, endpoint; optional rctc, reply) | **Settings › Public health › Case reporting**: Act as a test public health agency |
 | `-ecr-responses` | on/off | — | accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived from the eICR it answers | **Settings › Public health › Case reporting**: Receive Reportability Responses |
 | `-engine` | on/off | `true` | run the channel engine in this process, so the interface can start, stop and monitor channels | — |
+| `-epa-payer-id` | string | — | this payer's identifier on the prescribing network, the From of every RTPB and ePA response (default: the formulary's payer id) | **Settings › Payers › Drug formulary**: Payer ID on the prescribing network |
+| `-epa-reply-channel` | string | — | route ePA decisions made after the request was answered (a reviewer's, an appeal's) to this channel, which delivers them to the prescriber's network | **Settings › Payers › Drug formulary**: Channel that sends later ePA decisions |
 | `-fhir` | on/off | `true` | serve a FHIR endpoint at /fhir | **Settings › FHIR › The FHIR server**: Serve a FHIR endpoint at /fhir |
 | `-fhir-api-tokens` | on/off | — | with SMART configured, accept Perfuse API tokens on the FHIR endpoint as well (unscoped; the console's FHIR settings can switch it) | **Settings › FHIR › Access**: Accept Perfuse API tokens beside SMART tokens |
 | `-fhir-bulk-export` | on/off | — | enable $export, which produces a file holding every record the FHIR endpoint serves | **Settings › FHIR › Bulk data**: Bulk Data export ($export) |
@@ -38,6 +40,7 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-fhir-version` | string | `4.0.1` | FHIR release to serve: R4, R4B or R5 | **Settings › FHIR › The FHIR server**: FHIR version clients see |
 | `-fhir-writes-per-minute` | int | — | for a public server: writes one client address may make to the FHIR endpoint a minute (0: no limit) | **Settings › FHIR › Access**: Writes a minute from one client |
 | `-fleet-label` | string | — | how this instance names itself in a fleet view (default: hostname) | **Settings › Fleet › This server**: Name for this server |
+| `-formulary` | string | — | publish this drug formulary over the Da Vinci US Drug Formulary API at /formulary/fhir and answer NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization from it | **Settings › Payers › Drug formulary**: Drug formulary file |
 | `-index-identity` | on/off | `true` | index patient identifiers from message contents so a message can be found by MRN, name or accession in any format; has no effect when -store-payloads is off | **Settings › Data › What is kept**: Index patient identifiers |
 | `-insecure` | on/off | — | serve over plain HTTP on a non-loopback address (not recommended) | — |
 | `-inventory` | string | — | write a Markdown inventory of every interface to this file, and keep it current | **Settings › Monitoring › Inventory**: Write an interface inventory to |

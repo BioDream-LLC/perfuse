@@ -82,7 +82,24 @@ func (s *Server) handleCMS0057Status(w http.ResponseWriter, r *http.Request, ses
 	need(s.CRD != nil, "coverage requirements rules for CRD (-crd-rules)", &pa.Missing)
 	need(!st.ReadOnly, "a writable FHIR endpoint, so PAS requests can be received", &pa.Missing)
 
-	apis := []cms0057API{patient, provider, p2p, pa}
+	drugs := cms0057API{Name: "Drug prior authorization (CMS-0062-P, proposed)",
+		Rule:     "CMS-0062-P, proposed 14 April 2026; Medicare Part D already requires NCPDP SCRIPT ePA",
+		Deadline: "proposed 1 October 2027 for NCPDP SCRIPT, Formulary & Benefit and RTPB; drug metrics from 2028",
+		Guides: []string{"NCPDP SCRIPT 2023011 electronic prior authorization", "NCPDP Real-Time Prescription Benefit v13",
+			"Da Vinci US Drug Formulary 2.1.0", "medical-benefit drugs through Da Vinci CRD, DTR and PAS"}}
+	if d := s.Drugs; d != nil && d.Formulary != nil {
+		drugs.Endpoints = []string{d.FormularyBase + "/InsurancePlan", s.selfURL() + "/ncpdp/rtpb", s.selfURL() + "/ncpdp/script"}
+	} else {
+		drugs.Endpoints = []string{}
+	}
+	need(s.Drugs != nil && s.Drugs.Formulary != nil, "a drug formulary (-formulary FILE)", &drugs.Missing)
+	need(s.Drugs != nil && s.Drugs.EPA != nil && s.Drugs.EPA.Submit != nil, "Da Vinci PAS on the FHIR endpoint (-fhir -pas), "+
+		"which decides SCRIPT prior authorizations as it does every other", &drugs.Missing)
+	drugs.Note = "Decided by the same rules file, decision service and reviewer queue as every other prior authorization. A " +
+		"decision service such as Vaglio reads a drug request's MedicationRequest and answers as PAS. The NCPDP Formulary & " +
+		"Benefit file is not produced: its full layout is in NCPDP's licensed guide."
+
+	apis := []cms0057API{patient, provider, p2p, pa, drugs}
 	for i := range apis {
 		apis[i].Ready = len(apis[i].Missing) == 0
 		if apis[i].Missing == nil {

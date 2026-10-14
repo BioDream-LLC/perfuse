@@ -798,6 +798,119 @@ export interface Passkey {
   lastUsed?: string
 }
 
+/** FormularyView is GET /api/formulary. */
+export interface FormularyView {
+  enabled: boolean
+  hint?: string
+  summary?: {
+    payer: string
+    plans: { id: string; name: string; formulary: string; costs: number }[]
+    formularies: {
+      id: string
+      name: string
+      start?: string
+      end?: string
+      drugs: number
+      tiers: Record<string, number>
+      priorAuthorization: number
+      stepTherapy: number
+      quantityLimit: number
+      notCovered: number
+    }[]
+  }
+  drugs?: FormularyDrug[]
+  formularyBase?: string
+  rtpb?: string
+  script?: string
+  epa?: boolean
+  epaDecides?: boolean
+  replyChannel?: string
+  payerId?: string
+}
+
+export interface FormularyDrug {
+  formulary: string
+  rxnorm: string
+  display: string
+  ndc: string[]
+  tier: string
+  requirements: string[]
+  notCovered: boolean
+  priorAuthorization: boolean
+  stepTherapy: boolean
+  quantityLimit: boolean
+  questionnaire?: string
+  alternatives?: string[]
+  notes?: string
+}
+
+export interface RTPBPriced {
+  ndc: string
+  rxnorm: string
+  description: string
+  tier: string
+  coverageStatus: string
+  formularyStatus: string
+  restrictions?: string[]
+  patientPays?: number
+  planCost?: number
+  message: string
+  quantity: string
+  unit: string
+  days: number
+  benefit: string
+}
+
+export interface RTPBAnswer {
+  processed: boolean
+  reject?: string
+  note: string
+  plan?: string
+  requested?: RTPBPriced
+  alternatives?: RTPBPriced[]
+}
+
+export interface EPACase {
+  caseId: string
+  referenceId: string
+  member: string
+  plan: string
+  rxnorm: string
+  ndc: string
+  drug: string
+  prescriber: string
+  state: string
+  pasId?: string
+  outcome?: string
+  reason?: string
+  authNumber?: string
+  authEnd?: string
+  appealed: boolean
+  appealOutcome?: string
+  expedited: boolean
+  created: string
+  submitted?: string
+  decided?: string
+  answers?: { id: string; question: string; text: string; kind: string }[]
+  replySent: boolean
+  replyError?: string
+  reply?: string
+}
+
+export interface EPAMetrics {
+  since: string
+  requests: number
+  approved: number
+  denied: number
+  pending: number
+  appealed: number
+  approvedOnAppeal: number
+  deniedOnAppeal: number
+  meanHours: number
+  medianHours: number
+  late: number
+}
+
 /** DICOMwebStatus is GET /api/dicomweb. */
 export interface DICOMwebStatus {
   enabled: boolean
@@ -1536,6 +1649,17 @@ export const api = {
   createSHL: (input: { label?: string; content: unknown; passcode?: string; expiresInDays?: number }) =>
     request<SHLCreated>('POST', '/api/shl', input),
   listSHL: () => request<{ links: SHLHosted[] }>('GET', '/api/shl'),
+  /** formulary is the drug formulary this server publishes, and where its three APIs are. */
+  formulary: () => request<FormularyView>('GET', '/api/formulary'),
+  /** rtpbTry prices a drug for a member, as a prescriber's RTPB request would. */
+  rtpbTry: (body: { member: string; group?: string; ndc: string; quantity: number; days: number; mail: boolean }) =>
+    request<{ answer: RTPBAnswer; xml: string }>('POST', '/api/formulary/rtpb', body),
+  epaCases: () => request<{ cases: EPACase[] }>('GET', '/api/epa/cases'),
+  epaCase: (id: string) => request<EPACase>('GET', `/api/epa/cases/${encodeURIComponent(id)}`),
+  epaResend: (id: string) => request<{ sent: boolean }>('POST', `/api/epa/cases/${encodeURIComponent(id)}/resend`),
+  /** epaTry sends a SCRIPT message from the screen, as the network endpoint would receive it. */
+  epaTry: (xml: string) => request<{ xml: string }>('POST', '/api/epa/try', { xml }),
+  epaMetrics: (days = 365) => request<{ enabled: boolean; days?: number; metrics?: EPAMetrics }>('GET', `/api/epa/metrics?days=${days}`),
   /** dicomwebStatus says whether this server keeps an imaging archive, where it is served, and what it holds. */
   dicomwebStatus: () => request<DICOMwebStatus>('GET', '/api/dicomweb'),
   /** qido searches the archive (QIDO-RS). An empty result is an empty list. */
@@ -2838,6 +2962,8 @@ export interface PASCase {
   created: string
   updated: string
   expedited: boolean
+  /** drug is a request for a drug, held to CMS-0062-P's proposed 24 and 72 hours. */
+  drug: boolean
   due: string
   items: { sequence: number; service: string; system?: string; quantity?: number; code: string; display: string; note?: string }[]
   asked?: string[]

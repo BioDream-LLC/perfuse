@@ -39,7 +39,7 @@ parses each of them properly, transforms what needs transforming, and delivers w
 
 **What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM · X12 837, 835, 270/271, 276/277, 834 and 278 ·
 SMART Health Links and Cards ·
-C-CDA and CDA · HL7 v3 · NCPDP Telecommunication and SCRIPT · delimited and raw formats.
+C-CDA and CDA · HL7 v3 · NCPDP Telecommunication, SCRIPT (with ePA) and RTPB · delimited and raw formats.
 
 **How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, DICOMweb, Kafka, message
 brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ 4), MQTT, IBM MQ, Azure Blob Storage, Google Cloud (Pub/Sub and Cloud
@@ -199,14 +199,15 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <tr>
 <td width="50%" valign="top">
 <img src="docs/assets/chips/priorauth.svg" width="168" height="40" alt="Prior auth"><br>
-<b>CMS-0057: the four payer APIs</b>
+<b>CMS-0057, and drugs for CMS-0062-P</b>
 <ul>
 <li><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b>, with a screen saying which are ready</li>
 <li><b>Da Vinci CRD 2.2.1</b> over CDS Hooks, <b>DTR 2.2.0</b> questionnaire packages, and a <b>PAS 2.2.1 server</b>: <code>$submit</code>, <code>$inquire</code>, <code>$decide</code></li>
 <li>A <b>reviewer queue</b> for pended requests, with the documents sent for each</li>
-<li>An optional <b>decision service</b> asked about what the rules leave to a reviewer; any failure pends, never approves</li>
+<li>An optional <b>decision service</b> asked about what the rules leave to a reviewer (we recommend <b>Vaglio</b>, source-available; any engine plugs in); any failure pends, never approves</li>
 <li>Claims to <b>CARIN Blue Button 2.2.0</b>, decisions to <b>PDex 2.2.0</b>, <code>$member-match</code>, <code>$davinci-data-export</code>, a <b>Plan-Net</b> directory</li>
 <li>The yearly <b>prior authorization metrics page</b> in CMS's layout</li>
+<li>Drugs: <b>NCPDP SCRIPT ePA</b> and <b>Real-Time Prescription Benefit</b> from one formulary, published over the <b>Da Vinci US Drug Formulary 2.1.0</b> API; decided through PAS</li>
 <li>Inferno: CRD <b>passes</b>, DTR <b>43/45</b>, PAS <b>82/84</b>, PDex payer-to-payer <b>19/19</b>, Bulk Data <b>48/48</b></li>
 </ul>
 </td>

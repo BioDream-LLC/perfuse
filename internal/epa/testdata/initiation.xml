@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A synthetic PAInitiationRequest, laid out as the public Surescripts ePA example is. Nobody real is named. -->
+<Message DatatypesVersion="20230115" TransportVersion="20230115" TransactionDomain="SCRIPT"
+  TransactionVersion="20230115" StructuresVersion="20230115" ECLVersion="20230115">
+  <Header>
+    <To Qualifier="ZZZ">EXAMPLEPBM01</To>
+    <From Qualifier="D">6842917100001</From>
+    <MessageID>INIT-TEST-1</MessageID>
+    <SentTime>2026-10-14T17:18:14.1Z</SentTime>
+  </Header>
+  <Body>
+    <PAInitiationRequest>
+      <PAReferenceID>REF-TEST-1</PAReferenceID>
+      <BenefitsCoordination>
+        <PayerIdentification>
+          <PayerID>EXAMPLEPBM01</PayerID>
+        </PayerIdentification>
+        <PayerName>EXAMPLE HEALTH PLAN</PayerName>
+        <CardholderID>CARD1001</CardholderID>
+        <GroupID>GRP-EXAMPLE-1</GroupID>
+        <PBMMemberID>MBR1001</PBMMemberID>
+      </BenefitsCoordination>
+      <Patient>
+        <HumanPatient>
+          <Names>
+            <Name>
+              <LastName>DOE</LastName>
+              <FirstName>JANE</FirstName>
+            </Name>
+          </Names>
+          <GenderAndSex>
+            <AdministrativeGender>F</AdministrativeGender>
+          </GenderAndSex>
+          <DateOfBirth>
+            <Date>1950-02-03</Date>
+          </DateOfBirth>
+          <Address>
+            <AddressLine1>1 EXAMPLE ROAD</AddressLine1>
+            <City>SPRINGFIELD</City>
+            <StateProvince>OH</StateProvince>
+            <PostalCode>45000</PostalCode>
+            <CountryCode>US</CountryCode>
+          </Address>
+        </HumanPatient>
+      </Patient>
+      <Pharmacy>
+        <Identification>
+          <NCPDPID>0000001</NCPDPID>
+          <NPI>1234567893</NPI>
+        </Identification>
+        <BusinessName>EXAMPLE PHARMACY</BusinessName>
+      </Pharmacy>
+      <Prescriber>
+        <NonVeterinarian>
+          <Identification>
+            <NPI>1992091797</NPI>
+          </Identification>
+          <Names>
+            <Name>
+              <LastName>SMITH</LastName>
+              <FirstName>ALEX</FirstName>
+            </Name>
+          </Names>
+        </NonVeterinarian>
+      </Prescriber>
+      <MedicationPrescribed>
+        <DrugDescription>LOVENOX 40 MG PER 0.4 ML PREFILLED SYRINGE</DrugDescription>
+        <Product>
+          <DrugCoded>
+            <NDC>00075062001</NDC>
+          </DrugCoded>
+        </Product>
+        <Quantity>
+          <Value>30</Value>
+          <CodeListQualifier>38</CodeListQualifier>
+          <QuantityUnitOfMeasure>
+            <Code>C48540</Code>
+          </QuantityUnitOfMeasure>
+        </Quantity>
+        <DaysSupply>30</DaysSupply>
+        <Diagnosis>
+          <ClinicalInformationQualifier>1</ClinicalInformationQualifier>
+          <Qualifier>ABF</Qualifier>
+          <Value>I82409</Value>
+          <Description>DEEP VEIN THROMBOSIS</Description>
+        </Diagnosis>
+        <Sig>
+          <SigText>INJECT 40 MG SUBCUTANEOUSLY ONCE DAILY</SigText>
+        </Sig>
+      </MedicationPrescribed>
+    </PAInitiationRequest>
+  </Body>
+</Message>

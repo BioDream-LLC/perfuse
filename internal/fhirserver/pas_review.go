@@ -27,9 +27,12 @@ type PASCase struct {
 	Created  time.Time `json:"created"`
 	Updated  time.Time `json:"updated"`
 	// Expedited is a request marked stat: CMS-0057 gives it 72 hours rather than 7 days. Due is when that runs out.
-	Expedited bool          `json:"expedited"`
-	Due       time.Time     `json:"due"`
-	Items     []PASCaseItem `json:"items"`
+	Expedited bool `json:"expedited"`
+	// Drug is a request for a drug (an item coded in RxNorm or NDC, or one asking for a MedicationRequest): CMS-0062-P
+	// proposes 24 hours expedited and 72 hours standard for those, and reports them apart from other items and services.
+	Drug  bool          `json:"drug"`
+	Due   time.Time     `json:"due"`
+	Items []PASCaseItem `json:"items"`
 	// Asked says what the response asks for ("LOINC 18776-5", "questionnaire <url>"); Attachments what has arrived.
 	Asked       []string        `json:"asked,omitempty"`
 	Attachments []PASAttachment `json:"attachments"`
@@ -77,6 +80,9 @@ func reviewDecision(rv PASReview) (itemDecision, error) {
 		d = pasApproved
 	case "deny":
 		d = pasDenied
+	case "cancel":
+		// The provider withdrew the request (an NCPDP PACancelRequest, or PAS certificationType 3 after the fact).
+		d = pasCancelled
 	case "modify":
 		if rv.Quantity <= 0 && rv.Alternative == nil {
 			return d, ErrBadReview{"decision modify needs quantity (the units certified) or alternative (the service approved instead), or both"}
@@ -84,7 +90,7 @@ func reviewDecision(rv PASReview) (itemDecision, error) {
 		d = pasModified
 		d.answer = PASAnswer{Decision: "approve", AllowedQuantity: rv.Quantity, Alternative: rv.Alternative}
 	default:
-		return d, ErrBadReview{"decision must be approve, deny or modify"}
+		return d, ErrBadReview{"decision must be approve, deny, modify or cancel"}
 	}
 	if (rv.Quantity > 0 || rv.Alternative != nil) && rv.Decision != "modify" {
 		return d, ErrBadReview{"quantity and alternative go with decision modify"}
@@ -251,8 +257,9 @@ func scanCase(row rowScanner) (*PASCase, error) {
 			}
 		}
 		c.Expedited = pasExpedited(req.Claim)
+		c.Drug = pasDrug(req)
 	}
-	c.Due = c.Created.Add(pasTimeframe(c.Expedited))
+	c.Due = c.Created.Add(pasTimeframe(c.Expedited, c.Drug))
 	notes := map[string]string{}
 	var cr map[string]any
 	for _, e := range asSliceAny(c.Response["entry"]) {
@@ -357,22 +364,60 @@ func pasExpedited(claim map[string]any) bool {
 	return false
 }
 
-// pasTimeframe is how long CMS-0057 gives a payer to decide: 72 hours expedited, 7 calendar days standard (Medicare Advantage,
-// Medicaid and CHIP; QHP issuers on the federal exchanges keep their own timeframes).
-func pasTimeframe(expedited bool) time.Duration {
-	if expedited {
+// pasTimeframe is how long a payer has to decide. Items and services: CMS-0057 gives 72 hours expedited and 7 calendar days
+// standard (Medicare Advantage, Medicaid and CHIP; QHP issuers on the federal exchanges keep their own timeframes). Drugs:
+// CMS-0062-P proposes 24 hours expedited and 72 hours standard, which is used until a final rule says otherwise.
+func pasTimeframe(expedited, drug bool) time.Duration {
+	switch {
+	case drug && expedited:
+		return 24 * time.Hour
+	case drug, expedited:
 		return 72 * time.Hour
 	}
 	return 7 * 24 * time.Hour
+}
+
+// Drug code systems: a PAS item coded in one of them asks for a drug.
+const (
+	rxNormSystem = "http://www.nlm.nih.gov/research/umls/rxnorm"
+	ndcSystem    = "http://hl7.org/fhir/sid/ndc"
+)
+
+// pasDrug says whether a request asks for a drug: an item coded in RxNorm or NDC, or one whose requested service is a
+// MedicationRequest. Medical-benefit drugs come through PAS coded in HCPCS (a J code) with a MedicationRequest, which this
+// counts; a J code alone is a service.
+func pasDrug(req *pasRequest) bool {
+	for _, it := range asSliceAny(req.Claim["item"]) {
+		item := asMapAny(it)
+		for _, c := range asSliceAny(asMapAny(item["productOrService"])["coding"]) {
+			if sys := str(asMapAny(c)["system"]); sys == rxNormSystem || sys == ndcSystem {
+				return true
+			}
+		}
+		for _, e := range asSliceAny(item["extension"]) {
+			em := asMapAny(e)
+			if str(em["url"]) != pasBase+"extension-requestedService" {
+				continue
+			}
+			if order := req.Resolve(str(asMapAny(em["valueReference"])["reference"])); order != nil &&
+				str(asMapAny(order["resource"])["resourceType"]) == "MedicationRequest" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // PASFigures are the prior authorization figures a payer's operations dashboard shows: how many requests met the CMS-0057
 // timeframe, how many are overdue now, and how the services asked for were answered.
 type PASFigures struct {
 	Since time.Time `json:"since"`
-	// Standard and Expedited count requests by where they stand against their timeframe.
-	Standard  PASTimeliness `json:"standard"`
-	Expedited PASTimeliness `json:"expedited"`
+	// Standard and Expedited count requests for items and services by where they stand against their timeframe; DrugStandard
+	// and DrugExpedited count drug requests the same way, against the drug timeframes. CMS reports them apart.
+	Standard      PASTimeliness `json:"standard"`
+	Expedited     PASTimeliness `json:"expedited"`
+	DrugStandard  PASTimeliness `json:"drugStandard"`
+	DrugExpedited PASTimeliness `json:"drugExpedited"`
 	// Decisions counts items by their current review action: approved, partial, modified, denied, pended, cancelled.
 	Decisions map[string]int `json:"decisions"`
 	Items     int            `json:"items"`
@@ -405,14 +450,19 @@ func (s *Server) Figures(ctx context.Context, since time.Time) (*PASFigures, err
 		now = s.PAS.now()
 	}
 	out := &PASFigures{Since: since, Decisions: map[string]int{}}
-	var stdHours, expHours []float64
+	var stdHours, expHours, drugStdHours, drugExpHours []float64
 	for rows.Next() {
 		c, err := scanCase(rows)
 		if err != nil {
 			return nil, err
 		}
 		t := &out.Standard
-		if c.Expedited {
+		switch {
+		case c.Drug && c.Expedited:
+			t = &out.DrugExpedited
+		case c.Drug:
+			t = &out.DrugStandard
+		case c.Expedited:
 			t = &out.Expedited
 		}
 		t.Requests++
@@ -428,9 +478,14 @@ func (s *Server) Figures(ctx context.Context, since time.Time) (*PASFigures, err
 		}
 		if !c.Pended {
 			h := c.Updated.Sub(c.Created).Hours()
-			if c.Expedited {
+			switch {
+			case c.Drug && c.Expedited:
+				drugExpHours = append(drugExpHours, h)
+			case c.Drug:
+				drugStdHours = append(drugStdHours, h)
+			case c.Expedited:
 				expHours = append(expHours, h)
-			} else {
+			default:
 				stdHours = append(stdHours, h)
 			}
 		}
@@ -440,6 +495,7 @@ func (s *Server) Figures(ctx context.Context, since time.Time) (*PASFigures, err
 		}
 	}
 	out.Standard.MedianHours, out.Expedited.MedianHours = median(stdHours), median(expHours)
+	out.DrugStandard.MedianHours, out.DrugExpedited.MedianHours = median(drugStdHours), median(drugExpHours)
 	return out, rows.Err()
 }
 

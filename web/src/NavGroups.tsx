@@ -85,7 +85,20 @@ export const NAV_GROUPS: NavGroup[] = [
       ring: 'border-t-emerald-500/60',
       dot: 'bg-emerald-400',
     },
-    members: ['fhir', 'subscriptions', 'documents', 'payer', 'shl', 'imaging', 'cms0057', 'tefca'],
+    members: ['fhir', 'subscriptions', 'documents', 'shl', 'imaging', 'tefca'],
+  },
+  {
+    name: 'Payers',
+    about: 'Claims, prior authorization, drugs and the CMS payer rules',
+    // Cyan rather than rose: red in this interface means something is wrong, and a group name is never wrong.
+    accent: {
+      text: 'text-cyan-300',
+      activeBg: 'bg-cyan-500/15 text-cyan-200',
+      ring: 'border-t-cyan-500/60',
+      dot: 'bg-cyan-400',
+    },
+    // Claims & auth first: the everyday X12 and PAS tools, then drugs, then the rule's own screen.
+    members: ['payer', 'drugs', 'cms0057'],
   },
   {
     name: 'Administer',
@@ -243,7 +256,7 @@ export function GroupMenu({
         <div
           role="menu"
           aria-label={`${group.name} views`}
-          className={`absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-slate-800 border-t-2 ${group.accent.ring} bg-slate-950/95 p-1.5 shadow-xl shadow-black/40 backdrop-blur-xl`}
+          className={`absolute right-0 top-full z-50 mt-1 max-h-[calc(100vh-5rem)] w-72 overflow-y-auto rounded-xl border border-slate-800 border-t-2 ${group.accent.ring} bg-slate-950/95 p-1.5 shadow-xl shadow-black/40 backdrop-blur-xl`}
         >
           {/*
             The group explains itself here rather than in a tooltip on the trigger. A tooltip is not

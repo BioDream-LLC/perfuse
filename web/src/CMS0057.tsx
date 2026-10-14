@@ -22,8 +22,8 @@ export function CMS0057() {
         <h2 className="text-lg font-medium text-slate-100">CMS-0057 payer APIs</h2>
         <p className="mt-1 text-sm text-slate-400">
           The four FHIR APIs the CMS Interoperability and Prior Authorization rule requires of payers, and the data behind them:
-          claims as CARIN Blue Button, prior authorizations as Da Vinci PDex, and the metrics posted every year. Drugs are out of
-          scope, as they are in the rule.
+          claims as CARIN Blue Button, prior authorizations as Da Vinci PDex, and the metrics posted every year. Drugs, which
+          CMS-0062-P proposes to add, have a card of their own here and their tools under Payers › Drugs.
         </p>
       </div>
       <div role="group" aria-label="CMS-0057 tools" className="flex flex-wrap gap-2">

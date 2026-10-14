@@ -58,6 +58,10 @@ type PAS struct {
 	// UM, when set, sends every request to the payer's utilization management system as an X12 278 and answers with its
 	// decisions; Decide is then not consulted.
 	UM *PASUM
+	// Decided, when set, is told after a reviewer's decision is recorded (Claim/$decide or the review queue), with the
+	// request's id and the response Bundle as it now reads. NCPDP electronic prior authorization uses it to send the
+	// prescriber an unsolicited PAResponse. It runs after the commit, so a failure in it cannot undo the decision.
+	Decided func(ctx context.Context, id string, response map[string]any)
 }
 
 // PASAnswer is the payer's rule for one service.
@@ -241,22 +245,44 @@ func (s *Server) handlePASSubmit(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	response, _, problems, err := s.SubmitPAS(r.Context(), body)
+	switch {
+	case len(problems) > 0:
+		s.refusePAS(w, r, problems)
+	case err != nil:
+		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
+	default:
+		s.writeJSON(w, http.StatusOK, response)
+	}
+}
+
+// ErrPASOff is SubmitPAS on a server without -pas.
+var ErrPASOff = errors.New("Da Vinci PAS is not enabled on this server (serve -pas)")
+
+// SubmitPAS answers a PAS request Bundle as Claim/$submit does, and keeps it: the same rules, decision service, UM system,
+// review queue and metrics. NCPDP electronic prior authorization submits drug requests through it, so a drug and a
+// procedure are decided the same way. problems lists why a Bundle was refused; id is the ClaimResponse id $decide takes.
+func (s *Server) SubmitPAS(ctx context.Context, body map[string]any) (response map[string]any, id string, problems []string, err error) {
+	if s.PAS == nil {
+		return nil, "", nil, ErrPASOff
+	}
+	if err := s.pasReady(ctx); err != nil {
+		return nil, "", nil, err
+	}
 	req, problems := readPASRequest(body, false)
 	if len(problems) > 0 {
-		s.refusePAS(w, r, problems)
-		return
+		return nil, "", problems, nil
 	}
 	now := s.PAS.now().UTC()
-	id := newUUID()
+	id = newUUID()
 	if s.PAS.UM != nil && s.PAS.UM.Send != nil {
-		s.askUM(r.Context(), req, id, now)
+		s.askUM(ctx, req, id, now)
 	}
-	response, pended := s.pasRespond(r.Context(), req, id, now)
-	if err := s.savePAS(r.Context(), req, id, response, pended, now); err != nil {
-		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
-		return
+	response, pended := s.pasRespond(ctx, req, id, now)
+	if err := s.savePAS(ctx, req, id, response, pended, now); err != nil {
+		return nil, "", nil, err
 	}
-	s.writeJSON(w, http.StatusOK, response)
+	return response, id, nil, nil
 }
 
 // itemDecision is one item's answer.
@@ -1180,6 +1206,9 @@ func (s *Server) decidePAS(ctx context.Context, id string, d itemDecision, items
 	}
 	if subs != nil {
 		subs.Poke()
+	}
+	if s.PAS.Decided != nil {
+		s.PAS.Decided(ctx, id, bundle)
 	}
 	return bundle, nil
 }

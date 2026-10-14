@@ -1554,6 +1554,25 @@ export function IconQR(props: IconProps) {
   )
 }
 
+export function IconPill(props: IconProps) {
+  return (
+    <SvgWrapper {...props}>
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-a`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#a78bfa" />
+              <stop offset="100%" stopColor="#22d3ee" />
+            </linearGradient>
+          </defs>
+          <rect x="2.5" y="8" width="19" height="8" rx="4" transform="rotate(-45 12 12)" fill="none" stroke={`url(#${id}-a)`} strokeWidth="2" />
+          <path d="M8.6 8.6l6.8 6.8" stroke={`url(#${id}-a)`} strokeWidth="2" strokeLinecap="round" />
+        </>
+      )}
+    </SvgWrapper>
+  )
+}
+
 export function IconKey(props: IconProps) {
   return (
     <SvgWrapper {...props}>
@@ -1631,6 +1650,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Claims & auth': IconBilling,
   'Health links': IconQR,
   'Imaging': IconImaging,
+  'Drugs': IconPill,
   'Scripts': IconScripts,
   'Migrate': IconMigrate,
   'Contracts': IconContracts,
@@ -1809,6 +1829,16 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Come across from Mirth': IconMigrate,
   'Receive a SMART Health Link': IconQR,
   'Share a visit record': IconQR,
+  // Drugs: the formulary, RTPB and ePA.
+  'No formulary on this server': IconPill,
+  'Where it is published': IconSend,
+  'Plans': IconBilling,
+  'Drugs on the formulary': IconPill,
+  'Price a drug for a member': IconBilling,
+  'Electronic prior authorization is off': IconPill,
+  'Try a prior authorization': IconPill,
+  'Drug prior authorization figures': IconMetrics,
+  'Prior authorization cases': IconDocuments,
   // The imaging archive.
   'For a viewer': IconImaging,
   'No archive on this server': IconImaging,

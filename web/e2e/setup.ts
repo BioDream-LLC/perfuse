@@ -375,6 +375,8 @@ export default async function globalSetup() {
       "-vpn", vpnFile,
       // An imaging archive, so the Imaging view and DICOMweb are tested against a real archive rather than the "off" card.
       "-dicomweb-archive", join(dir, "imaging"),
+      // The sample drug formulary, so the Drugs screen, the Drug Formulary API, RTPB and ePA are tested for real.
+      "-formulary", "examples/formulary/formulary.yaml",
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
   );

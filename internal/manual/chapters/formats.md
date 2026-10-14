@@ -79,7 +79,7 @@ Any X12 interchange can be routed, filtered and addressed by path. These transac
 | `834` | Enrolment: members added, changed and terminated, with each coverage line and its dates. |
 | `837` | Claims, professional and institutional (read for CMS-0057's CARIN conversion). |
 
-Perfuse also **builds** the `270` eligibility inquiry and the `276` claim status request, under **Exchange → Claims & auth** or through
+Perfuse also **builds** the `270` eligibility inquiry and the `276` claim status request, under **Payers → Claims & auth** or through
 `POST /api/x12/eligibility/build` and `/api/x12/claimstatus/build`. Both are the HIPAA 5010 versions (005010X279A1, 005010X212), read
 back and envelope-checked before they are shown, and neither is sent from that page: delivering one is a channel's job, where the
 trading partner and its credentials are.
@@ -406,6 +406,10 @@ An absent substitution flag is refused rather than defaulted. Both possible defa
 A Schedule II prescription with refills is refused, and the builder will not produce one.
 
 Refusals and warnings are kept as separate lists rather than one severity-tagged list, because a reader who has to check a severity field to know whether the message was sent will eventually not check it.
+
+Electronic prior authorization (`PAInitiationRequest`, `PARequest`, `PAAppealRequest`, `PACancelRequest`) and Real-Time
+Prescription Benefit are answered by the payer side at `/ncpdp/script` and `/ncpdp/rtpb`, from the drug formulary; see
+[CMS-0057](#cms-0057).
 
 ## DICOM
 

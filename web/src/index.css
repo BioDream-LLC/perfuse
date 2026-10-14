@@ -95,6 +95,13 @@
   --color-rose-400: oklch(45% 0.18 15);
   --color-purple-300: oklch(45% 0.16 300);
   --color-purple-400: oklch(42% 0.18 300);
+  /* Cyan and violet joined the accents with the imaging and drug screens; found by the contrast sweep at 1.37:1. */
+  --color-cyan-200: oklch(42% 0.09 210);
+  --color-cyan-300: oklch(46% 0.1 210);
+  --color-cyan-400: oklch(43% 0.11 210);
+  --color-violet-200: oklch(42% 0.15 290);
+  --color-violet-300: oklch(45% 0.16 290);
+  --color-violet-500: oklch(55% 0.18 290);
 
   /* The tinted-panel pattern, inverted.
      Status is shown throughout as a very dark tint behind a bright accent -

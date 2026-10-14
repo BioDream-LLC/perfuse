@@ -1,0 +1,77 @@
+# A sample drug formulary for Perfuse (serve -formulary examples/formulary/formulary.yaml).
+#
+# Every drug below is a real RxNorm concept (checked against RxNav) with an NDC RxNorm lists for it, so the Drug Formulary
+# API, Real-Time Prescription Benefit and electronic prior authorization can be tried end to end. The plan, its prices and
+# its limits are invented.
+payer:
+  name: Example Health Plan
+  id: EXAMPLEPBM01
+
+plans:
+  - id: GOLD2026
+    name: Example Gold PPO 2026
+    type: commppo
+    formulary: STD2026
+    groups: ["GRP-EXAMPLE-1"]
+    phone: "+1 (800) 555-0100"
+    website: https://plan.example/formulary
+    costs:
+      - { benefit: 1-month-in-retail, tier: generic, copay: 10 }
+      - { benefit: 1-month-in-retail, tier: preferred-brand, copay: 45 }
+      - { benefit: 1-month-in-retail, tier: non-preferred-brand, copay: 90 }
+      - { benefit: 1-month-in-retail, tier: specialty, coinsurance: 25 }
+      - { benefit: 3-month-in-mail, tier: generic, copay: 20 }
+      - { benefit: 3-month-in-mail, tier: preferred-brand, copay: 110 }
+
+# Test members. A real payer's members are found through the FHIR store's Coverage resources instead.
+members:
+  MBR1001: GOLD2026
+
+formularies:
+  - id: STD2026
+    name: Example Standard Formulary 2026
+    start: "2026-01-01"
+    end: "2026-12-31"
+    drugs:
+      - rxnorm: "860975"
+        display: 24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet
+        group: "1161611"
+        group_display: metformin Pill
+        ndc: ["00378035205"]
+        tier: generic
+        benefits: [1-month-in-retail, 3-month-in-mail]
+      - rxnorm: "1373469"
+        display: canagliflozin 100 MG Oral Tablet [Invokana]
+        group: "1373468"
+        group_display: Invokana Pill
+        ndc: ["50458-0140-30"]
+        tier: preferred-brand
+        step_therapy: true
+        notes: Step therapy - a trial of metformin first.
+        alternatives: ["860975"]
+      - rxnorm: "854236"
+        display: 0.4 ML enoxaparin sodium 100 MG/ML Prefilled Syringe [Lovenox]
+        group: "1180930"
+        group_display: Lovenox Injectable Product
+        ndc: ["00075062001"]
+        tier: preferred-brand
+        cost_30_day: 410.00
+        prior_authorization: true
+        quantity_limit: { quantity: 30, days: 30, max_daily: 2 }
+        questionnaire: https://plan.example/fhir/Questionnaire/enoxaparin-pa
+      - rxnorm: "1872980"
+        display: 0.4 ML adalimumab 100 MG/ML Auto-Injector [Humira]
+        group: "1171992"
+        group_display: Humira Injectable Product
+        ndc: ["00074055402"]
+        tier: specialty
+        cost_30_day: 6922.00
+        prior_authorization: true
+        quantity_limit: { quantity: 2, days: 28 }
+        questionnaire: https://plan.example/fhir/Questionnaire/adalimumab-pa
+      - rxnorm: "1049640"
+        display: acetaminophen 325 MG / oxycodone hydrochloride 5 MG Oral Tablet [Percocet]
+        ndc: ["63481062370"]
+        tier: non-preferred-brand
+        not_covered: true
+        notes: Not covered. The generic is on the formulary.

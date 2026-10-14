@@ -162,10 +162,6 @@ FHIR subscriptions and whether their notifications are arriving: events, accepte
 
 Clinical documents — CDA and the printable form of a document. Useful when the thing being exchanged is a discharge summary rather than a message.
 
-### Claims & auth
-
-Build an X12 `275` claims attachment in the `006020` form CMS-0053-F adopts, from a pasted C-CDA or an uploaded PDF, TIFF or JPEG, and see it read back. Read a `275` and download the document inside. Convert an X12 `278` decision into a Da Vinci PAS `ClaimResponse`. Nothing on this page is stored or sent. See [message formats](#message-formats) for what the `275` is built from and what it does not do.
-
 ### Health links
 
 SMART Health Links and Cards, for CMS's *Kill the Clipboard*. **Receive a SMART Health Link** reads the link or QR code a patient
@@ -182,20 +178,6 @@ the DICOMweb address and the data-source block for an OHIF viewer, and a study s
 made with the same QIDO-RS request a viewer makes. A study opens to its series and instances, and an instance downloads as a
 DICOM file. Nothing is rendered: Perfuse moves images and a viewer displays them. Without an archive the screen says how to
 turn one on. See [DICOMweb](#message-formats).
-
-### CMS-0057
-
-The payer side of the CMS Interoperability and Prior Authorization rule, as five tools:
-
-- **The four APIs:** whether Patient Access, Provider Access, Payer-to-Payer and Prior Authorization are ready on this instance,
-  and what each still needs.
-- **Reviewer queue:** the PAS requests waiting for a person, soonest due first, with the documents sent for each; approve, deny or
-  certify fewer units. See [the reviewer queue](#cms-0057).
-- **Claims to CARIN BB:** an 837 and its 835 converted to CARIN Blue Button bundles.
-- **Prior auth to PDex:** a PAS response converted to a PDex prior authorization.
-- **Prior auth metrics:** the yearly public prior authorization metrics page, previewed from a CSV of decisions.
-
-The conversions store nothing and send nothing.
 
 ### TEFCA
 
@@ -214,6 +196,37 @@ What remains cannot be done from here. The certificate that proves community mem
 Throughout, the endpoints used for exchange come from the **signed** part of a partner's metadata, never the document body. Verifying a signature and then reading the endpoints from the unsigned copy would be an elaborate way of trusting the network: an attacker able to rewrite the response leaves the signed element alone, points the token endpoint at their own server, and collects client assertions from everybody who checked the signature and then ignored what it covered.
 
 A trust anchor bundle is required and its absence is refused at startup. Checking a partner's signed metadata against the certificate that arrived inside it proves only that one party made both — a mistake this codebase has made before, in SAML, where the verifier preferred the embedded certificate and authenticated an attacker as an administrator while every test passed. Include the intermediates in the bundle: a UDAP server need only send its leaf certificate, and the public reference server does exactly that.
+
+
+## Payers — claims, prior authorization, drugs and the CMS payer rules
+
+### Claims & auth
+
+Build an X12 `275` claims attachment in the `006020` form CMS-0053-F adopts, from a pasted C-CDA or an uploaded PDF, TIFF or JPEG, and see it read back. Read a `275` and download the document inside. Convert an X12 `278` decision into a Da Vinci PAS `ClaimResponse`. Nothing on this page is stored or sent. See [message formats](#message-formats) for what the `275` is built from and what it does not do.
+
+### Drugs
+
+The drug formulary loaded with `-formulary`, and the two NCPDP standards answered from it. **Formulary** lists the plans and the
+drugs with their tier and requirements, and where the public Da Vinci US Drug Formulary API and the NCPDP endpoints are.
+**Price check (RTPB)** prices a drug for a member as a prescriber's Real-Time Prescription Benefit request would: the coverage
+status, the restrictions in words with their codes, the member's share and the plan's, and the cheaper alternatives. **Prior
+authorization (ePA)** sends a SCRIPT initiation to this server's own endpoint, shows the question set as a form, sends the answers and
+shows the decision; below, every case with where it stands and whether the prescriber has been told, the case's answers, a button to
+send an unsent decision again, and the drug figures CMS-0062-P proposes. See [CMS-0057](#cms-0057).
+
+### CMS-0057
+
+The payer side of the CMS Interoperability and Prior Authorization rule, as five tools:
+
+- **The four APIs:** whether Patient Access, Provider Access, Payer-to-Payer and Prior Authorization are ready on this instance,
+  and what each still needs.
+- **Reviewer queue:** the PAS requests waiting for a person, soonest due first, with the documents sent for each; approve, deny or
+  certify fewer units. See [the reviewer queue](#cms-0057).
+- **Claims to CARIN BB:** an 837 and its 835 converted to CARIN Blue Button bundles.
+- **Prior auth to PDex:** a PAS response converted to a PDex prior authorization.
+- **Prior auth metrics:** the yearly public prior authorization metrics page, previewed from a CSV of decisions.
+
+The conversions store nothing and send nothing.
 
 ## Administer — who can do what, and how this server is set up
 

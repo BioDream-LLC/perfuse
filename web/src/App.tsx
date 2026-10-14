@@ -46,6 +46,7 @@ const PayerLab = lazy(() => import('./PayerLab').then((m) => ({ default: m.Payer
 const CMS0057 = lazy(() => import('./CMS0057').then((m) => ({ default: m.CMS0057 })))
 const HealthLinks = lazy(() => import('./HealthLinks').then((m) => ({ default: m.HealthLinks })))
 const Imaging = lazy(() => import('./Imaging').then((m) => ({ default: m.Imaging })))
+const Drugs = lazy(() => import('./Drugs').then((m) => ({ default: m.Drugs })))
 const Certificates = lazy(() => import('./Certificates').then((m) => ({ default: m.Certificates })))
 const MirthMigration = lazy(() => import('./MirthMigration').then((m) => ({ default: m.MirthMigration })))
 const Contracts = lazy(() => import('./Contracts').then((m) => ({ default: m.Contracts })))
@@ -81,6 +82,7 @@ export type Tab =
   | 'cms0057'
   | 'shl'
   | 'imaging'
+  | 'drugs'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -584,6 +586,12 @@ function Console() {
       about: 'SMART Health Links and Cards: read the QR code a patient shows at check-in, and share the visit record back the same way',
     },
     {
+      id: 'drugs',
+      label: 'Drugs',
+      minRole: 'viewer',
+      about: 'The drug formulary, NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization',
+    },
+    {
       id: 'imaging',
       label: 'Imaging',
       minRole: 'viewer',
@@ -934,6 +942,7 @@ function Console() {
           {tab === 'cms0057' && <CMS0057 />}
           {tab === 'shl' && <HealthLinks />}
           {tab === 'imaging' && <Imaging />}
+          {tab === 'drugs' && <Drugs />}
           {tab === 'certificates' && <Certificates />}
           {tab === 'scripts' && (
             <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

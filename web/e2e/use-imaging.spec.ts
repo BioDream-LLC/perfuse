@@ -83,7 +83,7 @@ test("a study goes STOW-RS to a channel, into the archive, and shows in Imaging"
   // A search that matches nothing says so.
   await page.getByLabel("Patient ID").fill("NOBODY-HERE");
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.getByText("No study matches.")).toBeVisible();
+  await expect(page.getByTestId("imaging-result")).toHaveText("No study matches: PatientID NOBODY-HERE.");
 
   await page.request.post("/api/channels/e2e-imaging-relay/stop", { headers });
   await page.request.delete("/api/channels/e2e-imaging-relay", { headers });

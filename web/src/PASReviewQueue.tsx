@@ -60,7 +60,7 @@ export function PASReviewQueue() {
       <Section
         title={all ? 'Every request' : 'Waiting for a reviewer'}
         icon={IconQueue}
-        description="Pended requests, soonest due first: 72 hours for an expedited request, 7 days for a standard one."
+        description="Pended requests, soonest due first: 72 hours for an expedited request, 7 days for a standard one; for a drug, 24 hours expedited and 72 standard (CMS-0062-P, proposed)."
       >
         <label className="mb-3 flex items-center gap-2 text-sm text-slate-300">
           <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} />
@@ -84,6 +84,7 @@ export function PASReviewQueue() {
                     <span className="flex items-center justify-between gap-2">
                       <span className="font-medium text-slate-100">{c.member || 'Unnamed member'}</span>
                       {c.expedited && <span className="rounded bg-rose-500/15 px-2 py-0.5 text-xs text-rose-200">Expedited</span>}
+                      {c.drug && <span className="rounded bg-violet-500/15 px-2 py-0.5 text-xs text-violet-200">Drug</span>}
                     </span>
                     <span className="mt-1 block text-xs text-slate-400">
                       {c.provider} · trace {c.trace || c.id.slice(0, 8)}

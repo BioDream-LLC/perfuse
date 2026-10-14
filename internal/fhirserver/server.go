@@ -306,6 +306,18 @@ func init() {
 	}
 }
 
+// Da Vinci US Drug Formulary 2.1.0's profiles, which -formulary publishes and the searches above serve.
+func init() {
+	for t, profiles := range map[string][]string{
+		"InsurancePlan": {"usdf-PayerInsurancePlan", "usdf-Formulary"}, "MedicationKnowledge": {"usdf-FormularyDrug"},
+		"Basic": {"usdf-FormularyItem"},
+	} {
+		for _, p := range profiles {
+			usCoreProfiles[t] = append(usCoreProfiles[t], usdfSD+p)
+		}
+	}
+}
+
 func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 	version := s.resolveVersion(r)
 

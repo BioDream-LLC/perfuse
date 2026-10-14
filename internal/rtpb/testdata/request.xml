@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A synthetic RTPBRequest (PBv13), laid out as the public Surescripts RTPB example is. Nobody real is named. -->
+<Message RTPBDatatypesVersion="PBv13" RTPBTransportVersion="PBv13" RTPBTransactionDomain="RTPB" RTPBTransactionVersion="PBv13"
+  RTPBStructuresVersion="PBv13" RTPBECLVersion="PBv13" RTPBVersion="PBv13">
+  <RTPBHeader>
+    <To>
+      <Primary>
+        <Identification>EXAMPLEPBM01</Identification>
+        <Qualifier>PY</Qualifier>
+      </Primary>
+    </To>
+    <From>
+      <Primary>
+        <Identification>D00000000000001</Identification>
+        <Qualifier>D</Qualifier>
+      </Primary>
+    </From>
+    <MessageID>RTPBREQ-TEST-1</MessageID>
+    <RelatesToMessageID>ELIG-TEST-1</RelatesToMessageID>
+    <SentTime>2026-10-14T10:10:02.9Z</SentTime>
+  </RTPBHeader>
+  <RTPBBody>
+    <RTPBRequest>
+      <Patient>
+        <Name>
+          <LastName>DOE</LastName>
+          <FirstName>JANE</FirstName>
+        </Name>
+        <SexAndGender>
+          <AdministrativeGender>F</AdministrativeGender>
+        </SexAndGender>
+        <DateOfBirth>1970-01-01</DateOfBirth>
+        <StateProvince>MD</StateProvince>
+        <PostalCode>20850</PostalCode>
+      </Patient>
+      <BenefitsCoordination>
+        <PBMMemberID>MBR1001</PBMMemberID>
+      </BenefitsCoordination>
+      <RequestedProduct>
+        <Product>
+          <DrugCoded>
+            <NDC>00075062001</NDC>
+          </DrugCoded>
+        </Product>
+        <Quantity>
+          <Value>30</Value>
+          <CodeListQualifier>38</CodeListQualifier>
+          <QuantityUnitOfMeasure>
+            <Code>C48539</Code>
+          </QuantityUnitOfMeasure>
+        </Quantity>
+        <DaysSupply>30</DaysSupply>
+        <Diagnosis>
+          <Code>I82409</Code>
+          <Qualifier>ABF</Qualifier>
+        </Diagnosis>
+      </RequestedProduct>
+      <Prescriber>
+        <Identification>
+          <NPI>1234567893</NPI>
+        </Identification>
+        <LastName>SMITH</LastName>
+      </Prescriber>
+      <Pharmacy>
+        <Identification>
+          <NCPDPID>0000001</NCPDPID>
+          <NPI>1234567893</NPI>
+        </Identification>
+        <BusinessName>EXAMPLE PHARMACY</BusinessName>
+        <PrimaryTelephoneNumber>3015550100</PrimaryTelephoneNumber>
+      </Pharmacy>
+    </RTPBRequest>
+  </RTPBBody>
+</Message>

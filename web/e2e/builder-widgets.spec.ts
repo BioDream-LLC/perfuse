@@ -625,8 +625,14 @@ test("the builder does not offer a transport the server has never heard of", asy
 
   const type = page.locator('select[id^="dest-"][id$="-type"]').first();
 
-  await expect(type.locator('option[value="dicomweb"]')).toHaveCount(0);
+  // The server's own list of destination types, from the same endpoint the builder builds against: every option in the menu must
+  // be one of them. (DICOMweb was the case that started this; it is a real destination now, and is checked like the rest.)
+  const known = ["mllp", "tcp", "file", "http", "database", "sftp", "fhir", "smtp", "cda", "channel", "s3", "ftp", "document", "soap",
+    "dicom", "dicomweb", "javascript", "broker", "kafka", "sqs", "sns", "amqp", "azure_blob", "mqtt", "ibm_mq", "pubsub", "gcs"];
+  const offered = await type.locator("option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value).filter(Boolean));
+  expect(offered.filter((v) => !known.includes(v)), "the builder offers a destination type the server does not know").toEqual([]);
 
   // A positive control: the locator has to be capable of finding an option that is there.
   await expect(type.locator('option[value="dicom"]')).toHaveCount(1);
+  await expect(type.locator('option[value="dicomweb"]')).toHaveCount(1);
 });

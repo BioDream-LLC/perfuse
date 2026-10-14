@@ -34,6 +34,7 @@ const allowedPlain: Record<string, string> = {
   'builderFields.tsx': 'the generic Area, used for prose fields. ScriptArea beside it carries the script slots',
   'Playground.tsx': 'the shared field here uses CodeArea; this entry covers nothing else in the file',
   'HealthLinks.tsx': 'a SMART Health Link is one base64url token after shlink:/, with no structure to colour',
+  'Drugs.tsx': "a prior authorization question's free-text answer is the prescriber's prose; the SCRIPT XML uses CodeArea",
   'CodeArea.tsx': 'the implementation. The textarea underneath the coloured layer is the whole mechanism',
 }
 

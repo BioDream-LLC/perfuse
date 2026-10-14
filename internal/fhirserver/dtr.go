@@ -481,12 +481,17 @@ func lastUpdated(res map[string]any) time.Time {
 
 // byCanonical finds the resource with this canonical url. With a |version suffix it returns that version; without one, the newest.
 func (s *Server) byCanonical(r *http.Request, resourceType, canonical string) map[string]any {
+	return s.ByCanonical(r.Context(), resourceType, canonical)
+}
+
+// ByCanonical returns the newest resource of the type with this canonical URL (url or url|version), or nil.
+func (s *Server) ByCanonical(ctx context.Context, resourceType, canonical string) map[string]any {
 	parts := strings.SplitN(canonical, "|", 2)
 	q, err := ParseSearch(resourceType, map[string][]string{"url": {parts[0]}})
 	if err != nil {
 		return nil
 	}
-	res, err := s.Store.Search(r.Context(), q)
+	res, err := s.Store.Search(ctx, q)
 	if err != nil || len(res.Resources) == 0 {
 		return nil
 	}

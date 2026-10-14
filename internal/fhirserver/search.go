@@ -166,7 +166,7 @@ var SearchParams = map[string][]string{
 	"MolecularSequence": {"_id", "_lastUpdated", "identifier", "patient", "type"},
 
 	// Medications
-	"MedicationKnowledge":        {"_id", "_lastUpdated", "code", "status"},
+	"MedicationKnowledge":        {"_id", "_lastUpdated", "code", "status", "doseform"},
 	"ImmunizationEvaluation":     {"_id", "_lastUpdated", "identifier", "patient", "status", "date"},
 	"ImmunizationRecommendation": {"_id", "_lastUpdated", "identifier", "patient", "date"},
 
@@ -182,7 +182,7 @@ var SearchParams = map[string][]string{
 	"ChargeItem":                  {"_id", "_lastUpdated", "identifier", "subject", "code", "status"},
 	"ChargeItemDefinition":        {"_id", "_lastUpdated", "url", "status"},
 	"Contract":                    {"_id", "_lastUpdated", "identifier", "status"},
-	"InsurancePlan":               {"_id", "_lastUpdated", "identifier", "status", "name", "administered-by", "owned-by", "coverage-area", "plan-type", "type"},
+	"InsurancePlan":               {"_id", "_lastUpdated", "identifier", "status", "name", "administered-by", "owned-by", "coverage-area", "plan-type", "type", "period", "coverage-type", "formulary-coverage"},
 	"Invoice":                     {"_id", "_lastUpdated", "identifier", "subject", "status", "date"},
 
 	// Workflow & scheduling
@@ -212,7 +212,7 @@ var SearchParams = map[string][]string{
 	"Group":                  {"_id", "_lastUpdated", "identifier", "type", "name", "code", "member"},
 	"Person":                 {"_id", "_lastUpdated", "identifier", "gender", "birthdate"},
 	"Linkage":                {"_id", "_lastUpdated"},
-	"Basic":                  {"_id", "_lastUpdated", "identifier", "subject", "created"},
+	"Basic":                  {"_id", "_lastUpdated", "identifier", "subject", "created", "code", "drug-tier", "formulary", "status", "pharmacy-benefit-type", "period"},
 	"DeviceMetric":           {"_id", "_lastUpdated", "identifier", "source", "category"},
 	"DeviceDefinition":       {"_id", "_lastUpdated", "identifier"},
 	"Substance":              {"_id", "_lastUpdated", "identifier", "code", "status"},
@@ -1767,7 +1767,9 @@ func isReferenceParam(param string) bool {
 		"primary-organization", "For", "coverage", "payor", "member", "location", "medication",
 		// Plan-Net's directory references.
 		"participating-organization", "network", "service", "endpoint", "coverage-area", "administered-by", "owned-by",
-		"partof":
+		"partof",
+		// The Drug Formulary's.
+		"formulary", "formulary-coverage":
 		return true
 	}
 
@@ -1869,6 +1871,9 @@ func refTypeFromString(ref string) string {
 	return candidate
 }
 
+// usdfSD is where the Da Vinci US Drug Formulary's profiles and extensions are defined.
+const usdfSD = "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/"
+
 // pathParam is a search parameter read from the resource's JSON by path, for the parameters the typed indexer above does not
 // cover. Added for the US Core 6.1 server parameters the Inferno US Core suite searches on, which answered 400 before.
 type pathParam struct {
@@ -1904,7 +1909,21 @@ var pathParams = map[string][]pathParam{
 		{"administered-by", "reference", []string{"administeredBy"}}, {"owned-by", "reference", []string{"ownedBy"}},
 		{"coverage-area", "reference", []string{"coverageArea"}}, {"plan-type", "token", []string{"plan.type"}},
 		{"type", "token", []string{"type"}}, {"name", "string", []string{"alias"}},
+		// Da Vinci US Drug Formulary 2.1.0's InsurancePlan parameters.
+		{"period", "date", []string{"period"}}, {"coverage-type", "token", []string{"coverage.type"}},
+		{"formulary-coverage", "reference", []string{"coverage.extension[" + usdfSD + "usdf-FormularyReference-extension].valueReference"}},
 	},
+	// Da Vinci US Drug Formulary 2.1.0: a FormularyItem (Basic) ties a FormularyDrug to a formulary with its tier and
+	// limits, all in extensions, and MedicationKnowledge's dose form.
+	"Basic": {
+		{"code", "token", []string{"code"}},
+		{"drug-tier", "token", []string{"extension[" + usdfSD + "usdf-DrugTierID-extension].valueCodeableConcept"}},
+		{"formulary", "reference", []string{"extension[" + usdfSD + "usdf-FormularyReference-extension].valueReference"}},
+		{"status", "token", []string{"extension[" + usdfSD + "usdf-AvailabilityStatus-extension].valueCode"}},
+		{"pharmacy-benefit-type", "token", []string{"extension[" + usdfSD + "usdf-PharmacyBenefitType-extension].valueCodeableConcept"}},
+		{"period", "date", []string{"extension[" + usdfSD + "usdf-AvailabilityPeriod-extension].valuePeriod"}},
+	},
+	"MedicationKnowledge": {{"doseform", "token", []string{"doseForm"}}},
 	"OrganizationAffiliation": {
 		{"participating-organization", "reference", []string{"participatingOrganization"}},
 		{"location", "reference", []string{"location"}}, {"service", "reference", []string{"healthcareService"}},
@@ -1949,6 +1968,13 @@ func pathEntries(r fhir.Resource) []indexEntry {
 			for _, v := range walkPath(tree, splitPath(path)) {
 				switch d.kind {
 				case "token":
+					if code, ok := v.(string); ok {
+						// A code, rather than a CodeableConcept: an extension's valueCode, say.
+						if code = strings.TrimSpace(code); code != "" {
+							out = append(out, indexEntry{param: d.param, value: code, valueRaw: code})
+						}
+						continue
+					}
 					cc, _ := v.(map[string]any)
 					codings, _ := cc["coding"].([]any)
 					for _, c := range codings {

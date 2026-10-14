@@ -44,6 +44,9 @@ export function Imaging() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [studies, setStudies] = useState<DicomJSON[] | null>(null)
+  // searched says what the last search asked for, so the answer names its question: a search that changes nothing on the
+  // screen reads as a button that does nothing.
+  const [searched, setSearched] = useState('')
   const [open, setOpen] = useState<string | null>(null)
   const [series, setSeries] = useState<DicomJSON[]>([])
   const [instances, setInstances] = useState<Record<string, DicomJSON[]>>({})
@@ -62,9 +65,11 @@ export function Imaging() {
     if (patientId.trim()) q.set('PatientID', patientId.trim())
     if (accession.trim()) q.set('AccessionNumber', accession.trim())
     if (from || to) q.set('StudyDate', `${from.replaceAll('-', '')}-${to.replaceAll('-', '')}`)
+    const asked = [...q.entries()].filter(([k]) => k !== 'fuzzymatching').map(([k, v]) => `${k} ${v}`).join(', ')
     q.set('limit', '200')
     try {
       setStudies(await api.qido(`/studies?${q.toString()}`))
+      setSearched(asked)
       setOpen(null)
     } catch (e) {
       setError(toError(e))
@@ -200,8 +205,11 @@ export function Imaging() {
                 </div>
               </form>
 
-              {studies !== null && studies.length === 0 && (
-                <p className="mt-4 text-sm text-slate-400">No study matches.</p>
+              {studies !== null && (
+                <p className="mt-4 text-sm text-slate-400" data-testid="imaging-result" aria-live="polite">
+                  {studies.length === 0 ? 'No study matches' : `${studies.length} ${studies.length === 1 ? 'study matches' : 'studies match'}`}
+                  {searched ? `: ${searched}.` : ' (every study).'}
+                </p>
               )}
               {studies !== null && studies.length > 0 && (
                 <table className="mt-4 w-full text-left text-sm" data-testid="imaging-studies">

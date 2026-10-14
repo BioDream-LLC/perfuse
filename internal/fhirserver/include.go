@@ -124,7 +124,11 @@ var referenceTargets = map[string]map[string][]string{
 	},
 	"InsurancePlan": {
 		"administered-by": {"Organization"}, "owned-by": {"Organization"}, "coverage-area": {"Location"},
+		// Da Vinci US Drug Formulary: a payer plan's formulary.
+		"formulary-coverage": {"InsurancePlan"},
 	},
+	// Da Vinci US Drug Formulary: a FormularyItem's drug and formulary, so one search returns the drug list it describes.
+	"Basic":        {"subject": {"MedicationKnowledge"}, "formulary": {"InsurancePlan"}},
 	"Location":     {"endpoint": {"Endpoint"}, "organization": {"Organization"}, "partof": {"Location"}},
 	"Organization": {"partof": {"Organization"}, "endpoint": {"Endpoint"}, "coverage-area": {"Location"}},
 	"OrganizationAffiliation": {

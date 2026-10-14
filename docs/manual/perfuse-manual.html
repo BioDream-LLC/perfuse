@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.15 · 2047a0e</p>
+<p class="version">v0.1.15 · 18c6535</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -398,20 +398,22 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s3-4-1-fhir-lab"><span class="num">3.4.1</span> FHIR lab</a></div>
 <div class="toc-d3"><a href="#s3-4-2-subscriptions"><span class="num">3.4.2</span> Subscriptions</a></div>
 <div class="toc-d3"><a href="#s3-4-3-documents"><span class="num">3.4.3</span> Documents</a></div>
-<div class="toc-d3"><a href="#s3-4-4-claims--auth"><span class="num">3.4.4</span> Claims &amp; auth</a></div>
-<div class="toc-d3"><a href="#s3-4-5-health-links"><span class="num">3.4.5</span> Health links</a></div>
-<div class="toc-d3"><a href="#s3-4-6-imaging"><span class="num">3.4.6</span> Imaging</a></div>
-<div class="toc-d3"><a href="#s3-4-7-cms-0057"><span class="num">3.4.7</span> CMS-0057</a></div>
-<div class="toc-d3"><a href="#s3-4-8-tefca"><span class="num">3.4.8</span> TEFCA</a></div>
-<div class="toc-d2"><a href="#s3-5-administer--who-can-do-what-and-how-this-server-is-set-up"><span class="num">3.5</span> Administer — who can do what, and how this server is set up</a></div>
-<div class="toc-d3"><a href="#s3-5-1-users"><span class="num">3.5.1</span> Users</a></div>
-<div class="toc-d3"><a href="#s3-5-2-tenants"><span class="num">3.5.2</span> Tenants</a></div>
-<div class="toc-d3"><a href="#s3-5-3-certificates"><span class="num">3.5.3</span> Certificates</a></div>
-<div class="toc-d3"><a href="#s3-5-4-activity"><span class="num">3.5.4</span> Activity</a></div>
-<div class="toc-d3"><a href="#s3-5-5-fleet"><span class="num">3.5.5</span> Fleet</a></div>
-<div class="toc-d3"><a href="#s3-5-6-migrate"><span class="num">3.5.6</span> Migrate</a></div>
-<div class="toc-d3"><a href="#s3-5-7-settings"><span class="num">3.5.7</span> Settings</a></div>
-<div class="toc-d2"><a href="#s3-6-what-the-colours-mean"><span class="num">3.6</span> What the colours mean</a></div>
+<div class="toc-d3"><a href="#s3-4-4-health-links"><span class="num">3.4.4</span> Health links</a></div>
+<div class="toc-d3"><a href="#s3-4-5-imaging"><span class="num">3.4.5</span> Imaging</a></div>
+<div class="toc-d3"><a href="#s3-4-6-tefca"><span class="num">3.4.6</span> TEFCA</a></div>
+<div class="toc-d2"><a href="#s3-5-payers--claims-prior-authorization-drugs-and-the-cms-payer-rules"><span class="num">3.5</span> Payers — claims, prior authorization, drugs and the CMS payer rules</a></div>
+<div class="toc-d3"><a href="#s3-5-1-claims--auth"><span class="num">3.5.1</span> Claims &amp; auth</a></div>
+<div class="toc-d3"><a href="#s3-5-2-drugs"><span class="num">3.5.2</span> Drugs</a></div>
+<div class="toc-d3"><a href="#s3-5-3-cms-0057"><span class="num">3.5.3</span> CMS-0057</a></div>
+<div class="toc-d2"><a href="#s3-6-administer--who-can-do-what-and-how-this-server-is-set-up"><span class="num">3.6</span> Administer — who can do what, and how this server is set up</a></div>
+<div class="toc-d3"><a href="#s3-6-1-users"><span class="num">3.6.1</span> Users</a></div>
+<div class="toc-d3"><a href="#s3-6-2-tenants"><span class="num">3.6.2</span> Tenants</a></div>
+<div class="toc-d3"><a href="#s3-6-3-certificates"><span class="num">3.6.3</span> Certificates</a></div>
+<div class="toc-d3"><a href="#s3-6-4-activity"><span class="num">3.6.4</span> Activity</a></div>
+<div class="toc-d3"><a href="#s3-6-5-fleet"><span class="num">3.6.5</span> Fleet</a></div>
+<div class="toc-d3"><a href="#s3-6-6-migrate"><span class="num">3.6.6</span> Migrate</a></div>
+<div class="toc-d3"><a href="#s3-6-7-settings"><span class="num">3.6.7</span> Settings</a></div>
+<div class="toc-d2"><a href="#s3-7-what-the-colours-mean"><span class="num">3.7</span> What the colours mean</a></div>
 <div class="toc-d1"><a href="#s4-channels"><span class="num">4</span> Channels</a></div>
 <div class="toc-d2"><a href="#s4-1-anatomy"><span class="num">4.1</span> Anatomy</a></div>
 <div class="toc-d2"><a href="#s4-2-one-source-many-destinations"><span class="num">4.2</span> One source, many destinations</a></div>
@@ -583,12 +585,16 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s16-5-the-provider-access-and-payer-to-payer-apis"><span class="num">16.5</span> The Provider Access and Payer-to-Payer APIs</a></div>
 <div class="toc-d2"><a href="#s16-6-a-provider-directory-plan-net"><span class="num">16.6</span> A provider directory: Plan-Net</a></div>
 <div class="toc-d2"><a href="#s16-7-prior-authorisation-metrics"><span class="num">16.7</span> Prior authorisation metrics</a></div>
-<div class="toc-d2"><a href="#s16-8-what-was-checked-and-against-what"><span class="num">16.8</span> What was checked, and against what</a></div>
-<div class="toc-d2"><a href="#s16-9-deciding-prior-authorisation-requests-pas"><span class="num">16.9</span> Deciding prior authorisation requests: PAS</a></div>
-<div class="toc-d3"><a href="#s16-9-1-the-reviewer-queue"><span class="num">16.9.1</span> The reviewer queue</a></div>
-<div class="toc-d3"><a href="#s16-9-2-receiving-the-documents-a-pended-request-asks-for"><span class="num">16.9.2</span> Receiving the documents a pended request asks for</a></div>
-<div class="toc-d3"><a href="#s16-9-3-deciding-in-an-x12-utilization-management-system"><span class="num">16.9.3</span> Deciding in an X12 utilization management system</a></div>
-<div class="toc-d3"><a href="#s16-9-4-deciding-on-the-clinical-evidence-with-a-decision-service"><span class="num">16.9.4</span> Deciding on the clinical evidence, with a decision service</a></div>
+<div class="toc-d2"><a href="#s16-8-drugs-the-formulary-real-time-prescription-benefit-and-electronic-prior-authorization"><span class="num">16.8</span> Drugs: the formulary, Real-Time Prescription Benefit and electronic prior authorization</a></div>
+<div class="toc-d3"><a href="#s16-8-1-the-da-vinci-us-drug-formulary-api"><span class="num">16.8.1</span> The Da Vinci US Drug Formulary API</a></div>
+<div class="toc-d3"><a href="#s16-8-2-real-time-prescription-benefit"><span class="num">16.8.2</span> Real-Time Prescription Benefit</a></div>
+<div class="toc-d3"><a href="#s16-8-3-electronic-prior-authorization-ncpdp-script"><span class="num">16.8.3</span> Electronic prior authorization (NCPDP SCRIPT)</a></div>
+<div class="toc-d2"><a href="#s16-9-what-was-checked-and-against-what"><span class="num">16.9</span> What was checked, and against what</a></div>
+<div class="toc-d2"><a href="#s16-10-deciding-prior-authorisation-requests-pas"><span class="num">16.10</span> Deciding prior authorisation requests: PAS</a></div>
+<div class="toc-d3"><a href="#s16-10-1-the-reviewer-queue"><span class="num">16.10.1</span> The reviewer queue</a></div>
+<div class="toc-d3"><a href="#s16-10-2-receiving-the-documents-a-pended-request-asks-for"><span class="num">16.10.2</span> Receiving the documents a pended request asks for</a></div>
+<div class="toc-d3"><a href="#s16-10-3-deciding-in-an-x12-utilization-management-system"><span class="num">16.10.3</span> Deciding in an X12 utilization management system</a></div>
+<div class="toc-d3"><a href="#s16-10-4-deciding-on-the-clinical-evidence-with-a-decision-service"><span class="num">16.10.4</span> Deciding on the clinical evidence, with a decision service</a></div>
 <div class="toc-d1"><a href="#s17-security"><span class="num">17</span> Security</a></div>
 <div class="toc-d2"><a href="#s17-1-transport-security"><span class="num">17.1</span> Transport security</a></div>
 <div class="toc-d2"><a href="#s17-2-authentication-and-roles"><span class="num">17.2</span> Authentication and roles</a></div>
@@ -1116,73 +1122,76 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s26-30-e4x"><span class="num">26.30</span> e4x</a></div>
 <div class="toc-d2"><a href="#s26-31-egress"><span class="num">26.31</span> egress</a></div>
 <div class="toc-d2"><a href="#s26-32-engine"><span class="num">26.32</span> engine</a></div>
-<div class="toc-d2"><a href="#s26-33-eprescribe"><span class="num">26.33</span> eprescribe</a></div>
-<div class="toc-d2"><a href="#s26-34-equiv"><span class="num">26.34</span> equiv</a></div>
-<div class="toc-d2"><a href="#s26-35-expr"><span class="num">26.35</span> expr</a></div>
-<div class="toc-d2"><a href="#s26-36-fdlimit"><span class="num">26.36</span> fdlimit</a></div>
-<div class="toc-d2"><a href="#s26-37-fhirserver"><span class="num">26.37</span> fhirserver</a></div>
-<div class="toc-d2"><a href="#s26-38-framing"><span class="num">26.38</span> framing</a></div>
-<div class="toc-d2"><a href="#s26-39-ftpconn"><span class="num">26.39</span> ftpconn</a></div>
-<div class="toc-d2"><a href="#s26-40-gcp"><span class="num">26.40</span> gcp</a></div>
-<div class="toc-d2"><a href="#s26-41-generate"><span class="num">26.41</span> generate</a></div>
-<div class="toc-d2"><a href="#s26-42-hl7dict"><span class="num">26.42</span> hl7dict</a></div>
-<div class="toc-d2"><a href="#s26-43-hl7v3"><span class="num">26.43</span> hl7v3</a></div>
-<div class="toc-d2"><a href="#s26-44-hl7xml"><span class="num">26.44</span> hl7xml</a></div>
-<div class="toc-d2"><a href="#s26-45-ibmmq"><span class="num">26.45</span> ibmmq</a></div>
-<div class="toc-d2"><a href="#s26-46-identity"><span class="num">26.46</span> identity</a></div>
-<div class="toc-d2"><a href="#s26-47-iis"><span class="num">26.47</span> iis</a></div>
-<div class="toc-d2"><a href="#s26-48-kafka"><span class="num">26.48</span> kafka</a></div>
-<div class="toc-d2"><a href="#s26-49-ldap"><span class="num">26.49</span> ldap</a></div>
-<div class="toc-d2"><a href="#s26-50-mapper"><span class="num">26.50</span> mapper</a></div>
-<div class="toc-d2"><a href="#s26-51-metrics"><span class="num">26.51</span> metrics</a></div>
-<div class="toc-d2"><a href="#s26-52-mirth"><span class="num">26.52</span> mirth</a></div>
-<div class="toc-d2"><a href="#s26-53-mirthlive"><span class="num">26.53</span> mirthlive</a></div>
-<div class="toc-d2"><a href="#s26-54-mqtt"><span class="num">26.54</span> mqtt</a></div>
-<div class="toc-d2"><a href="#s26-55-msgstore"><span class="num">26.55</span> msgstore</a></div>
-<div class="toc-d2"><a href="#s26-56-ncpdp"><span class="num">26.56</span> ncpdp</a></div>
-<div class="toc-d2"><a href="#s26-57-oidc"><span class="num">26.57</span> oidc</a></div>
-<div class="toc-d2"><a href="#s26-58-parity"><span class="num">26.58</span> parity</a></div>
-<div class="toc-d2"><a href="#s26-59-pas278"><span class="num">26.59</span> pas278</a></div>
-<div class="toc-d2"><a href="#s26-60-pdf"><span class="num">26.60</span> pdf</a></div>
-<div class="toc-d2"><a href="#s26-61-priorauth"><span class="num">26.61</span> priorauth</a></div>
-<div class="toc-d2"><a href="#s26-62-publichealth"><span class="num">26.62</span> publichealth</a></div>
-<div class="toc-d2"><a href="#s26-63-published"><span class="num">26.63</span> published</a></div>
-<div class="toc-d2"><a href="#s26-64-queue"><span class="num">26.64</span> queue</a></div>
-<div class="toc-d2"><a href="#s26-65-s3put"><span class="num">26.65</span> s3put</a></div>
-<div class="toc-d2"><a href="#s26-66-saml"><span class="num">26.66</span> saml</a></div>
-<div class="toc-d2"><a href="#s26-67-scim"><span class="num">26.67</span> scim</a></div>
-<div class="toc-d2"><a href="#s26-68-script"><span class="num">26.68</span> script</a></div>
-<div class="toc-d2"><a href="#s26-69-settings"><span class="num">26.69</span> settings</a></div>
-<div class="toc-d2"><a href="#s26-70-sftpconn"><span class="num">26.70</span> sftpconn</a></div>
-<div class="toc-d2"><a href="#s26-71-shadow"><span class="num">26.71</span> shadow</a></div>
-<div class="toc-d2"><a href="#s26-72-shl"><span class="num">26.72</span> shl</a></div>
-<div class="toc-d2"><a href="#s26-73-smartauth"><span class="num">26.73</span> smartauth</a></div>
-<div class="toc-d2"><a href="#s26-74-soap"><span class="num">26.74</span> soap</a></div>
-<div class="toc-d2"><a href="#s26-75-sqldb"><span class="num">26.75</span> sqldb</a></div>
-<div class="toc-d2"><a href="#s26-76-sqlitedb"><span class="num">26.76</span> sqlitedb</a></div>
-<div class="toc-d2"><a href="#s26-77-steps"><span class="num">26.77</span> steps</a></div>
-<div class="toc-d2"><a href="#s26-78-stomp"><span class="num">26.78</span> stomp</a></div>
-<div class="toc-d2"><a href="#s26-79-store"><span class="num">26.79</span> store</a></div>
-<div class="toc-d2"><a href="#s26-80-tefca"><span class="num">26.80</span> tefca</a></div>
-<div class="toc-d2"><a href="#s26-81-tenant"><span class="num">26.81</span> tenant</a></div>
-<div class="toc-d2"><a href="#s26-82-tlsconf"><span class="num">26.82</span> tlsconf</a></div>
-<div class="toc-d2"><a href="#s26-83-tomirth"><span class="num">26.83</span> tomirth</a></div>
-<div class="toc-d2"><a href="#s26-84-trace"><span class="num">26.84</span> trace</a></div>
-<div class="toc-d2"><a href="#s26-85-transform"><span class="num">26.85</span> transform</a></div>
-<div class="toc-d2"><a href="#s26-86-translate"><span class="num">26.86</span> translate</a></div>
-<div class="toc-d2"><a href="#s26-87-udap"><span class="num">26.87</span> udap</a></div>
-<div class="toc-d2"><a href="#s26-88-v2fhir"><span class="num">26.88</span> v2fhir</a></div>
-<div class="toc-d2"><a href="#s26-89-vcs"><span class="num">26.89</span> vcs</a></div>
-<div class="toc-d2"><a href="#s26-90-vfs"><span class="num">26.90</span> vfs</a></div>
-<div class="toc-d2"><a href="#s26-91-vpn"><span class="num">26.91</span> vpn</a></div>
-<div class="toc-d2"><a href="#s26-92-web"><span class="num">26.92</span> web</a></div>
-<div class="toc-d2"><a href="#s26-93-webauthn"><span class="num">26.93</span> webauthn</a></div>
-<div class="toc-d2"><a href="#s26-94-winservice"><span class="num">26.94</span> winservice</a></div>
-<div class="toc-d2"><a href="#s26-95-x12"><span class="num">26.95</span> x12</a></div>
-<div class="toc-d2"><a href="#s26-96-x12xml"><span class="num">26.96</span> x12xml</a></div>
-<div class="toc-d2"><a href="#s26-97-xmldsig"><span class="num">26.97</span> xmldsig</a></div>
-<div class="toc-d2"><a href="#s26-98-xtree"><span class="num">26.98</span> xtree</a></div>
-<div class="toc-d2"><a href="#s26-99-pas"><span class="num">26.99</span> pas</a></div>
+<div class="toc-d2"><a href="#s26-33-epa"><span class="num">26.33</span> epa</a></div>
+<div class="toc-d2"><a href="#s26-34-eprescribe"><span class="num">26.34</span> eprescribe</a></div>
+<div class="toc-d2"><a href="#s26-35-equiv"><span class="num">26.35</span> equiv</a></div>
+<div class="toc-d2"><a href="#s26-36-expr"><span class="num">26.36</span> expr</a></div>
+<div class="toc-d2"><a href="#s26-37-fdlimit"><span class="num">26.37</span> fdlimit</a></div>
+<div class="toc-d2"><a href="#s26-38-fhirserver"><span class="num">26.38</span> fhirserver</a></div>
+<div class="toc-d2"><a href="#s26-39-formulary"><span class="num">26.39</span> formulary</a></div>
+<div class="toc-d2"><a href="#s26-40-framing"><span class="num">26.40</span> framing</a></div>
+<div class="toc-d2"><a href="#s26-41-ftpconn"><span class="num">26.41</span> ftpconn</a></div>
+<div class="toc-d2"><a href="#s26-42-gcp"><span class="num">26.42</span> gcp</a></div>
+<div class="toc-d2"><a href="#s26-43-generate"><span class="num">26.43</span> generate</a></div>
+<div class="toc-d2"><a href="#s26-44-hl7dict"><span class="num">26.44</span> hl7dict</a></div>
+<div class="toc-d2"><a href="#s26-45-hl7v3"><span class="num">26.45</span> hl7v3</a></div>
+<div class="toc-d2"><a href="#s26-46-hl7xml"><span class="num">26.46</span> hl7xml</a></div>
+<div class="toc-d2"><a href="#s26-47-ibmmq"><span class="num">26.47</span> ibmmq</a></div>
+<div class="toc-d2"><a href="#s26-48-identity"><span class="num">26.48</span> identity</a></div>
+<div class="toc-d2"><a href="#s26-49-iis"><span class="num">26.49</span> iis</a></div>
+<div class="toc-d2"><a href="#s26-50-kafka"><span class="num">26.50</span> kafka</a></div>
+<div class="toc-d2"><a href="#s26-51-ldap"><span class="num">26.51</span> ldap</a></div>
+<div class="toc-d2"><a href="#s26-52-mapper"><span class="num">26.52</span> mapper</a></div>
+<div class="toc-d2"><a href="#s26-53-metrics"><span class="num">26.53</span> metrics</a></div>
+<div class="toc-d2"><a href="#s26-54-mirth"><span class="num">26.54</span> mirth</a></div>
+<div class="toc-d2"><a href="#s26-55-mirthlive"><span class="num">26.55</span> mirthlive</a></div>
+<div class="toc-d2"><a href="#s26-56-mqtt"><span class="num">26.56</span> mqtt</a></div>
+<div class="toc-d2"><a href="#s26-57-msgstore"><span class="num">26.57</span> msgstore</a></div>
+<div class="toc-d2"><a href="#s26-58-ncpdp"><span class="num">26.58</span> ncpdp</a></div>
+<div class="toc-d2"><a href="#s26-59-oidc"><span class="num">26.59</span> oidc</a></div>
+<div class="toc-d2"><a href="#s26-60-parity"><span class="num">26.60</span> parity</a></div>
+<div class="toc-d2"><a href="#s26-61-pas278"><span class="num">26.61</span> pas278</a></div>
+<div class="toc-d2"><a href="#s26-62-pdf"><span class="num">26.62</span> pdf</a></div>
+<div class="toc-d2"><a href="#s26-63-priorauth"><span class="num">26.63</span> priorauth</a></div>
+<div class="toc-d2"><a href="#s26-64-publichealth"><span class="num">26.64</span> publichealth</a></div>
+<div class="toc-d2"><a href="#s26-65-published"><span class="num">26.65</span> published</a></div>
+<div class="toc-d2"><a href="#s26-66-queue"><span class="num">26.66</span> queue</a></div>
+<div class="toc-d2"><a href="#s26-67-rtpb"><span class="num">26.67</span> rtpb</a></div>
+<div class="toc-d2"><a href="#s26-68-s3put"><span class="num">26.68</span> s3put</a></div>
+<div class="toc-d2"><a href="#s26-69-saml"><span class="num">26.69</span> saml</a></div>
+<div class="toc-d2"><a href="#s26-70-scim"><span class="num">26.70</span> scim</a></div>
+<div class="toc-d2"><a href="#s26-71-script"><span class="num">26.71</span> script</a></div>
+<div class="toc-d2"><a href="#s26-72-settings"><span class="num">26.72</span> settings</a></div>
+<div class="toc-d2"><a href="#s26-73-sftpconn"><span class="num">26.73</span> sftpconn</a></div>
+<div class="toc-d2"><a href="#s26-74-shadow"><span class="num">26.74</span> shadow</a></div>
+<div class="toc-d2"><a href="#s26-75-shl"><span class="num">26.75</span> shl</a></div>
+<div class="toc-d2"><a href="#s26-76-smartauth"><span class="num">26.76</span> smartauth</a></div>
+<div class="toc-d2"><a href="#s26-77-soap"><span class="num">26.77</span> soap</a></div>
+<div class="toc-d2"><a href="#s26-78-sqldb"><span class="num">26.78</span> sqldb</a></div>
+<div class="toc-d2"><a href="#s26-79-sqlitedb"><span class="num">26.79</span> sqlitedb</a></div>
+<div class="toc-d2"><a href="#s26-80-steps"><span class="num">26.80</span> steps</a></div>
+<div class="toc-d2"><a href="#s26-81-stomp"><span class="num">26.81</span> stomp</a></div>
+<div class="toc-d2"><a href="#s26-82-store"><span class="num">26.82</span> store</a></div>
+<div class="toc-d2"><a href="#s26-83-tefca"><span class="num">26.83</span> tefca</a></div>
+<div class="toc-d2"><a href="#s26-84-tenant"><span class="num">26.84</span> tenant</a></div>
+<div class="toc-d2"><a href="#s26-85-tlsconf"><span class="num">26.85</span> tlsconf</a></div>
+<div class="toc-d2"><a href="#s26-86-tomirth"><span class="num">26.86</span> tomirth</a></div>
+<div class="toc-d2"><a href="#s26-87-trace"><span class="num">26.87</span> trace</a></div>
+<div class="toc-d2"><a href="#s26-88-transform"><span class="num">26.88</span> transform</a></div>
+<div class="toc-d2"><a href="#s26-89-translate"><span class="num">26.89</span> translate</a></div>
+<div class="toc-d2"><a href="#s26-90-udap"><span class="num">26.90</span> udap</a></div>
+<div class="toc-d2"><a href="#s26-91-v2fhir"><span class="num">26.91</span> v2fhir</a></div>
+<div class="toc-d2"><a href="#s26-92-vcs"><span class="num">26.92</span> vcs</a></div>
+<div class="toc-d2"><a href="#s26-93-vfs"><span class="num">26.93</span> vfs</a></div>
+<div class="toc-d2"><a href="#s26-94-vpn"><span class="num">26.94</span> vpn</a></div>
+<div class="toc-d2"><a href="#s26-95-web"><span class="num">26.95</span> web</a></div>
+<div class="toc-d2"><a href="#s26-96-webauthn"><span class="num">26.96</span> webauthn</a></div>
+<div class="toc-d2"><a href="#s26-97-winservice"><span class="num">26.97</span> winservice</a></div>
+<div class="toc-d2"><a href="#s26-98-x12"><span class="num">26.98</span> x12</a></div>
+<div class="toc-d2"><a href="#s26-99-x12xml"><span class="num">26.99</span> x12xml</a></div>
+<div class="toc-d2"><a href="#s26-100-xmldsig"><span class="num">26.100</span> xmldsig</a></div>
+<div class="toc-d2"><a href="#s26-101-xtree"><span class="num">26.101</span> xtree</a></div>
+<div class="toc-d2"><a href="#s26-102-pas"><span class="num">26.102</span> pas</a></div>
 <div class="toc-d1"><a href="#s27-index-of-configuration-keys"><span class="num">27</span> Index of Configuration Keys</a></div>
 <div class="toc-d2"><a href="#s27-1-all-keys"><span class="num">27.1</span> All keys</a></div>
 </nav>
@@ -1387,29 +1396,11 @@ roles: {viewer: manager}</code></pre>
 <p>FHIR subscriptions and whether their notifications are arriving: events, accepted, waiting, and the last reason one was refused. Subscriptions are created by FHIR clients through the FHIR API, not from this page, and the credentials they gave the server are never shown. See <a href="#s8-message-formats">message formats</a>.</p>
 <h4 id="s3-4-3-documents"><span class="num">3.4.3</span> Documents</h4>
 <p>Clinical documents — CDA and the printable form of a document. Useful when the thing being exchanged is a discharge summary rather than a message.</p>
-<h4 id="s3-4-4-claims--auth"><span class="num">3.4.4</span> Claims &amp; auth</h4>
-<p>Build an X12 <code>275</code> claims attachment in the <code>006020</code> form CMS-0053-F adopts, from a pasted C-CDA or an uploaded PDF, TIFF or JPEG, and see it read back. Read a <code>275</code> and download the document inside. Convert an X12 <code>278</code> decision into a Da Vinci PAS <code>ClaimResponse</code>. Nothing on this page is stored or sent. See <a href="#s8-message-formats">message formats</a> for what the <code>275</code> is built from and what it does not do.</p>
-<h4 id="s3-4-5-health-links"><span class="num">3.4.5</span> Health links</h4>
-<p>SMART Health Links and Cards, for CMS&#39;s *Kill the Clipboard*. <strong>Receive a SMART Health Link</strong> reads the link or QR code a patient shows at check-in, verifies the health cards inside and <strong>sends it on</strong> to a channel. <strong>Share a visit record</strong> makes a link this server hosts, optionally with a passcode, and a QR code <strong>for the patient</strong>; <strong>Use their patient summary</strong> fills it with the patient&#39;s <a href="#s8-message-formats">International Patient Summary</a> from this server&#39;s FHIR store. <strong>Links this server hosts</strong> lists them with how often each was fetched, when it expires and the passcode tries left, and revokes one. <strong>Verify a SMART Health Card</strong> checks a card&#39;s signature and issuer on its own. See <a href="#s3-4-7-cms-0057">CMS-0057</a> for the server options it needs.</p>
-<h4 id="s3-4-6-imaging"><span class="num">3.4.6</span> Imaging</h4>
+<h4 id="s3-4-4-health-links"><span class="num">3.4.4</span> Health links</h4>
+<p>SMART Health Links and Cards, for CMS&#39;s *Kill the Clipboard*. <strong>Receive a SMART Health Link</strong> reads the link or QR code a patient shows at check-in, verifies the health cards inside and <strong>sends it on</strong> to a channel. <strong>Share a visit record</strong> makes a link this server hosts, optionally with a passcode, and a QR code <strong>for the patient</strong>; <strong>Use their patient summary</strong> fills it with the patient&#39;s <a href="#s8-message-formats">International Patient Summary</a> from this server&#39;s FHIR store. <strong>Links this server hosts</strong> lists them with how often each was fetched, when it expires and the passcode tries left, and revokes one. <strong>Verify a SMART Health Card</strong> checks a card&#39;s signature and issuer on its own. See <a href="#s3-5-3-cms-0057">CMS-0057</a> for the server options it needs.</p>
+<h4 id="s3-4-5-imaging"><span class="num">3.4.5</span> Imaging</h4>
 <p>The archive this server keeps when it runs with <code>-dicomweb-archive</code>: counts of studies, series, instances and space used, the DICOMweb address and the data-source block for an OHIF viewer, and a study search by patient name, ID, accession and date made with the same QIDO-RS request a viewer makes. A study opens to its series and instances, and an instance downloads as a DICOM file. Nothing is rendered: Perfuse moves images and a viewer displays them. Without an archive the screen says how to turn one on. See <a href="#s8-message-formats">DICOMweb</a>.</p>
-<h4 id="s3-4-7-cms-0057"><span class="num">3.4.7</span> CMS-0057</h4>
-<p>The payer side of the CMS Interoperability and Prior Authorization rule, as five tools:</p>
-<ul>
-<li><strong>The four APIs:</strong> whether Patient Access, Provider Access, Payer-to-Payer and Prior Authorization are ready on this instance,</li>
-</ul>
-<p>  and what each still needs.</p>
-<ul>
-<li><strong>Reviewer queue:</strong> the PAS requests waiting for a person, soonest due first, with the documents sent for each; approve, deny or</li>
-</ul>
-<p>  certify fewer units. See <a href="#s3-4-7-cms-0057">the reviewer queue</a>.</p>
-<ul>
-<li><strong>Claims to CARIN BB:</strong> an 837 and its 835 converted to CARIN Blue Button bundles.</li>
-<li><strong>Prior auth to PDex:</strong> a PAS response converted to a PDex prior authorization.</li>
-<li><strong>Prior auth metrics:</strong> the yearly public prior authorization metrics page, previewed from a CSV of decisions.</li>
-</ul>
-<p>The conversions store nothing and send nothing.</p>
-<h4 id="s3-4-8-tefca"><span class="num">3.4.8</span> TEFCA</h4>
+<h4 id="s3-4-6-tefca"><span class="num">3.4.6</span> TEFCA</h4>
 <p>The audit trail for exchange through a Qualified Health Information Network, and the purpose-of-use rules that govern it.</p>
 <p>Two transports, at genuinely different stages, and the screen says which is which. One flag covering both would be wrong in whichever direction it was rounded.</p>
 <p><strong>Facilitated FHIR is implemented, and has never spoken to a real QHIN.</strong> It follows the Sequoia Project Standard Operating Procedure effective 8 March 2026: discover the partner&#39;s UDAP metadata, verify it, register dynamically, obtain an access token carrying the purpose of use, and query. UDAP is a public key infrastructure over OAuth 2.0 — a trust community issues X.509 certificates to its members, and a member authenticates by signing JWTs with the private key and attaching the certificate chain.</p>
@@ -1418,29 +1409,50 @@ roles: {viewer: manager}</code></pre>
 <p><strong>The older QHIN-to-QHIN exchange built on the IHE profiles is not implemented.</strong> An attempt is refused with an error saying so, and the refusal is audited as a failure. That is deliberate rather than pending a tidy-up: a stubbed exchange reporting success would put entries in the audit trail for exchanges that never happened, and a trail that disagrees with what happened is worse than none, because the trail is what gets believed.</p>
 <p>Throughout, the endpoints used for exchange come from the <strong>signed</strong> part of a partner&#39;s metadata, never the document body. Verifying a signature and then reading the endpoints from the unsigned copy would be an elaborate way of trusting the network: an attacker able to rewrite the response leaves the signed element alone, points the token endpoint at their own server, and collects client assertions from everybody who checked the signature and then ignored what it covered.</p>
 <p>A trust anchor bundle is required and its absence is refused at startup. Checking a partner&#39;s signed metadata against the certificate that arrived inside it proves only that one party made both — a mistake this codebase has made before, in SAML, where the verifier preferred the embedded certificate and authenticated an attacker as an administrator while every test passed. Include the intermediates in the bundle: a UDAP server need only send its leaf certificate, and the public reference server does exactly that.</p>
-<h3 id="s3-5-administer--who-can-do-what-and-how-this-server-is-set-up"><span class="num">3.5</span> Administer — who can do what, and how this server is set up</h3>
-<h4 id="s3-5-1-users"><span class="num">3.5.1</span> Users</h4>
+<h3 id="s3-5-payers--claims-prior-authorization-drugs-and-the-cms-payer-rules"><span class="num">3.5</span> Payers — claims, prior authorization, drugs and the CMS payer rules</h3>
+<h4 id="s3-5-1-claims--auth"><span class="num">3.5.1</span> Claims &amp; auth</h4>
+<p>Build an X12 <code>275</code> claims attachment in the <code>006020</code> form CMS-0053-F adopts, from a pasted C-CDA or an uploaded PDF, TIFF or JPEG, and see it read back. Read a <code>275</code> and download the document inside. Convert an X12 <code>278</code> decision into a Da Vinci PAS <code>ClaimResponse</code>. Nothing on this page is stored or sent. See <a href="#s8-message-formats">message formats</a> for what the <code>275</code> is built from and what it does not do.</p>
+<h4 id="s3-5-2-drugs"><span class="num">3.5.2</span> Drugs</h4>
+<p>The drug formulary loaded with <code>-formulary</code>, and the two NCPDP standards answered from it. <strong>Formulary</strong> lists the plans and the drugs with their tier and requirements, and where the public Da Vinci US Drug Formulary API and the NCPDP endpoints are. <strong>Price check (RTPB)</strong> prices a drug for a member as a prescriber&#39;s Real-Time Prescription Benefit request would: the coverage status, the restrictions in words with their codes, the member&#39;s share and the plan&#39;s, and the cheaper alternatives. <strong>Prior authorization (ePA)</strong> sends a SCRIPT initiation to this server&#39;s own endpoint, shows the question set as a form, sends the answers and shows the decision; below, every case with where it stands and whether the prescriber has been told, the case&#39;s answers, a button to send an unsent decision again, and the drug figures CMS-0062-P proposes. See <a href="#s3-5-3-cms-0057">CMS-0057</a>.</p>
+<h4 id="s3-5-3-cms-0057"><span class="num">3.5.3</span> CMS-0057</h4>
+<p>The payer side of the CMS Interoperability and Prior Authorization rule, as five tools:</p>
+<ul>
+<li><strong>The four APIs:</strong> whether Patient Access, Provider Access, Payer-to-Payer and Prior Authorization are ready on this instance,</li>
+</ul>
+<p>  and what each still needs.</p>
+<ul>
+<li><strong>Reviewer queue:</strong> the PAS requests waiting for a person, soonest due first, with the documents sent for each; approve, deny or</li>
+</ul>
+<p>  certify fewer units. See <a href="#s3-5-3-cms-0057">the reviewer queue</a>.</p>
+<ul>
+<li><strong>Claims to CARIN BB:</strong> an 837 and its 835 converted to CARIN Blue Button bundles.</li>
+<li><strong>Prior auth to PDex:</strong> a PAS response converted to a PDex prior authorization.</li>
+<li><strong>Prior auth metrics:</strong> the yearly public prior authorization metrics page, previewed from a CSV of decisions.</li>
+</ul>
+<p>The conversions store nothing and send nothing.</p>
+<h3 id="s3-6-administer--who-can-do-what-and-how-this-server-is-set-up"><span class="num">3.6</span> Administer — who can do what, and how this server is set up</h3>
+<h4 id="s3-6-1-users"><span class="num">3.6.1</span> Users</h4>
 <p>Accounts, roles (monitor, viewer, operator, editor, admin) and channel groups. Each person&#39;s channel groups are edited in place in the list; empty means every channel, and <code>lab=editor, adt</code> gives a different role in one group. An administrator limited to some groups sees only the people of those groups. The header shows your own groups beside your role when you have any. See <a href="#s17-security">security</a>.</p>
 <p><strong>Machine credentials</strong> are also here. A token is for a machine rather than a person: it does not expire and is not affected by anybody signing out, which is what a server polling its neighbour needs. Only a hash is stored, so a token is shown once when it is created and cannot be recovered — a stolen database yields no usable token. Give one the lowest role that does the job.</p>
-<h4 id="s3-5-2-tenants"><span class="num">3.5.2</span> Tenants</h4>
+<h4 id="s3-6-2-tenants"><span class="num">3.6.2</span> Tenants</h4>
 <p>On a shared server, the platform operator&#39;s list of organisations: each one&#39;s channel count and stored size beside its limits (channels, messages a minute, storage), which are set in place. Shown only to the platform role. See <a href="#s17-security">security</a> for what each limit does.</p>
-<h4 id="s3-5-3-certificates"><span class="num">3.5.3</span> Certificates</h4>
+<h4 id="s3-6-3-certificates"><span class="num">3.6.3</span> Certificates</h4>
 <p>The TLS certificates in use and when they expire. The expiry dates are the point: a certificate that lapsed on a Sunday is a class of outage that is entirely preventable and routinely is not prevented.</p>
-<h4 id="s3-5-4-activity"><span class="num">3.5.4</span> Activity</h4>
+<h4 id="s3-6-4-activity"><span class="num">3.6.4</span> Activity</h4>
 <p>Who changed what, and when. Every configuration change is recorded, which is what makes &#34;it started failing on Tuesday&#34; answerable.</p>
-<h4 id="s3-5-5-fleet"><span class="num">3.5.5</span> Fleet</h4>
+<h4 id="s3-6-5-fleet"><span class="num">3.6.5</span> Fleet</h4>
 <p>Every Perfuse instance on one page.</p>
 <p>Mirth sells this as a separate product; here it is a configuration file and a read-only token. The reason it is worth having is narrow and important: <strong>a dead server does not look like a quiet one</strong>. A single instance&#39;s dashboard cannot tell you that a second site stopped reporting, and a fleet view can.</p>
-<h4 id="s3-5-6-migrate"><span class="num">3.5.6</span> Migrate</h4>
+<h4 id="s3-6-6-migrate"><span class="num">3.6.6</span> Migrate</h4>
 <p>Drop in a Mirth or OIE channel export and see how many of your channels would run here unchanged. The same analysis as <code>perfuse explain</code> and <code>perfuse translate</code>, without needing a terminal. See <a href="#s15-migration-from-mirth">migration</a>.</p>
-<h4 id="s3-5-7-settings"><span class="num">3.5.7</span> Settings</h4>
+<h4 id="s3-6-7-settings"><span class="num">3.6.7</span> Settings</h4>
 <p>Every setting the server has, with a control for each — including the ones that would traditionally live only in a file. Each says whether it takes effect at once or needs a restart, and whether it has been set explicitly or is sitting at its default.</p>
 <p>The settings cover every <code>perfuse serve</code> option that turns on a feature: the FHIR endpoint and its version, the payer APIs, PAS and the CRD rules, the X12 278 bridge, eCR, the SMART authorization server, TLS and signing, metrics, fleet and VPN. They are grouped as FHIR, Payers, Public health, SMART, Security and so on. Each is also shown with the flag it corresponds to.</p>
 <p><strong>Restarting from the console.</strong> A setting marked *Needs a restart* is saved at once but read only when the server starts. While any are waiting, a banner at the top of Settings lists them with a <strong>Restart the server</strong> button (the sign-on editor and the settings files offer the same button after a save). It asks first, because every channel stops for a few seconds: each finishes the message it is handling, as it does when the service is stopped, and senders resend whatever arrives meanwhile. The console then waits for the server to answer again and reads the settings afresh. Only an administrator can restart, and each restart is recorded in the activity log as <code>server.restart</code>.</p>
 <p>On Linux and macOS the process replaces itself with a fresh copy of the same program and arguments, keeping its process id, so systemd, launchd or a container runtime sees nothing happen. On Windows the server starts again inside the same process, which keeps a Windows service under the service manager. If the server has not answered after two minutes, the console says so; the reason is in the server&#39;s log.</p>
 <p><strong>Flags and the settings file.</strong> The first time the server starts, the flags it was given are written into the settings file. From then on the file wins over the flags, so changing a setting is done in the console (or the file), not by editing the service&#39;s command line. A flag the file does not yet mention is recorded when the server starts with it. Removing a flag from the command line later does not turn its feature off: turn it off in Settings.</p>
 <p><strong>Branding</strong> is here too: a site can set the product name, a tagline, an accent colour, and upload a logo. The logo then appears in the header, on the sign-in page, on the dashboard and on the reporting screens. If none is uploaded, nothing is substituted — an unbranded installation stays unbranded rather than acquiring decoration.</p>
-<h3 id="s3-6-what-the-colours-mean"><span class="num">3.6</span> What the colours mean</h3>
+<h3 id="s3-7-what-the-colours-mean"><span class="num">3.7</span> What the colours mean</h3>
 <p>Four registers, and each says something different. The distinction is worth stating because it is the difference between a screen you can read at a glance and one where everything competes for attention.</p>
 <p><strong>Plain text</strong> is a fact about how Perfuse works. Most of the interface. Nothing is coloured to tell you it is important.</p>
 <p><strong>Green</strong> means something succeeded just now, because of something you did. It appears after an action and does not persist.</p>
@@ -1840,7 +1852,7 @@ roles: {viewer: manager}</code></pre>
 <tr><td><code>837</code></td><td>Claims, professional and institutional (read for CMS-0057&#39;s CARIN conversion).</td></tr>
 </tbody>
 </table>
-<p>Perfuse also <strong>builds</strong> the <code>270</code> eligibility inquiry and the <code>276</code> claim status request, under <strong>Exchange → Claims &amp; auth</strong> or through <code>POST /api/x12/eligibility/build</code> and <code>/api/x12/claimstatus/build</code>. Both are the HIPAA 5010 versions (005010X279A1, 005010X212), read back and envelope-checked before they are shown, and neither is sent from that page: delivering one is a channel&#39;s job, where the trading partner and its credentials are.</p>
+<p>Perfuse also <strong>builds</strong> the <code>270</code> eligibility inquiry and the <code>276</code> claim status request, under <strong>Payers → Claims &amp; auth</strong> or through <code>POST /api/x12/eligibility/build</code> and <code>/api/x12/claimstatus/build</code>. Both are the HIPAA 5010 versions (005010X279A1, 005010X212), read back and envelope-checked before they are shown, and neither is sent from that page: delivering one is a channel&#39;s job, where the trading partner and its credentials are.</p>
 <h4 id="s8-3-4-eligibility-and-the-caqh-core-data-content-rule"><span class="num">8.3.4</span> Eligibility, and the CAQH CORE data content rule</h4>
 <p>A 271 is a list of EB segments, each a single fact: active coverage, or a $25 co-payment for service type 30 in network, or $800 of the individual deductible remaining. The reader assembles them into the answer a front desk wants - &#34;coverage active under Gold PPO 2000; co-payment in network $25; individual deductible remaining in network $800&#34; - and names a rejection (an AAA segment) in words, with what the payer says to do next.</p>
 <p>It also checks the response against the CAQH CORE Eligibility &amp; Benefits data content rule: for an inquiry about health benefit plan coverage (service type 30), an active response should carry plan dates, the plan name, co-payment, coinsurance, deductible and remaining deductible both in and out of network, and the base service types (1, 33, 35, 47, 48, 50, 86, 88, 98, AL, MH, UC). Each is listed as met or missing. This is Perfuse&#39;s reading of the rule, useful for &#34;why does this payer never tell us the deductible?&#34; - it is not CORE certification, which CAQH&#39;s authorised testing vendors carry out.</p>
@@ -2076,6 +2088,7 @@ roles: {viewer: manager}</code></pre>
 <p>An absent substitution flag is refused rather than defaulted. Both possible defaults reach the patient — one may dispense a generic where the prescriber required the brand, the other prevents a substitution the prescriber permitted — so there is no safe assumption and the message stops.</p>
 <p>A Schedule II prescription with refills is refused, and the builder will not produce one.</p>
 <p>Refusals and warnings are kept as separate lists rather than one severity-tagged list, because a reader who has to check a severity field to know whether the message was sent will eventually not check it.</p>
+<p>Electronic prior authorization (<code>PAInitiationRequest</code>, <code>PARequest</code>, <code>PAAppealRequest</code>, <code>PACancelRequest</code>) and Real-Time Prescription Benefit are answered by the payer side at <code>/ncpdp/script</code> and <code>/ncpdp/rtpb</code>, from the drug formulary; see <a href="#s3-5-3-cms-0057">CMS-0057</a>.</p>
 <h3 id="s8-7-dicom"><span class="num">8.7</span> DICOM</h3>
 <p>Imaging. Perfuse can receive DICOM objects, query a remote archive, and store to one, over the classic DICOM network services or over DICOMweb, and it can keep an archive of its own for viewers.</p>
 <p>DICOM is not a message format in the same sense as the others — objects are large, and the association handshake matters more than the payload parsing. The <code>called_ae</code> and <code>calling_ae</code> titles are the commonest reason a first connection fails, and the failure looks like a network problem rather than a configuration one.</p>
@@ -2945,7 +2958,7 @@ rules:
 <p>Discovery declares <code>davinci-crd.version</code> and a <code>coverage-info</code> configuration option. When a client turns the option off, the answer is empty. EHR JWTs are checked as CDS Hooks defines them, with <code>iss</code>, <code>aud</code>, <code>exp</code>, <code>iat</code> and <code>jti</code> and no <code>sub</code>, and a repeated <code>jti</code> is refused.</p>
 <p>Calls authenticate with the JWT an EHR signs for each call, from an issuer named in <code>-cds-clients</code> with its JWKS URL - which is how CDS Hooks describes it - or with a Perfuse API token. Discovery is open, as CDS Hooks requires.</p>
 <p><strong>DTR</strong>: load the questionnaires into the FHIR endpoint, and <code>POST /fhir/Questionnaire/$questionnaire-package</code> returns them as DTR package bundles, with the CQL Libraries they name. The request can name the questionnaire, or send the order and let its coverage-information say which.</p>
-<p><strong>Trying it</strong>: Exchange → Claims &amp; auth → Coverage requirements (CRD) sends an order to this server&#39;s rules, or to a payer&#39;s CDS service URL, and shows the cards and the coverage information.</p>
+<p><strong>Trying it</strong>: Payers → Claims &amp; auth → Coverage requirements (CRD) sends an order to this server&#39;s rules, or to a payer&#39;s CDS service URL, and shows the cards and the coverage information.</p>
 <h3 id="s16-3-claims-as-carin-blue-button"><span class="num">16.3</span> Claims as CARIN Blue Button</h3>
 <p><code>perfuse cms0057 carinbb</code> pairs each claim in an 837 with its payment in an 835, by the patient account number the 835 is required to echo back, and writes a FHIR transaction for each: the ExplanationOfBenefit with the Patient, Coverage, Organizations and Practitioners it references.</p>
 <pre class="code lang-sh"><code>perfuse cms0057 carinbb -system https://fhir.your-plan.org/identifier -network innetwork \
@@ -2981,7 +2994,30 @@ rules:
 <p>Columns are found by header: <code>priority</code>, <code>received</code>, <code>decided</code> and <code>decision</code> are required, and <code>request_id</code>, <code>line_of_business</code>, <code>extended</code>, <code>appealed</code>, <code>appeal_decision</code>, <code>service_code</code> and <code>service_description</code> are read when present. A request belongs to the year it was decided in; one still pending is listed as excluded, never counted. Every row that cannot be read is reported with its line number.</p>
 <p>The arithmetic follows the template: for standard and expedited requests separately, the share approved and denied, approved and denied within the decision timeframe, approved after the review time was extended, and approved after appeal — out of appeals, not out of requests — with the mean and median time from receipt to decision. A median under a day is written in hours rather than rounded to &#34;0 days&#34;, which the template asks for explicitly. Partly approved requests are counted as approved, since the template has no category for them, and the page says how many there were. Metrics are reported per line of business, which is the level CMS requires.</p>
 <p>The page is self-contained — no script, no external stylesheet or font — because it is posted on a public website by whoever maintains that, and anything it loads from elsewhere is something else that can break or track a visitor. <code>-format csv</code> and <code>-format json</code> give the same numbers for other uses. Without <code>-services</code> the page carries a notice that the list of items and services requiring prior authorisation is missing, because CMS requires it on the same page.</p>
-<h3 id="s16-8-what-was-checked-and-against-what"><span class="num">16.8</span> What was checked, and against what</h3>
+<h3 id="s16-8-drugs-the-formulary-real-time-prescription-benefit-and-electronic-prior-authorization"><span class="num">16.8</span> Drugs: the formulary, Real-Time Prescription Benefit and electronic prior authorization</h3>
+<p>CMS-0062-P (proposed 14 April 2026) would bring drugs into prior authorization: impacted payers would support NCPDP SCRIPT electronic prior authorization, the NCPDP Formulary &amp; Benefit standard and NCPDP Real-Time Prescription Benefit from 1 October 2027, decide drug requests within 24 hours (expedited) and 72 hours (standard), give a specific reason for every denial, and report drug metrics from 2028. Medicare Part D already requires SCRIPT ePA. One file, the formulary, answers all of it:</p>
+<pre class="code lang-sh"><code>perfuse serve -fhir -pas -crd-rules payer-rules.yaml -formulary formulary.yaml</code></pre>
+<p><code>examples/formulary/formulary.yaml</code> is a sample whose drugs are real RxNorm concepts with NDCs RxNorm lists for them (checked against RxNav). A file names the payer, its plans (each with the formulary it uses, its group IDs and its cost shares by pharmacy benefit and tier) and its formularies. Each drug is an RxNorm SCD or SBD with its RxNorm group (the SCDG or SBDG the Drug Formulary API requires), its NDCs, a tier, and its limits: <code>prior_authorization</code>, <code>step_therapy</code>, <code>quantity_limit</code> (a quantity in a rolling number of days, and a daily maximum), <code>not_covered</code>, <code>alternatives</code> (RxNorm codes, most preferred first), <code>notes</code>, and <code>questionnaire</code>, the canonical URL of the FHIR Questionnaire a prior authorization asks. <code>cost_30_day</code> is the plan&#39;s cost of a 30-day supply, which a coinsurance is a percentage of; without it a coinsurance is quoted as a percentage, never as an invented amount. The whole file is checked when it loads, every problem listed at once. A member is found by the file&#39;s <code>members</code> list, by group, or through the FHIR store: a <code>Coverage</code> whose <code>subscriberId</code> is the member ID and whose <code>class</code> of type <code>plan</code> is the plan&#39;s id. <strong>Payers › Drugs</strong> shows the formulary, prices a drug and runs a prior authorization end to end.</p>
+<h4 id="s16-8-1-the-da-vinci-us-drug-formulary-api"><span class="num">16.8.1</span> The Da Vinci US Drug Formulary API</h4>
+<p>Published at <code>/formulary/fhir</code> as Da Vinci US Drug Formulary 2.1.0: each plan a <code>PayerInsurancePlan</code>, each formulary a <code>Formulary</code> (both <code>InsurancePlan</code>), each drug a <code>FormularyDrug</code> (<code>MedicationKnowledge</code>) and each entry a <code>FormularyItem</code> (<code>Basic</code>). The guide&#39;s searches are served (<code>Basic?code=formulary-item&amp;formulary=...&amp;drug-tier=...&amp;pharmacy-benefit-type=...&amp;period=...</code>, <code>subject:MedicationKnowledge.code</code>, <code>InsurancePlan?formulary-coverage=...</code>, <code>coverage-type</code>, <code>MedicationKnowledge?code=...&amp;doseform=...</code>) with <code>_include=Basic:subject</code>, <code>Basic:formulary</code> and <code>InsurancePlan:formulary-coverage</code>. It is public, with no credential, as CMS requires of a payer&#39;s formulary: it is served from a store of its own, in memory, that holds the formulary and nothing else, so being open cannot reach a patient&#39;s record. It is read-only. An excluded drug is not published, since the API lists what a formulary covers; RTPB and ePA still answer it as not covered. <strong>Verified</strong> with the HL7 FHIR validator against the guide&#39;s 2.1.0 package with terminology checked: every resource generated from the sample has no errors.</p>
+<h4 id="s16-8-2-real-time-prescription-benefit"><span class="num">16.8.2</span> Real-Time Prescription Benefit</h4>
+<p><code>POST /ncpdp/rtpb</code> takes an <code>RTPBRequest</code> (NCPDP RTPB v13) with an API token of the operator role and answers an <code>RTPBResponse</code> from the formulary: the coverage status, the formulary status, the member&#39;s estimated share and the plan&#39;s, and the coverage restrictions, with up to five covered alternatives priced the same way. Restriction codes and the status each maps to follow NCPDP&#39;s public RTPB Implementation Recommendations: <code>75</code> prior authorization required, <code>608</code> step therapy, <code>76</code> plan limits exceeded, <code>7X</code> days supply over the plan limit (a drug not available by mail, say), <code>70</code> not covered, all *covered with restrictions* (<code>CR</code>) except <code>70</code> (<code>NC</code>). A member with an approved prior authorization on file gets <code>CC</code> and <code>AB8</code>, as the Surescripts guide asks, so the prescriber is not sent to ask again. A request that cannot be priced is <code>NotProcessed</code> with an NCPDP reject code: <code>52</code> for a member not found, <code>E7</code> and <code>19</code> for a missing quantity or days supply. The pharmacy benefit is read from the request: a fill over 34 days is a three-month supply, and pharmacy type <code>M</code> is mail order.</p>
+<h4 id="s16-8-3-electronic-prior-authorization-ncpdp-script"><span class="num">16.8.3</span> Electronic prior authorization (NCPDP SCRIPT)</h4>
+<p><code>POST /ncpdp/script</code> takes <code>PAInitiationRequest</code>, <code>PARequest</code>, <code>PAAppealRequest</code> and <code>PACancelRequest</code> with an API token of the operator role, and answers each with its response:</p>
+<table>
+<thead><tr><th>Request</th><th>Answer</th></tr></thead>
+<tbody>
+<tr><td><code>PAInitiationRequest</code></td><td><code>Closed</code> when none is needed: <code>CC</code> no prior authorization required, <code>FN</code> within the quantity limit, <code>FM</code> not covered or not on the formulary, <code>FQ</code> an approval on file, <code>CD</code> no such member, <code>CG</code> one already in process. Otherwise <code>Open</code>, with a case ID and the question set.</td></tr>
+<tr><td><code>PARequest</code></td><td>Decided as a PAS request: <code>Approved</code> with the authorization number and period, <code>Denied</code> with the reason, or <code>Open</code> under review.</td></tr>
+<tr><td><code>PAAppealRequest</code></td><td>A denied case decided again, on the reason in <code>PANote</code> (an appeal without one is asked for it).</td></tr>
+<tr><td><code>PACancelRequest</code></td><td><code>Approved</code> while the case is open or under review, and the PAS request is cancelled; <code>Denied</code> once it is decided.</td></tr>
+</tbody>
+</table>
+<p>The question set is the drug&#39;s FHIR Questionnaire from the FHIR store, the same one DTR fills in: a boolean becomes a yes/no choice, a choice a choice, a number numeric, a date a date, and anything else free text; groups are flattened in order, and <code>enableWhen</code> is not carried, since SCRIPT branches by choice and not by condition. A drug with no questionnaire is asked three free-text questions: the diagnosis, what was tried, and why this drug. A <code>PARequest</code> becomes a Da Vinci PAS request: a <code>Claim</code> for the drug (RxNorm and NDC), the <code>MedicationRequest</code> it asks for, the patient, prescriber, payer and coverage, and the answers as a <code>QuestionnaireResponse</code>, with any attachments as <code>DocumentReference</code>s. It is then decided as every prior authorization on this server is: the rules file, a decision service (<code>-pas-decider-url</code>), or the reviewer queue, where it is marked <strong>Drug</strong> and held to the drug timeframes. A decision service sees a drug request exactly as it sees one from an EHR&#39;s PAS client. We recommend Vaglio, BioDream&#39;s source-available (PolyForm Shield) decision engine, which has drug policies with step therapy; a payer&#39;s own engine plugs in through the same <code>-pas-decider-url</code>, and none is needed for the rules file and reviewers to decide.</p>
+<p>A decision made after the request was answered (a reviewer&#39;s, an appeal&#39;s) is sent to the prescriber as an unsolicited <code>PAResponse</code> or <code>PAAppealResponse</code>, routed to the channel named by <code>-epa-reply-channel</code>, which delivers it to the network. Without one, or when delivery fails, the case says the prescriber has not been told and the screen sends it again.</p>
+<p><strong>Payers › Drugs › Prior authorization</strong> sends the messages a prescriber&#39;s system would to this server&#39;s own endpoint (start, answer the questions, see the decision), lists every case with what the prescriber was told, and shows the drug figures CMS-0062-P proposes: requests approved, denied and pending, appealed and approved or denied on appeal, the mean and median hours from request to decision, and how many were decided late. Medical-benefit drugs requested through PAS (a HCPCS J code with a <code>MedicationRequest</code>, or an item coded in RxNorm or NDC) are counted as drugs in the PAS figures too.</p>
+<p><strong>What this rests on, stated plainly.</strong> NCPDP&#39;s schemas and implementation guides are licensed. The element names and order here follow the public Surescripts ePA and RTPB companion guides and their examples, and NCPDP&#39;s public RTPB recommendations. Two elements the public material never shows are written to the SCRIPT pattern used elsewhere and should be checked against a licensed copy before certification: <code>Closed/ReasonCode</code> and <code>Denied/DenialReason</code>. No message has been checked against NCPDP&#39;s XSD or a network&#39;s certification. The NCPDP Formulary &amp; Benefit file is not produced: its full layout is in NCPDP&#39;s licensed guide, and a partial file would be refused by the network that loads it.</p>
+<h3 id="s16-9-what-was-checked-and-against-what"><span class="num">16.9</span> What was checked, and against what</h3>
 <p>The CARIN and PDex outputs were validated with the official HL7 FHIR validator, loaded with the published packages (<code>hl7.fhir.us.carin-bb#2.2.0</code>, <code>hl7.fhir.us.davinci-pdex#2.2.0</code>): professional, inpatient and outpatient claims and two PAS decisions, with no errors. The PDex inputs were the PAS guide&#39;s own examples rather than shapes written here to agree with the converter. The validator found five defects on the first run — among them that CARIN requires the profile version in <code>meta.profile</code> and the claim-type code system version on institutional claims — and each is fixed and covered by a test.</p>
 <p>Building this found a defect older than it: the FHIR store dropped every element its internal model did not declare, so an ExplanationOfBenefit lost its items, diagnoses, adjudication and payment on the way in. The store now keeps whatever a resource carries, and a test loads a CARIN claim through the server and reads it back whole.</p>
 <p>CRD&#39;s output - the updated order, and the CDS Hooks response against CRD&#39;s own logical model - and DTR&#39;s package output validate in the official HL7 validator against CRD 2.2.1 and DTR 2.2.0 with no errors.</p>
@@ -2993,7 +3029,7 @@ rules:
 <p>People can sign in at the organisation&#39;s own identity provider instead: <code>-smart-oidc oidc.yaml</code> names it (issuer, client id and where the secret is), and the sign-in page offers &#34;Sign in with&#34; it beside the password. Each person is linked by the provider&#39;s subject, <code>oidc_subject</code> in the users file, so the file still decides who may authorize apps and which FHIR resource they are; an account linked to nobody is refused. Codes, refresh tokens and revocations are kept in the database, so a restart signs nobody out.</p>
 <p><strong>Users → SMART apps</strong> in the console lists the registered apps and the people, and adds, edits and removes them. Each save is checked as the files are at start-up, written to them, and used at once. A confidential app saved without a secret is given one, shown once; a password is set there and never shown back. Removing an app, or a person, stops the access tokens already issued to it or granted by them at once, not when they expire, and their refresh tokens with them.</p>
 <p>Scopes may be granular, as SMART App Launch 2 and US Core define them: <code>patient/Observation.rs?category=laboratory</code> reads only the Observations that search would find. A grant that is filtered for a type applies its filter to every search and every read of that type; an unfiltered grant for the type, or for <code>*</code>, lifts it. A filter that cannot be read grants nothing rather than everything.</p>
-<h3 id="s16-9-deciding-prior-authorisation-requests-pas"><span class="num">16.9</span> Deciding prior authorisation requests: PAS</h3>
+<h3 id="s16-10-deciding-prior-authorisation-requests-pas"><span class="num">16.10</span> Deciding prior authorisation requests: PAS</h3>
 <p><code>serve -fhir -pas -crd-rules rules.yaml</code> answers Da Vinci PAS 2.2.1 at <code>POST /fhir/Claim/$submit</code> and <code>POST /fhir/Claim/$inquire</code>. The decisions come from the same rules file as CRD&#39;s answers, so the order a clinician is told needs authorisation is decided by the rule that said so:</p>
 <pre class="code lang-yaml"><code>  - description: Physical therapy
     codes: [&#34;PT&#34;]                       # matched on the item&#39;s productOrService, then the code of the order it requests
@@ -3021,17 +3057,17 @@ rules:
   {&#34;name&#34;: &#34;reviewer&#34;, &#34;valueString&#34;: &#34;&lt;the reviewer&#39;s NPI&gt;&#34;}]}</code></pre>
 <p><code>decision</code> may also be <code>modify</code>: certified, but not as asked, with <code>quantity</code> (valueDecimal, the units certified) and/or <code>alternative</code> (valueCoding, the service approved instead). The response then says A6 Modified, with the certified detail or the alternative as an added item, and an authorization number. <code>item</code> (valueInteger, repeatable) limits the decision to some lines. The decision becomes a new version of the response, marked as reviewed by a person, and with <code>-fhir-subscriptions</code> it is delivered on the PAS topic (<code>PASSubscriptionTopic</code>, filtered by <code>org-identifier</code>, the requesting organisation&#39;s identifier) as the full PAS Response Bundle, in the same transaction that records it. <code>$inquire</code> returns the current response to every request that provider made about that member; another provider&#39;s inquiry finds nothing. <code>$decide</code> needs a write scope; <code>$inquire</code> is a read.</p>
 <p>Requests and every version of their responses are kept in <code>pas_requests</code> and <code>pas_responses</code> in the server&#39;s database.</p>
-<h4 id="s16-9-1-the-reviewer-queue"><span class="num">16.9.1</span> The reviewer queue</h4>
-<p>In the web console, <strong>Exchange → CMS-0057 → Reviewer queue</strong> lists the pended requests soonest due first: an expedited request (Claim.priority <code>stat</code>) is due 72 hours after it arrived, a standard one 7 days. Choosing one shows the member, the provider, each service with the units asked for and where it stands, what the response asked for, and every document received for it, with plain-text documents shown inline. An editor records the decision there: approve, deny, or modify (units certified, or another service approved instead), with a reason and the reviewer&#39;s NPI. A modification has to certify fewer units than were asked for; as many or more is an approval, and is refused as a modification. A service approved instead starts in the code system of the one asked for. It is the same decision <code>$decide</code> makes, so the provider&#39;s subscription delivers it. Reading a request and deciding it are both written to the audit log.</p>
+<h4 id="s16-10-1-the-reviewer-queue"><span class="num">16.10.1</span> The reviewer queue</h4>
+<p>In the web console, <strong>Payers → CMS-0057 → Reviewer queue</strong> lists the pended requests soonest due first: an expedited request (Claim.priority <code>stat</code>) is due 72 hours after it arrived, a standard one 7 days. Choosing one shows the member, the provider, each service with the units asked for and where it stands, what the response asked for, and every document received for it, with plain-text documents shown inline. An editor records the decision there: approve, deny, or modify (units certified, or another service approved instead), with a reason and the reviewer&#39;s NPI. A modification has to certify fewer units than were asked for; as many or more is an approval, and is refused as a modification. A service approved instead starts in the code system of the one asked for. It is the same decision <code>$decide</code> makes, so the provider&#39;s subscription delivers it. Reading a request and deciding it are both written to the audit log.</p>
 <p><strong>Monitor → Team dashboards → Prior authorization</strong> shows, for the last 30 days, how many standard and expedited requests were decided within CMS-0057&#39;s timeframes, decided late, still waiting in time and overdue now, with the median time to decide, and how the services asked for were answered: approved, modified, denied or still pended. These two tiles are read from the requests themselves, so they are not in the dashboard&#39;s Grafana export, which says so in its description.</p>
-<h4 id="s16-9-2-receiving-the-documents-a-pended-request-asks-for"><span class="num">16.9.2</span> Receiving the documents a pended request asks for</h4>
+<h4 id="s16-10-2-receiving-the-documents-a-pended-request-asks-for"><span class="num">16.10.2</span> Receiving the documents a pended request asks for</h4>
 <p>A pended response asks for documents with a Task and one CommunicationRequest per document. The provider sends them with Da Vinci CDex <code>$submit-attachment</code> (<code>POST /fhir/$submit-attachment</code>): the <code>TrackingId</code> is the CommunicationRequest&#39;s identifier, the attachment control number (the Task&#39;s identifier is accepted too), <code>AttachTo</code> is <code>preauthorization</code>, and <code>MemberId</code> must be the request&#39;s member. Each attachment&#39;s DocumentReference or QuestionnaireResponse is kept with the request and shown to its reviewer; a document arriving decides nothing.</p>
-<h4 id="s16-9-3-deciding-in-an-x12-utilization-management-system"><span class="num">16.9.3</span> Deciding in an X12 utilization management system</h4>
+<h4 id="s16-10-3-deciding-in-an-x12-utilization-management-system"><span class="num">16.10.3</span> Deciding in an X12 utilization management system</h4>
 <p>Most payers decide prior authorizations in a UM system that speaks X12 278. With <code>-pas-278-url</code>, Perfuse is the FHIR front of that system: each <code>$submit</code> is sent as one 278 request (005010X217), every item a patient event carrying its service type, procedure code, diagnoses, date and quantity, and the 278 response&#39;s action code and authorization number become the item&#39;s review action. Local rules are not consulted.</p>
 <pre class="code lang-sh"><code>perfuse serve -fhir -pas -pas-278-url https://um.example/x12/278 -pas-278-receiver ACMEUM \
   -pas-278-token-env UM_TOKEN</code></pre>
 <p>A UM system that pends first and decides later posts its later 278 response to <code>POST /fhir/Claim/$decide-278</code>; each event is matched to its request by the trace number Perfuse sent, and decided as <code>$decide</code> would decide it. If the UM system cannot be reached, or answers with something that is not a 278 response, every item is pended for a reviewer and the provider is told only that; the reason is in the server log.</p>
-<h4 id="s16-9-4-deciding-on-the-clinical-evidence-with-a-decision-service"><span class="num">16.9.4</span> Deciding on the clinical evidence, with a decision service</h4>
+<h4 id="s16-10-4-deciding-on-the-clinical-evidence-with-a-decision-service"><span class="num">16.10.4</span> Deciding on the clinical evidence, with a decision service</h4>
 <p>A rules file decides by service code: a code needs no authorization, is not covered, or goes to a reviewer. Whether this patient meets the criteria for it is a different question, answered from the conditions, questionnaire answers and documents the provider sent with the request. With <code>-pas-decider-url</code>, every item the rules leave to a reviewer is first put to a decision service, such as Vaglio, which reads the same PAS request Bundle through Perfuse&#39;s published <code>pas</code> package.</p>
 <pre class="code lang-sh"><code>perfuse serve -fhir -pas -crd-rules payer-rules.yaml -pas-decider-url https://vaglio.example/api/pas/decide \
   -pas-decider-token-env VAGLIO_TOKEN</code></pre>
@@ -3390,6 +3426,8 @@ rules:
 <tr><td><code>-ecr-agency</code></td><td>string</td><td>—</td><td>play a public health agency for testing eCR: answer case reports at $process-message with a Reportability Response, using the agency YAML file given (name, phone, address, endpoint; optional rctc, reply)</td><td><strong>Settings › Public health › Case reporting</strong>: Act as a test public health agency</td></tr>
 <tr><td><code>-ecr-responses</code></td><td>on/off</td><td>—</td><td>accept eCR Reportability Responses at the FHIR endpoint&#39;s $process-message, storing each as DocumentReference/&lt;id&gt; derived from the eICR it answers</td><td><strong>Settings › Public health › Case reporting</strong>: Receive Reportability Responses</td></tr>
 <tr><td><code>-engine</code></td><td>on/off</td><td><code>true</code></td><td>run the channel engine in this process, so the interface can start, stop and monitor channels</td><td>—</td></tr>
+<tr><td><code>-epa-payer-id</code></td><td>string</td><td>—</td><td>this payer&#39;s identifier on the prescribing network, the From of every RTPB and ePA response (default: the formulary&#39;s payer id)</td><td><strong>Settings › Payers › Drug formulary</strong>: Payer ID on the prescribing network</td></tr>
+<tr><td><code>-epa-reply-channel</code></td><td>string</td><td>—</td><td>route ePA decisions made after the request was answered (a reviewer&#39;s, an appeal&#39;s) to this channel, which delivers them to the prescriber&#39;s network</td><td><strong>Settings › Payers › Drug formulary</strong>: Channel that sends later ePA decisions</td></tr>
 <tr><td><code>-fhir</code></td><td>on/off</td><td><code>true</code></td><td>serve a FHIR endpoint at /fhir</td><td><strong>Settings › FHIR › The FHIR server</strong>: Serve a FHIR endpoint at /fhir</td></tr>
 <tr><td><code>-fhir-api-tokens</code></td><td>on/off</td><td>—</td><td>with SMART configured, accept Perfuse API tokens on the FHIR endpoint as well (unscoped; the console&#39;s FHIR settings can switch it)</td><td><strong>Settings › FHIR › Access</strong>: Accept Perfuse API tokens beside SMART tokens</td></tr>
 <tr><td><code>-fhir-bulk-export</code></td><td>on/off</td><td>—</td><td>enable $export, which produces a file holding every record the FHIR endpoint serves</td><td><strong>Settings › FHIR › Bulk data</strong>: Bulk Data export ($export)</td></tr>
@@ -3403,6 +3441,7 @@ rules:
 <tr><td><code>-fhir-version</code></td><td>string</td><td><code>4.0.1</code></td><td>FHIR release to serve: R4, R4B or R5</td><td><strong>Settings › FHIR › The FHIR server</strong>: FHIR version clients see</td></tr>
 <tr><td><code>-fhir-writes-per-minute</code></td><td>int</td><td>—</td><td>for a public server: writes one client address may make to the FHIR endpoint a minute (0: no limit)</td><td><strong>Settings › FHIR › Access</strong>: Writes a minute from one client</td></tr>
 <tr><td><code>-fleet-label</code></td><td>string</td><td>—</td><td>how this instance names itself in a fleet view (default: hostname)</td><td><strong>Settings › Fleet › This server</strong>: Name for this server</td></tr>
+<tr><td><code>-formulary</code></td><td>string</td><td>—</td><td>publish this drug formulary over the Da Vinci US Drug Formulary API at /formulary/fhir and answer NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization from it</td><td><strong>Settings › Payers › Drug formulary</strong>: Drug formulary file</td></tr>
 <tr><td><code>-index-identity</code></td><td>on/off</td><td><code>true</code></td><td>index patient identifiers from message contents so a message can be found by MRN, name or accession in any format; has no effect when -store-payloads is off</td><td><strong>Settings › Data › What is kept</strong>: Index patient identifiers</td></tr>
 <tr><td><code>-insecure</code></td><td>on/off</td><td>—</td><td>serve over plain HTTP on a non-loopback address (not recommended)</td><td>—</td></tr>
 <tr><td><code>-inventory</code></td><td>string</td><td>—</td><td>write a Markdown inventory of every interface to this file, and keep it current</td><td><strong>Settings › Monitoring › Inventory</strong>: Write an interface inventory to</td></tr>
@@ -6079,7 +6118,12 @@ rules:
 <p>Package engine runs configured channels.</p>
 <p>A channel is a source, a filter, and a set of destinations. The runtime&#39;s job is to be honest about what happened to each message: an acknowledgement should mean what the configuration says it means, a message that is filtered out should be distinguishable from one that was delivered, and a message that could not be delivered anywhere must not be reported as accepted.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/engine</code></p>
-<h3 id="s26-33-eprescribe"><span class="num">26.33</span> eprescribe</h3>
+<h3 id="s26-33-epa"><span class="num">26.33</span> epa</h3>
+<p>Package epa is NCPDP SCRIPT electronic prior authorization, the payer&#39;s side: PAInitiationRequest, PARequest, PAAppealRequest and PACancelRequest in, and their responses out.</p>
+<p>CMS-0062-P proposes that impacted payers support it from 1 October 2027, and Medicare Part D already requires it. A request is decided the way every prior authorization on this server is: it becomes a Da Vinci PAS request (a Claim, the MedicationRequest and the prescriber&#39;s answers as a QuestionnaireResponse) and goes to the same rules file, decision service and review queue. The formulary says which drugs need one and which questions to ask, from the same FHIR Questionnaire Da Vinci DTR fills in.</p>
+<p>NCPDP&#39;s schemas are licensed. Element names and order here follow the public Surescripts ePA companion guide and its examples; two elements the public material never shows (the reason inside Closed and inside Denied) follow the SCRIPT pattern used elsewhere and are named in the manual so a payer can check them against its own copy of the schema.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/epa</code></p>
+<h3 id="s26-34-eprescribe"><span class="num">26.34</span> eprescribe</h3>
 <p>Package eprescribe reads and writes NCPDP SCRIPT, the standard prescriptions travel in.</p>
 <p>Named for what it does rather than for the standard, because internal/script is already the JavaScript engine and two packages called script in one tree is a mistake waiting to be made at an import line.</p>
 <p>SCRIPT is XML, unlike the Telecommunication Standard that carries the resulting claim. A prescriber sends a NEWRX to a pharmacy; the pharmacy sends back RXFILL to say what happened, REFREQ to ask for a refill, or RXCHG to ask for a change. Every one of those is a message here.</p>
@@ -6090,7 +6134,7 @@ rules:
 <h1 id="what-has-not-been-verified">What has not been verified</h1>
 <p>The message structure follows the published SCRIPT element names. No message from this package has been sent through a real routing network such as Surescripts, and certification by one is a commercial process rather than a technical one. This parses and builds the format; it does not claim certification.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/eprescribe</code></p>
-<h3 id="s26-34-equiv"><span class="num">26.34</span> equiv</h3>
+<h3 id="s26-35-equiv"><span class="num">26.35</span> equiv</h3>
 <p>Package equiv proves that two engines agree, or says exactly where they do not.</p>
 <p>This is the answer to the only question that actually blocks a migration. An interface team does not refuse a new engine because it lacks features; they refuse because they cannot be sure it will do the same thing to the traffic they already have, and being wrong means lab results stop reaching doctors. No amount of feature comparison answers that. Evidence does.</p>
 <p>The intended use is a parallel run. Both engines receive the same production messages; the incumbent keeps delivering and Perfuse delivers to nobody, which is what shadow channels already are. After two weeks the outputs are compared here, and the conversation changes from &#34;trust this&#34; to &#34;here are the three messages out of four hundred thousand where we differed, and why&#34;.</p>
@@ -6100,22 +6144,26 @@ rules:
 <p>Real traffic is patient data, so a comparison report is a place PHI could leak into a ticket, an email or a slide. By default this reports paths, kinds and counts - never values. That is enough to find the cause: &#34;MSH-7 differs in 3,000 of 3,000 messages&#34; tells an analyst it is the date format without showing one date.</p>
 <p>Values can be enabled deliberately, because eventually somebody does need to see one, and pretending otherwise would only push them to a worse tool. It is an explicit opt-in and the report says on its face that it contains message content.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/equiv</code></p>
-<h3 id="s26-35-expr"><span class="num">26.35</span> expr</h3>
+<h3 id="s26-36-expr"><span class="num">26.36</span> expr</h3>
 <p>The HL7 v2 binding.</p>
 <p>This is the logic that used to live inline in eval.go. It is unchanged in behaviour - deliberately, because the v2 filter is what every HL7 channel runs and the point of the generic grammar was to add formats, not to alter this one.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/expr</code></p>
-<h3 id="s26-36-fdlimit"><span class="num">26.36</span> fdlimit</h3>
+<h3 id="s26-37-fdlimit"><span class="num">26.37</span> fdlimit</h3>
 <p>Package fdlimit finds out how many file descriptors this process may open, and raises the limit if it can.</p>
 <p>This exists because of the shape of the failure it prevents. Every inbound connection is a descriptor, and so is every outbound delivery in flight. A receiver that has stopped answering holds a descriptor for the whole retry budget - with the defaults, five attempts at a thirty second timeout plus fifteen seconds of backoff, so nearly three minutes. A few hundred connections against one hung receiver is therefore a few hundred descriptors held for minutes.</p>
 <p>Running out does not produce a tidy error in the place that ran out. It produces &#34;too many open files&#34; somewhere else entirely: the database cannot open its journal, the web interface stops accepting, a log file cannot be written. The engine appears to have broken in three unrelated places at once, and the real cause is a partner system that went quiet. That is the support call this package exists to avoid.</p>
 <p>Two things happen at startup. The soft limit is raised to the hard limit, which usually removes the problem outright - the soft default is often a few hundred while the hard limit is tens of thousands. Then whatever is available is reported, so the engine can bound its own concurrency inside it rather than discovering it by hitting it.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/fdlimit</code></p>
-<h3 id="s26-37-fhirserver"><span class="num">26.37</span> fhirserver</h3>
+<h3 id="s26-38-fhirserver"><span class="num">26.38</span> fhirserver</h3>
 <p>Package fhirserver implements a FHIR REST server.</p>
 <p>This exists because the useful end of a v2-to-FHIR mapper is somewhere to put the result. Being able to convert a message is a demo; being able to convert it, store it, and then find the patient again by identifier is a product.</p>
 <p>It is a real FHIR server in the parts that matter for that: a capability statement, create, read, update, delete, search on the parameters people actually use, and transaction bundles applied atomically. It is not a complete FHIR server — no history, no chained search, no _include — and it says so in its own capability statement rather than letting a client discover the gaps.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/fhirserver</code></p>
-<h3 id="s26-38-framing"><span class="num">26.38</span> framing</h3>
+<h3 id="s26-39-formulary"><span class="num">26.39</span> formulary</h3>
+<p>Package formulary is a payer&#39;s drug formulary: which drugs each plan covers, on what tier, and with which limits (prior authorization, step therapy, quantity limits), and what the member pays.</p>
+<p>One file is the single source for everything that answers a question about a drug: the Da Vinci US Drug Formulary API (published from it as FHIR), NCPDP Real-Time Prescription Benefit answers, and NCPDP SCRIPT electronic prior authorization (whether a drug needs one, and which questions to ask). A formulary that lived in three places would answer the same question three ways.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/formulary</code></p>
+<h3 id="s26-40-framing"><span class="num">26.40</span> framing</h3>
 <p>Package framing reads and writes messages on a byte stream that is not MLLP.</p>
 <h1 id="why-this-exists-separately-from-mllp">Why this exists separately from mllp</h1>
 <p>MLLP is one framing: 0x0B before, 0x1C 0x0D after. It is what HL7 v2 uses over TCP and Perfuse has always spoken it.</p>
@@ -6125,7 +6173,7 @@ rules:
 <p>Reading from a stream and guessing where a message ends is the whole problem. Guess short and a message is cut in half; guess long and two messages arrive as one. Both produce output that often looks plausible, which is worse than an error, so every mode here is explicit about what terminates a message and none of them fall back to another.</p>
 <p>A message with no framing at all is a legitimate configuration - some devices open a connection, send one message and close - but it cannot be combined with anything else and cannot be used on a connection that stays open, so it is named and validated rather than treated as a default.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/framing</code></p>
-<h3 id="s26-39-ftpconn"><span class="num">26.39</span> ftpconn</h3>
+<h3 id="s26-41-ftpconn"><span class="num">26.41</span> ftpconn</h3>
 <p>Package ftpconn uploads files over FTP and FTPS using only the standard library.</p>
 <p>FTP is old, chatty and not a good protocol. It is also still how a large number of hospital systems accept files, usually because the far end is a laboratory analyser or a bureau service whose software has not been touched since it worked. Refusing to support it does not make those systems modern; it makes Perfuse unusable at those sites.</p>
 <p>Implemented here rather than taken as a dependency for the same reason as S3: the eight-dependency bill of materials is a real argument with whoever reviews software before a hospital installs it. FTP&#39;s control channel is line-oriented text over TCP, so this is a few hundred lines of net and crypto/tls.</p>
@@ -6134,23 +6182,23 @@ rules:
 <p>Explicit FTPS (AUTH TLS) is supported and is the default when TLS is asked for. Implicit FTPS on port 990 is also supported because some analysers only speak that.</p>
 <p>Plain FTP is supported and warns. It sends the password in clear text, and a site that has to use it should be told once rather than left to find out from a packet capture.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/ftpconn</code></p>
-<h3 id="s26-40-gcp"><span class="num">26.40</span> gcp</h3>
+<h3 id="s26-42-gcp"><span class="num">26.42</span> gcp</h3>
 <p>Package gcp talks to Google Cloud Pub/Sub and Cloud Storage over their REST APIs, with Google&#39;s OAuth 2.0 done here: a service account key signs a JWT (RS256, crypto/rsa) that is traded for an access token, or, on Google Cloud itself, the metadata server hands one out.</p>
 <p>No Google SDK.</p>
 <p>Emulators (the Pub/Sub emulator, fake-gcs-server) take no credentials: set Endpoint and leave the credentials empty.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/gcp</code></p>
-<h3 id="s26-41-generate"><span class="num">26.41</span> generate</h3>
+<h3 id="s26-43-generate"><span class="num">26.43</span> generate</h3>
 <p>Package generate makes synthetic HL7 v2 messages.</p>
 <p>Two uses. Somebody trying Perfuse needs traffic to look at, and a channel test needs a fixture that is realistic enough to exercise the thing being tested. A generator is a paid extension in Mirth, which tells you people want one.</p>
 <p>Everything here is invented. The names come from a fixed list of obviously fictional ones, the identifiers are sequential within a run, and the addresses are made up. That is not a disclaimer, it is the design: a generator that produced plausible-looking real names would eventually put one into a test fixture, a bug report and then a repository.</p>
 <p>Realism is spent where it matters for testing and nowhere else. Timestamps carry offsets, repeating fields actually repeat, a name sometimes has a middle initial and sometimes does not, and roughly one message in twelve is deliberately awkward: a missing optional field, an unusual but legal separator, an empty component. Feeding a channel nothing but perfectly formed messages tells you very little.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/generate</code></p>
-<h3 id="s26-42-hl7dict"><span class="num">26.42</span> hl7dict</h3>
+<h3 id="s26-44-hl7dict"><span class="num">26.44</span> hl7dict</h3>
 <p>Package hl7dict names the fields of HL7 v2 segments.</p>
 <p>This exists for one screen: a message viewer that can tell you PID-5.1 is the patient&#39;s family name instead of leaving you to count carets. Anyone who has debugged an interface has done that counting by hand, and it is the single most common source of the off-by-one mistakes that put a value in the wrong field.</p>
 <p>It is not the whole standard. HL7 v2 has hundreds of segments and thousands of fields, and the ones here are those that appear in ADT, ORU, ORM and SIU traffic. An unknown field is reported as unknown rather than guessed at.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/hl7dict</code></p>
-<h3 id="s26-43-hl7v3"><span class="num">26.43</span> hl7v3</h3>
+<h3 id="s26-45-hl7v3"><span class="num">26.45</span> hl7v3</h3>
 <p>Package hl7v3 reads HL7 version 3 messages.</p>
 <p>Version 3 is a different thing from version 2 wearing the same name. Version 2 is a pipe-delimited stream of segments whose meaning is positional; version 3 is XML generated from a reference information model, where meaning is carried by element names and by a small set of datatypes that recur everywhere. Almost nothing transfers between the two beyond the clinical vocabulary.</p>
 <p>In practice v3 arrives in one of two shapes. Either it is a CDA document, which is v3-derived and handled by the cda package, or it is an IHE transaction - PIX and PDQ v3 in particular, which is how a great many hospitals resolve patient identifiers across systems. This package targets the second.</p>
@@ -6158,7 +6206,7 @@ rules:
 <p>The single most consequential thing about v3 is that an element can be present and explicitly null, with a stated reason. A birth date carrying nullFlavor=&#34;ASKU&#34; means the patient was asked and declined to answer. One carrying nullFlavor=&#34;NAV&#34; means the value exists but is not available right now, so asking again later may work. One that is simply absent means nobody recorded anything at all.</p>
 <p>Collapsing those into an empty string is the mistake this package is arranged to prevent. It is not a cosmetic loss: a downstream system that receives an empty birth date where the source said &#34;patient declined&#34; will usually treat it as missing data to be chased, and a demographic match that should have been left unresolved gets resolved by a human guessing. So every datatype here distinguishes absent, null-with-reason, and present.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/hl7v3</code></p>
-<h3 id="s26-44-hl7xml"><span class="num">26.44</span> hl7xml</h3>
+<h3 id="s26-46-hl7xml"><span class="num">26.46</span> hl7xml</h3>
 <p>Package hl7xml converts HL7 v2 messages to and from the XML shape Mirth Connect uses, and back to ER7 encoding.</p>
 <p>The shape is not a design choice. Mirth&#39;s scripts are written against the output of its own ER7-to-XML serialiser, so they contain expressions like</p>
 <p>msg[&#39;PID&#39;][&#39;PID.5&#39;][&#39;PID.5.1&#39;].toString()</p>
@@ -6167,12 +6215,12 @@ rules:
 <p>Every field is wrapped in numbered component elements even when the field has only one component, so PID-5 with the value &#34;Doe&#34; still produces &lt;PID.5&gt;&lt;PID.5.1&gt;Doe&lt;/PID.5.1&gt;&lt;/PID.5&gt;. Scripts index straight to .1 constantly and a tree that put the text on the field element would break nearly all of them.</p>
 <p>MSH keeps standard HL7 field numbers, where MSH-1 is the field separator and MSH-9 is the message type. The parser in internal/hl7 indexes MSH with an offset because the separator occupies a position no delimiter splits, and that offset stops here: a script saying MSH.9 means the message type.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/hl7xml</code></p>
-<h3 id="s26-45-ibmmq"><span class="num">26.45</span> ibmmq</h3>
+<h3 id="s26-47-ibmmq"><span class="num">26.47</span> ibmmq</h3>
 <p>Package ibmmq sends to and reads from IBM MQ queues through the queue manager&#39;s messaging REST API (mqweb), which IBM MQ 9.1.5 and later ship on every platform, z/OS included.</p>
 <p>It needs no MQ client library: the native MQI protocol is IBM&#39;s and undocumented, and the REST API is the supported way to reach MQ without one. (IBM MQ also speaks AMQP 1.0 on an AMQP channel; Perfuse&#39;s amqp connector covers that route.)</p>
 <p>Reading is at least once: the first message is browsed, handed to the caller, and removed by its message id only once the caller has handled it. A message that could not be handled stays on the queue, first in line.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/ibmmq</code></p>
-<h3 id="s26-46-identity"><span class="num">26.46</span> identity</h3>
+<h3 id="s26-48-identity"><span class="num">26.48</span> identity</h3>
 <p>Finding a message by what you know about it, whatever format it arrived in.</p>
 <p>The existing content search matches metadata, offers a substring match against the payload, and can evaluate a filter expression - but the expression is evaluated against HL7 v2 only, and every expression requires knowing the path. So finding one patient&#39;s traffic meant knowing that identity lives at PID-3 in an HL7 v2 admission, at Patient.identifier in a FHIR resource, at (0010,0020) in a DICOM instance and at NM109 of an NM1*IL loop in an 837 claim. Four formats, four vocabularies, and during an incident the message being hunted might be in any of them.</p>
 <p>This package maps a small set of concepts - who the message is about, which visit, which study, which claim - onto the place each format keeps them, so a search can be for &#34;MRN 12345&#34; rather than for a path. The concepts are deliberately few: these are the things people actually have in their hand when they need to find a message, which is a number off a phone call or a name off a complaint.</p>
@@ -6181,32 +6229,32 @@ rules:
 <h1 id="this-is-a-privacy-escalation-and-it-is-optional">This is a privacy escalation, and it is optional</h1>
 <p>Patient names and identifiers currently sit inside an opaque payload column. Indexing them makes them queryable, which is the point, and also makes them enumerable, which is a real change in exposure: a database that could only be grepped can now be asked &#34;list every patient&#34;. That is a decision for the site, not for this package, so extraction is switchable and every search through it is recorded in the PHI audit log.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/identity</code></p>
-<h3 id="s26-47-iis"><span class="num">26.47</span> iis</h3>
+<h3 id="s26-49-iis"><span class="num">26.49</span> iis</h3>
 <p>Package iis speaks the transport every US immunization registry shares: the CDC&#39;s IIS SOAP web service.</p>
 <p>In 2011 an expert panel convened by the CDC and the American Immunization Registry Association chose one SOAP interface for submitting HL7 v2 messages to Immunization Information Systems, and the registries adopted it. The WSDL is small - two operations, connectivityTest and submitSingleMessage - and the HL7 message (a VXU to report a shot, a QBP^Q11 to ask for a patient&#39;s history) travels as escaped text inside the SOAP body. The answer comes back the same way: an ACK, or an RSP^K11 carrying the history and the forecast.</p>
 <p>The generic SOAP destination could be configured to do this, but every site would have to type the same envelope, get the namespace right, put the credentials in the body rather than in HTTP authentication, and then read the HL7 acknowledgement out of the reply to learn whether the registry kept the record. A registry answers a rejected shot with HTTP 200 and an AR inside; treating the 200 as success is how immunizations silently fail to be reported. So this package does the CDC envelope, and judges the acknowledgement, once.</p>
 <p>What it does not do: the WSDL&#39;s username and password are the registry&#39;s application credentials and are sent as the WSDL says, in the body. Mutual TLS, where a registry requires it, is the destination&#39;s TLS setting as for any HTTPS call. Nothing here is specific to one state; where states differ (facility ID required or not, SOAP 1.1 accepted or not, warnings sent as AE) the destination&#39;s settings say so.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/iis</code></p>
-<h3 id="s26-48-kafka"><span class="num">26.48</span> kafka</h3>
+<h3 id="s26-50-kafka"><span class="num">26.50</span> kafka</h3>
 <p>Kafka, as a client rather than as something to replace.</p>
 <p>A health system that has an event backbone has a Kafka one, and the systems built in the last decade publish to it rather than to a JMS broker. So this connector exists to make Perfuse the healthcare-aware edge of somebody else&#39;s event platform: it reads clinical messages off topics and publishes them onto topics, and it deliberately does not try to be a streaming platform. Windowing, joins, stream processing and schema registries are Kafka&#39;s ecosystem and stay there.</p>
 <h1 id="why-a-dependency-when-stomp-and-mllp-were-written-by-hand">Why a dependency, when STOMP and MLLP were written by hand</h1>
 <p>The stated rule in this repository is that a dependency has to buy capability rather than convenience, and must be pure Go so one static binary still cross-compiles to every target. franz-go is pure Go and carries no cgo, which was checked against all six targets.</p>
 <p>Kafka&#39;s protocol is not STOMP&#39;s. STOMP is a text protocol that fits in a few hundred lines. Kafka is a versioned binary protocol across roughly seventy request types, and the part that matters most here - consumer groups - is a distributed coordination protocol with join, sync, heartbeat and offset-commit phases and a rebalance dance between them. Getting that subtly wrong does not produce an obvious failure: it produces a partition nobody is reading, or two consumers reading the same one. In a clinical feed those are a missing lab result and a duplicated order. That is capability, and it is not worth hand-rolling to save a dependency.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/kafka</code></p>
-<h3 id="s26-49-ldap"><span class="num">26.49</span> ldap</h3>
+<h3 id="s26-51-ldap"><span class="num">26.51</span> ldap</h3>
 <p>Package ldap speaks enough LDAP to authenticate a person and read their groups.</p>
 <p>Hospitals run Active Directory almost universally, and AD speaks LDAP. OpenID Connect is the better answer where it is reachable - see internal/oidc, and the note there about Mirth having no single sign-on at any price - but an integration engine often sits on an isolated VLAN where a browser cannot reach an identity provider at all. That is what this is for.</p>
 <p>Hand-rolled BER rather than a dependency, for the same reason as DICOM and STOMP: the encoding is small, and what arrives on this socket decides whether somebody gets into a system that moves patient data.</p>
 <p>encoding/asn1 in the standard library is not usable here. It targets DER and rejects the context-specific tags and implicit tagging that LDAP uses throughout, so the parts that matter would need hand-rolling anyway.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/ldap</code></p>
-<h3 id="s26-50-mapper"><span class="num">26.50</span> mapper</h3>
+<h3 id="s26-52-mapper"><span class="num">26.52</span> mapper</h3>
 <p>Package mapper suggests field mappings between systems with confidence scores.</p>
 <p>This is a rules-based intelligent mapping engine. No LLM, no network calls, no external dependencies. It runs offline in the same binary and never sends patient data anywhere.</p>
 <p>The engine combines multiple signals - fuzzy string matching on field names, healthcare identifier pattern recognition, code system lookups, and historical acceptance data - into a single confidence score per suggestion. When confidence is below a configurable threshold the mapper abstains rather than guessing wrong, because a wrong mapping in healthcare can route data to the wrong field and that is a patient-safety defect.</p>
 <p>Abstention is the core design decision. A system that always produces an answer trains users to stop checking, and the one time it is wrong nobody notices until a lab result lands in a note field. A system that says &#34;I don&#39;t know&#34; forces a human decision exactly when the human is needed.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/mapper</code></p>
-<h3 id="s26-51-metrics"><span class="num">26.51</span> metrics</h3>
+<h3 id="s26-53-metrics"><span class="num">26.53</span> metrics</h3>
 <p>Package metrics collects what the engine is doing and keeps enough history to draw it.</p>
 <p>An interface engine is watched, not just run. When a ward says results stopped arriving twenty minutes ago, the question is what changed twenty minutes ago, and that cannot be answered by current counters alone. So this keeps series rather than totals, in memory, at a fixed resolution.</p>
 <p>Three decisions shape it.</p>
@@ -6214,7 +6262,7 @@ rules:
 <p>Series are bounded ring buffers, sized when the collector is made. Nothing here grows without limit, because an interface engine runs for months at a time and a metrics system that needs restarting is worse than none.</p>
 <p>Cardinality is capped. A label value taken from message data - a sending application, say - can take thousands of values if somebody misconfigures a feed, and unbounded labels are the standard way monitoring takes down the thing it monitors. Past the cap, values collapse into an &#34;other&#34; bucket and the cap is itself reported.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/metrics</code></p>
-<h3 id="s26-52-mirth"><span class="num">26.52</span> mirth</h3>
+<h3 id="s26-54-mirth"><span class="num">26.54</span> mirth</h3>
 <p>Java analysis for imported Mirth channels.</p>
 <h1 id="why-this-exists">Why this exists</h1>
 <p>Mirth runs Rhino on the JVM, so a Mirth script can call any Java on the classpath, including Mirth&#39;s own server classes. Perfuse runs goja and has no Java runtime. It refuses those calls with an error naming the class - but that refusal happens when the script runs, which for a source connector means when the first real message arrives.</p>
@@ -6224,34 +6272,34 @@ rules:
 <p>&#34;Uses Java&#34; is one bit of information and the wrong one, because the Java a real Mirth channel uses falls into groups with completely different amounts of work attached. Roughly half of what sites actually write is SimpleDateFormat and HashMap, which JavaScript does natively. Some of it is Mirth&#39;s documented script API, which Perfuse already implements under the same names. A little of it wants to start and stop channels, which Perfuse can do over its REST API but does not expose to scripts. And some of it is a vendor jar that is never going to run here.</p>
 <p>Reporting those as one number tells a migrator nothing about whether their afternoon or their quarter is at stake.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/mirth</code></p>
-<h3 id="s26-53-mirthlive"><span class="num">26.53</span> mirthlive</h3>
+<h3 id="s26-55-mirthlive"><span class="num">26.55</span> mirthlive</h3>
 <p>Package mirthlive finds the running Mirth-family engines that the interoperability tests talk to.</p>
 <p>Mirth Connect stopped being open source at 4.6 (March 2025). The sites leaving it go to one of three places: Mirth 4.5.2, the last open release, which they keep running; the Open Integration Engine, the Eclipse-hosted fork; or BridgeLink, Innovar&#39;s fork, which numbers its releases by year (26.9.0). A channel Perfuse exports has to load in all of them, and a channel any of them exports has to import here, so every live test runs once per engine that answers.</p>
 <p>The engines are found by asking, not configured: ./scripts/interop-up.sh starts them on fixed ports, and an engine that is not running is reported as skipped rather than silently passing. PERFUSE_MIRTH_ENGINES overrides the list, as name=url pairs separated by commas.</p>
 <p>Only tests import this. It lives outside a _test.go file because two packages share it.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/mirth/mirthlive</code></p>
-<h3 id="s26-54-mqtt"><span class="num">26.54</span> mqtt</h3>
+<h3 id="s26-56-mqtt"><span class="num">26.56</span> mqtt</h3>
 <p>Package mqtt is an MQTT 3.1.1 client: connect (with TLS, a username and password, or a client certificate), publish at QoS 0 or 1, subscribe, and acknowledge each received QoS 1 message only once the caller says it was handled.</p>
 <p>Written against the OASIS MQTT 3.1.1 standard rather than imported, as Perfuse&#39;s other wire protocols are. 3.1.1 is the version every broker speaks: Mosquitto, EMQX, HiveMQ, VerneMQ, RabbitMQ&#39;s MQTT plugin, IBM MQ&#39;s telemetry channel, AWS IoT Core and Azure Event Grid.</p>
 <p>Delivery: a message received at QoS 1 is acknowledged (PUBACK) only when Ack is called. A caller that cannot handle a message closes the connection instead; with a persistent session (CleanSession false) the broker sends it again, marked as a duplicate, when the client reconnects. MQTT 3.1.1 has no negative acknowledgement, so this is the only way to ask for a message again.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/mqtt</code></p>
-<h3 id="s26-55-msgstore"><span class="num">26.55</span> msgstore</h3>
+<h3 id="s26-57-msgstore"><span class="num">26.57</span> msgstore</h3>
 <p>Finding a stored message by what somebody knows about it.</p>
 <p>The search a person actually needs is &#34;here is a number off a phone call, show me every message about it&#34;. Before this that meant either a substring match over payloads, which is grep and slow, or a filter expression, which requires knowing that identity lives at PID-3 in HL7 v2 and somewhere else entirely in the other three formats on the same server.</p>
 <p>Identity is extracted once when the message is recorded and indexed, so this is a lookup rather than a scan. The cost is paid on the recording path, once per message, instead of on every search.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/msgstore</code></p>
-<h3 id="s26-56-ncpdp"><span class="num">26.56</span> ncpdp</h3>
+<h3 id="s26-58-ncpdp"><span class="num">26.58</span> ncpdp</h3>
 <p>Writing a field in an NCPDP transmission.</p>
 <h1 id="why-a-write-refuses-an-ambiguous-path">Why a write refuses an ambiguous path</h1>
 <p>Read returns every value a path addresses, because a filter asking whether any DUR conflict is a therapeutic duplication should see all of them. A write cannot work that way. If D7 addresses the product codes of two claims in one transmission, setting D7 has no single meaning: writing both would change a drug nobody asked about, and writing the first would silently leave the second.</p>
 <p>So a write refuses a path that addresses more than one field, and the error names the qualified form that would be unambiguous. This is the same reasoning that gives the transformation steps no remove action: where the honest answer is that the configuration is ambiguous, saying so beats picking one.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/ncpdp</code></p>
-<h3 id="s26-57-oidc"><span class="num">26.57</span> oidc</h3>
+<h3 id="s26-59-oidc"><span class="num">26.59</span> oidc</h3>
 <p>Package oidc verifies OpenID Connect identities.</p>
 <p>Written against the standard library rather than a JWT dependency. Authentication is the one place where an unaudited dependency is least acceptable, signature verification for the algorithms that matter is about a hundred lines of crypto/rsa and crypto/ecdsa, and Perfuse already carries enough that adding more needs a reason rather than a habit.</p>
 <p>The scope is deliberately narrow: verify that an identity provider vouched for a person, and report what it said about them. Everything else - what they may do, how long the session lasts - stays with Perfuse, because an identity provider knows who somebody is and not what they are allowed to do in an interface engine.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/oidc</code></p>
-<h3 id="s26-58-parity"><span class="num">26.58</span> parity</h3>
+<h3 id="s26-60-parity"><span class="num">26.60</span> parity</h3>
 <p>Package parity compares what Perfuse produces against what the engine being replaced produced.</p>
 <h1 id="why-this-exists">Why this exists</h1>
 <p>Perfuse can import a Mirth channel and can trace what it would do with a message. Neither of those answers the question somebody actually has before moving a live feed, which is: will this produce the same output as the thing that has been running for six years?</p>
@@ -6263,7 +6311,7 @@ rules:
 <p>A run over fifty thousand messages that reports four thousand differences has told somebody nothing they can act on. The same run reporting that PID-8 differs in every message because the old engine mapped M to Male has told them exactly one thing to decide about.</p>
 <p>So findings are grouped by field, with a count, an example, and the distinct value pairs seen. One decision per finding is the unit somebody can work through.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/parity</code></p>
-<h3 id="s26-59-pas278"><span class="num">26.59</span> pas278</h3>
+<h3 id="s26-61-pas278"><span class="num">26.61</span> pas278</h3>
 <p>Package pas278 maps between Da Vinci prior authorisation and the X12 278 transaction.</p>
 <h1 id="why-this-exists">Why this exists</h1>
 <p>CMS-0057-F requires payers to expose a FHIR prior authorisation API by 1 January 2027. It does not replace the X12 278, and it was never going to: a payer&#39;s utilisation management system decides authorisations and speaks 278. So a payer meeting the rule is translating FHIR to 278 and back, and a provider sending 278 today will be sending FHIR tomorrow to the same payers who still accept both.</p>
@@ -6274,17 +6322,17 @@ rules:
 <li><strong>A decision is never upgraded.</strong> Partial certification does not become approval, and a request the payer refused to consider does not become a denial. Both of those collapses are available in the obvious mapping and both are wrong in the direction that costs somebody weeks: an appeal filed against a decision nobody made, or six sessions booked against three approved. - <strong>Nothing is invented to fill a required field.</strong> Where the target format demands something the source does not carry, the mapping reports it as a note rather than supplying a plausible default. A fabricated authorisation number is worse than an absent one. - <strong>Every judgement is reported.</strong> Notes come back with the result, so a person can read the handful that needed a decision rather than the whole output. - <strong>Round trips are tested, not assumed.</strong> A mapping that loses a field in one direction is found by converting back and comparing, which is the only way to see a field nobody thought to assert on.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/pas278</code></p>
-<h3 id="s26-60-pdf"><span class="num">26.60</span> pdf</h3>
+<h3 id="s26-62-pdf"><span class="num">26.62</span> pdf</h3>
 <p>Package pdf writes simple text documents, using only the standard library.</p>
 <p>Mirth&#39;s Document Writer renders HTML to PDF, which needs a layout engine. That is not what this is. This produces a plain, paginated text document with a monospaced font, and it exists because the actual requirement at almost every site that uses that connector is &#34;put this report on a share so somebody can print it&#34; - a discharge summary, a result report, a daily reconciliation. Those are text.</p>
 <p>Refusing the feature entirely would leave a Tier 2 migration blocker in place. Pulling in an HTML rendering engine would cost more than the whole rest of the binary and bring a CVE stream with it, which would undo the argument the bill of materials makes. So: text, honestly described as text, and a site that genuinely needs typeset output is better served by a file destination and a tool built for it.</p>
 <h1 id="why-write-a-pdf-at-all-rather-than-a-text-file">Why write a PDF at all rather than a text file</h1>
 <p>Because the receiving end is usually a person with a printer and a Windows share, and a .txt file printed from a share loses its pagination, its margins and often its line endings. A PDF prints the same everywhere, which is the entire reason anybody asked for one.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/pdf</code></p>
-<h3 id="s26-61-priorauth"><span class="num">26.61</span> priorauth</h3>
+<h3 id="s26-63-priorauth"><span class="num">26.63</span> priorauth</h3>
 <p>Package priorauth implements the provider-side prior authorization workflow required by CMS-0057. It submits prior auth requests to payer FHIR APIs, tracks responses, and converts between internal types and FHIR resources.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/priorauth</code></p>
-<h3 id="s26-62-publichealth"><span class="num">26.62</span> publichealth</h3>
+<h3 id="s26-64-publichealth"><span class="num">26.64</span> publichealth</h3>
 <p>Package publichealth implements bidirectional public health reporting: electronic case reporting (eCR), electronic lab reporting (ELR), and immunization registry queries.</p>
 <p>Every hospital is legally required to report certain conditions — tuberculosis, measles, hepatitis, COVID-19, sexually transmitted infections, foodborne illness — to state and local public health agencies. The reporting happens through three distinct interfaces:</p>
 <ul>
@@ -6293,18 +6341,22 @@ rules:
 <p>The package is bidirectional: it reports outward (ELR, eCR, VXU) and queries back (VXQ/VXR). All operations are real-time rather than nightly batch.</p>
 <p>Thread safety: SubmissionLog is safe for concurrent use. The builder functions are pure and safe to call from any goroutine.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/publichealth</code></p>
-<h3 id="s26-63-published"><span class="num">26.63</span> published</h3>
+<h3 id="s26-65-published"><span class="num">26.65</span> published</h3>
 <p>Package published holds the guards for Perfuse&#39;s importable packages, in one place.</p>
 <p>hl7 was the first package published and carries its own copy of these checks. fhir and pas were published so that a decision service such as Vaglio reads FHIR and PAS requests with exactly the code Perfuse uses, rather than a copy that drifts: four readers of the X12 action codes in this repository once disagreed, and one read a denial as an approval. The guards are kept here rather than copied into each package, for the same reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/published</code></p>
-<h3 id="s26-64-queue"><span class="num">26.64</span> queue</h3>
+<h3 id="s26-66-queue"><span class="num">26.66</span> queue</h3>
 <p>Package queue is a durable, per-destination delivery queue.</p>
 <p>Without it, a destination that is down for two minutes loses everything sent during those two minutes: retries happen in memory, and when they run out the message is recorded as failed and gone. With it, the message is on disk and keeps its place until the destination comes back.</p>
 <p>Two design decisions shape everything else.</p>
 <p><strong>Order is preserved per destination, and that means a queued destination stops taking the fast path.</strong> HL7 is a stream of events about the same patients: an A01 admits, an A03 discharges. If a failed A01 goes to the queue while the next A03 is delivered directly, the receiving system sees a discharge for a patient it never admitted. So once anything is queued for a destination, everything for that destination queues behind it until the queue drains. That costs throughput during an outage and it is not optional, because the alternative is silent clinical nonsense. It is also the specific thing that goes wrong in other engines when somebody turns on concurrent queue threads to make a backlog drain faster.</p>
 <p><strong>A queued message is an accepted message.</strong> The sender is told AA, because the bytes are on disk and fsynced before the acknowledgement goes out. Saying AE would make a correctly functioning store-and-forward queue look like a fault and invite the sender to resend what we already hold.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/queue</code></p>
-<h3 id="s26-65-s3put"><span class="num">26.65</span> s3put</h3>
+<h3 id="s26-67-rtpb"><span class="num">26.67</span> rtpb</h3>
+<p>Package rtpb answers NCPDP Real-Time Prescription Benefit requests from a formulary: what a drug will cost this member at this pharmacy, whether it needs a prior authorization or a step first, and which alternatives cost less.</p>
+<p>CMS-0062-P proposes RTPB for impacted payers from 1 October 2027. The XML is NCPDP RTPB v13 (PBv13). NCPDP&#39;s schema is licensed, so element names and order follow the public Surescripts RTPB examples and NCPDP&#39;s public RTPB Implementation Recommendations (coverage restriction codes and the coverage status each maps to); a response is not checked against the XSD here, and a network certification is where that happens.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/rtpb</code></p>
+<h3 id="s26-68-s3put"><span class="num">26.68</span> s3put</h3>
 <p>Package s3put writes objects to S3 using only the standard library.</p>
 <p>The obvious way to talk to S3 is the AWS SDK, and the SDK is enormous. This project sells a static binary with eight direct dependencies and a bill of materials that fits on one screen - that is a real argument with the person who reviews software before a hospital installs it, and trading it away for one connector would be a bad bargain.</p>
 <p>What S3 actually needs is an HTTP PUT and a signature. Signature Version 4 is fully specified, it is deterministic, and AWS publishes test vectors for it. So it is implemented here: about two hundred lines against crypto/hmac and net/http, with no new dependency and nothing to patch when the SDK has an advisory.</p>
@@ -6312,12 +6364,12 @@ rules:
 <p>No multipart upload, no retries of its own, no credential chain beyond static keys and the standard environment variables. An HL7 message is kilobytes, so multipart solves a problem this does not have; the engine already retries; and an instance-role credential chain would mean IMDS calls, caching and refresh logic, which is where a small implementation stops being small. If somebody needs those, the honest answer is a file destination and a sync tool, not a half-built SDK.</p>
 <p>It works with anything speaking the S3 API - MinIO, Ceph, Wasabi, Backblaze - because it is just signed HTTP. That is a side effect worth having, since a hospital object store is often not AWS.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/s3put</code></p>
-<h3 id="s26-66-saml"><span class="num">26.66</span> saml</h3>
+<h3 id="s26-69-saml"><span class="num">26.69</span> saml</h3>
 <p>Exclusive XML Canonicalization (exc-c14n) per https://www.w3.org/TR/xml-exc-c14n/</p>
 <p>This is the byte-exact canonical form that an XML signature signs. Getting it wrong means valid signatures appear invalid and - worse - an implementation that gets it mostly right will pass in testing against its own signatures while rejecting real IdP responses.</p>
 <p>The rules that matter for SAML: - Namespace declarations are rendered only if visibly utilised by the element or its attributes. - Inherited namespaces that an element uses but did not declare are rendered as if declared on that element. - Attributes are sorted: namespace declarations first (sorted by prefix), then other attributes (sorted by expanded name: namespace URI then local name). - Empty elements use start-tag/end-tag, never self-closing. - Text nodes are output verbatim; CDATA is replaced by its content with entity escaping. - Processing instructions and comments outside the document element are excluded.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/saml</code></p>
-<h3 id="s26-67-scim"><span class="num">26.67</span> scim</h3>
+<h3 id="s26-70-scim"><span class="num">26.70</span> scim</h3>
 <p>Package scim implements SCIM 2.0, the protocol identity providers use to provision accounts.</p>
 <p>Okta, Entra ID, Google Workspace and OneLogin all speak it. An administrator adds somebody to a group in the identity provider, and within a minute an account appears here with the right role. They remove them, and the account goes away.</p>
 <h1 id="deprovisioning-is-the-point">Deprovisioning is the point</h1>
@@ -6330,7 +6382,7 @@ rules:
 <h1 id="why-it-is-a-separate-package">Why it is a separate package</h1>
 <p>SCIM&#39;s shapes are not Perfuse&#39;s. It has its own error format, its own list envelope, its own patch language, and its own opinions about attribute casing. Keeping the translation in one place means the handlers can be about what happens to an account rather than about JSON.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/scim</code></p>
-<h3 id="s26-68-script"><span class="num">26.68</span> script</h3>
+<h3 id="s26-71-script"><span class="num">26.71</span> script</h3>
 <p>Package script runs Mirth Connect JavaScript.</p>
 <p>The goal is that a channel&#39;s scripts move across untouched. That is a compatibility exercise, not a design exercise, so the shape of everything here is dictated by what Mirth exposes: msg and tmp as E4X trees, six maps with Java&#39;s Map methods, the $ family of lookup functions, logger, and a handful of utility objects whose method names and date-format strings are Java&#39;s.</p>
 <p>Three decisions are ours rather than Mirth&#39;s, and each is a deliberate departure:</p>
@@ -6338,7 +6390,7 @@ rules:
 <p>Java interoperability is refused with an error naming the class, rather than returning undefined. A script reaching into Packages.java.sql cannot be made to work here, and the useful outcome is a message saying exactly that at the line where it happens, not a NullPointerException three lines later.</p>
 <p>File and database access are off unless a channel turns them on. Mirth grants both to every script by default. A transformer that can read any file the process can read is a reasonable thing to want and an unreasonable default.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/script</code></p>
-<h3 id="s26-69-settings"><span class="num">26.69</span> settings</h3>
+<h3 id="s26-72-settings"><span class="num">26.72</span> settings</h3>
 <p>Package settings is the single description of everything about a Perfuse server that an operator may change.</p>
 <h1 id="why-this-exists">Why this exists</h1>
 <p>Before this package, roughly thirty things were command-line flags and nothing else. Changing how long messages are kept meant editing a service definition and restarting, which in a hospital means a change ticket - so in practice nobody changed them, and a default chosen on the first afternoon became the setting forever.</p>
@@ -6352,11 +6404,11 @@ rules:
 <p>The file wins once it exists, and flags supply the initial contents. The alternative - flags always winning - would make the interface a liar, since anything ever passed on a command line could be edited and saved and silently ignored.</p>
 <p>A flag that disagrees with the file is reported at startup, naming both values, because otherwise the flag stays in the service definition for years and the next person to read it believes it.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/settings</code></p>
-<h3 id="s26-70-sftpconn"><span class="num">26.70</span> sftpconn</h3>
+<h3 id="s26-73-sftpconn"><span class="num">26.73</span> sftpconn</h3>
 <p>Package sftpconn opens SFTP connections.</p>
 <p>Split out from the connectors because the interesting part is authentication and host key verification, and both are identical whether a channel is collecting files or writing them. Two copies would drift, and the half that drifted would be the half that stopped verifying.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sftpconn</code></p>
-<h3 id="s26-71-shadow"><span class="num">26.71</span> shadow</h3>
+<h3 id="s26-74-shadow"><span class="num">26.74</span> shadow</h3>
 <p>Package shadow compares a candidate channel against the live one.</p>
 <p>The comparison itself is the easy part. The whole value is in two guarantees, and both are enforced by construction rather than by configuration:</p>
 <ul>
@@ -6364,17 +6416,17 @@ rules:
 </ul>
 <p>Anything less than that and shadow mode becomes a way to break production while trying to avoid breaking production.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/shadow</code></p>
-<h3 id="s26-72-shl"><span class="num">26.72</span> shl</h3>
+<h3 id="s26-75-shl"><span class="num">26.75</span> shl</h3>
 <p>Package shl implements SMART Health Links and SMART Health Cards: the QR codes CMS&#39;s &#34;Kill the Clipboard&#34; asks providers to accept at check-in, and to hand back with the visit record.</p>
 <p>A SMART Health Link (SMART Health Links STU 1) is shlink:/ followed by base64url JSON: a manifest URL, a 256-bit key, and optionally an expiry, a label and flags (P passcode, L long-term, U a single file by GET). The receiver posts to the manifest URL and gets back files, each a JWE encrypted with that key - alg dir, enc A256GCM, optionally DEFLATE-compressed - holding FHIR JSON, SMART Health Cards, or a SMART access token. The server that hosts the files never sees the key: it travels only in the link, which is the patient&#39;s.</p>
 <p>A SMART Health Card (SMART Health Cards Framework 1.4) is a signed FHIR bundle: a compact JWS, ES256, with a DEFLATE-compressed payload naming its issuer, whose public key is at &lt;iss&gt;/.well-known/jwks.json. It travels as a numeric shc:/ QR code or a .smart-health-card file.</p>
 <p>Only the standard library: crypto/aes, crypto/cipher, crypto/ecdsa and compress/flate cover everything, and a JOSE library would bring a much larger surface for two algorithms.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/shl</code></p>
-<h3 id="s26-73-smartauth"><span class="num">26.73</span> smartauth</h3>
+<h3 id="s26-76-smartauth"><span class="num">26.76</span> smartauth</h3>
 <p>Package smartauth is a SMART App Launch authorization server: it issues the access tokens Perfuse&#39;s FHIR endpoint accepts.</p>
 <p>Written against the standard library, like internal/oidc, which verifies what this signs. The tokens are JWTs signed RS256, the one algorithm every SMART client and the specification&#39;s ID token rules can rely on.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/smartauth</code></p>
-<h3 id="s26-74-soap"><span class="num">26.74</span> soap</h3>
+<h3 id="s26-77-soap"><span class="num">26.77</span> soap</h3>
 <p>Package soap sends SOAP requests and reads SOAP faults, using only the standard library.</p>
 <p>SOAP is a fair amount of ceremony around an HTTP POST, and it is still how a great deal of hospital middleware accepts data - patient administration systems, document repositories, regional record services, anything specified in the decade when this was the answer. Mirth has a Web Service connector, so this is a Tier 2 migration blocker rather than a nice-to-have.</p>
 <h1 id="why-not-a-generated-client">Why not a generated client</h1>
@@ -6383,17 +6435,17 @@ rules:
 <p>No WSDL parsing, no WS-Security, no MTOM, no WS-Addressing. Those are each a specification in their own right, and pretending to support one while getting a detail wrong is worse than not offering it - a signature that almost verifies is indistinguishable from an attack at the far end. WS-Security in particular is where a half-implementation would do real harm.</p>
 <p>What is here: SOAP 1.1 and 1.2 envelopes, a templated body, the SOAPAction header, and fault detection that reads the fault string rather than reporting &#34;500&#34;.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/soap</code></p>
-<h3 id="s26-75-sqldb"><span class="num">26.75</span> sqldb</h3>
+<h3 id="s26-78-sqldb"><span class="num">26.78</span> sqldb</h3>
 <p>Package sqldb opens database connections for the database source and destination.</p>
 <p>The drivers are registered here and nowhere else, so there is exactly one place that decides what Perfuse can connect to.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqldb</code></p>
-<h3 id="s26-76-sqlitedb"><span class="num">26.76</span> sqlitedb</h3>
+<h3 id="s26-79-sqlitedb"><span class="num">26.79</span> sqlitedb</h3>
 <p>Package sqlitedb opens SQLite the way a server needs it: one connection for writes and several for reads.</p>
 <p>The reason is a failure mode that only appears once a deployment has been running for a while. SQLite in WAL mode lets readers run alongside a writer, but Go&#39;s connection pool sits above SQLite, so a pool of one serialises everything regardless of what the database would allow. A message browser search scanning the payload column then holds the only connection, and every arriving message waits behind it.</p>
 <p>Measured on this machine, a write takes 104µs with the store idle and 2.6ms while a search scans four thousand messages: twenty-five times slower. That scales with the table, so at a few hundred thousand stored messages a report turns into seconds of delivery latency, and a write is on the acknowledgement path. The sender sees a timeout, resends, and somebody spends a morning looking for a problem in the network.</p>
 <p>Splitting the pools costs nothing and removes the interaction: reports get their own connections, and the writer keeps one to itself because SQLite permits exactly one writer anyway.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqlitedb</code></p>
-<h3 id="s26-77-steps"><span class="num">26.77</span> steps</h3>
+<h3 id="s26-80-steps"><span class="num">26.80</span> steps</h3>
 <p>Declarative transformation steps, for any message format.</p>
 <h1 id="why-this-is-shared">Why this is shared</h1>
 <p>The step vocabulary - set, copy, clear, map, replace, trim, case, each with a description and an optional condition - has nothing to do with any particular format. Only three things differ between formats: how a path is written, how a value is read, and how it is written back.</p>
@@ -6401,18 +6453,18 @@ rules:
 <h1 id="what-a-format-supplies">What a format supplies</h1>
 <p>An Accessor: a path compiler, a condition compiler, and an optional veto on steps it cannot honour. Nothing else.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/steps</code></p>
-<h3 id="s26-78-stomp"><span class="num">26.78</span> stomp</h3>
+<h3 id="s26-81-stomp"><span class="num">26.81</span> stomp</h3>
 <p>Package stomp speaks STOMP 1.2 to a message broker.</p>
 <p>This is what &#34;JMS support&#34; has to mean in a program that is not Java. JMS is an API rather than a protocol, so there is nothing to implement: what a site actually needs is for Perfuse to talk to the broker sitting behind their JMS applications.</p>
 <p>STOMP rather than OpenWire, and the reasoning is worth recording because the obvious answer is wrong. OpenWire is ActiveMQ&#39;s native protocol and a binary serialisation of JMS commands - weeks of work, specific to one broker family, and undocumented except by its implementation. ActiveMQ auto-detects STOMP, AMQP and MQTT on the same port it serves OpenWire on, so a text protocol reaches the same brokers. STOMP covers ActiveMQ Classic, Artemis and RabbitMQ; AMQP 1.0 would add Azure Service Bus and IBM MQ, and is the sensible next one rather than OpenWire.</p>
 <p>Written against the standard library. A broker client is not the place for a dependency whose failure modes are somebody else&#39;s to explain, and the framing here is small enough that owning it costs less than reading their issue tracker.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/stomp</code></p>
-<h3 id="s26-79-store"><span class="num">26.79</span> store</h3>
+<h3 id="s26-82-store"><span class="num">26.82</span> store</h3>
 <p>Package store holds the data that is genuinely stateful: users, sessions and an audit trail.</p>
 <p>Channels are deliberately not in here. They live in files, because that is what gives git, diffs, code review and environment promotion for free. Putting channels in a database is the decision that forces every one of those to be bought separately, and it is the reason a third-party product exists purely to shuttle Mirth channels between its database and a git repository.</p>
 <p>So the split is: configuration in files, identity and history in SQLite.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/store</code></p>
-<h3 id="s26-80-tefca"><span class="num">26.80</span> tefca</h3>
+<h3 id="s26-83-tefca"><span class="num">26.83</span> tefca</h3>
 <p>Package tefca implements the parts of TEFCA participation that do not require a QHIN connection.</p>
 <h1 id="what-is-real">What is real</h1>
 <p>Purpose-of-use validation, configuration validation, and the audit trail - including its persistence, its query interface and its obligation to record failed attempts as well as successful ones. That last part is not a technicality: a run of failed deliveries to one recipient is how a misconfigured partner shows up, and a run of failed queries for different patients is how probing shows up.</p>
@@ -6422,7 +6474,7 @@ rules:
 <h1 id="what-completing-it-requires">What completing it requires</h1>
 <p>Onboarding with a Qualified Health Information Network, mutually authenticated TLS using certificates issued through that process, and either the IHE profiles the Common Agreement started with or Facilitated FHIR as defined by the Sequoia Project&#39;s standard operating procedure, effective 8 March 2026. None of it can be written speculatively: it is tested against a real QHIN or it is not tested, and an untested exchange implementation is the same defect as no implementation wearing a better disguise.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tefca</code></p>
-<h3 id="s26-81-tenant"><span class="num">26.81</span> tenant</h3>
+<h3 id="s26-84-tenant"><span class="num">26.84</span> tenant</h3>
 <p>Package tenant provides the identity and isolation rules for multi-tenant operation.</p>
 <p>An HIE, a clearinghouse or a managed service provider runs one engine on behalf of many organisations. Mirth cannot do this - one instance serves one organisation, and an MSP ends up running fifty JVMs and fifty databases.</p>
 <h1 id="what-a-tenant-owns">What a tenant owns</h1>
@@ -6431,19 +6483,19 @@ rules:
 <p>The dangerous failure here is not a crash. It is tenant A seeing tenant B&#39;s messages, which is a reportable breach rather than a bug. A design where every query takes a tenant_id parameter fails the first time somebody writes a query and forgets one, and that query looks perfectly correct in review.</p>
 <p>So the tenant is not a parameter. Data access goes through a handle that already carries it, and there is no way to reach the tables without one. Forgetting is not available.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tenant</code></p>
-<h3 id="s26-82-tlsconf"><span class="num">26.82</span> tlsconf</h3>
+<h3 id="s26-85-tlsconf"><span class="num">26.85</span> tlsconf</h3>
 <p>Package tlsconf builds TLS configuration from files and describes certificates.</p>
 <p>This is the free equivalent of an extension Mirth now charges for. Most of the value is not the encryption, which is a few lines, but the part that stops somebody deploying something they think is secure and is not: refusing to skip verification silently, insisting a client certificate is actually checked when one is requested, and saying plainly when a certificate is about to expire.</p>
 <p>An expired certificate on an interface feed is a genuine hospital outage, and it happens because nobody was told. The describing half of this package exists for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tlsconf</code></p>
-<h3 id="s26-83-tomirth"><span class="num">26.83</span> tomirth</h3>
+<h3 id="s26-86-tomirth"><span class="num">26.86</span> tomirth</h3>
 <p>Package tomirth writes a Perfuse channel back out as Mirth channel XML.</p>
 <p>Why this exists. The objection to adopting a new integration engine is rarely &#34;is it any good&#34;. It is &#34;what if we are wrong and we are stuck&#34;, and the cheapest answer to that is being able to walk back out. Perfuse has read Mirth&#39;s channels since the beginning; until now it could not write one, which made the reassurance one-directional and therefore not much of a reassurance.</p>
 <p>How it avoids the trap that made the first attempt useless. Mirth&#39;s XML is XStream&#39;s output, and XStream reads the class and version attributes as instructions: an element it does not recognise is dropped without a word, and a channel it cannot assemble is stored with its description replaced by &#34;This channel is invalid. Verify all required extensions are loaded correctly&#34; and its destinations discarded. Nothing in that response names the element at fault. An exporter that composes property blocks from a reading of the format therefore fails in the one way that is expensive to diagnose, which is what happened: this repository carried an exporter with nine passing tests whose output Mirth threw away, because every test compared it against our own parser instead of a server.</p>
 <p>So none of the property blocks are composed here. scripts/mirth-dump-connector-templates.sh has Mirth&#39;s own ObjectXMLSerializer serialise the defaults of each connector properties class, and those documents are committed under templates/. This package substitutes values into them, and mirth.SetRawProperty refuses any path the template does not already contain - so a mistake is an error naming the path, at the moment of export, rather than a channel that vanishes on import.</p>
 <p>What it will not do. A transport with no Mirth equivalent is refused by name rather than approximated. An export that quietly turned an S3 destination into a file writer would be worse than no export at all, because the channel would import cleanly and deliver to the wrong place.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tomirth</code></p>
-<h3 id="s26-84-trace"><span class="num">26.84</span> trace</h3>
+<h3 id="s26-87-trace"><span class="num">26.87</span> trace</h3>
 <p>Package trace produces distributed traces for messages moving through a channel, and exports them over OTLP/HTTP with the JSON encoding.</p>
 <p>Why this exists rather than the OpenTelemetry SDK: the SDK plus an OTLP exporter pulls in roughly sixty modules and adds about as much to the binary as the whole of the rest of this program. What is actually needed here is narrow - W3C trace context propagation, a span model, head sampling, and a batched HTTP POST - and OTLP/JSON is a documented stable encoding that can be produced with the standard library alone. Same trade as choosing lib/pq over pgx: take the small thing when only part of the big thing is wanted.</p>
 <p>The consequence worth stating: there is no auto-instrumentation and no vendor-specific exporter. Spans are the ones this program creates deliberately, and they go to any OTLP endpoint - a collector, Jaeger, Grafana Tempo, Honeycomb, Datadog&#39;s OTLP ingest.</p>
@@ -6452,12 +6504,12 @@ rules:
 <h1 id="tracing-must-never-affect-delivery">Tracing must never affect delivery</h1>
 <p>Every operation here is best-effort. Spans are dropped when the buffer is full, export failures are counted and never retried into the message path, and no call blocks on the network. A dropped span is an inconvenience. A message delayed or lost because the tracing backend was slow is a clinical incident, so the trade is never in question.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/trace</code></p>
-<h3 id="s26-85-transform"><span class="num">26.85</span> transform</h3>
+<h3 id="s26-88-transform"><span class="num">26.88</span> transform</h3>
 <p>Package transform applies declarative changes to a message.</p>
 <p>This is the layer meant to carry the ordinary work, with scripting kept as a marked escape hatch. The distinction is not stylistic. A step declared in YAML can be validated before it runs, shown in a diff, reviewed by somebody who does not read JavaScript, and reported on; a script can only be executed and hoped about. Most of what Mirth transformers actually do is boring - copy a field, pad an identifier, map a code through a table, clear something that should not leave the building - and all of that belongs here.</p>
 <p>Every step names its target explicitly and every step is reversible in the sense that it says what it did, because the most expensive failure in an interface is a transformation nobody knew was happening.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/transform</code></p>
-<h3 id="s26-86-translate"><span class="num">26.86</span> translate</h3>
+<h3 id="s26-89-translate"><span class="num">26.89</span> translate</h3>
 <p>Package translate converts a Mirth channel into a Perfuse channel definition.</p>
 <p><code>perfuse explain</code> reports what blocks a migration. This does most of the migration, which is a different and much larger claim, so it is deliberately conservative about what it will assert.</p>
 <p>Three rules shape the whole thing.</p>
@@ -6465,26 +6517,26 @@ rules:
 <p><strong>Declarative where it is certain, script where it is not.</strong> A Mapper step that copies a field becomes a declarative step, because that is readable and checkable. A JavaScript step becomes a script, because Perfuse runs Mirth&#39;s JavaScript unchanged and rewriting it into something that looks equivalent is exactly where a translator would introduce a difference nobody notices.</p>
 <p><strong>The output is meant to be read.</strong> It carries comments explaining what came from where, and what was left for a person. A migration is reviewed by somebody who has to sign off on it, and an unannotated wall of YAML cannot be reviewed.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/translate</code></p>
-<h3 id="s26-87-udap"><span class="num">26.87</span> udap</h3>
+<h3 id="s26-90-udap"><span class="num">26.90</span> udap</h3>
 <p>Package udap implements the client half of HL7 Security for Scalable Registration, Authentication, and Authorization — the specification TEFCA&#39;s Facilitated FHIR exchange rests on.</p>
 <p>UDAP is a public key infrastructure bolted onto OAuth 2.0. A trust community issues X.509 certificates to its members; a member proves who it is by signing JWTs with the private key and attaching the certificate chain in the JWT header. That replaces the shared client secret of ordinary OAuth, which does not scale to thousands of organisations who have never met.</p>
 <p>Why this package exists at all. TEFCA exchange cannot be fully verified without a real QHIN: joining one needs onboarding and issued certificates, and cannot be faked. But the security profile underneath it is a published HL7 implementation guide with public reference servers, and one of them answers on the open internet. So the part that can be verified is verified here, and the part that cannot is refused at the boundary rather than guessed at.</p>
 <p>The distinction matters because of what happened with SAML in this repository: a thousand lines of tests passed, five of them specifically about signature canonicalisation, while no real identity provider could authenticate anybody. Both halves had been written here and agreed with each other. The lesson taken from it is that a security implementation is worth nothing until something somebody else wrote has accepted or rejected it.</p>
 <p>Specification references: - HL7 UDAP Security STU 1: http://hl7.org/fhir/us/udap-security/STU1/ - TEFCA SOP Facilitated FHIR Implementation v2.0, effective 8 March 2026</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/udap</code></p>
-<h3 id="s26-88-v2fhir"><span class="num">26.88</span> v2fhir</h3>
+<h3 id="s26-91-v2fhir"><span class="num">26.91</span> v2fhir</h3>
 <p>Package v2fhir maps HL7 v2 messages to FHIR resources.</p>
 <p>Mapping is where interoperability projects actually fail, so the rules this package follows are stated rather than implied:</p>
 <ul>
 <li>A value that cannot be mapped is preserved as text, never guessed at. A local code turned into a plausible-looking standard code is worse than an uncoded value, because the receiver believes it. - Every mapping decision that involved judgement is reported as a note, so a human can check the ones that matter instead of reading the whole output. - Timestamps are converted, not copied. HL7 v2 timestamps are not ISO 8601, and a dateTime carrying a local time with no offset is the single most common reason a converted resource is rejected. - Units keep their original text and gain a UCUM code only when the mapping is certain. A wrong unit code is a patient-safety defect, not a formatting problem.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/v2fhir</code></p>
-<h3 id="s26-89-vcs"><span class="num">26.89</span> vcs</h3>
+<h3 id="s26-92-vcs"><span class="num">26.92</span> vcs</h3>
 <p>Package vcs reads the history of channel files from git.</p>
 <p>Channel history is a paid extension elsewhere, and it is a paid extension because those engines keep channels in a database, so tracking changes means building a change-tracking system. Perfuse keeps channels in files, so the history already exists and has since the first commit. This package only has to read it.</p>
 <p>It shells out to git rather than embedding a git library. The library would add a large dependency to a binary whose selling point is having four, and it would buy nothing: a deployment keeping its channels under version control has git installed, and one that does not gets a clear &#34;not a git repository&#34; rather than a subtly different implementation of the same thing.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vcs</code></p>
-<h3 id="s26-90-vfs"><span class="num">26.90</span> vfs</h3>
+<h3 id="s26-93-vfs"><span class="num">26.93</span> vfs</h3>
 <p>Package vfs is the small set of file operations a polling connector needs.</p>
 <h1 id="why-an-interface-rather-than-four-connectors">Why an interface rather than four connectors</h1>
 <p>Perfuse collects files from a local disk, an SFTP server, an FTP server, a Windows share and a WebDAV server. The transfer differs in every case. Everything that actually decides whether messages survive does not:</p>
@@ -6496,17 +6548,17 @@ rules:
 <p>No writing, beyond what disposal needs. Sending files is a different problem with different failure modes - a partially written file at the far end, which the existing senders handle by writing to a temporary name and renaming. Folding both directions into one interface would make each harder to reason about.</p>
 <p>No recursion. A poller that descends into subdirectories collects the archive directory it just moved a file into.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vfs</code></p>
-<h3 id="s26-91-vpn"><span class="num">26.91</span> vpn</h3>
+<h3 id="s26-94-vpn"><span class="num">26.94</span> vpn</h3>
 <p>Package vpn reports the state of the site-to-site VPN tunnels partner traffic runs over - AWS Site-to-Site VPN, Azure VPN Gateway connections and strongSwan - and keeps each partner&#39;s connection sheet: both sides&#39; tunnel settings, and whether they agree.</p>
 <p>A tunnel that is down looks, from an interface engine, exactly like a partner whose engine is stopped: connections time out. Saying &#34;the tunnel is down&#34; instead is the difference between calling the network team and calling the partner.</p>
 <p>Read only. Nothing here changes a tunnel, and no pre-shared key is ever read, kept or shown.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vpn</code></p>
-<h3 id="s26-92-web"><span class="num">26.92</span> web</h3>
+<h3 id="s26-95-web"><span class="num">26.95</span> web</h3>
 <p>Package web serves the built front end from inside the binary.</p>
 <p>The assets are embedded rather than shipped alongside, so deployment stays one file. That is the same reason the engine avoids cgo: an operator should be able to copy a binary onto a server and run it, with no JVM, no installer and no asset directory to get out of step with the executable.</p>
 <p>The built output is committed so that <code>go build</code> works on a checkout without Node installed. Rebuild it with <code>make web</code>.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/web</code></p>
-<h3 id="s26-93-webauthn"><span class="num">26.93</span> webauthn</h3>
+<h3 id="s26-96-webauthn"><span class="num">26.96</span> webauthn</h3>
 <p>Package webauthn verifies passkeys.</p>
 <p>A passkey is a key pair the authenticator holds - Touch ID, Windows Hello, a YubiKey, a phone - where the private half never leaves the device. Signing in means the server sends a random challenge, the authenticator signs it after checking the user is present, and the server verifies the signature against the public key it stored at registration.</p>
 <p>The property that matters is not that it is convenient. It is that there is nothing to phish. A password can be typed into a convincing copy of a login page; a passkey signature is bound to the origin it was created for, so the copy gets a signature its server cannot use. For an integration engine holding a hospital&#39;s interfaces, that is the difference worth having.</p>
@@ -6516,12 +6568,12 @@ rules:
 <li>The signing algorithm is fixed at registration and stored with the key. Nothing at sign-in reads an algorithm from the client, because that is algorithm confusion and there is no function here that could do it. - The origin is compared exactly, never by prefix or suffix. A check that accepts anything ending in the right domain accepts an attacker&#39;s subdomain. - A challenge is single-use and expires. It is deleted when consumed, so a captured assertion cannot be replayed. - Attestation is not trusted for anything. The attestation statement is parsed to extract the credential and then its signature is ignored, because verifying it properly needs a maintained root store and pretending to verify it is worse than not claiming to. - The sign count is checked when the authenticator provides one, and its absence is not treated as suspicious. Many authenticators legitimately leave it at zero.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/webauthn</code></p>
-<h3 id="s26-94-winservice"><span class="num">26.94</span> winservice</h3>
+<h3 id="s26-97-winservice"><span class="num">26.97</span> winservice</h3>
 <p>Package winservice runs Perfuse as a Windows service.</p>
 <p>This file is the everywhere-else half. It exists so that cmd/perfuse can call into this package without wrapping every call site in a build tag: the subcommand is always compiled, and on Linux or macOS it explains that services are a Windows idea rather than failing to exist.</p>
 <p>Refusing with a clear sentence is better than hiding the subcommand. Somebody following Windows instructions on the wrong machine gets told what is actually going on, and the equivalent for their platform.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/winservice</code></p>
-<h3 id="s26-95-x12"><span class="num">26.95</span> x12</h3>
+<h3 id="s26-98-x12"><span class="num">26.98</span> x12</h3>
 <p>Reading and writing values at a path.</p>
 <h1 id="why-this-is-separate-from-path">Why this is separate from Path</h1>
 <p>path.go decides what a path expression means. This file resolves one against an actual interchange. Kept apart because the parsing rules are worth reading without the byte handling, and because the parser is used by the configuration validator, which has no message to resolve against.</p>
@@ -6529,7 +6581,7 @@ rules:
 <p>Segment.elements are subslices of Segment.raw, and Message.segs indexes into Message.raw. Editing a value in place changes the length of everything after it, so every one of those slices would need adjusting, and any that was missed would read correct until the one message where it did not.</p>
 <p>So a write rebuilds the segment, rebuilds the interchange, and parses it again. That costs a parse per changed message and buys the guarantee that a Message returned from here is exactly what parsing its own bytes produces. There is no state where the indexes and the bytes disagree, because that state is unrepresentable.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12</code></p>
-<h3 id="s26-96-x12xml"><span class="num">26.96</span> x12xml</h3>
+<h3 id="s26-99-x12xml"><span class="num">26.99</span> x12xml</h3>
 <p>Package x12xml converts an X12 interchange to and from the node tree the transformation, filter and script layers already work on.</p>
 <p>This is the same trick hl7xml plays, and for the same reason. Everything above the parser - declarative transformation steps, the filter language, JavaScript, the channel test runner - operates on an xtree.Node rather than on a format. Render X12 into that tree and all of it works on claims without a line of new code in any of those packages. Write a second addressing layer instead and every one of them grows an X12 branch that has to be kept in step with the HL7 one for ever.</p>
 <h1 id="element-naming">Element naming</h1>
@@ -6537,7 +6589,7 @@ rules:
 <p>Two independent reasons point the same way. It is what every 837 and 835 implementation guide writes, so a person reading the guide and a person reading the tree see the same token. And it is what Mirth&#39;s own X12 serialiser produces, so a Mirth script that walks msg[&#39;CLM&#39;][&#39;CLM01&#39;] keeps working - which is the whole migration promise.</p>
 <p>The element number is always two digits, matching the guides, so CLM01 rather than CLM1. Composite components add a further dotted number, CLM05.1, because X12 composites are one level deep and there is nothing to collide with.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12xml</code></p>
-<h3 id="s26-97-xmldsig"><span class="num">26.97</span> xmldsig</h3>
+<h3 id="s26-100-xmldsig"><span class="num">26.100</span> xmldsig</h3>
 <p>Package xmldsig implements XML Digital Signatures and the XAdES profile of them.</p>
 <h1 id="why-this-is-written-rather-than-borrowed">Why this is written rather than borrowed</h1>
 <p>A signed clinical document is a legal artefact. It asserts that a named person, at a named time, took responsibility for a specific set of bytes. Getting that wrong in either direction is serious: a signature that cannot be verified makes a valid document look forged, and a verifier that is too generous accepts a document somebody altered.</p>
@@ -6547,12 +6599,12 @@ rules:
 <h1 id="exclusive-rather-than-inclusive-by-default">Exclusive rather than inclusive, by default</h1>
 <p>Inclusive canonicalisation pulls in every namespace declaration that is in scope, including ones the signed element never uses. That makes a signature break when the document is later embedded inside something that declares an unrelated namespace on an ancestor, which is precisely what happens when a CDA is put inside a SOAP envelope or an IHE metadata wrapper. Exclusive canonicalisation includes only the declarations the element actually uses, and is what document exchange profiles specify for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xmldsig</code></p>
-<h3 id="s26-98-xtree"><span class="num">26.98</span> xtree</h3>
+<h3 id="s26-101-xtree"><span class="num">26.101</span> xtree</h3>
 <p>Package xtree is a mutable XML tree.</p>
 <p>Three very different features need to modify XML: HL7 transformations, which Mirth models as XML because that is what its scripts operate on; clinical documents, which are XML natively; and the declarative transformation steps. They share this one tree rather than each growing their own, because the alternative is three models that disagree about what an empty element means.</p>
 <p>The design goal is faithfulness to E4X semantics, since Mirth scripts are E4X and the whole point of running them unchanged is that they behave the same. That drives two decisions that would otherwise look strange: a node keeps a pointer to its parent, because E4X exposes parent(), and children are ordered with duplicates allowed, because an HL7 field repetition is literally a repeated element and scripts index into them by position.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xtree</code></p>
-<h3 id="s26-99-pas"><span class="num">26.99</span> pas</h3>
+<h3 id="s26-102-pas"><span class="num">26.102</span> pas</h3>
 <p>Package pas reads Da Vinci Prior Authorization Support (PAS) request Bundles.</p>
 <p>It is the reader Perfuse&#39;s own PAS server uses, published so that whatever decides a prior authorization - a payer&#39;s rules, a utilization management system, a decision service such as Vaglio - reads a request with the same code, and so the same answers about what a request contains. Two readers of one message format are two opinions about it.</p>
 <p>It has no dependencies outside the standard library. A request is kept as decoded JSON (map[string]any) rather than as typed resources, because a PAS Bundle carries whatever supporting resources the provider chose to send, and a reader that dropped what it did not model would hide evidence from the decision.</p>

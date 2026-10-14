@@ -98,6 +98,12 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	publicURL := fset.String("public-url", "", "the https address patients' phones and other organisations reach this server at, for the "+
 		"SMART Health Links it hosts (default: the listen address)")
 	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
+	formularyFile := fset.String("formulary", "", "publish this drug formulary over the Da Vinci US Drug Formulary API at "+
+		"/formulary/fhir and answer NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization from it")
+	epaPayerID := fset.String("epa-payer-id", "", "this payer's identifier on the prescribing network, the From of every RTPB "+
+		"and ePA response (default: the formulary's payer id)")
+	epaReplyChannel := fset.String("epa-reply-channel", "", "route ePA decisions made after the request was answered (a "+
+		"reviewer's, an appeal's) to this channel, which delivers them to the prescriber's network")
 	dicomwebArchive := fset.String("dicomweb-archive", "", "keep imaging objects in this directory and serve them over "+
 		"DICOMweb (QIDO-RS, WADO-RS, WADO-URI, STOW-RS) at /dicomweb")
 	dicomwebCORS := fset.String("dicomweb-cors", "", "comma-separated browser origins, such as an OHIF viewer's, allowed to "+
@@ -1177,6 +1183,7 @@ oidcDone:
 		return fmt.Errorf("-fhir-subscriptions needs the FHIR endpoint, which is off; pass -fhir as well")
 	}
 
+	var drugsFHIR *fhirserver.Server
 	if fhirStore != nil {
 		baseURL := fmt.Sprintf("%s://%s/fhir", schemeFor(useTLS), *addr)
 		// The address clients reach, when one is given: bundle links, fullUrls and the SMART audience all carry it, and a
@@ -1185,6 +1192,7 @@ oidcDone:
 			baseURL = pub + "/fhir"
 		}
 		fhirSrv := fhirserver.NewServer(fhirStore, baseURL, log)
+		drugsFHIR = fhirSrv
 		fhirSrv.ReadOnly = *fhirReadOnly
 
 		// The channels' mapping tables, published as ConceptMaps and answerable by $translate.
@@ -1463,6 +1471,24 @@ oidcDone:
 				"discover where to authenticate",
 				"fix", "pass -smart-authorize and -smart-token")
 		}
+	}
+
+	if path := strings.TrimSpace(*formularyFile); path != "" {
+		public := strings.TrimRight(strings.TrimSpace(*publicURL), "/")
+		if public == "" {
+			public = fmt.Sprintf("%s://%s", schemeFor(useTLS), *addr)
+		}
+		drugs, closeDrugs, err := setupDrugs(mux, drugSetup{path: path, payerID: *epaPayerID, replyChannel: strings.TrimSpace(*epaReplyChannel),
+			publicBase: public, db: db, fhirSrv: drugsFHIR, fhirStore: fhirStore, runtime: runtime, log: log})
+		if err != nil {
+			return err
+		}
+		defer closeDrugs()
+		srv.Drugs = drugs
+		log.Info("drug formulary published", "file", path, "drug_formulary_api", drugs.FormularyBase,
+			"rtpb", "/ncpdp/rtpb", "epa", map[bool]string{true: "/ncpdp/script", false: "off (needs -fhir)"}[drugs.EPA != nil])
+	} else if strings.TrimSpace(*epaReplyChannel) != "" || strings.TrimSpace(*epaPayerID) != "" {
+		return fmt.Errorf("-epa-payer-id and -epa-reply-channel need a formulary; pass -formulary as well")
 	}
 
 	httpSrv := &http.Server{
