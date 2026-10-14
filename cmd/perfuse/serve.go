@@ -229,6 +229,14 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	pasDeciderCA := fset.String("pas-decider-ca", "",
 		"a PEM file of certificate authorities to trust for -pas-decider-url beside the system's, such as the payer's own "+
 			"authority or the decision service's (Vaglio's is its DATA/tls/ca.crt)")
+	crdAdvisorURL := fset.String("crd-advisor-url", "",
+		"with -crd-rules, ask the decision service at this URL (such as Vaglio's /api/pas/advise) what a prior authorization "+
+			"request for each order needing one would be told as the record stands, shown as one more CRD card; the "+
+			"prefetched record is POSTed to it. No answer, or any failure, leaves the cards as they are without it")
+	crdAdvisorTokenEnv := fset.String("crd-advisor-token-env", "",
+		"name of an environment variable holding a bearer token for -crd-advisor-url (the token itself is never a flag)")
+	crdAdvisorCA := fset.String("crd-advisor-ca", "",
+		"a PEM file of certificate authorities to trust for -crd-advisor-url beside the system's (Vaglio's is its DATA/tls/ca.crt)")
 	ecrResponses := fset.Bool("ecr-responses", false,
 		"accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived "+
 			"from the eICR it answers")
@@ -1072,6 +1080,16 @@ oidcDone:
 			srv.CRD = rules
 			rules.Client = srv.OutboundClient()
 			log.Info("serving Da Vinci CRD over CDS Hooks", "discovery", srv.SelfURL+"/cds-services", "rules", len(rules.Rules))
+			if *crdAdvisorURL != "" {
+				adv, err := newCRDAdvisor(*crdAdvisorURL, *crdAdvisorTokenEnv, *crdAdvisorCA, log)
+				if err != nil {
+					return err
+				}
+				rules.Advise = adv
+				log.Info("CRD asks a decision service for advice on orders needing prior authorization", "url", *crdAdvisorURL)
+			}
+		} else if *crdAdvisorURL != "" {
+			return fmt.Errorf("-crd-advisor-url adds a card to CRD's answers: it needs -crd-rules")
 		}
 		if *dashboardsFile != "" {
 			a, err := dashboards.LoadAssignments(*dashboardsFile)

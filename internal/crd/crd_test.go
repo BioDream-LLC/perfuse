@@ -274,3 +274,45 @@ func TestWithPAIsSentOnlyWhenTheRulesFileAllowsIt(t *testing.T) {
 		t.Errorf("withpa beside no-auth: %v", err)
 	}
 }
+
+// A decision service's advice is one more card on an order needing prior authorization, and only that: with no answer,
+// a failure, or an order needing none, the response is exactly what it is without one.
+func TestAdviceIsOneMoreCardAndNeverRequired(t *testing.T) {
+	now := time.Date(2026, 10, 3, 0, 0, 0, 0, time.UTC)
+	without, _ := LoadRules("../../examples/crd/rules.yaml")
+	base, err := without.Evaluate(request(t, order), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules, _ := LoadRules("../../examples/crd/rules.yaml")
+	var asked []string
+	rules.Advise = func(_ context.Context, system, code string, record []map[string]any) (*Advice, bool) {
+		asked = append(asked, code)
+		return &Advice{Decides: true, Answer: "pend", Summary: "a request would need: a recent oxygen saturation test",
+			Missing: []string{"A recent oxygen saturation test"}, Questionnaire: "https://q.example/Questionnaire/oxygen"}, true
+	}
+	resp, err := rules.Evaluate(request(t, order), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(asked) != 1 || len(resp.Cards) != len(base.Cards)+1 || len(resp.SystemActions) != len(base.SystemActions) {
+		t.Fatalf("asked %v; cards %d (without %d)", asked, len(resp.Cards), len(base.Cards))
+	}
+	c := resp.Cards[len(resp.Cards)-1]
+	if !strings.HasPrefix(c.Summary, "Before you submit: ") || !strings.Contains(c.Detail, "oxygen saturation") ||
+		!strings.Contains(c.Detail, "is decided when it is sent") || len([]rune(c.Summary)) >= 140 {
+		t.Errorf("%+v", c)
+	}
+	for _, fails := range []func(context.Context, string, string, []map[string]any) (*Advice, bool){
+		func(context.Context, string, string, []map[string]any) (*Advice, bool) { return nil, false },
+		func(context.Context, string, string, []map[string]any) (*Advice, bool) {
+			return &Advice{Decides: false}, false
+		},
+	} {
+		rules.Advise = fails
+		resp, _ := rules.Evaluate(request(t, order), now)
+		if len(resp.Cards) != len(base.Cards) {
+			t.Errorf("no advice still added a card: %+v", resp.Cards)
+		}
+	}
+}

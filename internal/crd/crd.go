@@ -158,6 +158,10 @@ type Rules struct {
 	Authorized func(ctx context.Context, coverage, patient map[string]any, codes []string, now time.Time) (string, error) `yaml:"-" json:"-"`
 	// Client fetches what the EHR did not prefetch, from its fhirServer. Nil uses a client with a timeout.
 	Client *http.Client `yaml:"-" json:"-"`
+	// Advise, when set, asks a decision service what a prior authorization request for an order would be told as the
+	// record stands (serve -crd-advisor-url): its answer is one more card. ok is false when the service gives no
+	// advice, does not decide the service, or fails; the response is then exactly what it is without one.
+	Advise func(ctx context.Context, system, code string, record []map[string]any) (advice *Advice, ok bool) `yaml:"-" json:"-"`
 
 	// The coverage assertions made, by id, for DTR's context parameter.
 	mu         sync.Mutex
@@ -557,8 +561,89 @@ func (r *Rules) EvaluateContext(ctx context.Context, req *Request, now time.Time
 		resp.SystemActions = append(resp.SystemActions, Action{Type: "update", Resource: updated,
 			Description: "Record the coverage information on the order", raw: withExtension(raw, ext)})
 		resp.Cards = append(resp.Cards, r.card(rule, matched, ref, source))
+		if c, ok := r.advice(ctx, req, rule, matched, o, ref, source); ok {
+			resp.Cards = append(resp.Cards, c)
+		}
 	}
 	return resp, nil
+}
+
+// Advice is a decision service's answer about an order before any request is made: what a prior authorization
+// request would be told as the record stands. It is advice: the request that follows is decided on its own.
+type Advice struct {
+	Decides     bool       `json:"decides"`
+	PolicyTitle string     `json:"policyTitle,omitempty"`
+	Answer      string     `json:"answer,omitempty"` // approve, pend or deny
+	Summary     string     `json:"summary,omitempty"`
+	Missing     []string   `json:"missing,omitempty"`
+	ToApprove   [][]string `json:"toApprove,omitempty"`
+	// Questionnaire is the DTR questionnaire that asks for what is missing.
+	Questionnaire string `json:"questionnaire,omitempty"`
+}
+
+// adviceTimeout bounds asking for advice: a clinician is signing an order, and the coverage card must not wait on it.
+const adviceTimeout = 3 * time.Second
+
+// advice is the decision service's card for an order that needs prior authorization, when it gives one.
+func (r *Rules) advice(ctx context.Context, req *Request, rule Rule, matched bool, order map[string]any, ref string,
+	source map[string]any) (Card, bool) {
+	if r.Advise == nil || !matched || (rule.PA != "auth-needed" && rule.PA != "conditional" && rule.PA != "performpa") {
+		return Card{}, false
+	}
+	codes := codingsOf(order)
+	if len(codes) == 0 {
+		return Card{}, false
+	}
+	// The record the EHR sent with the hook: every prefetched resource, the patient first.
+	var record []map[string]any
+	if p := firstResource(req.Prefetch["patient"], "Patient"); p != nil {
+		record = append(record, p)
+	}
+	for key, raw := range req.Prefetch {
+		if key == "patient" || key == "coverage" {
+			continue
+		}
+		record = append(record, resourcesIn(raw)...)
+	}
+	ctx, cancel := context.WithTimeout(ctx, adviceTimeout)
+	defer cancel()
+	var a *Advice
+	for _, c := range codes {
+		if adv, ok := r.Advise(ctx, c.system, c.code, record); ok && adv != nil && adv.Decides {
+			a = adv
+			break
+		}
+	}
+	if a == nil || a.Summary == "" {
+		return Card{}, false
+	}
+	c := Card{UUID: newUUID(), Source: source, Indicator: "info", Summary: "Before you submit: " + a.Summary,
+		Extension: map[string]any{"davinci-crd.associated-resource": []any{map[string]string{"reference": ref}}}}
+	if a.Answer == "deny" {
+		c.Indicator = "warning"
+	}
+	var detail []string
+	if a.PolicyTitle != "" {
+		detail = append(detail, "Checked against the plan's policy: "+a.PolicyTitle+".")
+	}
+	if len(a.Missing) > 0 {
+		line := "Still needed: " + strings.Join(a.Missing, "; ") + "."
+		if a.Questionnaire != "" {
+			line += " The questionnaire " + a.Questionnaire + " asks for it."
+		}
+		detail = append(detail, line)
+	}
+	if a.Answer != "approve" && len(a.ToApprove) > 0 {
+		var routes []string
+		for _, route := range a.ToApprove {
+			routes = append(routes, strings.Join(route, " and "))
+		}
+		detail = append(detail, "It would be approved with any one of: "+strings.Join(routes, "; or ")+".")
+	}
+	detail = append(detail, "This is advice on the record as it stands; the request itself is decided when it is sent.")
+	c.Detail = strings.Join(detail, " ")
+	c.Summary, c.Detail = clipSummary(c.Summary, c.Detail)
+	return c, true
 }
 
 func (r *Rules) match(o map[string]any) (Rule, bool) {
