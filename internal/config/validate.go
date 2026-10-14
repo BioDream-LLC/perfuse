@@ -36,6 +36,7 @@ func (c *Channel) Validate() error {
 
 	errs = append(errs, c.Source.validate()...)
 	errs = append(errs, c.validateSourcePayloadAgreement()...)
+	errs = append(errs, c.validateDICOMwebDataType()...)
 
 	// Checked before the filter, transformations and scripts are compiled, because on
 	// an X12 channel those are refused outright and compiling them first would report
@@ -411,6 +412,12 @@ func (s *Source) validate() []error {
 				"source.listen does not apply to a dicom source; use dicom.listen"))
 		}
 
+	case SourceDICOMweb:
+		errs = append(errs, s.DICOMweb.validate()...)
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to a dicomweb source; use dicomweb.listen"))
+		}
+
 	case SourceSOAP:
 		errs = append(errs, s.SOAP.validate()...)
 		if s.Listen != "" {
@@ -669,6 +676,9 @@ func (d *Destination) validate(dataType DataType) []error {
 
 	case DestinationDICOM:
 		errs = append(errs, validateDICOMDest(d)...)
+
+	case DestinationDICOMweb:
+		errs = append(errs, validateDICOMwebDest(d)...)
 
 	case DestinationJavaScript:
 		errs = append(errs, validateJavaScriptDest(d)...)
@@ -1207,5 +1217,25 @@ func (c *Channel) validateSourcePayloadAgreement() []error {
 			"A batch of forty would arrive as forty payloads rather than one file. Set raw on the source as well"))
 	}
 
+	return errs
+}
+
+// validateDICOMwebDataType refuses DICOMweb on a channel that is not an imaging channel.
+//
+// A STOW-RS part is a Part 10 object and a STOW-RS destination sends one; on an HL7 channel the source would hand a binary
+// object to an HL7 parser, and the destination would post an HL7 message to an archive as though it were an image.
+func (c *Channel) validateDICOMwebDataType() []error {
+	if c.Type() == DataDICOM {
+		return nil
+	}
+	var errs []error
+	if c.Source.Type == SourceDICOMweb {
+		errs = append(errs, fmt.Errorf("a dicomweb source receives imaging objects; set dataType: dicom"))
+	}
+	for _, d := range c.Destinations {
+		if d.Type == DestinationDICOMweb {
+			errs = append(errs, fmt.Errorf("destination %q stores imaging objects by STOW-RS; set dataType: dicom", d.Name))
+		}
+	}
 	return errs
 }

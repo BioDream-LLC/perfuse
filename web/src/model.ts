@@ -34,6 +34,7 @@ export type DestinationType =
   | 'document'
   | 'soap'
   | 'dicom'
+  | 'dicomweb'
   | 'javascript'
 
 export const destinationLabels: Record<DestinationType, string> = {
@@ -52,6 +53,7 @@ export const destinationLabels: Record<DestinationType, string> = {
   document: 'A printable document (PDF or text)',
   soap: 'A SOAP web service',
   dicom: 'An imaging archive (DICOM C-STORE)',
+  dicomweb: 'An imaging archive or cloud service (DICOMweb STOW-RS)',
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
   kafka: 'A Kafka topic',
@@ -91,6 +93,8 @@ export const destinationHints: Record<DestinationType, string> = {
     'Posts a SOAP request. You write the XML that goes inside the envelope and Perfuse adds the envelope, the action header and fault handling. WS-Security and MTOM are not supported — a half-implementation of those is worse than none.',
   dicom:
     'Sends imaging objects to a PACS or workstation as a C-STORE user, the same operation a scanner uses. Verified against DCMTK, the toolkit most hospital imaging equipment is built on. Encryption is included — Mirth needs a paid extension for it, and DICOM metadata carries patient names.',
+  dicomweb:
+    "Stores each imaging object with STOW-RS: Orthanc, dcm4chee, Google Cloud Healthcare, Azure Health Data Services, AWS HealthImaging, or this server's own archive. The server's answer for each object decides, so an object it lists as failed is a failed delivery, not a delivered one. Give the service root; /studies is added.",
   javascript:
     'Runs your script instead of sending anywhere. This is the escape hatch: when nothing else here fits, do the work yourself with the message in hand. Returning nothing counts as success, and returning a string fails the delivery with that string as the reason.',
   broker:
@@ -434,6 +438,11 @@ export interface Destination {
   soapPassword: string
   soapFaultIsSuccess: string
 
+  /** dicomwebUrl and the rest describe a DICOMweb (STOW-RS) destination. */
+  dicomwebUrl: string
+  dicomwebToken: string
+  dicomwebUsername: string
+  dicomwebPassword: string
   /** dicomAddr and the rest describe an imaging archive. */
   dicomAddr: string
   dicomCalledAe: string
@@ -593,6 +602,7 @@ export type SourceKind =
   | 'sftp'
   | 'dicom'
   | 'dicom_query'
+  | 'dicomweb'
   | 'javascript'
   | 'broker'
   | 'kafka'
@@ -935,6 +945,13 @@ export interface ChannelDraft {
   attachmentsMinBytes: number
   attachmentsReassemble: boolean
 
+  /** dicomwebListen and the rest describe a STOW-RS endpoint. */
+  dicomwebListen: string
+  dicomwebPath: string
+  dicomwebToken: string
+  dicomwebUsername: string
+  dicomwebPassword: string
+  dicomwebTls: boolean
   /** dicomListen and the rest describe an imaging listener. */
   dicomListen: string
   dicomListenAe: string
@@ -1720,6 +1737,16 @@ export function draftToWire(draft: ChannelDraft): unknown {
         faultOnNak: draft.soapSourceFaultOnNak || undefined,
       }
       break
+    case 'dicomweb':
+      source.dicomweb = {
+        listen: draft.dicomwebListen || undefined,
+        path: draft.dicomwebPath || undefined,
+        token: draft.dicomwebToken || undefined,
+        username: draft.dicomwebUsername || undefined,
+        password: draft.dicomwebPassword || undefined,
+        tls: draft.dicomwebTls ? { enabled: true } : undefined,
+      }
+      break
     case 'dicom':
       source.dicom = {
         listen: draft.dicomListen || undefined,
@@ -2247,6 +2274,14 @@ function destinationToWire(d: Destination): unknown {
     case 'channel':
       out.channel = { name: d.routeTo }
       break
+    case 'dicomweb':
+      out.dicomweb = {
+        url: d.dicomwebUrl || undefined,
+        token: d.dicomwebToken || undefined,
+        username: d.dicomwebUsername || undefined,
+        password: d.dicomwebPassword || undefined,
+      }
+      break
     case 'dicom':
       out.dicom = {
         // "address", matching the server. This was "addr" first, which the round-trip tests happily
@@ -2569,6 +2604,10 @@ export function newDestination(): Destination {
     soapPassword: '',
     soapFaultIsSuccess: '',
 
+    dicomwebUrl: '',
+    dicomwebToken: '',
+    dicomwebUsername: '',
+    dicomwebPassword: '',
     dicomAddr: '',
     dicomCalledAe: '',
     dicomCallingAe: '',
@@ -2771,6 +2810,12 @@ export function emptyDraft(): ChannelDraft {
     // one that lost them, and nobody debugging a feed wants to wonder which.
     attachmentsReassemble: true,
 
+    dicomwebListen: '',
+    dicomwebPath: '',
+    dicomwebToken: '',
+    dicomwebUsername: '',
+    dicomwebPassword: '',
+    dicomwebTls: false,
     dicomListen: '',
     dicomListenAe: '',
     dicomListenTls: false,

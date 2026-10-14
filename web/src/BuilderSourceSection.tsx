@@ -30,6 +30,7 @@ const SOURCE_OPTIONS: { value: SourceKind; label: string }[] = [
   { value: 'soap', label: 'A sender calls us as a web service (SOAP)' },
   { value: 'dicom', label: 'A scanner sends us images (DICOM C-STORE)' },
   { value: 'dicom_query', label: 'We ask an imaging archive what is new (DICOM C-FIND)' },
+  { value: 'dicomweb', label: 'A viewer or service sends us images over the web (DICOMweb STOW-RS)' },
   { value: 'javascript', label: 'A script we write produces messages (JavaScript Reader)' },
   { value: 'file', label: 'We read files from a folder on this server' },
   { value: 'ftp', label: 'We collect files from a server (FTP or FTPS)' },
@@ -1151,6 +1152,51 @@ export function SourceSection({
               />
             </Pair>
           </Advanced>
+          )}
+        </>
+      )}
+
+      {draft.sourceKind === 'dicomweb' && (
+        <>
+          <Pair>
+            <Text
+              label="Listen on"
+              value={draft.dicomwebListen}
+              onChange={(v) => set('dicomwebListen', v)}
+              placeholder="0.0.0.0:8043"
+              hint="Senders post to this address followed by the service path and /studies."
+            />
+            <Text
+              label="Service path"
+              value={draft.dicomwebPath}
+              onChange={(v) => set('dicomwebPath', v)}
+              placeholder="/dicom-web"
+              mono
+              hint="Defaults to /dicom-web, the path Orthanc and dcm4chee use, so a sender set up for either needs only the host changed."
+            />
+          </Pair>
+          <Pair>
+            <Secret
+              label="Bearer token"
+              value={draft.dicomwebToken}
+              onChange={(v) => set('dicomwebToken', v)}
+              hint="Without a token or a username, anybody who can reach the port can send images into this channel."
+            />
+            <Text label="Username" value={draft.dicomwebUsername} onChange={(v) => set('dicomwebUsername', v)} />
+          </Pair>
+          <Pair>
+            <Secret label="Password" value={draft.dicomwebPassword} onChange={(v) => set('dicomwebPassword', v)} />
+            <Check
+              label="Encrypt with TLS"
+              value={draft.dicomwebTls}
+              onChange={(v) => set('dicomwebTls', v)}
+              hint="Images carry patient names. Set the certificate and key under Settings or in the file."
+            />
+          </Pair>
+          {draft.dataType !== 'dicom' && (
+            <p className="rounded-lg border border-amber-900/60 bg-amber-950/30 p-3 text-sm text-amber-200">
+              This source receives imaging objects, so the channel&apos;s data type must be DICOM.
+            </p>
           )}
         </>
       )}

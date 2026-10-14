@@ -1460,6 +1460,50 @@ function DestinationCard({
           </>
         )}
 
+        {dest.type === 'dicomweb' && (
+          <>
+            <Field
+              label="DICOMweb service root"
+              hint="Objects are posted to this address followed by /studies. For Orthanc, http://host:8042/dicom-web; for this server's own archive, its address followed by /dicomweb."
+            >
+              <input
+                className="input font-mono text-xs"
+                value={dest.dicomwebUrl}
+                onChange={(e) => onChange({ dicomwebUrl: e.target.value })}
+                placeholder="https://pacs.example/dicom-web"
+              />
+            </Field>
+            {/\/studies\/?$/.test(dest.dicomwebUrl) && (
+              <p className="rounded-lg border border-amber-900/60 bg-amber-950/30 p-3 text-sm text-amber-200">
+                Give the service root without /studies: Perfuse adds it, and posting to /studies/studies is a 404.
+              </p>
+            )}
+            <Field label="Bearer token" hint="A token the server issued, or leave empty and use a username.">
+              <input
+                type="password"
+                className="input font-mono"
+                value={dest.dicomwebToken}
+                onChange={(e) => onChange({ dicomwebToken: e.target.value })}
+              />
+            </Field>
+            <Field label="Username" hint="HTTP basic authentication, which Orthanc uses by default.">
+              <input
+                className="input font-mono"
+                value={dest.dicomwebUsername}
+                onChange={(e) => onChange({ dicomwebUsername: e.target.value })}
+              />
+            </Field>
+            <Field label="Password">
+              <input
+                type="password"
+                className="input font-mono"
+                value={dest.dicomwebPassword}
+                onChange={(e) => onChange({ dicomwebPassword: e.target.value })}
+              />
+            </Field>
+          </>
+        )}
+
         {dest.type === 'dicom' && (
           <>
             <Field

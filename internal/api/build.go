@@ -293,6 +293,9 @@ type buildSource struct {
 	DICOM  *buildDICOMSource `json:"dicom,omitempty" yaml:"dicom,omitempty"`
 	SOAP   *buildSOAPSource  `json:"soap,omitempty" yaml:"soap,omitempty"`
 
+	// DICOMweb is a STOW-RS endpoint.
+	DICOMweb *buildDICOMwebSource `json:"dicomweb,omitempty" yaml:"dicomweb,omitempty"`
+
 	// JS is the JavaScript Reader: a script that runs on a timer and returns the messages.
 	//
 	// Mirth's equivalent is one of the connectors people most often have to reimplement by hand, so a channel migrating
@@ -825,6 +828,9 @@ type buildDest struct {
 
 	// DICOM applies to a dicom destination.
 	DICOM *buildDICOMDest `json:"dicom,omitempty" yaml:"dicom,omitempty"`
+
+	// DICOMweb applies to a dicomweb destination.
+	DICOMweb *buildDICOMwebDest `json:"dicomweb,omitempty" yaml:"dicomweb,omitempty"`
 
 	// JavaScript applies to a javascript destination.
 	JavaScript *buildJSDest `json:"javascript,omitempty" yaml:"javascript,omitempty"`
@@ -1445,6 +1451,28 @@ type buildAttachRule struct {
 	Path     string `json:"path,omitempty" yaml:"path,omitempty"`
 	MinBytes int    `json:"minBytes,omitempty" yaml:"min_bytes,omitempty"`
 	Repeats  bool   `json:"repeats,omitempty" yaml:"repeats,omitempty"`
+}
+
+// buildDICOMwebSource accepts imaging objects by STOW-RS.
+type buildDICOMwebSource struct {
+	Listen         string    `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Path           string    `json:"path,omitempty" yaml:"path,omitempty"`
+	Token          string    `json:"token,omitempty" yaml:"token,omitempty"`
+	Username       string    `json:"username,omitempty" yaml:"username,omitempty"`
+	Password       string    `json:"password,omitempty" yaml:"password,omitempty"`
+	MaxObjectBytes int       `json:"maxObjectBytes,omitempty" yaml:"max_object_bytes,omitempty"`
+	TLS            *buildTLS `json:"tls,omitempty" yaml:"tls,omitempty"`
+}
+
+// buildDICOMwebDest stores imaging objects by STOW-RS.
+type buildDICOMwebDest struct {
+	URL      string            `json:"url,omitempty" yaml:"url,omitempty"`
+	Token    string            `json:"token,omitempty" yaml:"token,omitempty"`
+	Username string            `json:"username,omitempty" yaml:"username,omitempty"`
+	Password string            `json:"password,omitempty" yaml:"password,omitempty"`
+	Headers  map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+	TLS      *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Timeout  string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 // buildSOAPSource accepts messages inside a SOAP envelope.

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
 	"github.com/biodream-llc/perfuse/internal/dashboards"
+	"github.com/biodream-llc/perfuse/internal/dicomweb"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"log/slog"
@@ -254,6 +255,11 @@ type Server struct {
 	// is served.
 	DTRPackage func(ctx context.Context, params []byte) (status int, body []byte)
 
+	// DICOMweb is the imaging archive served at /dicomweb, nil without -dicomweb-archive; DICOMwebCORS are the browser
+	// origins (a viewer such as OHIF served elsewhere) allowed to call it.
+	DICOMweb     *dicomweb.Archive
+	DICOMwebCORS []string
+
 	// PatientSummary builds this server's own International Patient Summary for a patient, for Health links. Nil when
 	// no FHIR endpoint is served.
 	PatientSummary func(ctx context.Context, patientID string) (status int, body []byte)
@@ -483,6 +489,7 @@ func (s *Server) Handler() http.Handler {
 	// Receiving is an editor's: it fetches from an address in a stranger's QR code and can deliver into a channel.
 	mux.Handle("POST /api/shl/resolve", s.require(store.RoleEditor, s.handleResolveSHL))
 	mux.Handle("POST /api/shl/summary", s.require(store.RoleEditor, s.handleSHLSummary))
+	s.registerDICOMweb(mux)
 	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))
 	mux.Handle("POST /api/dtr/package", s.require(store.RoleViewer, s.handleDTRPackage))
 	mux.Handle("POST /api/shc/verify", s.require(store.RoleViewer, s.handleVerifySHC))

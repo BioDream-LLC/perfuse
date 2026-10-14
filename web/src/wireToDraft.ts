@@ -160,6 +160,14 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.soapSourceUsername = source.soap?.username ?? ''
       draft.soapSourcePassword = source.soap?.password ?? ''
       break
+    case 'dicomweb':
+      draft.dicomwebListen = source.dicomweb?.listen ?? ''
+      draft.dicomwebPath = source.dicomweb?.path ?? ''
+      draft.dicomwebToken = source.dicomweb?.token ?? ''
+      draft.dicomwebUsername = source.dicomweb?.username ?? ''
+      draft.dicomwebPassword = source.dicomweb?.password ?? ''
+      draft.dicomwebTls = source.dicomweb?.tls?.enabled ?? false
+      break
     case 'dicom':
       draft.dicomListen = source.dicom?.listen ?? ''
       draft.dicomListenAe = source.dicom?.aeTitle ?? ''
@@ -817,6 +825,12 @@ function readDestination(d: WireDest): Destination {
     case 'channel':
       dest.routeTo = d.channel?.name ?? ''
       break
+    case 'dicomweb':
+      dest.dicomwebUrl = d.dicomweb?.url ?? ''
+      dest.dicomwebToken = d.dicomweb?.token ?? ''
+      dest.dicomwebUsername = d.dicomweb?.username ?? ''
+      dest.dicomwebPassword = d.dicomweb?.password ?? ''
+      break
     case 'dicom':
       dest.dicomAddr = d.dicom?.address ?? ''
       dest.dicomCalledAe = d.dicom?.calledAe ?? ''
@@ -1195,6 +1209,14 @@ interface WireSource {
     sasl?: { mechanism?: string; username?: string; password?: string }
   }
 
+  dicomweb?: {
+    listen?: string
+    path?: string
+    token?: string
+    username?: string
+    password?: string
+    tls?: { enabled?: boolean }
+  }
   dicom?: {
     listen?: string
     aeTitle?: string
@@ -1332,6 +1354,12 @@ interface WireDest {
   tempSuffix?: string
   retainHours?: number
 
+  dicomweb?: {
+    url?: string
+    token?: string
+    username?: string
+    password?: string
+  }
   dicom?: {
     address?: string
     calledAe?: string

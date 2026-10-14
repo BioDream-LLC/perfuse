@@ -1630,6 +1630,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Documents': IconDocuments,
   'Claims & auth': IconBilling,
   'Health links': IconQR,
+  'Imaging': IconImaging,
   'Scripts': IconScripts,
   'Migrate': IconMigrate,
   'Contracts': IconContracts,
@@ -1808,6 +1809,10 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Come across from Mirth': IconMigrate,
   'Receive a SMART Health Link': IconQR,
   'Share a visit record': IconQR,
+  // The imaging archive.
+  'For a viewer': IconImaging,
+  'No archive on this server': IconImaging,
+  'Studies': IconDicom,
   'Links this server hosts': IconQR,
   'Verify a SMART Health Card': IconQR,
   'For the patient': IconQR,

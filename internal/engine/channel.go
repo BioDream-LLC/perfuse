@@ -598,6 +598,14 @@ func (c *Channel) Start() error {
 		c.resumeQueues(context.Background())
 		return nil
 
+	case config.SourceDICOMweb:
+		// Shares the HTTP server field and its stop path, like the SOAP source.
+		if err := c.startDICOMwebSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
 	case config.SourceSOAP:
 		// Shares the HTTP server field, and therefore the stop path, because it is an HTTP listener that happens to
 		// speak SOAP. Two fields would mean two shutdown paths and one of them eventually being forgotten.

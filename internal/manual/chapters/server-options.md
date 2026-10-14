@@ -19,6 +19,8 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-dashboards` | string | — | a file mapping directory groups and roles to the dashboard each opens on | **Settings › Monitoring › Dashboards**: Which dashboard each group opens on (file) |
 | `-db` | string | `./perfuse.db` | database file for users, messages and stored resources | — |
 | `-demo-account` | string | — | for a public demonstration server: username:password of a shared viewer account shown on the sign-in page | — |
+| `-dicomweb-archive` | string | — | keep imaging objects in this directory and serve them over DICOMweb (QIDO-RS, WADO-RS, WADO-URI, STOW-RS) at /dicomweb | **Settings › Data › Imaging archive**: Keep images in this folder and serve them over DICOMweb |
+| `-dicomweb-cors` | string | — | comma-separated browser origins, such as an OHIF viewer's, allowed to call /dicomweb | **Settings › Data › Imaging archive**: Browser origins allowed to call it |
 | `-drain-for` | duration | — | after SIGTERM, report not-ready for this long before shutting down (for rolling deploys) | **Settings › Engine › Shutdown**: Wait for in-flight messages on shutdown |
 | `-ecr-agency` | string | — | play a public health agency for testing eCR: answer case reports at $process-message with a Reportability Response, using the agency YAML file given (name, phone, address, endpoint; optional rctc, reply) | **Settings › Public health › Case reporting**: Act as a test public health agency |
 | `-ecr-responses` | on/off | — | accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived from the eICR it answers | **Settings › Public health › Case reporting**: Receive Reportability Responses |

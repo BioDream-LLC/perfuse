@@ -58,6 +58,8 @@ var settingFlags = map[string]string{
 	"ecr-responses":                     "publicHealth.ecrResponses",
 	"rctc":                              "publicHealth.rctc",
 	"shl-allow-http":                    "publicHealth.shlAllowHTTP",
+	"dicomweb-archive":                  "data.dicomwebArchive",
+	"dicomweb-cors":                     "data.dicomwebCORS",
 	"smart-issuer":                      "smart.issuer",
 	"smart-audience":                    "smart.audience",
 	"smart-authorize":                   "smart.authorize",

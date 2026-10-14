@@ -51,6 +51,8 @@ func DefaultSenderFactory(d config.Destination) (Sender, error) {
 		return NewSOAPSender(d)
 	case config.DestinationDICOM:
 		return NewDICOMSender(d)
+	case config.DestinationDICOMweb:
+		return NewDICOMwebSender(d)
 	case config.DestinationBroker:
 		return NewBrokerSender(d)
 	case config.DestinationKafka:

@@ -175,6 +175,14 @@ with the patient's [International Patient Summary](#message-formats) from this s
 with how often each was fetched, when it expires and the passcode tries left, and revokes one. **Verify a SMART Health Card** checks a card's signature and issuer on its own. See
 [CMS-0057](#cms-0057) for the server options it needs.
 
+### Imaging
+
+The archive this server keeps when it runs with `-dicomweb-archive`: counts of studies, series, instances and space used,
+the DICOMweb address and the data-source block for an OHIF viewer, and a study search by patient name, ID, accession and date
+made with the same QIDO-RS request a viewer makes. A study opens to its series and instances, and an instance downloads as a
+DICOM file. Nothing is rendered: Perfuse moves images and a viewer displays them. Without an archive the screen says how to
+turn one on. See [DICOMweb](#message-formats).
+
 ### CMS-0057
 
 The payer side of the CMS Interoperability and Prior Authorization rule, as five tools:

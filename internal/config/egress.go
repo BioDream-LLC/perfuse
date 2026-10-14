@@ -52,6 +52,10 @@ func (d *Destination) OutboundHosts() []string {
 		if d.FHIR != nil {
 			addURL(d.FHIR.URL)
 		}
+	case DestinationDICOMweb:
+		if d.DICOMweb != nil {
+			addURL(d.DICOMweb.URL)
+		}
 	case DestinationSOAP:
 		if d.SOAP != nil {
 			addURL(d.SOAP.URL)

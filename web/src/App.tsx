@@ -45,6 +45,7 @@ const DocumentLab = lazy(() => import('./DocumentLab').then((m) => ({ default: m
 const PayerLab = lazy(() => import('./PayerLab').then((m) => ({ default: m.PayerLab })))
 const CMS0057 = lazy(() => import('./CMS0057').then((m) => ({ default: m.CMS0057 })))
 const HealthLinks = lazy(() => import('./HealthLinks').then((m) => ({ default: m.HealthLinks })))
+const Imaging = lazy(() => import('./Imaging').then((m) => ({ default: m.Imaging })))
 const Certificates = lazy(() => import('./Certificates').then((m) => ({ default: m.Certificates })))
 const MirthMigration = lazy(() => import('./MirthMigration').then((m) => ({ default: m.MirthMigration })))
 const Contracts = lazy(() => import('./Contracts').then((m) => ({ default: m.Contracts })))
@@ -79,6 +80,7 @@ export type Tab =
   | 'payer'
   | 'cms0057'
   | 'shl'
+  | 'imaging'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -582,6 +584,12 @@ function Console() {
       about: 'SMART Health Links and Cards: read the QR code a patient shows at check-in, and share the visit record back the same way',
     },
     {
+      id: 'imaging',
+      label: 'Imaging',
+      minRole: 'viewer',
+      about: 'The imaging archive this server keeps, searched as a viewer searches it, and served over DICOMweb',
+    },
+    {
       id: 'cms0057',
       label: 'CMS-0057',
       minRole: 'viewer',
@@ -925,6 +933,7 @@ function Console() {
           {tab === 'payer' && <PayerLab />}
           {tab === 'cms0057' && <CMS0057 />}
           {tab === 'shl' && <HealthLinks />}
+          {tab === 'imaging' && <Imaging />}
           {tab === 'certificates' && <Certificates />}
           {tab === 'scripts' && (
             <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

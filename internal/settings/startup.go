@@ -80,6 +80,14 @@ func startupSettings() []Setting {
 		{Key: "publicHealth.shlAllowHTTP", Group: "Public health", Subgroup: "Health links", Label: "Allow SMART Health Links over plain HTTP",
 			Help: "Let a received SMART Health Link point at plain HTTP; for testing only.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: false, Flag: "shl-allow-http", Advanced: true},
+		{Key: "data.dicomwebArchive", Group: GroupData, Subgroup: "Imaging archive", Label: "Keep images in this folder and serve them over DICOMweb",
+			Help: "A directory for imaging objects, served at /dicomweb: QIDO-RS to search, WADO-RS and WADO-URI to retrieve, " +
+				"STOW-RS to store. A viewer such as OHIF can browse it, and a channel's dicomweb destination can fill it.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "dicomweb-archive"},
+		{Key: "data.dicomwebCORS", Group: GroupData, Subgroup: "Imaging archive", Label: "Browser origins allowed to call it",
+			Help: "Comma-separated origins, such as https://viewer.example, of viewers served from another address that " +
+				"call /dicomweb from the browser. Empty allows none.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "dicomweb-cors", Advanced: true},
 		{Key: "smart.issuer", Group: "SMART", Subgroup: "Authorization", Label: "Accept SMART access tokens from this authorization server",
 			Help: "Accept SMART on FHIR access tokens from this authorization server.",
 			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "smart-issuer"},

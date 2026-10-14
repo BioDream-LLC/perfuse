@@ -798,6 +798,23 @@ export interface Passkey {
   lastUsed?: string
 }
 
+/** DICOMwebStatus is GET /api/dicomweb. */
+export interface DICOMwebStatus {
+  enabled: boolean
+  hint?: string
+  base?: string
+  studies?: number
+  series?: number
+  instances?: number
+  bytes?: number
+  corsOrigins?: string[]
+  readable?: boolean
+  note?: string
+}
+
+/** DicomJSON is one DICOM JSON object (PS3.18 F.2), keyed by tag. */
+export type DicomJSON = Record<string, { vr: string; Value?: unknown[] }>
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {}
   const mutating = method !== 'GET' && method !== 'HEAD'
@@ -1519,6 +1536,16 @@ export const api = {
   createSHL: (input: { label?: string; content: unknown; passcode?: string; expiresInDays?: number }) =>
     request<SHLCreated>('POST', '/api/shl', input),
   listSHL: () => request<{ links: SHLHosted[] }>('GET', '/api/shl'),
+  /** dicomwebStatus says whether this server keeps an imaging archive, where it is served, and what it holds. */
+  dicomwebStatus: () => request<DICOMwebStatus>('GET', '/api/dicomweb'),
+  /** qido searches the archive (QIDO-RS). An empty result is an empty list. */
+  qido: async (path: string): Promise<DicomJSON[]> => {
+    const res = await fetch(`/dicomweb${path}`, { headers: { Accept: 'application/dicom+json' }, credentials: 'same-origin' })
+    if (res.status === 204) return []
+    const text = await res.text()
+    if (!res.ok) throw new ApiError(res.status, text.trim() || `the archive answered ${res.status}`)
+    return JSON.parse(text) as DicomJSON[]
+  },
   /** patientSummary builds an International Patient Summary (IPS document Bundle) from this server's FHIR store. */
   patientSummary: (patient: string) => request<Record<string, unknown>>('POST', '/api/shl/summary', { patient }),
   revokeSHL: (id: string) => request<{ status: string }>('DELETE', `/api/shl/${encodeURIComponent(id)}`),

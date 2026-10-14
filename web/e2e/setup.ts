@@ -373,6 +373,8 @@ export default async function globalSetup() {
       "-smart-users", smartUsers,
       "-smart-key", join(dir, "smart.key"),
       "-vpn", vpnFile,
+      // An imaging archive, so the Imaging view and DICOMweb are tested against a real archive rather than the "off" card.
+      "-dicomweb-archive", join(dir, "imaging"),
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
   );

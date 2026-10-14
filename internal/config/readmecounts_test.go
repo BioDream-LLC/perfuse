@@ -125,7 +125,7 @@ func TestEveryConnectorIsNamedInTheREADME(t *testing.T) {
 	}
 	for _, s := range []SourceType{
 		SourceMLLP, SourceTCP, SourceHTTP, SourceSOAP, SourceFile, SourceFTP, SourceSFTP,
-		SourceSMB, SourceWebDAV, SourceDatabase, SourceDICOM, SourceDICOMQuery, SourceKafka,
+		SourceSMB, SourceWebDAV, SourceDatabase, SourceDICOM, SourceDICOMQuery, SourceDICOMweb, SourceKafka,
 		SourceBroker, SourceJavaScript, SourceSerial, SourceSQS, SourceS3, SourceAMQP, SourceAzureBlob,
 		SourceMQTT, SourceIBMMQ, SourcePubSub, SourceGCS,
 	} {
@@ -148,7 +148,7 @@ func TestEveryConnectorIsNamedInTheREADME(t *testing.T) {
 func TestTheConnectorGuardCoversEverySourceType(t *testing.T) {
 	listed := []SourceType{
 		SourceMLLP, SourceTCP, SourceHTTP, SourceSOAP, SourceFile, SourceFTP, SourceSFTP,
-		SourceSMB, SourceWebDAV, SourceDatabase, SourceDICOM, SourceDICOMQuery, SourceKafka,
+		SourceSMB, SourceWebDAV, SourceDatabase, SourceDICOM, SourceDICOMQuery, SourceDICOMweb, SourceKafka,
 		SourceBroker, SourceJavaScript, SourceSerial, SourceSQS, SourceS3, SourceAMQP, SourceAzureBlob,
 		SourceMQTT, SourceIBMMQ, SourcePubSub, SourceGCS,
 	}

@@ -250,6 +250,17 @@ The ELR file is the channel's companion, not a channel: `perfuse check` and the 
 channel that will not load. In the channel builder the same two settings are under the destination, in **Lab reporting (ELR
 2.5.1)**; the trigger codes field opens once an ELR file is named, and saving refuses a file that is not beside the channel.
 
+### DICOMweb archives
+
+`type: dicomweb` stores each object with STOW-RS: Orthanc, dcm4chee, the cloud imaging services, or a Perfuse server's own
+archive. Give the service root (`https://pacs.example/dicom-web`); `/studies` is added, and a URL already ending in
+`/studies` is refused rather than posting to `/studies/studies`. Authenticate with `token` (a bearer token) or `username` and
+`password`; `headers` adds others, such as a cloud service's project header. The channel needs `dataType: dicom`.
+
+The server's answer decides the outcome, not its status code alone. An object the answer lists as failed is a failed
+delivery with the DICOM failure reason, and so is a 202 that lists nothing as stored: the server took the request and kept
+none of it. Timeout defaults to two minutes, because a large series is slow.
+
 ### Immunization registries
 
 Every US state immunization registry (IIS) takes HL7 2.5.1 messages on the same SOAP interface, the one the CDC published in

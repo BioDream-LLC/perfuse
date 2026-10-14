@@ -409,7 +409,7 @@ Refusals and warnings are kept as separate lists rather than one severity-tagged
 
 ## DICOM
 
-Imaging. Perfuse can receive DICOM objects, query a remote archive, and store to one.
+Imaging. Perfuse can receive DICOM objects, query a remote archive, and store to one, over the classic DICOM network services or over DICOMweb, and it can keep an archive of its own for viewers.
 
 DICOM is not a message format in the same sense as the others — objects are large, and the association handshake matters more than the payload parsing. The `called_ae` and `calling_ae` titles are the commonest reason a first connection fails, and the failure looks like a network problem rather than a configuration one.
 
@@ -422,6 +422,65 @@ Left open, a DICOM listener accepts anything from anyone that can reach the port
 **Only accept these SOP classes** and **only accept these transfer syntaxes** take comma-separated UIDs. Empty accepts every kind of object and negotiates whatever compression the sender offers, which includes kinds this channel's destinations cannot handle. Refusing at the association is clearer to the sender than accepting the object and failing afterwards.
 
 **Largest object accepted** is in bytes, and zero means no limit. Whole-slide images and long series run to gigabytes, so the limit is otherwise memory.
+
+### DICOMweb
+
+DICOMweb is DICOM over HTTP: QIDO-RS searches, WADO-RS and WADO-URI retrieve, STOW-RS stores. Browser viewers such as OHIF
+speak only DICOMweb, and so do the cloud imaging services (Google Cloud Healthcare, Azure Health Data Services, AWS
+HealthImaging). Perfuse uses it in three places.
+
+**The imaging archive.** Start the server with `-dicomweb-archive DIR` (**Settings › Data › Imaging archive**) and it keeps
+objects in that folder, indexed in SQLite, and serves them at `/dicomweb` on the console's own address: QIDO-RS at the study,
+series and instance levels, WADO-RS for objects, metadata, frames and bulk data, WADO-URI at `/dicomweb/wado`, and STOW-RS.
+Reading takes the viewer role and storing the operator role, with a session or an API token; every read and store is in
+**Activity** as `dicomweb.read` or `dicomweb.store`. An account limited to a tenant or to channel groups is refused, because
+the archive belongs to the whole server. Objects are kept exactly as received, so what a viewer retrieves is byte for byte
+what was stored. Frames are returned in the transfer syntax they were stored in; a request that would need transcoding
+answers 406 rather than a converted image.
+
+A search on an attribute the archive does not index answers 400 rather than ignoring the condition and returning more
+studies than were asked for. Indexed: patient name (wildcards, and fuzzy matching with `fuzzymatching=true`), patient ID,
+birth date, sex, study date and time (ranges), accession number, study ID, description, referring physician, study, series and
+SOP instance UIDs (lists), modality, body part, series number and description, SOP class, instance number, rows, columns and
+number of frames.
+
+**The source.** `type: dicomweb` listens for STOW-RS, at `/dicom-web/studies` by default (the path Orthanc and dcm4chee
+use), and sends every object through the channel as a DICOM message. The channel needs `dataType: dicom`. Set a bearer
+token or a username and password: without one, anybody who can reach the port can send images into the channel. The answer
+lists each object as stored or failed, with the DICOM failure reason, so a sender knows which to resend.
+
+```yaml
+name: imaging-from-viewers
+dataType: dicom
+source:
+  type: dicomweb
+  dicomweb:
+    listen: 0.0.0.0:8043
+    token: ${STOW_TOKEN}
+    tls: { enabled: true, cert_file: /etc/perfuse/imaging.crt, key_file: /etc/perfuse/imaging.key }
+destinations:
+  - name: archive
+    type: dicomweb
+    dicomweb:
+      url: https://perfuse.example/dicomweb
+      token: ${ARCHIVE_TOKEN}
+```
+
+**The destination** is in [delivery](#delivery-queueing-and-retry), under DICOMweb archives.
+
+#### Pointing OHIF at the archive
+
+Use a DICOMweb data source with `qidoRoot` and `wadoRoot` set to the archive's address (the **Imaging** screen shows it, with
+the whole data-source block to copy), `wadoUriRoot` to that address followed by `/wado`, `imageRendering` and
+`thumbnailRendering` to `wadors`, and `supportsFuzzyMatching` true. A viewer on another origin needs that origin in
+`-dicomweb-cors` (**Browser origins allowed to call it**), and its requests need an API token in the `Authorization` header,
+because a browser on another origin does not send the console's session cookie. Serving OHIF from the same origin through a
+reverse proxy avoids both.
+
+Tested against Orthanc with its DICOMweb plugin, in both directions: the destination stores into Orthanc, and Orthanc's
+DICOMweb client searches Perfuse's archive and retrieves a study byte-identical to the one stored.
+OHIF 3 lists the archive's studies and displays their frames with the settings above. OHIF and several other clients
+send `type=` unquoted in the Accept and Content-Type headers, which RFC 2045 does not allow; Perfuse accepts it.
 
 ## Delimited
 

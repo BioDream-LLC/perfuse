@@ -216,6 +216,8 @@ const (
 	SourceDICOM SourceType = "dicom"
 	// SourceDICOMQuery polls an archive with C-FIND, which Mirth cannot do at all.
 	SourceDICOMQuery SourceType = "dicom_query"
+	// SourceDICOMweb accepts imaging objects by STOW-RS, which is how viewers, AI services and cloud archives send them.
+	SourceDICOMweb SourceType = "dicomweb"
 	// SourceBroker reads from a message broker, which is Mirth's JMS Reader.
 	SourceBroker SourceType = "broker"
 	// SourceJavaScript runs a user-supplied script on a timer and feeds the
@@ -281,6 +283,9 @@ type Source struct {
 	// SOAP applies to a soap source, which accepts envelopes rather than bare
 	// messages.
 	SOAP *SOAPSource `yaml:"soap,omitempty"`
+
+	// DICOMweb applies to a dicomweb source.
+	DICOMweb *DICOMwebSource `yaml:"dicomweb,omitempty"`
 
 	// DICOM applies to a dicom source, which receives imaging objects.
 	DICOM *DICOMSource `yaml:"dicom,omitempty"`
@@ -418,6 +423,8 @@ const (
 	// DestinationDICOM sends imaging objects as a C-STORE user, which is what
 	// Mirth's DICOM Sender does.
 	DestinationDICOM DestinationType = "dicom"
+	// DestinationDICOMweb stores imaging objects by STOW-RS on a DICOMweb server.
+	DestinationDICOMweb DestinationType = "dicomweb"
 	// DestinationJavaScript runs a script instead of sending, which is Mirth's
 	// JavaScript Writer and the escape hatch sites reach for constantly.
 	DestinationJavaScript DestinationType = "javascript"
@@ -484,6 +491,7 @@ var allDestinationTypes = []DestinationType{
 	DestinationCDA,
 	DestinationDocument,
 	DestinationDICOM,
+	DestinationDICOMweb,
 	DestinationBroker,
 	DestinationKafka,
 	DestinationSQS,
@@ -582,6 +590,9 @@ type Destination struct {
 
 	// SOAP applies to a soap destination.
 	SOAP *SOAPDestination `yaml:"soap,omitempty"`
+
+	// DICOMweb applies to a dicomweb destination.
+	DICOMweb *DICOMwebDestination `yaml:"dicomweb,omitempty"`
 
 	// DICOM applies to a dicom destination.
 	DICOM *DICOMDestination `yaml:"dicom,omitempty"`

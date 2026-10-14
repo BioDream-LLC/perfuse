@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
 	"github.com/biodream-llc/perfuse/internal/dashboards"
+	"github.com/biodream-llc/perfuse/internal/dicomweb"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"github.com/biodream-llc/perfuse/internal/trace"
 	"io"
@@ -97,6 +98,10 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	publicURL := fset.String("public-url", "", "the https address patients' phones and other organisations reach this server at, for the "+
 		"SMART Health Links it hosts (default: the listen address)")
 	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
+	dicomwebArchive := fset.String("dicomweb-archive", "", "keep imaging objects in this directory and serve them over "+
+		"DICOMweb (QIDO-RS, WADO-RS, WADO-URI, STOW-RS) at /dicomweb")
+	dicomwebCORS := fset.String("dicomweb-cors", "", "comma-separated browser origins, such as an OHIF viewer's, allowed to "+
+		"call /dicomweb")
 	crdRules := fset.String("crd-rules", "", "a Da Vinci CRD rules file: serve coverage requirements over CDS Hooks at /cds-services")
 	dashboardsFile := fset.String("dashboards", "", "a file mapping directory groups and roles to the dashboard each opens on")
 	rctc := fset.String("rctc", "", "eCR trigger codes for the case report preview: a FHIR ValueSet or Bundle of them, such as the eRSD")
@@ -1003,6 +1008,22 @@ oidcDone:
 		srv.SelfURL = fmt.Sprintf("%s://%s", schemeFor(useTLS), *addr)
 		srv.PublicURL = strings.TrimRight(strings.TrimSpace(*publicURL), "/")
 		srv.SHLAllowHTTP = *shlAllowHTTP
+		if dir := strings.TrimSpace(*dicomwebArchive); dir != "" {
+			archive, err := dicomweb.OpenArchive(dir)
+			if err != nil {
+				return fmt.Errorf("-dicomweb-archive: %w", err)
+			}
+			defer archive.Close()
+			srv.DICOMweb = archive
+			for _, o := range strings.Split(*dicomwebCORS, ",") {
+				if o = strings.TrimRight(strings.TrimSpace(o), "/"); o != "" {
+					srv.DICOMwebCORS = append(srv.DICOMwebCORS, o)
+				}
+			}
+			log.Info("imaging archive served over DICOMweb", "dir", dir, "path", "/dicomweb", "cors", srv.DICOMwebCORS)
+		} else if strings.TrimSpace(*dicomwebCORS) != "" {
+			return fmt.Errorf("-dicomweb-cors is set but -dicomweb-archive is not, so there is nothing for it to open")
+		}
 		if *crdRules != "" {
 			rules, err := crd.LoadRules(*crdRules)
 			if err != nil {
