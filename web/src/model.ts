@@ -420,6 +420,12 @@ export interface Destination {
 
   /** soapUrl and the rest describe a SOAP call. */
   soapUrl: string
+  /** soapProfile 'cdc-iis' builds the CDC immunization registry envelope and judges the registry's HL7 ACK. */
+  soapProfile: '' | 'cdc-iis'
+  /** soapFacilityId is the registry's facilityID for the submitter (cdc-iis). */
+  soapFacilityId: string
+  /** soapWarningsAreErrors treats an AE carrying only warnings as a failure (cdc-iis). */
+  soapWarningsAreErrors: boolean
   soapAction: string
   soapVersion: '1.1' | '1.2'
   soapBody: string
@@ -898,6 +904,8 @@ export interface ChannelDraft {
 
   /** soapSource fields describe accepting messages inside a SOAP envelope. */
   soapSourceListen: string
+  /** soapSourceProfile 'cdc-iis' answers as an immunization registry on the CDC interface. */
+  soapSourceProfile: '' | 'cdc-iis'
   soapSourcePath: string
   soapSourceVersion: '1.1' | '1.2'
   soapSourceElement: string
@@ -1692,8 +1700,15 @@ export function draftToWire(draft: ChannelDraft): unknown {
     case 'soap':
       source.soap = {
         listen: draft.soapSourceListen || undefined,
+        profile: draft.soapSourceProfile || undefined,
         path: draft.soapSourcePath || undefined,
-        version: draft.soapSourceVersion !== '1.1' ? draft.soapSourceVersion : undefined,
+        // With the registry profile the server's default is 1.2, so 1.1 must be written to be kept.
+        version:
+          draft.soapSourceProfile === 'cdc-iis'
+            ? draft.soapSourceVersion
+            : draft.soapSourceVersion !== '1.1'
+              ? draft.soapSourceVersion
+              : undefined,
         element: draft.soapSourceElement || undefined,
         base64: draft.soapSourceBase64 || undefined,
         responseElement: draft.soapSourceResponseElement || undefined,
@@ -2258,6 +2273,20 @@ function destinationToWire(d: Destination): unknown {
       break
 
     case 'soap':
+      if (d.soapProfile === 'cdc-iis') {
+        // The registry profile builds the envelope, the action and the success test itself, so the plain-SOAP
+        // fields are not sent even if they were filled in before the profile was chosen.
+        out.soap = {
+          url: d.soapUrl || undefined,
+          profile: 'cdc-iis',
+          facilityId: d.soapFacilityId || undefined,
+          warningsAreErrors: d.soapWarningsAreErrors || undefined,
+          version: d.soapVersion,
+          username: d.soapUsername || undefined,
+          password: d.soapPassword || undefined,
+        }
+        break
+      }
       out.soap = {
         url: d.soapUrl || undefined,
         action: d.soapAction || undefined,
@@ -2529,6 +2558,9 @@ export function newDestination(): Destination {
     // touching the control.
     smtpStartTLS: true,
     soapUrl: '',
+    soapProfile: '',
+    soapFacilityId: '',
+    soapWarningsAreErrors: false,
     soapAction: '',
     soapVersion: '1.1',
     soapBody: '',
@@ -2718,6 +2750,7 @@ export function emptyDraft(): ChannelDraft {
     sourceKind: 'mllp',
 
     soapSourceListen: '',
+    soapSourceProfile: '',
     soapSourcePath: '',
     soapSourceVersion: '1.1',
     soapSourceElement: '',

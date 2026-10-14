@@ -1519,6 +1519,8 @@ export const api = {
   createSHL: (input: { label?: string; content: unknown; passcode?: string; expiresInDays?: number }) =>
     request<SHLCreated>('POST', '/api/shl', input),
   listSHL: () => request<{ links: SHLHosted[] }>('GET', '/api/shl'),
+  /** patientSummary builds an International Patient Summary (IPS document Bundle) from this server's FHIR store. */
+  patientSummary: (patient: string) => request<Record<string, unknown>>('POST', '/api/shl/summary', { patient }),
   revokeSHL: (id: string) => request<{ status: string }>('DELETE', `/api/shl/${encodeURIComponent(id)}`),
   /** resolveSHL fetches and decrypts what a link points at, and can deliver its FHIR content to a channel. */
   resolveSHL: (input: { link: string; passcode?: string; recipient?: string; channel?: string }) =>

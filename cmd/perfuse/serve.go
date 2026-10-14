@@ -1422,6 +1422,7 @@ oidcDone:
 		// would mean every EHR integration had to hold a login cookie.
 		mountFHIR(mux, fhirSrv.Handler())
 		srv.DTRPackage = fhirSrv.QuestionnairePackage
+		srv.PatientSummary = fhirSrv.PatientSummary
 
 		// Reports the scheme actually in use rather than asserting one. The previous line claimed the endpoint
 		// was unauthenticated whatever was configured, which is the kind of log entry that gets believed.

@@ -1,0 +1,25 @@
+# Report immunizations to a state registry on the CDC IIS web service.
+#
+# The EHR sends VXU^V04 over MLLP. Each one is submitted with submitSingleMessage; the registry's HL7 ACK decides
+# whether it was delivered. An AR, or an AE carrying an E severity, is a failed delivery with the registry's reason,
+# and the queue holds it for a person rather than retrying a rejection forever.
+#
+# Replace the URL, the credentials and the facility ID with the ones your registry's onboarding gave you. Most
+# registries also require mutual TLS or an IP allow-list; set destinations[0].soap.tls for the first.
+name: vxu-to-registry
+source:
+  type: mllp
+  listen: "0.0.0.0:6661"
+filter: MSH-9.1 == "VXU"
+destinations:
+  - name: state-registry
+    type: soap
+    soap:
+      profile: cdc-iis
+      url: "https://iis.state.example/iis-ws/cdc"
+      username: "replace-with-registry-username"
+      password: "replace-with-registry-password"
+      facility_id: "FAC-1234"
+    queue:
+      enabled: true
+      max_attempts: 5

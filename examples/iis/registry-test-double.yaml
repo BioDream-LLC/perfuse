@@ -1,0 +1,17 @@
+# A local stand-in for a state registry, for testing the two channels beside this file without a registry account.
+#
+# Answers connectivityTest, takes submitSingleMessage, serves the CDC WSDL at http://127.0.0.1:8096/iis?wsdl and
+# writes every message it receives to ./registry-received.
+name: registry-test-double
+source:
+  type: soap
+  soap:
+    profile: cdc-iis
+    listen: "127.0.0.1:8096"
+    path: /iis
+    username: test
+    password: test
+destinations:
+  - name: received
+    type: file
+    dir: ./registry-received

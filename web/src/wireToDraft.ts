@@ -148,7 +148,8 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
     case 'soap':
       draft.soapSourceListen = source.soap?.listen ?? ''
       draft.soapSourcePath = source.soap?.path ?? ''
-      draft.soapSourceVersion = source.soap?.version ?? '1.1'
+      draft.soapSourceProfile = source.soap?.profile === 'cdc-iis' ? 'cdc-iis' : ''
+      draft.soapSourceVersion = source.soap?.version ?? (draft.soapSourceProfile === 'cdc-iis' ? '1.2' : '1.1')
       draft.soapSourceElement = source.soap?.element ?? ''
       draft.soapSourceBase64 = source.soap?.base64 ?? false
       draft.soapSourceResponseElement = source.soap?.responseElement ?? ''
@@ -836,7 +837,11 @@ function readDestination(d: WireDest): Destination {
       dest.soapAction = d.soap?.action ?? ''
       // An absent version means 1.1, the server default. Reading it as 1.2 would send a different envelope on
       // the next save and the service would fault about the version rather than the message.
-      dest.soapVersion = d.soap?.version ?? '1.1'
+      // The registry profile's default is 1.2, the CDC WSDL's binding.
+      dest.soapProfile = d.soap?.profile === 'cdc-iis' ? 'cdc-iis' : ''
+      dest.soapFacilityId = d.soap?.facilityId ?? ''
+      dest.soapWarningsAreErrors = d.soap?.warningsAreErrors === true
+      dest.soapVersion = d.soap?.version ?? (dest.soapProfile === 'cdc-iis' ? '1.2' : '1.1')
       dest.soapBody = d.soap?.body ?? ''
       dest.soapHeader = d.soap?.header ?? ''
       dest.soapUsername = d.soap?.username ?? ''
@@ -1201,6 +1206,7 @@ interface WireSource {
   }
   soap?: {
     listen?: string
+    profile?: string
     path?: string
     version?: '1.1' | '1.2'
     element?: string
@@ -1339,6 +1345,9 @@ interface WireDest {
   }
   soap?: {
     url?: string
+    profile?: string
+    facilityId?: string
+    warningsAreErrors?: boolean
     action?: string
     version?: '1.1' | '1.2'
     body?: string

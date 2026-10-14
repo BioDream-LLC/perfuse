@@ -91,6 +91,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li>Write limits for a public server: writes a minute per client, and a resource cap</li>
 <li><code>fhir</code> as a destination; a <b>browser FHIR lab</b>; <code>perfuse fhir</code> to convert, validate and serve</li>
 <li><b>SMART Health Links and Cards</b> (<i>Kill the Clipboard</i>): read a patient's QR code, verify the cards, share the visit back</li>
+<li><b>International Patient Summary</b>: <code>Patient/$summary</code> builds an IPS 2.0.0 document from the store; empty sections say so rather than reading as none</li>
 </ul>
 </td>
 </tr>
@@ -210,11 +211,12 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 </td>
 <td width="50%" valign="top">
 <img src="docs/assets/chips/publichealth.svg" width="168" height="40" alt="Public health"><br>
-<b>eCR and ELR</b>
+<b>eCR, ELR and immunization registries</b>
 <ul>
 <li><b>eCR 2.1.2</b>: an eICR for each message with a reportable-condition trigger code, from the RCTC you load</li>
 <li><b>Reportability Responses</b> received at <code>$process-message</code>, and a test agency to try the round trip</li>
 <li><b>ELR</b>: a lab's ORU^R01 reshaped into HL7 2.5.1 ELR with only the reportable orders; ONC's tool reports all 28 of its examples valid</li>
+<li><b>Immunization registries</b> on the CDC IIS web service: VXU and QBP submitted, the registry's ACK judged, and a registry endpoint to test against</li>
 </ul>
 </td>
 </tr>
@@ -267,7 +269,6 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 </td>
 </tr>
 </table>
-
 
 ## How small it is
 

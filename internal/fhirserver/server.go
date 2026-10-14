@@ -167,6 +167,8 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /Patient/{id}/$everything", s.handleEverything)
 	mux.HandleFunc("POST /Patient/{id}/$everything", s.handleEverything)
+	mux.HandleFunc("GET /Patient/{id}/$summary", s.handleSummary)
+	mux.HandleFunc("GET /Patient/$summary", s.handleSummary)
 
 	// History and versioned reads.
 	//
@@ -372,6 +374,10 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 				map[string]any{
 					"name":       "everything",
 					"definition": "http://hl7.org/fhir/OperationDefinition/Patient-everything",
+				},
+				map[string]any{
+					"name":       "summary",
+					"definition": "http://hl7.org/fhir/uv/ips/OperationDefinition/summary",
 				},
 			}
 			if s.Payer != nil {

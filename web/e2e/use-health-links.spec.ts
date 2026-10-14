@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { openTab } from "./nav";
+import { smartToken } from "./smart";
 
 // Kill the Clipboard, both directions through the interface: a visit record shared as a SMART Health Link with a passcode, then that
 // same link read back the way a front desk would - which exercises the public manifest endpoint, the decryption and the passcode.
@@ -46,4 +47,44 @@ test("something that is not a health card is refused with the reason", async ({ 
   await page.getByLabel("SMART Health Card").fill("hello");
   await page.getByRole("button", { name: "Verify", exact: true }).click();
   await expect(page.getByRole("alert").first()).toContainText("not a SMART Health Card");
+});
+
+// The patient summary: built from the server's own FHIR store, shown before it is shared, and shared as a link.
+test("a patient's International Patient Summary is built from the store and shared", async ({ page }) => {
+  const faults: string[] = [];
+  page.on("pageerror", (e) => faults.push(e.message));
+  await page.goto("/");
+  const token = await smartToken(page.request);
+  const fhir = { Authorization: `Bearer ${token}`, "Content-Type": "application/fhir+json" };
+  const id = `e2e-ips-${Date.now()}`;
+  for (const [path, body] of [
+    [`/fhir/Patient/${id}`, { resourceType: "Patient", id, name: [{ family: "Lindqvist", given: ["Maja"] }], birthDate: "1971-05-02" }],
+    [`/fhir/Condition/${id}-c`, { resourceType: "Condition", id: `${id}-c`, subject: { reference: `Patient/${id}` },
+      clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: "active" }] },
+      code: { text: "Asthma" } }],
+  ] as const) {
+    const put = await page.request.put(path, { headers: fhir, data: body });
+    expect(put.status(), await put.text()).toBeLessThan(300);
+  }
+
+  await openTab(page, "Health links");
+  await page.getByRole("button", { name: "Share", exact: true }).click();
+  await page.getByLabel("Patient", { exact: true }).fill(id);
+  await page.getByRole("button", { name: "Use their patient summary" }).click();
+  await expect(page.getByTestId("ips-note")).toContainText("International Patient Summary");
+  const content = page.getByLabel("FHIR content to share");
+  await expect(content).toContainText('"type": "document"');
+  await expect(content).toContainText("Asthma");
+  // The empty allergy section says the server holds nothing, not that there is nothing.
+  await expect(content).toContainText("does not mean there is none");
+
+  await page.getByRole("button", { name: "Create the link" }).click();
+  await expect(page.getByTestId("shl-link")).toContainText("shlink:/");
+  await expect(page.getByTestId("shl-hosted")).toContainText("Patient summary");
+
+  // An unknown patient is refused with the reason.
+  await page.getByLabel("Patient", { exact: true }).fill("nobody-here");
+  await page.getByRole("button", { name: "Use their patient summary" }).click();
+  await expect(page.getByRole("alert").first()).toContainText("no Patient with id nobody-here");
+  expect(faults, faults.join("\n")).toEqual([]);
 });

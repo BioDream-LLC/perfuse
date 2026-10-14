@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/config"
+	"github.com/biodream-llc/perfuse/internal/engine"
+	"github.com/biodream-llc/perfuse/internal/iis"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/store"
 )
@@ -39,8 +41,12 @@ type connectionCheck struct {
 	Reason  string `json:"reason"`
 
 	CertificateExpires *time.Time `json:"certificateExpires,omitempty"`
-	LastDelivered      *time.Time `json:"lastDelivered,omitempty"`
-	LastFailed         *time.Time `json:"lastFailed,omitempty"`
+
+	// dest is kept for the one probe that is allowed to speak the application protocol: an immunization registry's
+	// connectivityTest, which the CDC interface defines for exactly this and which submits nothing.
+	dest          config.Destination
+	LastDelivered *time.Time `json:"lastDelivered,omitempty"`
+	LastFailed    *time.Time `json:"lastFailed,omitempty"`
 }
 
 type layer struct {
@@ -117,7 +123,7 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request, sess 
 			if target == "" {
 				continue
 			}
-			checks = append(checks, &connectionCheck{Channel: c.Name, Destination: d.Name, Type: string(d.Type), Target: target, TLS: tlsOn})
+			checks = append(checks, &connectionCheck{Channel: c.Name, Destination: d.Name, Type: string(d.Type), Target: target, TLS: tlsOn, dest: d})
 		}
 	}
 	last := map[string]msgstore.LastDelivery{}
@@ -138,6 +144,7 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request, sess 
 			defer func() { <-sem }()
 			probe(r.Context(), c)
 			judge(c, last[c.Channel+"\x00"+c.Destination])
+			registryEcho(r.Context(), c)
 		}(c)
 	}
 	wg.Wait()
@@ -228,6 +235,36 @@ func judge(c *connectionCheck, l msgstore.LastDelivery) {
 		if c.App.State == "skipped" {
 			c.Reason = "Reachable; nothing has been sent to it in the last seven days."
 		}
+	}
+}
+
+// registryEcho asks an immunization registry's connectivityTest when its traffic says nothing either way.
+//
+// The CDC interface defines connectivityTest to prove the endpoint without submitting anything, so it is the one
+// application-level probe that cannot put a test message into production. It does not check credentials; only a
+// real submission does, and the page says so.
+func registryEcho(ctx context.Context, c *connectionCheck) {
+	if c.dest.SOAP == nil || c.dest.SOAP.Profile != iis.Profile || c.App.State != "skipped" ||
+		c.TCP.State != "ok" || c.TLSStep.State == "failed" {
+		return
+	}
+	sender, err := engine.NewSOAPSender(c.dest)
+	if err != nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
+	defer cancel()
+	start := time.Now()
+	got, err := sender.ConnectivityTest(ctx, "perfuse")
+	if err != nil {
+		c.App = layer{State: "failed", Detail: "the registry's connectivityTest failed: " + err.Error(), Millis: ms(start)}
+		c.Verdict, c.Reason = "degraded", "The network path is open, but "+c.App.Detail
+		return
+	}
+	c.App = layer{State: "ok", Detail: "connectivityTest answered: " + got +
+		" (this proves the endpoint, not the username and password)", Millis: ms(start)}
+	if c.Verdict == "ok" {
+		c.Reason = "Reachable, and the registry answers connectivityTest; nothing has been submitted in the last seven days."
 	}
 }
 

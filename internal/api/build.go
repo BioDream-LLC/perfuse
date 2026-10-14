@@ -1275,6 +1275,9 @@ type buildSOAPDest struct {
 	TLS *buildTLS `json:"tls,omitempty" yaml:"tls,omitempty"`
 
 	URL            string            `json:"url,omitempty" yaml:"url,omitempty"`
+	Profile        string            `json:"profile,omitempty" yaml:"profile,omitempty"`
+	FacilityID     string            `json:"facilityId,omitempty" yaml:"facility_id,omitempty"`
+	WarningsAreErr bool              `json:"warningsAreErrors,omitempty" yaml:"warnings_are_errors,omitempty"`
 	Action         string            `json:"action,omitempty" yaml:"action,omitempty"`
 	Version        string            `json:"version,omitempty" yaml:"version,omitempty"`
 	Body           string            `json:"body,omitempty" yaml:"body,omitempty"`
@@ -1447,6 +1450,7 @@ type buildAttachRule struct {
 // buildSOAPSource accepts messages inside a SOAP envelope.
 type buildSOAPSource struct {
 	Listen            string    `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Profile           string    `json:"profile,omitempty" yaml:"profile,omitempty"`
 	Path              string    `json:"path,omitempty" yaml:"path,omitempty"`
 	Version           string    `json:"version,omitempty" yaml:"version,omitempty"`
 	Element           string    `json:"element,omitempty" yaml:"element,omitempty"`

@@ -1568,14 +1568,109 @@ function DestinationCard({
 
         {dest.type === 'soap' && (
           <>
+            <Field
+              label="Service"
+              hint="An immunization registry speaks the CDC's interface, so Perfuse builds the envelope, puts the
+              credentials where the WSDL says and reads the registry's HL7 acknowledgement to decide whether the
+              shot was kept. Anything else is a SOAP service you describe."
+            >
+              <select
+                className="input"
+                aria-label="SOAP service"
+                value={dest.soapProfile}
+                onChange={(e) => {
+                  const profile = e.target.value as '' | 'cdc-iis'
+                  // The CDC WSDL binds SOAP 1.2, so choosing the registry also chooses its version.
+                  onChange(profile === 'cdc-iis' ? { soapProfile: profile, soapVersion: '1.2' } : { soapProfile: profile })
+                }}
+              >
+                <option value="">A SOAP service you describe</option>
+                <option value="cdc-iis">Immunization registry (CDC IIS web service)</option>
+              </select>
+            </Field>
+
             <Field label="Endpoint">
               <input
                 className="input font-mono text-xs"
                 value={dest.soapUrl}
                 onChange={(e) => onChange({ soapUrl: e.target.value })}
-                placeholder="https://registry.internal/PatientService"
+                placeholder={
+                  dest.soapProfile === 'cdc-iis'
+                    ? 'https://iis.state.example/iis-ws/cdc'
+                    : 'https://registry.internal/PatientService'
+                }
               />
             </Field>
+
+            {dest.soapProfile === 'cdc-iis' && (
+              <>
+                <Field
+                  label="SOAP version"
+                  hint="1.2 is what the CDC WSDL binds. Choose 1.1 only if your registry's onboarding guide says so."
+                >
+                  <select
+                    className="input"
+                    value={dest.soapVersion}
+                    onChange={(e) => onChange({ soapVersion: e.target.value as '1.1' | '1.2' })}
+                  >
+                    <option value="1.2">1.2</option>
+                    <option value="1.1">1.1</option>
+                  </select>
+                </Field>
+
+                <Field
+                  label="Username"
+                  hint="The registry account for this submitter. Sent inside the request, where the CDC WSDL puts
+                  it, not as HTTP authentication."
+                >
+                  <input
+                    className="input font-mono"
+                    value={dest.soapUsername}
+                    onChange={(e) => onChange({ soapUsername: e.target.value })}
+                  />
+                </Field>
+
+                <Field label="Password">
+                  <input
+                    type="password"
+                    className="input font-mono"
+                    value={dest.soapPassword}
+                    onChange={(e) => onChange({ soapPassword: e.target.value })}
+                  />
+                </Field>
+
+                <Field
+                  label="Facility ID"
+                  hint="The registry's identifier for the submitting organisation. Optional in the WSDL; many
+                  registries require it. Left empty, none is sent."
+                >
+                  <input
+                    className="input font-mono"
+                    value={dest.soapFacilityId}
+                    onChange={(e) => onChange({ soapFacilityId: e.target.value })}
+                    placeholder="FAC-1234"
+                  />
+                </Field>
+
+                <Check
+                  label="Treat warnings as failures"
+                  value={dest.soapWarningsAreErrors}
+                  onChange={(v) => onChange({ soapWarningsAreErrors: v })}
+                  hint="Registries answer AE both for 'accepted with warnings' and for 'part of this was not stored'.
+                  Off, the ERR severity decides: any E is a failure, warnings alone are delivered. On, every AE
+                  waits for a person."
+                />
+
+                <p className="rounded-lg border border-sky-900/60 bg-sky-950/30 p-3 text-sm text-sky-200">
+                  Each message goes in <code>submitSingleMessage</code>. A VXU comes back as the registry&apos;s
+                  ACK, a QBP query as its RSP with the history and forecast; a response script reads either as
+                  HL7. An AR, or an AE with an error, is reported as a failed delivery with the registry&apos;s
+                  reason — never as delivered.
+                </p>
+              </>
+            )}
+
+            {dest.soapProfile !== 'cdc-iis' && (<>
 
             <Field
               label="SOAP version"
@@ -1683,6 +1778,7 @@ function DestinationCard({
               </Field>
               </div>
             </details>
+            </>)}
           </>
         )}
 

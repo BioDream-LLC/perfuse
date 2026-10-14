@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biodream-llc/perfuse/internal/iis"
 	"github.com/biodream-llc/perfuse/internal/soap"
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
 )
@@ -21,6 +22,15 @@ import (
 type SOAPSource struct {
 	// Listen is the address to serve on. Required.
 	Listen string `yaml:"listen"`
+
+	// Profile names a standard service this endpoint implements. Empty accepts any envelope as configured below.
+	//
+	// "cdc-iis" answers as an immunization registry does, on the CDC interface (urn:cdc:iisb:2011): connectivityTest
+	// is echoed, submitSingleMessage's hl7Message is the message and the channel's acknowledgement goes back in
+	// return, the WSDL is served at ?wsdl, and username and password, when set, are checked against the ones in the
+	// body (where the WSDL puts them) rather than against HTTP authentication. For a registry's test double, or for a
+	// site that receives submissions the way registries do.
+	Profile string `yaml:"profile,omitempty"`
 
 	// Path is the URL path to accept envelopes on. Defaults to "/".
 	Path string `yaml:"path,omitempty"`
@@ -133,6 +143,26 @@ func (s *SOAPSource) validate() []error {
 	case "", "1.1", "1.2":
 	default:
 		errs = append(errs, fmt.Errorf("soap version %q is not one this understands; use 1.1 or 1.2", s.Version))
+	}
+
+	switch strings.TrimSpace(s.Profile) {
+	case "":
+	case iis.Profile:
+		if s.Element != "" || s.Base64 || s.ResponseElement != "" || s.ResponseNamespace != "" || s.FaultOnNak {
+			errs = append(errs, fmt.Errorf("the soap source uses profile %s, which fixes the element, the response "+
+				"and how a rejection is answered; remove element, base64, response_element, response_namespace and "+
+				"fault_on_nak", iis.Profile))
+		}
+		if s.Token != "" {
+			errs = append(errs, fmt.Errorf("the soap source uses profile %s, whose callers send username and "+
+				"password in the body; a bearer token is not part of that interface", iis.Profile))
+		}
+		if s.Version == "" {
+			s.Version = "1.2"
+		}
+	default:
+		errs = append(errs, fmt.Errorf("soap profile %q is not one this understands; the only profile is %s",
+			s.Profile, iis.Profile))
 	}
 
 	if s.Username != "" && s.Password == "" {

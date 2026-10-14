@@ -539,11 +539,13 @@ type Composition struct {
 
 // CompositionSection is one section of a clinical document.
 type CompositionSection struct {
-	Title   string               `json:"title,omitempty"`
-	Code    *CodeableConcept     `json:"code,omitempty"`
-	Text    *Narrative           `json:"text,omitempty"`
-	Entry   []Reference          `json:"entry,omitempty"`
-	Section []CompositionSection `json:"section,omitempty"`
+	Title string           `json:"title,omitempty"`
+	Code  *CodeableConcept `json:"code,omitempty"`
+	Text  *Narrative       `json:"text,omitempty"`
+	Entry []Reference      `json:"entry,omitempty"`
+	// EmptyReason says why a section has no entries, so a reader can tell "none known" from "not looked for".
+	EmptyReason *CodeableConcept     `json:"emptyReason,omitempty"`
+	Section     []CompositionSection `json:"section,omitempty"`
 }
 
 func (c *Composition) ResourceTypeName() string { return "Composition" }

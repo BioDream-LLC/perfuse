@@ -8,6 +8,7 @@ import (
 
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/config"
+	"github.com/biodream-llc/perfuse/internal/iis"
 	"github.com/biodream-llc/perfuse/internal/soap"
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
 )
@@ -50,6 +51,10 @@ func (s *SOAPSender) Send(ctx context.Context, msg []byte) error {
 // here: these services routinely answer with a 200 and a body describing a rejection, and the fault codes that
 // should count as success are entirely site-specific.
 func (s *SOAPSender) SendForResponse(ctx context.Context, msg []byte) ([]byte, error) {
+	if s.cfg.Profile == iis.Profile {
+		return s.sendToRegistry(ctx, msg)
+	}
+
 	parsed, err := hl7.Parse(msg)
 	if err != nil {
 		return nil, fmt.Errorf("building the SOAP request needs the message parsed, and a transformation "+
@@ -100,6 +105,70 @@ func (s *SOAPSender) SendForResponse(ctx context.Context, msg []byte) ([]byte, e
 	return resp.Body, nil
 }
 
+// sendToRegistry submits one message to an immunization registry on the CDC interface.
+//
+// The reply is the registry's HL7 answer - the ACK for a VXU, the RSP for a QBP - not the envelope, so a response
+// script reads HL7 as it would from MLLP. Whether the message was delivered is the acknowledgement's to say: a
+// registry answers a rejection with HTTP 200, and reporting that as delivered is how shots go unreported.
+func (s *SOAPSender) sendToRegistry(ctx context.Context, msg []byte) ([]byte, error) {
+	if _, err := hl7.Parse(msg); err != nil {
+		return nil, fmt.Errorf("an immunization registry takes an HL7 v2 message, and this does not parse as one: %w", err)
+	}
+
+	resp, err := soap.Call(ctx, s.client, soap.Request{
+		URL:         s.cfg.URL,
+		Action:      iis.ActionSubmit,
+		Body:        iis.SubmitBody(s.cfg.Username, s.cfg.Password, s.cfg.FacilityID, msg),
+		Version:     s.cfg.SOAPVersion(),
+		HTTPHeaders: s.cfg.Headers,
+		// No HTTP authentication: the WSDL carries the credentials in the body.
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp.Fault != nil {
+		return resp.Body, fmt.Errorf("the registry refused the submission: %w", resp.Fault)
+	}
+	if resp.Status < 200 || resp.Status >= 300 {
+		return resp.Body, fmt.Errorf("the registry answered %d with no SOAP fault: %s", resp.Status, firstLine(resp.Body, 200))
+	}
+
+	returned, err := iis.ParseReturn(resp.Body)
+	if err != nil {
+		return resp.Body, err
+	}
+	ack, err := iis.JudgeAck(returned, s.cfg.WarningsAreErrors)
+	if err != nil {
+		return []byte(returned), err
+	}
+	if ack.Rejected {
+		return ack.Message, ack
+	}
+	return ack.Message, nil
+}
+
+// ConnectivityTest calls the registry's connectivityTest, which proves the address, TLS and SOAP binding without
+// submitting anything. Credentials are not checked by this operation, so it cannot prove those.
+func (s *SOAPSender) ConnectivityTest(ctx context.Context, echo string) (string, error) {
+	resp, err := soap.Call(ctx, s.client, soap.Request{
+		URL:         s.cfg.URL,
+		Action:      iis.ActionConnectivity,
+		Body:        iis.ConnectivityBody(echo),
+		Version:     s.cfg.SOAPVersion(),
+		HTTPHeaders: s.cfg.Headers,
+	})
+	if err != nil {
+		return "", err
+	}
+	if resp.Fault != nil {
+		return "", resp.Fault
+	}
+	if resp.Status < 200 || resp.Status >= 300 {
+		return "", fmt.Errorf("the registry answered %d: %s", resp.Status, firstLine(resp.Body, 200))
+	}
+	return iis.ParseReturn(resp.Body)
+}
+
 // faultCountsAsSuccess reports whether a fault was configured as acceptable.
 //
 // Matched on the code and on the reason, because services are inconsistent about which one carries the meaning -
@@ -120,6 +189,9 @@ func (s *SOAPSender) faultCountsAsSuccess(fault *soap.Fault) bool {
 
 // Describe names the destination, never the password.
 func (s *SOAPSender) Describe() string {
+	if s.cfg.Profile == iis.Profile {
+		return fmt.Sprintf("%s (immunization registry, CDC IIS SOAP %s)", s.cfg.URL, s.cfg.SOAPVersion())
+	}
 	if s.cfg.Action != "" {
 		return fmt.Sprintf("%s (SOAP %s, %s)", s.cfg.URL, s.cfg.SOAPVersion(), s.cfg.Action)
 	}

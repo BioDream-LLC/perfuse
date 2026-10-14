@@ -505,7 +505,9 @@ func describeDestination(d config.Destination) string {
 		}
 
 	case config.DestinationSOAP:
-		if d.SOAP != nil {
+		if d.SOAP != nil && d.SOAP.Profile == "cdc-iis" {
+			out = fmt.Sprintf("submitted to the immunization registry at %s (CDC IIS web service)", d.SOAP.URL)
+		} else if d.SOAP != nil {
 			out = fmt.Sprintf("posted as a SOAP request to %s", d.SOAP.URL)
 		} else {
 			out = "a SOAP endpoint"

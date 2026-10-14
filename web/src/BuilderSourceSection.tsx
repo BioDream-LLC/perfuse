@@ -1016,6 +1016,21 @@ export function SourceSection({
 
       {draft.sourceKind === 'soap' && (
         <>
+          <Choose
+            label="Service"
+            value={draft.soapSourceProfile}
+            onChange={(v) => {
+              set('soapSourceProfile', v)
+              // The CDC WSDL binds SOAP 1.2.
+              if (v === 'cdc-iis') set('soapSourceVersion', '1.2')
+            }}
+            options={[
+              { value: '', label: 'Any SOAP caller, as configured below' },
+              { value: 'cdc-iis', label: 'Answer as an immunization registry (CDC IIS web service)' },
+            ]}
+            hint="The registry interface answers connectivityTest, takes the message from submitSingleMessage, returns the channel's acknowledgement in return and serves the CDC WSDL at ?wsdl. Use it for a registry test double, or to receive submissions the way registries do."
+          />
+
           <Pair>
             <Text
               label="Listen on"
@@ -1042,16 +1057,33 @@ export function SourceSection({
               hint="1.1 unless the caller says otherwise. The difference is not cosmetic — the two use different
               content types, and a mismatch is rejected before your message is looked at."
             />
-            <Text
-              label="Element holding the message"
-              value={draft.soapSourceElement}
-              onChange={(v) => set('soapSourceElement', v)}
-              placeholder="HL7Message"
-              hint="The element inside the envelope body that contains the HL7. Namespace prefixes are ignored,
-              so give the local name only — callers disagree about prefixes and none of them are wrong."
-            />
+            {draft.soapSourceProfile !== 'cdc-iis' && (
+              <Text
+                label="Element holding the message"
+                value={draft.soapSourceElement}
+                onChange={(v) => set('soapSourceElement', v)}
+                placeholder="HL7Message"
+                hint="The element inside the envelope body that contains the HL7. Namespace prefixes are ignored,
+                so give the local name only — callers disagree about prefixes and none of them are wrong."
+              />
+            )}
           </Pair>
 
+          {draft.soapSourceProfile === 'cdc-iis' ? (
+            <Pair>
+              <Text
+                label="Username callers send"
+                value={draft.soapSourceUsername}
+                onChange={(v) => set('soapSourceUsername', v)}
+                hint="Checked against the username inside submitSingleMessage, where the CDC WSDL puts it. A wrong one is answered with a SecurityFault. Left empty, any caller is accepted."
+              />
+              <Secret
+                label="Password callers send"
+                value={draft.soapSourcePassword}
+                onChange={(v) => set('soapSourcePassword', v)}
+              />
+            </Pair>
+          ) : (
           <Check
             label="The message arrives base64 encoded"
             value={draft.soapSourceBase64}
@@ -1059,6 +1091,9 @@ export function SourceSection({
             hint="Common, because it stops the segment separators being mangled by XML. Turn it on if the caller
             says they encode — with it off, an encoded message arrives as one long unparseable line."
           />
+          )}
+
+          {draft.soapSourceProfile !== 'cdc-iis' && (
 
           <Advanced
             title="Response and authentication"
@@ -1116,6 +1151,7 @@ export function SourceSection({
               />
             </Pair>
           </Advanced>
+          )}
         </>
       )}
 

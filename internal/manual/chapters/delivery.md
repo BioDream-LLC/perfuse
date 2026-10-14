@@ -250,6 +250,65 @@ The ELR file is the channel's companion, not a channel: `perfuse check` and the 
 channel that will not load. In the channel builder the same two settings are under the destination, in **Lab reporting (ELR
 2.5.1)**; the trigger codes field opens once an ELR file is named, and saving refuses a file that is not beside the channel.
 
+### Immunization registries
+
+Every US state immunization registry (IIS) takes HL7 2.5.1 messages on the same SOAP interface, the one the CDC published in
+2011 (namespace `urn:cdc:iisb:2011`). It has two operations: `connectivityTest`, which proves the endpoint, and
+`submitSingleMessage`, which carries the message. A VXU^V04 reports a shot and comes back as an ACK; a QBP^Q11 asks for a
+patient's history and forecast and comes back as an RSP^K11.
+
+Choose **Immunization registry (CDC IIS web service)** as the service of a SOAP destination, or write `profile: cdc-iis`:
+
+```yaml
+destinations:
+  - name: state-registry
+    type: soap
+    soap:
+      profile: cdc-iis
+      url: https://iis.state.example/iis-ws/cdc
+      username: clinic-submitter       # the registry account for this submitter
+      password: "..."
+      facility_id: FAC-1234            # optional in the WSDL; many registries require it
+    queue: {enabled: true}
+```
+
+Perfuse builds the envelope, so there is no body to write. The username and password go inside the request, where the CDC WSDL
+puts them, not into HTTP authentication. The version is SOAP 1.2, the WSDL's binding, unless you set `version: "1.1"` for a
+registry whose guide asks for it. Where a registry requires a client certificate, set the destination's `tls` as for any HTTPS
+call.
+
+The registry's acknowledgement decides whether the message was delivered, not the HTTP status. A registry answers a rejected shot
+with HTTP 200 and an AR inside, so a destination that trusted the status would report a lost immunization as delivered.
+
+| The registry answers | Perfuse records |
+|---|---|
+| AA (or CA) | Delivered. |
+| AE whose ERR segments are all warnings (ERR-4 `W` or `I`) | Delivered. The warnings are in the reply. |
+| AE with any ERR-4 `E`, or an ERR with no severity | Failed, with each ERR's location, code and text in the error. |
+| AR or CR | Failed, the same way. |
+| A SOAP fault (wrong password, message too large) | Failed, with the registry's reason. |
+| Something that is not an HL7 message | Failed. |
+
+`warnings_are_errors: true` (**Treat warnings as failures**) makes every AE wait for a person. The reply, which response scripts
+and an HTTP caller waiting on the channel read, is the registry's HL7 message: the ACK, or the RSP with the history and forecast.
+`examples/iis` holds three channels to start from: VXU from an EHR over MLLP, QBP queries over HTTP, and a local stand-in for a
+registry.
+
+The **Connections** dashboard asks a registry its `connectivityTest` when nothing has been submitted for seven days. That operation
+exists for this purpose and submits nothing, so it is the one application-level check Perfuse makes. It proves the address, TLS
+and the SOAP binding, not the username and password; only a real submission tests those.
+
+A SOAP source can answer the same way: **Answer as an immunization registry**, or `profile: cdc-iis` on the source. It echoes
+`connectivityTest`, takes the message from `submitSingleMessage`, returns the channel's acknowledgement in `return`, and serves
+the CDC WSDL at `?wsdl`. A username and password, when set, are checked against the ones in the request, and a wrong pair gets
+the WSDL's `SecurityFault`. A message the channel rejects goes back as a NAK, never as a fault, as the CDC guide says. Use it as
+a test double, or to receive submissions the way a registry does.
+
+Not covered: the state-specific parts of onboarding. Each registry has its own endpoint, account process and local profile of
+the 2.5.1 guide (required RXA and OBX fields, VFC eligibility, refusal codes). Those are the messages' content, which the
+channel's transformations shape; no state's endpoint is built in. Perfuse has been tested against itself and against recorded
+registry answers, not against a live state registry.
+
 ## When the transport says yes and the message did not arrive
 
 "Did this arrive" is often not a question the transport can answer. An MLLP receiver returns an application acknowledgement whose meaning is in its text. An HTTP receiver returns 200 with an error document. In both cases the transport succeeded and the message did not arrive.

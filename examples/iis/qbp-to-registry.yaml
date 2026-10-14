@@ -1,0 +1,21 @@
+# Ask a state registry for a patient's immunization history and forecast (QBP^Q11, Z44 or Z34).
+#
+# The caller posts a QBP over HTTP and waits; the registry's RSP^K11 comes back as the reply, so the EHR receives
+# the history and the forecast exactly as the registry sent them.
+name: qbp-to-registry
+source:
+  type: http
+  http:
+    listen: "0.0.0.0:8095"
+    path: /iis/query
+    token: "replace-with-a-long-random-token"
+filter: MSH-9.1 == "QBP"
+destinations:
+  - name: state-registry
+    type: soap
+    soap:
+      profile: cdc-iis
+      url: "https://iis.state.example/iis-ws/cdc"
+      username: "replace-with-registry-username"
+      password: "replace-with-registry-password"
+      facility_id: "FAC-1234"

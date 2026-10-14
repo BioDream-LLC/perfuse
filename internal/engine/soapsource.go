@@ -17,6 +17,7 @@ import (
 
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/config"
+	"github.com/biodream-llc/perfuse/internal/iis"
 	"github.com/biodream-llc/perfuse/internal/soap"
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
 )
@@ -99,6 +100,11 @@ func (c *Channel) handleSOAPRequest(src *config.SOAPSource, maxSize int) http.Ha
 		// envelope to send and refusing it with "method not allowed" tells them nothing.
 		if r.Method == http.MethodGet && r.URL.RawQuery != "" && strings.EqualFold(r.URL.RawQuery, "wsdl") {
 			c.serveWSDL(w, r, src)
+			return
+		}
+
+		if src.Profile == iis.Profile {
+			c.handleIISRequest(w, r, src, maxSize)
 			return
 		}
 
@@ -401,6 +407,11 @@ func (c *Channel) writeSOAPFault(w http.ResponseWriter, src *config.SOAPSource, 
 
 // serveWSDL returns the configured WSDL file.
 func (c *Channel) serveWSDL(w http.ResponseWriter, r *http.Request, src *config.SOAPSource) {
+	if strings.TrimSpace(src.WSDL) == "" && src.Profile == iis.Profile {
+		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+		_, _ = w.Write(iis.WSDL)
+		return
+	}
 	if strings.TrimSpace(src.WSDL) == "" {
 		// Said plainly rather than answered with a 404, because a caller fetching ?wsdl and getting "not found" will
 		// assume the endpoint is wrong rather than that no WSDL was published.
@@ -427,4 +438,89 @@ func (c *Channel) serveWSDL(w http.ResponseWriter, r *http.Request, src *config.
 // stopSOAPSource shuts the listener down.
 func (c *Channel) stopSOAPSource(ctx context.Context) error {
 	return c.stopHTTPSource(ctx)
+}
+
+// handleIISRequest answers one call on the CDC immunization registry interface.
+//
+// Faults use the WSDL's typed details, so a client generated from it raises SecurityFault for a wrong password and
+// MessageTooLargeFault for an oversized message rather than one generic error it can only retry.
+func (c *Channel) handleIISRequest(w http.ResponseWriter, r *http.Request, src *config.SOAPSource, maxSize int) {
+	fault := func(sender bool, element string, code int, reason string, status int) {
+		w.Header().Set("Content-Type", soap.ContentType(soap.V12, ""))
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(iis.FaultEnvelope(sender, element, code, reason, "")))
+	}
+
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "this endpoint accepts CDC IIS SOAP requests by POST; the WSDL is at ?wsdl",
+			http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, int64(maxSize)+1))
+	if err != nil {
+		fault(true, iis.FaultUnknown, 400, "the request body could not be read: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(body) > maxSize {
+		fault(true, iis.FaultMessageTooLarge, 413,
+			fmt.Sprintf("the message is larger than the %d byte limit this endpoint accepts", maxSize),
+			http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	var env envelope
+	if err := xml.Unmarshal(body, &env); err != nil {
+		fault(true, iis.FaultUnknown, 400, "this does not parse as a SOAP envelope: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	req, err := iis.ParseRequest(env.Body.Inner)
+	if errors.Is(err, iis.ErrUnsupportedOperation) {
+		fault(true, iis.FaultUnsupportedOperation, 400, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		fault(true, iis.FaultUnknown, 400, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.Operation == "connectivityTest" {
+		// Answered without credentials, as the CDC interface specifies: it proves the endpoint, not the account.
+		c.writeIISResponse(w, "connectivityTest", iis.ConnectivityAnswer(req.Echo))
+		return
+	}
+
+	if src.Username != "" {
+		userOK := subtle.ConstantTimeCompare([]byte(req.Username), []byte(src.Username)) == 1
+		passOK := subtle.ConstantTimeCompare([]byte(req.Password), []byte(src.Password)) == 1
+		if !userOK || !passOK {
+			fault(true, iis.FaultSecurity, 401, "the username or password is not accepted", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	ack, err := c.handle(r.Context(), req.Message)
+	if errors.Is(err, ErrNotAdmitted) {
+		w.Header().Set("Retry-After", "60")
+		fault(false, iis.FaultUnknown, 503, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	if err != nil {
+		fault(false, iis.FaultUnknown, 500, "the message could not be processed: "+err.Error(),
+			http.StatusInternalServerError)
+		return
+	}
+
+	// A NAK goes back as the answer, never as a fault: the CDC guide reports message-level problems in the HL7
+	// acknowledgement, and faults only for transport, security and size.
+	c.writeIISResponse(w, "submitSingleMessage", string(ack))
+}
+
+func (c *Channel) writeIISResponse(w http.ResponseWriter, operation, value string) {
+	w.Header().Set("Content-Type", soap.ContentType(soap.V12, ""))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte(soap.ResponseEnvelope(soap.V12, iis.ResponseBody(operation, value)))); err != nil {
+		c.log.Warn("could not write the IIS response", "err", err)
+	}
 }

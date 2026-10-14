@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biodream-llc/perfuse/internal/iis"
 	"github.com/biodream-llc/perfuse/internal/soap"
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
 )
@@ -24,6 +25,24 @@ type SOAPDestination struct {
 	// URL is the endpoint.
 	URL string `yaml:"url"`
 
+	// Profile names a standard service whose envelope Perfuse builds itself. Empty is a plain SOAP call with the body
+	// written in this file.
+	//
+	// "cdc-iis" is the CDC's immunization registry interface (urn:cdc:iisb:2011), which every US state registry uses:
+	// the message goes in submitSingleMessage, username and password go in the body as the WSDL says (not as HTTP
+	// authentication), SOAP 1.2 by default, and the registry's HL7 acknowledgement decides whether the message was
+	// delivered. A registry answers a rejected shot with HTTP 200 and an AR inside, so without this a rejection reads
+	// as a success.
+	Profile string `yaml:"profile,omitempty"`
+
+	// FacilityID is the cdc-iis facilityID, the registry's identifier for the submitting organisation. Optional in the
+	// WSDL; some registries require it.
+	FacilityID string `yaml:"facility_id,omitempty"`
+
+	// WarningsAreErrors, for cdc-iis, treats an AE acknowledgement carrying only warnings as a failure. Off by default:
+	// registries send AE for "accepted with warnings", and the ERR severity says whether anything was lost.
+	WarningsAreErrors bool `yaml:"warnings_are_errors,omitempty"`
+
 	// Action is the SOAPAction. Required by most 1.1 services.
 	Action string `yaml:"action,omitempty"`
 
@@ -33,7 +52,7 @@ type SOAPDestination struct {
 
 	// Body is the XML that goes inside the envelope, with ${PID-5.1} style references to message paths.
 	//
-	// Required. There is no useful default: the element names come from the service's own schema and no engine
+	// Required, unless a profile builds it. There is no useful default: the element names come from the service's own schema and no engine
 	// can guess them.
 	Body string `yaml:"body"`
 
@@ -84,6 +103,20 @@ func validateSOAPDest(d *Destination) []error {
 		errs = append(errs, fmt.Errorf("destination %q needs soap.url", d.Name))
 	}
 
+	switch strings.TrimSpace(s.Profile) {
+	case "":
+	case iis.Profile:
+		return append(errs, validateIISDest(d)...)
+	default:
+		return append(errs, fmt.Errorf("destination %q has soap.profile %q; the only profile is %s (the CDC "+
+			"immunization registry interface), or leave it empty for a plain SOAP call", d.Name, s.Profile, iis.Profile))
+	}
+
+	if s.FacilityID != "" || s.WarningsAreErrors {
+		errs = append(errs, fmt.Errorf("destination %q sets facility_id or warnings_are_errors, which only mean "+
+			"something with soap.profile: %s", d.Name, iis.Profile))
+	}
+
 	if strings.TrimSpace(s.Body) == "" {
 		// No default is possible: the element names come from the service's own schema.
 		errs = append(errs, fmt.Errorf(
@@ -114,5 +147,44 @@ func validateSOAPDest(d *Destination) []error {
 		s.Timeout = 30 * time.Second
 	}
 
+	return errs
+}
+
+// validateIISDest checks a cdc-iis destination and fills in what the WSDL fixes.
+func validateIISDest(d *Destination) []error {
+	s := d.SOAP
+	var errs []error
+
+	if strings.TrimSpace(s.Body) != "" || strings.TrimSpace(s.Header) != "" {
+		// Refused rather than ignored. Somebody who wrote a body expects it to be sent, and with this profile it
+		// would not be.
+		errs = append(errs, fmt.Errorf("destination %q uses soap.profile %s, which builds the envelope itself; "+
+			"remove soap.body and soap.header", d.Name, iis.Profile))
+	}
+	if s.Action != "" && s.Action != iis.ActionSubmit {
+		errs = append(errs, fmt.Errorf("destination %q uses soap.profile %s, whose action is %s; remove soap.action",
+			d.Name, iis.Profile, iis.ActionSubmit))
+	}
+	if strings.TrimSpace(s.Username) == "" || s.Password == "" {
+		// Every registry issues credentials, and a submission without them answers with a SecurityFault on the first
+		// message, which is the wrong time to find out.
+		errs = append(errs, fmt.Errorf("destination %q needs soap.username and soap.password: the registry's "+
+			"credentials for this submitter, sent in the body as the CDC WSDL says", d.Name))
+	}
+	if len(s.FaultIsSuccess) > 0 {
+		errs = append(errs, fmt.Errorf("destination %q sets fault_is_success with soap.profile %s; the registry's "+
+			"acknowledgement decides, so a fault is always a failure", d.Name, iis.Profile))
+	}
+
+	if s.Action == "" {
+		s.Action = iis.ActionSubmit
+	}
+	if strings.TrimSpace(s.Version) == "" {
+		// The CDC WSDL binds SOAP 1.2. Some older registries accept 1.1 too; a site that needs it says so.
+		s.Version = "1.2"
+	}
+	if s.Timeout == 0 {
+		s.Timeout = 30 * time.Second
+	}
 	return errs
 }

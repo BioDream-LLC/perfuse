@@ -442,3 +442,44 @@ func (s *Server) handleVerifySHC(w http.ResponseWriter, r *http.Request, sess *s
 	}
 	s.ok(w, map[string]any{"cards": cards})
 }
+
+// handleSHLSummary builds an International Patient Summary from this server's FHIR store, to be shared as a link.
+//
+// Audited by patient, because reading a whole summary is reading the record; the link created from it is audited again.
+func (s *Server) handleSHLSummary(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	var req struct {
+		Patient string `json:"patient"`
+	}
+	if !s.decode(w, r, &req) {
+		return
+	}
+	req.Patient = strings.TrimSpace(req.Patient)
+	if req.Patient == "" || strings.ContainsAny(req.Patient, "/?#") {
+		s.fail(w, r, http.StatusBadRequest, "name the patient by the FHIR id of their Patient resource")
+		return
+	}
+	if s.PatientSummary == nil {
+		s.fail(w, r, http.StatusConflict, "this server does not serve FHIR, so it holds no records to summarise; start it with -fhir")
+		return
+	}
+	status, body := s.PatientSummary(r.Context(), req.Patient)
+	_ = s.Store.Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "fhir.summary",
+		Target: "Patient/" + req.Patient, IP: clientIP(r)})
+	if status != http.StatusOK {
+		// The FHIR server answers with an OperationOutcome; the console shows its diagnostics as the error.
+		var oo struct {
+			Issue []struct {
+				Diagnostics string `json:"diagnostics"`
+			} `json:"issue"`
+		}
+		msg := "the summary could not be built"
+		if json.Unmarshal(body, &oo) == nil && len(oo.Issue) > 0 && oo.Issue[0].Diagnostics != "" {
+			msg = oo.Issue[0].Diagnostics
+		}
+		s.fail(w, r, status, msg)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(body)
+}

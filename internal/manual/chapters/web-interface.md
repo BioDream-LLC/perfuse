@@ -69,7 +69,8 @@ names them.
 The **Connections** tile checks every networked destination in layers. It looks the name up, opens a TCP connection, completes TLS
 where it is used, and reads the destination's last delivery and failure from real traffic. Each failure says what it means, for
 example "refused: the partner's engine is probably stopped", "timed out: a firewall or a VPN tunnel that is down", or "a
-certificate from an authority this server does not trust". Nothing is sent to the partner. With `-vpn tunnels.yaml` the **VPN tunnels** tile beside it
+certificate from an authority this server does not trust". Nothing is sent to the partner, with one exception: an immunization
+registry that has had no traffic for seven days is asked its CDC `connectivityTest`, which submits nothing. With `-vpn tunnels.yaml` the **VPN tunnels** tile beside it
 reads each partner tunnel's state from AWS Site-to-Site VPN, an Azure VPN Gateway connection or strongSwan on this host, so a time-out
 can be told apart from a tunnel that is down. It also compares both sides' IKE and IPsec settings, as the cloud reports ours and the
 file lists theirs, and says where they cannot agree. **Connection sheet** downloads a partner's settings side by side as Markdown to
@@ -169,7 +170,8 @@ Build an X12 `275` claims attachment in the `006020` form CMS-0053-F adopts, fro
 
 SMART Health Links and Cards, for CMS's *Kill the Clipboard*. **Receive a SMART Health Link** reads the link or QR code a patient
 shows at check-in, verifies the health cards inside and **sends it on** to a channel. **Share a visit record** makes a
-link this server hosts, optionally with a passcode, and a QR code **for the patient**. **Links this server hosts** lists them
+link this server hosts, optionally with a passcode, and a QR code **for the patient**; **Use their patient summary** fills it
+with the patient's [International Patient Summary](#message-formats) from this server's FHIR store. **Links this server hosts** lists them
 with how often each was fetched, when it expires and the passcode tries left, and revokes one. **Verify a SMART Health Card** checks a card's signature and issuer on its own. See
 [CMS-0057](#cms-0057) for the server options it needs.
 

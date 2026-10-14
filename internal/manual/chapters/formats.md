@@ -317,6 +317,33 @@ A FHIR server declaring R4 accepts R4. That was not true of Encounters until thi
 
 It was found the first time anything posted a converted ADT to Perfuse's own R4 server. A test now does that for every mapped message type, and another checks that everything written as R4 is read back unchanged.
 
+### International Patient Summary
+
+`GET /fhir/Patient/{id}/$summary`, or `GET /fhir/Patient/$summary?identifier=system|value`, returns an International Patient
+Summary (HL7 IPS 2.0.0): a FHIR `document` Bundle whose Composition lists the patient's active problems, allergies, medicines,
+immunizations, results, vital signs, procedures, devices, past illnesses, social history and care plans, each with a readable
+narrative. It is the short record a clinician who has never met the patient reads first, and the summary the European Health Data
+Space exchanges between countries from 2029.
+
+It is built from what the FHIR store holds, and nothing is invented:
+
+- Records marked `entered-in-error` are left out.
+- A resolved condition goes under past illness, not problems.
+- A medicine order that was stopped or completed is history, not a current medicine.
+- The three sections the IPS requires (problems, allergies, medicines) are always present. When one has nothing in it, the section
+  carries the coded empty reason `unavailable` and says the server holds no information, "which does not mean there is none". An
+  empty allergy list must never read as "no known allergies".
+- The practitioners, organisations, medicines and locations the entries point at are included, so the document reads on its own.
+
+Access follows `$everything`: a token limited to one patient gets a 403 for another, and an identifier that matches two patients is
+refused rather than guessed. Only the IPS profile is built; asking for another `profile` is refused. The document Perfuse produces
+from its test records validates against the IPS 2.0.0 Bundle profile with the HL7 validator, with no errors. A record built from
+real feeds can still fail where the feed's own codes do (a display name the code system does not use, for example), because the
+summary passes the data on as it was received.
+
+**Exchange → Health links → Share** fills the content with a patient's summary: type the patient's FHIR id and choose **Use their
+patient summary**, then read it and create the link. Building it is audited as `fhir.summary`.
+
 ### Subscriptions
 
 With `-fhir-subscriptions`, the FHIR endpoint sends notifications when an Encounter or an Appointment is created or changed. It follows the FHIR Subscriptions R5 Backport IG for R4, which is what CMS Interoperability Framework criterion 15 and TEFCA's FHIR roadmap use for appointment and encounter notifications.

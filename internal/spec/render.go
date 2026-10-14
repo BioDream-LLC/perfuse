@@ -304,6 +304,10 @@ func describeTransport(d config.Destination) string {
 	case config.DestinationSOAP:
 		// The endpoint and the action, never the credentials. A specification gets emailed to a vendor.
 		if d.SOAP != nil {
+			if d.SOAP.Profile == "cdc-iis" {
+				return fmt.Sprintf("submitted to the immunization registry at %s on the CDC IIS web service; "+
+					"the registry's HL7 acknowledgement decides whether it was delivered", d.SOAP.URL)
+			}
 			if d.SOAP.Action != "" {
 				return fmt.Sprintf("sent as a SOAP request to %s, action %s", d.SOAP.URL, d.SOAP.Action)
 			}

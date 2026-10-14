@@ -241,6 +241,25 @@ function Share() {
   const [created, setCreated] = useState<SHLCreated | null>(null)
   const [links, setLinks] = useState<SHLHosted[]>([])
   const [error, setError] = useState<UiError | null>(null)
+  const [patient, setPatient] = useState('')
+  const [summaryNote, setSummaryNote] = useState('')
+
+  async function useSummary() {
+    setError(null)
+    setSummaryNote('')
+    try {
+      const doc = await api.patientSummary(patient.trim())
+      setContent(JSON.stringify(doc, null, 2))
+      setLabel('Patient summary')
+      const entries = Array.isArray(doc.entry) ? doc.entry.length : 0
+      setSummaryNote(
+        `An International Patient Summary of ${entries} resources, from this server's records. Read it before sharing: ` +
+          'a section with nothing in it says the server holds nothing, not that the patient has nothing.',
+      )
+    } catch (e) {
+      setError(toError(e))
+    }
+  }
 
   async function load() {
     try {
@@ -276,6 +295,27 @@ function Share() {
       <div className="grid gap-5 xl:grid-cols-2">
         <Section title="Share a visit record">
           <div className="space-y-3">
+            <div className="flex items-end gap-2">
+              <Field
+                label="Patient"
+                hint="The FHIR id of a Patient this server holds. Fills the content below with their International Patient Summary."
+              >
+                <input
+                  className="input font-mono"
+                  value={patient}
+                  onChange={(e) => setPatient(e.target.value)}
+                  placeholder="patient id"
+                />
+              </Field>
+              <button className="btn-ghost mb-0.5 shrink-0" disabled={!patient.trim()} onClick={() => void useSummary()}>
+                Use their patient summary
+              </button>
+            </div>
+            {summaryNote && (
+              <p className="text-xs text-sky-300" data-testid="ips-note">
+                {summaryNote}
+              </p>
+            )}
             <Field label="FHIR content" hint="A Bundle, usually: the visit's encounter, results and medications.">
               <CodeArea language="json" aria-label="FHIR content to share" className="min-h-48" value={content} onChange={setContent} />
             </Field>
