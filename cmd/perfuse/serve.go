@@ -205,6 +205,9 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 			"-crd-rules leave it to a reviewer; the PAS request Bundle is POSTed to it. Cannot be combined with -pas-278-url")
 	pasDeciderTokenEnv := fset.String("pas-decider-token-env", "",
 		"name of an environment variable holding a bearer token for -pas-decider-url (the token itself is never a flag)")
+	pasDeciderCA := fset.String("pas-decider-ca", "",
+		"a PEM file of certificate authorities to trust for -pas-decider-url beside the system's, such as the payer's own "+
+			"authority or the decision service's (Vaglio's is its DATA/tls/ca.crt)")
 	ecrResponses := fset.Bool("ecr-responses", false,
 		"accept eCR Reportability Responses at the FHIR endpoint's $process-message, storing each as DocumentReference/<id> derived "+
 			"from the eICR it answers")
@@ -1209,7 +1212,7 @@ oidcDone:
 					// configured beside one would silently do nothing.
 					return fmt.Errorf("-pas-decider-url and -pas-278-url both decide PAS requests; choose one")
 				}
-				decider, err := newPASDecider(*pasDeciderURL, *pasDeciderTokenEnv, log)
+				decider, err := newPASDecider(*pasDeciderURL, *pasDeciderTokenEnv, *pasDeciderCA, log)
 				if err != nil {
 					return err
 				}

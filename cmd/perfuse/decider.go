@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -63,7 +65,7 @@ const deciderTimeout = 20 * time.Second
 
 // newPASDecider returns a Decide that asks the decision service at target. ok reports whether the service decided; when
 // it did not (404, or a failure, which is logged), the caller keeps whatever it would otherwise have answered.
-func newPASDecider(target, tokenEnv string, log *slog.Logger) (func(ctx context.Context, req *pas.Request, svc pas.Service) (fhirserver.PASAnswer, bool), error) {
+func newPASDecider(target, tokenEnv, caFile string, log *slog.Logger) (func(ctx context.Context, req *pas.Request, svc pas.Service) (fhirserver.PASAnswer, bool), error) {
 	u, err := url.Parse(target)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.RawQuery != "" {
 		return nil, fmt.Errorf("-pas-decider-url %q is not an http(s) URL without a query", target)
@@ -80,6 +82,24 @@ func newPASDecider(target, tokenEnv string, log *slog.Logger) (func(ctx context.
 		}
 	}
 	client := &http.Client{Timeout: deciderTimeout}
+	if caFile != "" {
+		// A decision service on the payer's own network often carries a certificate from the payer's own authority, or
+		// from the service's (Vaglio makes one for itself): trust that file beside the system's authorities.
+		pool, err := x509.SystemCertPool()
+		if err != nil || pool == nil {
+			pool = x509.NewCertPool()
+		}
+		raw, err := os.ReadFile(caFile)
+		if err != nil {
+			return nil, fmt.Errorf("-pas-decider-ca: %w", err)
+		}
+		if !pool.AppendCertsFromPEM(raw) {
+			return nil, fmt.Errorf("-pas-decider-ca %s holds no PEM certificate", caFile)
+		}
+		t := http.DefaultTransport.(*http.Transport).Clone()
+		t.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: pool}
+		client.Transport = t
+	}
 	fail := func(svc pas.Service, why string, err error) (fhirserver.PASAnswer, bool) {
 		if log != nil {
 			log.Warn("PAS: the decision service did not decide; the item is pended for a reviewer",

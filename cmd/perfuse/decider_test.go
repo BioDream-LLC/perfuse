@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"encoding/pem"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -34,7 +37,7 @@ func deciderAgainst(t *testing.T, status int, body string) (fhirserver.PASAnswer
 	}))
 	defer ts.Close()
 	t.Setenv("DECIDER_TOKEN", "s3cret")
-	decide, err := newPASDecider(ts.URL+"/api/pas/decide", "DECIDER_TOKEN", slog.New(slog.NewTextHandler(io.Discard, nil)))
+	decide, err := newPASDecider(ts.URL+"/api/pas/decide", "DECIDER_TOKEN", "", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +100,7 @@ func TestDeciderUnreachableIsPended(t *testing.T) {
 	ts := httptest.NewServer(http.NotFoundHandler())
 	url := ts.URL
 	ts.Close()
-	decide, err := newPASDecider(url, "", nil)
+	decide, err := newPASDecider(url, "", "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,12 +112,12 @@ func TestDeciderUnreachableIsPended(t *testing.T) {
 
 func TestDeciderRefusesBadConfiguration(t *testing.T) {
 	for _, u := range []string{"ftp://x", "not a url", "http://x/decide?item=1", ""} {
-		if _, err := newPASDecider(u, "", nil); err == nil {
+		if _, err := newPASDecider(u, "", "", nil); err == nil {
 			t.Errorf("%q accepted", u)
 		}
 	}
 	t.Setenv("EMPTY_TOKEN", "")
-	if _, err := newPASDecider("https://x/decide", "EMPTY_TOKEN", nil); err == nil {
+	if _, err := newPASDecider("https://x/decide", "EMPTY_TOKEN", "", nil); err == nil {
 		t.Error("an empty token variable was accepted")
 	}
 }
@@ -160,12 +163,47 @@ func TestChainLeavesTheRulesCoveragePolicyAlone(t *testing.T) {
 }
 
 func TestADeciderOverPlainHTTPMustBeOnThisMachine(t *testing.T) {
-	if _, err := newPASDecider("http://vaglio.example/api/pas/decide", "", nil); err == nil {
+	if _, err := newPASDecider("http://vaglio.example/api/pas/decide", "", "", nil); err == nil {
 		t.Error("plain http to another host was accepted")
 	}
 	for _, ok := range []string{"http://127.0.0.1:9000/d", "http://localhost/d", "http://[::1]:9000/d", "https://vaglio.example/d"} {
-		if _, err := newPASDecider(ok, "", nil); err != nil {
+		if _, err := newPASDecider(ok, "", "", nil); err != nil {
 			t.Errorf("%s refused: %v", ok, err)
 		}
+	}
+}
+
+// A decision service whose certificate comes from an authority the system does not know (the payer's own, or the
+// service's) is reached once -pas-decider-ca names that authority, and only then.
+func TestPASDeciderTrustsTheNamedAuthority(t *testing.T) {
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"decision":"approve","why":"meets the policy"}`)
+	}))
+	defer ts.Close()
+	ca := filepath.Join(t.TempDir(), "ca.crt")
+	if err := os.WriteFile(ca, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ts.Certificate().Raw}), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	req, svc := deciderRequest()
+
+	untrusting, err := newPASDecider(ts.URL+"/api/pas/decide", "", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a, _ := untrusting(context.Background(), req, svc); a.Decision != "pend" {
+		t.Fatalf("an untrusted certificate was accepted: %+v", a)
+	}
+
+	trusting, err := newPASDecider(ts.URL+"/api/pas/decide", "", ca, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a, ok := trusting(context.Background(), req, svc); !ok || a.Decision != "approve" {
+		t.Fatalf("with -pas-decider-ca: %+v %v", a, ok)
+	}
+
+	if _, err := newPASDecider(ts.URL, "", filepath.Join(t.TempDir(), "missing.crt"), nil); err == nil {
+		t.Fatal("a missing -pas-decider-ca was accepted")
 	}
 }
