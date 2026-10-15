@@ -1,0 +1,45 @@
+{
+  "resourceType": "Measure",
+  "id": "example-a1c-tested",
+  "url": "https://perfuse.health/fhir/Measure/example-a1c-tested",
+  "version": "1.0.0",
+  "name": "ExampleHbA1cTested",
+  "title": "Example: diabetes with an HbA1c test",
+  "status": "draft",
+  "experimental": true,
+  "description": "An illustrative measure, not a CMS eCQM or HEDIS measure: adults 18 to 75 with diabetes who had an HbA1c result in the period.",
+  "scoring": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-scoring", "code": "proportion" }] },
+  "improvementNotation": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-improvement-notation", "code": "increase" }] },
+  "group": [
+    {
+      "id": "main",
+      "population": [
+        {
+          "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "initial-population" }] },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "%subject.birthDate <= (%periodEnd - 18 years) and %subject.birthDate > (%periodEnd - 76 years) and entry.resource.ofType(Condition).where(code.coding.where((system = 'http://snomed.info/sct' and code = '44054006') or (system = 'http://hl7.org/fhir/sid/icd-10-cm' and code.startsWith('E11'))).exists()).exists()"
+          }
+        },
+        {
+          "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "denominator" }] },
+          "criteria": { "language": "text/fhirpath", "expression": "true" }
+        },
+        {
+          "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "numerator" }] },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "entry.resource.ofType(Observation).where(code.coding.where(system = 'http://loinc.org' and code = '4548-4').exists() and effective.ofType(dateTime) >= %periodStart and effective.ofType(dateTime) <= %periodEnd and value.exists()).exists()"
+          }
+        }
+      ],
+      "stratifier": [
+        {
+          "id": "sex",
+          "code": { "coding": [{ "system": "http://loinc.org", "code": "46098-0", "display": "Sex" }], "text": "Sex" },
+          "criteria": { "language": "text/fhirpath", "expression": "%subject.gender" }
+        }
+      ]
+    }
+  ]
+}

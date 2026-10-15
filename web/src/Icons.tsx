@@ -250,6 +250,27 @@ export function IconContracts(props: IconProps) {
   )
 }
 
+export function IconMeasure(props: IconProps) {
+  return (
+    <SvgWrapper {...props}>
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-a`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#22c55e" />
+              <stop offset="100%" stopColor="#14b8a6" />
+            </linearGradient>
+          </defs>
+          <circle cx="12" cy="12" r="9" fill="none" stroke={`url(#${id}-a)`} strokeWidth="1.5" />
+          <circle cx="12" cy="12" r="5" fill="none" stroke={`url(#${id}-a)`} strokeWidth="1.5" />
+          <circle cx="12" cy="12" r="1.6" fill={`url(#${id}-a)`} />
+          <path d="M12 12l6-6M16 6h2v2" stroke={`url(#${id}-a)`} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        </>
+      )}
+    </SvgWrapper>
+  )
+}
+
 export function IconTables(props: IconProps) {
   return (
     <SvgWrapper {...props}>
@@ -1681,6 +1702,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Direct': IconDirect,
   'CMS Aligned Network': IconCheck,
   'SQL on FHIR': IconTables,
+  'Quality measures': IconMeasure,
   'Scripts': IconScripts,
   'Migrate': IconMigrate,
   'Contracts': IconContracts,
@@ -1753,6 +1775,12 @@ export function IconTheme(props: IconProps) {
  * seventy-ninth icon for one heading.
  */
 export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
+  // Digital quality measures.
+  'Quality measures': IconMeasure,
+  'Evaluate': IconMetrics,
+  'Populations': IconUsers,
+  'Stratified by': IconFilter,
+  'The MeasureReport': IconFhir,
   // SQL on FHIR views.
   'SQL on FHIR views': IconTables,
   'The view': IconFhir,

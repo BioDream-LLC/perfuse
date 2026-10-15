@@ -152,6 +152,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	passkeyOrigins := fset.String("passkey-origins", "",
 		"comma-separated origins the console is reached at, with scheme and port: "+
 			"https://perfuse.example.org. Defaults to https:// plus the domain")
+	measureReporter := fset.String("measure-reporter", "Perfuse",
+		"the reporting organisation's name on MeasureReports from $evaluate-measure when the request names no reporter")
 	passkeyName := fset.String("passkey-name", "Perfuse",
 		"the name an authenticator shows a person when they register a passkey")
 
@@ -1488,6 +1490,8 @@ oidcDone:
 		srv.DTRPackage = fhirSrv.QuestionnairePackage
 		srv.PatientSummary = fhirSrv.PatientSummary
 		srv.RunView = fhirSrv.RunView
+		srv.Measures = fhirSrv
+		fhirSrv.MeasureReporter = *measureReporter
 		fhirSrv.Views = srv.ViewLibrary()
 
 		// Reports the scheme actually in use rather than asserting one. The previous line claimed the endpoint

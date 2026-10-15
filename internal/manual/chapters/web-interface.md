@@ -45,6 +45,15 @@ Throughput, latency and error rates over time. Useful for capacity questions and
 SQL on FHIR views: pick an example or a saved view, or write one, run it over this server's FHIR store (all patients or one) or
 over resources pasted in, see the rows with their types, and download CSV, NDJSON or Parquet. **Save** keeps it for the FHIR
 endpoint's `$sql-run`. See [message formats](#message-formats).
+
+### Quality measures
+
+Digital quality measures: pick an example or a Measure in the FHIR store, or write one with FHIRPath criteria. Choose a
+measurement period and a report (summary, summary with patient lists, or one patient) and evaluate it over the FHIR store or
+pasted resources. The screen shows each population's count and patients, the score, and the strata. **Download MeasureReport**
+saves the FHIR result, and **Save to the FHIR store** keeps the Measure for `Measure/$evaluate-measure`. Measures in CQL are
+refused: Perfuse has no CQL engine. See [digital quality measures](#message-formats).
+
 ### Flow map
 
 A picture of how messages actually move: which sources feed which channels, and which destinations they reach.

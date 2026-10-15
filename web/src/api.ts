@@ -964,6 +964,27 @@ export interface ViewsList {
   formats: string[]
 }
 
+export interface MeasureSummary {
+  id: string
+  url?: string
+  version?: string
+  title?: string
+  description?: string
+  scoring?: string
+  problem?: string
+}
+
+export interface MeasuresList {
+  fhir: boolean
+  measures: MeasureSummary[]
+  examples: { id: string; title: string; measure: string }[]
+}
+
+export interface MeasureEvalResult {
+  report: Record<string, unknown>
+  source: 'store' | 'pasted'
+}
+
 export interface ViewRunResult {
   columns: { name: string; type?: string; collection?: boolean }[]
   rows: unknown[][]
@@ -1822,6 +1843,17 @@ export const api = {
     a.click()
     URL.revokeObjectURL(url)
   },
+  /** measures lists the Measures in the FHIR store and the shipped examples. */
+  measures: async (): Promise<MeasuresList> => {
+    const l = await request<{ fhir: boolean; measures: MeasureSummary[]; examples: { id: string; title: string; measure: unknown }[] }>('GET', '/api/measures')
+    return { ...l, examples: l.examples.map((e) => ({ ...e, measure: typeof e.measure === 'string' ? e.measure : JSON.stringify(e.measure) })) }
+  },
+  measureGet: async (id: string): Promise<string> => JSON.stringify(await request<unknown>('GET', `/api/measures/${encodeURIComponent(id)}`)),
+  measureSave: (measure: unknown) => request<{ saved: string }>('PUT', '/api/measures', { measure }),
+  measureDelete: (id: string) => request<{ deleted: string }>('DELETE', `/api/measures/${encodeURIComponent(id)}`),
+  /** measureEvaluate evaluates a stored or inline Measure over the FHIR store, or over pasted resources. */
+  measureEvaluate: (body: { id?: string; measure?: unknown; periodStart: string; periodEnd: string; reportType?: string; subject?: string; resources?: string }) =>
+    request<MeasureEvalResult>('POST', '/api/measures/evaluate', body),
   /** alignedNetwork is this server's readiness for each CMS Interoperability Framework criterion. */
   alignedNetwork: () => request<AlignedView>('GET', '/api/aligned-network'),
   /** direct is this server's Direct addresses and its address book. */

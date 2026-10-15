@@ -5,7 +5,7 @@ import type { Tab } from './App'
 /**
  * The header navigation, grouped.
  *
- * There are twenty-two views. They used to be shown as the first seven followed by a menu called
+ * There are twenty-three views. They used to be shown as the first seven followed by a menu called
  * "More" holding the other fifteen in declaration order, which meant the answer to "where do I look
  * for the thing I need" was to open More and read all of it. The order carried no meaning, so nothing
  * could be learnt and the list had to be re-read every time.
@@ -63,7 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
       dot: 'bg-sky-400',
     },
     // Messages before Queue before Alerts: the order somebody follows when a feed is reported broken.
-    members: ['messages', 'queue', 'alerts', 'metrics', 'views', 'flow', 'teams'],
+    members: ['messages', 'queue', 'alerts', 'metrics', 'views', 'measures', 'flow', 'teams'],
   },
   {
     name: 'Build',

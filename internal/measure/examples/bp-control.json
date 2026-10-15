@@ -1,0 +1,52 @@
+{
+  "resourceType": "Measure",
+  "id": "example-bp-control",
+  "url": "https://perfuse.health/fhir/Measure/example-bp-control",
+  "version": "1.0.0",
+  "name": "ExampleBloodPressureControl",
+  "title": "Example: blood pressure under control",
+  "status": "draft",
+  "experimental": true,
+  "description": "An illustrative measure, not a CMS eCQM: adults 18 to 85 with hypertension whose blood pressure readings in the period were all below 140/90, with at least one reading.",
+  "scoring": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-scoring", "code": "proportion" }] },
+  "improvementNotation": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-improvement-notation", "code": "increase" }] },
+  "group": [
+    {
+      "id": "main",
+      "population": [
+        {
+          "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "initial-population" }] },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "%subject.birthDate <= (%periodEnd - 18 years) and %subject.birthDate > (%periodEnd - 86 years) and entry.resource.ofType(Condition).where(code.coding.where((system = 'http://snomed.info/sct' and code = '38341003') or (system = 'http://hl7.org/fhir/sid/icd-10-cm' and code = 'I10')).exists() and (clinicalStatus.empty() or clinicalStatus.coding.code = 'active')).exists()"
+          }
+        },
+        {
+          "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "denominator" }] },
+          "criteria": { "language": "text/fhirpath", "expression": "true" }
+        },
+        {
+          "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "denominator-exclusion" }] },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "entry.resource.ofType(Condition).where(code.coding.where(system = 'http://snomed.info/sct' and code = '46177005').exists()).exists()"
+          }
+        },
+        {
+          "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "numerator" }] },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "entry.resource.ofType(Observation).where(code.coding.where(system = 'http://loinc.org' and code = '85354-9').exists() and effective.ofType(dateTime) >= %periodStart and effective.ofType(dateTime) <= %periodEnd).select(component.where(code.coding.code = '8480-6').value.ofType(Quantity).value < 140 and component.where(code.coding.code = '8462-4').value.ofType(Quantity).value < 90).allTrue() and entry.resource.ofType(Observation).where(code.coding.where(system = 'http://loinc.org' and code = '85354-9').exists() and effective.ofType(dateTime) >= %periodStart and effective.ofType(dateTime) <= %periodEnd).exists()"
+          }
+        }
+      ],
+      "stratifier": [
+        {
+          "id": "sex",
+          "code": { "coding": [{ "system": "http://loinc.org", "code": "46098-0", "display": "Sex" }], "text": "Sex" },
+          "criteria": { "language": "text/fhirpath", "expression": "%subject.gender" }
+        }
+      ]
+    }
+  ]
+}

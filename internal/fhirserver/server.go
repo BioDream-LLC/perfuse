@@ -107,6 +107,9 @@ type Server struct {
 	// This server had no authentication at all until it was tested by hand: a patient record was created with no
 	// credentials and read straight back. Everything in this file exists because of that.
 	Auth Authenticator
+
+	// MeasureReporter names the Organization a MeasureReport carries as its reporter when the request names none.
+	MeasureReporter string
 }
 
 // NewServer builds a server with safe defaults.
@@ -179,6 +182,11 @@ func (s *Server) Handler() http.Handler {
 	// order - but written together here because they are one feature and splitting them across the list is how one gets
 	// removed without the other.
 	// Bulk export. The operation, the poll URL and the files.
+	// Digital quality measures: FHIRPath Measures evaluated to a MeasureReport.
+	mux.HandleFunc("GET /Measure/{id}/$evaluate-measure", s.handleEvaluateMeasure)
+	mux.HandleFunc("POST /Measure/{id}/$evaluate-measure", s.handleEvaluateMeasure)
+	mux.HandleFunc("GET /Measure/$evaluate-measure", s.handleEvaluateMeasure)
+	mux.HandleFunc("POST /Measure/$evaluate-measure", s.handleEvaluateMeasure)
 	// SQL on FHIR v2: run a ViewDefinition over this server's resources.
 	mux.HandleFunc("GET /$sql-run", s.handleSQLRun)
 	mux.HandleFunc("POST /$sql-run", s.handleSQLRun)
@@ -504,6 +512,11 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 			"definition": "http://hl7.org/fhir/uv/bulkdata/OperationDefinition/export"})
 	}
 	// SQL on FHIR v2 $sql-run, for ViewDefinition subjects.
+	{
+		ops, _ := rest["operation"].([]any)
+		rest["operation"] = append(ops, map[string]any{"name": "evaluate-measure",
+			"definition": "http://hl7.org/fhir/OperationDefinition/Measure-evaluate-measure"})
+	}
 	{
 		ops, _ := rest["operation"].([]any)
 		rest["operation"] = append(ops, map[string]any{"name": "sql-run",

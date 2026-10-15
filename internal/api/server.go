@@ -275,8 +275,10 @@ type Server struct {
 	directBk   *directBook
 
 	// ViewsDir keeps SQL on FHIR ViewDefinitions; RunView runs one over the FHIR store (nil without -fhir).
-	ViewsDir  string
-	RunView   ViewRunner
+	ViewsDir string
+	RunView  ViewRunner
+	// Measures evaluates digital quality measures over the FHIR store (nil without -fhir).
+	Measures  MeasureService
 	viewsOnce sync.Once
 	viewsLib  *viewLibrary
 	FHIRStore *fhirserver.Store
@@ -523,6 +525,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerXDS(mux)
 	s.registerDirect(mux)
 	s.registerViews(mux)
+	s.registerMeasures(mux)
 	mux.Handle("GET /api/aligned-network", s.require(store.RoleViewer, s.handleAlignedNetwork))
 	s.registerMHD(mux)
 	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))

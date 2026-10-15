@@ -75,6 +75,7 @@ Usage:
   perfuse athena  [flags]              print the Amazon Athena table for an S3 ndjson archive
   perfuse elr     -config f <path>...  lab results to public health as HL7 2.5.1 ELR messages
   perfuse sof     -view v.json <path>...  run a SQL on FHIR view over NDJSON or Bundles, to CSV, NDJSON or Parquet
+  perfuse measure -measure m.json <path>... evaluate a quality measure over NDJSON or Bundles, to a MeasureReport
   perfuse smart   hash < secret        hash a password or client secret for the SMART users or clients file
   perfuse version                      print the version
 
@@ -191,6 +192,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdELR(args[1:], stdout, stderr)
 	case "sof":
 		return cmdSOF(args[1:], stdout, stderr)
+	case "measure":
+		return cmdMeasure(args[1:], stdout, stderr)
 	case "smart":
 		return cmdSmart(args[1:], os.Stdin, stdout)
 	case "version", "--version", "-v":

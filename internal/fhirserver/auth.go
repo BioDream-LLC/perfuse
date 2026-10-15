@@ -370,6 +370,8 @@ var readOperations = map[string]bool{
 	"$member-match": true,
 	// SQL on FHIR's $sql-run reads resources into rows and stores nothing; the OperationDefinition calls it safe.
 	"$sql-run": true,
+	// $evaluate-measure computes a MeasureReport and returns it without storing it.
+	"$evaluate-measure": true,
 	// POST [type]/_search is a search, which FHIR offers by POST so long queries need not go in a URL.
 	"_search": true,
 }

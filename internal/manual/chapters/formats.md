@@ -676,6 +676,64 @@ build: all pass), and the Parquet output read back by DuckDB 1.5.6 with the righ
 SQLView Libraries (SQL over the views' tables), `$sql-export`, `_format=fhir`, and the `source` and `group` parameters; each
 is refused with the reason.
 
+## Digital quality measures
+
+A **digital quality measure** counts the patients in each population of a FHIR `Measure` over a measurement period (initial
+population, denominator, denominator exclusions and exceptions, numerator, numerator exclusions) and scores the result. The answer
+is a FHIR **MeasureReport**, shaped as the Da Vinci Data Exchange for Quality Measures (DEQM) guide asks. This is where CMS's eCQM
+programmes and NCQA's digital HEDIS are heading.
+
+In Perfuse the population criteria are **FHIRPath** (`"language": "text/fhirpath"`), run by the same engine as SQL on FHIR. Each
+criterion is evaluated once per patient. Its focus is a Bundle of that patient's record (the Patient compartment), and it has
+these variables: `%subject` (the Patient), `%periodStart` and `%periodEnd` (the period, as dateTimes) and `%"Measurement Period"`.
+A criterion gives true or false; a single value that exists counts as true.
+
+```json
+{
+  "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/measure-population", "code": "numerator" }] },
+  "criteria": {
+    "language": "text/fhirpath",
+    "expression": "entry.resource.ofType(Observation).where(code.coding.where(system = 'http://loinc.org' and code = '4548-4').exists() and effective.ofType(dateTime) >= %periodStart and effective.ofType(dateTime) <= %periodEnd).exists()"
+  }
+}
+```
+
+The populations nest as the Measure specification says. A patient is in the denominator only if in the initial population. A
+denominator exclusion takes the patient out before the numerator is judged. A denominator exception counts only for a patient
+not in the numerator. A proportion's score is (numerator − numerator exclusions) / (denominator − exclusions − exceptions); a
+ratio's is numerator / denominator; a cohort has counts and no score. Single-criterion stratifiers split every population by
+their value (sex, say).
+
+**Perfuse has no CQL engine.** The published CMS eCQMs and HEDIS digital measures are written in CQL, so they cannot be run
+as they are. A Measure whose criteria are CQL is refused with that reason. Write the logic as FHIRPath instead. Continuous-variable
+scoring, multi-component stratifiers and Group or Practitioner subjects are refused the same way.
+
+**Monitor › Quality measures** evaluates a measure over this server's FHIR store or over pasted resources, for a period. It
+offers three reports: a summary, a summary with the patients in each population, or one patient. The screen shows the
+populations, the score and the strata, and downloads the MeasureReport. It starts from three examples: blood pressure under
+control, diabetes with an HbA1c test, and patients seen in the period. **They are illustrative, written for this manual, and are
+not CMS eCQMs or HEDIS measures.** **Save to the FHIR store** checks the Measure and stores it as a `Measure` resource.
+
+The FHIR endpoint answers **`Measure/[id]/$evaluate-measure`** and **`Measure/$evaluate-measure?measure=<url>`**, by GET or by
+POST of a Parameters resource. Parameters:
+
+- `periodStart` and `periodEnd`: required. A date means the whole day.
+- `reportType`: `summary`, `subject` or `subject-list`.
+- `subject`: `Patient/<id>`.
+- `reporter`: `Organization/<id>`. When it is absent, the report contains an Organization named by `serve -measure-reporter`.
+- `measure`: a Measure sent inline, as a POST parameter.
+
+The report is returned, not stored. The operation is a read, so a SMART token needs read access to Measure and to Patient. A
+token bound to one patient gets an individual report about that patient and no other.
+
+`perfuse measure -measure m.json -period-start 2026-01-01 -period-end 2026-12-31 [-type summary|subject|subject-list]
+[-subject Patient/ID] [-o out] files...` evaluates a measure over FHIR files (a bulk export's NDJSON, Bundles, arrays) without a
+server. `-measure example:example-bp-control` runs a shipped example, and `-examples` lists them.
+
+**Verified.** The HL7 FHIR validator checks the shipped Measures against FHIR R4, with no errors. It checks a summary, an
+individual and a subject-list MeasureReport against the DEQM 5.0.0 summary, individual and subject-list profiles, also with no
+errors. Not verified: equivalence with any published eCQM, since none can be run here without CQL.
+
 ## Delimited
 
 CSV and its relatives. The options are on the source in the builder, and the [format reference](#format-reference) lists the file keys.

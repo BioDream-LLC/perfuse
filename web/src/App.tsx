@@ -48,6 +48,7 @@ const HealthLinks = lazy(() => import('./HealthLinks').then((m) => ({ default: m
 const Imaging = lazy(() => import('./Imaging').then((m) => ({ default: m.Imaging })))
 const Drugs = lazy(() => import('./Drugs').then((m) => ({ default: m.Drugs })))
 const Views = lazy(() => import('./Views').then((m) => ({ default: m.Views })))
+const Measures = lazy(() => import('./Measures').then((m) => ({ default: m.Measures })))
 const AlignedNetwork = lazy(() => import('./AlignedNetwork').then((m) => ({ default: m.AlignedNetwork })))
 const Direct = lazy(() => import('./Direct').then((m) => ({ default: m.Direct })))
 const DocumentSharing = lazy(() => import('./DocumentSharing').then((m) => ({ default: m.DocumentSharing })))
@@ -91,6 +92,7 @@ export type Tab =
   | 'direct'
   | 'aligned'
   | 'views'
+  | 'measures'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -712,6 +714,12 @@ function Console() {
       about: 'SQL on FHIR views: FHIR resources as tables, run here and downloaded as CSV, NDJSON or Parquet',
     },
     {
+      id: 'measures',
+      label: 'Quality measures',
+      minRole: 'viewer',
+      about: 'Digital quality measures: FHIRPath Measures evaluated over the FHIR store to MeasureReports',
+    },
+    {
       id: 'aligned',
       label: 'CMS Aligned Network',
       minRole: 'viewer',
@@ -979,6 +987,7 @@ function Console() {
           {tab === 'direct' && <Direct />}
           {tab === 'aligned' && <AlignedNetwork />}
           {tab === 'views' && <Views />}
+          {tab === 'measures' && <Measures />}
           {tab === 'certificates' && <Certificates />}
           {tab === 'scripts' && (
             <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

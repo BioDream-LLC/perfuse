@@ -131,6 +131,20 @@ Runs a SQL on FHIR ViewDefinition over FHIR files (the NDJSON of a bulk export, 
 writes the table: `-view FILE` (required), `-format csv|ndjson|json|parquet` (csv by default), `-header=false`, and `-o FILE`
 (required for Parquet). See [SQL on FHIR views](#message-formats).
 
+### perfuse measure
+
+Evaluates a quality measure with FHIRPath criteria over FHIR files (the NDJSON of a bulk export, Bundles or JSON arrays; `-`
+for stdin) and writes the MeasureReport. Flags:
+
+- `-measure FILE`, or `-measure example:ID` for a shipped example: required. `-examples` lists the examples.
+- `-period-start` and `-period-end`: required.
+- `-type summary|subject|subject-list`.
+- `-subject Patient/ID`.
+- `-reporter NAME`.
+- `-o FILE`.
+
+See [digital quality measures](#message-formats).
+
 ### FHIR flags on perfuse serve
 
 | Flag | Effect |
