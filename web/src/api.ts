@@ -923,6 +923,40 @@ export interface EPAMetrics {
   late: number
 }
 
+export interface XDSCode {
+  code: string
+  scheme: string
+  display?: string
+}
+
+export interface XDSDoc {
+  entryUUID: string
+  uniqueId: string
+  patientId: string
+  title: string
+  status: string
+  class: XDSCode
+  type: XDSCode
+  format: XDSCode
+  confidentiality: string
+  creationTime: string
+  mimeType: string
+  size: string
+  author?: string
+  repositoryUniqueId: string
+  homeCommunityId?: string
+}
+
+export interface XDSStatus {
+  enabled: boolean
+  hint?: string
+  counts?: { documents: number; submissionSets: number; folders: number; patients: number; deprecated: number; bytes: number }
+  documents?: XDSDoc[]
+  repositoryUniqueId?: string
+  homeCommunityId?: string
+  endpoints?: { repository: string; registry: string; gateway: string }
+}
+
 /** DICOMwebStatus is GET /api/dicomweb. */
 export interface DICOMwebStatus {
   enabled: boolean
@@ -1673,6 +1707,14 @@ export const api = {
   /** epaTry sends a SCRIPT message from the screen, as the network endpoint would receive it. */
   epaTry: (xml: string) => request<{ xml: string }>('POST', '/api/epa/try', { xml }),
   epaMetrics: (days = 365) => request<{ enabled: boolean; days?: number; metrics?: EPAMetrics }>('GET', `/api/epa/metrics?days=${days}`),
+  /** xdsStatus is the document registry: what it holds, its endpoints, and the latest documents (optionally one patient's). */
+  xdsStatus: (patient = '') => request<XDSStatus>('GET', '/api/xds' + (patient ? `?patient=${encodeURIComponent(patient)}` : '')),
+  /** xdsQuery runs FindDocuments on this registry, a remote registry (ITI-18) or a responding gateway (ITI-38). */
+  xdsQuery: (body: { patient: string; url?: string; gateway?: boolean; token?: string }) =>
+    request<{ status: string; errors: string[]; documents: XDSDoc[] }>('POST', '/api/xds/query', body),
+  /** xdsPublish registers a CDA document in this server's repository. */
+  xdsPublish: (body: { document: string; patientDomain?: string; facilityType: XDSCode; practiceSetting: XDSCode }) =>
+    request<{ document: XDSDoc }>('POST', '/api/xds/publish', body),
   /** dicomwebStatus says whether this server keeps an imaging archive, where it is served, and what it holds. */
   dicomwebStatus: () => request<DICOMwebStatus>('GET', '/api/dicomweb'),
   /** qido searches the archive (QIDO-RS). An empty result is an empty list. */

@@ -22,7 +22,15 @@ func TestClientCredentialsAgainstKeycloak(t *testing.T) {
 	if err != nil {
 		t.Skip("no Keycloak on 127.0.0.1:8080; start it with ./scripts/interop-up.sh")
 	}
+	// Something else on the port (another program answering everything) is not Keycloak: its realm document names the realm.
+	var realm struct {
+		Realm string `json:"realm"`
+	}
+	_ = json.NewDecoder(res.Body).Decode(&realm)
 	_ = res.Body.Close()
+	if realm.Realm != "master" {
+		t.Skip("127.0.0.1:8080 answers, but it is not Keycloak; start it with ./scripts/interop-up.sh")
+	}
 
 	admin := func() string {
 		r, err := http.PostForm(base+"/realms/master/protocol/openid-connect/token", url.Values{"grant_type": {"password"},

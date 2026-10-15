@@ -832,6 +832,9 @@ type buildDest struct {
 	// DICOMweb applies to a dicomweb destination.
 	DICOMweb *buildDICOMwebDest `json:"dicomweb,omitempty" yaml:"dicomweb,omitempty"`
 
+	// XDS applies to an xds destination.
+	XDS *buildXDSDest `json:"xds,omitempty" yaml:"xds,omitempty"`
+
 	// JavaScript applies to a javascript destination.
 	JavaScript *buildJSDest `json:"javascript,omitempty" yaml:"javascript,omitempty"`
 
@@ -1451,6 +1454,30 @@ type buildAttachRule struct {
 	Path     string `json:"path,omitempty" yaml:"path,omitempty"`
 	MinBytes int    `json:"minBytes,omitempty" yaml:"min_bytes,omitempty"`
 	Repeats  bool   `json:"repeats,omitempty" yaml:"repeats,omitempty"`
+}
+
+// buildXDSCode is a coded value.
+type buildXDSCode struct {
+	Code    string `json:"code,omitempty" yaml:"code,omitempty"`
+	Scheme  string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
+	Display string `json:"display,omitempty" yaml:"display,omitempty"`
+}
+
+// buildXDSDest publishes clinical documents to an XDS.b repository.
+type buildXDSDest struct {
+	URL             string            `json:"url,omitempty" yaml:"url,omitempty"`
+	SourceID        string            `json:"sourceId,omitempty" yaml:"source_id,omitempty"`
+	PatientDomain   string            `json:"patientDomain,omitempty" yaml:"patient_domain,omitempty"`
+	FacilityType    buildXDSCode      `json:"facilityType" yaml:"facility_type"`
+	PracticeSetting buildXDSCode      `json:"practiceSetting" yaml:"practice_setting"`
+	Class           *buildXDSCode     `json:"class,omitempty" yaml:"class,omitempty"`
+	ContentType     *buildXDSCode     `json:"contentType,omitempty" yaml:"content_type,omitempty"`
+	Token           string            `json:"token,omitempty" yaml:"token,omitempty"`
+	Username        string            `json:"username,omitempty" yaml:"username,omitempty"`
+	Password        string            `json:"password,omitempty" yaml:"password,omitempty"`
+	Headers         map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+	TLS             *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 // buildDICOMwebSource accepts imaging objects by STOW-RS.

@@ -261,6 +261,13 @@ The server's answer decides the outcome, not its status code alone. An object th
 delivery with the DICOM failure reason, and so is a 202 that lists nothing as stored: the server took the request and kept
 none of it. Timeout defaults to two minutes, because a large series is slow.
 
+### Document repositories (IHE XDS.b)
+
+`type: xds` publishes each clinical document to an XDS.b repository with ITI-41 Provide and Register: a CDA document, or one an
+HL7 v2 message (MDM, ORU) carries. The metadata comes from the document and the destination's settings (`source_id`,
+`patient_domain`, `facility_type`, `practice_setting`), and the repository's RegistryResponse decides the delivery. See
+[IHE document sharing](#message-formats).
+
 ### Immunization registries
 
 Every US state immunization registry (IIS) takes HL7 2.5.1 messages on the same SOAP interface, the one the CDC published in

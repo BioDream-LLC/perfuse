@@ -35,6 +35,7 @@ export type DestinationType =
   | 'soap'
   | 'dicom'
   | 'dicomweb'
+  | 'xds'
   | 'javascript'
 
 export const destinationLabels: Record<DestinationType, string> = {
@@ -54,6 +55,7 @@ export const destinationLabels: Record<DestinationType, string> = {
   soap: 'A SOAP web service',
   dicom: 'An imaging archive (DICOM C-STORE)',
   dicomweb: 'An imaging archive or cloud service (DICOMweb STOW-RS)',
+  xds: 'A document repository (IHE XDS.b ITI-41)',
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
   kafka: 'A Kafka topic',
@@ -93,6 +95,8 @@ export const destinationHints: Record<DestinationType, string> = {
     'Posts a SOAP request. You write the XML that goes inside the envelope and Perfuse adds the envelope, the action header and fault handling. WS-Security and MTOM are not supported — a half-implementation of those is worse than none.',
   dicom:
     'Sends imaging objects to a PACS or workstation as a C-STORE user, the same operation a scanner uses. Verified against DCMTK, the toolkit most hospital imaging equipment is built on. Encryption is included — Mirth needs a paid extension for it, and DICOM metadata carries patient names.',
+  xds:
+    "Publishes each clinical document to an IHE XDS.b repository with ITI-41 Provide and Register: a CDA document, or one carried in an HL7 v2 message (MDM, ORU). The metadata is read from the document - patient, title, type, time, author, confidentiality - and completed from what you set here. The repository's answer decides: an XDS error is a failed delivery with its error code.",
   dicomweb:
     "Stores each imaging object with STOW-RS: Orthanc, dcm4chee, Google Cloud Healthcare, Azure Health Data Services, AWS HealthImaging, or this server's own archive. The server's answer for each object decides, so an object it lists as failed is a failed delivery, not a delivered one. Give the service root; /studies is added.",
   javascript:
@@ -438,6 +442,19 @@ export interface Destination {
   soapPassword: string
   soapFaultIsSuccess: string
 
+  /** xdsUrl and the rest describe an XDS.b (ITI-41) destination. */
+  xdsUrl: string
+  xdsSourceId: string
+  xdsPatientDomain: string
+  xdsFacilityCode: string
+  xdsFacilityScheme: string
+  xdsFacilityDisplay: string
+  xdsPracticeCode: string
+  xdsPracticeScheme: string
+  xdsPracticeDisplay: string
+  xdsClassCode: string
+  xdsClassScheme: string
+  xdsToken: string
   /** dicomwebUrl and the rest describe a DICOMweb (STOW-RS) destination. */
   dicomwebUrl: string
   dicomwebToken: string
@@ -2274,6 +2291,17 @@ function destinationToWire(d: Destination): unknown {
     case 'channel':
       out.channel = { name: d.routeTo }
       break
+    case 'xds':
+      out.xds = {
+        url: d.xdsUrl || undefined,
+        sourceId: d.xdsSourceId || undefined,
+        patientDomain: d.xdsPatientDomain || undefined,
+        facilityType: { code: d.xdsFacilityCode || undefined, scheme: d.xdsFacilityScheme || undefined, display: d.xdsFacilityDisplay || undefined },
+        practiceSetting: { code: d.xdsPracticeCode || undefined, scheme: d.xdsPracticeScheme || undefined, display: d.xdsPracticeDisplay || undefined },
+        class: d.xdsClassCode ? { code: d.xdsClassCode, scheme: d.xdsClassScheme || undefined } : undefined,
+        token: d.xdsToken || undefined,
+      }
+      break
     case 'dicomweb':
       out.dicomweb = {
         url: d.dicomwebUrl || undefined,
@@ -2604,6 +2632,18 @@ export function newDestination(): Destination {
     soapPassword: '',
     soapFaultIsSuccess: '',
 
+    xdsUrl: '',
+    xdsSourceId: '',
+    xdsPatientDomain: '',
+    xdsFacilityCode: '',
+    xdsFacilityScheme: '2.16.840.1.113883.6.96',
+    xdsFacilityDisplay: '',
+    xdsPracticeCode: '',
+    xdsPracticeScheme: '2.16.840.1.113883.6.96',
+    xdsPracticeDisplay: '',
+    xdsClassCode: '',
+    xdsClassScheme: '',
+    xdsToken: '',
     dicomwebUrl: '',
     dicomwebToken: '',
     dicomwebUsername: '',

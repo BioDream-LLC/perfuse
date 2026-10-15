@@ -1651,6 +1651,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Health links': IconQR,
   'Imaging': IconImaging,
   'Drugs': IconPill,
+  'Document sharing': IconDocuments,
   'Scripts': IconScripts,
   'Migrate': IconMigrate,
   'Contracts': IconContracts,
@@ -1829,6 +1830,12 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   'Come across from Mirth': IconMigrate,
   'Receive a SMART Health Link': IconQR,
   'Share a visit record': IconQR,
+  // Document sharing: XDS, XCA, MHD.
+  'No document registry on this server': IconDocuments,
+  'Where other systems reach it': IconSend,
+  "Find a patient's documents": IconDocuments,
+  'Publish a CDA document here': IconDocuments,
+  'Latest documents': IconDocuments,
   // Drugs: the formulary, RTPB and ePA.
   'No formulary on this server': IconPill,
   'Where it is published': IconSend,

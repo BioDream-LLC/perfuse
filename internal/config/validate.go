@@ -680,6 +680,9 @@ func (d *Destination) validate(dataType DataType) []error {
 	case DestinationDICOMweb:
 		errs = append(errs, validateDICOMwebDest(d)...)
 
+	case DestinationXDS:
+		errs = append(errs, validateXDSDest(d)...)
+
 	case DestinationJavaScript:
 		errs = append(errs, validateJavaScriptDest(d)...)
 

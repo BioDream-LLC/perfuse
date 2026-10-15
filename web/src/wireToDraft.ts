@@ -825,6 +825,20 @@ function readDestination(d: WireDest): Destination {
     case 'channel':
       dest.routeTo = d.channel?.name ?? ''
       break
+    case 'xds':
+      dest.xdsUrl = d.xds?.url ?? ''
+      dest.xdsSourceId = d.xds?.source_id ?? ''
+      dest.xdsPatientDomain = d.xds?.patient_domain ?? ''
+      dest.xdsFacilityCode = d.xds?.facility_type?.code ?? ''
+      dest.xdsFacilityScheme = d.xds?.facility_type?.scheme ?? ''
+      dest.xdsFacilityDisplay = d.xds?.facility_type?.display ?? ''
+      dest.xdsPracticeCode = d.xds?.practice_setting?.code ?? ''
+      dest.xdsPracticeScheme = d.xds?.practice_setting?.scheme ?? ''
+      dest.xdsPracticeDisplay = d.xds?.practice_setting?.display ?? ''
+      dest.xdsClassCode = d.xds?.class?.code ?? ''
+      dest.xdsClassScheme = d.xds?.class?.scheme ?? ''
+      dest.xdsToken = d.xds?.token ?? ''
+      break
     case 'dicomweb':
       dest.dicomwebUrl = d.dicomweb?.url ?? ''
       dest.dicomwebToken = d.dicomweb?.token ?? ''
@@ -1354,6 +1368,15 @@ interface WireDest {
   tempSuffix?: string
   retainHours?: number
 
+  xds?: {
+    url?: string
+    source_id?: string
+    patient_domain?: string
+    facility_type?: { code?: string; scheme?: string; display?: string }
+    practice_setting?: { code?: string; scheme?: string; display?: string }
+    class?: { code?: string; scheme?: string }
+    token?: string
+  }
   dicomweb?: {
     url?: string
     token?: string

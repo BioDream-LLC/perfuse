@@ -35,6 +35,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/tefca"
 	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
+	"github.com/biodream-llc/perfuse/internal/xds"
 )
 
 // Server is the HTTP API.
@@ -262,6 +263,11 @@ type Server struct {
 
 	// Drugs is the formulary, Real-Time Prescription Benefit and NCPDP SCRIPT ePA, nil without -formulary.
 	Drugs *Drugs
+
+	// XDS is the IHE XDS.b registry and repository and XCA responding gateway, nil without -xds. FHIRStore is this server's
+	// FHIR store, which MHD resolves patients from and PIXm and PDQm answer from; nil without -fhir.
+	XDS       *xds.Registry
+	FHIRStore *fhirserver.Store
 
 	// MCP is the Model Context Protocol server at /mcp, off unless its Enabled says so. FHIRHandler is the FHIR endpoint
 	// (with /fhir stripped), which MCP's fhir_search calls with the agent's own token; nil without -fhir.
@@ -502,6 +508,8 @@ func (s *Server) Handler() http.Handler {
 	s.registerDICOMweb(mux)
 	s.registerDrugs(mux)
 	s.registerMCP(mux)
+	s.registerXDS(mux)
+	s.registerMHD(mux)
 	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))
 	mux.Handle("POST /api/dtr/package", s.require(store.RoleViewer, s.handleDTRPackage))
 	mux.Handle("POST /api/shc/verify", s.require(store.RoleViewer, s.handleVerifySHC))

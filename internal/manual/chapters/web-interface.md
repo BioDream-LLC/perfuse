@@ -162,6 +162,13 @@ FHIR subscriptions and whether their notifications are arriving: events, accepte
 
 Clinical documents — CDA and the printable form of a document. Useful when the thing being exchanged is a discharge summary rather than a message.
 
+### Document sharing
+
+The IHE XDS.b registry and repository started with `-xds`: how many documents, patients and submission sets it holds and how
+many were replaced; the addresses of the repository, registry, XCA gateway and MHD; a search for a patient's documents in this
+registry or another community's (an ITI-18 registry or an ITI-38 gateway, with a token for it); and publishing a CDA document by
+hand, with the facility type and practice setting a document does not say. See [message formats](#message-formats).
+
 ### Health links
 
 SMART Health Links and Cards, for CMS's *Kill the Clipboard*. **Receive a SMART Health Link** reads the link or QR code a patient

@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.15 · 955ad45</p>
+<p class="version">v0.1.15 · 460d844</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -398,9 +398,10 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s3-4-1-fhir-lab"><span class="num">3.4.1</span> FHIR lab</a></div>
 <div class="toc-d3"><a href="#s3-4-2-subscriptions"><span class="num">3.4.2</span> Subscriptions</a></div>
 <div class="toc-d3"><a href="#s3-4-3-documents"><span class="num">3.4.3</span> Documents</a></div>
-<div class="toc-d3"><a href="#s3-4-4-health-links"><span class="num">3.4.4</span> Health links</a></div>
-<div class="toc-d3"><a href="#s3-4-5-imaging"><span class="num">3.4.5</span> Imaging</a></div>
-<div class="toc-d3"><a href="#s3-4-6-tefca"><span class="num">3.4.6</span> TEFCA</a></div>
+<div class="toc-d3"><a href="#s3-4-4-document-sharing"><span class="num">3.4.4</span> Document sharing</a></div>
+<div class="toc-d3"><a href="#s3-4-5-health-links"><span class="num">3.4.5</span> Health links</a></div>
+<div class="toc-d3"><a href="#s3-4-6-imaging"><span class="num">3.4.6</span> Imaging</a></div>
+<div class="toc-d3"><a href="#s3-4-7-tefca"><span class="num">3.4.7</span> TEFCA</a></div>
 <div class="toc-d2"><a href="#s3-5-payers--claims-prior-authorization-drugs-and-the-cms-payer-rules"><span class="num">3.5</span> Payers — claims, prior authorization, drugs and the CMS payer rules</a></div>
 <div class="toc-d3"><a href="#s3-5-1-claims--auth"><span class="num">3.5.1</span> Claims &amp; auth</a></div>
 <div class="toc-d3"><a href="#s3-5-2-drugs"><span class="num">3.5.2</span> Drugs</a></div>
@@ -477,13 +478,14 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s8-7-dicom"><span class="num">8.7</span> DICOM</a></div>
 <div class="toc-d3"><a href="#s8-7-1-what-a-c-store-listener-accepts"><span class="num">8.7.1</span> What a C-STORE listener accepts</a></div>
 <div class="toc-d3"><a href="#s8-7-2-dicomweb"><span class="num">8.7.2</span> DICOMweb</a></div>
-<div class="toc-d2"><a href="#s8-8-delimited"><span class="num">8.8</span> Delimited</a></div>
-<div class="toc-d3"><a href="#s8-8-1-naming-the-columns"><span class="num">8.8.1</span> Naming the columns</a></div>
-<div class="toc-d3"><a href="#s8-8-2-what-a-filter-or-a-script-sees"><span class="num">8.8.2</span> What a filter or a script sees</a></div>
-<div class="toc-d3"><a href="#s8-8-3-the-three-that-change-what-counts-as-an-error"><span class="num">8.8.3</span> The three that change what counts as an error</a></div>
-<div class="toc-d2"><a href="#s8-9-raw"><span class="num">8.9</span> Raw</a></div>
-<div class="toc-d2"><a href="#s8-10-choosing"><span class="num">8.10</span> Choosing</a></div>
-<div class="toc-d2"><a href="#s8-11-smart-health-links-and-cards"><span class="num">8.11</span> SMART Health Links and Cards</a></div>
+<div class="toc-d2"><a href="#s8-8-ihe-document-sharing-xdsb-xca-mhd-pixm-and-pdqm"><span class="num">8.8</span> IHE document sharing: XDS.b, XCA, MHD, PIXm and PDQm</a></div>
+<div class="toc-d2"><a href="#s8-9-delimited"><span class="num">8.9</span> Delimited</a></div>
+<div class="toc-d3"><a href="#s8-9-1-naming-the-columns"><span class="num">8.9.1</span> Naming the columns</a></div>
+<div class="toc-d3"><a href="#s8-9-2-what-a-filter-or-a-script-sees"><span class="num">8.9.2</span> What a filter or a script sees</a></div>
+<div class="toc-d3"><a href="#s8-9-3-the-three-that-change-what-counts-as-an-error"><span class="num">8.9.3</span> The three that change what counts as an error</a></div>
+<div class="toc-d2"><a href="#s8-10-raw"><span class="num">8.10</span> Raw</a></div>
+<div class="toc-d2"><a href="#s8-11-choosing"><span class="num">8.11</span> Choosing</a></div>
+<div class="toc-d2"><a href="#s8-12-smart-health-links-and-cards"><span class="num">8.12</span> SMART Health Links and Cards</a></div>
 <div class="toc-d1"><a href="#s9-acknowledgements"><span class="num">9</span> Acknowledgements</a></div>
 <div class="toc-d2"><a href="#s9-1-timing"><span class="num">9.1</span> Timing</a></div>
 <div class="toc-d2"><a href="#s9-2-what-perfuse-sends"><span class="num">9.2</span> What Perfuse sends</a></div>
@@ -507,7 +509,8 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s10-8-2-public-health-case-reporting"><span class="num">10.8.2</span> Public health case reporting</a></div>
 <div class="toc-d3"><a href="#s10-8-3-lab-results-to-public-health-elr"><span class="num">10.8.3</span> Lab results to public health: ELR</a></div>
 <div class="toc-d3"><a href="#s10-8-4-dicomweb-archives"><span class="num">10.8.4</span> DICOMweb archives</a></div>
-<div class="toc-d3"><a href="#s10-8-5-immunization-registries"><span class="num">10.8.5</span> Immunization registries</a></div>
+<div class="toc-d3"><a href="#s10-8-5-document-repositories-ihe-xdsb"><span class="num">10.8.5</span> Document repositories (IHE XDS.b)</a></div>
+<div class="toc-d3"><a href="#s10-8-6-immunization-registries"><span class="num">10.8.6</span> Immunization registries</a></div>
 <div class="toc-d2"><a href="#s10-9-when-the-transport-says-yes-and-the-message-did-not-arrive"><span class="num">10.9</span> When the transport says yes and the message did not arrive</a></div>
 <div class="toc-d2"><a href="#s10-10-what-a-delivery-outcome-means"><span class="num">10.10</span> What a delivery outcome means</a></div>
 <div class="toc-d2"><a href="#s10-11-slow-delivery"><span class="num">10.11</span> Slow delivery</a></div>
@@ -985,6 +988,13 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s23-28-tcp-dest"><span class="num">23.28</span> TCP Dest</a></div>
 <div class="toc-d3"><a href="#s23-28-1-expect-reply"><span class="num">23.28.1</span> expect_reply</a></div>
 <div class="toc-d3"><a href="#s23-28-2-keep-alive"><span class="num">23.28.2</span> keep_alive</a></div>
+<div class="toc-d2"><a href="#s23-29-xds-destination"><span class="num">23.29</span> XDS Destination</a></div>
+<div class="toc-d3"><a href="#s23-29-1-patient-domain"><span class="num">23.29.1</span> patient_domain</a></div>
+<div class="toc-d3"><a href="#s23-29-2-token"><span class="num">23.29.2</span> token</a></div>
+<div class="toc-d3"><a href="#s23-29-3-username"><span class="num">23.29.3</span> username</a></div>
+<div class="toc-d3"><a href="#s23-29-4-password"><span class="num">23.29.4</span> password</a></div>
+<div class="toc-d3"><a href="#s23-29-5-headers"><span class="num">23.29.5</span> headers</a></div>
+<div class="toc-d3"><a href="#s23-29-6-tls"><span class="num">23.29.6</span> tls</a></div>
 <div class="toc-d1"><a href="#s24-format-reference"><span class="num">24</span> Format Reference</a></div>
 <div class="toc-d2"><a href="#s24-1-attachments"><span class="num">24.1</span> Attachments</a></div>
 <div class="toc-d3"><a href="#s24-1-1-reassemble"><span class="num">24.1.1</span> reassemble</a></div>
@@ -1090,6 +1100,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s25-20-4-ignore"><span class="num">25.20.4</span> ignore</a></div>
 <div class="toc-d3"><a href="#s25-20-5-max-differences"><span class="num">25.20.5</span> max_differences</a></div>
 <div class="toc-d3"><a href="#s25-20-6-timeout"><span class="num">25.20.6</span> timeout</a></div>
+<div class="toc-d2"><a href="#s25-21-xds-code"><span class="num">25.21</span> XDS Code</a></div>
 <div class="toc-d1"><a href="#s26-how-each-component-works"><span class="num">26</span> How Each Component Works</a></div>
 <div class="toc-d2"><a href="#s26-1-fhir"><span class="num">26.1</span> fhir</a></div>
 <div class="toc-d2"><a href="#s26-2-hl7"><span class="num">26.2</span> hl7</a></div>
@@ -1190,9 +1201,10 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s26-97-winservice"><span class="num">26.97</span> winservice</a></div>
 <div class="toc-d2"><a href="#s26-98-x12"><span class="num">26.98</span> x12</a></div>
 <div class="toc-d2"><a href="#s26-99-x12xml"><span class="num">26.99</span> x12xml</a></div>
-<div class="toc-d2"><a href="#s26-100-xmldsig"><span class="num">26.100</span> xmldsig</a></div>
-<div class="toc-d2"><a href="#s26-101-xtree"><span class="num">26.101</span> xtree</a></div>
-<div class="toc-d2"><a href="#s26-102-pas"><span class="num">26.102</span> pas</a></div>
+<div class="toc-d2"><a href="#s26-100-xds"><span class="num">26.100</span> xds</a></div>
+<div class="toc-d2"><a href="#s26-101-xmldsig"><span class="num">26.101</span> xmldsig</a></div>
+<div class="toc-d2"><a href="#s26-102-xtree"><span class="num">26.102</span> xtree</a></div>
+<div class="toc-d2"><a href="#s26-103-pas"><span class="num">26.103</span> pas</a></div>
 <div class="toc-d1"><a href="#s27-index-of-configuration-keys"><span class="num">27</span> Index of Configuration Keys</a></div>
 <div class="toc-d2"><a href="#s27-1-all-keys"><span class="num">27.1</span> All keys</a></div>
 </nav>
@@ -1397,11 +1409,13 @@ roles: {viewer: manager}</code></pre>
 <p>FHIR subscriptions and whether their notifications are arriving: events, accepted, waiting, and the last reason one was refused. Subscriptions are created by FHIR clients through the FHIR API, not from this page, and the credentials they gave the server are never shown. See <a href="#s8-message-formats">message formats</a>.</p>
 <h4 id="s3-4-3-documents"><span class="num">3.4.3</span> Documents</h4>
 <p>Clinical documents — CDA and the printable form of a document. Useful when the thing being exchanged is a discharge summary rather than a message.</p>
-<h4 id="s3-4-4-health-links"><span class="num">3.4.4</span> Health links</h4>
+<h4 id="s3-4-4-document-sharing"><span class="num">3.4.4</span> Document sharing</h4>
+<p>The IHE XDS.b registry and repository started with <code>-xds</code>: how many documents, patients and submission sets it holds and how many were replaced; the addresses of the repository, registry, XCA gateway and MHD; a search for a patient&#39;s documents in this registry or another community&#39;s (an ITI-18 registry or an ITI-38 gateway, with a token for it); and publishing a CDA document by hand, with the facility type and practice setting a document does not say. See <a href="#s8-message-formats">message formats</a>.</p>
+<h4 id="s3-4-5-health-links"><span class="num">3.4.5</span> Health links</h4>
 <p>SMART Health Links and Cards, for CMS&#39;s *Kill the Clipboard*. <strong>Receive a SMART Health Link</strong> reads the link or QR code a patient shows at check-in, verifies the health cards inside and <strong>sends it on</strong> to a channel. <strong>Share a visit record</strong> makes a link this server hosts, optionally with a passcode, and a QR code <strong>for the patient</strong>; <strong>Use their patient summary</strong> fills it with the patient&#39;s <a href="#s8-message-formats">International Patient Summary</a> from this server&#39;s FHIR store. <strong>Links this server hosts</strong> lists them with how often each was fetched, when it expires and the passcode tries left, and revokes one. <strong>Verify a SMART Health Card</strong> checks a card&#39;s signature and issuer on its own. See <a href="#s3-5-3-cms-0057">CMS-0057</a> for the server options it needs.</p>
-<h4 id="s3-4-5-imaging"><span class="num">3.4.5</span> Imaging</h4>
+<h4 id="s3-4-6-imaging"><span class="num">3.4.6</span> Imaging</h4>
 <p>The archive this server keeps when it runs with <code>-dicomweb-archive</code>: counts of studies, series, instances and space used, the DICOMweb address and the data-source block for an OHIF viewer, and a study search by patient name, ID, accession and date made with the same QIDO-RS request a viewer makes. A study opens to its series and instances, and an instance downloads as a DICOM file. Nothing is rendered: Perfuse moves images and a viewer displays them. Without an archive the screen says how to turn one on. See <a href="#s8-message-formats">DICOMweb</a>.</p>
-<h4 id="s3-4-6-tefca"><span class="num">3.4.6</span> TEFCA</h4>
+<h4 id="s3-4-7-tefca"><span class="num">3.4.7</span> TEFCA</h4>
 <p>The audit trail for exchange through a Qualified Health Information Network, and the purpose-of-use rules that govern it.</p>
 <p>Two transports, at genuinely different stages, and the screen says which is which. One flag covering both would be wrong in whichever direction it was rounded.</p>
 <p><strong>Facilitated FHIR is implemented, and has never spoken to a real QHIN.</strong> It follows the Sequoia Project Standard Operating Procedure effective 8 March 2026: discover the partner&#39;s UDAP metadata, verify it, register dynamically, obtain an access token carrying the purpose of use, and query. UDAP is a public key infrastructure over OAuth 2.0 — a trust community issues X.509 certificates to its members, and a member authenticates by signing JWTs with the private key and attaching the certificate chain.</p>
@@ -2122,28 +2136,55 @@ destinations:
 <h4 id="pointing-ohif-at-the-archive">Pointing OHIF at the archive</h4>
 <p>Use a DICOMweb data source with <code>qidoRoot</code> and <code>wadoRoot</code> set to the archive&#39;s address (the <strong>Imaging</strong> screen shows it, with the whole data-source block to copy), <code>wadoUriRoot</code> to that address followed by <code>/wado</code>, <code>imageRendering</code> and <code>thumbnailRendering</code> to <code>wadors</code>, and <code>supportsFuzzyMatching</code> true. A viewer on another origin needs that origin in <code>-dicomweb-cors</code> (<strong>Browser origins allowed to call it</strong>), and its requests need an API token in the <code>Authorization</code> header, because a browser on another origin does not send the console&#39;s session cookie. Serving OHIF from the same origin through a reverse proxy avoids both.</p>
 <p>Tested against Orthanc with its DICOMweb plugin, in both directions: the destination stores into Orthanc, and Orthanc&#39;s DICOMweb client searches Perfuse&#39;s archive and retrieves a study byte-identical to the one stored. OHIF 3 lists the archive&#39;s studies and displays their frames with the settings above. OHIF and several other clients send <code>type=</code> unquoted in the Accept and Content-Type headers, which RFC 2045 does not allow; Perfuse accepts it.</p>
-<h3 id="s8-8-delimited"><span class="num">8.8</span> Delimited</h3>
+<h3 id="s8-8-ihe-document-sharing-xdsb-xca-mhd-pixm-and-pdqm"><span class="num">8.8</span> IHE document sharing: XDS.b, XCA, MHD, PIXm and PDQm</h3>
+<p>Clinical documents shared between organisations the way health information exchanges, Carequality and eHealth Exchange do: a repository holds them, a registry indexes their metadata, and a community answers other communities&#39; queries through a gateway. Start the server with <code>-xds REPOSITORY-OID</code> (<strong>Settings › Data › Document sharing</strong>) and it is all three, in this server&#39;s database, at these addresses, each taking an API token as a bearer token (the viewer role to query and retrieve, the operator role to submit; most affinity domains add mutual TLS in front):</p>
+<table>
+<thead><tr><th>Address</th><th>Actor</th><th>Transactions</th></tr></thead>
+<tbody>
+<tr><td><code>/xds/repository</code></td><td>Document Repository</td><td>ITI-41 Provide and Register Document Set-b, ITI-43 Retrieve Document Set</td></tr>
+<tr><td><code>/xds/registry</code></td><td>Document Registry</td><td>ITI-18 Registry Stored Query (all thirteen stored queries), ITI-42 Register Document Set-b</td></tr>
+<tr><td><code>/xca/gateway</code></td><td>XCA Responding Gateway</td><td>ITI-38 Cross Gateway Query, ITI-39 Cross Gateway Retrieve, with <code>-xds-home-community urn:oid:...</code></td></tr>
+<tr><td><code>/mhd</code></td><td>MHD Document Recipient and Responder</td><td>ITI-65 Provide Document Bundle, ITI-66 Find Lists, ITI-67 Find Document References, ITI-68 Retrieve Document</td></tr>
+<tr><td><code>/mhd/Patient</code></td><td>PDQm Supplier and PIXm Manager</td><td>ITI-78 Patient Demographics Query, ITI-83 <code>Patient/$ihe-pix</code>, from the FHIR store&#39;s Patients</td></tr>
+</tbody>
+</table>
+<p>The SOAP transactions are SOAP 1.2 with WS-Addressing, and MTOM/XOP where documents travel (a document inline as base64 is accepted too). A failed transaction is answered with a RegistryResponse carrying IHE&#39;s error codes, not a SOAP fault: <code>XDSDuplicateUniqueIdInRegistry</code>, <code>XDSNonIdenticalHash</code>, <code>XDSPatientIdDoesNotMatch</code>, <code>XDSMissingDocument</code>, <code>XDSRegistryMetadataError</code> (with the field that is missing), <code>XDSStoredQueryMissingParam</code>, <code>XDSUnknownStoredQuery</code>, <code>XDSUnknownRepositoryId</code>, <code>XDSUnknownCommunity</code>, and <code>UnresolvedReferenceException</code>. A replacement (<code>RPLC</code>, <code>XFRM_RPLC</code>) deprecates the document it replaces, which then answers only queries asking for deprecated documents; <code>APND</code>, <code>XFRM</code> and <code>signs</code> are kept as associations. Hash and size are computed by the repository and checked against what the submission says. On-demand documents and metadata update (ITI-57) are not supported, and a submission asking for them is refused with the reason.</p>
+<p>MHD is the same registry in FHIR: a document provided over MHD is found by ITI-18 and over XCA, and one provided over XDS.b is found by ITI-67. A DocumentReference&#39;s id is the entry&#39;s UUID, its masterIdentifier the uniqueId, and its attachment&#39;s url the ITI-68 address of the document. Patients are resolved to the affinity domain&#39;s identifier from the FHIR store: the first identifier whose system is <code>urn:oid:</code>, or the Patient carried in the Bundle. PIXm answers every other identifier of the Patient with the one given (<code>sourceIdentifier=system|value</code>, narrowed by <code>targetSystem</code>), and 404 for one it does not know; PDQm searches by identifier, name, birth date, gender, address and telecom.</p>
+<p><strong>Publishing.</strong> A channel&#39;s <code>xds</code> destination publishes each clinical document it receives, a CDA document or one carried in an HL7 v2 message, to any XDS.b repository with ITI-41. The metadata is read from the document: the patient (the identifier in <code>patient_domain</code>, the affinity domain&#39;s assigning authority), title, type (as typeCode and, unless set, classCode), creation and service times, author, confidentiality, language and format (C-CDA 2.1 or 1.1 structured body, XDS-SD, or mimeTypeSufficient, from its templates); and completed from what a document does not say: the sender&#39;s <code>source_id</code>, the <code>facility_type</code> and <code>practice_setting</code> every registry requires. The repository&#39;s RegistryResponse decides the delivery: a Failure, or an error in a PartialSuccess, is a failed delivery with the registry&#39;s error codes.</p>
+<pre class="code lang-yaml"><code>destinations:
+  - name: hie
+    type: xds
+    xds:
+      url: https://hie.example/xds/repository
+      source_id: 1.2.840.114350.1.13.99
+      patient_domain: 1.2.840.114350.1.13.99.2.7.5.737384.14
+      facility_type: { code: &#34;225732001&#34;, scheme: 2.16.840.1.113883.6.96, display: Community hospital }
+      practice_setting: { code: &#34;394802001&#34;, scheme: 2.16.840.1.113883.6.96, display: General medicine }
+      tls: { enabled: true, cert_file: /etc/perfuse/hie.crt, key_file: /etc/perfuse/hie.key }</code></pre>
+<p><strong>Exchange › Document sharing</strong> shows what the registry holds and where it is reached, finds a patient&#39;s documents in this registry or another (a registry&#39;s ITI-18 or a gateway&#39;s ITI-38), downloads one, and publishes a CDA document by hand with the metadata a destination would give it.</p>
+<p><strong>Verified</strong> against the NIST XDS Toolkit 7.13.0, the IHE reference implementation: Perfuse&#39;s ITI-41, ITI-18 and ITI-43 against its Registry/Repository simulator (accepted with no validation errors, the document retrieved byte-identical), and its Initiating Gateway simulator querying and retrieving from Perfuse&#39;s Responding Gateway over XCA, with no errors in its log. Every SOAP message Perfuse writes validates against the ebXML Registry 3.0 and XDS.b schemas, and the MHD DocumentReference and SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. Not yet checked against Gazelle or at a Connectathon, and PIX/PDQ V3 (ITI-44, ITI-45, ITI-47 over SOAP) is not built.</p>
+<h3 id="s8-9-delimited"><span class="num">8.9</span> Delimited</h3>
 <p>CSV and its relatives. The options are on the source in the builder, and the <a href="#s24-format-reference">format reference</a> lists the file keys.</p>
 <p>Paths address columns. A named column is available when a header row is declared or the names are given; otherwise columns are positional.</p>
-<h4 id="s8-8-1-naming-the-columns"><span class="num">8.8.1</span> Naming the columns</h4>
+<h4 id="s8-9-1-naming-the-columns"><span class="num">8.9.1</span> Naming the columns</h4>
 <p>There are two ways, and they are exclusive. Either the first row of the file names them — <strong>the first row names the columns</strong> — or you list them yourself, in order. Declaring a header means the row is not treated as data.</p>
 <p>If neither is set, columns can only be addressed by position, so a filter written against a name has nothing to match. Turning the header on removes the list of names rather than keeping both: with a header the names come from the file, so a list left behind would be ignored, and a channel that reads as though it chose the names when the file chose them is harder to debug than one that refuses.</p>
-<h4 id="s8-8-2-what-a-filter-or-a-script-sees"><span class="num">8.8.2</span> What a filter or a script sees</h4>
+<h4 id="s8-9-2-what-a-filter-or-a-script-sees"><span class="num">8.9.2</span> What a filter or a script sees</h4>
 <p>One delimited document becomes many messages, so this needs stating before you write either.</p>
 <p><strong>With splitting on, everything runs per row.</strong> Declarative steps, the filter and the transformer script all see one row, and a path means *this* row&#39;s column. A filter that rejects a row rejects that row and no other, and the received count is rows rather than documents.</p>
 <p><strong>With splitting off, the message is the whole document</strong> and a write that crosses rows is refused rather than applied to the first one. That refusal is deliberate: silently writing to row one is the behaviour that produces a file which looks transformed and is not.</p>
-<h4 id="s8-8-3-the-three-that-change-what-counts-as-an-error"><span class="num">8.8.3</span> The three that change what counts as an error</h4>
+<h4 id="s8-9-3-the-three-that-change-what-counts-as-an-error"><span class="num">8.9.3</span> The three that change what counts as an error</h4>
 <p><strong>Accept rows with the wrong number of columns</strong> is off by default. A row with too many or too few columns is then an error, which is what catches a file whose shape changed without warning. Turning it on accepts the row and leaves the missing columns empty.</p>
 <p><strong>Trim spaces around each value</strong> fixes the common case of a value padded to a column width. Leave it off where trailing spaces are significant, which they occasionally are in an identifier.</p>
 <p><strong>Keep blank lines as rows</strong> is off by default and usually should be. On, a blank line becomes a row of empty columns, which matters only when a count has to match the file exactly.</p>
-<h3 id="s8-9-raw"><span class="num">8.9</span> Raw</h3>
+<h3 id="s8-10-raw"><span class="num">8.10</span> Raw</h3>
 <p>No parsing at all. The message is bytes.</p>
 <p>Use this when the content is not something Perfuse understands and does not need to: a PDF being moved between systems, a proprietary format, an already-formed document being forwarded unchanged.</p>
 <p>The cost is that nothing which depends on structure works — no field-level transformation, no filter on a field, no field-level comparison in the parity checker. A raw channel is a pipe, and it is honest about being one.</p>
-<h3 id="s8-10-choosing"><span class="num">8.10</span> Choosing</h3>
+<h3 id="s8-11-choosing"><span class="num">8.11</span> Choosing</h3>
 <p>If the message is HL7 v2, use <code>hl7</code>, even if you only intend to forward it unchanged. Parsing gives you the trace, the field-level statistics, the ability to filter later and the ability to compare. <code>raw</code> on parseable content buys nothing and loses all of that.</p>
 <p>Use <code>raw</code> when parsing would fail or would be a lie about the content.</p>
-<h3 id="s8-11-smart-health-links-and-cards"><span class="num">8.11</span> SMART Health Links and Cards</h3>
+<h3 id="s8-12-smart-health-links-and-cards"><span class="num">8.12</span> SMART Health Links and Cards</h3>
 <p>CMS&#39;s *Kill the Clipboard* asks providers to accept a patient&#39;s records from a QR code at check-in, and to hand the visit record back the same way. The QR code holds a <strong>SMART Health Link</strong> (<code>shlink:/...</code>): an address, a 256-bit key and, optionally, a label, an expiry and a passcode flag. <strong>Exchange → Health links</strong> reads one.</p>
 <p><strong>Receiving.</strong> Paste the link, or scan it with the camera where the browser can (Chrome and Edge). Perfuse fetches the manifest, decrypts each file with the key from the link, summarises any FHIR bundle - who the patient is, how many of each resource - and checks any <strong>SMART Health Card</strong> inside against its issuer&#39;s published key. *Deliver to the channel* hands the FHIR content to a channel as a message, which is how it reaches the EHR. The fetch is held to the egress policy at connect time, plain HTTP is refused, and the response of a server that is not a manifest server is never shown, because the address came from a stranger&#39;s QR code.</p>
 <p><strong>Sharing.</strong> *Share* encrypts a FHIR bundle, hosts it, and shows the link and its QR code once. The server keeps the ciphertext and not the key - it cannot open what it hosts, and cannot show the link again. A passcode is hashed; ten wrong ones disable the link. Links expire after 30 days by default, can be revoked, and list how often and by whom they were fetched. Start the server with <code>-public-url</code> set to the https address patients&#39; phones reach; the manifest URL it builds must fit the specification&#39;s 128 characters.</p>
@@ -2351,7 +2392,9 @@ filler_authority: {namespace: SPRINGFIELD-LAB, id: 2.16.840.1.113883.19.5.2, typ
 <h4 id="s10-8-4-dicomweb-archives"><span class="num">10.8.4</span> DICOMweb archives</h4>
 <p><code>type: dicomweb</code> stores each object with STOW-RS: Orthanc, dcm4chee, the cloud imaging services, or a Perfuse server&#39;s own archive. Give the service root (<code>https://pacs.example/dicom-web</code>); <code>/studies</code> is added, and a URL already ending in <code>/studies</code> is refused rather than posting to <code>/studies/studies</code>. Authenticate with <code>token</code> (a bearer token) or <code>username</code> and <code>password</code>; <code>headers</code> adds others, such as a cloud service&#39;s project header. The channel needs <code>dataType: dicom</code>.</p>
 <p>The server&#39;s answer decides the outcome, not its status code alone. An object the answer lists as failed is a failed delivery with the DICOM failure reason, and so is a 202 that lists nothing as stored: the server took the request and kept none of it. Timeout defaults to two minutes, because a large series is slow.</p>
-<h4 id="s10-8-5-immunization-registries"><span class="num">10.8.5</span> Immunization registries</h4>
+<h4 id="s10-8-5-document-repositories-ihe-xdsb"><span class="num">10.8.5</span> Document repositories (IHE XDS.b)</h4>
+<p><code>type: xds</code> publishes each clinical document to an XDS.b repository with ITI-41 Provide and Register: a CDA document, or one an HL7 v2 message (MDM, ORU) carries. The metadata comes from the document and the destination&#39;s settings (<code>source_id</code>, <code>patient_domain</code>, <code>facility_type</code>, <code>practice_setting</code>), and the repository&#39;s RegistryResponse decides the delivery. See <a href="#s8-message-formats">IHE document sharing</a>.</p>
+<h4 id="s10-8-6-immunization-registries"><span class="num">10.8.6</span> Immunization registries</h4>
 <p>Every US state immunization registry (IIS) takes HL7 2.5.1 messages on the same SOAP interface, the one the CDC published in 2011 (namespace <code>urn:cdc:iisb:2011</code>). It has two operations: <code>connectivityTest</code>, which proves the endpoint, and <code>submitSingleMessage</code>, which carries the message. A VXU^V04 reports a shot and comes back as an ACK; a QBP^Q11 asks for a patient&#39;s history and forecast and comes back as an RSP^K11.</p>
 <p>Choose <strong>Immunization registry (CDC IIS web service)</strong> as the service of a SOAP destination, or write <code>profile: cdc-iis</code>:</p>
 <pre class="code lang-yaml"><code>destinations:
@@ -3518,6 +3561,8 @@ rules:
 <tr><td><code>-trace-sample</code></td><td>float</td><td><code>1</code></td><td>fraction of traces to record, 0 to 1</td><td>—</td></tr>
 <tr><td><code>-tsa-url</code></td><td>string</td><td>—</td><td>RFC 3161 time-stamping authority for DSDR signatures on claims attachments</td><td><strong>Settings › Security › Document signing</strong>: Time-stamping authority</td></tr>
 <tr><td><code>-vpn</code></td><td>string</td><td>—</td><td>partner VPN tunnels to report on the Connections dashboard (YAML: AWS Site-to-Site VPN, Azure VPN Gateway or strongSwan, and both sides&#39; settings); see examples/vpn.yaml</td><td><strong>Settings › Monitoring › Connections</strong>: VPN tunnels to watch (file)</td></tr>
+<tr><td><code>-xds</code></td><td>string</td><td>—</td><td>keep clinical documents here as an IHE XDS.b registry and repository with this repository uniqueId (an OID), answering ITI-41, ITI-42, ITI-18 and ITI-43 at /xds/repository and /xds/registry</td><td><strong>Settings › Data › Document sharing (IHE XDS)</strong>: Keep documents here as an XDS registry and repository</td></tr>
+<tr><td><code>-xds-home-community</code></td><td>string</td><td>—</td><td>this community&#39;s home community id (urn:oid:...), so /xca/gateway answers XCA ITI-38 and ITI-39 for it</td><td><strong>Settings › Data › Document sharing (IHE XDS)</strong>: Home community id, for XCA</td></tr>
 </tbody>
 </table>
 </section>
@@ -4707,6 +4752,7 @@ rules:
 <tr><td><code>document</code></td><td>DocumentDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>soap</code></td><td>SOAPDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>dicomweb</code></td><td>DICOMwebDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>xds</code></td><td>XDSDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>dicom</code></td><td>DICOMDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>javascript</code></td><td>JavaScriptDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>broker</code></td><td>BrokerDestination (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
@@ -5292,6 +5338,46 @@ rules:
 <h4 id="s23-28-2-keep-alive"><span class="num">23.28.2</span> keep_alive</h4>
 <p>KeepAlive holds one connection open across messages rather than dialling per message.</p>
 <p>Most device endpoints expect this; some refuse a second message on the same connection. Off by default because a connection per message is the behaviour that works everywhere, at the cost of a handshake each time.</p>
+<h3 id="s23-29-xds-destination"><span class="num">23.29</span> XDS Destination</h3>
+<p>XDSDestination publishes each clinical document to an IHE XDS.b Document Repository with ITI-41 Provide and Register.</p>
+<p>The metadata is read from the CDA document (patient, title, type, time, author, confidentiality, language) and completed from these settings, which say what the document cannot: who is sending it, what kind of facility and practice it came from, and which of the patient&#39;s identifiers is the affinity domain&#39;s.</p>
+<p>Defined as <code>XDSDestination</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>url</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>source_id</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>patient_domain</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>facility_type</code></td><td>XDSCode</td><td>yes</td><td>—</td></tr>
+<tr><td><code>practice_setting</code></td><td>XDSCode</td><td>yes</td><td>—</td></tr>
+<tr><td><code>class</code></td><td>XDSCode (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>content_type</code></td><td>XDSCode (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>token</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>username</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>password</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>headers</code></td><td>mapping of text to text</td><td>no</td><td>—</td></tr>
+<tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s23-29-1-patient-domain"><span class="num">23.29.1</span> patient_domain</h4>
+<p>PatientDomain is the affinity domain&#39;s assigning authority OID: the patient identifier with this root is the one registered.</p>
+<p>Without it a document whose patient has one identifier sends that one, and one with several is refused.</p>
+<h4 id="s23-29-2-token"><span class="num">23.29.2</span> token</h4>
+<p>Token or Username/Password authenticate; Headers are added to each request.</p>
+<p>Most affinity domains use mutual TLS (tls) instead.</p>
+<h4 id="s23-29-3-username"><span class="num">23.29.3</span> username</h4>
+<p>Token or Username/Password authenticate; Headers are added to each request.</p>
+<p>Most affinity domains use mutual TLS (tls) instead.</p>
+<h4 id="s23-29-4-password"><span class="num">23.29.4</span> password</h4>
+<p>Token or Username/Password authenticate; Headers are added to each request.</p>
+<p>Most affinity domains use mutual TLS (tls) instead.</p>
+<h4 id="s23-29-5-headers"><span class="num">23.29.5</span> headers</h4>
+<p>Token or Username/Password authenticate; Headers are added to each request.</p>
+<p>Most affinity domains use mutual TLS (tls) instead.</p>
+<h4 id="s23-29-6-tls"><span class="num">23.29.6</span> tls</h4>
+<p>Token or Username/Password authenticate; Headers are added to each request.</p>
+<p>Most affinity domains use mutual TLS (tls) instead.</p>
 </section>
 <section class="chapter">
 <h2 id="s24-format-reference"><span class="num">24</span> Format Reference</h2>
@@ -5921,6 +6007,17 @@ rules:
 <p>Timeout bounds one shadow run.</p>
 <p>Defaults to 5s.</p>
 <p>Separate from the channel&#39;s own timeout, and shorter. A candidate with a runaway script must not accumulate goroutines behind the live traffic.</p>
+<h3 id="s25-21-xds-code"><span class="num">25.21</span> XDS Code</h3>
+<p>XDSCode is a coded value in destination settings: code, coding scheme (an OID) and display.</p>
+<p>Defined as <code>XDSCode</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>code</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>scheme</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>display</code></td><td>text</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
 </section>
 <section class="chapter">
 <h2 id="s26-how-each-component-works"><span class="num">26</span> How Each Component Works</h2>
@@ -6608,7 +6705,11 @@ rules:
 <p>Two independent reasons point the same way. It is what every 837 and 835 implementation guide writes, so a person reading the guide and a person reading the tree see the same token. And it is what Mirth&#39;s own X12 serialiser produces, so a Mirth script that walks msg[&#39;CLM&#39;][&#39;CLM01&#39;] keeps working - which is the whole migration promise.</p>
 <p>The element number is always two digits, matching the guides, so CLM01 rather than CLM1. Composite components add a further dotted number, CLM05.1, because X12 composites are one level deep and there is nothing to collide with.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12xml</code></p>
-<h3 id="s26-100-xmldsig"><span class="num">26.100</span> xmldsig</h3>
+<h3 id="s26-100-xds"><span class="num">26.100</span> xds</h3>
+<p>Package xds is IHE cross-enterprise document sharing: an XDS.b Document Registry and Repository (ITI-41 Provide and Register, ITI-18 Registry Stored Query, ITI-43 Retrieve Document Set), an XCA Responding Gateway over the same store (ITI-38, ITI-39), and the client side of each, so a channel can publish a document to another organisation&#39;s repository and the console can query a registry or a community.</p>
+<p>The metadata is ebXML Registry 3.0 (ebRIM), as XDS.b defines it in IHE ITI TF-3 chapter 4. It is modelled here as Go structs whose XML tags carry the namespaces, so a message is read the same whichever prefixes the sender chose, and written namespace-correct.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/xds</code></p>
+<h3 id="s26-101-xmldsig"><span class="num">26.101</span> xmldsig</h3>
 <p>Package xmldsig implements XML Digital Signatures and the XAdES profile of them.</p>
 <h1 id="why-this-is-written-rather-than-borrowed">Why this is written rather than borrowed</h1>
 <p>A signed clinical document is a legal artefact. It asserts that a named person, at a named time, took responsibility for a specific set of bytes. Getting that wrong in either direction is serious: a signature that cannot be verified makes a valid document look forged, and a verifier that is too generous accepts a document somebody altered.</p>
@@ -6618,12 +6719,12 @@ rules:
 <h1 id="exclusive-rather-than-inclusive-by-default">Exclusive rather than inclusive, by default</h1>
 <p>Inclusive canonicalisation pulls in every namespace declaration that is in scope, including ones the signed element never uses. That makes a signature break when the document is later embedded inside something that declares an unrelated namespace on an ancestor, which is precisely what happens when a CDA is put inside a SOAP envelope or an IHE metadata wrapper. Exclusive canonicalisation includes only the declarations the element actually uses, and is what document exchange profiles specify for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xmldsig</code></p>
-<h3 id="s26-101-xtree"><span class="num">26.101</span> xtree</h3>
+<h3 id="s26-102-xtree"><span class="num">26.102</span> xtree</h3>
 <p>Package xtree is a mutable XML tree.</p>
 <p>Three very different features need to modify XML: HL7 transformations, which Mirth models as XML because that is what its scripts operate on; clinical documents, which are XML natively; and the declarative transformation steps. They share this one tree rather than each growing their own, because the alternative is three models that disagree about what an empty element means.</p>
 <p>The design goal is faithfulness to E4X semantics, since Mirth scripts are E4X and the whole point of running them unchanged is that they behave the same. That drives two decisions that would otherwise look strange: a node keeps a pointer to its parent, because E4X exposes parent(), and children are ordered with duplicates allowed, because an HL7 field repetition is literally a repeated element and scripts index into them by position.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xtree</code></p>
-<h3 id="s26-102-pas"><span class="num">26.102</span> pas</h3>
+<h3 id="s26-103-pas"><span class="num">26.103</span> pas</h3>
 <p>Package pas reads Da Vinci Prior Authorization Support (PAS) request Bundles.</p>
 <p>It is the reader Perfuse&#39;s own PAS server uses, published so that whatever decides a prior authorization - a payer&#39;s rules, a utilization management system, a decision service such as Vaglio - reads a request with the same code, and so the same answers about what a request contains. Two readers of one message format are two opinions about it.</p>
 <p>It has no dependencies outside the standard library. A request is kept as decoded JSON (map[string]any) rather than as typed resources, because a PAS Bundle carries whatever supporting resources the provider chose to send, and a reader that dropped what it did not model would hide evidence from the decision.</p>
@@ -6683,8 +6784,10 @@ rules:
 <tr><td><code>check_every</code></td><td>Contract Ref</td></tr>
 <tr><td><code>city</code></td><td>ECR Facility</td></tr>
 <tr><td><code>claim_us_core</code></td><td>FHIR Destination</td></tr>
+<tr><td><code>class</code></td><td>XDS Destination</td></tr>
 <tr><td><code>client_id</code></td><td>FHIR Auth, MQTT Connection</td></tr>
 <tr><td><code>client_secret</code></td><td>FHIR Auth</td></tr>
+<tr><td><code>code</code></td><td>XDS Code</td></tr>
 <tr><td><code>column</code></td><td>Database Source</td></tr>
 <tr><td><code>columns</code></td><td>Delimited</td></tr>
 <tr><td><code>comment</code></td><td>Delimited</td></tr>
@@ -6693,7 +6796,7 @@ rules:
 <tr><td><code>compression</code></td><td>Kafka Destination</td></tr>
 <tr><td><code>config</code></td><td>ELR Destination</td></tr>
 <tr><td><code>container</code></td><td>Azure Blob Access</td></tr>
-<tr><td><code>content_type</code></td><td>AMQP Destination, Azure Blob Destination, Broker Destination, GCS Destination, HTTP Destination, S3 Destination</td></tr>
+<tr><td><code>content_type</code></td><td>AMQP Destination, Azure Blob Destination, Broker Destination, GCS Destination, HTTP Destination, S3 Destination, XDS Destination</td></tr>
 <tr><td><code>contract</code></td><td>Channel</td></tr>
 <tr><td><code>credentials_file</code></td><td>GCP Access</td></tr>
 <tr><td><code>dataType</code></td><td>Channel</td></tr>
@@ -6710,6 +6813,7 @@ rules:
 <tr><td><code>dicom_query</code></td><td>Source</td></tr>
 <tr><td><code>dicomweb</code></td><td>Destination, Source</td></tr>
 <tr><td><code>dir</code></td><td>CDA Destination, Destination, Document Destination, FTP Destination, File Poll, SFTP Destination, SFTP Source</td></tr>
+<tr><td><code>display</code></td><td>XDS Code</td></tr>
 <tr><td><code>document</code></td><td>Destination</td></tr>
 <tr><td><code>domain</code></td><td>SMB Source</td></tr>
 <tr><td><code>driver</code></td><td>Database Destination, Database Source</td></tr>
@@ -6727,6 +6831,7 @@ rules:
 <tr><td><code>extract</code></td><td>Attachments</td></tr>
 <tr><td><code>facility</code></td><td>Ack, ECR Destination</td></tr>
 <tr><td><code>facility_id</code></td><td>SOAP Destination</td></tr>
+<tr><td><code>facility_type</code></td><td>XDS Destination</td></tr>
 <tr><td><code>fail_on_body</code></td><td>HTTP Destination</td></tr>
 <tr><td><code>fault_is_success</code></td><td>SOAP Destination</td></tr>
 <tr><td><code>fault_on_nak</code></td><td>SOAP Source</td></tr>
@@ -6750,7 +6855,7 @@ rules:
 <tr><td><code>group_by</code></td><td>SNS Destination, SQS Destination</td></tr>
 <tr><td><code>has_header</code></td><td>Delimited</td></tr>
 <tr><td><code>header</code></td><td>SOAP Destination</td></tr>
-<tr><td><code>headers</code></td><td>Broker Destination, CDA Destination, DICO Mweb Destination, FHIR Destination, HTTP Destination, Kafka Destination, SOAP Destination</td></tr>
+<tr><td><code>headers</code></td><td>Broker Destination, CDA Destination, DICO Mweb Destination, FHIR Destination, HTTP Destination, Kafka Destination, SOAP Destination, XDS Destination</td></tr>
 <tr><td><code>heartbeat</code></td><td>Broker Source</td></tr>
 <tr><td><code>hl7v3</code></td><td>Channel</td></tr>
 <tr><td><code>host</code></td><td>Broker Destination, Broker Source, FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, SMTP Destination</td></tr>
@@ -6812,9 +6917,10 @@ rules:
 <tr><td><code>params</code></td><td>Database Destination</td></tr>
 <tr><td><code>parity</code></td><td>Serial Source</td></tr>
 <tr><td><code>passcode</code></td><td>Broker Destination, Broker Source</td></tr>
-<tr><td><code>password</code></td><td>AMQP Connection, DICO Mweb Destination, DICO Mweb Source, FTP Destination, FTP Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, SOAP Source, Web DAV Source</td></tr>
+<tr><td><code>password</code></td><td>AMQP Connection, DICO Mweb Destination, DICO Mweb Source, FTP Destination, FTP Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, SOAP Source, Web DAV Source, XDS Destination</td></tr>
 <tr><td><code>path</code></td><td>DICO Mweb Source, HTTP Source, SOAP Source</td></tr>
 <tr><td><code>path_style</code></td><td>S3 Destination, S3 Source</td></tr>
+<tr><td><code>patient_domain</code></td><td>XDS Destination</td></tr>
 <tr><td><code>patient_root</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>pattern</code></td><td>File Poll, SFTP Source</td></tr>
 <tr><td><code>persistent</code></td><td>Broker Destination</td></tr>
@@ -6823,6 +6929,7 @@ rules:
 <tr><td><code>port</code></td><td>Serial Source</td></tr>
 <tr><td><code>postal_code</code></td><td>ECR Facility</td></tr>
 <tr><td><code>postprocessor</code></td><td>Scripts</td></tr>
+<tr><td><code>practice_setting</code></td><td>XDS Destination</td></tr>
 <tr><td><code>prefetch</code></td><td>AMQP Source</td></tr>
 <tr><td><code>prefix</code></td><td>Azure Blob Source, GCS Source, S3 Source</td></tr>
 <tr><td><code>preprocessor</code></td><td>Scripts</td></tr>
@@ -6862,6 +6969,7 @@ rules:
 <tr><td><code>sample</code></td><td>Shadow</td></tr>
 <tr><td><code>sas</code></td><td>Azure Blob Access</td></tr>
 <tr><td><code>sasl</code></td><td>Kafka Destination, Kafka Source</td></tr>
+<tr><td><code>scheme</code></td><td>XDS Code</td></tr>
 <tr><td><code>scope</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>script</code></td><td>Channel, Java Script Destination, Java Script Source</td></tr>
 <tr><td><code>scripts</code></td><td>Channel</td></tr>
@@ -6884,6 +6992,7 @@ rules:
 <tr><td><code>sop_classes</code></td><td>DICOM Source</td></tr>
 <tr><td><code>sort_by</code></td><td>File Poll</td></tr>
 <tr><td><code>source</code></td><td>Channel, ECR Destination</td></tr>
+<tr><td><code>source_id</code></td><td>XDS Destination</td></tr>
 <tr><td><code>split</code></td><td>Delimited, X12 Options</td></tr>
 <tr><td><code>sqs</code></td><td>Destination, Source</td></tr>
 <tr><td><code>stable_for</code></td><td>File Poll, SFTP Source</td></tr>
@@ -6905,12 +7014,12 @@ rules:
 <tr><td><code>template</code></td><td>Database Source, Document Destination</td></tr>
 <tr><td><code>tenant_id</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>tier</code></td><td>Azure Blob Destination</td></tr>
-<tr><td><code>timeout</code></td><td>AMQP Connection, Broker Destination, Broker Source, DICO Mweb Destination, DICOM Destination, DICOM Query Source, Database Destination, Destination, Document Destination, FTP Destination, FTP Source, IBMMQ Connection, Java Script Destination, Java Script Source, Kafka Destination, Kafka Source, MQTT Connection, S3 Destination, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, Scripts, Shadow, TCP Dest, Web DAV Source</td></tr>
+<tr><td><code>timeout</code></td><td>AMQP Connection, Broker Destination, Broker Source, DICO Mweb Destination, DICOM Destination, DICOM Query Source, Database Destination, Destination, Document Destination, FTP Destination, FTP Source, IBMMQ Connection, Java Script Destination, Java Script Source, Kafka Destination, Kafka Source, MQTT Connection, S3 Destination, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, Scripts, Shadow, TCP Dest, Web DAV Source, XDS Destination</td></tr>
 <tr><td><code>timezone</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>title</code></td><td>Document Destination</td></tr>
-<tr><td><code>tls</code></td><td>AMQP Connection, Broker Destination, Broker Source, DICO Mweb Destination, DICO Mweb Source, DICOM Destination, DICOM Query Source, DICOM Source, Destination, HTTP Destination, HTTP Source, IBMMQ Connection, Kafka Destination, Kafka Source, MQTT Connection, SOAP Destination, SOAP Source, Source, TCP Dest, TCP Source</td></tr>
+<tr><td><code>tls</code></td><td>AMQP Connection, Broker Destination, Broker Source, DICO Mweb Destination, DICO Mweb Source, DICOM Destination, DICOM Query Source, DICOM Source, Destination, HTTP Destination, HTTP Source, IBMMQ Connection, Kafka Destination, Kafka Source, MQTT Connection, SOAP Destination, SOAP Source, Source, TCP Dest, TCP Source, XDS Destination</td></tr>
 <tr><td><code>to</code></td><td>SMTP Destination</td></tr>
-<tr><td><code>token</code></td><td>DICO Mweb Destination, DICO Mweb Source, HTTP Source, SOAP Source</td></tr>
+<tr><td><code>token</code></td><td>DICO Mweb Destination, DICO Mweb Source, HTTP Source, SOAP Source, XDS Destination</td></tr>
 <tr><td><code>token_url</code></td><td>FHIR Auth</td></tr>
 <tr><td><code>topic</code></td><td>Kafka Destination, MQTT Destination, MQTT Source, Pub Sub Destination</td></tr>
 <tr><td><code>topic_arn</code></td><td>SNS Destination</td></tr>
@@ -6922,9 +7031,9 @@ rules:
 <tr><td><code>trim_space</code></td><td>Delimited</td></tr>
 <tr><td><code>type</code></td><td>Destination, FHIR Auth, Source</td></tr>
 <tr><td><code>undeploy</code></td><td>Scripts</td></tr>
-<tr><td><code>url</code></td><td>CDA Destination, DICO Mweb Destination, FHIR Destination, HTTP Destination, IBMMQ Connection, SOAP Destination, Web DAV Source</td></tr>
+<tr><td><code>url</code></td><td>CDA Destination, DICO Mweb Destination, FHIR Destination, HTTP Destination, IBMMQ Connection, SOAP Destination, Web DAV Source, XDS Destination</td></tr>
 <tr><td><code>user</code></td><td>FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, Web DAV Source</td></tr>
-<tr><td><code>username</code></td><td>AMQP Connection, DICO Mweb Destination, DICO Mweb Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SMTP Destination, SOAP Destination, SOAP Source</td></tr>
+<tr><td><code>username</code></td><td>AMQP Connection, DICO Mweb Destination, DICO Mweb Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SMTP Destination, SOAP Destination, SOAP Source, XDS Destination</td></tr>
 <tr><td><code>validate_before_send</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>version</code></td><td>CDA Destination, FHIR Destination, SOAP Destination, SOAP Source</td></tr>
 <tr><td><code>visibility_timeout</code></td><td>SQS Source</td></tr>
@@ -6936,6 +7045,7 @@ rules:
 <tr><td><code>write</code></td><td>CDA Destination</td></tr>
 <tr><td><code>wsdl</code></td><td>SOAP Source</td></tr>
 <tr><td><code>x12</code></td><td>Channel</td></tr>
+<tr><td><code>xds</code></td><td>Destination</td></tr>
 </tbody>
 </table>
 </section>

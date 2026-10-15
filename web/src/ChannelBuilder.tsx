@@ -1460,6 +1460,52 @@ function DestinationCard({
           </>
         )}
 
+        {dest.type === 'xds' && (
+          <>
+            <Field label="Repository's ITI-41 address" hint="The Provide and Register endpoint, such as https://hie.example/xds/repository.">
+              <input className="input font-mono text-xs" value={dest.xdsUrl} onChange={(e) => onChange({ xdsUrl: e.target.value })} placeholder="https://hie.example/xds/repository" />
+            </Field>
+            <Field label="Source ID (this sender's OID)" hint="The SubmissionSet's sourceId: the OID the affinity domain knows this system by.">
+              <input className="input font-mono" value={dest.xdsSourceId} onChange={(e) => onChange({ xdsSourceId: e.target.value })} placeholder="1.2.840.114350.1.13.99" />
+            </Field>
+            <Field
+              label="Affinity domain (patient ID OID)"
+              hint="The assigning authority whose patient identifier is registered. Empty: a document whose patient has one identifier sends that one."
+            >
+              <input className="input font-mono" value={dest.xdsPatientDomain} onChange={(e) => onChange({ xdsPatientDomain: e.target.value })} />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Facility type code" hint="Required by every registry; CDA does not say it.">
+                <input className="input font-mono" value={dest.xdsFacilityCode} onChange={(e) => onChange({ xdsFacilityCode: e.target.value })} placeholder="225732001" />
+              </Field>
+              <Field label="Facility type scheme">
+                <input className="input font-mono" value={dest.xdsFacilityScheme} onChange={(e) => onChange({ xdsFacilityScheme: e.target.value })} />
+              </Field>
+              <Field label="Facility type display">
+                <input className="input" value={dest.xdsFacilityDisplay} onChange={(e) => onChange({ xdsFacilityDisplay: e.target.value })} placeholder="Community hospital" />
+              </Field>
+              <Field label="Practice setting code" hint="Required by every registry; CDA does not say it.">
+                <input className="input font-mono" value={dest.xdsPracticeCode} onChange={(e) => onChange({ xdsPracticeCode: e.target.value })} placeholder="394802001" />
+              </Field>
+              <Field label="Practice setting scheme">
+                <input className="input font-mono" value={dest.xdsPracticeScheme} onChange={(e) => onChange({ xdsPracticeScheme: e.target.value })} />
+              </Field>
+              <Field label="Practice setting display">
+                <input className="input" value={dest.xdsPracticeDisplay} onChange={(e) => onChange({ xdsPracticeDisplay: e.target.value })} placeholder="General medicine" />
+              </Field>
+              <Field label="Class code (optional)" hint="Defaults to the document's own type code.">
+                <input className="input font-mono" value={dest.xdsClassCode} onChange={(e) => onChange({ xdsClassCode: e.target.value })} />
+              </Field>
+              <Field label="Class code scheme">
+                <input className="input font-mono" value={dest.xdsClassScheme} onChange={(e) => onChange({ xdsClassScheme: e.target.value })} />
+              </Field>
+              <Field label="Bearer token (optional)" hint="Most affinity domains use mutual TLS instead.">
+                <input type="password" className="input font-mono" value={dest.xdsToken} onChange={(e) => onChange({ xdsToken: e.target.value })} />
+              </Field>
+            </div>
+          </>
+        )}
+
         {dest.type === 'dicomweb' && (
           <>
             <Field

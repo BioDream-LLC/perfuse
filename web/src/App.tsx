@@ -47,6 +47,7 @@ const CMS0057 = lazy(() => import('./CMS0057').then((m) => ({ default: m.CMS0057
 const HealthLinks = lazy(() => import('./HealthLinks').then((m) => ({ default: m.HealthLinks })))
 const Imaging = lazy(() => import('./Imaging').then((m) => ({ default: m.Imaging })))
 const Drugs = lazy(() => import('./Drugs').then((m) => ({ default: m.Drugs })))
+const DocumentSharing = lazy(() => import('./DocumentSharing').then((m) => ({ default: m.DocumentSharing })))
 const Certificates = lazy(() => import('./Certificates').then((m) => ({ default: m.Certificates })))
 const MirthMigration = lazy(() => import('./MirthMigration').then((m) => ({ default: m.MirthMigration })))
 const Contracts = lazy(() => import('./Contracts').then((m) => ({ default: m.Contracts })))
@@ -83,6 +84,7 @@ export type Tab =
   | 'shl'
   | 'imaging'
   | 'drugs'
+  | 'xds'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -592,6 +594,12 @@ function Console() {
       about: 'The drug formulary, NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization',
     },
     {
+      id: 'xds',
+      label: 'Document sharing',
+      minRole: 'viewer',
+      about: 'The IHE XDS.b registry and repository, XCA and MHD: documents shared with other organisations',
+    },
+    {
       id: 'imaging',
       label: 'Imaging',
       minRole: 'viewer',
@@ -943,6 +951,7 @@ function Console() {
           {tab === 'shl' && <HealthLinks />}
           {tab === 'imaging' && <Imaging />}
           {tab === 'drugs' && <Drugs />}
+          {tab === 'xds' && <DocumentSharing />}
           {tab === 'certificates' && <Certificates />}
           {tab === 'scripts' && (
             <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

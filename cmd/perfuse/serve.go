@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -45,6 +46,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/web"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
+	"github.com/biodream-llc/perfuse/internal/xds"
 	"github.com/biodream-llc/perfuse/pas"
 )
 
@@ -98,6 +100,10 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	publicURL := fset.String("public-url", "", "the https address patients' phones and other organisations reach this server at, for the "+
 		"SMART Health Links it hosts (default: the listen address)")
 	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
+	xdsRepository := fset.String("xds", "", "keep clinical documents here as an IHE XDS.b registry and repository with this "+
+		"repository uniqueId (an OID), answering ITI-41, ITI-42, ITI-18 and ITI-43 at /xds/repository and /xds/registry")
+	xdsHome := fset.String("xds-home-community", "", "this community's home community id (urn:oid:...), so /xca/gateway answers "+
+		"XCA ITI-38 and ITI-39 for it")
 	mcpOn := fset.Bool("mcp", false, "serve the Model Context Protocol at /mcp, so AI agents with an API token can read "+
 		"status, messages, the queue, alerts and the FHIR store with that token's own access")
 	formularyFile := fset.String("formulary", "", "publish this drug formulary over the Da Vinci US Drug Formulary API at "+
@@ -1022,6 +1028,20 @@ oidcDone:
 			Enabled:        func() bool { return settingsStore.Bool("security.mcp") },
 			CallsPerMinute: func() int { return settingsStore.Int("security.mcpCallsPerMinute") },
 		}
+		if oid := strings.TrimSpace(*xdsRepository); oid != "" {
+			if !regexp.MustCompile(`^[0-2](\.(0|[1-9][0-9]*))+$`).MatchString(oid) {
+				return fmt.Errorf("-xds %q is not an OID; give the repository's uniqueId, such as 1.2.840.114350.1.13.99.2", oid)
+			}
+			home := strings.TrimSpace(*xdsHome)
+			if home != "" && !regexp.MustCompile(`^urn:oid:[0-2](\.(0|[1-9][0-9]*))+$`).MatchString(home) {
+				return fmt.Errorf("-xds-home-community %q is not urn:oid:<OID>", home)
+			}
+			srv.XDS = &xds.Registry{DB: db, RepositoryID: oid, HomeCommunityID: home}
+			log.Info("IHE document sharing", "repository", oid, "home_community", home,
+				"endpoints", "/xds/repository /xds/registry"+map[bool]string{true: " /xca/gateway", false: ""}[home != ""])
+		} else if strings.TrimSpace(*xdsHome) != "" {
+			return fmt.Errorf("-xds-home-community answers XCA from this server's registry, which is off; pass -xds as well")
+		}
 		if dir := strings.TrimSpace(*dicomwebArchive); dir != "" {
 			archive, err := dicomweb.OpenArchive(dir)
 			if err != nil {
@@ -1460,6 +1480,7 @@ oidcDone:
 		fhirHandler := fhirSrv.Handler()
 		mountFHIR(mux, fhirHandler)
 		srv.FHIRHandler = fhirHandler
+		srv.FHIRStore = fhirStore
 		srv.DTRPackage = fhirSrv.QuestionnairePackage
 		srv.PatientSummary = fhirSrv.PatientSummary
 

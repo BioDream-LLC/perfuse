@@ -89,6 +89,12 @@ func startupSettings() []Setting {
 		{Key: "publicHealth.shlAllowHTTP", Group: "Public health", Subgroup: "Health links", Label: "Allow SMART Health Links over plain HTTP",
 			Help: "Let a received SMART Health Link point at plain HTTP; for testing only.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: false, Flag: "shl-allow-http", Advanced: true},
+		{Key: "data.xdsRepository", Group: GroupData, Subgroup: "Document sharing (IHE XDS)", Label: "Keep documents here as an XDS registry and repository",
+			Help: "This repository's uniqueId, an OID. Documents are kept in this server's database and served as IHE XDS.b: ITI-41 Provide and Register and ITI-43 Retrieve at /xds/repository, ITI-18 Stored Query and ITI-42 Register at /xds/registry. Empty leaves it off.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "xds"},
+		{Key: "data.xdsHomeCommunity", Group: GroupData, Subgroup: "Document sharing (IHE XDS)", Label: "Home community id, for XCA",
+			Help: "This community's id, urn:oid:..., so other communities can query and retrieve these documents over XCA (ITI-38 and ITI-39) at /xca/gateway, as Carequality and eHealth Exchange do.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "xds-home-community", Advanced: true},
 		{Key: "data.dicomwebArchive", Group: GroupData, Subgroup: "Imaging archive", Label: "Keep images in this folder and serve them over DICOMweb",
 			Help: "A directory for imaging objects, served at /dicomweb: QIDO-RS to search, WADO-RS and WADO-URI to retrieve, " +
 				"STOW-RS to store. A viewer such as OHIF can browse it, and a channel's dicomweb destination can fill it.",

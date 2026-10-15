@@ -377,6 +377,8 @@ export default async function globalSetup() {
       "-dicomweb-archive", join(dir, "imaging"),
       // The sample drug formulary, so the Drugs screen, the Drug Formulary API, RTPB and ePA are tested for real.
       "-formulary", "examples/formulary/formulary.yaml",
+      // An IHE document registry, repository and XCA gateway, so Document sharing, XDS.b, XCA and MHD are tested for real.
+      "-xds", "1.2.826.0.1.3680043.10.1337.42.1", "-xds-home-community", "urn:oid:1.2.826.0.1.3680043.10.1337.42",
     ],
     { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
   );

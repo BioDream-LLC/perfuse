@@ -63,6 +63,8 @@ var settingFlags = map[string]string{
 	"rctc":                              "publicHealth.rctc",
 	"shl-allow-http":                    "publicHealth.shlAllowHTTP",
 	"dicomweb-archive":                  "data.dicomwebArchive",
+	"xds":                               "data.xdsRepository",
+	"xds-home-community":                "data.xdsHomeCommunity",
 	"dicomweb-cors":                     "data.dicomwebCORS",
 	"smart-issuer":                      "smart.issuer",
 	"smart-audience":                    "smart.audience",

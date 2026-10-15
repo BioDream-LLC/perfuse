@@ -425,6 +425,8 @@ const (
 	DestinationDICOM DestinationType = "dicom"
 	// DestinationDICOMweb stores imaging objects by STOW-RS on a DICOMweb server.
 	DestinationDICOMweb DestinationType = "dicomweb"
+	// DestinationXDS publishes each clinical document to an IHE XDS.b repository (ITI-41).
+	DestinationXDS DestinationType = "xds"
 	// DestinationJavaScript runs a script instead of sending, which is Mirth's
 	// JavaScript Writer and the escape hatch sites reach for constantly.
 	DestinationJavaScript DestinationType = "javascript"
@@ -492,6 +494,7 @@ var allDestinationTypes = []DestinationType{
 	DestinationDocument,
 	DestinationDICOM,
 	DestinationDICOMweb,
+	DestinationXDS,
 	DestinationBroker,
 	DestinationKafka,
 	DestinationSQS,
@@ -593,6 +596,9 @@ type Destination struct {
 
 	// DICOMweb applies to a dicomweb destination.
 	DICOMweb *DICOMwebDestination `yaml:"dicomweb,omitempty"`
+
+	// XDS applies to an xds destination.
+	XDS *XDSDestination `yaml:"xds,omitempty"`
 
 	// DICOM applies to a dicom destination.
 	DICOM *DICOMDestination `yaml:"dicom,omitempty"`

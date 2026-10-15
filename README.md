@@ -136,14 +136,15 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>HL7 v3</b>, delimited and raw formats, read by element and attribute</li>
 <li><b>Signed claims attachments</b> (HL7 DSDR): XAdES-X-L with OCSP and RFC 3161 time-stamps, signed and verified; checked with xmlsec1 and OpenSSL</li>
 <li>CDA and document destinations, and a browser lab</li>
+<li><b>IHE XDS.b</b> registry and repository, <b>XCA</b> gateway and <b>MHD</b>, <b>PIXm</b>, <b>PDQm</b>; an xds destination publishing CDA; checked with the <b>NIST XDS Toolkit</b></li>
 </ul>
 </td>
 <td width="50%" valign="top">
 <img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"><br>
-<b>25 source types, 27 destination types</b>
+<b>25 source types, 28 destination types</b>
 <ul>
 <li><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · DICOMweb (STOW-RS) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · JavaScript Reader · serial</li>
-<li><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · database · DICOM · DICOMweb · FHIR · CDA · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</li>
+<li><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · database · DICOM · DICOMweb · FHIR · CDA · <b>IHE XDS.b</b> · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</li>
 <li>Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle, SQLite</b>, the dialect checked when the channel is saved</li>
 <li><b>Kafka keyed per patient</b>, offsets committed after the batch; an SQS message deleted only once handled</li>
 <li>AWS, Azure and Google Cloud <b>without their SDKs</b>; S3 archives as <b>date-partitioned JSON for Athena</b></li>
@@ -209,7 +210,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b>, with a screen saying which are ready</li>
 <li><b>Da Vinci CRD 2.2.1</b> over CDS Hooks, <b>DTR 2.2.0</b> questionnaire packages, and a <b>PAS 2.2.1 server</b>: <code>$submit</code>, <code>$inquire</code>, <code>$decide</code></li>
 <li>A <b>reviewer queue</b> for pended requests, with the documents sent for each</li>
-<li>An optional <b>decision service</b> asked about what the rules leave to a reviewer (we recommend <b>Vaglio</b>, source-available, <a href="https://vaglio.perfuse.health:8443">try its demo</a>; any engine plugs in); any failure pends, never approves</li>
+<li>An optional <b>decision service</b> asked about what the rules leave to a reviewer (we recommend <b>Vaglio</b>, source-available; any engine plugs in); any failure pends, never approves</li>
 <li>Claims to <b>CARIN Blue Button 2.2.0</b>, decisions to <b>PDex 2.2.0</b>, <code>$member-match</code>, <code>$davinci-data-export</code>, a <b>Plan-Net</b> directory</li>
 <li>The yearly <b>prior authorization metrics page</b> in CMS's layout</li>
 <li>Drugs: <b>NCPDP SCRIPT ePA</b> and <b>Real-Time Prescription Benefit</b> from one formulary, published over the <b>Da Vinci US Drug Formulary 2.1.0</b> API; decided through PAS</li>
@@ -495,6 +496,7 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | **HAPI FHIR** | FHIR resources Perfuse produces validate in an independent server |
 | **Orthanc** | DICOM C-STORE and C-FIND, and DICOMweb both ways (STOW-RS into Orthanc; Orthanc's DICOMweb client searching and retrieving from Perfuse) |
 | **OHIF** | Viewer listing and displaying studies from Perfuse's DICOMweb archive |
+| **NIST XDS Toolkit** | XDS.b ITI-41/18/43 against its Registry/Repository, and its XCA Initiating Gateway against Perfuse's Responding Gateway |
 | **PostgreSQL, SFTP, ActiveMQ** | Database, file transfer and broker destinations against real services |
 | **The FHIR R4 specification's own examples** | All 2,912 example files the standard's authors published. 13,723 resources validated, none reported wrongly. Found a bundle whose invalid content was being reported as a missing feature, exiting zero under `-strict` |
 | **The HAPI HL7 v2 test corpus** | 59 of the reference Java implementation's own awkward messages — uuencoded payloads, escaped delimiters, repeating groups — all parsed |
@@ -825,7 +827,7 @@ NEMA. Those marks are used only to describe what this software reads and writes.
 <sub><b>DICOM:</b> DICOM · DICOM router · DICOM gateway · C-STORE · C-FIND · C-ECHO · C-MOVE · C-GET · DICOM SCP · DICOM SCU · PACS integration · DICOM de-identification · DICOM anonymisation · radiology integration · imaging integration · DICOM to HL7 · DICOM to FHIR · DICOM query retrieve · modality worklist · DICOMweb · QIDO-RS · WADO-RS · STOW-RS · OHIF</sub><br><br>
 <sub><b>X12 and revenue:</b> X12 · X12 837 · X12 835 · X12 270 · X12 271 · X12 278 · X12 parser · EDI healthcare · healthcare EDI · claims integration · remittance advice · eligibility verification · prior authorisation · prior authorization · CMS-0057 · Da Vinci PAS · payer integration · revenue cycle integration · claims 837 · ERA 835</sub><br><br>
 <sub><b>Documents:</b> C-CDA · CDA · CCDA validator · CDA parser · clinical document architecture · CCD · discharge summary · MDM T02 · document integration · CDA to FHIR · clinical document exchange · CDA narrative validation · IHE · XDS</sub><br><br>
-<sub><b>Exchange:</b> TEFCA · TEFCA participant · UDAP · UDAP dynamic client registration · Facilitated FHIR · QHIN · Carequality · Commonwell · national health information exchange · trusted exchange framework · record locator · patient discovery · cross-organisational exchange</sub><br><br>
+<sub><b>Exchange:</b> TEFCA · TEFCA participant · UDAP · UDAP dynamic client registration · Facilitated FHIR · QHIN · Carequality · Commonwell · national health information exchange · trusted exchange framework · record locator · patient discovery · cross-organisational exchange · IHE XDS · XDS.b · XCA · MHD · PIXm · PDQm · document registry · document repository · ITI-41 · ITI-18 · ITI-43 · ITI-38</sub><br><br>
 <sub><b>Public health:</b> eCR · electronic case reporting · ELR · electronic lab reporting · public health reporting · reportable conditions · syndromic surveillance · immunisation registry · notifiable disease reporting</sub><br><br>
 <sub><b>Security:</b> SAML · SAML 2.0 · SAML single sign-on · OIDC · OpenID Connect · LDAP · Active Directory · passkeys · WebAuthn · FIDO2 · SCIM · SCIM 2.0 · mutual TLS · mTLS · client certificate authentication · role-based access control · RBAC · audit log · PHI audit · HIPAA audit trail · HIPAA integration engine · healthcare single sign-on · Keycloak SAML · Microsoft Entra SAML · Okta SAML · ADFS SAML · API tokens</sub><br><br>
 <sub><b>Operations:</b> durable queue · message queue · guaranteed delivery · dead letter queue · message retry · shadow mode · canary deployment · feed contracts · schema drift detection · interface monitoring · HL7 monitoring · Prometheus metrics · OpenTelemetry · OTLP tracing · distributed tracing · alerting · message search · message replay · multi-tenant · fleet management · flow map · interface dashboard</sub><br><br>

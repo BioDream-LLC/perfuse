@@ -486,6 +486,70 @@ DICOMweb client searches Perfuse's archive and retrieves a study byte-identical 
 OHIF 3 lists the archive's studies and displays their frames with the settings above. OHIF and several other clients
 send `type=` unquoted in the Accept and Content-Type headers, which RFC 2045 does not allow; Perfuse accepts it.
 
+## IHE document sharing: XDS.b, XCA, MHD, PIXm and PDQm
+
+Clinical documents shared between organisations the way health information exchanges, Carequality and eHealth Exchange do:
+a repository holds them, a registry indexes their metadata, and a community answers other communities' queries through a
+gateway. Start the server with `-xds REPOSITORY-OID` (**Settings › Data › Document sharing**) and it is all three, in this
+server's database, at these addresses, each taking an API token as a bearer token (the viewer role to query and retrieve, the
+operator role to submit; most affinity domains add mutual TLS in front):
+
+| Address | Actor | Transactions |
+|---|---|---|
+| `/xds/repository` | Document Repository | ITI-41 Provide and Register Document Set-b, ITI-43 Retrieve Document Set |
+| `/xds/registry` | Document Registry | ITI-18 Registry Stored Query (all thirteen stored queries), ITI-42 Register Document Set-b |
+| `/xca/gateway` | XCA Responding Gateway | ITI-38 Cross Gateway Query, ITI-39 Cross Gateway Retrieve, with `-xds-home-community urn:oid:...` |
+| `/mhd` | MHD Document Recipient and Responder | ITI-65 Provide Document Bundle, ITI-66 Find Lists, ITI-67 Find Document References, ITI-68 Retrieve Document |
+| `/mhd/Patient` | PDQm Supplier and PIXm Manager | ITI-78 Patient Demographics Query, ITI-83 `Patient/$ihe-pix`, from the FHIR store's Patients |
+
+The SOAP transactions are SOAP 1.2 with WS-Addressing, and MTOM/XOP where documents travel (a document inline as base64 is
+accepted too). A failed transaction is answered with a RegistryResponse carrying IHE's error codes, not a SOAP fault:
+`XDSDuplicateUniqueIdInRegistry`, `XDSNonIdenticalHash`, `XDSPatientIdDoesNotMatch`, `XDSMissingDocument`,
+`XDSRegistryMetadataError` (with the field that is missing), `XDSStoredQueryMissingParam`, `XDSUnknownStoredQuery`,
+`XDSUnknownRepositoryId`, `XDSUnknownCommunity`, and `UnresolvedReferenceException`. A replacement (`RPLC`, `XFRM_RPLC`)
+deprecates the document it replaces, which then answers only queries asking for deprecated documents; `APND`, `XFRM` and
+`signs` are kept as associations. Hash and size are computed by the repository and checked against what the submission says.
+On-demand documents and metadata update (ITI-57) are not supported, and a submission asking for them is refused with the reason.
+
+MHD is the same registry in FHIR: a document provided over MHD is found by ITI-18 and over XCA, and one provided over XDS.b is
+found by ITI-67. A DocumentReference's id is the entry's UUID, its masterIdentifier the uniqueId, and its attachment's url the
+ITI-68 address of the document. Patients are resolved to the affinity domain's identifier from the FHIR store: the first
+identifier whose system is `urn:oid:`, or the Patient carried in the Bundle. PIXm answers every other identifier of the Patient
+with the one given (`sourceIdentifier=system|value`, narrowed by `targetSystem`), and 404 for one it does not know; PDQm searches
+by identifier, name, birth date, gender, address and telecom.
+
+**Publishing.** A channel's `xds` destination publishes each clinical document it receives, a CDA document or one carried in an
+HL7 v2 message, to any XDS.b repository with ITI-41. The metadata is read from the document: the patient (the identifier in
+`patient_domain`, the affinity domain's assigning authority), title, type (as typeCode and, unless set, classCode), creation and
+service times, author, confidentiality, language and format (C-CDA 2.1 or 1.1 structured body, XDS-SD, or mimeTypeSufficient,
+from its templates); and completed from what a document does not say: the sender's `source_id`, the `facility_type` and
+`practice_setting` every registry requires. The repository's RegistryResponse decides the delivery: a Failure, or an error in
+a PartialSuccess, is a failed delivery with the registry's error codes.
+
+```yaml
+destinations:
+  - name: hie
+    type: xds
+    xds:
+      url: https://hie.example/xds/repository
+      source_id: 1.2.840.114350.1.13.99
+      patient_domain: 1.2.840.114350.1.13.99.2.7.5.737384.14
+      facility_type: { code: "225732001", scheme: 2.16.840.1.113883.6.96, display: Community hospital }
+      practice_setting: { code: "394802001", scheme: 2.16.840.1.113883.6.96, display: General medicine }
+      tls: { enabled: true, cert_file: /etc/perfuse/hie.crt, key_file: /etc/perfuse/hie.key }
+```
+
+**Exchange › Document sharing** shows what the registry holds and where it is reached, finds a patient's documents in this
+registry or another (a registry's ITI-18 or a gateway's ITI-38), downloads one, and publishes a CDA document by hand with the
+metadata a destination would give it.
+
+**Verified** against the NIST XDS Toolkit 7.13.0, the IHE reference implementation: Perfuse's ITI-41, ITI-18 and ITI-43 against
+its Registry/Repository simulator (accepted with no validation errors, the document retrieved byte-identical), and its Initiating
+Gateway simulator querying and retrieving from Perfuse's Responding Gateway over XCA, with no errors in its log. Every SOAP
+message Perfuse writes validates against the ebXML Registry 3.0 and XDS.b schemas, and the MHD DocumentReference and
+SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. Not yet checked against Gazelle or at a Connectathon, and
+PIX/PDQ V3 (ITI-44, ITI-45, ITI-47 over SOAP) is not built.
+
 ## Delimited
 
 CSV and its relatives. The options are on the source in the builder, and the [format reference](#format-reference) lists the file keys.
