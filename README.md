@@ -204,7 +204,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b>, with a screen saying which are ready</li>
 <li><b>Da Vinci CRD 2.2.1</b> over CDS Hooks, <b>DTR 2.2.0</b> questionnaire packages, and a <b>PAS 2.2.1 server</b>: <code>$submit</code>, <code>$inquire</code>, <code>$decide</code></li>
 <li>A <b>reviewer queue</b> for pended requests, with the documents sent for each</li>
-<li>An optional <b>decision service</b> asked about what the rules leave to a reviewer (we recommend <b>Vaglio</b>, source-available; any engine plugs in); any failure pends, never approves</li>
+<li>An optional <b>decision service</b> asked about what the rules leave to a reviewer (we recommend <b>Vaglio</b>, source-available, <a href="https://vaglio.perfuse.health:8443">try its demo</a>; any engine plugs in); any failure pends, never approves</li>
 <li>Claims to <b>CARIN Blue Button 2.2.0</b>, decisions to <b>PDex 2.2.0</b>, <code>$member-match</code>, <code>$davinci-data-export</code>, a <b>Plan-Net</b> directory</li>
 <li>The yearly <b>prior authorization metrics page</b> in CMS's layout</li>
 <li>Drugs: <b>NCPDP SCRIPT ePA</b> and <b>Real-Time Prescription Benefit</b> from one formulary, published over the <b>Da Vinci US Drug Formulary 2.1.0</b> API; decided through PAS</li>
