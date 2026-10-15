@@ -40,6 +40,11 @@ What has fired and what the rules are. Rules are edited here rather than in a fi
 
 Throughput, latency and error rates over time. Useful for capacity questions and, more often, for board packs — which is why the site's own logo appears on it if one has been uploaded.
 
+### SQL on FHIR
+
+SQL on FHIR views: pick an example or a saved view, or write one, run it over this server's FHIR store (all patients or one) or
+over resources pasted in, see the rows with their types, and download CSV, NDJSON or Parquet. **Save** keeps it for the FHIR
+endpoint's `$sql-run`. See [message formats](#message-formats).
 ### Flow map
 
 A picture of how messages actually move: which sources feed which channels, and which destinations they reach.

@@ -21,6 +21,9 @@ type Server struct {
 	// Store persists resources.
 	Store *Store
 
+	// Views resolves ViewDefinitions named in $sql-run; nil when none are kept.
+	Views ViewLibrary
+
 	// BaseURL is advertised in the capability statement and used to build
 	// absolute URLs in bundles.
 	BaseURL string
@@ -176,6 +179,9 @@ func (s *Server) Handler() http.Handler {
 	// order - but written together here because they are one feature and splitting them across the list is how one gets
 	// removed without the other.
 	// Bulk export. The operation, the poll URL and the files.
+	// SQL on FHIR v2: run a ViewDefinition over this server's resources.
+	mux.HandleFunc("GET /$sql-run", s.handleSQLRun)
+	mux.HandleFunc("POST /$sql-run", s.handleSQLRun)
 	mux.HandleFunc("GET /$export", s.handleExport)
 	mux.HandleFunc("GET /Patient/$export", s.handleExport)
 	// The poll and file paths put their literal segment last, and that is not cosmetic.
@@ -496,6 +502,12 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		ops, _ := rest["operation"].([]any)
 		rest["operation"] = append(ops, map[string]any{"name": "export",
 			"definition": "http://hl7.org/fhir/uv/bulkdata/OperationDefinition/export"})
+	}
+	// SQL on FHIR v2 $sql-run, for ViewDefinition subjects.
+	{
+		ops, _ := rest["operation"].([]any)
+		rest["operation"] = append(ops, map[string]any{"name": "sql-run",
+			"definition": "http://hl7.org/fhir/uv/sql-on-fhir/OperationDefinition/SQLRun"})
 	}
 
 	statement := map[string]any{

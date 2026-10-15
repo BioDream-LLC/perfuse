@@ -1680,6 +1680,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Document sharing': IconDocuments,
   'Direct': IconDirect,
   'CMS Aligned Network': IconCheck,
+  'SQL on FHIR': IconTables,
   'Scripts': IconScripts,
   'Migrate': IconMigrate,
   'Contracts': IconContracts,
@@ -1752,6 +1753,10 @@ export function IconTheme(props: IconProps) {
  * seventy-ninth icon for one heading.
  */
 export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
+  // SQL on FHIR views.
+  'SQL on FHIR views': IconTables,
+  'The view': IconFhir,
+  'Rows': IconTables,
   // CMS Aligned Network readiness.
   'CMS Aligned Network readiness': IconCheck,
   // Direct secure messaging.

@@ -273,7 +273,13 @@ type Server struct {
 	DirectDir  string
 	directOnce sync.Once
 	directBk   *directBook
-	FHIRStore  *fhirserver.Store
+
+	// ViewsDir keeps SQL on FHIR ViewDefinitions; RunView runs one over the FHIR store (nil without -fhir).
+	ViewsDir  string
+	RunView   ViewRunner
+	viewsOnce sync.Once
+	viewsLib  *viewLibrary
+	FHIRStore *fhirserver.Store
 
 	// MCP is the Model Context Protocol server at /mcp, off unless its Enabled says so. FHIRHandler is the FHIR endpoint
 	// (with /fhir stripped), which MCP's fhir_search calls with the agent's own token; nil without -fhir.
@@ -516,6 +522,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerMCP(mux)
 	s.registerXDS(mux)
 	s.registerDirect(mux)
+	s.registerViews(mux)
 	mux.Handle("GET /api/aligned-network", s.require(store.RoleViewer, s.handleAlignedNetwork))
 	s.registerMHD(mux)
 	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))

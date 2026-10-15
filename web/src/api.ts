@@ -947,6 +947,31 @@ export interface XDSDoc {
   homeCommunityId?: string
 }
 
+export interface ViewSummary {
+  name: string
+  title?: string
+  url?: string
+  resource: string
+  columns: string[]
+  problem?: string
+}
+
+export interface ViewsList {
+  views: ViewSummary[]
+  examples: { name: string; title: string; view: string }[]
+  fhir: boolean
+  dir: string
+  formats: string[]
+}
+
+export interface ViewRunResult {
+  columns: { name: string; type?: string; collection?: boolean }[]
+  rows: unknown[][]
+  truncated: boolean
+  source: 'store' | 'pasted'
+  resource: string
+}
+
 export interface AlignedCriterion {
   number: number
   group: string
@@ -1775,6 +1800,28 @@ export const api = {
   /** xdsPublish registers a CDA document in this server's repository. */
   xdsPublish: (body: { document: string; patientDomain?: string; facilityType: XDSCode; practiceSetting: XDSCode }) =>
     request<{ document: XDSDoc }>('POST', '/api/xds/publish', body),
+  /** views lists the saved SQL on FHIR ViewDefinitions and the shipped examples. */
+  views: async (): Promise<ViewsList> => {
+    const l = await request<{ views: ViewSummary[]; examples: { name: string; title: string; view: unknown }[]; fhir: boolean; dir: string; formats: string[] }>('GET', '/api/views')
+    // The examples arrive as JSON objects; the screen edits them as text.
+    return { ...l, examples: l.examples.map((e) => ({ ...e, view: typeof e.view === 'string' ? e.view : JSON.stringify(e.view) })) }
+  },
+  viewGet: async (name: string): Promise<string> => JSON.stringify(await request<unknown>('GET', `/api/views/${encodeURIComponent(name)}`)),
+  viewSave: (name: string, view: unknown) => request<{ saved: string }>('PUT', `/api/views/${encodeURIComponent(name)}`, { view }),
+  viewDelete: (name: string) => request<{ deleted: string }>('DELETE', `/api/views/${encodeURIComponent(name)}`),
+  /** viewRun runs a view over the FHIR store, or over pasted resources, for the screen. */
+  viewRun: (body: { view: unknown; resources?: string; patient?: string; limit?: number }) =>
+    request<ViewRunResult>('POST', '/api/views/run', body),
+  /** viewDownload runs a view and saves the table as csv, ndjson or parquet. */
+  viewDownload: async (body: { view: unknown; resources?: string; patient?: string; limit?: number; format: string }) => {
+    const { blob, filename } = await requestBlob('POST', '/api/views/run', body)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  },
   /** alignedNetwork is this server's readiness for each CMS Interoperability Framework criterion. */
   alignedNetwork: () => request<AlignedView>('GET', '/api/aligned-network'),
   /** direct is this server's Direct addresses and its address book. */

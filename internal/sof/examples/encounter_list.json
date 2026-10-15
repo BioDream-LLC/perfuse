@@ -1,0 +1,19 @@
+{
+  "resourceType": "ViewDefinition",
+  "name": "encounter_list",
+  "title": "Encounters",
+  "status": "active",
+  "resource": "Encounter",
+  "select": [
+    {
+      "column": [
+        { "name": "id", "path": "getResourceKey()", "type": "id" },
+        { "name": "patient_id", "path": "subject.getReferenceKey(Patient)", "type": "id" },
+        { "name": "status", "path": "status", "type": "code" },
+        { "name": "class", "path": "class.code.first() | class.coding.code.first()", "type": "code" },
+        { "name": "start", "path": "period.start | actualPeriod.start", "type": "dateTime" },
+        { "name": "end", "path": "period.end | actualPeriod.end", "type": "dateTime" }
+      ]
+    }
+  ]
+}

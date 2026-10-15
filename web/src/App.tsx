@@ -47,6 +47,7 @@ const CMS0057 = lazy(() => import('./CMS0057').then((m) => ({ default: m.CMS0057
 const HealthLinks = lazy(() => import('./HealthLinks').then((m) => ({ default: m.HealthLinks })))
 const Imaging = lazy(() => import('./Imaging').then((m) => ({ default: m.Imaging })))
 const Drugs = lazy(() => import('./Drugs').then((m) => ({ default: m.Drugs })))
+const Views = lazy(() => import('./Views').then((m) => ({ default: m.Views })))
 const AlignedNetwork = lazy(() => import('./AlignedNetwork').then((m) => ({ default: m.AlignedNetwork })))
 const Direct = lazy(() => import('./Direct').then((m) => ({ default: m.Direct })))
 const DocumentSharing = lazy(() => import('./DocumentSharing').then((m) => ({ default: m.DocumentSharing })))
@@ -89,6 +90,7 @@ export type Tab =
   | 'xds'
   | 'direct'
   | 'aligned'
+  | 'views'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -704,6 +706,12 @@ function Console() {
       about: 'Who can sign in, and what they are allowed to do',
     },
     {
+      id: 'views',
+      label: 'SQL on FHIR',
+      minRole: 'viewer',
+      about: 'SQL on FHIR views: FHIR resources as tables, run here and downloaded as CSV, NDJSON or Parquet',
+    },
+    {
       id: 'aligned',
       label: 'CMS Aligned Network',
       minRole: 'viewer',
@@ -970,6 +978,7 @@ function Console() {
           {tab === 'xds' && <DocumentSharing />}
           {tab === 'direct' && <Direct />}
           {tab === 'aligned' && <AlignedNetwork />}
+          {tab === 'views' && <Views />}
           {tab === 'certificates' && <Certificates />}
           {tab === 'scripts' && (
             <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

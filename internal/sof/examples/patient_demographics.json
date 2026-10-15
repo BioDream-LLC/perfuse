@@ -1,0 +1,32 @@
+{
+  "resourceType": "ViewDefinition",
+  "name": "patient_demographics",
+  "title": "Patient demographics",
+  "status": "active",
+  "resource": "Patient",
+  "select": [
+    {
+      "column": [
+        { "name": "id", "path": "getResourceKey()", "type": "id" },
+        { "name": "gender", "path": "gender", "type": "code" },
+        { "name": "birth_date", "path": "birthDate", "type": "date" },
+        { "name": "deceased", "path": "deceased.ofType(boolean)", "type": "boolean" }
+      ]
+    },
+    {
+      "forEachOrNull": "name.where(use = 'official').first()",
+      "column": [
+        { "name": "family", "path": "family", "type": "string" },
+        { "name": "given", "path": "given.join(' ')", "type": "string" }
+      ]
+    },
+    {
+      "forEachOrNull": "address.first()",
+      "column": [
+        { "name": "city", "path": "city", "type": "string" },
+        { "name": "state", "path": "state", "type": "string" },
+        { "name": "postal_code", "path": "postalCode", "type": "string" }
+      ]
+    }
+  ]
+}

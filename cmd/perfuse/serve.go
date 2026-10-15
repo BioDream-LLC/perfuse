@@ -1030,6 +1030,7 @@ oidcDone:
 		}
 		// The Direct address book sits beside the database, and direct destinations read it unless they name their own.
 		srv.DirectDir = filepath.Join(filepath.Dir(*dbPath), "direct-certs")
+		srv.ViewsDir = filepath.Join(filepath.Dir(*dbPath), "views")
 		engine.DefaultDirectCertsDir = srv.DirectDir
 		if oid := strings.TrimSpace(*xdsRepository); oid != "" {
 			if !regexp.MustCompile(`^[0-2](\.(0|[1-9][0-9]*))+$`).MatchString(oid) {
@@ -1486,6 +1487,8 @@ oidcDone:
 		srv.FHIRStore = fhirStore
 		srv.DTRPackage = fhirSrv.QuestionnairePackage
 		srv.PatientSummary = fhirSrv.PatientSummary
+		srv.RunView = fhirSrv.RunView
+		fhirSrv.Views = srv.ViewLibrary()
 
 		// Reports the scheme actually in use rather than asserting one. The previous line claimed the endpoint
 		// was unauthenticated whatever was configured, which is the kind of log entry that gets believed.

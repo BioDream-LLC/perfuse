@@ -96,6 +96,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><code>fhir</code> as a destination; a <b>browser FHIR lab</b>; <code>perfuse fhir</code> to convert, validate and serve</li>
 <li><b>SMART Health Links and Cards</b> (<i>Kill the Clipboard</i>): read a patient's QR code, verify the cards, share the visit back</li>
 <li><b>International Patient Summary</b>: <code>Patient/$summary</code> builds an IPS 2.0.0 document from the store; empty sections say so rather than reading as none</li>
+<li><b>SQL on FHIR v2</b>: ViewDefinitions on its own FHIRPath engine, <code>$sql-run</code> and <code>perfuse sof</code>, to CSV, NDJSON or <b>Parquet</b>; passes all 144 official tests</li>
 </ul>
 </td>
 </tr>

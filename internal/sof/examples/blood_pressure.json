@@ -1,0 +1,23 @@
+{
+  "resourceType": "ViewDefinition",
+  "name": "blood_pressure",
+  "title": "Blood pressure readings",
+  "status": "active",
+  "resource": "Observation",
+  "constant": [
+    { "name": "systolic", "valueCode": "8480-6" },
+    { "name": "diastolic", "valueCode": "8462-4" }
+  ],
+  "where": [{ "path": "code.coding.exists(system = 'http://loinc.org' and code = '85354-9')" }],
+  "select": [
+    {
+      "column": [
+        { "name": "id", "path": "getResourceKey()", "type": "id" },
+        { "name": "patient_id", "path": "subject.getReferenceKey(Patient)", "type": "id" },
+        { "name": "effective", "path": "effective.ofType(dateTime)", "type": "dateTime" },
+        { "name": "systolic", "path": "component.where(code.coding.code = %systolic).value.ofType(Quantity).value.first()", "type": "decimal" },
+        { "name": "diastolic", "path": "component.where(code.coding.code = %diastolic).value.ofType(Quantity).value.first()", "type": "decimal" }
+      ]
+    }
+  ]
+}

@@ -625,6 +625,57 @@ message to another through a HISP stand-in, which answers with an MDN the sender
 HISP or the ONC Edge Testing Tool; IMAP collection from a HISP mailbox, XDR (Direct over SOAP), and LDAP certificate discovery
 are not built.
 
+## SQL on FHIR views
+
+A **ViewDefinition** (HL7 SQL on FHIR v2) turns each FHIR resource of one type into rows of named columns, each column a
+FHIRPath expression, so FHIR data can be read as tables by DuckDB, Athena, Spark, a data warehouse or a spreadsheet. Perfuse
+runs them with its own FHIRPath engine: `column`, nested `select`, `forEach`, `forEachOrNull`, `repeat` and `unionAll`,
+`where`, `constant` (every value[x] type), `collection` columns, `%rowIndex`, and the `getResourceKey()` and
+`getReferenceKey(type)` join keys.
+
+```json
+{
+  "resourceType": "ViewDefinition",
+  "name": "blood_pressure",
+  "resource": "Observation",
+  "constant": [{ "name": "systolic", "valueCode": "8480-6" }],
+  "where": [{ "path": "code.coding.exists(system = 'http://loinc.org' and code = '85354-9')" }],
+  "select": [{ "column": [
+    { "name": "id", "path": "getResourceKey()", "type": "id" },
+    { "name": "patient_id", "path": "subject.getReferenceKey(Patient)", "type": "id" },
+    { "name": "systolic", "path": "component.where(code.coding.code = %systolic).value.ofType(Quantity).value.first()", "type": "decimal" }
+  ]}]
+}
+```
+
+**Monitor › SQL on FHIR** runs a view over this server's FHIR store (one patient, or all) or over resources pasted in (NDJSON
+from a bulk export, a Bundle, a JSON array), shows the rows, and downloads them as CSV, NDJSON or Parquet. It starts from five
+example views (patient demographics, observations with a value, blood pressure, conditions, encounters) and saves views to the
+`views` directory beside the database, one JSON file each.
+
+The FHIR endpoint answers the specification's **`$sql-run`** at the system level, by GET or POST, for a ViewDefinition subject
+given inline (`subjectResource`), by `subjectReference` (`ViewDefinition/<name>`, a saved view) or by `subjectCanonical` (a
+saved view's `url`), with `_format` (`csv`, `ndjson` (the default), `json` or `parquet`), `header`, `patient`, `_since`,
+`_limit`, and `resource` to run over resources sent with the request instead of the store. It is a read: a SMART token needs
+read scope for the view's resource type, a token bound to one patient gets that patient's rows only, and granular scopes narrow
+the resources read, as they do a search. More than a million rows needs `_limit`, `patient` or `_since`.
+
+`perfuse sof -view v.json [-format csv|ndjson|json|parquet] [-o out] files...` runs a view over FHIR files without a server:
+the NDJSON files of a bulk export, Bundles or arrays.
+
+```
+perfuse sof -view blood_pressure.json -format parquet -o bp.parquet export/Observation.ndjson
+duckdb -c "SELECT patient_id, avg(systolic) FROM 'bp.parquet' GROUP BY 1"
+```
+
+Parquet files have one row group and uncompressed PLAIN pages; booleans are BOOLEAN, integer types INT64, decimals DOUBLE and
+everything else UTF-8 strings (a collection column as its JSON).
+
+**Verified** with the official SQL on FHIR test suite (the 144 tests of the sql-on-fhir.js repository's `tests/`, run on every
+build: all pass), and the Parquet output read back by DuckDB 1.5.6 with the right types and values. Not supported: SQLQuery and
+SQLView Libraries (SQL over the views' tables), `$sql-export`, `_format=fhir`, and the `source` and `group` parameters; each
+is refused with the reason.
+
 ## Delimited
 
 CSV and its relatives. The options are on the source in the builder, and the [format reference](#format-reference) lists the file keys.

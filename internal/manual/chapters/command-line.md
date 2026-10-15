@@ -125,6 +125,12 @@ Converts HL7 v2 to FHIR, validates FHIR, or serves it, depending on the subcomma
 
 The validating subcommand is useful on its own: it will tell you whether a resource somebody sent you satisfies US Core, which is the profile American regulation is written against. Being able to answer that without adopting an engine is the point.
 
+### perfuse sof
+
+Runs a SQL on FHIR ViewDefinition over FHIR files (the NDJSON of a bulk export, Bundles or JSON arrays; `-` for stdin) and
+writes the table: `-view FILE` (required), `-format csv|ndjson|json|parquet` (csv by default), `-header=false`, and `-o FILE`
+(required for Parquet). See [SQL on FHIR views](#message-formats).
+
 ### FHIR flags on perfuse serve
 
 | Flag | Effect |
