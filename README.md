@@ -14,6 +14,10 @@ instead of a 254 MB install and a Java runtime, and it starts immediately rather
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg?logo=go&logoColor=white)](https://go.dev) [![Release](https://img.shields.io/badge/release-v0.1.15-success.svg)](#download) [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#download) [![Tests](https://img.shields.io/badge/tests-verified%20against%20real%20Mirth%2C%20Keycloak%20%26%20Entra-brightgreen.svg)](#verified-against-real-software-not-mocks)
 
+<a href="https://test.perfuse.health"><img src="docs/assets/buttons/try.svg" alt="Try Perfuse now: the live test instance, no install" width="300"></a>
+
+<sub><b>Sign in as</b> <code>demo</code> <b>with password</b> <code>try-perfuse-demo</code> · test data only · look at every screen, change nothing</sub>
+
 ### Download v0.1.15
 
 <a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.15/perfuse-v0.1.15-linux-amd64.tar.gz"><img src="docs/assets/buttons/download-linux.svg" alt="Download Perfuse for Linux, x86-64" width="248"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.15/perfuse-v0.1.15-darwin-arm64.tar.gz"><img src="docs/assets/buttons/download-macos.svg" alt="Download Perfuse for macOS, Apple Silicon" width="290"></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/biodream-llc/perfuse/releases/download/v0.1.15/perfuse-v0.1.15-windows-amd64.zip"><img src="docs/assets/buttons/download-windows.svg" alt="Download Perfuse for Windows, x64" width="248"></a>
