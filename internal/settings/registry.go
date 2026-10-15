@@ -167,6 +167,38 @@ func baseSettings() []Setting {
 
 		// ------------------------------------------------------------ Security
 		{
+			Key:      "security.mcp",
+			Group:    GroupSecurity,
+			Subgroup: "AI agents (MCP)",
+			Label:    "Let AI agents connect over MCP",
+			Help: "Serves the Model Context Protocol at /mcp, so an AI agent with an API token (Users, Machine credentials) " +
+				"can read channel status, messages, the queue, alerts and the FHIR store with that token's own role, channel " +
+				"groups and tenant. Reading only, unless the token was issued with the mcp:write scope. Every tool call is in " +
+				"Activity. Takes effect on the next request.",
+			Kind:      KindBool,
+			Widget:    WidgetToggle,
+			Effect:    EffectLive,
+			Default:   false,
+			Flag:      "mcp",
+			Sensitive: true,
+		},
+		{
+			Key:      "security.mcpCallsPerMinute",
+			Group:    GroupSecurity,
+			Subgroup: "AI agents (MCP)",
+			Label:    "Tool calls a minute from one token",
+			Help: "An agent in a loop can call a tool many times a second. Over this many a minute, a call is answered with " +
+				"an error the agent can read, and nothing is done.",
+			Kind:     KindInt,
+			Widget:   WidgetNumber,
+			Effect:   EffectLive,
+			Default:  60,
+			Min:      intp(1),
+			Max:      intp(10000),
+			Unit:     "calls",
+			Advanced: true,
+		},
+		{
 			Key:      "security.allowMetadataEgress",
 			Group:    GroupSecurity,
 			Subgroup: "What may leave",

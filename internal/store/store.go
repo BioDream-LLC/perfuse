@@ -162,6 +162,9 @@ type Session struct {
 	// ChannelGroups limits the session to channels in these groups. Empty means every channel of the tenant.
 	ChannelGroups []string
 
+	// Scopes are an API token's grants beyond reading through MCP (ScopeMCPWrite); always empty for a person.
+	Scopes []string
+
 	// baseRole is the account's own role when GroupRoles raised Role above it.
 	baseRole Role
 

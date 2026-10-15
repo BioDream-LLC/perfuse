@@ -98,6 +98,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	publicURL := fset.String("public-url", "", "the https address patients' phones and other organisations reach this server at, for the "+
 		"SMART Health Links it hosts (default: the listen address)")
 	shlAllowHTTP := fset.Bool("shl-allow-http", false, "let a received SMART Health Link point at plain HTTP; for testing only")
+	mcpOn := fset.Bool("mcp", false, "serve the Model Context Protocol at /mcp, so AI agents with an API token can read "+
+		"status, messages, the queue, alerts and the FHIR store with that token's own access")
 	formularyFile := fset.String("formulary", "", "publish this drug formulary over the Da Vinci US Drug Formulary API at "+
 		"/formulary/fhir and answer NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization from it")
 	epaPayerID := fset.String("epa-payer-id", "", "this payer's identifier on the prescribing network, the From of every RTPB "+
@@ -1014,6 +1016,12 @@ oidcDone:
 		srv.SelfURL = fmt.Sprintf("%s://%s", schemeFor(useTLS), *addr)
 		srv.PublicURL = strings.TrimRight(strings.TrimSpace(*publicURL), "/")
 		srv.SHLAllowHTTP = *shlAllowHTTP
+		// MCP is switched live from Settings: read on every request, so turning it off stops agents at once.
+		_ = mcpOn
+		srv.MCP = &api.MCPSettings{
+			Enabled:        func() bool { return settingsStore.Bool("security.mcp") },
+			CallsPerMinute: func() int { return settingsStore.Int("security.mcpCallsPerMinute") },
+		}
 		if dir := strings.TrimSpace(*dicomwebArchive); dir != "" {
 			archive, err := dicomweb.OpenArchive(dir)
 			if err != nil {
@@ -1449,7 +1457,9 @@ oidcDone:
 		// The FHIR endpoint is deliberately outside the session-cookie API. FHIR
 		// clients are machines with tokens, not browsers, and pretending otherwise
 		// would mean every EHR integration had to hold a login cookie.
-		mountFHIR(mux, fhirSrv.Handler())
+		fhirHandler := fhirSrv.Handler()
+		mountFHIR(mux, fhirHandler)
+		srv.FHIRHandler = fhirHandler
 		srv.DTRPackage = fhirSrv.QuestionnairePackage
 		srv.PatientSummary = fhirSrv.PatientSummary
 

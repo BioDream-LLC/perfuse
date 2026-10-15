@@ -774,6 +774,18 @@ export interface ApiToken {
   fhirGroups?: string[]
   /** The channel groups the token is limited to; absent means every channel. */
   channelGroups?: string[]
+  /** Grants beyond reading through MCP: mcp:write lets an AI agent act up to the token's role. */
+  scopes?: string[]
+}
+
+/** MCPStatus is GET /api/mcp. */
+export interface MCPStatus {
+  enabled: boolean
+  url: string
+  protocol: string
+  callsPerMinute: number
+  fhir: boolean
+  tools: { name: string; title: string; description: string; role: string; writes: boolean }[]
 }
 
 /** The one and only sight of a new token's value. */
@@ -1146,8 +1158,9 @@ export const api = {
     request<Me>('POST', '/api/passkeys/signin/finish', { challenge, response }),
 
   tokens: () => request<{ tokens: ApiToken[] }>('GET', '/api/tokens'),
-  createToken: (label: string, role: string, fhirGroups: string[] = [], channelGroups: string[] = []) =>
-    request<NewApiToken>('POST', '/api/tokens', { label, role, fhirGroups, channelGroups }),
+  createToken: (label: string, role: string, fhirGroups: string[] = [], channelGroups: string[] = [], scopes: string[] = []) =>
+    request<NewApiToken>('POST', '/api/tokens', { label, role, fhirGroups, channelGroups, scopes }),
+  mcpStatus: () => request<MCPStatus>('GET', '/api/mcp'),
   revokeToken: (label: string) =>
     request<{ status: string }>('DELETE', `/api/tokens/${encodeURIComponent(label)}`),
 

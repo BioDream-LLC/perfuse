@@ -100,6 +100,42 @@ Two limits keep one client from spoiling it for everybody, both under **Settings
 
 A hospital's own endpoint needs neither.
 
+## AI agents: the MCP server
+
+With **Settings › Security › AI agents (MCP)** on (or `serve -mcp`), Perfuse serves the Model Context Protocol at `/mcp`, so an
+AI agent such as Claude, ChatGPT or an IDE assistant can ask it what is happening. It is off by default, and switching it off
+stops every agent on its next call.
+
+An agent connects with an API token from **Administer › Users › Machine credentials** as a bearer token, never with a person's
+browser session (that is refused, so an agent is never acting with a person's full access). A client configuration looks like:
+
+```json
+{ "mcpServers": { "perfuse": { "type": "http", "url": "https://perfuse.example/mcp",
+    "headers": { "Authorization": "Bearer <token>" } } } }
+```
+
+| Tool | Role | What it does |
+|---|---|---|
+| `server_status`, `list_channels`, `queue`, `alerts` | monitor | Whether things work, with no message contents |
+| `get_channel`, `search_messages`, `get_message`, `find_patient`, `fhir_search` | viewer | Channels, messages (with contents), a patient's messages across formats, a FHIR search |
+| `retry_delivery`, `reprocess_message` | operator, and `mcp:write` | Retry a queued delivery, send a message through its channel again |
+| `start_channel`, `stop_channel` | admin, and `mcp:write` | Start or stop a channel |
+
+Every tool is answered by the same route or FHIR search a person's screen uses, called with the agent's own token, so the
+token's role, channel groups and tenant decide what it sees, exactly as they do in the console; and `fhir_search` gets the
+token's own access on the FHIR endpoint (which may refuse API tokens altogether; see the FHIR section above). An agent is
+offered only the tools its token may use. Reading is the default: a tool that changes something also needs the token's
+**mcp:write** scope ("Let an AI agent act with it" when issuing the token), so a token issued for a reporting agent cannot be
+talked into acting by a prompt. A monitor token's answers have message contents removed, whatever a route returns.
+
+Every call is in **Activity** as `mcp.tool` with the token's name, the tool, its arguments and the outcome (`ok`, `refused`,
+`invalid`, `rate-limited` or the HTTP status); `mcp.connect` records which client connected. Each token may make 60 tool calls a
+minute (**Tool calls a minute from one token**); over that, a call is answered with an error the agent can read, and nothing is
+done. A request from a browser page on another origin is refused, which MCP asks of a server to stop DNS rebinding. The transport
+is MCP's Streamable HTTP, answered as JSON with no event stream; protocol versions 2025-06-18, 2025-03-26 and 2024-11-05 are
+accepted. Messages and FHIR resources hold patient data: an agent's answers go to whatever model it runs on, so give a token to an
+agent only where that model is allowed to see them, and give it the lowest role that does the job.
+
 ## A demonstration account
 
 `serve -demo-account demo:PASSWORD` creates a shared account for a public demonstration server, and the sign-in page shows its

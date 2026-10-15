@@ -474,6 +474,14 @@ var migrations = []migration{
 			{"users", "group_roles", "TEXT NOT NULL DEFAULT ''"},
 		},
 	},
+	{
+		// What a token may do beyond reading, comma-separated: "mcp:write" lets an AI agent act through the MCP server (retry,
+		// reprocess, start and stop) up to the token's role. Empty: the MCP tools that change something are refused.
+		name: "api-token-scopes",
+		addColumns: []columnAdd{
+			{"api_tokens", "scopes", "TEXT NOT NULL DEFAULT ''"},
+		},
+	},
 }
 
 // applyMigrations runs whatever has not run yet.

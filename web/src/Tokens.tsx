@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { ApiToken, NewApiToken } from './api'
+import type { ApiToken, MCPStatus, NewApiToken } from './api'
 import { api } from './api'
 import type { UiError } from './store'
 import { toUiError } from './store'
@@ -26,6 +26,8 @@ export function Tokens() {
   const [role, setRole] = useState('viewer')
   const [groups, setGroups] = useState('')
   const [channelGroups, setChannelGroups] = useState('')
+  const [mcpWrite, setMcpWrite] = useState(false)
+  const [mcp, setMcp] = useState<MCPStatus | null>(null)
   const [creating, setCreating] = useState(false)
 
   // Held in state rather than shown in the list, because this is the only time the value
@@ -37,6 +39,7 @@ export function Tokens() {
     try {
       const res = await api.tokens()
       setTokens(res.tokens ?? [])
+      setMcp(await api.mcpStatus().catch(() => null))
       setError(null)
     } catch (err) {
       setError(toUiError(err))
@@ -61,11 +64,12 @@ export function Tokens() {
         .split(',')
         .map((g) => g.trim())
         .filter(Boolean)
-      const res = await api.createToken(label.trim(), role, limit, channels)
+      const res = await api.createToken(label.trim(), role, limit, channels, mcpWrite ? ['mcp:write'] : [])
       setIssued(res)
       setLabel('')
       setGroups('')
       setChannelGroups('')
+      setMcpWrite(false)
       await load()
     } catch (err) {
       setError(toUiError(err))
@@ -166,6 +170,16 @@ export function Tokens() {
             />
           </Field>
 
+          <label className="flex max-w-xs items-start gap-2 text-sm text-slate-300">
+            <input type="checkbox" className="mt-1" checked={mcpWrite} onChange={(e) => setMcpWrite(e.target.checked)} />
+            <span>
+              Let an AI agent act with it
+              <span className="block text-xs text-slate-500">
+                The mcp:write scope: retry, reprocess, start and stop through MCP, up to the role. Without it an agent only reads.
+              </span>
+            </span>
+          </label>
+
           <button
             className="btn-primary"
             disabled={creating || label.trim() === ''}
@@ -213,6 +227,9 @@ export function Tokens() {
                           Channel groups: {t.channelGroups.join(', ')}
                         </span>
                       )}
+                      {t.scopes && t.scopes.includes('mcp:write') && (
+                        <span className="block text-xs text-amber-300">AI agents may act (mcp:write)</span>
+                      )}
                       {t.fhirGroups && t.fhirGroups.length > 0 && (
                         <span className="block text-xs text-slate-400">FHIR Groups: {t.fhirGroups.join(', ')}</span>
                       )}
@@ -239,6 +256,40 @@ export function Tokens() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {mcp && (
+          <div className="rounded-lg border border-slate-800 p-4" data-testid="mcp-card">
+            <p className="text-sm font-medium text-slate-100">
+              AI agents (MCP){' '}
+              <span className={mcp.enabled ? 'text-emerald-300' : 'text-slate-400'}>{mcp.enabled ? 'on' : 'off'}</span>
+            </p>
+            {mcp.enabled ? (
+              <>
+                <p className="mt-1 text-xs text-slate-400">
+                  An agent connects to <code className="font-mono text-cyan-300">{mcp.url}</code> (Model Context Protocol {mcp.protocol}) with one
+                  of these tokens as a bearer token, and gets that token&apos;s access: its role, channel groups and tenant. At most{' '}
+                  {mcp.callsPerMinute} tool calls a minute per token; every call is in Activity.
+                </p>
+                <pre className="mt-2 overflow-auto rounded bg-slate-950 p-2 font-mono text-xs text-slate-300">
+                  {JSON.stringify({ mcpServers: { perfuse: { type: 'http', url: mcp.url, headers: { Authorization: 'Bearer <token>' } } } }, null, 2)}
+                </pre>
+                <ul className="mt-2 grid gap-1 text-xs sm:grid-cols-2">
+                  {mcp.tools.map((t) => (
+                    <li key={t.name}>
+                      <span className={`font-mono ${t.writes ? 'text-amber-300' : 'text-slate-200'}`}>{t.name}</span>{' '}
+                      <span className="text-slate-500">
+                        {t.role}
+                        {t.writes ? ' + mcp:write' : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="mt-1 text-xs text-slate-400">Switch it on under Settings › Security › AI agents (MCP).</p>
+            )}
           </div>
         )}
 

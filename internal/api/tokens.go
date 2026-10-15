@@ -28,6 +28,7 @@ type apiTokenResponse struct {
 	FHIRGroups []string `json:"fhirGroups"`
 	// ChannelGroups are the channel groups the token is limited to; empty means every channel.
 	ChannelGroups []string `json:"channelGroups,omitempty"`
+	Scopes        []string `json:"scopes,omitempty"`
 }
 
 // handleListAPITokens lists tokens without their values.
@@ -53,6 +54,7 @@ func (s *Server) handleListAPITokens(w http.ResponseWriter, r *http.Request, ses
 			CreatedBy:     t.CreatedBy,
 			Revoked:       t.Revoked(),
 			FHIRGroups:    t.FHIRGroups,
+			Scopes:        t.Scopes,
 		}
 		if entry.FHIRGroups == nil {
 			entry.FHIRGroups = []string{}
@@ -80,6 +82,8 @@ type createTokenRequest struct {
 	FHIRGroups []string `json:"fhirGroups"`
 	// ChannelGroups limits the token to the channels in these groups. A limited administrator's token gets their groups.
 	ChannelGroups []string `json:"channelGroups,omitempty"`
+	// Scopes grant more than reading through MCP: ["mcp:write"].
+	Scopes []string `json:"scopes,omitempty"`
 }
 
 // createTokenResponse carries the one and only sight of the value.
@@ -155,6 +159,14 @@ func (s *Server) handleCreateAPIToken(w http.ResponseWriter, r *http.Request, se
 			return
 		}
 		detail += groupsDetail(channelGroups)
+	}
+	if len(req.Scopes) > 0 {
+		if err := s.storeFor(sess).SetAPITokenScopes(r.Context(), label, req.Scopes); err != nil {
+			_ = s.storeFor(sess).RevokeAPIToken(r.Context(), label)
+			s.fail(w, r, http.StatusBadRequest, err.Error())
+			return
+		}
+		detail += ", scopes " + strings.Join(req.Scopes, ", ")
 	}
 
 	s.log().Info("an API token was created",

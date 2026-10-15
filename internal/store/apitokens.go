@@ -31,6 +31,9 @@ type APIToken struct {
 	// ChannelGroups limits the token to the channels in these groups, as for a person. Empty means every channel.
 	ChannelGroups []string `json:"channelGroups,omitempty"`
 
+	// Scopes are what the token may do beyond reading through the MCP server: ScopeMCPWrite. Empty means read only.
+	Scopes []string `json:"scopes,omitempty"`
+
 	// hash identifies the row without exposing the token.
 	hash string
 }
@@ -91,10 +94,11 @@ func (s *Store) LookupAPIToken(ctx context.Context, token string) (*Session, err
 		revokedAt sql.NullString
 		groups    string
 		channels  string
+		scopes    string
 	)
 	err := s.db.QueryRowContext(ctx,
-		`SELECT tenant_id, label, role, revoked_at, fhir_groups, channel_groups FROM api_tokens WHERE token_hash = ?`,
-		hash).Scan(&tid, &label, &role, &revokedAt, &groups, &channels)
+		`SELECT tenant_id, label, role, revoked_at, fhir_groups, channel_groups, scopes FROM api_tokens WHERE token_hash = ?`,
+		hash).Scan(&tid, &label, &role, &revokedAt, &groups, &channels, &scopes)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTokenNotFound
 	}
@@ -120,6 +124,7 @@ func (s *Store) LookupAPIToken(ctx context.Context, token string) (*Session, err
 		FHIRGroups: splitGroups(groups),
 		// A token can be limited to channel groups like a person, so a facility's script sees only its own channels.
 		ChannelGroups: splitGroups(channels),
+		Scopes:        splitGroups(scopes),
 	}, nil
 }
 
@@ -176,6 +181,35 @@ func (sc *Scoped) LimitAPITokenToChannelGroups(ctx context.Context, label string
 	return requireOneRow(res)
 }
 
+// ScopeMCPWrite lets a token act through the MCP server, up to its role: retry and reprocess (operator), start and stop
+// channels (admin). Without it every MCP tool that changes something is refused, whatever the role.
+const ScopeMCPWrite = "mcp:write"
+
+// SetAPITokenScopes replaces a token's scopes; only ScopeMCPWrite is known.
+func (sc *Scoped) SetAPITokenScopes(ctx context.Context, label string, scopes []string) error {
+	for _, v := range scopes {
+		if v != ScopeMCPWrite {
+			return fmt.Errorf("%q is not a token scope; the one scope is %s", v, ScopeMCPWrite)
+		}
+	}
+	res, err := sc.store.db.ExecContext(ctx,
+		`UPDATE api_tokens SET scopes = ? WHERE tenant_id = ? AND label = ?`, joinGroups(scopes), string(sc.id), label)
+	if err != nil {
+		return err
+	}
+	return requireOneRow(res)
+}
+
+// HasScope says whether a session carries a scope. A person's session carries none: MCP is for machines.
+func (s *Session) HasScope(scope string) bool {
+	for _, v := range s.Scopes {
+		if v == scope {
+			return true
+		}
+	}
+	return false
+}
+
 func splitGroups(v string) []string {
 	var out []string
 	for _, g := range strings.Split(v, ",") {
@@ -197,7 +231,7 @@ func (s *Store) ListAPITokens(ctx context.Context) ([]APIToken, error) {
 
 func (s *Store) listAPITokensIn(ctx context.Context, tid tenant.ID) ([]APIToken, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT token_hash, label, role, created_at, created_by, last_used, revoked_at, fhir_groups, channel_groups
+		`SELECT token_hash, label, role, created_at, created_by, last_used, revoked_at, fhir_groups, channel_groups, scopes
 		 FROM api_tokens WHERE tenant_id = ?
 		 ORDER BY revoked_at IS NOT NULL, label`,
 		string(tid))
@@ -213,12 +247,14 @@ func (s *Store) listAPITokensIn(ctx context.Context, tid tenant.ID) ([]APIToken,
 			created, createdBy  string
 			lastUsed, revokedAt sql.NullString
 			groups, channels    string
+			scopes              string
 		)
 		if err := rows.Scan(&t.hash, &t.Label, &t.Role, &created, &createdBy, &lastUsed, &revokedAt, &groups,
-			&channels); err != nil {
+			&channels, &scopes); err != nil {
 			return nil, err
 		}
 		t.ChannelGroups = splitGroups(channels)
+		t.Scopes = splitGroups(scopes)
 		t.FHIRGroups = splitGroups(groups)
 		if t.FHIRGroups == nil {
 			t.FHIRGroups = []string{}

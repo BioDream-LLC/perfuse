@@ -186,6 +186,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Channel groups</b> for a hospital group on one server, with a <b>different role in each group</b> if needed</li>
 <li>Directory groups map to <b>any of the six roles and to channel groups</b> at every sign-in</li>
 <li><b>A SMART on FHIR authorization server</b>: Inferno's SMART App Launch STU2.2 suite <b>80 of 80</b></li>
+<li>An <b>MCP server</b> for AI agents: status, messages, queue, alerts and FHIR under a token's own role and groups, read-only unless granted, every call audited</li>
 <li>No patient data over plain HTTP off loopback; cloud metadata addresses refused at connect time; PHI access watched for volume, after-hours and bulk reads</li>
 </ul>
 </td>

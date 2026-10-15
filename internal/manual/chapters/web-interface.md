@@ -238,6 +238,8 @@ The header shows your own groups beside your role when you have any. See [securi
 
 **Machine credentials** are also here. A token is for a machine rather than a person: it does not expire and is not affected by anybody signing out, which is what a server polling its neighbour needs. Only a hash is stored, so a token is shown once when it is created and cannot be recovered — a stolen database yields no usable token. Give one the lowest role that does the job.
 
+With MCP on, the section also shows the address an AI agent connects to, a client configuration to copy and each tool with the role it needs; issuing a token with **Let an AI agent act with it** gives it the `mcp:write` scope. See [security](#security).
+
 ### Tenants
 
 On a shared server, the platform operator's list of organisations: each one's channel count and stored size beside its

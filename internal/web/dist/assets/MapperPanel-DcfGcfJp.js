@@ -1,4 +1,4 @@
-import{r as n,a as f,j as e,b as E,S as B,E as O,G as N}from"./index-BQrGAOyT.js";function W(){const[l,d]=n.useState(`PatientMRN = MRN00412, MRN00998
+import{r as n,a as f,j as e,b as E,S as B,E as O,G as N}from"./index-B5XVF-j-.js";function W(){const[l,d]=n.useState(`PatientMRN = MRN00412, MRN00998
 DateOfBirth = 19800101, 19750612
 PhoneNumber = 5551234567
 ZPI-1`),[b,m]=n.useState(`PID-3.1 = mrn
