@@ -60,6 +60,10 @@ func (d *Destination) OutboundHosts() []string {
 		if d.XDS != nil {
 			addURL(d.XDS.URL)
 		}
+	case DestinationDirect:
+		if d.Direct != nil {
+			add(d.Direct.SMTPHost)
+		}
 	case DestinationSOAP:
 		if d.SOAP != nil {
 			addURL(d.SOAP.URL)

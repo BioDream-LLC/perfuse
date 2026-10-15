@@ -550,6 +550,81 @@ message Perfuse writes validates against the ebXML Registry 3.0 and XDS.b schema
 SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. Not yet checked against Gazelle or at a Connectathon, and
 PIX/PDQ V3 (ITI-44, ITI-45, ITI-47 over SOAP) is not built.
 
+## Direct secure messaging
+
+Direct is how US providers send each other referrals, summaries and results by secure e-mail: every message is signed with the
+sender's certificate and encrypted to the recipient's (S/MIME), and travels between HISPs (Health Information Service
+Providers) that issue the addresses and vouch for them. Perfuse is the **edge system** beside your HISP, not a HISP: the HISP
+issues your address, its certificate and its key, and you keep its trust bundle (such as DirectTrust's). It follows the Direct
+Applicability Statement for Secure Health Transport 1.2, the Implementation Guide for Delivery Notification, and IHE XDM
+(ITI TF-1 Annex 15) for documents with metadata.
+
+**Sending.** A `direct` destination signs each message as your address (SHA-256, RSA), encrypts it to every recipient's
+certificate and your own (AES-256-CBC, RSA key transport), and submits it to the HISP by SMTP with STARTTLS required. The message
+travels as an attachment named by its content (`document.xml`, `message.hl7`, `resource.json`), or, with `xdm: true`, a CDA
+document travels as an IHE XDM package (`IHE_XDM/SUBSET01/METADATA.XML` with the document and its hash and size, plus
+`INDEX.HTM` and `README.TXT`) that receiving EHRs import with its metadata. Recipient certificates come from the **Direct address
+book** (below), then from DNS, where Direct publishes them as CERT records (RFC 4398): under the address with its @ made a dot,
+else under its domain. A certificate is used only when it is for the address or its domain and chains to one of your anchors; a
+recipient with no such certificate is a failed delivery, never plain e-mail. `to` and `subject` take field references such as
+`{PV1-8.1}`, and `request_mdn` asks the recipient for a delivery notification.
+
+```yaml
+destinations:
+  - name: referrals
+    type: direct
+    direct:
+      address: referrals@direct.hospital.example
+      cert_file: /etc/perfuse/direct/referrals.crt   # with its chain after it
+      key_file: /etc/perfuse/direct/referrals.key
+      anchors_file: /etc/perfuse/direct/anchors.pem
+      to: ["intake@direct.clinic.example"]
+      subject: "Referral for {PID-5.1}"
+      text: "Please see the attached summary."
+      xdm: true
+      xdm_source_id: 1.2.840.114350.1.13.99
+      smtp_host: smtp.hisp.example:587
+      username: referrals
+      password: ${DIRECT_HISP_PASSWORD}
+      request_mdn: true
+```
+
+**Receiving.** A `direct` source is the SMTP server the HISP delivers your address's mail to. It takes mail for that address
+only (anything else is refused at RCPT), requires STARTTLS when given a certificate, and opens each message before anything reads
+it: decrypts it with your key, verifies the signature against your anchors, and checks that the signing certificate is for the
+From address or its domain. A message that is not encrypted S/MIME, is signed by a sender you do not trust, or is signed by a
+certificate for someone else is refused at DATA with the reason, so the HISP keeps it and reports it to the sender; Perfuse never
+accepts what it then drops. An XDM package's documents each become a message (checked against the hashes in its metadata);
+otherwise each attachment does, or the text when there is none. With `smtp_host` set, each message taken in is answered with a
+signed, encrypted "processed" notification (MDN), and notifications arriving for what you sent are logged.
+
+```yaml
+source:
+  type: direct
+  direct:
+    address: intake@direct.clinic.example
+    cert_file: /etc/perfuse/direct/intake.crt
+    key_file: /etc/perfuse/direct/intake.key
+    anchors_file: /etc/perfuse/direct/anchors.pem
+    listen: 0.0.0.0:2525
+    tls_cert: /etc/perfuse/tls/server.crt
+    tls_key: /etc/perfuse/tls/server.key
+    smtp_host: smtp.hisp.example:587
+```
+
+**Exchange › Direct** lists the Direct addresses your channels send and receive as, with their certificates, expiry and anchors;
+keeps the **address book** of correspondents (name, organisation, notes and certificate, pasted from their HISP or found in
+DNS, and refused when it is not for that address or domain); and looks up an address's certificates in DNS without saving
+them. The book is the directory `direct-certs` beside the database, one PEM file per address or domain, which a destination
+reads unless it names its own `recipient_certs_dir`.
+
+**Verified** against OpenSSL 4.0's `cms` and `smime` in both directions: what Perfuse signs and encrypts OpenSSL verifies and
+decrypts (PKCS#1 v1.5 and OAEP key transport), and Perfuse opens what OpenSSL signs and encrypts (AES-128 and AES-256). A
+message made with `openssl smime` and delivered over SMTP is received, opened and stored by a channel, and one Perfuse sends a
+message to another through a HISP stand-in, which answers with an MDN the sender opens. Not yet tested against an accredited
+HISP or the ONC Edge Testing Tool; IMAP collection from a HISP mailbox, XDR (Direct over SOAP), and LDAP certificate discovery
+are not built.
+
 ## Delimited
 
 CSV and its relatives. The options are on the source in the builder, and the [format reference](#format-reference) lists the file keys.

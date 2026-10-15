@@ -1460,6 +1460,67 @@ function DestinationCard({
           </>
         )}
 
+        {dest.type === 'direct' && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="From (this Direct address)" hint="The address the HISP issued; its certificate signs every message.">
+                <input className="input font-mono" value={dest.directAddress} onChange={(e) => onChange({ directAddress: e.target.value })} placeholder="referrals@direct.hospital.example" />
+              </Field>
+              <Field label="To (Direct addresses)" hint="Comma-separated. A field reference such as {PV1-8.1} is substituted from the message.">
+                <input className="input font-mono" value={dest.directTo} onChange={(e) => onChange({ directTo: e.target.value })} placeholder="intake@direct.clinic.example" />
+              </Field>
+              <Field label="Address certificate (PEM)" hint="With its chain after it.">
+                <input className="input font-mono text-xs" value={dest.directCertFile} onChange={(e) => onChange({ directCertFile: e.target.value })} placeholder="/etc/perfuse/direct/referrals.crt" />
+              </Field>
+              <Field label="Address private key (PEM)">
+                <input className="input font-mono text-xs" value={dest.directKeyFile} onChange={(e) => onChange({ directKeyFile: e.target.value })} placeholder="/etc/perfuse/direct/referrals.key" />
+              </Field>
+              <Field label="Trust anchors (PEM)" hint="A recipient certificate that does not chain to one of these is not used.">
+                <input className="input font-mono text-xs" value={dest.directAnchorsFile} onChange={(e) => onChange({ directAnchorsFile: e.target.value })} placeholder="/etc/perfuse/direct/anchors.pem" />
+              </Field>
+              <Field label="HISP submission server" hint="host:port; 587 when no port. STARTTLS is required.">
+                <input className="input font-mono" value={dest.directSmtpHost} onChange={(e) => onChange({ directSmtpHost: e.target.value })} placeholder="smtp.hisp.example:587" />
+              </Field>
+              <Field label="HISP username">
+                <input className="input" value={dest.directUsername} onChange={(e) => onChange({ directUsername: e.target.value })} />
+              </Field>
+              <Field label="HISP password">
+                <input type="password" className="input" value={dest.directPassword} onChange={(e) => onChange({ directPassword: e.target.value })} />
+              </Field>
+              <Field label="Subject" hint="Field references are substituted.">
+                <input className="input" value={dest.directSubject} onChange={(e) => onChange({ directSubject: e.target.value })} placeholder="Referral for {PID-5.1}" />
+              </Field>
+              <Field label="Attachment name" hint="Default by content: document.xml, message.hl7, resource.json, or xdm.zip.">
+                <input className="input font-mono" value={dest.directAttachName} onChange={(e) => onChange({ directAttachName: e.target.value })} />
+              </Field>
+            </div>
+            <Field label="Message text" hint="The covering note the clinician reads.">
+              <textarea className="input min-h-16" value={dest.directText} onChange={(e) => onChange({ directText: e.target.value })} />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={dest.directXdm} onChange={(e) => onChange({ directXdm: e.target.checked })} />
+                Package a CDA document as IHE XDM (with its metadata)
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={dest.directRequestMdn} onChange={(e) => onChange({ directRequestMdn: e.target.checked })} />
+                Ask for a delivery notification (MDN)
+              </label>
+              {dest.directXdm && (
+                <Field label="XDM source ID (your organisation's OID)" hint="The SubmissionSet sourceId in METADATA.XML.">
+                  <input className="input font-mono" value={dest.directXdmSourceId} onChange={(e) => onChange({ directXdmSourceId: e.target.value })} placeholder="1.2.840.114350.1.13.99" />
+                </Field>
+              )}
+              <Field label="Recipient certificates directory" hint="Empty: the server's Direct address book (Exchange › Direct). Recipients not found there are looked up in DNS.">
+                <input className="input font-mono text-xs" value={dest.directRecipientCertsDir} onChange={(e) => onChange({ directRecipientCertsDir: e.target.value })} />
+              </Field>
+              <Field label="DNS server for certificate lookup" hint="host:port. Empty: the system's resolver.">
+                <input className="input font-mono" value={dest.directDns} onChange={(e) => onChange({ directDns: e.target.value })} placeholder="1.1.1.1:53" />
+              </Field>
+            </div>
+          </>
+        )}
+
         {dest.type === 'xds' && (
           <>
             <Field label="Repository's ITI-41 address" hint="The Provide and Register endpoint, such as https://hie.example/xds/repository.">

@@ -296,6 +296,9 @@ type buildSource struct {
 	// DICOMweb is a STOW-RS endpoint.
 	DICOMweb *buildDICOMwebSource `json:"dicomweb,omitempty" yaml:"dicomweb,omitempty"`
 
+	// Direct receives Direct secure messages the HISP delivers by SMTP.
+	Direct *buildDirectSource `json:"direct,omitempty" yaml:"direct,omitempty"`
+
 	// JS is the JavaScript Reader: a script that runs on a timer and returns the messages.
 	//
 	// Mirth's equivalent is one of the connectors people most often have to reimplement by hand, so a channel migrating
@@ -834,6 +837,9 @@ type buildDest struct {
 
 	// XDS applies to an xds destination.
 	XDS *buildXDSDest `json:"xds,omitempty" yaml:"xds,omitempty"`
+
+	// Direct applies to a direct destination.
+	Direct *buildDirectDest `json:"direct,omitempty" yaml:"direct,omitempty"`
 
 	// JavaScript applies to a javascript destination.
 	JavaScript *buildJSDest `json:"javascript,omitempty" yaml:"javascript,omitempty"`
@@ -1478,6 +1484,42 @@ type buildXDSDest struct {
 	Headers         map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	TLS             *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
 	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
+// buildDirectSource receives Direct mail for one address.
+type buildDirectSource struct {
+	Address     string `json:"address,omitempty" yaml:"address,omitempty"`
+	CertFile    string `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile     string `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
+	AnchorsFile string `json:"anchorsFile,omitempty" yaml:"anchors_file,omitempty"`
+	Listen      string `json:"listen,omitempty" yaml:"listen,omitempty"`
+	TLSCert     string `json:"tlsCert,omitempty" yaml:"tls_cert,omitempty"`
+	TLSKey      string `json:"tlsKey,omitempty" yaml:"tls_key,omitempty"`
+	MaxBytes    int64  `json:"maxBytes,omitempty" yaml:"max_bytes,omitempty"`
+	SMTPHost    string `json:"smtpHost,omitempty" yaml:"smtp_host,omitempty"`
+	Username    string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password    string `json:"password,omitempty" yaml:"password,omitempty"`
+}
+
+// buildDirectDest sends as Direct through a HISP.
+type buildDirectDest struct {
+	Address           string   `json:"address,omitempty" yaml:"address,omitempty"`
+	CertFile          string   `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile           string   `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
+	AnchorsFile       string   `json:"anchorsFile,omitempty" yaml:"anchors_file,omitempty"`
+	To                []string `json:"to,omitempty" yaml:"to,omitempty"`
+	Subject           string   `json:"subject,omitempty" yaml:"subject,omitempty"`
+	Text              string   `json:"text,omitempty" yaml:"text,omitempty"`
+	AttachName        string   `json:"attachName,omitempty" yaml:"attach_name,omitempty"`
+	XDM               bool     `json:"xdm,omitempty" yaml:"xdm,omitempty"`
+	XDMSourceID       string   `json:"xdmSourceId,omitempty" yaml:"xdm_source_id,omitempty"`
+	RecipientCertsDir string   `json:"recipientCertsDir,omitempty" yaml:"recipient_certs_dir,omitempty"`
+	DNS               string   `json:"dns,omitempty" yaml:"dns,omitempty"`
+	SMTPHost          string   `json:"smtpHost,omitempty" yaml:"smtp_host,omitempty"`
+	Username          string   `json:"username,omitempty" yaml:"username,omitempty"`
+	Password          string   `json:"password,omitempty" yaml:"password,omitempty"`
+	RequestMDN        bool     `json:"requestMdn,omitempty" yaml:"request_mdn,omitempty"`
+	Timeout           string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 // buildDICOMwebSource accepts imaging objects by STOW-RS.

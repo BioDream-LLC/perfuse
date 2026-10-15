@@ -412,6 +412,12 @@ func (s *Source) validate() []error {
 				"source.listen does not apply to a dicom source; use dicom.listen"))
 		}
 
+	case SourceDirect:
+		errs = append(errs, s.Direct.validate()...)
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to a direct source; use direct.listen"))
+		}
+
 	case SourceDICOMweb:
 		errs = append(errs, s.DICOMweb.validate()...)
 		if s.Listen != "" {
@@ -682,6 +688,9 @@ func (d *Destination) validate(dataType DataType) []error {
 
 	case DestinationXDS:
 		errs = append(errs, validateXDSDest(d)...)
+
+	case DestinationDirect:
+		errs = append(errs, validateDirectDest(d)...)
 
 	case DestinationJavaScript:
 		errs = append(errs, validateJavaScriptDest(d)...)

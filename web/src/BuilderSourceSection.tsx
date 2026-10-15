@@ -31,6 +31,7 @@ const SOURCE_OPTIONS: { value: SourceKind; label: string }[] = [
   { value: 'dicom', label: 'A scanner sends us images (DICOM C-STORE)' },
   { value: 'dicom_query', label: 'We ask an imaging archive what is new (DICOM C-FIND)' },
   { value: 'dicomweb', label: 'A viewer or service sends us images over the web (DICOMweb STOW-RS)' },
+  { value: 'direct', label: 'Our HISP delivers Direct secure messages to us (Direct, SMTP)' },
   { value: 'javascript', label: 'A script we write produces messages (JavaScript Reader)' },
   { value: 'file', label: 'We read files from a folder on this server' },
   { value: 'ftp', label: 'We collect files from a server (FTP or FTPS)' },
@@ -61,6 +62,7 @@ export function SourceSection({
   const [showSoapAdvanced, setShowSoapAdvanced] = useState(false)
   const [showHttpAdvanced, setShowHttpAdvanced] = useState(false)
   const [showKafkaSasl, setShowKafkaSasl] = useState(false)
+  const [showDirectAdvanced, setShowDirectAdvanced] = useState(false)
   const [showDicomAdvanced, setShowDicomAdvanced] = useState(false)
   const [showMllpTls, setShowMllpTls] = useState(false)
   const isX12 = draft.dataType === 'x12'
@@ -1153,6 +1155,89 @@ export function SourceSection({
             </Pair>
           </Advanced>
           )}
+        </>
+      )}
+
+      {draft.sourceKind === 'direct' && (
+        <>
+          <Pair>
+            <Text
+              label="Direct address"
+              value={draft.directSrcAddress}
+              onChange={(v) => set('directSrcAddress', v)}
+              placeholder="intake@direct.clinic.example"
+              mono
+              hint="Mail for any other address is refused at RCPT, so the HISP reports it rather than Perfuse dropping it."
+            />
+            <Text
+              label="Listen on (SMTP)"
+              value={draft.directSrcListen}
+              onChange={(v) => set('directSrcListen', v)}
+              placeholder="0.0.0.0:2525"
+              mono
+              hint="The address the HISP delivers this address's mail to. Ask the HISP which source addresses to allow."
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Address certificate (PEM)"
+              value={draft.directSrcCertFile}
+              onChange={(v) => set('directSrcCertFile', v)}
+              placeholder="/etc/perfuse/direct/intake.crt"
+              mono
+              hint="Issued by the HISP or its registration authority. Mail encrypted to it is opened with the key below."
+            />
+            <Text
+              label="Address private key (PEM)"
+              value={draft.directSrcKeyFile}
+              onChange={(v) => set('directSrcKeyFile', v)}
+              placeholder="/etc/perfuse/direct/intake.key"
+              mono
+            />
+          </Pair>
+          <Text
+            label="Trust anchors (PEM)"
+            value={draft.directSrcAnchorsFile}
+            onChange={(v) => set('directSrcAnchorsFile', v)}
+            placeholder="/etc/perfuse/direct/anchors.pem"
+            mono
+            hint="The certificate authorities whose senders you accept, such as the DirectTrust bundle. A message signed by anyone else, or signed by a certificate that is not for its From address, is refused."
+          />
+          <Advanced
+            title="STARTTLS, notifications and limits"
+            open={showDirectAdvanced}
+            onToggle={() => setShowDirectAdvanced((v) => !v)}
+          >
+            <Pair>
+              <Text
+                label="SMTP TLS certificate"
+                value={draft.directSrcTlsCert}
+                onChange={(v) => set('directSrcTlsCert', v)}
+                mono
+                hint="With a certificate and key, STARTTLS is offered and required before mail is taken."
+              />
+              <Text label="SMTP TLS key" value={draft.directSrcTlsKey} onChange={(v) => set('directSrcTlsKey', v)} mono />
+            </Pair>
+            <Pair>
+              <Text
+                label="HISP submission server (for notifications)"
+                value={draft.directSrcSmtpHost}
+                onChange={(v) => set('directSrcSmtpHost', v)}
+                placeholder="smtp.hisp.example:587"
+                mono
+                hint="Set it and each message taken in is answered with a signed, encrypted 'processed' notification (MDN) to its sender."
+              />
+              <Num label="Largest message (bytes)" value={draft.directSrcMaxBytes} onChange={(v) => set('directSrcMaxBytes', v ?? 0)} hint="64 MB when empty." />
+            </Pair>
+            <Pair>
+              <Text label="HISP username" value={draft.directSrcUsername} onChange={(v) => set('directSrcUsername', v)} />
+              <Secret label="HISP password" value={draft.directSrcPassword} onChange={(v) => set('directSrcPassword', v)} />
+            </Pair>
+          </Advanced>
+          <p className="text-xs text-slate-400">
+            Each message is decrypted and its signature checked before anything reads it. An XDM package&apos;s documents each become
+            a message; otherwise each attachment does, or the text when there is none.
+          </p>
         </>
       )}
 

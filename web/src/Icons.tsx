@@ -1532,6 +1532,32 @@ export function IconLock(props: IconProps) {
   )
 }
 
+/** IconDirect is a sealed envelope: Direct secure messaging, mail signed and encrypted end to end. */
+export function IconDirect(props: IconProps) {
+  return (
+    <SvgWrapper {...props}>
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-a`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#22d3ee" />
+              <stop offset="100%" stopColor="#0ea5e9" />
+            </linearGradient>
+            <linearGradient id={`${id}-b`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#fbbf24" />
+            </linearGradient>
+          </defs>
+          <rect x="2.5" y="5" width="17" height="12" rx="2" fill="none" stroke={`url(#${id}-a)`} strokeWidth="1.6" />
+          <path d="M3 6l8 6 8-6" fill="none" stroke={`url(#${id}-a)`} strokeWidth="1.6" strokeLinejoin="round" />
+          <rect x="14.5" y="14" width="7" height="6" rx="1.2" fill={`url(#${id}-b)`} />
+          <path d="M16 14v-1.5a2 2 0 0 1 4 0V14" fill="none" stroke={`url(#${id}-b)`} strokeWidth="1.4" />
+        </>
+      )}
+    </SvgWrapper>
+  )
+}
+
 /** IconQR is a QR code: SMART Health Links and Cards. */
 export function IconQR(props: IconProps) {
   return (
@@ -1652,6 +1678,8 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Imaging': IconImaging,
   'Drugs': IconPill,
   'Document sharing': IconDocuments,
+  'Direct': IconDirect,
+  'CMS Aligned Network': IconCheck,
   'Scripts': IconScripts,
   'Migrate': IconMigrate,
   'Contracts': IconContracts,
@@ -1679,6 +1707,7 @@ export const sourceIcons: Record<string, React.ComponentType<IconProps>> = {
   'dicom_move': IconDicom,
   'dicom_worklist': IconDicom,
   'dicomweb': IconDicom,
+  'direct': IconDirect,
   'javascript': IconJavaScript,
 }
 
@@ -1723,6 +1752,12 @@ export function IconTheme(props: IconProps) {
  * seventy-ninth icon for one heading.
  */
 export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
+  // CMS Aligned Network readiness.
+  'CMS Aligned Network readiness': IconCheck,
+  // Direct secure messaging.
+  'This server\'s Direct addresses': IconDirect,
+  'Address book': IconUsers,
+  'Find a certificate in DNS': IconKey,
   // The SMART authorization server.
   'SMART apps': IconKey,
   'People who authorize apps': IconUsers,

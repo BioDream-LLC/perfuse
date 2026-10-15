@@ -218,6 +218,8 @@ const (
 	SourceDICOMQuery SourceType = "dicom_query"
 	// SourceDICOMweb accepts imaging objects by STOW-RS, which is how viewers, AI services and cloud archives send them.
 	SourceDICOMweb SourceType = "dicomweb"
+	// SourceDirect receives Direct secure messages a HISP delivers by SMTP.
+	SourceDirect SourceType = "direct"
 	// SourceBroker reads from a message broker, which is Mirth's JMS Reader.
 	SourceBroker SourceType = "broker"
 	// SourceJavaScript runs a user-supplied script on a timer and feeds the
@@ -286,6 +288,9 @@ type Source struct {
 
 	// DICOMweb applies to a dicomweb source.
 	DICOMweb *DICOMwebSource `yaml:"dicomweb,omitempty"`
+
+	// Direct applies to a direct source.
+	Direct *DirectSource `yaml:"direct,omitempty"`
 
 	// DICOM applies to a dicom source, which receives imaging objects.
 	DICOM *DICOMSource `yaml:"dicom,omitempty"`
@@ -427,6 +432,8 @@ const (
 	DestinationDICOMweb DestinationType = "dicomweb"
 	// DestinationXDS publishes each clinical document to an IHE XDS.b repository (ITI-41).
 	DestinationXDS DestinationType = "xds"
+	// DestinationDirect sends each message as Direct secure messaging through a HISP.
+	DestinationDirect DestinationType = "direct"
 	// DestinationJavaScript runs a script instead of sending, which is Mirth's
 	// JavaScript Writer and the escape hatch sites reach for constantly.
 	DestinationJavaScript DestinationType = "javascript"
@@ -495,6 +502,7 @@ var allDestinationTypes = []DestinationType{
 	DestinationDICOM,
 	DestinationDICOMweb,
 	DestinationXDS,
+	DestinationDirect,
 	DestinationBroker,
 	DestinationKafka,
 	DestinationSQS,
@@ -599,6 +607,9 @@ type Destination struct {
 
 	// XDS applies to an xds destination.
 	XDS *XDSDestination `yaml:"xds,omitempty"`
+
+	// Direct applies to a direct destination.
+	Direct *DirectDestination `yaml:"direct,omitempty"`
 
 	// DICOM applies to a dicom destination.
 	DICOM *DICOMDestination `yaml:"dicom,omitempty"`

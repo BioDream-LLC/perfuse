@@ -169,6 +169,14 @@ many were replaced; the addresses of the repository, registry, XCA gateway and M
 registry or another community's (an ITI-18 registry or an ITI-38 gateway, with a token for it); and publishing a CDA document by
 hand, with the facility type and practice setting a document does not say. See [message formats](#message-formats).
 
+### Direct
+
+Direct secure messaging. **This server's Direct addresses** lists every address a channel sends or receives as, with its
+certificate, when it expires, the anchors it trusts, and anything wrong (a missing file, an expired certificate). The **Address
+book** keeps correspondents and the certificates their mail is encrypted to: paste one from their HISP, or **Save with the
+certificate from DNS**; a certificate that is not for the address or its domain is refused. **Find a certificate in DNS** asks
+without saving. See [message formats](#message-formats).
+
 ### Health links
 
 SMART Health Links and Cards, for CMS's *Kill the Clipboard*. **Receive a SMART Health Link** reads the link or QR code a patient
@@ -260,6 +268,12 @@ The TLS certificates in use and when they expire. The expiry dates are the point
 ### Activity
 
 Who changed what, and when. Every configuration change is recorded, which is what makes "it started failing on Tuesday" answerable.
+
+### CMS Aligned Network
+
+Readiness for the CMS Interoperability Framework: each of its 26 criteria, grouped as CMS groups them, with what Perfuse provides,
+whether it is on here, the setting that turns it on, and what is the organisation's to do. The counts at the top filter the list.
+See [CMS-0057](#cms-0057).
 
 ### Fleet
 

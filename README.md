@@ -137,14 +137,15 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Signed claims attachments</b> (HL7 DSDR): XAdES-X-L with OCSP and RFC 3161 time-stamps, signed and verified; checked with xmlsec1 and OpenSSL</li>
 <li>CDA and document destinations, and a browser lab</li>
 <li><b>IHE XDS.b</b> registry and repository, <b>XCA</b> gateway and <b>MHD</b>, <b>PIXm</b>, <b>PDQm</b>; an xds destination publishing CDA; checked with the <b>NIST XDS Toolkit</b></li>
+<li><b>Direct secure messaging</b> through your HISP: S/MIME signed and encrypted, <b>IHE XDM</b> packages, MDNs, certificates from an address book or <b>DNS CERT</b>; checked with OpenSSL</li>
 </ul>
 </td>
 <td width="50%" valign="top">
 <img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"><br>
-<b>25 source types, 28 destination types</b>
+<b>26 source types, 29 destination types</b>
 <ul>
-<li><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · DICOMweb (STOW-RS) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · JavaScript Reader · serial</li>
-<li><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · database · DICOM · DICOMweb · FHIR · CDA · <b>IHE XDS.b</b> · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</li>
+<li><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · DICOMweb (STOW-RS) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · <b>Direct</b> (from a HISP) · JavaScript Reader · serial</li>
+<li><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · database · DICOM · DICOMweb · FHIR · CDA · <b>IHE XDS.b</b> · <b>Direct</b> secure messaging · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</li>
 <li>Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle, SQLite</b>, the dialect checked when the channel is saved</li>
 <li><b>Kafka keyed per patient</b>, offsets committed after the batch; an SQS message deleted only once handled</li>
 <li>AWS, Azure and Google Cloud <b>without their SDKs</b>; S3 archives as <b>date-partitioned JSON for Athena</b></li>
@@ -215,6 +216,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li>The yearly <b>prior authorization metrics page</b> in CMS's layout</li>
 <li>Drugs: <b>NCPDP SCRIPT ePA</b> and <b>Real-Time Prescription Benefit</b> from one formulary, published over the <b>Da Vinci US Drug Formulary 2.1.0</b> API; decided through PAS</li>
 <li>Inferno: CRD <b>passes</b>, DTR <b>43/45</b>, PAS <b>82/84</b>, PDex payer-to-payer <b>19/19</b>, Bulk Data <b>48/48</b></li>
+<li><b>CMS Aligned Network readiness</b>: all 26 Interoperability Framework criteria, each read from what is switched on, with what is yours to do</li>
 </ul>
 </td>
 <td width="50%" valign="top">

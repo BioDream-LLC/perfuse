@@ -947,6 +947,66 @@ export interface XDSDoc {
   homeCommunityId?: string
 }
 
+export interface AlignedCriterion {
+  number: number
+  group: string
+  title: string
+  status: 'ready' | 'partial' | 'off' | 'yours' | 'not-built'
+  inEffect?: boolean
+  perfuse: string
+  missing: string[]
+  gap?: string
+  where?: string
+}
+
+export interface AlignedView {
+  criteria: AlignedCriterion[]
+  counts: Partial<Record<AlignedCriterion['status'], number>>
+  source: string
+  sourceUrl: string
+}
+
+export interface DirectCert {
+  subject: string
+  issuer: string
+  notBefore: string
+  notAfter: string
+  bound: string
+  sha256: string
+  expired: boolean
+  pem?: string
+}
+
+export interface DirectContact {
+  address: string
+  name?: string
+  organisation?: string
+  notes?: string
+  source: string
+  added: string
+  updated: string
+  certificates: DirectCert[]
+}
+
+export interface DirectAddress {
+  address: string
+  channel: string
+  role: 'send' | 'receive'
+  destination?: string
+  listen?: string
+  hisp?: string
+  to?: string[]
+  certificate?: DirectCert
+  anchors?: DirectCert[]
+  problem?: string
+}
+
+export interface DirectView {
+  addresses: DirectAddress[]
+  contacts: DirectContact[]
+  certsDir: string
+}
+
 export interface XDSStatus {
   enabled: boolean
   hint?: string
@@ -1715,6 +1775,16 @@ export const api = {
   /** xdsPublish registers a CDA document in this server's repository. */
   xdsPublish: (body: { document: string; patientDomain?: string; facilityType: XDSCode; practiceSetting: XDSCode }) =>
     request<{ document: XDSDoc }>('POST', '/api/xds/publish', body),
+  /** alignedNetwork is this server's readiness for each CMS Interoperability Framework criterion. */
+  alignedNetwork: () => request<AlignedView>('GET', '/api/aligned-network'),
+  /** direct is this server's Direct addresses and its address book. */
+  direct: () => request<DirectView>('GET', '/api/direct'),
+  /** directSave adds or changes a correspondent; certificate (PEM) or lookUp (DNS) sets the certificate. */
+  directSave: (address: string, body: { name?: string; organisation?: string; notes?: string; certificate?: string; lookUp?: boolean; dns?: string }) =>
+    request<DirectContact>('PUT', `/api/direct/contacts/${encodeURIComponent(address)}`, body),
+  directDelete: (address: string) => request<{ deleted: string }>('DELETE', `/api/direct/contacts/${encodeURIComponent(address)}`),
+  /** directLookup asks DNS for an address's certificates without saving them. */
+  directLookup: (address: string, dns = '') => request<{ address: string; certificates: DirectCert[] }>('POST', '/api/direct/lookup', { address, dns }),
   /** dicomwebStatus says whether this server keeps an imaging archive, where it is served, and what it holds. */
   dicomwebStatus: () => request<DICOMwebStatus>('GET', '/api/dicomweb'),
   /** qido searches the archive (QIDO-RS). An empty result is an empty list. */

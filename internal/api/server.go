@@ -266,8 +266,14 @@ type Server struct {
 
 	// XDS is the IHE XDS.b registry and repository and XCA responding gateway, nil without -xds. FHIRStore is this server's
 	// FHIR store, which MHD resolves patients from and PIXm and PDQm answer from; nil without -fhir.
-	XDS       *xds.Registry
-	FHIRStore *fhirserver.Store
+	XDS *xds.Registry
+
+	// DirectDir is the Direct address book: one PEM file per correspondent, which a direct destination's recipient_certs_dir
+	// reads (and which it reads by default).
+	DirectDir  string
+	directOnce sync.Once
+	directBk   *directBook
+	FHIRStore  *fhirserver.Store
 
 	// MCP is the Model Context Protocol server at /mcp, off unless its Enabled says so. FHIRHandler is the FHIR endpoint
 	// (with /fhir stripped), which MCP's fhir_search calls with the agent's own token; nil without -fhir.
@@ -509,6 +515,8 @@ func (s *Server) Handler() http.Handler {
 	s.registerDrugs(mux)
 	s.registerMCP(mux)
 	s.registerXDS(mux)
+	s.registerDirect(mux)
+	mux.Handle("GET /api/aligned-network", s.require(store.RoleViewer, s.handleAlignedNetwork))
 	s.registerMHD(mux)
 	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))
 	mux.Handle("POST /api/dtr/package", s.require(store.RoleViewer, s.handleDTRPackage))

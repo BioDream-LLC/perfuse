@@ -160,6 +160,19 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.soapSourceUsername = source.soap?.username ?? ''
       draft.soapSourcePassword = source.soap?.password ?? ''
       break
+    case 'direct':
+      draft.directSrcAddress = source.direct?.address ?? ''
+      draft.directSrcCertFile = source.direct?.certFile ?? ''
+      draft.directSrcKeyFile = source.direct?.keyFile ?? ''
+      draft.directSrcAnchorsFile = source.direct?.anchorsFile ?? ''
+      draft.directSrcListen = source.direct?.listen ?? ''
+      draft.directSrcTlsCert = source.direct?.tlsCert ?? ''
+      draft.directSrcTlsKey = source.direct?.tlsKey ?? ''
+      draft.directSrcMaxBytes = source.direct?.maxBytes ?? 0
+      draft.directSrcSmtpHost = source.direct?.smtpHost ?? ''
+      draft.directSrcUsername = source.direct?.username ?? ''
+      draft.directSrcPassword = source.direct?.password ?? ''
+      break
     case 'dicomweb':
       draft.dicomwebListen = source.dicomweb?.listen ?? ''
       draft.dicomwebPath = source.dicomweb?.path ?? ''
@@ -825,16 +838,34 @@ function readDestination(d: WireDest): Destination {
     case 'channel':
       dest.routeTo = d.channel?.name ?? ''
       break
+    case 'direct':
+      dest.directAddress = d.direct?.address ?? ''
+      dest.directCertFile = d.direct?.certFile ?? ''
+      dest.directKeyFile = d.direct?.keyFile ?? ''
+      dest.directAnchorsFile = d.direct?.anchorsFile ?? ''
+      dest.directTo = (d.direct?.to ?? []).join(', ')
+      dest.directSubject = d.direct?.subject ?? ''
+      dest.directText = d.direct?.text ?? ''
+      dest.directAttachName = d.direct?.attachName ?? ''
+      dest.directXdm = d.direct?.xdm === true
+      dest.directXdmSourceId = d.direct?.xdmSourceId ?? ''
+      dest.directRecipientCertsDir = d.direct?.recipientCertsDir ?? ''
+      dest.directDns = d.direct?.dns ?? ''
+      dest.directSmtpHost = d.direct?.smtpHost ?? ''
+      dest.directUsername = d.direct?.username ?? ''
+      dest.directPassword = d.direct?.password ?? ''
+      dest.directRequestMdn = d.direct?.requestMdn === true
+      break
     case 'xds':
       dest.xdsUrl = d.xds?.url ?? ''
-      dest.xdsSourceId = d.xds?.source_id ?? ''
-      dest.xdsPatientDomain = d.xds?.patient_domain ?? ''
-      dest.xdsFacilityCode = d.xds?.facility_type?.code ?? ''
-      dest.xdsFacilityScheme = d.xds?.facility_type?.scheme ?? ''
-      dest.xdsFacilityDisplay = d.xds?.facility_type?.display ?? ''
-      dest.xdsPracticeCode = d.xds?.practice_setting?.code ?? ''
-      dest.xdsPracticeScheme = d.xds?.practice_setting?.scheme ?? ''
-      dest.xdsPracticeDisplay = d.xds?.practice_setting?.display ?? ''
+      dest.xdsSourceId = d.xds?.sourceId ?? ''
+      dest.xdsPatientDomain = d.xds?.patientDomain ?? ''
+      dest.xdsFacilityCode = d.xds?.facilityType?.code ?? ''
+      dest.xdsFacilityScheme = d.xds?.facilityType?.scheme ?? ''
+      dest.xdsFacilityDisplay = d.xds?.facilityType?.display ?? ''
+      dest.xdsPracticeCode = d.xds?.practiceSetting?.code ?? ''
+      dest.xdsPracticeScheme = d.xds?.practiceSetting?.scheme ?? ''
+      dest.xdsPracticeDisplay = d.xds?.practiceSetting?.display ?? ''
       dest.xdsClassCode = d.xds?.class?.code ?? ''
       dest.xdsClassScheme = d.xds?.class?.scheme ?? ''
       dest.xdsToken = d.xds?.token ?? ''
@@ -1223,6 +1254,19 @@ interface WireSource {
     sasl?: { mechanism?: string; username?: string; password?: string }
   }
 
+  direct?: {
+    address?: string
+    certFile?: string
+    keyFile?: string
+    anchorsFile?: string
+    listen?: string
+    tlsCert?: string
+    tlsKey?: string
+    maxBytes?: number
+    smtpHost?: string
+    username?: string
+    password?: string
+  }
   dicomweb?: {
     listen?: string
     path?: string
@@ -1368,12 +1412,30 @@ interface WireDest {
   tempSuffix?: string
   retainHours?: number
 
+  direct?: {
+    address?: string
+    certFile?: string
+    keyFile?: string
+    anchorsFile?: string
+    to?: string[]
+    subject?: string
+    text?: string
+    attachName?: string
+    xdm?: boolean
+    xdmSourceId?: string
+    recipientCertsDir?: string
+    dns?: string
+    smtpHost?: string
+    username?: string
+    password?: string
+    requestMdn?: boolean
+  }
   xds?: {
     url?: string
-    source_id?: string
-    patient_domain?: string
-    facility_type?: { code?: string; scheme?: string; display?: string }
-    practice_setting?: { code?: string; scheme?: string; display?: string }
+    sourceId?: string
+    patientDomain?: string
+    facilityType?: { code?: string; scheme?: string; display?: string }
+    practiceSetting?: { code?: string; scheme?: string; display?: string }
     class?: { code?: string; scheme?: string }
     token?: string
   }

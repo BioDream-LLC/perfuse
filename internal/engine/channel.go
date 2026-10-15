@@ -8,6 +8,8 @@
 package engine
 
 import (
+	"net"
+
 	"context"
 	"errors"
 	"fmt"
@@ -172,6 +174,9 @@ type Channel struct {
 
 	// dicomServer is the imaging listener, nil unless the source is dicom.
 	dicomServer *dicom.Server
+
+	// directLn is the SMTP listener of a direct source.
+	directLn net.Listener
 
 	// poller drives a database source. Nil for every other source type.
 	poller *databasePoller
@@ -598,6 +603,13 @@ func (c *Channel) Start() error {
 		c.resumeQueues(context.Background())
 		return nil
 
+	case config.SourceDirect:
+		if err := c.startDirectSource(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
 	case config.SourceDICOMweb:
 		// Shares the HTTP server field and its stop path, like the SOAP source.
 		if err := c.startDICOMwebSource(); err != nil {
@@ -733,6 +745,9 @@ func (c *Channel) Stop(ctx context.Context) error {
 	// forgotten here - a listener that outlives its channel keeps a port bound and accepts studies nothing will deliver.
 	if dicomErr := c.stopDICOMSource(ctx); dicomErr != nil && err == nil {
 		err = dicomErr
+	}
+	if directErr := c.stopDirectSource(); directErr != nil && err == nil {
+		err = directErr
 	}
 
 	if httpErr := c.stopHTTPSource(ctx); httpErr != nil && err == nil {

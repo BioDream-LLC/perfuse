@@ -1028,6 +1028,9 @@ oidcDone:
 			Enabled:        func() bool { return settingsStore.Bool("security.mcp") },
 			CallsPerMinute: func() int { return settingsStore.Int("security.mcpCallsPerMinute") },
 		}
+		// The Direct address book sits beside the database, and direct destinations read it unless they name their own.
+		srv.DirectDir = filepath.Join(filepath.Dir(*dbPath), "direct-certs")
+		engine.DefaultDirectCertsDir = srv.DirectDir
 		if oid := strings.TrimSpace(*xdsRepository); oid != "" {
 			if !regexp.MustCompile(`^[0-2](\.(0|[1-9][0-9]*))+$`).MatchString(oid) {
 				return fmt.Errorf("-xds %q is not an OID; give the repository's uniqueId, such as 1.2.840.114350.1.13.99.2", oid)
@@ -1471,7 +1474,7 @@ oidcDone:
 		srv.CMS0057 = api.CMS0057Status{
 			FHIR: true, BaseURL: baseURL, SMART: strings.TrimSpace(*smartIssuer) != "",
 			BulkExport: *fhirBulkExport, PayerAPIs: *fhirPayerAPIs, Consent: *fhirPayerAPIs && !*fhirMatchWithoutConsent,
-			ReadOnly: *fhirReadOnly,
+			ReadOnly: *fhirReadOnly, Subscriptions: *fhirSubscriptions,
 		}
 
 		// The FHIR endpoint is deliberately outside the session-cookie API. FHIR

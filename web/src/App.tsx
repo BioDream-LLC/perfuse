@@ -47,6 +47,8 @@ const CMS0057 = lazy(() => import('./CMS0057').then((m) => ({ default: m.CMS0057
 const HealthLinks = lazy(() => import('./HealthLinks').then((m) => ({ default: m.HealthLinks })))
 const Imaging = lazy(() => import('./Imaging').then((m) => ({ default: m.Imaging })))
 const Drugs = lazy(() => import('./Drugs').then((m) => ({ default: m.Drugs })))
+const AlignedNetwork = lazy(() => import('./AlignedNetwork').then((m) => ({ default: m.AlignedNetwork })))
+const Direct = lazy(() => import('./Direct').then((m) => ({ default: m.Direct })))
 const DocumentSharing = lazy(() => import('./DocumentSharing').then((m) => ({ default: m.DocumentSharing })))
 const Certificates = lazy(() => import('./Certificates').then((m) => ({ default: m.Certificates })))
 const MirthMigration = lazy(() => import('./MirthMigration').then((m) => ({ default: m.MirthMigration })))
@@ -85,6 +87,8 @@ export type Tab =
   | 'imaging'
   | 'drugs'
   | 'xds'
+  | 'direct'
+  | 'aligned'
   | 'scripts'
   | 'certificates'
   | 'shadow'
@@ -600,6 +604,12 @@ function Console() {
       about: 'The IHE XDS.b registry and repository, XCA and MHD: documents shared with other organisations',
     },
     {
+      id: 'direct',
+      label: 'Direct',
+      minRole: 'viewer',
+      about: 'Direct secure messaging: this server\'s Direct addresses and the address book of correspondents and their certificates',
+    },
+    {
       id: 'imaging',
       label: 'Imaging',
       minRole: 'viewer',
@@ -692,6 +702,12 @@ function Console() {
       label: 'Users',
       minRole: 'admin',
       about: 'Who can sign in, and what they are allowed to do',
+    },
+    {
+      id: 'aligned',
+      label: 'CMS Aligned Network',
+      minRole: 'viewer',
+      about: 'Readiness for the CMS Interoperability Framework: each of its 26 criteria and where this server stands',
     },
     {
       id: 'audit',
@@ -952,6 +968,8 @@ function Console() {
           {tab === 'imaging' && <Imaging />}
           {tab === 'drugs' && <Drugs />}
           {tab === 'xds' && <DocumentSharing />}
+          {tab === 'direct' && <Direct />}
+          {tab === 'aligned' && <AlignedNetwork />}
           {tab === 'certificates' && <Certificates />}
           {tab === 'scripts' && (
             <Suspense fallback={<p className="text-sm text-slate-500">loading the editor…</p>}>

@@ -24,7 +24,9 @@ type CMS0057Status struct {
 	BulkExport bool   `json:"bulkExport"`
 	PayerAPIs  bool   `json:"payerApis"`
 	Consent    bool   `json:"consentRequired"`
-	ReadOnly   bool   `json:"readOnly"`
+	// Subscriptions is topic-based FHIR subscriptions (encounter and appointment notifications).
+	Subscriptions bool `json:"subscriptions"`
+	ReadOnly      bool `json:"readOnly"`
 }
 
 type cms0057API struct {

@@ -36,6 +36,7 @@ export type DestinationType =
   | 'dicom'
   | 'dicomweb'
   | 'xds'
+  | 'direct'
   | 'javascript'
 
 export const destinationLabels: Record<DestinationType, string> = {
@@ -56,6 +57,7 @@ export const destinationLabels: Record<DestinationType, string> = {
   dicom: 'An imaging archive (DICOM C-STORE)',
   dicomweb: 'An imaging archive or cloud service (DICOMweb STOW-RS)',
   xds: 'A document repository (IHE XDS.b ITI-41)',
+  direct: 'A Direct address, through a HISP (Direct secure messaging)',
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
   kafka: 'A Kafka topic',
@@ -97,6 +99,8 @@ export const destinationHints: Record<DestinationType, string> = {
     'Sends imaging objects to a PACS or workstation as a C-STORE user, the same operation a scanner uses. Verified against DCMTK, the toolkit most hospital imaging equipment is built on. Encryption is included — Mirth needs a paid extension for it, and DICOM metadata carries patient names.',
   xds:
     "Publishes each clinical document to an IHE XDS.b repository with ITI-41 Provide and Register: a CDA document, or one carried in an HL7 v2 message (MDM, ORU). The metadata is read from the document - patient, title, type, time, author, confidentiality - and completed from what you set here. The repository's answer decides: an XDS error is a failed delivery with its error code.",
+  direct:
+    "Sends each message as Direct secure messaging: signed with this address's certificate, encrypted to each recipient's, and handed to your HISP by SMTP with STARTTLS. Recipient certificates come from the Direct address book (the Direct screen) or DNS; a recipient with no trusted certificate is a failed delivery, never plain e-mail. A CDA document can go as an IHE XDM package, which receiving EHRs import with its metadata.",
   dicomweb:
     "Stores each imaging object with STOW-RS: Orthanc, dcm4chee, Google Cloud Healthcare, Azure Health Data Services, AWS HealthImaging, or this server's own archive. The server's answer for each object decides, so an object it lists as failed is a failed delivery, not a delivered one. Give the service root; /studies is added.",
   javascript:
@@ -442,6 +446,23 @@ export interface Destination {
   soapPassword: string
   soapFaultIsSuccess: string
 
+  /** directAddress and the rest describe a Direct destination. */
+  directAddress: string
+  directCertFile: string
+  directKeyFile: string
+  directAnchorsFile: string
+  directTo: string
+  directSubject: string
+  directText: string
+  directAttachName: string
+  directXdm: boolean
+  directXdmSourceId: string
+  directRecipientCertsDir: string
+  directDns: string
+  directSmtpHost: string
+  directUsername: string
+  directPassword: string
+  directRequestMdn: boolean
   /** xdsUrl and the rest describe an XDS.b (ITI-41) destination. */
   xdsUrl: string
   xdsSourceId: string
@@ -620,6 +641,7 @@ export type SourceKind =
   | 'dicom'
   | 'dicom_query'
   | 'dicomweb'
+  | 'direct'
   | 'javascript'
   | 'broker'
   | 'kafka'
@@ -962,6 +984,18 @@ export interface ChannelDraft {
   attachmentsMinBytes: number
   attachmentsReassemble: boolean
 
+  /** directSrc fields describe receiving Direct mail from a HISP. */
+  directSrcAddress: string
+  directSrcCertFile: string
+  directSrcKeyFile: string
+  directSrcAnchorsFile: string
+  directSrcListen: string
+  directSrcTlsCert: string
+  directSrcTlsKey: string
+  directSrcMaxBytes: number
+  directSrcSmtpHost: string
+  directSrcUsername: string
+  directSrcPassword: string
   /** dicomwebListen and the rest describe a STOW-RS endpoint. */
   dicomwebListen: string
   dicomwebPath: string
@@ -1754,6 +1788,21 @@ export function draftToWire(draft: ChannelDraft): unknown {
         faultOnNak: draft.soapSourceFaultOnNak || undefined,
       }
       break
+    case 'direct':
+      source.direct = {
+        address: draft.directSrcAddress || undefined,
+        certFile: draft.directSrcCertFile || undefined,
+        keyFile: draft.directSrcKeyFile || undefined,
+        anchorsFile: draft.directSrcAnchorsFile || undefined,
+        listen: draft.directSrcListen || undefined,
+        tlsCert: draft.directSrcTlsCert || undefined,
+        tlsKey: draft.directSrcTlsKey || undefined,
+        maxBytes: draft.directSrcMaxBytes || undefined,
+        smtpHost: draft.directSrcSmtpHost || undefined,
+        username: draft.directSrcUsername || undefined,
+        password: draft.directSrcPassword || undefined,
+      }
+      break
     case 'dicomweb':
       source.dicomweb = {
         listen: draft.dicomwebListen || undefined,
@@ -2291,6 +2340,26 @@ function destinationToWire(d: Destination): unknown {
     case 'channel':
       out.channel = { name: d.routeTo }
       break
+    case 'direct':
+      out.direct = {
+        address: d.directAddress || undefined,
+        certFile: d.directCertFile || undefined,
+        keyFile: d.directKeyFile || undefined,
+        anchorsFile: d.directAnchorsFile || undefined,
+        to: splitList(d.directTo),
+        subject: d.directSubject || undefined,
+        text: d.directText || undefined,
+        attachName: d.directAttachName || undefined,
+        xdm: d.directXdm || undefined,
+        xdmSourceId: d.directXdmSourceId || undefined,
+        recipientCertsDir: d.directRecipientCertsDir || undefined,
+        dns: d.directDns || undefined,
+        smtpHost: d.directSmtpHost || undefined,
+        username: d.directUsername || undefined,
+        password: d.directPassword || undefined,
+        requestMdn: d.directRequestMdn || undefined,
+      }
+      break
     case 'xds':
       out.xds = {
         url: d.xdsUrl || undefined,
@@ -2632,6 +2701,22 @@ export function newDestination(): Destination {
     soapPassword: '',
     soapFaultIsSuccess: '',
 
+    directAddress: '',
+    directCertFile: '',
+    directKeyFile: '',
+    directAnchorsFile: '',
+    directTo: '',
+    directSubject: '',
+    directText: '',
+    directAttachName: '',
+    directXdm: false,
+    directXdmSourceId: '',
+    directRecipientCertsDir: '',
+    directDns: '',
+    directSmtpHost: '',
+    directUsername: '',
+    directPassword: '',
+    directRequestMdn: false,
     xdsUrl: '',
     xdsSourceId: '',
     xdsPatientDomain: '',
@@ -2850,6 +2935,17 @@ export function emptyDraft(): ChannelDraft {
     // one that lost them, and nobody debugging a feed wants to wonder which.
     attachmentsReassemble: true,
 
+    directSrcAddress: '',
+    directSrcCertFile: '',
+    directSrcKeyFile: '',
+    directSrcAnchorsFile: '',
+    directSrcListen: '',
+    directSrcTlsCert: '',
+    directSrcTlsKey: '',
+    directSrcMaxBytes: 0,
+    directSrcSmtpHost: '',
+    directSrcUsername: '',
+    directSrcPassword: '',
     dicomwebListen: '',
     dicomwebPath: '',
     dicomwebToken: '',

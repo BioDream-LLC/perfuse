@@ -23,6 +23,7 @@ var respondingSenders = map[config.DestinationType]Sender{
 	config.DestinationSOAP:       (*SOAPSender)(nil),
 	config.DestinationDICOMweb:   (*DICOMwebSender)(nil),
 	config.DestinationXDS:        (*XDSSender)(nil),
+	config.DestinationDirect:     (*DirectSender)(nil),
 	config.DestinationFile:       (*FileSender)(nil),
 	config.DestinationDocument:   (*DocumentSender)(nil),
 	config.DestinationSFTP:       (*SFTPSender)(nil),
