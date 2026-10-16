@@ -1049,7 +1049,7 @@ tested (`certbot renew --dry-run`). The data are the conformance runs' fixtures;
 and write only Claims and Subscriptions, and a write to anything else was checked to be refused.
 
 Inferno's hosted test kits at inferno.healthit.gov, run against it on 11 October 2026 with v0.1.9 (`conformance/inferno/hosted.py`),
-gave the same results as the local runs:
+gave the same results as the local runs (DTR and PAS run again on 15 October 2026 with v0.1.16: unchanged):
 
 | Kit | Result |
 |---|---|
