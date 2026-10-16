@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -186,6 +187,16 @@ destinations:
 // TLS checked against the container's own certificate.
 func TestAnIBMMQChannelMovesAMessageBetweenQueues(t *testing.T) {
 	listening(t, "127.0.0.1:9443")
+	// 9443 is a common port, so something listening there is not proof of a queue manager: ask its REST API first.
+	probe := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+	if resp, err := probe.Get("https://127.0.0.1:9443/ibmmq/rest/v3/login"); err != nil {
+		t.Skipf("127.0.0.1:9443 is not IBM MQ's REST API (%v); start it with ./scripts/interop-up.sh", err)
+	} else {
+		_ = resp.Body.Close()
+		if resp.StatusCode == http.StatusNotFound || !strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+			t.Skip("127.0.0.1:9443 answers but is not IBM MQ's REST API (another server holds the port)")
+		}
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	conn, err := tls.Dial("tcp", "127.0.0.1:9443", &tls.Config{InsecureSkipVerify: true})

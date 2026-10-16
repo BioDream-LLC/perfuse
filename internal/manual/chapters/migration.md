@@ -122,6 +122,26 @@ So the verdict leads with the number that matters and says in the same sentence 
 
 A third category is kept separate: capability that exists but not from a script. Starting a channel from JavaScript has no equivalent here, and there is an API endpoint that does exactly the same thing. Calling that lock-in would overstate the finding.
 
+### Java calls that run unchanged
+
+The commonest of those Java classes run as they are written. Perfuse has no Java runtime, so these are JavaScript classes with the
+same names and methods, enough for the way channel scripts use them; `importPackage(java.util)` and `importClass(...)` bring them
+into scope by their short names, as in Rhino (JavaScript's own `Date`, `Map`, `Set`, `Math`, `String` and `Boolean` are never
+replaced: the Java ones are still there by full name). The migration report counts each of these calls as **already supported**.
+
+| Package | Classes |
+|---|---|
+| `java.util` | `ArrayList`, `LinkedList`, `Vector`, `List`, `Collection`, `HashMap`, `LinkedHashMap`, `Hashtable`, `TreeMap`, `Properties`, `HashSet`, `LinkedHashSet`, `TreeSet`, `Arrays`, `Collections`, `Date`, `Calendar`, `GregorianCalendar`, `UUID`, `Base64`, `regex.Pattern` (with `Matcher`), `concurrent.ConcurrentHashMap` |
+| `java.lang` | `String`, `StringBuilder`, `StringBuffer`, `Integer`, `Long`, `Short`, `Byte`, `Double`, `Float`, `Boolean`, `Math`, `System` (time and line separator only) |
+| `java.text`, `java.math`, `java.net`, `java.nio` | `SimpleDateFormat` and `DateFormat` (Mirth's pattern letters), `BigDecimal` (as a double), `URLEncoder`, `URLDecoder`, `StandardCharsets` |
+| Apache Commons | `lang3.StringUtils` and `lang.StringUtils` (about sixty methods), `StringEscapeUtils`, `codec.binary.Base64` |
+
+They behave as Java does where scripts depend on it: `Integer.parseInt("x")` throws `NumberFormatException`, `String.replaceAll`
+and `split` take regular expressions while `replace` is literal, maps key strings by value, `TreeMap` and `TreeSet` iterate in
+order, and `SimpleDateFormat.parse` returns a date `getTime()` works on. A method a script calls that the equivalent lacks fails at
+that line, naming it; any other Java class fails by name, as before. `BigDecimal` is a double here, so it does not keep Java's exact
+decimal arithmetic: check scripts that use it for money.
+
 ### External scripts are reported as unknown
 
 A step that runs an external script file references a path on the old server, and the file is not in the export. Nothing can be said about what it contains, so it is counted as unknown rather than assumed either way. Fetch those files before concluding anything — in both directions.

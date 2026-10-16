@@ -31,6 +31,13 @@ type instance struct {
 	// this a Reader script that writes `lastResult = x` on one poll sees it on the next, which
 	// for a transformer means one patient's data visible while handling another's.
 	baselineKeys map[string]struct{}
+
+	// baselineValues is what each of those globals held, so unbind can put back one a script overwrote. Without it a script
+	// writing Date = ... or JSON = null broke every later message handled by the same pooled runtime, not just its own.
+	baselineValues map[string]goja.Value
+
+	// builtins are the ECMAScript globals, which importPackage never replaces.
+	builtins map[string]struct{}
 }
 
 func (e *Engine) newInstance() (*instance, error) {
@@ -50,7 +57,14 @@ func (e *Engine) newInstance() (*instance, error) {
 		return nil, err
 	}
 
-	inst := &instance{vm: vm, e4x: rt, eng: e}
+	inst := &instance{vm: vm, e4x: rt, eng: e, builtins: map[string]struct{}{}}
+	for _, k := range vm.GlobalObject().Keys() {
+		inst.builtins[k] = struct{}{}
+	}
+	for _, k := range []string{"Map", "Set", "Date", "Math", "String", "Boolean", "Number", "Object", "Array", "JSON", "RegExp",
+		"Error", "Symbol", "Promise", "Proxy", "Reflect", "WeakMap", "WeakSet"} {
+		inst.builtins[k] = struct{}{}
+	}
 	if err := inst.install(); err != nil {
 		return nil, err
 	}
@@ -69,8 +83,16 @@ func (e *Engine) newInstance() (*instance, error) {
 	// considered per-invocation state and will be removed in unbind.
 	keys := vm.GlobalObject().Keys()
 	inst.baselineKeys = make(map[string]struct{}, len(keys))
+	inst.baselineValues = make(map[string]goja.Value, len(keys)+len(inst.builtins))
 	for _, k := range keys {
 		inst.baselineKeys[k] = struct{}{}
+		inst.baselineValues[k] = vm.Get(k)
+	}
+	// The ECMAScript built-ins are not enumerable, so Keys does not list them; they are remembered by name.
+	for k := range inst.builtins {
+		if v := vm.Get(k); v != nil {
+			inst.baselineValues[k] = v
+		}
 	}
 
 	return inst, nil
@@ -160,6 +182,12 @@ func (i *instance) unbind() {
 	for _, key := range global.Keys() {
 		if _, baseline := i.baselineKeys[key]; !baseline {
 			_ = global.Delete(key)
+		}
+	}
+	// And put back any global the script overwrote, built-ins included.
+	for key, was := range i.baselineValues {
+		if now := global.Get(key); now == nil || !now.SameAs(was) {
+			_ = global.Set(key, was)
 		}
 	}
 
@@ -379,7 +407,9 @@ func (i *instance) installUtilities() error {
 		if err != nil {
 			panic(vm.NewGoError(err))
 		}
-		return vm.ToValue(when)
+		// A JavaScript Date, as Mirth's returns a java.util.Date: getTime() and the rest work on it. It used to return Go's
+		// time value, on which every Date method a script called was undefined.
+		return jsDate(vm, when)
 	}); err != nil {
 		return err
 	}
@@ -644,19 +674,37 @@ func (i *instance) installRouter() error {
 func (i *instance) installJavaRefusal() error {
 	vm := i.vm
 
+	// The Java classes Perfuse provides JavaScript equivalents for. A name in this table is answered with the equivalent;
+	// anything else Java-shaped is still refused, by name, at the line that reaches for it.
+	classes, err := loadJavaClasses(vm)
+	if err != nil {
+		return err
+	}
+	// The class most recently reached for, so importClass(java.util.HashMap) knows which short name to bind: several
+	// names share one equivalent (HashMap and LinkedHashMap), so the value alone cannot say.
+	var lastClass string
+
 	var makeProxy func(path string) *goja.Object
 	makeProxy = func(path string) *goja.Object {
 		obj := vm.NewObject()
 		proxy := vm.NewProxy(obj, &goja.ProxyTrapConfig{
 			Get: func(target *goja.Object, key string, receiver goja.Value) goja.Value {
+				if key == "__javaPackage" {
+					return vm.ToValue(path)
+				}
 				full := path + "." + key
+				name := strings.TrimPrefix(full, "Packages.")
+				if v := classes.Get(name); v != nil && !goja.IsUndefined(v) {
+					lastClass = name
+					return v
+				}
 				// A capitalised final segment is a class name; anything else is
 				// still a package, so keep descending.
 				if key != "" && key[0] >= 'A' && key[0] <= 'Z' {
 					panic(vm.NewGoError(fmt.Errorf(
 						"this script uses Java: %s. Perfuse runs JavaScript but has no Java runtime, "+
-							"so this call cannot work. Rewrite it in JavaScript, or move the work into a "+
-							"channel step", full)))
+							"and has no equivalent for this class, so this call cannot work. Rewrite it in JavaScript, "+
+							"or move the work into a channel step", full)))
 				}
 				return makeProxy(full)
 			},
@@ -673,24 +721,56 @@ func (i *instance) installJavaRefusal() error {
 	if err := vm.Set("Packages", packages); err != nil {
 		return err
 	}
-	if err := vm.Set("java", makeProxy("java")); err != nil {
-		return err
-	}
-	if err := vm.Set("javax", makeProxy("javax")); err != nil {
-		return err
-	}
-
-	// importPackage is Rhino's, and a script that calls it is about to use Java.
-	for _, name := range []string{"importPackage", "importClass"} {
-		fn := name
-		if err := vm.Set(name, func(call goja.FunctionCall) goja.Value {
-			panic(vm.NewGoError(fmt.Errorf(
-				"%s is a Rhino feature for loading Java classes and has no equivalent here", fn)))
-		}); err != nil {
+	for _, root := range []string{"java", "javax", "org"} {
+		if err := vm.Set(root, makeProxy(root)); err != nil {
 			return err
 		}
 	}
-	return nil
+
+	// importPackage brings a package's classes into scope by their short names, for the classes Perfuse provides; a package
+	// with none is refused by name. importClass does the same for one class.
+	if err := vm.Set("importPackage", func(call goja.FunctionCall) goja.Value {
+		for _, arg := range call.Arguments {
+			obj, ok := arg.(*goja.Object)
+			if !ok {
+				panic(vm.NewGoError(fmt.Errorf("importPackage needs a package, such as java.util")))
+			}
+			pkg := strings.TrimPrefix(obj.Get("__javaPackage").String(), "Packages.")
+			found := 0
+			for _, name := range classes.Keys() {
+				short, ok := strings.CutPrefix(name, pkg+".")
+				if !ok || strings.Contains(short, ".") {
+					continue
+				}
+				found++
+				// JavaScript's own Date, Map, Set, Math, String and Boolean stay what they are: importPackage(java.util)
+				// replacing Map with java.util.Map would break every script, and the JavaScript ones serve the same uses.
+				// The Java one is still reachable by its full name.
+				if _, builtin := i.builtins[short]; builtin {
+					continue
+				}
+				_ = vm.Set(short, classes.Get(name))
+			}
+			if found == 0 {
+				panic(vm.NewGoError(fmt.Errorf("importPackage(%s): Perfuse has no Java runtime and no JavaScript "+
+					"equivalents for this package's classes, so the script needs rewriting", pkg)))
+			}
+		}
+		return goja.Undefined()
+	}); err != nil {
+		return err
+	}
+	return vm.Set("importClass", func(call goja.FunctionCall) goja.Value {
+		if lastClass == "" {
+			panic(vm.NewGoError(fmt.Errorf("importClass needs a class Perfuse provides, such as java.util.HashMap")))
+		}
+		short := lastClass[strings.LastIndex(lastClass, ".")+1:]
+		if _, builtin := i.builtins[short]; !builtin {
+			_ = vm.Set(short, classes.Get(lastClass))
+		}
+		lastClass = ""
+		return goja.Undefined()
+	})
 }
 
 // wrapMap presents a SharedMap with Java's Map methods, since that is what the

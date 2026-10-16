@@ -1,6 +1,7 @@
 package mirth
 
 import (
+	"github.com/biodream-llc/perfuse/internal/script"
 	"strings"
 	"testing"
 )
@@ -53,24 +54,49 @@ var id = UUIDGenerator.getUUID();
 	}
 }
 
-func TestOrdinaryJavaIsReportedWithTheJavaScriptThatReplacesIt(t *testing.T) {
+func TestJavaWithAnEquivalentIsReportedAsSupported(t *testing.T) {
 	r := scriptChannel(`
 var f = new java.text.SimpleDateFormat("yyyyMMdd");
 var m = new java.util.HashMap();
-var l = new java.util.ArrayList();
+var l = new Packages.java.util.ArrayList();
 `).ScanJava()
 
-	if r.Rewritable != 3 {
-		t.Fatalf("expected 3 rewritable findings, got %d: %+v", r.Rewritable, r.Uses)
+	if r.Supported != 3 || r.Blocked() {
+		t.Fatalf("expected 3 supported findings, got %+v", r.Uses)
 	}
-	// The advice has to name the replacement. "Rewrite this" is not advice.
+	if !strings.Contains(r.Uses[0].Advice, "unchanged") {
+		t.Fatalf("the advice should say the call works unchanged, got %q", r.Uses[0].Advice)
+	}
+}
+
+// Ordinary Java with no equivalent still gets the advice naming the JavaScript that replaces it.
+func TestOrdinaryJavaIsReportedWithTheJavaScriptThatReplacesIt(t *testing.T) {
+	r := scriptChannel(`
+var r = new java.io.BufferedReader(x);
+var w = new java.io.FileWriter("out.txt");
+`).ScanJava()
+
+	if r.Rewritable != 2 {
+		t.Fatalf("expected 2 rewritable findings, got %d: %+v", r.Rewritable, r.Uses)
+	}
 	for _, u := range r.Uses {
-		if len(u.Advice) < 30 {
-			t.Fatalf("advice for %q is too thin to act on: %q", u.Reference, u.Advice)
+		if !strings.Contains(u.Advice, "FileUtil") {
+			t.Fatalf("advice for %q should name FileUtil: %q", u.Reference, u.Advice)
 		}
 	}
-	if !strings.Contains(r.Uses[0].Advice, "DateUtil") {
-		t.Fatalf("SimpleDateFormat advice should name DateUtil, got %q", r.Uses[0].Advice)
+}
+
+// Every class the scanner calls supported is one the script runtime actually provides, and the reverse.
+func TestTheScannerAndTheRuntimeAgreeOnJavaClasses(t *testing.T) {
+	names := script.JavaClasses()
+	if len(names) < 40 {
+		t.Fatalf("only %d classes: the table did not load", len(names))
+	}
+	for _, n := range names {
+		r := scriptChannel("var x = " + n + ";").ScanJava()
+		if r.Supported != 1 {
+			t.Errorf("%s: %+v", n, r.Uses)
+		}
 	}
 }
 
@@ -230,7 +256,7 @@ var c = ChannelUtil.getChannelName();
 	if strings.Contains(s, "%") {
 		t.Fatalf("the summary should not contain a percentage: %q", s)
 	}
-	for _, want := range []string{"4 Java references", "1 already supported", "1 rewritable"} {
+	for _, want := range []string{"4 Java references", "2 already supported", "1 needing", "1 that will not run"} {
 		if !strings.Contains(s, want) {
 			t.Fatalf("the summary should contain %q, got %q", want, s)
 		}

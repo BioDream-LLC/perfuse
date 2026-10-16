@@ -288,7 +288,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <img src="docs/assets/chips/mirth.svg" width="168" height="40" alt="Mirth"><br>
 <b>Both directions: Mirth 4.5.2, OIE, BridgeLink</b>
 <ul>
-<li><b>Existing Mirth JavaScript runs unchanged</b>: E4X, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, <code>SerializerFactory</code></li>
+<li><b>Existing Mirth JavaScript runs unchanged</b>: E4X, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, <code>SerializerFactory</code>, and the Java scripts reach for most (<code>HashMap</code>, <code>ArrayList</code>, <code>StringBuilder</code>, <code>SimpleDateFormat</code>, <code>Pattern</code>, Commons <code>StringUtils</code> and <code>Base64</code>: 50 classes) as JavaScript equivalents</li>
 <li><code>perfuse explain</code> says <b>by name</b> what converts, what converts with caveats and what does not</li>
 <li><code>perfuse translate</code> converts channels, groups, code template libraries or a <b>whole server backup</b></li>
 <li><b>Export back</b>: Mirth, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0 all accept the channel files Perfuse writes</li>

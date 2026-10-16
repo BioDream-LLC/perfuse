@@ -28,6 +28,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/biodream-llc/perfuse/internal/script"
 )
 
 // Verdict says what can be done about one Java reference.
@@ -125,6 +127,22 @@ func (r *JavaReport) Summary() string {
 	return s
 }
 
+// providedJava matches a full class name Perfuse provides an equivalent for, with or without Packages. Built from the script
+// engine's own table, so the report can never claim a class the runtime does not have, or miss one it does.
+var providedJava = func() *regexp.Regexp {
+	names := script.JavaClasses()
+	quoted := make([]string, len(names))
+	for i, n := range names {
+		quoted[i] = regexp.QuoteMeta(n)
+	}
+	// Longest first, so java.util.LinkedHashMap is not reported as java.util.LinkedHash... any shorter prefix.
+	sort.Slice(quoted, func(i, j int) bool { return len(quoted[i]) > len(quoted[j]) })
+	if len(quoted) == 0 {
+		return regexp.MustCompile(`a^`)
+	}
+	return regexp.MustCompile(`\b(?:Packages\.)?(?:` + strings.Join(quoted, "|") + `)\b`)
+}()
+
 // javaRule matches one recognisable Java reference and says what it means.
 type javaRule struct {
 	pattern *regexp.Regexp
@@ -163,6 +181,14 @@ var javaRules = []javaRule{
 		regexp.MustCompile(`\bChannelUtil\.(getChannelState|isChannelStarted|isChannelStopped|isChannelPaused|isChannelDeployed|getDeployedChannelIds|getChannelIds)\b`),
 		VerdictNeedsFeature,
 		"Channel state is available from Perfuse over its API (GET /api/channels) but not to scripts. If this script only logs or branches on state, the alert rules may already cover what it was written for.",
+	},
+
+	// The Java classes Perfuse runs as JavaScript equivalents, by full name: the call works unchanged.
+	{
+		providedJava,
+		VerdictSupported,
+		"Perfuse runs this class as a JavaScript equivalent with the same name and methods, so the call works unchanged. " +
+			"It is not Java: a method a script uses that the equivalent lacks fails at that line, naming it.",
 	},
 
 	// Ordinary Java that JavaScript does natively.

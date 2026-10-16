@@ -399,9 +399,10 @@ func TestJavaIsRefusedClearly(t *testing.T) {
 	e := newTestEngine(t)
 
 	for _, tc := range []struct{ name, src, mentions string }{
-		{"java.util", `var d = new java.util.Date();`, "java.util.Date"},
-		{"Packages", `var s = new Packages.java.lang.String('x');`, "java.lang.String"},
-		{"importPackage", `importPackage(java.sql);`, "Rhino"},
+		{"java.sql", `var c = java.sql.DriverManager.getConnection('x');`, "java.sql.DriverManager"},
+		{"Packages", `var s = new Packages.com.acme.LabBridge();`, "com.acme.LabBridge"},
+		{"java.lang.Thread", `java.lang.Thread.sleep(1000);`, "java.lang.Thread"},
+		{"importPackage", `importPackage(java.sql);`, "java.sql"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root, _ := hl7xml.FromRaw([]byte(adt))
@@ -417,6 +418,56 @@ func TestJavaIsRefusedClearly(t *testing.T) {
 				t.Errorf("error should mention %q, got: %v", tc.mentions, err)
 			}
 		})
+	}
+}
+
+// The Java classes Mirth scripts use most run as JavaScript equivalents, so these lines work unchanged after an import.
+func TestJavaEquivalentsRun(t *testing.T) {
+	e := newTestEngine(t)
+	src := `
+importPackage(java.util);
+var m = new HashMap();
+m.put('a', 1); m.put('b', 2);
+var keys = new java.util.ArrayList(m.keySet());
+var sb = new java.lang.StringBuilder();
+sb.append('n=').append(m.size()).append(';');
+for (var it = keys.iterator(); it.hasNext();) { sb.append(it.next()); }
+var n = java.lang.Integer.parseInt('42') + 1;
+var bad = 'ok';
+try { java.lang.Integer.parseInt('x1'); bad = 'accepted'; } catch (e) { bad = String(e.message).indexOf('NumberFormatException') >= 0 ? 'refused' : String(e); }
+var f = new java.text.SimpleDateFormat('yyyyMMdd');
+var d = f.parse('20261016');
+var back = f.format(d);
+var dateUtilDate = DateUtil.getDate('yyyyMMdd', '20261016').getTime() === d.getTime();
+var s = new java.lang.String('a.b.c').replaceAll('\\.', '-');
+var parts = new java.lang.String('x|y|z').split('\\|');
+var b64 = org.apache.commons.codec.binary.Base64.encodeBase64String('héllo');
+var plain = new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.decodeBase64(b64), 'UTF-8');
+var su = org.apache.commons.lang3.StringUtils;
+var padded = su.leftPad('7', 3, '0') + su.substringAfter('key=value', '=') + su.isBlank('  ');
+var mt = java.util.regex.Pattern.compile('(\\d+)-(\\d+)').matcher('ref 12-34');
+var g = mt.find() ? mt.group(2) : 'none';
+var uuid = java.util.UUID.randomUUID().toString();
+var tree = new java.util.TreeMap(); tree.put('z', 1); tree.put('a', 2);
+var c = java.util.Calendar.getInstance(); c.setTime(d); c.add(java.util.Calendar.DATE, 1);
+var next = f.format(c.getTime());
+var enc = java.net.URLEncoder.encode('a b&c', 'UTF-8');
+channelMap.put('out', [sb.toString(), n, bad, back, dateUtilDate, String(s), parts.length, String(plain), padded, g,
+  uuid.length, tree.keySet().toString(), next, enc, java.lang.String.format('%05d|%-3s|%.2f', 42, 'x', 1.5)].join(','));
+`
+	root, _ := hl7xml.FromRaw([]byte(adt))
+	s, err := e.Compile("java-equivalents", src, Transformer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cm := NewSharedMap()
+	if _, err := e.Run(s, &Context{Message: root, ChannelMap: cm}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := cm.Get("out")
+	want := "n=2;ab,43,refused,20261016,true,a-b-c,3,héllo,007valuetrue,34,36,[a, z],20261017,a+b%26c,00042|x  |1.50"
+	if got != want {
+		t.Errorf("got\n  %v\nwant\n  %v", got, want)
 	}
 }
 
@@ -591,6 +642,31 @@ func TestConcurrentRunsAreSafe(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		if err := <-done; err != nil {
 			t.Fatalf("concurrent run failed: %v", err)
+		}
+	}
+}
+
+// A script that overwrites a built-in or one of Perfuse's globals affects only its own run: the pooled runtime puts them back.
+func TestAnOverwrittenGlobalIsPutBack(t *testing.T) {
+	e := newTestEngine(t)
+	run := func(src string) (any, error) {
+		root, _ := hl7xml.FromRaw([]byte(adt))
+		s, err := e.Compile("g", src, Transformer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cm := NewSharedMap()
+		_, err = e.Run(s, &Context{Message: root, ChannelMap: cm})
+		v, _ := cm.Get("out")
+		return v, err
+	}
+	if _, err := run(`Date = function () { return 'poisoned' }; JSON = null; DateUtil = null; importPackage(java.util);`); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 3; i++ {
+		got, err := run(`channelMap.put('out', [typeof new Date().getTime(), JSON.stringify({a: 1}), typeof DateUtil.formatDate, typeof Map.prototype.set].join(','))`)
+		if err != nil || got != "number,{\"a\":1},function,function" {
+			t.Fatalf("run %d after the poisoning: %v %v", i, got, err)
 		}
 	}
 }
