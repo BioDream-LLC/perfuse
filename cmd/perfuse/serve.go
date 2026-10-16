@@ -39,6 +39,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/peers"
 	"github.com/biodream-llc/perfuse/internal/queue"
 	"github.com/biodream-llc/perfuse/internal/settings"
+	"github.com/biodream-llc/perfuse/internal/snmp"
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"github.com/biodream-llc/perfuse/internal/store"
@@ -179,6 +180,19 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"YAML file of alert rules. Default: alerts.yaml beside the database, written when the rules are first saved in the console; until then a conservative default set is used")
 	alertSeverity := fset.String("alert-severity", "warning",
 		"minimum severity to send to the webhook: warning or critical")
+
+	snmpListen := fset.String("snmp-listen", "",
+		"answer SNMPv2c GET/GETNEXT/GETBULK on this UDP address, such as :161 (off when empty). Read-only: channel states, counts and queue depths")
+	snmpCommunity := fset.String("snmp-community", "",
+		"the SNMPv2c community (a password sent in clear: at least 6 characters, not public or private)")
+	snmpAllow := fset.String("snmp-allow", "",
+		"comma-separated networks or addresses the SNMP agent answers, such as 10.0.5.0/24; required with -snmp-listen")
+	snmpTraps := fset.String("snmp-traps", "",
+		"comma-separated managers (host or host:port, default port 162) that receive an SNMPv2 trap when an alert fires or resolves")
+	snmpBase := fset.String("snmp-base-oid", "",
+		"where Perfuse's values sit, under your enterprise number (default "+snmp.DefaultBase+", Net-SNMP's experimental space)")
+	snmpContact := fset.String("snmp-contact", "", "sysContact the SNMP agent reports")
+	snmpLocation := fset.String("snmp-location", "", "sysLocation the SNMP agent reports")
 
 	serveFHIR := fset.Bool("fhir", true, "serve a FHIR endpoint at /fhir")
 	// Defaults to what the resource structs are actually shaped to, not to the newest release.
@@ -559,6 +573,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	}
 
 	var srvAlerts *alerts.Evaluator
+	var srvSNMP *snmp.Service
 
 	// Tracing is started before the engine, so the first message of the process
 	// can already be traced. A failure here stops startup rather than silently
@@ -729,9 +744,38 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 				"rules", len(rules))
 		}
 
+		// SNMP for monitoring tools that speak it: a read-only agent and traps for alerts, beside the webhook rather than
+		// instead of it. Refused at startup when the settings are unsafe (a guessable community, no allow list).
+		snmpCfg := snmp.Config{Listen: strings.TrimSpace(*snmpListen), Community: *snmpCommunity, Allow: splitList(*snmpAllow),
+			Traps: splitList(*snmpTraps), Base: strings.TrimSpace(*snmpBase), Contact: *snmpContact, Location: *snmpLocation}
+		if snmpCfg.Listen != "" || len(snmpCfg.Traps) > 0 {
+			svc, err := snmp.New(snmpCfg, func() snmp.Figures { return snmpFigures(runtime, collector, repo, version, *fleetLabel) }, log)
+			if err != nil {
+				return err
+			}
+			snmpCtx, stopSNMP := context.WithCancel(context.Background())
+			defer stopSNMP()
+			if err := svc.Start(snmpCtx); err != nil {
+				return err
+			}
+			srvSNMP = svc
+			log.Info("SNMP enabled", "listen", snmpCfg.Listen, "trap_targets", len(snmpCfg.Traps))
+		}
+
 		notify := func(a alerts.Alert) {}
 		if notifier != nil {
 			notify = notifier.Notify
+		}
+		if srvSNMP != nil {
+			webhook := notify
+			notify = func(a alerts.Alert) {
+				webhook(a)
+				if a.Acknowledged && a.Firing() {
+					return
+				}
+				srvSNMP.Notify(snmp.Event{Firing: a.Firing(), Kind: string(a.Kind), Severity: string(a.Severity),
+					Channel: a.Channel, Destination: a.Destination, Summary: a.Summary})
+			}
 		}
 		evaluator := alerts.NewEvaluator(rules, notify)
 		srvAlerts = evaluator
@@ -953,6 +997,7 @@ oidcDone:
 		},
 		Runtime:            runtime,
 		Alerts:             srvAlerts,
+		SNMP:               srvSNMP,
 		Version:            version,
 		FleetLabel:         *fleetLabel,
 		Settings:           settingsStore,
@@ -1850,6 +1895,9 @@ func pollDeliveryAdmission(stop <-chan struct{}, collector *metrics.Collector) {
 // backlog that never cleared. A gauge that stops being written is not the same as
 // a gauge that reads zero, and on a chart it is the more alarming of the two.
 func pollQueueDepth(stop <-chan struct{}, q *queue.Store, collector *metrics.Collector, log *slog.Logger) {
+	// The queue gauges carry tenant, channel and destination like every channel-scoped metric. This store is the main
+	// tenant's; the gauges were once set with channel and destination only, which shifted every label by one (the channel
+	// read as the tenant) and so put them under the wrong channel on the dashboard and in a tenant's /metrics.
 	// Remembered so a destination that empties is explicitly zeroed.
 	type dest struct{ channel, destination string }
 	seen := map[dest]bool{}
@@ -1876,18 +1924,18 @@ func pollQueueDepth(stop <-chan struct{}, q *queue.Store, collector *metrics.Col
 			current[key] = true
 			seen[key] = true
 
-			collector.Set(metrics.QueueDepth, float64(r.Pending), r.Channel, r.Destination)
-			collector.Set(metrics.QueueFailedDepth, float64(r.Failed), r.Channel, r.Destination)
-			collector.Set(metrics.QueueOldestSeconds, r.OldestSeconds, r.Channel, r.Destination)
+			collector.Set(metrics.QueueDepth, float64(r.Pending), "main", r.Channel, r.Destination)
+			collector.Set(metrics.QueueFailedDepth, float64(r.Failed), "main", r.Channel, r.Destination)
+			collector.Set(metrics.QueueOldestSeconds, r.OldestSeconds, "main", r.Channel, r.Destination)
 		}
 
 		for key := range seen {
 			if current[key] {
 				continue
 			}
-			collector.Set(metrics.QueueDepth, 0, key.channel, key.destination)
-			collector.Set(metrics.QueueFailedDepth, 0, key.channel, key.destination)
-			collector.Set(metrics.QueueOldestSeconds, 0, key.channel, key.destination)
+			collector.Set(metrics.QueueDepth, 0, "main", key.channel, key.destination)
+			collector.Set(metrics.QueueFailedDepth, 0, "main", key.channel, key.destination)
+			collector.Set(metrics.QueueOldestSeconds, 0, "main", key.channel, key.destination)
 		}
 	}
 }

@@ -67,6 +67,8 @@ The first is the one that catches the failure nobody else will report.
 
 ## Where alerts go
 
-Alerts can be delivered by email, by HTTP to whatever you already use for on-call, or written to the log for a collector to pick up.
+Alerts can be sent as JSON to a webhook (`-alert-webhook`: Slack, Teams, Mattermost, PagerDuty, Alertmanager or anything that
+accepts a POST), sent as SNMPv2 traps to SNMP managers (`-snmp-traps`, see [SNMP](#snmp)), or written to the log for a
+collector to pick up. There is no email delivery of its own: point the webhook at a relay if alerts must arrive as email.
 
 An alert that is only written to a log nobody reads is not alerting. If Perfuse is the only thing that will notice a stopped feed, the alert has to reach a person.

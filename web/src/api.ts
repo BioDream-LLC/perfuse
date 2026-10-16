@@ -1305,6 +1305,7 @@ export const api = {
     request<{ status: string }>('DELETE', `/api/tokens/${encodeURIComponent(label)}`),
 
   settings: () => request<SettingsResponse>('GET', '/api/settings'),
+  snmp: () => request<SnmpStatus>('GET', '/api/snmp'),
   saveSettings: (kind: string, content: string) =>
     request<SettingsFile>('PUT', `/api/settings/${encodeURIComponent(kind)}`, { content }),
 
@@ -3437,4 +3438,17 @@ export interface DashboardsResponse {
 export interface CRDResponse {
   cards: CRDCard[]
   systemActions?: { type: string; resource: Record<string, unknown> }[]
+}
+
+/** SnmpStatus is the SNMP agent's state: GET /api/snmp. */
+export interface SnmpStatus {
+  running: boolean
+  listen: string
+  address?: string
+  error?: string
+  allow: string[]
+  traps: string[]
+  base: string
+  trapsSent: number
+  trapFailures: number
 }

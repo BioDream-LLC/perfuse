@@ -94,6 +94,13 @@ var settingFlags = map[string]string{
 	"inventory":                         "monitoring.inventory",
 	"inventory-every":                   "monitoring.inventoryEvery",
 	"trace-instance":                    "monitoring.traceInstance",
+	"snmp-listen":                       "monitoring.snmpListen",
+	"snmp-community":                    "monitoring.snmpCommunity",
+	"snmp-allow":                        "monitoring.snmpAllow",
+	"snmp-traps":                        "monitoring.snmpTraps",
+	"snmp-base-oid":                     "monitoring.snmpBaseOID",
+	"snmp-contact":                      "monitoring.snmpContact",
+	"snmp-location":                     "monitoring.snmpLocation",
 }
 
 // flagSettings collects the settings implied by flags the operator actually passed.

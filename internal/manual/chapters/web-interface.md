@@ -324,6 +324,9 @@ From then on the file wins over the flags, so changing a setting is done in the 
 service's command line. A flag the file does not yet mention is recorded when the server starts with it. Removing a flag from
 the command line later does not turn its feature off: turn it off in Settings.
 
+**SNMP** has a panel below the settings: whether the agent is answering and on which address, the networks it answers, how many
+alert traps were sent or failed, and **Download the MIB** for the base OID in use. The values are set under Monitoring, SNMP.
+
 **Branding** is here too: a site can set the product name, a tagline, an accent colour, and upload a logo. The logo then appears in the header, on the sign-in page, on the dashboard and on the reporting screens. If none is uploaded, nothing is substituted — an unbranded installation stays unbranded rather than acquiring decoration.
 
 ## What the colours mean

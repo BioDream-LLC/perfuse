@@ -94,6 +94,13 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-smart-oidc` | string | — | with -smart-users, let people sign in at this OpenID Connect provider (YAML: issuer, client_id, client_secret_file or client_secret_env, label); each is linked by oidc_subject | **Settings › SMART › Built-in server**: Sign people in through the OpenID Connect provider |
 | `-smart-token` | string | — | the token endpoint to advertise to SMART apps | **Settings › SMART › Authorization**: Token endpoint |
 | `-smart-users` | string | — | with -smart-clients, the people who may sign in to authorize apps (YAML: username, password_hash, fhir_user) | **Settings › SMART › Built-in server**: People who sign in to authorize apps (file) |
+| `-snmp-allow` | string | — | comma-separated networks or addresses the SNMP agent answers, such as 10.0.5.0/24; required with -snmp-listen | **Settings › Monitoring › SNMP**: Networks that may ask |
+| `-snmp-base-oid` | string | `1.3.6.1.4.1.8072.9999.9999.16, Net-SNMP's experimental space` | where Perfuse's values sit, under your enterprise number | **Settings › Monitoring › SNMP**: Base OID |
+| `-snmp-community` | string | — | the SNMPv2c community (a password sent in clear: at least 6 characters, not public or private) | **Settings › Monitoring › SNMP**: SNMP community |
+| `-snmp-contact` | string | — | sysContact the SNMP agent reports | **Settings › Monitoring › SNMP**: Contact (sysContact) |
+| `-snmp-listen` | string | — | answer SNMPv2c GET/GETNEXT/GETBULK on this UDP address, such as :161 (off when empty). Read-only: channel states, counts and queue depths | **Settings › Monitoring › SNMP**: Answer SNMP on this address |
+| `-snmp-location` | string | — | sysLocation the SNMP agent reports | **Settings › Monitoring › SNMP**: Location (sysLocation) |
+| `-snmp-traps` | string | — | comma-separated managers (host or host:port, default port 162) that receive an SNMPv2 trap when an alert fires or resolves | **Settings › Monitoring › SNMP**: Send traps to |
 | `-store-messages` | on/off | `true` | record every message handled, which is what makes the message browser work | **Settings › Data › What is kept**: Keep a record of each message |
 | `-store-payloads` | on/off | `true` | store message contents as well as their outcomes; turn this off where PHI must not be held at rest | **Settings › Data › What is kept**: Keep message contents |
 | `-tls-cert` | string | — | TLS certificate file | **Settings › Security › Encryption**: TLS certificate file |

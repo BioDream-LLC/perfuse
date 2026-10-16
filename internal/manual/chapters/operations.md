@@ -45,6 +45,28 @@ Alerting from within Perfuse is covered in [alerting](#alerting) and is what wil
 
 From outside, monitor the process, the disk the database is on, and whether the web interface responds. The database grows and a full disk stops message recording, which is a failure mode with no other warning.
 
+### SNMP
+
+For monitoring tools that speak SNMP (Nagios, Zabbix, PRTG, SolarWinds, LibreNMS), Perfuse runs a read-only SNMPv2c agent and
+sends a trap when an alert fires or resolves. Set it under **Settings → Monitoring → SNMP**, or with flags:
+
+```
+perfuse serve -snmp-listen :161 -snmp-community 'long-random-community' -snmp-allow 10.0.5.0/24 \
+  -snmp-traps nms.example.org,10.0.5.9:1162
+```
+
+- The agent answers GET, GETNEXT and GETBULK, and only from the networks in `-snmp-allow`: v2c's community is a password sent in
+  clear, so it is never open to everyone. A community under 6 characters, or `public`/`private`, stops the server at startup.
+- It serves the system group (sysDescr, sysUpTime, sysName from the fleet label, sysContact, sysLocation), totals under
+  `BASE.1` (channels, running, broken, received, delivered, failed, queued) and a channel table under `BASE.2.1` (name, running
+  or stopped, received, delivered, failed, queued, age of the oldest queued message). The numbers are the ones the dashboard and
+  `/metrics` show.
+- Traps go to every manager in `-snmp-traps`: `BASE.0.1` an alert fired, `BASE.0.2` it resolved, carrying the alert's kind,
+  severity, channel, destination and summary. Never message content. An acknowledged alert sends no trap.
+- `BASE` is `1.3.6.1.4.1.8072.9999.9999.16` (Net-SNMP's experimental space) unless `-snmp-base-oid` puts it under your own
+  enterprise number. **Download the MIB** on the Settings page (or `GET /api/snmp/mib`) gives a MIB for the base in use; the
+  same panel says whether the agent is answering and how many traps went.
+
 ### An inventory of every interface
 
 `-inventory interfaces.md` (**Settings → Monitoring → Inventory**) writes a Markdown document listing every channel - its format,

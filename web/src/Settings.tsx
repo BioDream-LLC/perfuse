@@ -8,6 +8,7 @@ import type { UiError } from './store'
 import { toUiError } from './store'
 import { AllSettings } from './AllSettings'
 import { BrandingPanel } from './BrandingPanel'
+import { SnmpPanel } from './SnmpPanel'
 import { ErrorBox, Field, Section, Toggle } from './ui'
 
 /** Settings edits the configuration files the server was started with.
@@ -59,6 +60,8 @@ export function Settings() {
           always looking for. The file editors below are for the three things that are genuinely
           documents rather than values - alert rules, single sign-on, the peer list. */}
       <AllSettings />
+
+      <SnmpPanel />
 
       {/* Sign-on above the file editors, and deliberately not among them.
           

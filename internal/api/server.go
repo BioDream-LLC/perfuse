@@ -31,6 +31,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/peers"
 	"github.com/biodream-llc/perfuse/internal/settings"
 	"github.com/biodream-llc/perfuse/internal/smartauth"
+	"github.com/biodream-llc/perfuse/internal/snmp"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/tefca"
 	"github.com/biodream-llc/perfuse/internal/vpn"
@@ -44,6 +45,8 @@ type Server struct {
 	Channels *ChannelRepo
 	// Alerts is the alert evaluator, nil when alerting is off.
 	Alerts *alerts.Evaluator
+	// SNMP is the SNMP agent and trap sender, nil when SNMP is off.
+	SNMP *snmp.Service
 
 	// Store holds users, sessions and the audit log.
 	Store *store.Store
@@ -560,6 +563,8 @@ func (s *Server) Handler() http.Handler {
 	// what it exposes is counts and timings labelled from configuration, with no
 	// message content.
 	mux.Handle("GET /api/metrics", s.require(store.RoleMonitor, s.handleMetrics))
+	mux.Handle("GET /api/snmp", s.require(store.RoleMonitor, s.handleSNMPStatus))
+	mux.Handle("GET /api/snmp/mib", s.require(store.RoleMonitor, s.handleSNMPMIB))
 	mux.Handle("GET /api/metrics/names", s.require(store.RoleMonitor, s.handleMetricNames))
 	mux.HandleFunc("GET /metrics", s.handlePrometheus)
 
