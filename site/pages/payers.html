@@ -55,6 +55,9 @@
           <li>Pended decisions sent back by subscription the moment they are made</li>
           <li>The X12 278 converted to and from PAS, so payers on either side are reachable</li>
           <li>Inferno: CRD 92 pass and none failed, PAS 82 of 84, DTR 43 pass and 2 fail</li>
+          <li>A decision service hook: send each request to your own engine, or to
+            <a href="https://github.com/BioDream-LLC/vaglio">Vaglio</a> (source-available), which explains every decision; Perfuse
+            never requires one</li>
         </ul>
         <a href="/da-vinci-prior-authorization/">Guide: CRD, DTR and PAS explained</a>
       </div>
@@ -85,6 +88,27 @@
       </div>
       <div class="frame"><img src="/assets/screens/web/fhirlab.webp" loading="lazy" width="1600" height="1002"
         alt="The FHIR lab in the console."></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="drug-pa">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Drug prior authorization (CMS-0062-P)</p>
+      <h2>Prescriptions approved while the prescriber is still in the chart</h2>
+      <p>The proposed CMS-0062-P rule brings drug prior authorization under the same deadlines as medical services, on the NCPDP
+        standards pharmacies already use.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:payer</div><h3>A formulary</h3><p>Drugs by RxNorm and NDC with tier, prior
+        authorization, step therapy and limits, imported from NCPDP Formulary &amp; Benefit files.</p></div>
+      <div class="card"><div class="icon">ICON:globe</div><h3>Drug Formulary API</h3><p>Published as the Da Vinci US Drug
+        Formulary FHIR API, public like the provider directory.</p></div>
+      <div class="card"><div class="icon">ICON:check</div><h3>Real-time benefit checks</h3><p>NCPDP RTPB answers what a drug
+        costs the patient and whether it needs approval, before it is prescribed.</p></div>
+      <div class="card"><div class="icon">ICON:doc</div><h3>SCRIPT ePA</h3><p>NCPDP SCRIPT electronic prior authorization requests,
+        appeals and cancellations, decided by the same rules, reviewer queue and decision hook as medical requests.</p></div>
     </div>
   </div>
 </section>

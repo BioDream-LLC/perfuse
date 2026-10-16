@@ -41,19 +41,22 @@ between systems that were never designed to talk to each other. A lab sends resu
 department speaks DICOM, a payer sends X12, and the receiving system wants FHIR. Perfuse sits in the middle,
 parses each of them properly, transforms what needs transforming, and delivers without losing anything.
 
-**What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM · X12 837, 835, 270/271, 276/277, 834 and 278 ·
-SMART Health Links and Cards ·
+**What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM and DICOMweb · X12 837, 835, 270/271, 276/277, 834 and 278 ·
+SMART Health Links and Cards · International Patient Summary · IHE XDS/XDM documents · S/MIME Direct messages ·
 C-CDA and CDA · HL7 v3 · NCPDP Telecommunication, SCRIPT (with ePA) and RTPB · delimited and raw formats.
 
 **How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, DICOMweb, Kafka, message
 brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ 4), MQTT, IBM MQ, Azure Blob Storage, Google Cloud (Pub/Sub and Cloud
-Storage), and AWS — S3, SQS and SNS — twenty-four source types and twenty-six destination types, in both directions.
+Storage), AWS — S3, SQS and SNS — IHE XDS.b and XCA, Direct secure messaging, immunization registries (CDC IIS) and
+DICOMweb: twenty-six source types and twenty-nine destination types, in both directions.
 
 **What it does beyond moving messages.** A **durable on-disk queue** that keeps ordering and survives a
 restart. **Shadow mode**, so a channel can be changed against real traffic while delivering nothing.
 **Feed contracts** that tell you when a sender quietly changes something. **TEFCA and UDAP** for exchanging
 records with organisations you have no direct connection to. **The four CMS-0057 payer APIs** and a **Plan-Net provider directory**, with claims
-as CARIN Blue Button, prior authorisations as Da Vinci PDex and the yearly metrics page. **eCR** public health case reporting. **SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual
+as CARIN Blue Button, prior authorisations as Da Vinci PDex and the yearly metrics page. **eCR** public health case reporting.
+**SQL on FHIR v2** (FHIR as tables, to Parquet), **digital quality measures** to DEQM MeasureReports, and an **MCP server**
+so AI agents can query it under the caller's own role. **SAML, OpenID Connect, LDAP, passkeys, SCIM and mutual
 TLS** for sign-on. Metrics, alerting, tracing, an audit log, and a searchable message store.
 
 **And it is one file.** Written in Go, licensed under **Apache 2.0**, running on **Linux, macOS and Windows**
@@ -64,6 +67,29 @@ console, applied at the next restart. That is a rule this project holds itself t
 only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
+
+## New in v0.1.16
+
+- **Drug prior authorization (CMS-0062-P):** a formulary, the Da Vinci US Drug Formulary API, NCPDP RTPB real-time benefit
+  checks and NCPDP SCRIPT ePA, all through the same decision hook as medical prior authorization.
+- **AI agents over MCP:** a built-in Model Context Protocol server at `/mcp`. Agents search messages, the FHIR store, queues and
+  channels under the token's own role, channel groups and tenant; read-only by default, every call audited.
+- **IHE document sharing:** an XDS.b registry and repository, an XCA gateway, MHD, PIXm and PDQm, and an XDS destination
+  (Carequality and eHealth Exchange style), tested against the NIST XDS Toolkit.
+- **Direct secure messaging:** S/MIME signed and encrypted mail with XDM packages and MDN receipts, certificates from an address
+  book or DNS, an SMTP source; checked against OpenSSL in both directions.
+- **DICOMweb:** an imaging archive over QIDO-RS, WADO-RS and STOW-RS, browsed by OHIF; tested against Orthanc both ways.
+- **Immunization registries:** the CDC IIS web service as source and destination, VXU with ACK handling, QBP/RSP queries.
+- **International Patient Summary:** `Patient/$summary`, also used by Health links to share a visit.
+- **SQL on FHIR v2:** its own FHIRPath engine, ViewDefinitions run from the console, `$sql-run` and `perfuse sof`, to CSV,
+  NDJSON or Parquet for DuckDB, Athena or Spark. Passes all 144 official tests.
+- **Digital quality measures:** FHIRPath Measures, `Measure/$evaluate-measure` and `perfuse measure`, giving MeasureReports that
+  pass the Da Vinci DEQM 5.0.0 profiles. (Published CQL eCQMs need a CQL engine, which is not built yet.)
+- **CMS Aligned Network readiness:** each of the 26 CMS Interoperability Framework criteria and where this server stands.
+- **Prior authorization decision services:** `-pas-decider-url` (questionnaires and CDex attachment requests on a pend,
+  a private CA with `-pas-decider-ca`) and `-crd-advisor-url`, which adds a decision service's advice as one more CRD card.
+  [Vaglio](https://github.com/BioDream-LLC/vaglio) (source-available, PolyForm Shield) is the recommended engine; any service
+  speaking the hook plugs in, and Perfuse never requires one.
 
 ## Everything it does
 
@@ -597,7 +623,10 @@ Full detail: [Migrating from Mirth](docs/reference.md#migrating-from-mirth) ·
 | **Feed contracts / drift detection** | Yes | No |
 | **Export back to the other engine** | Yes — writes Mirth channel files a real Mirth accepts | N/A |
 | **Kafka** | Source and destination, keyed for per-patient ordering | No connector |
-| **CMS-0057 payer APIs** | Patient Access, Provider Access, Payer-to-Payer, Prior Authorization; CARIN BB and PDex output validated by the HL7 validator | Not provided |
+| **IHE XDS.b / XCA, Direct, DICOMweb** | Built in | Not provided |
+| **SQL on FHIR, quality measures** | ViewDefinitions to Parquet; FHIRPath Measures to DEQM MeasureReports | Not provided |
+| **AI agents (MCP)** | Built-in MCP server under the caller's role | Not provided |
+| **CMS-0057 and CMS-0062 payer APIs** | Patient Access, Provider Access, Payer-to-Payer, Prior Authorization, drug prior authorization (RTPB, SCRIPT ePA, Drug Formulary); CARIN BB and PDex output validated by the HL7 validator | Not provided |
 | **Configuration from the web UI** | Everything | Most things |
 | **Multi-server view** | Fleet view, included | A paid feature |
 | **Published crash-consistency results** | Killed mid-batch and counted: 255 acknowledged, 255 delivered | None published |

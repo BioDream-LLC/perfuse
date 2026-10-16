@@ -1,7 +1,7 @@
 <section class="hero small">
   <div class="wrap">
     <p class="eyebrow">Exchange</p>
-    <h1>Reporting, national exchange, apps and images</h1>
+    <h1>Reporting, national exchange, documents, apps and images</h1>
     <p class="lede">Beyond the hospital's own interfaces, data has to reach public health agencies, other organisations across the
       country, patients' apps and imaging archives. Each has its own rules. Perfuse follows them.</p>
   </div>
@@ -97,12 +97,59 @@
         </div>
         <ul class="ticks">
           <li>C-STORE, C-FIND, C-ECHO, C-MOVE and C-GET, in both directions</li>
-          <li>Tested against the Orthanc archive, checked in Orthanc's own catalogue</li>
+          <li>DICOMweb: an archive served over QIDO-RS, WADO-RS and STOW-RS, browsable in the OHIF viewer</li>
+          <li>Tested against the Orthanc archive, checked in Orthanc's own catalogue, DICOMweb both ways</li>
         </ul>
         <a href="/dicom-routing/">Guide: DICOM routing and de-identification</a>
       </div>
       <div class="frame"><img src="/assets/articles/dicom-flow.svg" loading="lazy"
         alt="A scanner sends a study to Perfuse, which de-identifies it and routes it to an archive and a research store."></div>
     </div>
+  </div>
+</section>
+
+<section class="band" id="documents">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Document sharing and Direct</p>
+      <h2>Clinical documents to the organisations that need them</h2>
+    </div>
+    <div class="wwh">
+      <div><h4>What it is</h4><p>IHE XDS.b and XCA are how hospitals and health information exchanges register, find and fetch
+        clinical documents, as Carequality and eHealth Exchange do. Direct is secure, signed and encrypted email between
+        providers.</p></div>
+      <div><h4>Why it exists</h4><p>Referrals, discharge summaries and records requests still move as documents, and most of
+        them still go by fax.</p></div>
+      <div><h4>How you use it</h4><p>Turn on the registry and repository, or point an XDS destination at your exchange. For
+        Direct, give Perfuse its address and certificate, then send and receive like any channel.</p></div>
+    </div>
+    <ul class="ticks">
+      <li>XDS.b registry and repository (ITI-41, ITI-18, ITI-43), an XCA gateway (ITI-38, ITI-39), MHD, PIXm and PDQm on FHIR</li>
+      <li>Tested against the NIST XDS Toolkit</li>
+      <li>Direct: S/MIME signed and encrypted messages, XDM packages, MDN receipts, certificates from DNS; checked against
+        OpenSSL in both directions</li>
+      <li>A CMS Aligned Network screen: each of the 26 framework criteria and where this server stands</li>
+    </ul>
+  </div>
+</section>
+
+<section class="band soft" id="registries">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Immunization registries and patient summaries</p>
+      <h2>Vaccines reported, histories fetched, summaries on demand</h2>
+    </div>
+    <div class="wwh">
+      <div><h4>What it is</h4><p>State immunization registries take vaccine reports over the CDC's IIS web service. The
+        International Patient Summary is a short, standard record of a patient's problems, medicines, allergies and vaccines.</p></div>
+      <div><h4>Why it exists</h4><p>Every vaccine given must reach the state registry, and a patient seen somewhere new should
+        arrive with a summary, not a stack of paper.</p></div>
+      <div><h4>How you use it</h4><p>Add an immunization registry destination with your state's preset. Ask the FHIR server for
+        <code>Patient/$summary</code>, or share one with the patient through a Health link.</p></div>
+    </div>
+    <ul class="ticks">
+      <li>CDC IIS SOAP web service as source and destination; VXU submissions with ACK handling; QBP/RSP history queries</li>
+      <li>IPS Bundles from the FHIR store, shared as SMART Health Links</li>
+    </ul>
   </div>
 </section>

@@ -144,7 +144,53 @@
   </div>
 </section>
 
-<section class="band soft" id="operations">
+<section class="band" id="analytics">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Analytics and quality</p>
+      <h2>FHIR as tables, and measures scored where the data lives</h2>
+    </div>
+    <div class="wwh">
+      <div><h4>What it is</h4><p>SQL on FHIR turns FHIR resources into rows and columns any SQL tool can read. A digital quality
+        measure counts which patients meet a standard of care, as CMS and NCQA are moving to.</p></div>
+      <div><h4>Why it exists</h4><p>Analysts know SQL, not FHIR. And quality numbers are usually computed weeks later, somewhere
+        else, from a copy of the data.</p></div>
+      <div><h4>How you use it</h4><p>Open SQL on FHIR in the console, pick or write a view, and download CSV or Parquet. Open
+        Quality measures, pick a measure and a period, and read the populations, the score and the patients.</p></div>
+    </div>
+    <ul class="ticks">
+      <li>SQL on FHIR v2 ViewDefinitions on Perfuse's own FHIRPath engine: all 144 official tests pass</li>
+      <li>CSV, NDJSON and Parquet (read back by DuckDB); <code>$sql-run</code> on the FHIR endpoint and <code>perfuse sof</code></li>
+      <li>Measures with FHIRPath criteria; <code>Measure/$evaluate-measure</code> and <code>perfuse measure</code>; MeasureReports
+        that pass the Da Vinci DEQM 5.0.0 profiles</li>
+      <li>Not yet: published CMS eCQMs, which are written in CQL and need a CQL engine</li>
+    </ul>
+  </div>
+</section>
+
+<section class="band soft" id="agents">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">AI agents</p>
+      <h2>Let an assistant look, without giving it the keys</h2>
+    </div>
+    <div class="wwh">
+      <div><h4>What it is</h4><p>A built-in Model Context Protocol (MCP) server, so AI assistants and agents can search messages,
+        the FHIR store, queues and channel status.</p></div>
+      <div><h4>Why it exists</h4><p>"Why did last night's lab feed stop?" is a question an assistant can answer in seconds, if it
+        can see the engine, and only what it should.</p></div>
+      <div><h4>How you use it</h4><p>Switch MCP on in Settings, create a machine credential under Users, and point the agent at
+        <code>/mcp</code>.</p></div>
+    </div>
+    <ul class="ticks">
+      <li>Every call runs under the token's own role, channel groups and tenant</li>
+      <li>Read-only by default; writes need both a scope and the role; message bodies hidden from monitor accounts</li>
+      <li>Every tool call written to the audit log, with rate limits</li>
+    </ul>
+  </div>
+</section>
+
+<section class="band" id="operations">
   <div class="wrap">
     <div class="split">
       <div>
