@@ -238,6 +238,12 @@ func describeSource(c *config.Channel) string {
 		}
 		return "amqp " + src.AMQP.Address + " at " + src.AMQP.Addr
 
+	case config.SourceEmail:
+		if src.Email == nil {
+			return "a mailbox"
+		}
+		return src.Email.Protocol + " " + src.Email.Username + " at " + src.Email.Host + " (" + src.Email.Mailbox + ")"
+
 	case config.SourceAzureBlob:
 		if src.AzureBlob == nil {
 			return "an Azure blob container"

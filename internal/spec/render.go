@@ -568,6 +568,17 @@ func describeArrival(c *config.Channel) string {
 			config.S3AfterReadMove: "moved to " + src.GCS.MoveTo, config.S3AfterReadDelete: "deleted"}[src.GCS.AfterRead] +
 			" once handled"
 
+	case config.SourceEmail:
+		if src.Email == nil {
+			return "email is read from a mailbox"
+		}
+		what := map[string]string{config.EmailTakeAttachments: "each attachment", config.EmailTakeBody: "the text of each email",
+			config.EmailTakeRaw: "each whole email"}[src.Email.Take]
+		after := map[string]string{config.EmailAfterMove: "moved to " + src.Email.MoveTo, config.EmailAfterFlag: "marked read",
+			config.EmailAfterDelete: "deleted"}[src.Email.AfterRead]
+		return what + " in " + src.Email.Username + "'s " + src.Email.Mailbox + " at " + src.Email.Host + " (" +
+			strings.ToUpper(src.Email.Protocol) + ") becomes a message, and the email is " + after + " once handled"
+
 	case config.SourceAzureBlob:
 		if src.AzureBlob == nil {
 			return "blobs are read from Azure Blob Storage"

@@ -1731,6 +1731,7 @@ export const sourceIcons: Record<string, React.ComponentType<IconProps>> = {
   'dicom_worklist': IconDicom,
   'dicomweb': IconDicom,
   'direct': IconDirect,
+  'email': IconEmail,
   'javascript': IconJavaScript,
 }
 

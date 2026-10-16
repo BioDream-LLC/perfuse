@@ -23,6 +23,7 @@ var secretFields = map[string]bool{
 	"token":          true,
 	"bearer_token":   true,
 	"client_secret":  true,
+	"refresh_token":  true,
 	"secret":         true,
 	"api_key":        true,
 	"private_key":    true,

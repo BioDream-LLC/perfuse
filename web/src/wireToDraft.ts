@@ -265,6 +265,31 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.gcsSrcFramed = g?.framed ?? false
       break
     }
+    case 'email': {
+      const m = source.email
+      draft.mailProtocol = m?.protocol === 'pop3' ? 'pop3' : 'imap'
+      draft.mailHost = m?.host ?? ''
+      draft.mailPort = m?.port ? String(m.port) : ''
+      draft.mailSecurity = m?.security === 'starttls' || m?.security === 'none' ? m.security : 'tls'
+      draft.mailUsername = m?.username ?? ''
+      draft.mailPassword = m?.password ?? ''
+      draft.mailAuth = m?.oauth ? 'oauth' : 'password'
+      draft.mailOAuthProvider = m?.oauth?.provider === 'google' || m?.oauth?.provider === 'custom' ? m.oauth.provider : 'microsoft'
+      draft.mailOAuthTenant = m?.oauth?.tenant ?? ''
+      draft.mailOAuthTokenUrl = m?.oauth?.tokenUrl ?? ''
+      draft.mailOAuthClientId = m?.oauth?.clientId ?? ''
+      draft.mailOAuthClientSecret = m?.oauth?.clientSecret ?? ''
+      draft.mailOAuthRefreshToken = m?.oauth?.refreshToken ?? ''
+      draft.mailMailbox = m?.mailbox ?? 'INBOX'
+      draft.mailTake = m?.take === 'body' || m?.take === 'raw' ? m.take : 'attachments'
+      draft.mailAttachmentNames = (m?.attachmentNames ?? []).join(', ')
+      draft.mailAllowedSenders = (m?.allowedSenders ?? []).join(', ')
+      draft.mailAfterRead = m?.afterRead === 'flag' || m?.afterRead === 'delete' ? m.afterRead : 'move'
+      draft.mailMoveTo = m?.moveTo ?? ''
+      draft.mailErrorFolder = m?.errorFolder ?? ''
+      draft.mailPollSeconds = readSeconds(m?.pollInterval) || 60
+      break
+    }
     case 'azure_blob': {
       const a = source.azureBlob
       draft.azSrcAccount = a?.account ?? ''
@@ -1222,6 +1247,23 @@ interface WireSource {
     errorPrefix?: string
     pollInterval?: string
     framed?: boolean
+  }
+  email?: {
+    protocol?: string
+    host?: string
+    port?: number
+    security?: string
+    username?: string
+    password?: string
+    oauth?: { provider?: string; tenant?: string; tokenUrl?: string; clientId?: string; clientSecret?: string; refreshToken?: string }
+    mailbox?: string
+    take?: string
+    attachmentNames?: string[]
+    allowedSenders?: string[]
+    afterRead?: string
+    moveTo?: string
+    errorFolder?: string
+    pollInterval?: string
   }
   azureBlob?: WireAzureBlob & {
     prefix?: string

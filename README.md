@@ -47,8 +47,8 @@ C-CDA and CDA · HL7 v3 · NCPDP Telecommunication, SCRIPT (with ePA) and RTPB �
 
 **How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, DICOMweb, Kafka, message
 brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ 4), MQTT, IBM MQ, Azure Blob Storage, Google Cloud (Pub/Sub and Cloud
-Storage), AWS — S3, SQS and SNS — IHE XDS.b and XCA, Direct secure messaging, immunization registries (CDC IIS) and
-DICOMweb: twenty-six source types and twenty-nine destination types, in both directions.
+Storage), AWS — S3, SQS and SNS — IHE XDS.b and XCA, Direct secure messaging, email mailboxes (IMAP and POP3, with
+Microsoft 365 and Gmail OAuth), immunization registries (CDC IIS) and DICOMweb: twenty-seven source types and twenty-nine destination types, in both directions.
 
 **What it does beyond moving messages.** A **durable on-disk queue** that keeps ordering and survives a
 restart. **Shadow mode**, so a channel can be changed against real traffic while delivering nothing.
@@ -170,9 +170,9 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 </td>
 <td width="50%" valign="top">
 <img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"><br>
-<b>26 source types, 29 destination types</b>
+<b>27 source types, 29 destination types</b>
 <ul>
-<li><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · DICOMweb (STOW-RS) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · <b>Direct</b> (from a HISP) · JavaScript Reader · serial</li>
+<li><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · DICOMweb (STOW-RS) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · <b>Direct</b> (from a HISP) · <b>email</b> (IMAP, POP3; Microsoft 365 and Gmail OAuth) · JavaScript Reader · serial</li>
 <li><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · database · DICOM · DICOMweb · FHIR · CDA · <b>IHE XDS.b</b> · <b>Direct</b> secure messaging · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</li>
 <li>Databases: <b>PostgreSQL, MySQL, SQL Server, Oracle, SQLite</b>, the dialect checked when the channel is saved</li>
 <li><b>Kafka keyed per patient</b>, offsets committed after the batch; an SQS message deleted only once handled</li>

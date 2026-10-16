@@ -323,6 +323,9 @@ type buildSource struct {
 	// AzureBlob picks blobs up from a container prefix.
 	AzureBlob *buildAzureBlobSource `json:"azureBlob,omitempty" yaml:"azure_blob,omitempty"`
 
+	// Email reads a mailbox over IMAP or POP3.
+	Email *buildEmailSource `json:"email,omitempty" yaml:"email,omitempty"`
+
 	// MQTT, IBMMQ, PubSub and GCS are the MQTT, IBM MQ, Google Cloud Pub/Sub and Cloud Storage sources.
 	MQTT   *buildMQTTSource   `json:"mqtt,omitempty" yaml:"mqtt,omitempty"`
 	IBMMQ  *buildIBMMQSource  `json:"ibmMq,omitempty" yaml:"ibm_mq,omitempty"`
@@ -1155,6 +1158,38 @@ type buildAzureBlobSource struct {
 	PollInterval         string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
 	MaxObjectSize        int64  `json:"maxObjectSize,omitempty" yaml:"max_object_size,omitempty"`
 	Framed               bool   `json:"framed,omitempty" yaml:"framed,omitempty"`
+}
+
+// buildEmailOAuth is OAuth 2.0 sign-in for a mailbox.
+type buildEmailOAuth struct {
+	Provider     string `json:"provider,omitempty" yaml:"provider,omitempty"`
+	Tenant       string `json:"tenant,omitempty" yaml:"tenant,omitempty"`
+	TokenURL     string `json:"tokenUrl,omitempty" yaml:"token_url,omitempty"`
+	ClientID     string `json:"clientId,omitempty" yaml:"client_id,omitempty"`
+	ClientSecret string `json:"clientSecret,omitempty" yaml:"client_secret,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty" yaml:"refresh_token,omitempty"`
+	Scope        string `json:"scope,omitempty" yaml:"scope,omitempty"`
+}
+
+// buildEmailSource is a mailbox read over IMAP or POP3.
+type buildEmailSource struct {
+	Protocol        string           `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Host            string           `json:"host,omitempty" yaml:"host,omitempty"`
+	Port            int              `json:"port,omitempty" yaml:"port,omitempty"`
+	Security        string           `json:"security,omitempty" yaml:"security,omitempty"`
+	TLS             *buildTLS        `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Username        string           `json:"username,omitempty" yaml:"username,omitempty"`
+	Password        string           `json:"password,omitempty" yaml:"password,omitempty"`
+	OAuth           *buildEmailOAuth `json:"oauth,omitempty" yaml:"oauth,omitempty"`
+	Mailbox         string           `json:"mailbox,omitempty" yaml:"mailbox,omitempty"`
+	Take            string           `json:"take,omitempty" yaml:"take,omitempty"`
+	AttachmentNames []string         `json:"attachmentNames,omitempty" yaml:"attachment_names,omitempty"`
+	AllowedSenders  []string         `json:"allowedSenders,omitempty" yaml:"allowed_senders,omitempty"`
+	AfterRead       string           `json:"afterRead,omitempty" yaml:"after_read,omitempty"`
+	MoveTo          string           `json:"moveTo,omitempty" yaml:"move_to,omitempty"`
+	ErrorFolder     string           `json:"errorFolder,omitempty" yaml:"error_folder,omitempty"`
+	PollInterval    string           `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
+	MaxMessageSize  int64            `json:"maxMessageSize,omitempty" yaml:"max_message_size,omitempty"`
 }
 
 // buildMQTTConnection is an MQTT broker.

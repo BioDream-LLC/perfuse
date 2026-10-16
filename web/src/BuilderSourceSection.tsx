@@ -45,6 +45,7 @@ const SOURCE_OPTIONS: { value: SourceKind; label: string }[] = [
   { value: 's3', label: 'We collect objects from an Amazon S3 bucket' },
   { value: 'amqp', label: 'We read from an AMQP 1.0 queue (Azure Service Bus, RabbitMQ 4)' },
   { value: 'azure_blob', label: 'We collect blobs from Azure Blob Storage' },
+  { value: 'email', label: 'We read a mailbox (IMAP or POP3: Microsoft 365, Gmail, Exchange)' },
   { value: 'mqtt', label: 'We subscribe to an MQTT topic (Mosquitto, AWS IoT Core, HiveMQ)' },
   { value: 'ibm_mq', label: 'We read from an IBM MQ queue' },
   { value: 'pubsub', label: 'We read from a Google Cloud Pub/Sub subscription' },
@@ -497,6 +498,203 @@ export function SourceSection({
             placeholder="Leave empty for Azure"
             mono
             hint="Only for Azurite or a private endpoint, e.g. http://127.0.0.1:10000/devstoreaccount1."
+          />
+        </>
+      )}
+
+      {draft.sourceKind === 'email' && (
+        <>
+          <Pair>
+            <Choose
+              label="Protocol"
+              value={draft.mailProtocol}
+              onChange={(v) => {
+                set('mailProtocol', v)
+                if (v === 'pop3') set('mailAfterRead', 'delete')
+                else if (draft.mailAfterRead === 'delete') set('mailAfterRead', 'move')
+              }}
+              options={[
+                { value: 'imap', label: 'IMAP (folders: move or flag after reading)' },
+                { value: 'pop3', label: 'POP3 (read and delete)' },
+              ]}
+            />
+            <Choose
+              label="Connection"
+              value={draft.mailSecurity}
+              onChange={(v) => set('mailSecurity', v)}
+              options={[
+                { value: 'tls', label: 'TLS (993 or 995)' },
+                { value: 'starttls', label: 'STARTTLS (143 or 110)' },
+                { value: 'none', label: 'None: only to this machine' },
+              ]}
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Mail server"
+              required
+              value={draft.mailHost}
+              onChange={(v) => set('mailHost', v)}
+              placeholder="outlook.office365.com"
+              mono
+              hint="Microsoft 365: outlook.office365.com. Gmail: imap.gmail.com or pop.gmail.com."
+            />
+            <Text
+              label="Port"
+              value={draft.mailPort}
+              onChange={(v) => set('mailPort', v)}
+              placeholder={draft.mailProtocol === 'pop3' ? (draft.mailSecurity === 'tls' ? '995' : '110') : draft.mailSecurity === 'tls' ? '993' : '143'}
+              mono
+            />
+          </Pair>
+          <Pair>
+            <Text
+              label="Mailbox address (user name)"
+              required
+              value={draft.mailUsername}
+              onChange={(v) => set('mailUsername', v)}
+              placeholder="results-feed@hospital.example"
+              mono
+            />
+            <Choose
+              label="Sign in with"
+              value={draft.mailAuth}
+              onChange={(v) => set('mailAuth', v)}
+              options={[
+                { value: 'password', label: 'A password (an app password for Gmail)' },
+                { value: 'oauth', label: 'OAuth 2.0 (Microsoft 365, Gmail)' },
+              ]}
+            />
+          </Pair>
+          {draft.mailAuth === 'password' ? (
+            <Secret
+              label="Password"
+              value={draft.mailPassword}
+              onChange={(v) => set('mailPassword', v)}
+              hint="Prefer ${MAIL_PASSWORD}: the channel file goes into version control. Microsoft 365 has turned password sign-in off; use OAuth."
+            />
+          ) : (
+            <>
+              <Pair>
+                <Choose
+                  label="Provider"
+                  value={draft.mailOAuthProvider}
+                  onChange={(v) => set('mailOAuthProvider', v)}
+                  options={[
+                    { value: 'microsoft', label: 'Microsoft 365 (Entra ID)' },
+                    { value: 'google', label: 'Google (Gmail)' },
+                    { value: 'custom', label: 'Another provider' },
+                  ]}
+                />
+                {draft.mailOAuthProvider === 'microsoft' ? (
+                  <Text
+                    label="Tenant"
+                    value={draft.mailOAuthTenant}
+                    onChange={(v) => set('mailOAuthTenant', v)}
+                    placeholder="contoso.onmicrosoft.com"
+                    mono
+                    hint="The directory (tenant) id or domain. Empty uses organizations."
+                  />
+                ) : draft.mailOAuthProvider === 'custom' ? (
+                  <Text
+                    label="Token URL"
+                    required
+                    value={draft.mailOAuthTokenUrl}
+                    onChange={(v) => set('mailOAuthTokenUrl', v)}
+                    placeholder="https://idp.example/oauth2/token"
+                    mono
+                  />
+                ) : (
+                  <span />
+                )}
+              </Pair>
+              <Pair>
+                <Text label="Client id" required value={draft.mailOAuthClientId} onChange={(v) => set('mailOAuthClientId', v)} mono />
+                <Secret
+                  label="Client secret"
+                  value={draft.mailOAuthClientSecret}
+                  onChange={(v) => set('mailOAuthClientSecret', v)}
+                  hint="Or ${MAIL_CLIENT_SECRET}. With no refresh token, Microsoft 365 app-only access is used (an administrator grants the app this one mailbox)."
+                />
+              </Pair>
+              <Secret
+                label="Refresh token"
+                value={draft.mailOAuthRefreshToken}
+                onChange={(v) => set('mailOAuthRefreshToken', v)}
+                hint="A person's consent to the mailbox, as ${MAIL_REFRESH_TOKEN}. Required for Gmail, which has no app-only access."
+              />
+            </>
+          )}
+          <Pair>
+            <Choose
+              label="What becomes a message"
+              value={draft.mailTake}
+              onChange={(v) => set('mailTake', v)}
+              options={[
+                { value: 'attachments', label: 'Each attachment' },
+                { value: 'body', label: 'The text of the email' },
+                { value: 'raw', label: 'The whole email, for a script to take apart' },
+              ]}
+            />
+            {draft.mailTake === 'attachments' ? (
+              <Text
+                label="Only attachments named"
+                value={draft.mailAttachmentNames}
+                onChange={(v) => set('mailAttachmentNames', v)}
+                placeholder="*.hl7, *.csv"
+                mono
+                hint="Patterns, comma-separated. Empty takes every attachment."
+              />
+            ) : (
+              <span />
+            )}
+          </Pair>
+          <Text
+            label="Only mail from"
+            value={draft.mailAllowedSenders}
+            onChange={(v) => set('mailAllowedSenders', v)}
+            placeholder="results@lab.example, partner.example"
+            mono
+            hint="Addresses and domains, comma-separated. A From line can be forged: this keeps out accidents and stray mail, not an attacker."
+          />
+          {draft.mailProtocol === 'imap' && (
+            <>
+              <Pair>
+                <Text label="Folder to read" value={draft.mailMailbox} onChange={(v) => set('mailMailbox', v)} placeholder="INBOX" mono />
+                <Choose
+                  label="After an email is handled"
+                  value={draft.mailAfterRead}
+                  onChange={(v) => set('mailAfterRead', v)}
+                  options={[
+                    { value: 'move', label: 'Move it to another folder' },
+                    { value: 'flag', label: 'Mark it read' },
+                    { value: 'delete', label: 'Delete it' },
+                  ]}
+                />
+              </Pair>
+              <Pair>
+                {draft.mailAfterRead === 'move' ? (
+                  <Text label="Move it to" value={draft.mailMoveTo} onChange={(v) => set('mailMoveTo', v)} placeholder="Processed" mono />
+                ) : (
+                  <span />
+                )}
+                <Text
+                  label="Problem mail goes to"
+                  value={draft.mailErrorFolder}
+                  onChange={(v) => set('mailErrorFolder', v)}
+                  placeholder="Error"
+                  mono
+                  hint="Mail that failed, or that was not taken (a sender not allowed, no matching attachment)."
+                />
+              </Pair>
+            </>
+          )}
+          <Num
+            label="Check every, seconds"
+            value={draft.mailPollSeconds}
+            onChange={(v) => set('mailPollSeconds', v ?? 60)}
+            placeholder="60"
+            hint="At least 10: mail services throttle accounts that check faster."
           />
         </>
       )}

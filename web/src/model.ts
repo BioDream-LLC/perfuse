@@ -649,6 +649,7 @@ export type SourceKind =
   | 's3'
   | 'amqp'
   | 'azure_blob'
+  | 'email'
   | 'mqtt'
   | 'ibm_mq'
   | 'pubsub'
@@ -1254,6 +1255,29 @@ export interface ChannelDraft {
   azSrcPollSeconds: number
   azSrcFramed: boolean
 
+  /** The email source: a mailbox read over IMAP or POP3. */
+  mailProtocol: 'imap' | 'pop3'
+  mailHost: string
+  mailPort: string
+  mailSecurity: 'tls' | 'starttls' | 'none'
+  mailUsername: string
+  mailPassword: string
+  mailAuth: 'password' | 'oauth'
+  mailOAuthProvider: 'microsoft' | 'google' | 'custom'
+  mailOAuthTenant: string
+  mailOAuthTokenUrl: string
+  mailOAuthClientId: string
+  mailOAuthClientSecret: string
+  mailOAuthRefreshToken: string
+  mailMailbox: string
+  mailTake: 'attachments' | 'body' | 'raw'
+  mailAttachmentNames: string
+  mailAllowedSenders: string
+  mailAfterRead: 'move' | 'flag' | 'delete'
+  mailMoveTo: string
+  mailErrorFolder: string
+  mailPollSeconds: number
+
   /** connTlsCaFile, connTlsCertFile and connTlsKeyFile are the TLS files of an amqp, mqtt or ibm_mq source. */
   connTlsCaFile: string
   connTlsCertFile: string
@@ -1625,6 +1649,43 @@ export function draftToWire(draft: ChannelDraft): unknown {
         framed: draft.gcsSrcFramed || undefined,
       }
       break
+    case 'email': {
+      const list = (v: string) =>
+        v
+          .split(/[,\s]+/)
+          .map((x) => x.trim())
+          .filter(Boolean)
+      const names = list(draft.mailAttachmentNames)
+      const senders = list(draft.mailAllowedSenders)
+      source.email = {
+        protocol: draft.mailProtocol === 'pop3' ? 'pop3' : undefined,
+        host: draft.mailHost || undefined,
+        port: positiveOrNone(draft.mailPort),
+        security: draft.mailSecurity === 'tls' ? undefined : draft.mailSecurity,
+        username: draft.mailUsername || undefined,
+        password: draft.mailAuth === 'password' ? draft.mailPassword || undefined : undefined,
+        oauth:
+          draft.mailAuth === 'oauth'
+            ? {
+                provider: draft.mailOAuthProvider,
+                tenant: draft.mailOAuthProvider === 'microsoft' ? draft.mailOAuthTenant || undefined : undefined,
+                tokenUrl: draft.mailOAuthProvider === 'custom' ? draft.mailOAuthTokenUrl || undefined : undefined,
+                clientId: draft.mailOAuthClientId || undefined,
+                clientSecret: draft.mailOAuthClientSecret || undefined,
+                refreshToken: draft.mailOAuthRefreshToken || undefined,
+              }
+            : undefined,
+        mailbox: draft.mailProtocol === 'imap' && draft.mailMailbox && draft.mailMailbox !== 'INBOX' ? draft.mailMailbox : undefined,
+        take: draft.mailTake === 'attachments' ? undefined : draft.mailTake,
+        attachmentNames: draft.mailTake === 'attachments' && names.length ? names : undefined,
+        allowedSenders: senders.length ? senders : undefined,
+        afterRead: draft.mailProtocol === 'pop3' ? undefined : draft.mailAfterRead === 'move' ? undefined : draft.mailAfterRead,
+        moveTo: draft.mailProtocol === 'imap' && draft.mailAfterRead === 'move' ? draft.mailMoveTo || undefined : undefined,
+        errorFolder: draft.mailProtocol === 'imap' ? draft.mailErrorFolder || undefined : undefined,
+        pollInterval: draft.mailPollSeconds === 60 ? undefined : secondsOrNone(draft.mailPollSeconds),
+      }
+      break
+    }
     case 'azure_blob':
       source.azureBlob = {
         account: draft.azSrcAccount || undefined,
@@ -3130,6 +3191,28 @@ export function emptyDraft(): ChannelDraft {
     azSrcErrorPrefix: '',
     azSrcPollSeconds: 30,
     azSrcFramed: false,
+
+    mailProtocol: 'imap',
+    mailHost: '',
+    mailPort: '',
+    mailSecurity: 'tls',
+    mailUsername: '',
+    mailPassword: '',
+    mailAuth: 'password',
+    mailOAuthProvider: 'microsoft',
+    mailOAuthTenant: '',
+    mailOAuthTokenUrl: '',
+    mailOAuthClientId: '',
+    mailOAuthClientSecret: '',
+    mailOAuthRefreshToken: '',
+    mailMailbox: 'INBOX',
+    mailTake: 'attachments',
+    mailAttachmentNames: '',
+    mailAllowedSenders: '',
+    mailAfterRead: 'move',
+    mailMoveTo: '',
+    mailErrorFolder: '',
+    mailPollSeconds: 60,
 
     connTlsCaFile: '',
     connTlsCertFile: '',

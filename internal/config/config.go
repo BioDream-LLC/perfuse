@@ -243,6 +243,9 @@ const (
 	// SourceAzureBlob picks blobs up from an Azure Blob Storage container prefix.
 	SourceAzureBlob SourceType = "azure_blob"
 
+	// SourceEmail reads a mailbox over IMAP or POP3: attachments, bodies or whole messages become messages.
+	SourceEmail SourceType = "email"
+
 	// SourceMQTT subscribes to an MQTT 3.1.1 topic filter: Mosquitto, EMQX, HiveMQ, AWS IoT Core, Azure Event Grid.
 	SourceMQTT SourceType = "mqtt"
 
@@ -333,6 +336,9 @@ type Source struct {
 
 	// AzureBlob applies to an azure_blob source.
 	AzureBlob *AzureBlobSource `yaml:"azure_blob,omitempty"`
+
+	// Email applies to an email source.
+	Email *EmailSource `yaml:"email,omitempty"`
 
 	// MQTT applies to an mqtt source.
 	MQTT *MQTTSource `yaml:"mqtt,omitempty"`

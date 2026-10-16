@@ -90,6 +90,29 @@ describe('reading a channel back into the form', () => {
     expect(blobs.source).toMatchObject({ type: 'azure_blob', azureBlob: { prefix: 'inbound/', afterRead: 'delete', framed: true } })
   })
 
+  it('keeps an email source through a round trip', () => {
+    const imap = {
+      type: 'email',
+      email: {
+        host: 'outlook.office365.com',
+        username: 'feed@hospital.example',
+        oauth: { provider: 'microsoft', tenant: 'contoso.example', clientId: 'app', clientSecret: '${S}' },
+        mailbox: 'Results',
+        attachmentNames: ['*.hl7', '*.csv'],
+        allowedSenders: ['lab.example'],
+        afterRead: 'flag',
+        errorFolder: 'Bad',
+        pollInterval: '120s',
+      },
+    }
+    expect(roundTrip({ ...minimal, source: imap } as unknown as WireModel).source).toMatchObject(imap)
+    const pop = { type: 'email', email: { protocol: 'pop3', host: 'pop.gmail.com', username: 'a@b', password: '${P}', take: 'body' } }
+    const out = roundTrip({ ...minimal, source: pop } as unknown as WireModel).source as { email: Record<string, unknown> }
+    expect(out).toMatchObject(pop)
+    expect(out.email.afterRead).toBeUndefined()
+    expect(out.email.moveTo).toBeUndefined()
+  })
+
   it('keeps a hosted FHIR service sign-in through a round trip', () => {
     for (const auth of [
       { type: 'azure', tenantId: 't1', clientId: 'app', clientSecret: '${S}' },

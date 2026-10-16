@@ -370,6 +370,16 @@ func (s *Source) validate() []error {
 			errs = append(errs, errors.New("source.listen does not apply to a gcs source; it polls the bucket"))
 		}
 
+	case SourceEmail:
+		if s.Email == nil {
+			errs = append(errs, errors.New("an email source needs an email section with host, username and a password or oauth"))
+		} else {
+			errs = append(errs, s.Email.Validate()...)
+		}
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to an email source; it polls the mailbox"))
+		}
+
 	case SourceAzureBlob:
 		if s.AzureBlob == nil {
 			errs = append(errs, errors.New("an azure_blob source needs an azure_blob section with account, container and prefix"))

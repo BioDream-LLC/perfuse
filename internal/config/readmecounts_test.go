@@ -127,7 +127,7 @@ func TestEveryConnectorIsNamedInTheREADME(t *testing.T) {
 		SourceMLLP, SourceTCP, SourceHTTP, SourceSOAP, SourceFile, SourceFTP, SourceSFTP,
 		SourceSMB, SourceWebDAV, SourceDatabase, SourceDICOM, SourceDICOMQuery, SourceDICOMweb, SourceKafka,
 		SourceBroker, SourceJavaScript, SourceSerial, SourceSQS, SourceS3, SourceAMQP, SourceAzureBlob,
-		SourceMQTT, SourceIBMMQ, SourcePubSub, SourceGCS, SourceDirect,
+		SourceMQTT, SourceIBMMQ, SourcePubSub, SourceGCS, SourceDirect, SourceEmail,
 	} {
 		check(string(s))
 	}
@@ -150,7 +150,7 @@ func TestTheConnectorGuardCoversEverySourceType(t *testing.T) {
 		SourceMLLP, SourceTCP, SourceHTTP, SourceSOAP, SourceFile, SourceFTP, SourceSFTP,
 		SourceSMB, SourceWebDAV, SourceDatabase, SourceDICOM, SourceDICOMQuery, SourceDICOMweb, SourceKafka,
 		SourceBroker, SourceJavaScript, SourceSerial, SourceSQS, SourceS3, SourceAMQP, SourceAzureBlob,
-		SourceMQTT, SourceIBMMQ, SourcePubSub, SourceGCS, SourceDirect,
+		SourceMQTT, SourceIBMMQ, SourcePubSub, SourceGCS, SourceDirect, SourceEmail,
 	}
 	if got, want := len(listed), sourceTypeCount(t); got != want {
 		t.Errorf("the guard above checks %d source types and the code has %d; a type absent "+

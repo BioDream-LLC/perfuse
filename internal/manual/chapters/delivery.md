@@ -508,6 +508,53 @@ source:
     credentials_file: /etc/perfuse/gcp-key.json
 ```
 
+## Reading a mailbox (IMAP and POP3)
+
+An `email` source reads a mailbox and turns what it finds into messages: each attachment (`take: attachments`, the default,
+narrowed by `attachment_names` patterns), the text of the email (`take: body`), or the whole email (`take: raw`) for a script
+to take apart. Laboratories, imaging centres and small practices still send results this way.
+
+Each check signs in, reads the unread mail oldest first, and signs out. Over IMAP an email is fetched without being marked read,
+handed to the channel, and only once every message from it was accepted is it moved to `move_to` (Processed), marked read
+(`after_read: flag`) or deleted. Mail that failed, or that was not taken (a sender outside `allowed_senders`, no attachment
+matching `attachment_names`, larger than `max_message_size`), moves to `error_folder` (Error) with the reason in the log. Both
+folders are created when missing. POP3 has no folders or flags, so it deletes: deletions are committed by the QUIT at the end of
+the check, so a session that breaks off deletes nothing and a handled email may be read again (never lost). POP3 mail that is
+not taken stays on the server and is reported once.
+
+Sign-in is a password (`${MAIL_PASSWORD}`; an app password for Gmail) or OAuth 2.0 over SASL XOAUTH2, which Microsoft 365
+requires (it has turned password sign-in off) and Gmail prefers:
+
+```yaml
+source:
+  type: email
+  email:
+    host: outlook.office365.com        # imap.gmail.com, pop.gmail.com, or your server
+    username: results-feed@hospital.example
+    oauth:
+      provider: microsoft              # microsoft, google or custom (with token_url)
+      tenant: hospital.onmicrosoft.com
+      client_id: 00000000-0000-0000-0000-000000000000
+      client_secret: ${MAIL_CLIENT_SECRET}
+    attachment_names: ["*.hl7"]
+    allowed_senders: [lab.example, results@partner.example]
+```
+
+With `client_secret` and no `refresh_token`, Microsoft 365 app-only access is used (the client-credentials grant, scope
+`https://outlook.office365.com/.default`): an administrator registers the app, grants it IMAP.AccessAsApp and limits it to the
+one mailbox with an Exchange service principal. With a `refresh_token` (a person's consent), the delegated scope
+IMAP.AccessAsUser.All or POP.AccessAsUser.All is used, and a rotated refresh token is kept for the life of the process. Gmail
+needs a `refresh_token`: Google offers no app-only access to a mailbox.
+
+`allowed_senders` takes addresses and domains. The From line of an email can be forged, so it keeps out accidents and stray
+mail, not an attacker; a feed that must be trusted belongs on Direct (S/MIME signed), SFTP or a VPN. `security` is `tls` (993
+or 995, the default), `starttls` (143 or 110) or `none`, which is allowed only to `localhost`. Checks are at least 10 seconds
+apart (60 by default), because mail services throttle accounts that check faster.
+
+Tested against GreenMail 2.1.3 (IMAPS, IMAP, POP3S and POP3: sign-in refused with a wrong password, fetch without marking read,
+MOVE, flag, delete, a too-large email refused before it is read) and against Gmail's IMAP with an app password (create a
+folder, append, fetch, MOVE, delete). OAuth was tested against a stand-in token endpoint only: not against Microsoft or Google.
+
 ## Delivery to another channel
 
 A channel destination hands the message to another channel by name. The receiving channel treats it like any other arrival: it records it, filters it, transforms it and fans it out.
