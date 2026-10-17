@@ -40,6 +40,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/queue"
 	"github.com/biodream-llc/perfuse/internal/settings"
 	"github.com/biodream-llc/perfuse/internal/snmp"
+	"github.com/biodream-llc/perfuse/internal/terminology"
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"github.com/biodream-llc/perfuse/internal/store"
@@ -611,10 +612,31 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		}()
 	}
 
+	// Code systems and unmapped values live in their own database beside the main one. An import of RxNorm or SNOMED CT
+	// writes hundreds of thousands of rows, and in the main database that transaction would hold the connection every
+	// arriving message needs to be recorded.
+	var termStore *terminology.Store
+	if !isMemoryPath(*dbPath) {
+		termPath := filepath.Join(filepath.Dir(*dbPath), "terminology.db")
+		termPool, err := sqlitedb.Open(termPath, sqlitedb.Options{})
+		if err != nil {
+			return fmt.Errorf("opening %s: %w", termPath, err)
+		}
+		defer termPool.Close()
+		if termStore, err = terminology.Open(context.Background(), termPool.Write); err != nil {
+			return err
+		}
+		termCtx, stopTerm := context.WithCancel(context.Background())
+		defer stopTerm()
+		go termStore.Run(termCtx, 10*time.Second)
+		go forgetOldUnmapped(termCtx, termStore, *retention)
+	}
+
 	var runtime *api.Runtime
 	if *runEngine {
 		runtime = api.NewRuntime(repo, messages, fhirStore)
 		runtime.Tracer = tracer
+		runtime.Terminology = termStore
 
 		// Say what the delivery limits are and how they were arrived at.
 		//
@@ -998,6 +1020,7 @@ oidcDone:
 		Runtime:            runtime,
 		Alerts:             srvAlerts,
 		SNMP:               srvSNMP,
+		Terminology:        termStore,
 		Version:            version,
 		FleetLabel:         *fleetLabel,
 		Settings:           settingsStore,
@@ -1297,6 +1320,9 @@ oidcDone:
 		// Wired unconditionally: with no tables configured the endpoints say so and the capability statement does not
 		// mention ConceptMap at all, which is the honest state rather than an empty list implying there could be some.
 		fhirSrv.Tables = &channelTables{repo: repo, log: log}
+		if termStore != nil {
+			fhirSrv.Codes = termStore
+		}
 
 		// Bulk export is off unless asked for.
 		//

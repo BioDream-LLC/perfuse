@@ -3,6 +3,7 @@ package codeset
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 // The point of this package is that a mapping outlives the person who worked it out, so most of these tests are
@@ -237,5 +238,52 @@ func TestANilSetLooksUpNothingRatherThanPanicking(t *testing.T) {
 	}
 	if names := set.Names(); names != nil {
 		t.Errorf("names = %v, want nil", names)
+	}
+}
+
+func TestEditionsTakeOverOnTheirDate(t *testing.T) {
+	entries := func(to string) []Entry { return []Entry{{From: "M", To: to}} }
+	s := &Set{Tables: []Table{
+		{Name: "sex", Describes: "d", Version: "1", Entries: entries("1")},
+		{Name: "sex", Describes: "d", Version: "2", EffectiveFrom: "2026-11-01", Entries: entries("male")},
+		{Name: "sex", Describes: "d", Version: "3", Status: StatusDraft, Entries: entries("draft")},
+		{Name: "sex", Describes: "d", Version: "0", Status: StatusRetired, Entries: entries("old")},
+	}}
+	if errs := s.Validate(); len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	day := func(d string) time.Time { v, _ := time.Parse("2006-01-02", d); return v.Add(12 * time.Hour) }
+	for d, want := range map[string]string{"2026-10-31": "1", "2026-11-01": "male", "2027-01-01": "male"} {
+		tb, ok := s.TableAt("sex", day(d))
+		if !ok {
+			t.Fatalf("%s: no edition in force", d)
+		}
+		if got, _, _ := tb.Lookup("M"); got != want {
+			t.Errorf("%s: M became %q, want %q", d, got, want)
+		}
+	}
+	if len(s.Editions("sex")) != 4 || !s.Has("sex") {
+		t.Error("editions")
+	}
+	ended := &Set{Tables: []Table{{Name: "x", Describes: "d", EffectiveUntil: "2020-01-01", Entries: entries("1")}}}
+	if _, ok := ended.Table("x"); ok || !ended.Has("x") {
+		t.Error("an edition past its effective_until is in force")
+	}
+	for _, bad := range []Set{
+		{Tables: []Table{{Name: "a", Describes: "d", Entries: entries("1")}, {Name: "a", Describes: "d", Entries: entries("2")}}},
+		{Tables: []Table{{Name: "a", Describes: "d", Version: "1", Entries: entries("1")}, {Name: "a", Describes: "d", Version: "2", Entries: entries("2")}}},
+		{Tables: []Table{{Name: "a", Describes: "d", EffectiveFrom: "2026-13-01", Entries: entries("1")}}},
+		{Tables: []Table{{Name: "a", Describes: "d", Status: "maybe", Entries: entries("1")}}},
+		{Tables: []Table{{Name: "a", Describes: "d", EffectiveFrom: "2026-02-01", EffectiveUntil: "2026-01-01", Entries: entries("1")}}},
+	} {
+		if len(bad.Validate()) == 0 {
+			t.Errorf("accepted %+v", bad.Tables)
+		}
+	}
+	d := Compare(&Table{Entries: []Entry{{From: "M", To: "1"}, {From: "F", To: "2"}}},
+		&Table{Entries: []Entry{{From: "M", To: "male"}, {From: "U", To: "unknown"}}})
+	if len(d.Added) != 1 || d.Added[0].From != "U" || len(d.Removed) != 1 || d.Removed[0].From != "F" ||
+		len(d.Changed) != 1 || d.Changed[0].After != "male" {
+		t.Errorf("diff %+v", d)
 	}
 }

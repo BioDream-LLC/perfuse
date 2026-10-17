@@ -154,6 +154,25 @@ func TestAnEmailChannelOverPOP3AgainstGreenMail(t *testing.T) {
 	if host == "" {
 		t.Skip("set PERFUSE_TEST_GREENMAIL (GreenMail with user pop:poppass@lab.example)")
 	}
+	pop := func() *mailbox.POP3 {
+		c, err := mailbox.DialPOP3(t.Context(), mailbox.Dial{Host: host, Port: 3110, Security: mailbox.SecurityNone})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := c.Login(t.Context(), mailbox.Auth{Username: "pop", Password: "poppass"}); err != nil {
+			t.Fatal(err)
+		}
+		return c
+	}
+	// The email the channel leaves behind stays on the server, so a run starts from an empty mailbox.
+	{
+		c := pop()
+		left, _ := c.List()
+		for _, m := range left {
+			_ = c.Dele(m.Number)
+		}
+		_ = c.Quit()
+	}
 	send := func(m []byte) {
 		if err := smtp.SendMail(host+":3025", nil, "results@lab.example", []string{"pop@lab.example"}, m); err != nil {
 			t.Fatal(err)
@@ -189,14 +208,8 @@ destinations:
 		t.Fatalf("delivered %v", files)
 	}
 	time.Sleep(time.Second)
-	c, err := mailbox.DialPOP3(t.Context(), mailbox.Dial{Host: host, Port: 3110, Security: mailbox.SecurityNone})
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := pop()
 	defer c.Quit()
-	if err := c.Login(t.Context(), mailbox.Auth{Username: "pop", Password: "poppass"}); err != nil {
-		t.Fatal(err)
-	}
 	if left, _ := c.List(); len(left) != 1 {
 		t.Errorf("%d emails left on the server; want the one not taken", len(left))
 	}

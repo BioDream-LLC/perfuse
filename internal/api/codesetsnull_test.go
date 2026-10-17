@@ -29,6 +29,7 @@ func TestNoNullArraysInTheCodesetsResponse(t *testing.T) {
 			Entries:   1,
 			UsedBy:    []tableUse{},
 			Paths:     []string{},
+			Editions:  []editionSummary{},
 		}},
 		Unreferenced: 1,
 	}

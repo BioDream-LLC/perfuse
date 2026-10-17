@@ -77,6 +77,18 @@ func baseSettings() []Setting {
 			Sensitive: true,
 		},
 		{
+			Key:      "data.tableApproval",
+			Group:    GroupData,
+			Subgroup: "Mapping tables",
+			Label:    "Changes to a mapping table need a second person's approval",
+			Help: "A table saved in the console becomes a draft, used by no channel until somebody other than its author approves " +
+				"it, and an approved edition can only be changed by saving a new version. Off: a saved table is used at once.",
+			Kind:    KindBool,
+			Widget:  WidgetToggle,
+			Effect:  EffectLive,
+			Default: false,
+		},
+		{
 			Key:      "data.indexIdentity",
 			Group:    GroupData,
 			Subgroup: "What is kept",

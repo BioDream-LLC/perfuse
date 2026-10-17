@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/biodream-llc/perfuse/internal/codeset"
 	"github.com/biodream-llc/perfuse/internal/store"
 )
 
@@ -51,6 +52,27 @@ type tableImpact struct {
 	// Paths is every distinct field this table writes to, sorted. A table used on one field is a much smaller
 	// change than the same table used on five.
 	Paths []string `json:"paths"`
+
+	// Editions are every version of the table in its file, with which one is in force today; drafts waiting for sign-off are
+	// counted in Drafts so the list can say so without opening each table.
+	Editions []editionSummary `json:"editions"`
+	InForce  string           `json:"inForce"`
+	Drafts   int              `json:"drafts"`
+}
+
+// editionSummary is one edition, without its entries.
+type editionSummary struct {
+	Version        string `json:"version"`
+	Status         string `json:"status"`
+	EffectiveFrom  string `json:"effectiveFrom,omitempty"`
+	EffectiveUntil string `json:"effectiveUntil,omitempty"`
+	Entries        int    `json:"entries"`
+	DecidedBy      string `json:"decidedBy,omitempty"`
+	DecidedOn      string `json:"decidedOn,omitempty"`
+	Author         string `json:"author,omitempty"`
+	ApprovedBy     string `json:"approvedBy,omitempty"`
+	ApprovedOn     string `json:"approvedOn,omitempty"`
+	InForce        bool   `json:"inForce"`
 }
 
 type codesetsResponse struct {
@@ -59,6 +81,9 @@ type codesetsResponse struct {
 	// Unreferenced counts tables loaded by some channel but used by none, so the interface can say so once rather
 	// than leaving somebody to notice a lot of empty lists.
 	Unreferenced int `json:"unreferenced"`
+
+	// ApprovalNeeded says a saved table waits for a second person's sign-off.
+	ApprovalNeeded bool `json:"approvalNeeded"`
 }
 
 // handleCodesets lists shared mapping tables and what each one affects.
@@ -202,8 +227,41 @@ func (s *Server) handleCodesets(w http.ResponseWriter, r *http.Request, sess *st
 		}
 	}
 
-	resp := codesetsResponse{Tables: []tableImpact{}}
+	files := map[string]*codeset.Set{}
+	resp := codesetsResponse{Tables: []tableImpact{}, ApprovalNeeded: s.tablesNeedApproval()}
 	for _, impact := range impacts {
+		impact.Editions = []editionSummary{}
+		if impact.File != "" {
+			set, cached := files[impact.File]
+			if !cached {
+				set, _ = repo.ReadTables(impact.File)
+				if set != nil {
+					set.Compile()
+				}
+				files[impact.File] = set
+			}
+			if set != nil {
+				current, _ := set.Table(impact.Name)
+				for _, t := range set.Editions(impact.Name) {
+					status := t.Status
+					if status == "" {
+						status = codeset.StatusApproved
+					}
+					if t.Status == codeset.StatusDraft {
+						impact.Drafts++
+					}
+					impact.Editions = append(impact.Editions, editionSummary{Version: t.Version, Status: status,
+						EffectiveFrom: t.EffectiveFrom, EffectiveUntil: t.EffectiveUntil, Entries: len(t.Entries),
+						DecidedBy: t.DecidedBy, DecidedOn: t.DecidedOn, Author: t.Author, ApprovedBy: t.ApprovedBy,
+						ApprovedOn: t.ApprovedOn, InForce: t == current})
+				}
+				if current != nil {
+					impact.InForce = current.Version
+					impact.Entries = len(current.Entries)
+					impact.Describes = current.Describes
+				}
+			}
+		}
 		// Sorted, because Go maps range randomly and this output gets read side by side with the previous version.
 		sort.SliceStable(impact.UsedBy, func(i, j int) bool {
 			if impact.UsedBy[i].Channel != impact.UsedBy[j].Channel {

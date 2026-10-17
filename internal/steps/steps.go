@@ -229,6 +229,8 @@ type compiledStep[M any] struct {
 
 	pattern *regexp.Regexp
 	table   *codeset.Table
+	// tables is the set the table came from, so each message uses the edition in force that day.
+	tables *codeset.Set
 
 	// when is compiled at load, so a condition that does not parse refuses the channel rather than failing per message.
 	when expr.Expr[M]
@@ -353,9 +355,13 @@ func compileMap[M any](where string, st Step, tables *codeset.Set, c *compiledSt
 	}
 	t, ok := tables.Table(st.Map.Table)
 	if !ok {
+		if tables.Has(st.Map.Table) {
+			return fmt.Errorf("%s: map.table is %q, which has no approved edition in force today (check its status and "+
+				"effective dates)", where, st.Map.Table)
+		}
 		return fmt.Errorf("%s: map.table is %q, which is not a table loaded on this channel", where, st.Map.Table)
 	}
-	c.table = t
+	c.table, c.tables = t, tables
 	return nil
 }
 
@@ -452,14 +458,28 @@ func (c compiledStep[M]) apply(m M) (M, *Change, error) {
 		if !ok {
 			return m, nil, nil
 		}
-		mapped, _, found := c.table.Lookup(value)
+		table := c.table
+		if c.tables != nil {
+			// The edition in force now, so a mapping approved to start on the first of the month does, without a restart.
+			t, ok := c.tables.Table(c.step.Map.Table)
+			if !ok {
+				return m, nil, fmt.Errorf("table %q has no approved edition in force today", c.step.Map.Table)
+			}
+			table = t
+		}
+		mapped, _, found := table.Lookup(value)
 		if !found {
-			if c.step.Map.Default != "" {
+			c.tables.NoteUnmapped(c.step.Map.Table, value)
+			switch {
+			case c.step.Map.Default != "":
 				mapped = c.step.Map.Default
-			} else if strings.EqualFold(c.step.Map.OnMissing, "fail") {
-				return m, nil, fmt.Errorf("%s is %q, which is not in table %q, and on_missing is fail",
-					c.path.Canonical, value, c.step.Map.Table)
-			} else {
+			case table.Default != "":
+				// The table's own default, which Lookup has already returned. It used to be ignored here, so a table
+				// saying "anything else becomes U" passed anything else through unchanged.
+			case strings.EqualFold(c.step.Map.OnMissing, "fail") || table.Strict:
+				return m, nil, fmt.Errorf("%s is %q, which is not in table %q (%s)",
+					c.path.Canonical, value, c.step.Map.Table, map[bool]string{true: "the table is strict", false: "on_missing is fail"}[table.Strict])
+			default:
 				return m, nil, nil
 			}
 		}

@@ -1559,11 +1559,47 @@ export const api = {
     strict?: boolean
     source?: string
     file?: string
+    version?: string
+    effectiveFrom?: string
+    effectiveUntil?: string
+    draft?: boolean
+    sourceSystem?: string
+    targetSystem?: string
   }) => request<{ name: string; file: string; entries: number; notes: string[] }>(
     'PUT',
     '/api/codesets/table',
     table,
   ),
+
+  /** tableEditions returns every edition of one table, with its entries. */
+  tableEditions: (file: string, name: string) =>
+    request<TableEditions>('GET', `/api/codesets/table?file=${encodeURIComponent(file)}&name=${encodeURIComponent(name)}`),
+  /** approveEdition signs off a draft, optionally from a date. */
+  approveEdition: (file: string, name: string, version: string, effectiveFrom?: string) =>
+    request<{ notes: string[] }>('POST', '/api/codesets/table/approve', { file, name, version, effectiveFrom }),
+  retireEdition: (file: string, name: string, version: string) =>
+    request<{ notes: string[] }>('POST', '/api/codesets/table/retire', { file, name, version }),
+  deleteDraftEdition: (file: string, name: string, version: string) =>
+    request<{ notes: string[] }>('POST', '/api/codesets/table/delete-draft', { file, name, version }),
+  tableDiff: (file: string, name: string, from: string, to: string) =>
+    request<TableDiff>(
+      'GET',
+      `/api/codesets/diff?file=${encodeURIComponent(file)}&name=${encodeURIComponent(name)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  unmapped: () => request<{ values: UnmappedValue[]; recording: boolean }>('GET', '/api/codesets/unmapped'),
+  dismissUnmapped: (table: string, value: string) =>
+    request<{ dismissed: string }>('POST', '/api/codesets/unmapped/dismiss', { table, value }),
+  termSystems: () => request<{ systems: CodeSystemInfo[]; available: boolean }>('GET', '/api/terminology/systems'),
+  termSearch: (system: string, q: string) =>
+    request<{ concepts: Concept[] }>(
+      'GET',
+      `/api/terminology/search?system=${encodeURIComponent(system)}&q=${encodeURIComponent(q)}&limit=50`,
+    ),
+  termDelete: (system: string, version: string) =>
+    request<{ deleted: string }>(
+      'DELETE',
+      `/api/terminology/systems?system=${encodeURIComponent(system)}&version=${encodeURIComponent(version)}`,
+    ),
 
   /** proposeContract builds a contract from traffic already recorded, for review before saving. */
   proposeContract: (channel: string) =>
@@ -3451,4 +3487,79 @@ export interface SnmpStatus {
   base: string
   trapsSent: number
   trapFailures: number
+}
+
+/** A table entry, as stored. */
+export interface TableEntry {
+  from: string
+  to: string
+  why?: string
+  since?: string
+}
+
+/** One edition of a shared mapping table. */
+export interface TableEdition {
+  name: string
+  describes: string
+  entries: TableEntry[]
+  default?: string
+  strict?: boolean
+  decidedBy?: string
+  decidedOn?: string
+  source?: string
+  version?: string
+  effectiveFrom?: string
+  effectiveUntil?: string
+  status?: string
+  author?: string
+  approvedBy?: string
+  approvedOn?: string
+  sourceSystem?: string
+  targetSystem?: string
+  inForce: boolean
+  unknownFrom?: string[]
+  unknownTo?: string[]
+}
+
+export interface TableEditions {
+  file: string
+  name: string
+  inForce: string
+  editions: TableEdition[]
+  approvalNeeded: boolean
+  terminology: boolean
+}
+
+export interface TableDiff {
+  added: TableEntry[]
+  removed: TableEntry[]
+  changed: { from: string; before: string; after: string }[]
+}
+
+export interface UnmappedValue {
+  table: string
+  value: string
+  count: number
+  channels: string[]
+  firstSeen: string
+  lastSeen: string
+}
+
+export interface CodeSystemInfo {
+  system: string
+  version: string
+  name: string
+  format: string
+  concepts: number
+  importedAt: string
+  importedBy: string
+  licence?: string
+}
+
+export interface Concept {
+  system: string
+  version: string
+  code: string
+  display: string
+  active: boolean
 }

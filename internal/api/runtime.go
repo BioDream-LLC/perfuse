@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/biodream-llc/perfuse/internal/tenant"
-	"github.com/biodream-llc/perfuse/internal/trace"
 	"log/slog"
 	"net"
 	"net/http"
@@ -26,6 +24,9 @@ import (
 	"github.com/biodream-llc/perfuse/internal/metrics"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/store"
+	"github.com/biodream-llc/perfuse/internal/tenant"
+	"github.com/biodream-llc/perfuse/internal/terminology"
+	"github.com/biodream-llc/perfuse/internal/trace"
 	"github.com/biodream-llc/perfuse/internal/v2fhir"
 	"github.com/biodream-llc/perfuse/mllp"
 )
@@ -57,6 +58,9 @@ type Runtime struct {
 	// The same controller the engine uses, on purpose. A channel started from the interface must draw on the
 	// same descriptor budget as one started at boot, or the limit is per channel and therefore not a limit.
 	Admit *admit.Controller
+
+	// Terminology counts the values mapping tables did not have; nil when there is no database.
+	Terminology *terminology.Store
 
 	// QueryState records what a DICOM query source has already seen, nil when there is no database.
 	//
@@ -171,6 +175,14 @@ func (rt *Runtime) Start(name string, log *slog.Logger) error {
 	if rt.QueryState != nil {
 		ch.SetQueryState(rt.QueryState)
 	}
+	// Values the channel's mapping tables do not have are counted for the console's unmapped list. Set before the channel
+	// starts, so its message goroutines see it.
+	if rt.Terminology != nil {
+		if set := cfg.CodeSets(); set != nil {
+			term, tenantID, channel := rt.Terminology, string(rt.Tenant), cfg.Name
+			set.Observe = func(table, value string) { term.NoteUnmapped(tenantID, channel, table, value) }
+		}
+	}
 	// Nil when tracing is off, and a nil tracer is a working no-op, so this is
 	// unconditional.
 	ch.SetTracer(rt.Tracer)
@@ -193,6 +205,47 @@ func (rt *Runtime) Start(name string, log *slog.Logger) error {
 	delete(rt.failed, name)
 	rt.mu.Unlock()
 	return nil
+}
+
+// RestartUsingTables restarts every running channel that loads the named tables file, so a table change reaches them:
+// a channel reads its tables when it starts. Each is stopped (waiting for the message in hand) and started again. It returns
+// the channels restarted and, for any that would not start again, why.
+func (rt *Runtime) RestartUsingTables(ctx context.Context, file string, log *slog.Logger) (restarted []string, failed map[string]string) {
+	rt.mu.Lock()
+	names := make([]string, 0, len(rt.running))
+	for name := range rt.running {
+		names = append(names, name)
+	}
+	rt.mu.Unlock()
+	sort.Strings(names)
+
+	for _, name := range names {
+		cfg, err := rt.Repo.Get(name)
+		if err != nil {
+			continue
+		}
+		uses := false
+		for _, f := range cfg.Tables {
+			if filepath.Base(f) == filepath.Base(file) {
+				uses = true
+			}
+		}
+		if !uses {
+			continue
+		}
+		if err := rt.Stop(ctx, name); err != nil {
+			continue // stopped by somebody else meanwhile
+		}
+		if err := rt.Start(name, log); err != nil {
+			if failed == nil {
+				failed = map[string]string{}
+			}
+			failed[name] = err.Error()
+			continue
+		}
+		restarted = append(restarted, name)
+	}
+	return restarted, failed
 }
 
 // Stop stops one channel, waiting for messages in flight.

@@ -43,6 +43,15 @@ type tableWriteRequest struct {
 	DecidedBy string `json:"decidedBy,omitempty"`
 	Source    string `json:"source,omitempty"`
 
+	// Version names the edition written; an edition with the same name and version is replaced.
+	Version        string `json:"version,omitempty"`
+	EffectiveFrom  string `json:"effectiveFrom,omitempty"`
+	EffectiveUntil string `json:"effectiveUntil,omitempty"`
+	// Draft saves it for sign-off rather than in use. Forced on when tables need a second person's approval.
+	Draft        bool   `json:"draft,omitempty"`
+	SourceSystem string `json:"sourceSystem,omitempty"`
+	TargetSystem string `json:"targetSystem,omitempty"`
+
 	// File is which table file to write to. Empty means the shared one beside the channels.
 	File string `json:"file,omitempty"`
 }
@@ -127,6 +136,18 @@ func (s *Server) handleWriteTable(w http.ResponseWriter, r *http.Request, sess *
 		DecidedBy: strings.TrimSpace(req.DecidedBy),
 		Source:    strings.TrimSpace(req.Source),
 		DecidedOn: time.Now().UTC().Format("2006-01-02"),
+
+		Version:        strings.TrimSpace(req.Version),
+		EffectiveFrom:  strings.TrimSpace(req.EffectiveFrom),
+		EffectiveUntil: strings.TrimSpace(req.EffectiveUntil),
+		SourceSystem:   strings.TrimSpace(req.SourceSystem),
+		TargetSystem:   strings.TrimSpace(req.TargetSystem),
+		// Who saved it, separately from who decided: sign-off is checked against the account, not a typed name.
+		Author: sess.Username,
+	}
+	approval := s.tablesNeedApproval()
+	if req.Draft || approval {
+		table.Status = codeset.StatusDraft
 	}
 	if table.DecidedBy == "" {
 		// Falls back to whoever is signed in, because "decided by nobody" is worse than a name that turns out
@@ -143,7 +164,12 @@ func (s *Server) handleWriteTable(w http.ResponseWriter, r *http.Request, sess *
 	notes := []string{}
 	replaced := false
 	for i := range existing.Tables {
-		if strings.EqualFold(existing.Tables[i].Name, req.Name) {
+		if strings.EqualFold(existing.Tables[i].Name, req.Name) && existing.Tables[i].Version == table.Version {
+			if existing.Tables[i].InUse() && table.Status == codeset.StatusDraft && approval {
+				s.fail(w, r, http.StatusConflict, fmt.Sprintf("edition %q of %s is approved and in use, and changes need "+
+					"sign-off, so save them under a new version", orDash(table.Version), req.Name))
+				return
+			}
 			notes = append(notes, fmt.Sprintf(
 				"Replaced the existing %q, which had %d entr%s.",
 				req.Name, len(existing.Tables[i].Entries),
@@ -156,6 +182,24 @@ func (s *Server) handleWriteTable(w http.ResponseWriter, r *http.Request, sess *
 	if !replaced {
 		existing.Tables = append(existing.Tables, table)
 	}
+	for i := range existing.Tables {
+		if existing.Tables[i].Name == table.Name && existing.Tables[i].Version == table.Version {
+			notes = append(notes, takeOverToday(existing, &existing.Tables[i])...)
+		}
+	}
+	// Checked as a whole before it lands: a file that will not load takes every channel using it down with it.
+	if errs := existing.Validate(); len(errs) > 0 {
+		msgs := make([]string, len(errs))
+		for i, e := range errs {
+			msgs[i] = e.Error()
+		}
+		s.fail(w, r, http.StatusBadRequest, strings.Join(msgs, "; "))
+		return
+	}
+	if table.Status == codeset.StatusDraft {
+		notes = append(notes, "Saved as a draft: it is not used until somebody approves it.")
+	}
+	notes = append(notes, s.checkTableCodes(r, sess, &table)...)
 
 	raw, err := yaml.Marshal(existing)
 	if err != nil {
@@ -168,10 +212,17 @@ func (s *Server) handleWriteTable(w http.ResponseWriter, r *http.Request, sess *
 		return
 	}
 
+	// A draft changes nothing a channel uses, so only a table in force restarts the channels that load the file.
+	if table.Status != codeset.StatusDraft {
+		notes = append(notes, s.restartTableUsers(r, sess, file)...)
+	}
+
 	// Said rather than left to be discovered. A table nothing references does nothing, and somebody who has
 	// just carefully entered thirty mappings deserves to know that before they go looking for the effect.
-	notes = append(notes, fmt.Sprintf(
-		"Nothing uses this yet. Add a map step to a channel with table: %s to put it to work.", req.Name))
+	if !s.tableInUse(r, sess, req.Name) {
+		notes = append(notes, fmt.Sprintf(
+			"Nothing uses this yet. Add a map step to a channel with table: %s to put it to work.", req.Name))
+	}
 
 	_ = s.Store.Audit(r.Context(), store.AuditEntry{
 		Username: sess.Username, Action: "table.write",

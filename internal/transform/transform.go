@@ -105,6 +105,8 @@ type MapStep struct {
 
 	// resolved is the shared table, filled in at compile time when Use names one.
 	resolved *codeset.Table
+	// set is where resolved came from, so each message uses the edition of the table in force that day.
+	set *codeset.Set
 	// Default applies when the value is not in the table. When it is empty and
 	// Strict is false the original value is kept, which is the safe choice: an
 	// unmapped local code preserved is recoverable, an unmapped code silently
@@ -223,6 +225,10 @@ func CompileWith(steps []Step, tables *codeset.Set) (*Pipeline, error) {
 			}
 
 			table, ok := tables.Table(step.Map.Use)
+			if !ok && tables.Has(step.Map.Use) {
+				return nil, fmt.Errorf("%s: the shared mapping table %q has no approved edition in force today; check its "+
+					"status and effective dates", label, step.Map.Use)
+			}
 			if !ok {
 				available := ""
 				if names := tables.Names(); len(names) > 0 {
@@ -231,7 +237,10 @@ func CompileWith(steps []Step, tables *codeset.Set) (*Pipeline, error) {
 				return nil, fmt.Errorf("%s: no shared mapping table called %q%s",
 					label, step.Map.Use, available)
 			}
-			step.Map.resolved = table
+			// A copy of the map step, so the compiled pipeline never writes into the caller's steps.
+			m := *step.Map
+			m.resolved, m.set = table, tables
+			step.Map = &m
 		}
 
 		set := step.actions()
@@ -664,7 +673,18 @@ func (s *Step) apply(root *xtree.Node) (*Change, error) {
 			// is what makes the change explainable rather than merely visible: "M became 1" is a fact, and
 			// "because the lab's interface predates the HL7 table" is why.
 			if s.Map.resolved != nil {
-				mapped, entry, ok := s.Map.resolved.Lookup(current)
+				table := s.Map.resolved
+				if s.Map.set != nil {
+					t, ok := s.Map.set.Table(s.Map.Use)
+					if !ok {
+						return "", "", fmt.Errorf("the %s table has no approved edition in force today", s.Map.Use)
+					}
+					table = t
+				}
+				mapped, entry, ok := table.Lookup(current)
+				if !ok {
+					s.Map.set.NoteUnmapped(s.Map.Use, current)
+				}
 				switch {
 				case ok:
 					note := ""
@@ -672,13 +692,13 @@ func (s *Step) apply(root *xtree.Node) (*Change, error) {
 						note = entry.Why
 					}
 					return mapped, note, nil
-				case s.Map.resolved.Strict:
+				case table.Strict:
 					return "", "", fmt.Errorf("value %q is not in the %s table, which is strict: %s",
-						current, s.Map.resolved.Name, s.Map.resolved.Describes)
-				case s.Map.resolved.Default != "":
-					return mapped, "not in the " + s.Map.resolved.Name + " table, used its default", nil
+						current, table.Name, table.Describes)
+				case table.Default != "":
+					return mapped, "not in the " + table.Name + " table, used its default", nil
 				default:
-					return mapped, "not in the " + s.Map.resolved.Name + " table, left as it was", nil
+					return mapped, "not in the " + table.Name + " table, left as it was", nil
 				}
 			}
 

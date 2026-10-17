@@ -35,6 +35,9 @@ type Server struct {
 	// the honest state for an installation with no tables rather than an empty list implying there could be some.
 	Tables TableSource
 
+	// Codes answers CodeSystem/$lookup and $validate-code from the imported code systems; nil when there are none.
+	Codes CodeLookup
+
 	// Payer turns on the CMS-0057 payer operations: $member-match and the Group exports. Nil leaves them off.
 	Payer *PayerAPIs
 
@@ -165,6 +168,7 @@ func (s *Server) Handler() http.Handler {
 	// Registered before the generic /{type}/{id} routes so "$everything" is never mistaken for a resource id.
 	s.registerTerminology(mux)
 	s.registerValueSets(mux)
+	s.registerCodeSystems(mux)
 
 	s.registerPayerAPIs(mux)
 	s.registerPAS(mux)
@@ -479,6 +483,9 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 	// it is projected from files - so it does not appear in the resource registry the loop walks.
 	if term := s.terminologyCapability(); term != nil {
 		resources = append(resources, term)
+	}
+	if s.Codes != nil {
+		resources = codeSystemCapability(resources)
 	}
 	if subs := s.Store.Subscriptions(); subs != nil {
 		resources = subscriptionCapability(resources, subs.topics())

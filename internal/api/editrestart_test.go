@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,5 +49,50 @@ func TestSavingARunningChannelAppliesTheChange(t *testing.T) {
 	}
 	if h.server.Runtime.IsRunning("relay") {
 		t.Error("a stopped channel is running after a save")
+	}
+}
+
+// TestATableChangeRestartsTheChannelsUsingIt: a channel reads its tables when it starts, so an edited or approved table
+// reached a running channel only when it was restarted by hand, while the Tables screen said the next message would use it.
+func TestATableChangeRestartsTheChannelsUsingIt(t *testing.T) {
+	h := newHarness(t)
+	out := t.TempDir()
+	channel := "name: relay\nsource: {type: mllp, listen: \"127.0.0.1:0\"}\ntables: [shared.codeset.yaml]\n" +
+		"transformations:\n  - map: {path: PID-8, use: sex}\ndestinations:\n  - {name: out, type: file, dir: " +
+		strings.ReplaceAll(out, `\`, `\\`) + "}\n"
+	save := func(version, to string, draft bool) *httptest.ResponseRecorder {
+		return h.do("editor", http.MethodPut, "/api/codesets/table", map[string]any{"name": "sex", "describes": "d",
+			"version": version, "draft": draft, "entries": []map[string]any{{"from": "1", "to": to}}})
+	}
+	if rec := save("1", "M", false); rec.Code != http.StatusOK {
+		t.Fatalf("first table: %d %s", rec.Code, rec.Body)
+	}
+	if err := os.WriteFile(filepath.Join(h.dir, "relay.yaml"), []byte(channel), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h.server.Runtime = NewRuntime(h.server.Channels, nil, nil)
+	h.handler = h.server.Handler()
+	if rec := h.do("admin", http.MethodPost, "/api/channels/relay/start", nil); rec.Code != http.StatusOK {
+		t.Fatalf("start: %d %s", rec.Code, rec.Body)
+	}
+	t.Cleanup(func() { h.do("admin", http.MethodPost, "/api/channels/relay/stop", nil) })
+	started := func() time.Time { return *h.server.Runtime.States()[0].StartedAt }
+	before := started()
+	time.Sleep(10 * time.Millisecond)
+
+	// A draft is used by nothing, so nothing restarts.
+	if rec := save("2", "MALE", true); rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), "Restarted") {
+		t.Fatalf("draft: %d %s", rec.Code, rec.Body)
+	}
+	if !started().Equal(before) {
+		t.Error("saving a draft restarted the channel")
+	}
+	// Approving it does.
+	rec := h.do("admin", http.MethodPost, "/api/codesets/table/approve", map[string]any{"name": "sex", "version": "2"})
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Restarted relay") {
+		t.Fatalf("approve: %d %s", rec.Code, rec.Body)
+	}
+	if !started().After(before) || !h.server.Runtime.IsRunning("relay") {
+		t.Error("approving a table left the channel on the old one")
 	}
 }

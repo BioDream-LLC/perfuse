@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, ApiError } from './api'
+import type { CodeSystemInfo, TableEdition } from './api'
 import { ErrorBox, Field } from './ui'
 import type { UiError } from './store'
 
@@ -21,7 +22,25 @@ type Row = { from: string; to: string; why: string }
 
 const emptyRow: Row = { from: '', to: '', why: '' }
 
-export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
+/** TableSeed opens the form on an existing table: a new version of an edition, or one more row for a value seen unmapped. */
+export type TableSeed = { edition: TableEdition; file: string; addFrom?: string; nonce: number }
+
+function nextVersion(v: string | undefined): string {
+  const n = Number(v)
+  return v && Number.isInteger(n) ? String(n + 1) : v ? `${v}-next` : '2'
+}
+
+export function NewTable({
+  onSaved,
+  seed,
+  systems = [],
+  approvalNeeded = false,
+}: {
+  onSaved: (notes: string[]) => void
+  seed?: TableSeed | null
+  systems?: CodeSystemInfo[]
+  approvalNeeded?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [describes, setDescribes] = useState('')
@@ -31,6 +50,40 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
   const [strict, setStrict] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<UiError | null>(null)
+  const [file, setFile] = useState('')
+  const [version, setVersion] = useState('')
+  const [effectiveFrom, setEffectiveFrom] = useState('')
+  const [effectiveUntil, setEffectiveUntil] = useState('')
+  const [sourceSystem, setSourceSystem] = useState('')
+  const [targetSystem, setTargetSystem] = useState('')
+  const [draft, setDraft] = useState(false)
+  const [editing, setEditing] = useState(false)
+
+  // A seed opens the form on an existing table. An approved edition is copied into the next version, because it is in use and,
+  // where sign-off is on, cannot be changed in place; a draft is edited as it is.
+  useEffect(() => {
+    if (!seed) return
+    const e = seed.edition
+    const isDraft = e.status === 'draft'
+    setName(e.name)
+    setDescribes(e.describes)
+    setSource(e.source ?? '')
+    setFallback(e.default ?? '')
+    setStrict(!!e.strict)
+    setFile(seed.file)
+    setVersion(isDraft ? (e.version ?? '') : nextVersion(e.version))
+    setEffectiveFrom(isDraft ? (e.effectiveFrom ?? '') : '')
+    setEffectiveUntil(isDraft ? (e.effectiveUntil ?? '') : '')
+    setSourceSystem(e.sourceSystem ?? '')
+    setTargetSystem(e.targetSystem ?? '')
+    setDraft(isDraft)
+    const entries = e.entries.map((x) => ({ from: x.from, to: x.to, why: x.why ?? '' }))
+    if (seed.addFrom && !entries.some((x) => x.from === seed.addFrom)) entries.push({ from: seed.addFrom, to: '', why: '' })
+    setRows(entries.length ? entries : [{ ...emptyRow }])
+    setEditing(true)
+    setError(null)
+    setOpen(true)
+  }, [seed])
 
   function setRow(i: number, patch: Partial<Row>) {
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)))
@@ -44,6 +97,14 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
     setFallback('')
     setStrict(false)
     setError(null)
+    setFile('')
+    setVersion('')
+    setEffectiveFrom('')
+    setEffectiveUntil('')
+    setSourceSystem('')
+    setTargetSystem('')
+    setDraft(false)
+    setEditing(false)
   }
 
   async function save() {
@@ -61,6 +122,13 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
         entries: rows
           .filter((r) => r.from.trim() !== '' || r.to.trim() !== '')
           .map((r) => ({ from: r.from, to: r.to, why: r.why || undefined })),
+        file: file || undefined,
+        version: version.trim() || undefined,
+        effectiveFrom: effectiveFrom || undefined,
+        effectiveUntil: effectiveUntil || undefined,
+        sourceSystem: sourceSystem.trim() || undefined,
+        targetSystem: targetSystem.trim() || undefined,
+        draft: draft || undefined,
       })
       reset()
       setOpen(false)
@@ -91,7 +159,9 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-      <h3 className="text-sm font-medium text-slate-200">A new shared table</h3>
+      <h3 className="text-sm font-medium text-slate-200">
+        {editing ? `${name}: ${draft ? 'edit the draft' : 'a new version'}` : 'A new shared table'}
+      </h3>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {/* Field rather than a hand-rolled label.
@@ -106,6 +176,7 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="sex-codes"
+            readOnly={editing}
           />
         </Field>
 
@@ -129,6 +200,61 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
             value={describes}
             onChange={(e) => setDescribes(e.target.value)}
             placeholder="How this hospital's sex codes map to what the receiver expects"
+          />
+        </Field>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <Field label="Version" hint="Several versions can be kept: the one in force, a draft, the ones before.">
+          <input
+            className="input w-full py-1 text-xs"
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            placeholder="1"
+          />
+        </Field>
+        <Field label="In force from" hint="Empty: from the start, or from approval. A later version takes over on its date.">
+          <input
+            type="date"
+            className="input w-full py-1 text-xs"
+            value={effectiveFrom}
+            onChange={(e) => setEffectiveFrom(e.target.value)}
+          />
+        </Field>
+        <Field label="Until (last day)" hint="Empty: until a later version takes over.">
+          <input
+            type="date"
+            className="input w-full py-1 text-xs"
+            value={effectiveUntil}
+            onChange={(e) => setEffectiveUntil(e.target.value)}
+          />
+        </Field>
+      </div>
+
+      <datalist id="code-systems">
+        {systems.map((c) => (
+          <option key={`${c.system}|${c.version}`} value={c.system}>
+            {c.name}
+          </option>
+        ))}
+      </datalist>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label="Values mapped from are codes of" hint="Optional. Entries are checked against it when it is imported.">
+          <input
+            className="input w-full py-1 font-mono text-xs"
+            list="code-systems"
+            value={sourceSystem}
+            onChange={(e) => setSourceSystem(e.target.value)}
+            placeholder="urn:local:lab-codes"
+          />
+        </Field>
+        <Field label="Values mapped to are codes of" hint="Optional, such as http://loinc.org.">
+          <input
+            className="input w-full py-1 font-mono text-xs"
+            list="code-systems"
+            value={targetSystem}
+            onChange={(e) => setTargetSystem(e.target.value)}
+            placeholder="http://loinc.org"
           />
         </Field>
       </div>
@@ -211,6 +337,24 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
         </label>
       </div>
 
+      <label className="mt-4 flex items-start gap-2 text-xs text-slate-400">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={draft || approvalNeeded}
+          disabled={approvalNeeded}
+          onChange={(e) => setDraft(e.target.checked)}
+        />
+        <span>
+          <span className="block text-slate-300">Save as a draft for somebody to approve</span>
+          <span className="mt-0.5 block text-[11px] text-slate-500">
+            {approvalNeeded
+              ? 'Required on this server: a table change is used only once somebody other than you approves it.'
+              : 'A draft is used by no channel until it is approved.'}
+          </span>
+        </span>
+      </label>
+
       {error && (
         <div className="mt-3">
           <ErrorBox error={error} onDismiss={() => setError(null)} />
@@ -219,7 +363,7 @@ export function NewTable({ onSaved }: { onSaved: (notes: string[]) => void }) {
 
       <div className="mt-4 flex gap-2">
         <button className="btn-primary py-1 text-xs" onClick={() => void save()} disabled={busy}>
-          {busy ? 'Saving…' : 'Save table'}
+          {busy ? 'Saving…' : draft || approvalNeeded ? 'Save the draft' : 'Save table'}
         </button>
         <button
           className="btn-ghost py-1 text-xs"

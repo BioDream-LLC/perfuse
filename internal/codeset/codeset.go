@@ -83,6 +83,33 @@ type Table struct {
 	// Source records where the mapping came from - a specification, a conversation, an observed feed.
 	Source string `yaml:"source,omitempty" json:"source,omitempty"`
 
+	// Version names this edition of the table, so several can be kept under one name: the one in force, a draft waiting
+	// for sign-off, and the ones before. Empty is a table with one edition.
+	Version string `yaml:"version,omitempty" json:"version,omitempty"`
+
+	// EffectiveFrom is the first day (YYYY-MM-DD, UTC) this edition is used; empty means from the start. A later approved
+	// edition's EffectiveFrom ends this one, so a new mapping can be approved today and take over on the first of the month.
+	EffectiveFrom string `yaml:"effective_from,omitempty" json:"effectiveFrom,omitempty"`
+
+	// EffectiveUntil is the last day this edition is used, inclusive; empty means until a later edition takes over.
+	EffectiveUntil string `yaml:"effective_until,omitempty" json:"effectiveUntil,omitempty"`
+
+	// Status is approved (the default: in use within its dates), draft (written, waiting for sign-off, never used) or
+	// retired (kept for the record, never used).
+	Status string `yaml:"status,omitempty" json:"status,omitempty"`
+
+	// Author is the account that saved this edition from the console, which sign-off is checked against.
+	Author string `yaml:"author,omitempty" json:"author,omitempty"`
+
+	// ApprovedBy and ApprovedOn record the sign-off of an edition that needed one.
+	ApprovedBy string `yaml:"approved_by,omitempty" json:"approvedBy,omitempty"`
+	ApprovedOn string `yaml:"approved_on,omitempty" json:"approvedOn,omitempty"`
+
+	// SourceSystem and TargetSystem name the code systems of From and To (http://loinc.org, http://snomed.info/sct, a
+	// local URL), so the console can check each entry against an imported code system and FHIR can publish the map.
+	SourceSystem string `yaml:"source_system,omitempty" json:"sourceSystem,omitempty"`
+	TargetSystem string `yaml:"target_system,omitempty" json:"targetSystem,omitempty"`
+
 	// index is the compiled lookup.
 	index map[string]Entry
 }
@@ -128,6 +155,22 @@ func (t *Table) Validate() []error {
 			continue
 		}
 		seen[e.From] = e.To
+	}
+
+	switch t.Status {
+	case "", StatusApproved, StatusDraft, StatusRetired:
+	default:
+		errs = append(errs, fmt.Errorf("table %q has status %q; use approved, draft or retired", t.Name, t.Status))
+	}
+	for _, d := range []struct{ key, value string }{{"effective_from", t.EffectiveFrom}, {"effective_until", t.EffectiveUntil}} {
+		if d.value != "" {
+			if _, err := time.Parse("2006-01-02", d.value); err != nil {
+				errs = append(errs, fmt.Errorf("table %q has %s %q; write a date as YYYY-MM-DD", t.Name, d.key, d.value))
+			}
+		}
+	}
+	if t.EffectiveFrom != "" && t.EffectiveUntil != "" && t.EffectiveUntil < t.EffectiveFrom {
+		errs = append(errs, fmt.Errorf("table %q ends (%s) before it starts (%s)", t.Name, t.EffectiveUntil, t.EffectiveFrom))
 	}
 
 	if t.Strict && t.Default != "" {
@@ -204,28 +247,71 @@ func (t *Table) Values() []string {
 	return out
 }
 
+// Statuses of a table edition.
+const (
+	StatusApproved = "approved"
+	StatusDraft    = "draft"
+	StatusRetired  = "retired"
+)
+
+// InUse reports whether the edition may be used at all (approved, not draft or retired).
+func (t *Table) InUse() bool { return t.Status == "" || t.Status == StatusApproved }
+
+// InForce reports whether an approved edition's own dates cover day (YYYY-MM-DD). A later edition may still take over; see
+// Set.TableAt.
+func (t *Table) InForce(day string) bool {
+	return t.InUse() && (t.EffectiveFrom == "" || t.EffectiveFrom <= day) && (t.EffectiveUntil == "" || day <= t.EffectiveUntil)
+}
+
 // Set is a collection of tables loaded together.
 type Set struct {
 	Tables []Table `yaml:"tables" json:"tables"`
 
-	byName map[string]*Table
+	// Observe, when set, is told every value a map step could not find in a table, so unmapped codes can be listed for
+	// somebody to map. Called on the message's goroutine; it must not block.
+	Observe func(table, value string) `yaml:"-" json:"-"`
+
+	byName map[string][]*Table
 }
 
 // Validate checks every table and the set as a whole.
 func (s *Set) Validate() []error {
 	var errs []error
 
-	seen := map[string]bool{}
+	type edition struct{ name, version string }
+	seen := map[edition]bool{}
+	starts := map[string]map[string]string{}
 	for i := range s.Tables {
 		t := &s.Tables[i]
 		errs = append(errs, t.Validate()...)
 
-		if seen[t.Name] {
-			errs = append(errs, fmt.Errorf(
-				"two tables are called %q; a channel referring to that name would get whichever loaded first",
-				t.Name))
+		key := edition{t.Name, t.Version}
+		if seen[key] {
+			if t.Version == "" {
+				errs = append(errs, fmt.Errorf(
+					"two tables are called %q; a channel referring to that name would get whichever loaded first. "+
+						"To keep several editions, give each a version", t.Name))
+			} else {
+				errs = append(errs, fmt.Errorf("table %q has two editions called version %q", t.Name, t.Version))
+			}
 		}
-		seen[t.Name] = true
+		seen[key] = true
+
+		// Two approved editions starting the same day leave no rule for which one is in force.
+		if t.InUse() {
+			if starts[t.Name] == nil {
+				starts[t.Name] = map[string]string{}
+			}
+			if other, dup := starts[t.Name][t.EffectiveFrom]; dup {
+				from := t.EffectiveFrom
+				if from == "" {
+					from = "the start"
+				}
+				errs = append(errs, fmt.Errorf("table %q has two approved editions (%s and %s) in force from %s; give one "+
+					"a later effective_from, or make one a draft", t.Name, orUnknown(other), orUnknown(t.Version), from))
+			}
+			starts[t.Name][t.EffectiveFrom] = t.Version
+		}
 	}
 
 	return errs
@@ -233,23 +319,59 @@ func (s *Set) Validate() []error {
 
 // Compile indexes the set for lookup by name.
 func (s *Set) Compile() {
-	s.byName = make(map[string]*Table, len(s.Tables))
+	s.byName = make(map[string][]*Table, len(s.Tables))
 	for i := range s.Tables {
 		s.Tables[i].Compile()
-		s.byName[s.Tables[i].Name] = &s.Tables[i]
+		s.byName[s.Tables[i].Name] = append(s.byName[s.Tables[i].Name], &s.Tables[i])
+	}
+	for _, list := range s.byName {
+		sort.SliceStable(list, func(i, j int) bool { return list[i].EffectiveFrom < list[j].EffectiveFrom })
 	}
 }
 
-// Table returns a table by name.
+// Table returns the edition of a table in force today (UTC).
 func (s *Set) Table(name string) (*Table, bool) {
+	return s.TableAt(name, time.Now())
+}
+
+// TableAt returns the edition in force at a moment: of the approved editions whose dates cover that day, the one that
+// started latest. Drafts and retired editions are never returned.
+func (s *Set) TableAt(name string, at time.Time) (*Table, bool) {
 	if s == nil {
 		return nil, false
 	}
 	if s.byName == nil {
 		s.Compile()
 	}
-	t, ok := s.byName[name]
-	return t, ok
+	day := at.UTC().Format("2006-01-02")
+	list := s.byName[name]
+	for i := len(list) - 1; i >= 0; i-- {
+		if list[i].InForce(day) {
+			return list[i], true
+		}
+	}
+	return nil, false
+}
+
+// Editions lists every edition of a table, earliest start first, drafts and retired ones included.
+func (s *Set) Editions(name string) []*Table {
+	if s == nil {
+		return nil
+	}
+	if s.byName == nil {
+		s.Compile()
+	}
+	return append([]*Table(nil), s.byName[name]...)
+}
+
+// Has reports whether any edition of a table exists, whatever its status or dates.
+func (s *Set) Has(name string) bool { return len(s.Editions(name)) > 0 }
+
+// NoteUnmapped tells Observe about a value a table did not have.
+func (s *Set) NoteUnmapped(table, value string) {
+	if s != nil && s.Observe != nil {
+		s.Observe(table, value)
+	}
 }
 
 // Names lists the tables, sorted.
@@ -259,11 +381,59 @@ func (s *Set) Names() []string {
 	}
 
 	out := make([]string, 0, len(s.Tables))
+	seen := map[string]bool{}
 	for _, t := range s.Tables {
-		out = append(out, t.Name)
+		if !seen[t.Name] {
+			seen[t.Name] = true
+			out = append(out, t.Name)
+		}
 	}
 	sort.Strings(out)
 	return out
+}
+
+// Diff compares two editions: what was added, removed, and mapped to something else.
+type Diff struct {
+	Added   []Entry       `json:"added"`
+	Removed []Entry       `json:"removed"`
+	Changed []EntryChange `json:"changed"`
+}
+
+// EntryChange is a value whose mapping changed between editions.
+type EntryChange struct {
+	From   string `json:"from"`
+	Before string `json:"before"`
+	After  string `json:"after"`
+}
+
+// Compare says how edition b differs from edition a.
+func Compare(a, b *Table) Diff {
+	d := Diff{Added: []Entry{}, Removed: []Entry{}, Changed: []EntryChange{}}
+	old := map[string]Entry{}
+	if a != nil {
+		for _, e := range a.Entries {
+			old[e.From] = e
+		}
+	}
+	now := map[string]bool{}
+	if b != nil {
+		for _, e := range b.Entries {
+			now[e.From] = true
+			if prev, ok := old[e.From]; !ok {
+				d.Added = append(d.Added, e)
+			} else if prev.To != e.To {
+				d.Changed = append(d.Changed, EntryChange{From: e.From, Before: prev.To, After: e.To})
+			}
+		}
+	}
+	if a != nil {
+		for _, e := range a.Entries {
+			if !now[e.From] {
+				d.Removed = append(d.Removed, e)
+			}
+		}
+	}
+	return d
 }
 
 // Describe renders a table for a specification document.
@@ -275,6 +445,19 @@ func (t *Table) Describe() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s: %s\n", t.Name, t.Describes)
+	if t.Version != "" || t.EffectiveFrom != "" || t.EffectiveUntil != "" {
+		fmt.Fprintf(&b, "  version %s", orNone(t.Version))
+		if t.EffectiveFrom != "" {
+			fmt.Fprintf(&b, ", in force from %s", t.EffectiveFrom)
+		}
+		if t.EffectiveUntil != "" {
+			fmt.Fprintf(&b, " until %s", t.EffectiveUntil)
+		}
+		fmt.Fprintln(&b)
+	}
+	if t.ApprovedBy != "" {
+		fmt.Fprintf(&b, "  approved by %s on %s\n", t.ApprovedBy, orNone(t.ApprovedOn))
+	}
 
 	if t.DecidedBy != "" || t.DecidedOn != "" {
 		fmt.Fprintf(&b, "  decided by %s", orUnknown(t.DecidedBy))
@@ -309,6 +492,13 @@ func (t *Table) Describe() string {
 	}
 
 	return b.String()
+}
+
+func orNone(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "(none)"
+	}
+	return s
 }
 
 func orUnknown(s string) string {

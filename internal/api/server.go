@@ -34,6 +34,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/snmp"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/tefca"
+	"github.com/biodream-llc/perfuse/internal/terminology"
 	"github.com/biodream-llc/perfuse/internal/vpn"
 	"github.com/biodream-llc/perfuse/internal/webauthn"
 	"github.com/biodream-llc/perfuse/internal/xds"
@@ -45,6 +46,8 @@ type Server struct {
 	Channels *ChannelRepo
 	// Alerts is the alert evaluator, nil when alerting is off.
 	Alerts *alerts.Evaluator
+	// Terminology holds imported code systems and the values mapping tables did not have; nil without a database.
+	Terminology *terminology.Store
 	// SNMP is the SNMP agent and trap sender, nil when SNMP is off.
 	SNMP *snmp.Service
 
@@ -446,6 +449,18 @@ func (s *Server) Handler() http.Handler {
 	// channel using it, which is the feature and also the hazard.
 	mux.Handle("GET /api/codesets", s.require(store.RoleViewer, s.handleCodesets))
 	mux.Handle("PUT /api/codesets/table", s.require(store.RoleEditor, s.handleWriteTable))
+	mux.Handle("GET /api/codesets/table", s.require(store.RoleViewer, s.handleTableEditions))
+	mux.Handle("POST /api/codesets/table/approve", s.require(store.RoleEditor, s.handleTableApprove))
+	mux.Handle("POST /api/codesets/table/retire", s.require(store.RoleEditor, s.handleTableRetire))
+	mux.Handle("POST /api/codesets/table/delete-draft", s.require(store.RoleEditor, s.handleTableDeleteDraft))
+	mux.Handle("GET /api/codesets/diff", s.require(store.RoleViewer, s.handleTableDiff))
+	mux.Handle("GET /api/codesets/unmapped", s.require(store.RoleEditor, s.handleUnmapped))
+	mux.Handle("POST /api/codesets/unmapped/dismiss", s.require(store.RoleEditor, s.handleUnmappedDismiss))
+	mux.Handle("GET /api/terminology/systems", s.require(store.RoleViewer, s.handleTermSystems))
+	mux.Handle("POST /api/terminology/import", s.require(store.RoleAdmin, s.handleTermImport))
+	mux.Handle("DELETE /api/terminology/systems", s.require(store.RoleAdmin, s.handleTermDelete))
+	mux.Handle("GET /api/terminology/search", s.require(store.RoleViewer, s.handleTermSearch))
+	mux.Handle("GET /api/terminology/lookup", s.require(store.RoleViewer, s.handleTermLookup))
 
 	mux.Handle("GET /api/fleet", s.require(store.RoleViewer, s.handleFleet))
 	mux.Handle("GET /api/fleet/peers", s.require(store.RoleAdmin, s.handleListPeers))

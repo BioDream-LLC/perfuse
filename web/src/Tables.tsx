@@ -3,6 +3,10 @@ import { HBar } from './charts'
 import { ErrorBox, Section, Spinner } from './ui'
 import type { UiError } from './store'
 import { NewTable } from './NewTable'
+import type { TableSeed } from './NewTable'
+import { api } from './api'
+import type { CodeSystemInfo, TableEdition } from './api'
+import { CodeSystems, TableVersions, UnmappedValues } from './TerminologyPanels'
 
 type TableUse = {
   channel: string
@@ -23,11 +27,15 @@ type TableImpact = {
   channels: number
   running: number
   paths: string[]
+  editions: { version: string; status: string; effectiveFrom?: string; inForce: boolean }[]
+  inForce: string
+  drafts: number
 }
 
 type CodesetsResponse = {
   tables: TableImpact[]
   unreferenced: number
+  approvalNeeded: boolean
 }
 
 /**
@@ -53,7 +61,33 @@ export function Tables() {
 
   const afterSave = (notes: string[]) => {
     setSavedNotes(notes)
+    setSeed(null)
     reload()
+  }
+
+  // The form opened on an existing table: a new version of an edition, or one more row for a value seen unmapped.
+  const [seed, setSeed] = useState<TableSeed | null>(null)
+  const [versionsOpen, setVersionsOpen] = useState<string | null>(null)
+  const [systems, setSystems] = useState<CodeSystemInfo[]>([])
+  useEffect(() => {
+    api.termSystems().then((r) => setSystems(r.systems), () => setSystems([]))
+  }, [reloadCount])
+
+  const edit = (edition: TableEdition, file: string, addFrom?: string) => {
+    setSavedNotes(null)
+    setSeed({ edition, file, addFrom, nonce: Date.now() })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const mapValue = async (table: string, value: string) => {
+    const t = data?.tables.find((x) => x.name === table)
+    try {
+      const res = await api.tableEditions(t?.file ?? 'shared.codeset.yaml', table)
+      const pick = res.editions.find((e) => e.status === 'draft') ?? res.editions.find((e) => e.inForce) ?? res.editions[res.editions.length - 1]
+      if (pick) edit(pick, res.file, value)
+    } catch (e) {
+      setError({ message: e instanceof Error ? e.message : String(e), problems: [] })
+    }
   }
 
   useEffect(() => {
@@ -86,8 +120,16 @@ export function Tables() {
   if (error && !data) return <ErrorBox error={error} />
   if (!data) return null
 
+  const extras = (
+    <>
+      <UnmappedValues onMap={(table, value) => void mapValue(table, value)} reloadKey={reloadCount} />
+      <CodeSystems />
+    </>
+  )
+
   if (data.tables.length === 0) {
     return (
+      <div className="space-y-8">
       <Section
         title="Shared mapping tables"
         description="One table, used by every channel that needs it, with a record of who decided each mapping and why."
@@ -109,7 +151,7 @@ export function Tables() {
           </div>
         )}
         <div className="mb-4">
-          <NewTable onSaved={afterSave} />
+          <NewTable onSaved={afterSave} seed={seed} systems={systems} approvalNeeded={data.approvalNeeded} />
         </div>
 
         <div className="rounded-xl border border-dashed border-slate-800 p-6">
@@ -146,12 +188,15 @@ transformations:
           </details>
         </div>
       </Section>
+      {extras}
+      </div>
     )
   }
 
   const widest = data.tables.filter((t) => t.channels > 0)
 
   return (
+    <div className="space-y-8">
     <Section
       title="Shared mapping tables"
       description="What each table affects, so an edit is a decision rather than a surprise. Widest reach first."
@@ -171,7 +216,7 @@ transformations:
             </ul>
           </div>
         )}
-        <NewTable onSaved={afterSave} />
+        <NewTable onSaved={afterSave} seed={seed} systems={systems} approvalNeeded={data.approvalNeeded} />
 
         {widest.length > 1 && (
           <div className="rounded-xl border border-slate-800 p-4">
@@ -208,6 +253,21 @@ transformations:
                     {unused && (
                       <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
                         used by nothing
+                      </span>
+                    )}
+                    {t.inForce && (
+                      <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                        version {t.inForce} in force
+                      </span>
+                    )}
+                    {t.editions.length > 0 && !t.editions.some((e) => e.inForce) && (
+                      <span className="rounded bg-rose-950/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-rose-300">
+                        no version in force
+                      </span>
+                    )}
+                    {t.drafts > 0 && (
+                      <span className="rounded bg-amber-950/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+                        {t.drafts} draft{t.drafts === 1 ? '' : 's'} to approve
                       </span>
                     )}
                   </div>
@@ -251,9 +311,25 @@ transformations:
 
               {t.running > 0 && (
                 <p className="mt-3 rounded-lg border border-amber-900/60 bg-amber-950/25 p-3 text-sm text-amber-200">
-                  {t.running} of these channel{t.running === 1 ? ' is' : 's are'} running now, so a change takes
-                  effect on the next message through {t.running === 1 ? 'it' : 'them'}.
+                  {t.running === 1 ? 'One of these channels is' : `${t.running} of these channels are`} running now; saving a change in force restarts{' '}
+                  {t.running === 1 ? 'it' : 'them'} so the next message uses it.
                 </p>
+              )}
+
+              {t.file && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setVersionsOpen(versionsOpen === `${t.file}:${t.name}` ? null : `${t.file}:${t.name}`)}
+                    className="text-xs text-sky-400 hover:text-sky-300"
+                  >
+                    {versionsOpen === `${t.file}:${t.name}` ? 'Hide' : 'Show'} versions, edit and approve
+                    {t.editions.length > 1 && ` (${t.editions.length})`}
+                  </button>
+                  {versionsOpen === `${t.file}:${t.name}` && (
+                    <TableVersions file={t.file} name={t.name} onEdit={(e) => edit(e, t.file)} onChanged={reload} />
+                  )}
+                </div>
               )}
 
               {!unused && (
@@ -298,5 +374,7 @@ transformations:
         )}
       </div>
     </Section>
+    {extras}
+    </div>
   )
 }
