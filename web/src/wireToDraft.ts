@@ -170,6 +170,24 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.soapSourceUsername = source.soap?.username ?? ''
       draft.soapSourcePassword = source.soap?.password ?? ''
       break
+    case 'as2': {
+      const a = source.as2
+      draft.as2SrcListen = a?.listen ?? ''
+      draft.as2SrcPath = a?.path ?? ''
+      draft.as2SrcId = a?.id ?? ''
+      draft.as2SrcCertFile = a?.certFile ?? ''
+      draft.as2SrcKeyFile = a?.keyFile ?? ''
+      draft.as2SrcTlsEnabled = a?.tls?.enabled === true
+      draft.as2SrcTlsCertFile = a?.tls?.certFile ?? ''
+      draft.as2SrcTlsKeyFile = a?.tls?.keyFile ?? ''
+      draft.as2SrcPartners = (a?.partners ?? []).map((p) => ({
+        id: p.id ?? '',
+        certFile: p.certFile ?? '',
+        allowUnsigned: p.allowUnsigned === true,
+        allowUnencrypted: p.allowUnencrypted === true,
+      }))
+      break
+    }
     case 'direct':
       draft.directSrcAddress = source.direct?.address ?? ''
       draft.directSrcCertFile = source.direct?.certFile ?? ''
@@ -873,6 +891,26 @@ function readDestination(d: WireDest): Destination {
     case 'channel':
       dest.routeTo = d.channel?.name ?? ''
       break
+    case 'as2': {
+      const a = d.as2
+      dest.as2Url = a?.url ?? ''
+      dest.as2From = a?.from ?? ''
+      dest.as2To = a?.to ?? ''
+      dest.as2CertFile = a?.certFile ?? ''
+      dest.as2KeyFile = a?.keyFile ?? ''
+      dest.as2PartnerCertFile = a?.partnerCertFile ?? ''
+      dest.as2Unsigned = a?.unsigned === true
+      dest.as2Unencrypted = a?.unencrypted === true
+      dest.as2Receipt = a?.receipt === 'async' || a?.receipt === 'none' ? a.receipt : 'sync'
+      dest.as2UnsignedReceipt = a?.unsignedReceipt === true
+      dest.as2ReceiptUrl = a?.receiptUrl ?? ''
+      dest.as2ContentType = a?.contentType ?? ''
+      dest.as2FileName = a?.fileName ?? ''
+      dest.as2Subject = a?.subject ?? ''
+      dest.as2Username = a?.username ?? ''
+      dest.as2Password = a?.password ?? ''
+      break
+    }
     case 'direct':
       dest.directAddress = d.direct?.address ?? ''
       dest.directCertFile = d.direct?.certFile ?? ''
@@ -1249,6 +1287,15 @@ interface WireGCP {
 interface WireSource {
   type?: string
   listen?: string
+  as2?: {
+    listen?: string
+    path?: string
+    id?: string
+    certFile?: string
+    keyFile?: string
+    tls?: { enabled?: boolean; certFile?: string; keyFile?: string }
+    partners?: { id?: string; certFile?: string; allowUnsigned?: boolean; allowUnencrypted?: boolean }[]
+  }
   pgp?: {
     decryptWith?: string
     passphrase?: string
@@ -1441,6 +1488,24 @@ interface WireStep {
 interface WireDest {
   responseTransformer?: string
   elr?: { config?: string; rctc?: string }
+  as2?: {
+    url?: string
+    from?: string
+    to?: string
+    certFile?: string
+    keyFile?: string
+    partnerCertFile?: string
+    unsigned?: boolean
+    unencrypted?: boolean
+    receipt?: string
+    unsignedReceipt?: boolean
+    receiptUrl?: string
+    contentType?: string
+    fileName?: string
+    subject?: string
+    username?: string
+    password?: string
+  }
   pgp?: { encryptTo?: string[]; signWith?: string; passphrase?: string; armor?: boolean; noCompress?: boolean; fileName?: string }
 
   queue?: {

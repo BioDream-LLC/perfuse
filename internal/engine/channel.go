@@ -563,6 +563,14 @@ func (c *Channel) Start() error {
 		c.resumeQueues(context.Background())
 		return nil
 
+	case config.SourceAS2:
+		// An HTTP listener, so it shares the HTTP server field and its stop path.
+		if err := c.startAS2Source(); err != nil {
+			return err
+		}
+		c.resumeQueues(context.Background())
+		return nil
+
 	case config.SourceAzureBlob:
 		if err := c.startAzureBlobSource(); err != nil {
 			return err

@@ -12,6 +12,7 @@ import (
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/des"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -40,6 +41,8 @@ var (
 	oidSHA1RSA       = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 5}
 	oidAES128CBC     = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 2}
 	oidAES256CBC     = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 42}
+	oidAES192CBC     = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 22}
+	oidDESEDE3CBC    = asn1.ObjectIdentifier{1, 2, 840, 113549, 3, 7}
 	oidMGF1          = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 8}
 )
 
@@ -448,31 +451,39 @@ func Decrypt(der []byte, keys []KeyPair) ([]byte, error) {
 		return nil, ErrNotForUs
 	}
 	alg := ed.EncryptedContentInfo.ContentEncryptionAlgorithm
+	// AES-256 is what this package writes. AES-128 and AES-192 are read, and so is Triple DES: AS2 trading partners still
+	// send it (it is pyas2lib's and several commercial gateways' default), and refusing to read it would refuse the partner.
+	var block cipher.Block
+	var err error
 	switch {
-	case alg.Algorithm.Equal(oidAES128CBC) && len(cek) == 16, alg.Algorithm.Equal(oidAES256CBC) && len(cek) == 32:
+	case alg.Algorithm.Equal(oidAES128CBC) && len(cek) == 16, alg.Algorithm.Equal(oidAES192CBC) && len(cek) == 24,
+		alg.Algorithm.Equal(oidAES256CBC) && len(cek) == 32:
+		block, err = aes.NewCipher(cek)
+	case alg.Algorithm.Equal(oidDESEDE3CBC) && len(cek) == 24:
+		block, err = des.NewTripleDESCipher(cek)
 	default:
-		return nil, fmt.Errorf("cms: content encryption %v is not AES-128-CBC or AES-256-CBC", alg.Algorithm)
+		return nil, fmt.Errorf("cms: content encryption %v is not AES-CBC or Triple DES", alg.Algorithm)
 	}
+	if err != nil {
+		return nil, err
+	}
+	bs := block.BlockSize()
 	var iv []byte
-	if _, err := asn1.Unmarshal(alg.Parameters.FullBytes, &iv); err != nil || len(iv) != aes.BlockSize {
-		return nil, errors.New("cms: the AES IV cannot be read")
+	if _, err := asn1.Unmarshal(alg.Parameters.FullBytes, &iv); err != nil || len(iv) != bs {
+		return nil, errors.New("cms: the IV cannot be read")
 	}
 	ct := ed.EncryptedContentInfo.EncryptedContent.Bytes
 	if ed.EncryptedContentInfo.EncryptedContent.IsCompound {
 		// Constructed OCTET STRING (BER, from some senders): concatenate its segments.
 		ct = joinOctets(ct)
 	}
-	if len(ct) == 0 || len(ct)%aes.BlockSize != 0 {
-		return nil, errors.New("cms: the encrypted content is not a whole number of AES blocks")
-	}
-	block, err := aes.NewCipher(cek)
-	if err != nil {
-		return nil, err
+	if len(ct) == 0 || len(ct)%bs != 0 {
+		return nil, errors.New("cms: the encrypted content is not a whole number of cipher blocks")
 	}
 	out := make([]byte, len(ct))
 	cipher.NewCBCDecrypter(block, iv).CryptBlocks(out, ct)
 	n := int(out[len(out)-1])
-	if n == 0 || n > aes.BlockSize || n > len(out) || !bytes.Equal(out[len(out)-n:], bytes.Repeat([]byte{byte(n)}, n)) {
+	if n == 0 || n > bs || n > len(out) || !bytes.Equal(out[len(out)-n:], bytes.Repeat([]byte{byte(n)}, n)) {
 		return nil, errors.New("cms: the decrypted content has bad padding")
 	}
 	return out[:len(out)-n], nil

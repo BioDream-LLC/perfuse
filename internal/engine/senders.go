@@ -57,6 +57,8 @@ func DefaultSenderFactory(d config.Destination) (Sender, error) {
 		return NewXDSSender(d)
 	case config.DestinationDirect:
 		return NewDirectSender(d)
+	case config.DestinationAS2:
+		return NewAS2Sender(d)
 	case config.DestinationBroker:
 		return NewBrokerSender(d)
 	case config.DestinationKafka:

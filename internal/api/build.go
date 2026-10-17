@@ -298,6 +298,8 @@ type buildSource struct {
 
 	// Direct receives Direct secure messages the HISP delivers by SMTP.
 	Direct *buildDirectSource `json:"direct,omitempty" yaml:"direct,omitempty"`
+	// AS2 receives from trading partners over AS2.
+	AS2 *buildAS2Source `json:"as2,omitempty" yaml:"as2,omitempty"`
 
 	// JS is the JavaScript Reader: a script that runs on a timer and returns the messages.
 	//
@@ -847,6 +849,8 @@ type buildDest struct {
 
 	// Direct applies to a direct destination.
 	Direct *buildDirectDest `json:"direct,omitempty" yaml:"direct,omitempty"`
+	// AS2 sends to a trading partner over AS2.
+	AS2 *buildAS2Dest `json:"as2,omitempty" yaml:"as2,omitempty"`
 
 	// JavaScript applies to a javascript destination.
 	JavaScript *buildJSDest `json:"javascript,omitempty" yaml:"javascript,omitempty"`
@@ -1546,6 +1550,47 @@ type buildXDSDest struct {
 }
 
 // buildDirectSource receives Direct mail for one address.
+// buildAS2Partner is config.AS2Partner on the wire.
+type buildAS2Partner struct {
+	ID               string `json:"id,omitempty" yaml:"id,omitempty"`
+	CertFile         string `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
+	AllowUnsigned    bool   `json:"allowUnsigned,omitempty" yaml:"allow_unsigned,omitempty"`
+	AllowUnencrypted bool   `json:"allowUnencrypted,omitempty" yaml:"allow_unencrypted,omitempty"`
+}
+
+// buildAS2Source is config.AS2Source on the wire.
+type buildAS2Source struct {
+	Listen         string            `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Path           string            `json:"path,omitempty" yaml:"path,omitempty"`
+	TLS            *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
+	ID             string            `json:"id,omitempty" yaml:"id,omitempty"`
+	CertFile       string            `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile        string            `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
+	Partners       []buildAS2Partner `json:"partners,omitempty" yaml:"partners,omitempty"`
+	MaxMessageSize int64             `json:"maxMessageSize,omitempty" yaml:"max_message_size,omitempty"`
+}
+
+// buildAS2Dest is config.AS2Destination on the wire.
+type buildAS2Dest struct {
+	URL             string    `json:"url,omitempty" yaml:"url,omitempty"`
+	From            string    `json:"from,omitempty" yaml:"from,omitempty"`
+	To              string    `json:"to,omitempty" yaml:"to,omitempty"`
+	CertFile        string    `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile         string    `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
+	PartnerCertFile string    `json:"partnerCertFile,omitempty" yaml:"partner_cert_file,omitempty"`
+	Unsigned        bool      `json:"unsigned,omitempty" yaml:"unsigned,omitempty"`
+	Unencrypted     bool      `json:"unencrypted,omitempty" yaml:"unencrypted,omitempty"`
+	Receipt         string    `json:"receipt,omitempty" yaml:"receipt,omitempty"`
+	UnsignedReceipt bool      `json:"unsignedReceipt,omitempty" yaml:"unsigned_receipt,omitempty"`
+	ReceiptURL      string    `json:"receiptUrl,omitempty" yaml:"receipt_url,omitempty"`
+	ContentType     string    `json:"contentType,omitempty" yaml:"content_type,omitempty"`
+	FileName        string    `json:"fileName,omitempty" yaml:"file_name,omitempty"`
+	Subject         string    `json:"subject,omitempty" yaml:"subject,omitempty"`
+	Username        string    `json:"username,omitempty" yaml:"username,omitempty"`
+	Password        string    `json:"password,omitempty" yaml:"password,omitempty"`
+	TLS             *buildTLS `json:"tls,omitempty" yaml:"tls,omitempty"`
+}
+
 type buildDirectSource struct {
 	Address     string `json:"address,omitempty" yaml:"address,omitempty"`
 	CertFile    string `json:"certFile,omitempty" yaml:"cert_file,omitempty"`

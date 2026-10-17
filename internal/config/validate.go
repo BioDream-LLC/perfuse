@@ -389,6 +389,12 @@ func (s *Source) validate() []error {
 			errs = append(errs, errors.New("source.listen does not apply to a gcs source; it polls the bucket"))
 		}
 
+	case SourceAS2:
+		errs = append(errs, s.AS2.validate()...)
+		if s.Listen != "" {
+			errs = append(errs, errors.New("source.listen does not apply to an as2 source; set as2.listen"))
+		}
+
 	case SourceEmail:
 		if s.Email == nil {
 			errs = append(errs, errors.New("an email source needs an email section with host, username and a password or oauth"))
@@ -720,6 +726,9 @@ func (d *Destination) validate(dataType DataType) []error {
 
 	case DestinationDirect:
 		errs = append(errs, validateDirectDest(d)...)
+
+	case DestinationAS2:
+		errs = append(errs, d.AS2.validate(d.Name)...)
 
 	case DestinationJavaScript:
 		errs = append(errs, validateJavaScriptDest(d)...)

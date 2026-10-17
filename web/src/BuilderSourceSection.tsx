@@ -33,6 +33,7 @@ const SOURCE_OPTIONS: { value: SourceKind; label: string }[] = [
   { value: 'dicom_query', label: 'We ask an imaging archive what is new (DICOM C-FIND)' },
   { value: 'dicomweb', label: 'A viewer or service sends us images over the web (DICOMweb STOW-RS)' },
   { value: 'direct', label: 'Our HISP delivers Direct secure messages to us (Direct, SMTP)' },
+  { value: 'as2', label: 'Trading partners send us EDI over AS2 (signed, encrypted, with a receipt)' },
   { value: 'javascript', label: 'A script we write produces messages (JavaScript Reader)' },
   { value: 'file', label: 'We read files from a folder on this server' },
   { value: 'ftp', label: 'We collect files from a server (FTP or FTPS)' },
@@ -1426,6 +1427,128 @@ export function SourceSection({
             </Pair>
           </Advanced>
           )}
+        </>
+      )}
+
+      {draft.sourceKind === 'as2' && (
+        <>
+          <Pair>
+            <Text
+              label="Listen on"
+              value={draft.as2SrcListen}
+              onChange={(v) => set('as2SrcListen', v)}
+              placeholder=":4080"
+              mono
+              hint="Partners post to this address. Give them the full URL, with the path below."
+            />
+            <Text
+              label="Path"
+              value={draft.as2SrcPath}
+              onChange={(v) => set('as2SrcPath', v)}
+              placeholder="/as2"
+              mono
+            />
+          </Pair>
+          <Text
+            label="Our AS2 identifier"
+            value={draft.as2SrcId}
+            onChange={(v) => set('as2SrcId', v)}
+            placeholder="HOSPITAL-AS2"
+            mono
+            hint="Partners send it in AS2-To. A message addressed to anything else is refused."
+          />
+          <Pair>
+            <Text
+              label="Our certificate (PEM)"
+              value={draft.as2SrcCertFile}
+              onChange={(v) => set('as2SrcCertFile', v)}
+              placeholder="/etc/perfuse/as2/ours.crt"
+              mono
+              hint="Give it to each partner: they encrypt to it and check our receipts' signatures with it."
+            />
+            <Text
+              label="Our private key (PEM)"
+              value={draft.as2SrcKeyFile}
+              onChange={(v) => set('as2SrcKeyFile', v)}
+              placeholder="/etc/perfuse/as2/ours.key"
+              mono
+            />
+          </Pair>
+          <div className="space-y-2 rounded-lg border border-slate-800 p-3" data-testid="as2-partners">
+            <p className="text-sm text-slate-300">
+              <span className="text-sky-300">Trading partners.</span> Only these may send here. Each must sign and encrypt unless
+              its agreement says otherwise.
+            </p>
+            {draft.as2SrcPartners.length === 0 && (
+              <p className="rounded border border-rose-700 bg-rose-950/40 px-2 py-1.5 text-xs text-rose-200">
+                No partners yet, so every message would be refused.
+              </p>
+            )}
+            {draft.as2SrcPartners.map((p, i) => {
+              const change = (patch: Partial<typeof p>) =>
+                set('as2SrcPartners', draft.as2SrcPartners.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+              return (
+                <div key={i} className="grid gap-2 rounded border border-slate-800 p-2 sm:grid-cols-[1fr_2fr_auto]">
+                  <input
+                    aria-label={`Partner ${i + 1} AS2 identifier`}
+                    className="input font-mono text-xs"
+                    value={p.id}
+                    onChange={(e) => change({ id: e.target.value })}
+                    placeholder="PAYER-AS2"
+                  />
+                  <input
+                    aria-label={`Partner ${i + 1} certificate`}
+                    className="input font-mono text-xs"
+                    value={p.certFile}
+                    onChange={(e) => change({ certFile: e.target.value })}
+                    placeholder="/etc/perfuse/as2/payer.crt"
+                  />
+                  <button
+                    type="button"
+                    className="btn-ghost py-1 text-xs text-rose-300"
+                    onClick={() => set('as2SrcPartners', draft.as2SrcPartners.filter((_, j) => j !== i))}
+                  >
+                    Remove
+                  </button>
+                  <label className="flex items-center gap-2 text-xs text-slate-400 sm:col-span-3">
+                    <input type="checkbox" checked={p.allowUnsigned} onChange={(e) => change({ allowUnsigned: e.target.checked })} />
+                    accept unsigned messages
+                    <input type="checkbox" className="ml-4" checked={p.allowUnencrypted} onChange={(e) => change({ allowUnencrypted: e.target.checked })} />
+                    accept unencrypted messages
+                  </label>
+                  {!p.certFile.trim() && !p.allowUnsigned && (
+                    <p className="text-xs text-rose-300 sm:col-span-3">Its certificate is needed to check its signatures.</p>
+                  )}
+                </div>
+              )
+            })}
+            <button
+              type="button"
+              className="btn-ghost py-1 text-xs"
+              onClick={() =>
+                set('as2SrcPartners', [...draft.as2SrcPartners, { id: '', certFile: '', allowUnsigned: false, allowUnencrypted: false }])
+              }
+            >
+              Add a partner
+            </button>
+          </div>
+          <Check
+            label="Serve HTTPS"
+            value={draft.as2SrcTlsEnabled}
+            onChange={(v) => set('as2SrcTlsEnabled', v)}
+            hint="The payload is encrypted either way; most partner agreements require HTTPS as well."
+          />
+          {draft.as2SrcTlsEnabled && (
+            <Pair>
+              <Text label="HTTPS certificate (PEM)" value={draft.as2SrcTlsCertFile} onChange={(v) => set('as2SrcTlsCertFile', v)} mono />
+              <Text label="HTTPS key (PEM)" value={draft.as2SrcTlsKeyFile} onChange={(v) => set('as2SrcTlsKeyFile', v)} mono />
+            </Pair>
+          )}
+          <p className="rounded-lg border border-teal-800/60 bg-teal-950/20 p-3 text-xs leading-relaxed text-teal-200">
+            Each message is decrypted and its signature checked, then handled as the channel's message format says (X12 or EDIFACT
+            usually). The partner gets a receipt, signed if it asked, naming the digest of what arrived, or why it was refused. This
+            source also takes the asynchronous receipts partners send for messages an AS2 destination here sent.
+          </p>
         </>
       )}
 

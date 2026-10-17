@@ -238,6 +238,12 @@ func describeSource(c *config.Channel) string {
 		}
 		return "amqp " + src.AMQP.Address + " at " + src.AMQP.Addr
 
+	case config.SourceAS2:
+		if src.AS2 == nil {
+			return "AS2 from trading partners"
+		}
+		return "AS2 to " + src.AS2.ID + " on " + src.AS2.Listen + src.AS2.AS2Path()
+
 	case config.SourceEmail:
 		if src.Email == nil {
 			return "a mailbox"
@@ -389,6 +395,13 @@ func describeDestination(d config.Destination) string {
 
 	case config.DestinationFile:
 		out = "files written to " + d.Dir
+
+	case config.DestinationAS2:
+		if d.AS2 != nil {
+			out = "AS2 from " + d.AS2.From + " to " + d.AS2.To + " at " + d.AS2.URL
+		} else {
+			out = "AS2 to a trading partner"
+		}
 
 	case config.DestinationHTTP:
 		if d.HTTP != nil {

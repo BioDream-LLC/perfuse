@@ -52,6 +52,19 @@ describe('reading a channel back into the form', () => {
     expect(plain.destinations[0]?.pgp).toBeUndefined()
   })
 
+  it('keeps an AS2 source and destination through a round trip', () => {
+    const as2Source = { listen: ':4080', id: 'HOSPITAL', certFile: 'ours.crt', keyFile: 'ours.key',
+      tls: { enabled: true, certFile: 't.crt', keyFile: 't.key' },
+      partners: [{ id: 'PAYER', certFile: 'payer.crt' }, { id: 'LAB', certFile: 'lab.crt', allowUnencrypted: true }] }
+    const as2Dest = { url: 'https://as2.payer.example/as2', from: 'HOSPITAL', to: 'PAYER', certFile: 'ours.crt', keyFile: 'ours.key',
+      partnerCertFile: 'payer.crt', receipt: 'async', receiptUrl: 'https://us.example/as2', fileName: '${control_id}.x12' }
+    const model = { ...minimal, source: { type: 'as2', as2: as2Source },
+      destinations: [{ name: 'payer', type: 'as2', as2: as2Dest }] } as unknown as WireModel
+    const out = roundTrip(model) as unknown as { source: { as2?: unknown }; destinations: { as2?: unknown }[] }
+    expect(out.source.as2).toEqual(as2Source)
+    expect(out.destinations[0]?.as2).toEqual(as2Dest)
+  })
+
   it('keeps the name, source and destination', () => {
     const draft = wireToDraft(minimal)
     expect(draft.name).toBe('feed')

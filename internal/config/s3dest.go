@@ -202,3 +202,6 @@ func (h *HTTPDestination) ResolvedBearerToken() string { return resolveSecret(h.
 
 // ResolvedPassword returns the HTTP destination's password, expanding a ${NAME} reference from the environment.
 func (h *HTTPDestination) ResolvedPassword() string { return resolveSecret(h.Password) }
+
+// ResolveSecret expands a ${NAME} reference from the environment, for connectors outside this package.
+func ResolveSecret(value string) string { return resolveSecret(value) }

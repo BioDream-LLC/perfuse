@@ -568,6 +568,17 @@ func describeArrival(c *config.Channel) string {
 			config.S3AfterReadMove: "moved to " + src.GCS.MoveTo, config.S3AfterReadDelete: "deleted"}[src.GCS.AfterRead] +
 			" once handled"
 
+	case config.SourceAS2:
+		if src.AS2 == nil {
+			return "AS2 messages are received from trading partners"
+		}
+		ids := make([]string, 0, len(src.AS2.Partners))
+		for _, p := range src.AS2.Partners {
+			ids = append(ids, p.ID)
+		}
+		return "AS2 messages to " + src.AS2.ID + " are received on " + src.AS2.Listen + src.AS2.AS2Path() + " from " +
+			strings.Join(ids, ", ") + "; each is decrypted and its signature checked, and a signed receipt names its digest"
+
 	case config.SourceEmail:
 		if src.Email == nil {
 			return "email is read from a mailbox"

@@ -257,6 +257,9 @@ const (
 
 	// SourceGCS picks objects up from a Google Cloud Storage bucket prefix.
 	SourceGCS SourceType = "gcs"
+
+	// SourceAS2 receives AS2 (RFC 4130): EDI over HTTP under S/MIME, answered with a signed receipt.
+	SourceAS2 SourceType = "as2"
 )
 
 // Source is where a channel receives messages.
@@ -339,6 +342,9 @@ type Source struct {
 
 	// Email applies to an email source.
 	Email *EmailSource `yaml:"email,omitempty"`
+
+	// AS2 applies to an as2 source.
+	AS2 *AS2Source `yaml:"as2,omitempty"`
 
 	// PGP decrypts and verifies each received message with OpenPGP before anything else reads it: a file a payer
 	// dropped on SFTP, an email attachment, an HTTP body.
@@ -444,6 +450,9 @@ const (
 	DestinationXDS DestinationType = "xds"
 	// DestinationDirect sends each message as Direct secure messaging through a HISP.
 	DestinationDirect DestinationType = "direct"
+
+	// DestinationAS2 sends each message as AS2 (RFC 4130) to a trading partner, delivered once its receipt confirms it.
+	DestinationAS2 DestinationType = "as2"
 	// DestinationJavaScript runs a script instead of sending, which is Mirth's
 	// JavaScript Writer and the escape hatch sites reach for constantly.
 	DestinationJavaScript DestinationType = "javascript"
@@ -513,6 +522,7 @@ var allDestinationTypes = []DestinationType{
 	DestinationDICOMweb,
 	DestinationXDS,
 	DestinationDirect,
+	DestinationAS2,
 	DestinationBroker,
 	DestinationKafka,
 	DestinationSQS,
@@ -620,6 +630,9 @@ type Destination struct {
 
 	// Direct applies to a direct destination.
 	Direct *DirectDestination `yaml:"direct,omitempty"`
+
+	// AS2 configures an as2 destination.
+	AS2 *AS2Destination `yaml:"as2,omitempty"`
 
 	// DICOM applies to a dicom destination.
 	DICOM *DICOMDestination `yaml:"dicom,omitempty"`

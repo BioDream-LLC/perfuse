@@ -1460,6 +1460,93 @@ function DestinationCard({
           </>
         )}
 
+        {dest.type === 'as2' && (
+          <>
+            <Field label="Partner's AS2 URL" hint="Where the partner receives AS2. Usually HTTPS.">
+              <input className="input font-mono" value={dest.as2Url} onChange={(e) => onChange({ as2Url: e.target.value })} placeholder="https://as2.payer.example/as2" />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="From (our AS2 identifier)">
+                <input className="input font-mono" value={dest.as2From} onChange={(e) => onChange({ as2From: e.target.value })} placeholder="HOSPITAL-AS2" />
+              </Field>
+              <Field label="To (the partner's AS2 identifier)">
+                <input className="input font-mono" value={dest.as2To} onChange={(e) => onChange({ as2To: e.target.value })} placeholder="PAYER-AS2" />
+              </Field>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Our certificate (PEM)" hint="Signs each message; the partner checks it with this certificate.">
+                <input className="input font-mono" value={dest.as2CertFile} onChange={(e) => onChange({ as2CertFile: e.target.value })} placeholder="/etc/perfuse/as2/ours.crt" disabled={dest.as2Unsigned} />
+              </Field>
+              <Field label="Our private key (PEM)">
+                <input className="input font-mono" value={dest.as2KeyFile} onChange={(e) => onChange({ as2KeyFile: e.target.value })} placeholder="/etc/perfuse/as2/ours.key" disabled={dest.as2Unsigned} />
+              </Field>
+            </div>
+            <Field label="The partner's certificate (PEM)" hint="Messages are encrypted to it, and its receipts' signatures checked with it.">
+              <input className="input font-mono" value={dest.as2PartnerCertFile} onChange={(e) => onChange({ as2PartnerCertFile: e.target.value })} placeholder="/etc/perfuse/as2/payer.crt" />
+            </Field>
+            <Field
+              label="Receipt"
+              hint={
+                dest.as2Receipt === 'sync'
+                  ? 'Delivered only when the receipt says processed and names the digest of what was sent. The safe choice.'
+                  : dest.as2Receipt === 'async'
+                    ? 'Delivered once the partner accepts the request; the receipt arrives later at an AS2 source on this server, and a bad one is logged as an error.'
+                    : 'Delivered once the partner accepts the request. Nothing proves what arrived.'
+              }
+            >
+              <select className="input" value={dest.as2Receipt} onChange={(e) => onChange({ as2Receipt: e.target.value as 'sync' | 'async' | 'none' })}>
+                <option value="sync">in the response (synchronous)</option>
+                <option value="async">posted back later (asynchronous)</option>
+                <option value="none">none</option>
+              </select>
+            </Field>
+            {dest.as2Receipt === 'async' && (
+              <Field label="Receipt URL" hint="An AS2 source on this server that lists this partner, such as https://as2.hospital.example/as2.">
+                <input className="input font-mono" value={dest.as2ReceiptUrl} onChange={(e) => onChange({ as2ReceiptUrl: e.target.value })} />
+              </Field>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="File name for the partner" hint="Optional: ${control_id}, ${date}, ${timestamp}.">
+                <input className="input font-mono" value={dest.as2FileName} onChange={(e) => onChange({ as2FileName: e.target.value })} placeholder="${control_id}.x12" />
+              </Field>
+              <Field label="Content type" hint="Empty: from the channel's format (application/edi-x12 for X12).">
+                <input className="input font-mono" value={dest.as2ContentType} onChange={(e) => onChange({ as2ContentType: e.target.value })} placeholder="application/edi-x12" />
+              </Field>
+            </div>
+            <div className="flex flex-wrap gap-4 text-xs text-slate-400">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={dest.as2Unsigned} onChange={(e) => onChange({ as2Unsigned: e.target.checked })} /> do not sign
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={dest.as2Unencrypted} onChange={(e) => onChange({ as2Unencrypted: e.target.checked })} /> do not encrypt
+              </label>
+              {dest.as2Receipt !== 'none' && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={dest.as2UnsignedReceipt} onChange={(e) => onChange({ as2UnsignedReceipt: e.target.checked })} /> accept an unsigned receipt
+                </label>
+              )}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Subject" hint="Optional.">
+                <input className="input" value={dest.as2Subject} onChange={(e) => onChange({ as2Subject: e.target.value })} />
+              </Field>
+              <Field label="HTTP user name" hint="Only for gateways that ask for basic authentication besides the certificates.">
+                <input className="input font-mono" value={dest.as2Username} onChange={(e) => onChange({ as2Username: e.target.value })} />
+              </Field>
+            </div>
+            {dest.as2Username && (
+              <Field label="HTTP password" hint="Write ${AS2_PASSWORD} to read it from the environment.">
+                <input type="password" className="input font-mono" value={dest.as2Password} onChange={(e) => onChange({ as2Password: e.target.value })} autoComplete="off" />
+              </Field>
+            )}
+            {!dest.as2Unencrypted && !dest.as2PartnerCertFile.trim() && (
+              <p className="rounded border border-rose-700 bg-rose-950/40 px-2 py-1.5 text-xs text-rose-200">
+                The partner's certificate is needed to encrypt. The server will refuse this channel otherwise.
+              </p>
+            )}
+          </>
+        )}
+
         {dest.type === 'direct' && (
           <>
             <div className="grid gap-3 sm:grid-cols-2">

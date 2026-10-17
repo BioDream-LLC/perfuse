@@ -37,6 +37,7 @@ export type DestinationType =
   | 'dicomweb'
   | 'xds'
   | 'direct'
+  | 'as2'
   | 'javascript'
 
 export const destinationLabels: Record<DestinationType, string> = {
@@ -58,6 +59,7 @@ export const destinationLabels: Record<DestinationType, string> = {
   dicomweb: 'An imaging archive or cloud service (DICOMweb STOW-RS)',
   xds: 'A document repository (IHE XDS.b ITI-41)',
   direct: 'A Direct address, through a HISP (Direct secure messaging)',
+  as2: 'A trading partner over AS2 (EDI, signed and encrypted, with a receipt)',
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
   kafka: 'A Kafka topic',
@@ -99,6 +101,8 @@ export const destinationHints: Record<DestinationType, string> = {
     'Sends imaging objects to a PACS or workstation as a C-STORE user, the same operation a scanner uses. Verified against DCMTK, the toolkit most hospital imaging equipment is built on. Encryption is included — Mirth needs a paid extension for it, and DICOM metadata carries patient names.',
   xds:
     "Publishes each clinical document to an IHE XDS.b repository with ITI-41 Provide and Register: a CDA document, or one carried in an HL7 v2 message (MDM, ORU). The metadata is read from the document - patient, title, type, time, author, confidentiality - and completed from what you set here. The repository's answer decides: an XDS error is a failed delivery with its error code.",
+  as2:
+    "Posts each message to a trading partner over AS2 (RFC 4130): signed with our certificate, encrypted to theirs. With a synchronous receipt, the default, a message counts as delivered only when the partner's signed receipt says processed and names the digest of what was sent; anything else is a failed delivery and is retried. Tested against pyas2lib.",
   direct:
     "Sends each message as Direct secure messaging: signed with this address's certificate, encrypted to each recipient's, and handed to your HISP by SMTP with STARTTLS. Recipient certificates come from the Direct address book (the Direct screen) or DNS; a recipient with no trusted certificate is a failed delivery, never plain e-mail. A CDA document can go as an IHE XDM package, which receiving EHRs import with its metadata.",
   dicomweb:
@@ -446,6 +450,24 @@ export interface Destination {
   soapPassword: string
   soapFaultIsSuccess: string
 
+  /** An AS2 destination: a trading partner's endpoint, our identity and theirs. */
+  as2Url: string
+  as2From: string
+  as2To: string
+  as2CertFile: string
+  as2KeyFile: string
+  as2PartnerCertFile: string
+  as2Unsigned: boolean
+  as2Unencrypted: boolean
+  as2Receipt: 'sync' | 'async' | 'none'
+  as2UnsignedReceipt: boolean
+  as2ReceiptUrl: string
+  as2ContentType: string
+  as2FileName: string
+  as2Subject: string
+  as2Username: string
+  as2Password: string
+
   /** directAddress and the rest describe a Direct destination. */
   directAddress: string
   directCertFile: string
@@ -651,6 +673,7 @@ export type SourceKind =
   | 'dicom_query'
   | 'dicomweb'
   | 'direct'
+  | 'as2'
   | 'javascript'
   | 'broker'
   | 'kafka'
@@ -890,6 +913,14 @@ export function newV3Step(kind: V3StepKind = 'set'): DraftV3Step {
   }
 }
 
+/** A trading partner an AS2 source accepts. */
+export interface As2PartnerDraft {
+  id: string
+  certFile: string
+  allowUnsigned: boolean
+  allowUnencrypted: boolean
+}
+
 export interface ChannelDraft {
   name: string
   description: string
@@ -996,6 +1027,16 @@ export interface ChannelDraft {
 
   /** directSrc fields describe receiving Direct mail from a HISP. */
   directSrcAddress: string
+  /** An AS2 source: where partners post, our AS2 identity and key, and who may send. */
+  as2SrcListen: string
+  as2SrcPath: string
+  as2SrcId: string
+  as2SrcCertFile: string
+  as2SrcKeyFile: string
+  as2SrcPartners: As2PartnerDraft[]
+  as2SrcTlsEnabled: boolean
+  as2SrcTlsCertFile: string
+  as2SrcTlsKeyFile: string
   directSrcCertFile: string
   directSrcKeyFile: string
   directSrcAnchorsFile: string
@@ -1882,6 +1923,26 @@ export function draftToWire(draft: ChannelDraft): unknown {
         faultOnNak: draft.soapSourceFaultOnNak || undefined,
       }
       break
+    case 'as2':
+      source.as2 = {
+        listen: draft.as2SrcListen || undefined,
+        path: draft.as2SrcPath && draft.as2SrcPath !== '/as2' ? draft.as2SrcPath : undefined,
+        id: draft.as2SrcId || undefined,
+        certFile: draft.as2SrcCertFile || undefined,
+        keyFile: draft.as2SrcKeyFile || undefined,
+        tls: draft.as2SrcTlsEnabled
+          ? { enabled: true, certFile: draft.as2SrcTlsCertFile || undefined, keyFile: draft.as2SrcTlsKeyFile || undefined }
+          : undefined,
+        partners: draft.as2SrcPartners
+          .filter((p) => p.id.trim())
+          .map((p) => ({
+            id: p.id.trim(),
+            certFile: p.certFile.trim() || undefined,
+            allowUnsigned: p.allowUnsigned || undefined,
+            allowUnencrypted: p.allowUnencrypted || undefined,
+          })),
+      }
+      break
     case 'direct':
       source.direct = {
         address: draft.directSrcAddress || undefined,
@@ -2447,6 +2508,26 @@ function destinationToWire(d: Destination): unknown {
     case 'channel':
       out.channel = { name: d.routeTo }
       break
+    case 'as2':
+      out.as2 = {
+        url: d.as2Url || undefined,
+        from: d.as2From || undefined,
+        to: d.as2To || undefined,
+        certFile: d.as2Unsigned ? undefined : d.as2CertFile || undefined,
+        keyFile: d.as2Unsigned ? undefined : d.as2KeyFile || undefined,
+        partnerCertFile: d.as2PartnerCertFile || undefined,
+        unsigned: d.as2Unsigned || undefined,
+        unencrypted: d.as2Unencrypted || undefined,
+        receipt: d.as2Receipt === 'sync' ? undefined : d.as2Receipt,
+        unsignedReceipt: d.as2Receipt !== 'none' && d.as2UnsignedReceipt ? true : undefined,
+        receiptUrl: d.as2Receipt === 'async' ? d.as2ReceiptUrl || undefined : undefined,
+        contentType: d.as2ContentType || undefined,
+        fileName: d.as2FileName || undefined,
+        subject: d.as2Subject || undefined,
+        username: d.as2Username || undefined,
+        password: d.as2Username ? d.as2Password || undefined : undefined,
+      }
+      break
     case 'direct':
       out.direct = {
         address: d.directAddress || undefined,
@@ -2824,6 +2905,22 @@ export function newDestination(): Destination {
     directKeyFile: '',
     directAnchorsFile: '',
     directTo: '',
+    as2Url: '',
+    as2From: '',
+    as2To: '',
+    as2CertFile: '',
+    as2KeyFile: '',
+    as2PartnerCertFile: '',
+    as2Unsigned: false,
+    as2Unencrypted: false,
+    as2Receipt: 'sync',
+    as2UnsignedReceipt: false,
+    as2ReceiptUrl: '',
+    as2ContentType: '',
+    as2FileName: '',
+    as2Subject: '',
+    as2Username: '',
+    as2Password: '',
     directSubject: '',
     directText: '',
     directAttachName: '',
@@ -3061,6 +3158,15 @@ export function emptyDraft(): ChannelDraft {
     attachmentsReassemble: true,
 
     directSrcAddress: '',
+    as2SrcListen: ':4080',
+    as2SrcPath: '',
+    as2SrcId: '',
+    as2SrcCertFile: '',
+    as2SrcKeyFile: '',
+    as2SrcPartners: [],
+    as2SrcTlsEnabled: false,
+    as2SrcTlsCertFile: '',
+    as2SrcTlsKeyFile: '',
     directSrcCertFile: '',
     directSrcKeyFile: '',
     directSrcAnchorsFile: '',

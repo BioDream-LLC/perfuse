@@ -70,6 +70,10 @@ func listenerOf(c *Channel) (addr, kind string) {
 		if c.Source.HTTP != nil {
 			return c.Source.HTTP.Listen, "HTTP"
 		}
+	case SourceAS2:
+		if c.Source.AS2 != nil {
+			return c.Source.AS2.Listen, "AS2"
+		}
 	}
 	// database and sftp sources poll outward and bind nothing.
 	return "", ""
