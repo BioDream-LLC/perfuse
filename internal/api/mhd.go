@@ -24,6 +24,10 @@ import (
 
 func (s *Server) registerMHD(mux *recordingMux) {
 	if s.XDS == nil {
+		// A patient index is a PIX manager on its own, with or without a document registry.
+		if s.PatientIndex != nil {
+			mux.Handle("GET /mhd/Patient/$ihe-pix", s.require(store.RoleViewer, s.handlePIXm))
+		}
 		return
 	}
 	mux.Handle("POST /mhd", s.require(store.RoleOperator, s.handleMHDProvide))
@@ -379,6 +383,14 @@ func (s *Server) handleMHDBinary(w http.ResponseWriter, r *http.Request, sess *s
 
 // handlePIXm is ITI-83: every identifier the patient with this one has, from the FHIR store's Patients.
 func (s *Server) handlePIXm(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	// With a patient index the cross-references are the index's: every identifier of every record linked to the same
+	// person, and the enterprise identifier. That is what a PIX manager is for; the FHIR store only knows the identifiers
+	// one Patient resource happens to carry.
+	if s.PatientIndex != nil {
+		if s.handlePIXmFromIndex(w, r, sess) {
+			return
+		}
+	}
 	if s.FHIRStore == nil {
 		fhirFail(w, http.StatusNotImplemented, "not-supported", "PIXm answers from the FHIR store, which is off (serve -fhir)")
 		return
@@ -501,4 +513,39 @@ func (s *Server) handlePDQmRead(w http.ResponseWriter, r *http.Request, sess *st
 	_ = s.Store.Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "pdqm.read", Target: r.PathValue("id"), IP: clientIP(r)})
 	w.Header().Set("Content-Type", "application/fhir+json")
 	_, _ = w.Write(raw)
+}
+
+// handlePIXmFromIndex answers ITI-83 from the patient index, and reports false when the index does not know the identifier,
+// so the FHIR store is asked instead.
+func (s *Server) handlePIXmFromIndex(w http.ResponseWriter, r *http.Request, sess *store.Session) bool {
+	src := r.URL.Query().Get("sourceIdentifier")
+	sys, val, ok := strings.Cut(src, "|")
+	if !ok || sys == "" || val == "" {
+		fhirFail(w, http.StatusBadRequest, "required", "sourceIdentifier is system|value")
+		return true
+	}
+	t := mpiTenant(sess)
+	p, err := s.PatientIndex.ByIdentifier(r.Context(), t, src)
+	if err != nil {
+		return false
+	}
+	set, _ := s.PatientIndex.Settings(r.Context(), t)
+	targets := map[string]bool{}
+	for _, x := range strings.Split(r.URL.Query().Get("targetSystem"), ",") {
+		if x = strings.TrimSpace(x); x != "" {
+			targets[x] = true
+		}
+	}
+	params := []any{}
+	for _, id := range p.Identifiers(set.EUIDSystem) {
+		isys, ival, _ := strings.Cut(id, "|")
+		if id == src || (len(targets) > 0 && !targets[isys]) {
+			continue
+		}
+		params = append(params, map[string]any{"name": "targetIdentifier", "valueIdentifier": map[string]any{"use": "official",
+			"system": isys, "value": ival}})
+	}
+	_ = s.Store.Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "pixm.query", Target: src, Detail: "patient index", IP: clientIP(r)})
+	fhirJSON(w, http.StatusOK, map[string]any{"resourceType": "Parameters", "parameter": params})
+	return true
 }

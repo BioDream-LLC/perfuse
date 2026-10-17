@@ -27,6 +27,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/alerts"
 	"github.com/biodream-llc/perfuse/internal/authlimit"
 	"github.com/biodream-llc/perfuse/internal/branding"
+	"github.com/biodream-llc/perfuse/internal/mpi"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/peers"
 	"github.com/biodream-llc/perfuse/internal/settings"
@@ -48,6 +49,9 @@ type Server struct {
 	Alerts *alerts.Evaluator
 	// Terminology holds imported code systems and the values mapping tables did not have; nil without a database.
 	Terminology *terminology.Store
+
+	// PatientIndex is the master patient index; nil when the server keeps none (serve -mpi).
+	PatientIndex *mpi.Store
 	// SNMP is the SNMP agent and trap sender, nil when SNMP is off.
 	SNMP *snmp.Service
 
@@ -456,6 +460,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/codesets/diff", s.require(store.RoleViewer, s.handleTableDiff))
 	mux.Handle("GET /api/codesets/unmapped", s.require(store.RoleEditor, s.handleUnmapped))
 	mux.Handle("POST /api/codesets/unmapped/dismiss", s.require(store.RoleEditor, s.handleUnmappedDismiss))
+	s.registerMPI(mux)
 	mux.Handle("GET /api/terminology/systems", s.require(store.RoleViewer, s.handleTermSystems))
 	mux.Handle("POST /api/terminology/import", s.require(store.RoleAdmin, s.handleTermImport))
 	mux.Handle("DELETE /api/terminology/systems", s.require(store.RoleAdmin, s.handleTermDelete))

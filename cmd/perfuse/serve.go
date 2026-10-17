@@ -34,6 +34,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/ldap"
 	"github.com/biodream-llc/perfuse/internal/metrics"
+	"github.com/biodream-llc/perfuse/internal/mpi"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/oidc"
 	"github.com/biodream-llc/perfuse/internal/peers"
@@ -196,6 +197,9 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	snmpLocation := fset.String("snmp-location", "", "sysLocation the SNMP agent reports")
 
 	serveFHIR := fset.Bool("fhir", true, "serve a FHIR endpoint at /fhir")
+	keepMPI := fset.Bool("mpi", false, "keep a patient index (master patient index) in mpi.db beside the database: patient "+
+		"records from every system linked into one enterprise identifier per person, fed by mpi destinations, answering "+
+		"Patient/$match and PIXm")
 	// Defaults to what the resource structs are actually shaped to, not to the newest release.
 	//
 	// This served R5 while the US Core resource types are R4 shapes, so a client read fhirVersion 5.0.0 from the
@@ -632,6 +636,27 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		go forgetOldUnmapped(termCtx, termStore, *retention)
 	}
 
+	// The patient index, also in a database of its own: a site that keeps one decided to, and one that does not has no
+	// table of patients to protect.
+	var mpiStore *mpi.Store
+	if *keepMPI {
+		mpiPath := filepath.Join(filepath.Dir(*dbPath), "mpi.db")
+		if isMemoryPath(*dbPath) {
+			mpiPath = filepath.Join(os.TempDir(), fmt.Sprintf("perfuse-mpi-%d.db", os.Getpid()))
+			defer os.Remove(mpiPath)
+		}
+		mpiPool, err := sqlitedb.Open(mpiPath, sqlitedb.Options{})
+		if err != nil {
+			return fmt.Errorf("opening %s: %w", mpiPath, err)
+		}
+		defer mpiPool.Close()
+		if mpiStore, err = mpi.Open(context.Background(), mpiPool.Write); err != nil {
+			return err
+		}
+		engine.PatientIndex = mpiStore
+		log.Info("keeping a patient index", "database", mpiPath)
+	}
+
 	var runtime *api.Runtime
 	if *runEngine {
 		runtime = api.NewRuntime(repo, messages, fhirStore)
@@ -1021,6 +1046,7 @@ oidcDone:
 		Alerts:             srvAlerts,
 		SNMP:               srvSNMP,
 		Terminology:        termStore,
+		PatientIndex:       mpiStore,
 		Version:            version,
 		FleetLabel:         *fleetLabel,
 		Settings:           settingsStore,
@@ -1320,6 +1346,9 @@ oidcDone:
 		// Wired unconditionally: with no tables configured the endpoints say so and the capability statement does not
 		// mention ConceptMap at all, which is the honest state rather than an empty list implying there could be some.
 		fhirSrv.Tables = &channelTables{repo: repo, log: log}
+		if mpiStore != nil {
+			fhirSrv.Match = &mpiMatcher{store: mpiStore}
+		}
 		if termStore != nil {
 			fhirSrv.Codes = termStore
 		}

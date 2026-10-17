@@ -5,6 +5,11 @@ package settings
 // every setting). Without them the console could show that, say, the PAS server was off and not turn it on.
 func startupSettings() []Setting {
 	return []Setting{
+		{Key: "data.patientIndex", Group: GroupData, Subgroup: "Patient index", Label: "Keep a patient index",
+			Help: "Keep a master patient index: patient records from every system, linked into one enterprise identifier per person, " +
+				"fed by patient index destinations, answering Patient/$match and PIXm. It holds patient names, birth dates and " +
+				"identifiers, so it is off until somebody decides to keep one.",
+			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: false, Flag: "mpi"},
 		{Key: "fhir.serve", Group: GroupFHIR, Subgroup: "The FHIR server", Label: "Serve a FHIR endpoint at /fhir",
 			Help: "Serve a FHIR endpoint at /fhir, which the payer APIs, SMART apps, PAS and the FHIR lab all use. On by default.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: true, Flag: "fhir"},

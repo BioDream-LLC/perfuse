@@ -191,3 +191,86 @@ The rules are the same for all three languages rather than new ones per runtime,
 For a transformer, preprocessor or writer, **empty output means the message is unchanged.** Falling off the end of a script leaves the message alone; treating no output as "the message is now empty" would discard traffic on a technicality.
 
 WebAssembly modules are compiled when the channel loads, not on the first message. Compiling is not free — a module built from a language that brings its own runtime can take hundreds of milliseconds — and paying that at load time means the first message through a channel is not mysteriously slower than the rest.
+
+## Shared mapping tables
+
+A map step can use a table shared by every channel that needs it (`use:` instead of an inline `table:`), kept in a
+`*.codeset.yaml` file beside the channels with who decided each mapping and why. Tables are made and changed on **Build → Tables** as well as in the file. Saving a
+table that is in force restarts the running channels that load its file, so the
+next message uses it; a draft restarts nothing.
+
+### Versions and effective dates
+
+A table may keep several editions under one name, each with its own `version`.
+The edition a message uses is chosen when the message arrives: of the approved
+editions whose dates cover that day (UTC), the one that started latest. So a code
+change agreed for the first of next month is entered now and takes over on its
+own.
+
+```yaml
+tables:
+  - name: sex-to-lab
+    version: "3"
+    effective_from: 2026-11-01   # optional; empty means from the start
+    effective_until: 2027-10-31  # optional; the last day it applies
+    source_system: urn:local:hospital-sex
+    target_system: http://terminology.hl7.org/CodeSystem/v2-0001
+    entries: [...]
+```
+
+- `status` is `approved` (the default), `draft` (used by nothing) or `retired`
+  (kept for the record, used by nothing).
+- Two editions of one name with the same version, or two approved editions
+  starting the same day, are refused when the file loads.
+- Saving a new version with no start date while another is approved dates it
+  from today, so it replaces the one in force. One that had itself only started
+  today is retired, since two editions starting the same day leave no rule.
+- A map step's own `default` and `strict` are used when the step sets them;
+  otherwise the table's.
+- On the Tables screen, **Show versions** lists every edition with its status,
+  who saved and who approved it, and **Compare with the version in force** shows
+  what an edition adds, removes and changes.
+
+### Sign-off
+
+With **Settings → Data → Mapping tables** "Changes to a mapping table need a second person's approval" (`data.tableApproval`)
+on, every save is a draft, and the person who saved it cannot approve it:
+somebody else does, optionally giving the day it comes into force. An approved
+edition cannot be edited in place; **New version from this** copies it into the
+next version. Approving, retiring and deleting a draft are written to the audit
+log, and approving restarts the running channels that load the file.
+
+### Values no table maps
+
+Every value a map step looked for and did not find is counted, per table, with
+the channels it came through and when it was first and last seen. The Tables
+screen lists them, most frequent first. **Map it** opens the table with that value
+already added as a row; **Dismiss** removes it until it is seen again. Values
+longer than 64 characters are not recorded (they are not codes), and the list
+keeps what was seen within the message retention period. The list is kept in
+`terminology.db` beside the main database.
+
+### Code systems
+
+Published code systems can be imported from their publishers' own files, under
+**Code systems** on the Tables screen (admins) or with
+`POST /api/terminology/import?format=…` and the file as the body:
+
+| Format | File | System |
+|---|---|---|
+| `loinc` | `Loinc.csv` from the LOINC table release | `http://loinc.org` |
+| `icd10cm` | the CMS order file (`icd10cm_order_*.txt`) or codes file | `http://hl7.org/fhir/sid/icd-10-cm` |
+| `rxnorm` | `RXNCONSO.RRF` from the RxNorm full release | `http://www.nlm.nih.gov/research/umls/rxnorm` |
+| `snomed` | the RF2 description snapshot (`sct2_Description_Snapshot-en_*.txt`) | `http://snomed.info/sct` |
+| `csv` | any CSV, with `system`, `codeColumn` and `displayColumn` (CPT, HCPCS, local codes) | the given `system` |
+
+None ships with Perfuse: LOINC, SNOMED CT, RxNorm and CPT each have their own
+licence, and the screen asks the importer to confirm the organisation holds it
+(recorded with the import). Imported codes are used three ways:
+
+- a table naming `source_system` or `target_system` has its entries checked when
+  saved, and codes that are not in the system are listed on the edition;
+- **Find a code** searches by code or by words in the name;
+- the FHIR server answers `CodeSystem/$lookup` and `CodeSystem/$validate-code`
+  for them (see the FHIR server options). ICD-10-CM codes are accepted with or
+  without the dot.

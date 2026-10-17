@@ -1571,6 +1571,18 @@ export const api = {
     table,
   ),
 
+  mpiSummary: (q = '') => request<MPISummary>('GET', `/api/mpi${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  mpiPerson: (euid: string) => request<MPIPersonView>('GET', `/api/mpi/persons/${encodeURIComponent(euid)}`),
+  mpiReviews: () => request<{ reviews: MPIReview[] }>('GET', '/api/mpi/reviews'),
+  mpiDecide: (id: number, same: boolean) => request<{ review: number }>('POST', `/api/mpi/reviews/${id}`, { same }),
+  mpiLink: (recordId: number, euid: string, why: string) =>
+    request<{ euid: string }>('POST', `/api/mpi/records/${recordId}/link`, { euid, why }),
+  mpiUnlink: (recordId: number, why: string) => request<{ euid: string }>('POST', `/api/mpi/records/${recordId}/unlink`, { why }),
+  mpiMerge: (from: string, into: string, why: string) => request<{ euid: string }>('POST', '/api/mpi/merge', { from, into, why }),
+  mpiFind: (q: Partial<MPIRecord>) => request<{ matches: MPIMatch[] }>('POST', '/api/mpi/find', q),
+  mpiRegister: (r: Partial<MPIRecord>) => request<{ action: string; record: MPIRecord }>('POST', '/api/mpi/records', r),
+  mpiSaveSettings: (s: MPISettings) => request<MPISettings>('PUT', '/api/mpi/settings', s),
+
   /** tableEditions returns every edition of one table, with its entries. */
   tableEditions: (file: string, name: string) =>
     request<TableEditions>('GET', `/api/codesets/table?file=${encodeURIComponent(file)}&name=${encodeURIComponent(name)}`),
@@ -3562,4 +3574,88 @@ export interface Concept {
   code: string
   display: string
   active: boolean
+}
+
+/** One source system's record of a patient, in the patient index. */
+export interface MPIRecord {
+  id: number
+  system: string
+  value: string
+  family?: string
+  given?: string
+  birthDate?: string
+  sex?: string
+  phone?: string
+  line?: string
+  city?: string
+  postal?: string
+  identifiers?: string[]
+  source?: string
+  euid?: string
+  updatedAt: string
+}
+
+export interface MPIPerson {
+  euid: string
+  records: MPIRecord[]
+  created: string
+}
+
+export interface MPISettings {
+  autoLink: number
+  review: number
+  trusted: string[]
+  euidSystem: string
+}
+
+export interface MPISummary {
+  enabled: boolean
+  counts: { persons: number; records: number; reviews: number; linked: number }
+  persons: MPIPerson[]
+  settings: MPISettings
+}
+
+export interface MPIFieldResult {
+  field: string
+  result: 'agree' | 'partial' | 'disagree' | 'missing'
+  weight: number
+}
+
+export interface MPIComparison {
+  score: number
+  fields: MPIFieldResult[]
+  safe: boolean
+}
+
+export interface MPIReview {
+  id: number
+  record: MPIRecord
+  candidate: MPIPerson
+  score: number
+  why: MPIComparison
+  created: string
+}
+
+export interface MPIMatch {
+  person: MPIPerson
+  score: number
+  grade: 'certain' | 'probable' | 'possible'
+  why: MPIComparison
+}
+
+export interface MPIEvent {
+  at: string
+  actor: string
+  action: string
+  recordId?: number
+  euid?: string
+  otherEuid?: string
+  detail?: string
+}
+
+export interface MPIPersonView {
+  person: MPIPerson
+  golden: MPIRecord
+  history: MPIEvent[]
+  identifiers: string[]
 }

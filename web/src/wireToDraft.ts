@@ -899,6 +899,14 @@ function readDestination(d: WireDest): Destination {
     case 'channel':
       dest.routeTo = d.channel?.name ?? ''
       break
+    case 'mpi':
+      dest.mpiAuthorities = Object.entries(d.mpi?.authorities ?? {})
+        .map(([ns, sys]) => `${ns}=${sys}`)
+        .join('\n')
+      dest.mpiIdType = d.mpi?.idType ?? ''
+      dest.mpiSsnSystem = d.mpi?.ssnSystem ?? ''
+      dest.mpiNoMerge = d.mpi?.noMerge === true
+      break
     case 'as2': {
       const a = d.as2
       dest.as2Url = a?.url ?? ''
@@ -1497,6 +1505,7 @@ interface WireStep {
 interface WireDest {
   responseTransformer?: string
   elr?: { config?: string; rctc?: string }
+  mpi?: { authorities?: Record<string, string>; idType?: string; ssnSystem?: string; noMerge?: boolean }
   as2?: {
     url?: string
     from?: string

@@ -1,7 +1,7 @@
 // Every view's id, for reading one out of the URL. A string from the address bar is only trusted once it is in here.
 export const TAB_IDS = [
   'dashboard', 'teams', 'channels', 'messages', 'queue', 'alerts', 'metrics', 'fhir', 'subscriptions', 'documents', 'payer',
-  'cms0057', 'shl', 'drugs', 'xds', 'direct', 'aligned', 'views', 'measures', 'imaging', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
+  'cms0057', 'shl', 'drugs', 'xds', 'direct', 'mpi', 'aligned', 'views', 'measures', 'imaging', 'scripts', 'certificates', 'shadow', 'migrate', 'playground', 'flow', 'contracts', 'fleet', 'tefca', 'tables',
   'mapper', 'users', 'audit', 'settings', 'tenants',
 ] as const
 

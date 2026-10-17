@@ -731,6 +731,9 @@ func (d *Destination) validate(dataType DataType) []error {
 	case DestinationAS2:
 		errs = append(errs, d.AS2.validate(d.Name)...)
 
+	case DestinationMPI:
+		errs = append(errs, validateMPIDest(d, dataType)...)
+
 	case DestinationJavaScript:
 		errs = append(errs, validateJavaScriptDest(d)...)
 

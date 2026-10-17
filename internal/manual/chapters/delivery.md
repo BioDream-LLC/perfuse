@@ -555,6 +555,126 @@ Tested against GreenMail 2.1.3 (IMAPS, IMAP, POP3S and POP3: sign-in refused wit
 MOVE, flag, delete, a too-large email refused before it is read) and against Gmail's IMAP with an app password (create a
 folder, append, fetch, MOVE, delete). OAuth was tested against a stand-in token endpoint only: not against Microsoft or Google.
 
+## AS2
+
+AS2 (RFC 4130) is how many payers, clearinghouses and suppliers exchange EDI: an
+HTTP POST whose body is signed with the sender's certificate and encrypted to the
+receiver's, answered with a receipt (an MDN) that names a digest of what arrived.
+The S/MIME is the same code Direct messaging uses. Both ends are on the channel
+builder: **Trading partners send us EDI over AS2** as a source, **A trading partner
+over AS2** as a destination.
+
+```yaml
+# receive: partners post here
+source:
+  type: as2
+  as2:
+    listen: ":4080"            # path /as2 by default
+    id: HOSPITAL-AS2           # our AS2 identifier (AS2-To)
+    cert_file: as2/ours.crt    # partners encrypt to this
+    key_file: as2/ours.key     # and receipts are signed with it
+    tls: { enabled: true, cert_file: tls.crt, key_file: tls.key }
+    partners:
+      - id: PAYER-AS2
+        cert_file: as2/payer.crt
+dataType: x12
+```
+
+```yaml
+# send
+destinations:
+  - name: payer
+    type: as2
+    as2:
+      url: https://as2.payer.example/as2
+      from: HOSPITAL-AS2
+      to: PAYER-AS2
+      cert_file: as2/ours.crt
+      key_file: as2/ours.key
+      partner_cert_file: as2/payer.crt
+      file_name: "${control_id}.x12"
+```
+
+**Receiving.** A message to any other AS2-To, or from a sender not in `partners`,
+is refused with 403 and no receipt. A partner's message must be signed and
+encrypted unless its entry sets `allow_unsigned` or `allow_unencrypted`. The payload
+is decrypted, its signature checked against the partner's certificate (partners
+usually exchange self-signed ones, which is fine: the certificate is the trust),
+and handed to the channel as its message format says. The partner gets the receipt
+it asked for: in the response, or posted to its `Receipt-Delivery-Option` URL; signed
+when it asked for a signed one. A message that fails gets a receipt naming why
+(`decryption-failed`, `authentication-failed`, `insufficient-message-security`,
+`unexpected-processing-error`).
+
+**Sending.** Each message is signed (SHA-256) and encrypted (AES-256-CBC). With
+`receipt: sync`, the default, it counts as delivered only when the receipt verifies
+against `partner_cert_file`, says `processed`, and carries the same digest (MIC) as
+what was sent; anything else is a failed delivery and is retried. `receipt: async`
+asks for the receipt at `receipt_url`, which must be an AS2 source on this server
+that lists the partner: the message counts as delivered once the partner accepts the
+request, and a receipt that later disagrees is logged as an error. `receipt: none`
+asks for nothing. `unsigned`, `unencrypted` and `unsigned_receipt` relax each part for
+an agreement that says so; `username` and `password` add HTTP basic authentication
+for gateways that require it. The content type follows the channel's format
+(`application/edi-x12` for X12) unless `content_type` sets one.
+
+Triple DES, AES-128 and AES-192 are read as well as AES-256, since partners still
+send them. Not offered: compression (RFC 5402; a compressed message is refused with
+a receipt saying so), and detection of a message sent twice with the same
+Message-ID. Interoperability is tested against pyas2lib 1.4.3 in both directions,
+with Triple DES and AES-256, signed synchronous receipts included.
+
+## OpenPGP
+
+Payers, clearinghouses and state agencies often take and send files only under
+OpenPGP. A `pgp` block on a source opens what arrives; one on a destination
+protects what leaves. Both are on the channel builder: **Open PGP-encrypted
+messages** under the source, **Encrypt with OpenPGP** on each destination.
+
+```yaml
+source:
+  type: sftp
+  sftp: { host: sftp.payer.example, user: hospital, key_file: keys/id_ed25519, dir: outbound }
+  pgp:
+    decrypt_with: keys/our-secret.asc      # our secret key, armored or binary
+    passphrase: ${PGP_PASSPHRASE}
+    verify_with: [keys/payer.asc]          # the senders' public keys
+    require_signature: true
+destinations:
+  - name: claims
+    type: sftp
+    sftp: { host: sftp.payer.example, user: hospital, key_file: keys/id_ed25519, dir: inbound,
+            file_name: "${date}-${control_id}.x12.pgp" }
+    pgp:
+      encrypt_to: [keys/payer.asc]
+      sign_with: keys/our-secret.asc
+      passphrase: ${PGP_PASSPHRASE}
+```
+
+Key files are read relative to the channel file, and are read and unlocked when the
+channel loads: a missing key or a wrong passphrase stops the channel there, not on
+the first file.
+
+- **On a source**, the whole file, object, email attachment or request body is
+  opened first and then split into messages, so a batch encrypted as one file
+  works. One that will not open is refused: a file source moves it to its error
+  folder, an HTTP sender is answered 400 with the reason. `require_signature` refuses a message not
+  signed by one of `verify_with`; `allow_unencrypted` accepts one that is only
+  signed; `pass_plain` lets a message that is not PGP at all through unchanged,
+  for a folder that receives both.
+- **On a destination**, what would have been delivered is encrypted (to any of
+  `encrypt_to`) and signed (with `sign_with`), after every other step. A file,
+  SFTP, FTP, S3, Azure Blob or GCS destination still names the file from the plain
+  message, so `${control_id}` works, and any framing is inside the encryption.
+  `armor: true` writes `.asc` text rather than binary; `no_compress` turns off
+  compression; `file_name` is the name carried inside the message.
+
+Messages are written with AES-256 in the RFC 4880 format older receivers read, and
+the newer RFC 9580 format is read as well. The cryptography is
+`ProtonMail/go-crypto`; Perfuse implements no primitive. Interoperability is tested
+against GnuPG in both directions: gpg decrypts and verifies what Perfuse writes, and
+Perfuse opens and verifies what gpg writes.
+
 ## Delivery to another channel
 
 A channel destination hands the message to another channel by name. The receiving channel treats it like any other arrival: it records it, filters it, transforms it and fans it out.

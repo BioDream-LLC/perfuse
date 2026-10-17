@@ -38,6 +38,9 @@ type Server struct {
 	// Codes answers CodeSystem/$lookup and $validate-code from the imported code systems; nil when there are none.
 	Codes CodeLookup
 
+	// Match answers Patient/$match from the patient index; nil when the server keeps none.
+	Match PatientMatcher
+
 	// Payer turns on the CMS-0057 payer operations: $member-match and the Group exports. Nil leaves them off.
 	Payer *PayerAPIs
 
@@ -169,6 +172,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerTerminology(mux)
 	s.registerValueSets(mux)
 	s.registerCodeSystems(mux)
+	s.registerMatch(mux)
 
 	s.registerPayerAPIs(mux)
 	s.registerPAS(mux)
@@ -421,6 +425,9 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 					"name":       "export",
 					"definition": "http://hl7.org/fhir/uv/bulkdata/OperationDefinition/patient-export",
 				})
+			}
+			if s.Match != nil {
+				ops = append(ops, map[string]any{"name": "match", "definition": "http://hl7.org/fhir/OperationDefinition/Patient-match"})
 			}
 			entry["operation"] = ops
 		}

@@ -734,6 +734,78 @@ server. `-measure example:example-bp-control` runs a shipped example, and `-exam
 individual and a subject-list MeasureReport against the DEQM 5.0.0 summary, individual and subject-list profiles, also with no
 errors. Not verified: equivalence with any published eCQM, since none can be run here without CQL.
 
+## The patient index (MPI)
+
+A master patient index links the records every system keeps for a person (the
+hospital's MRN, the clinic's, the lab's) into one enterprise identifier, the EUID.
+It is off until somebody decides to keep one, because it is a table of patients'
+names, birth dates and identifiers: turn on **Settings → Data → Patient index**
+(or `serve -mpi`) and restart. It lives in `mpi.db` beside the main database.
+
+**Feeding it.** Add a destination of type `mpi` (**The patient index** in the
+builder) to the channels that carry registrations. It reads the PID of each HL7 v2
+message, or a FHIR Patient on a raw channel. The record's own identifier is the
+PID-3 repetition of type MR (`id_type` changes it); the others, and PID-19, become
+its other identifiers. An assigning authority with a universal identifier (PID-3.4.2
+with type ISO) becomes `urn:oid:...`; one with only a namespace is mapped by
+`authorities`, or becomes `urn:perfuse:aa:<namespace>`. An A40, A34, A18 or A39
+merges the person holding MRG-1's identifier into the person holding PID-3's
+(`no_merge` ignores them).
+
+```yaml
+destinations:
+  - name: index
+    type: mpi
+    mpi:
+      authorities: { HOSP: "urn:oid:1.2.840.114350.1.13.1" }
+```
+
+**Matching.** A new record is linked in this order:
+
+1. **Trusted identifiers.** A record sharing an identifier from a system listed as
+   trusted (a national identifier, an enterprise number) is the same person, with no
+   scoring. Never list a system a family shares, such as a payer's subscriber number.
+2. **Score.** Otherwise the people whose records could match are found by blocking
+   (the same-sounding family name and birth year, the same birth date, or the same
+   phone number) and scored with Fellegi-Sunter weights over family and given name
+   (Jaro-Winkler and Soundex, accents and punctuation ignored, swapped names
+   noticed), birth date (a day and month swapped is partial agreement), sex, postal
+   code, phone and address. Only fields both records have count. The score is the
+   evidence found as a share of the evidence possible.
+3. **Decision.** At or above the automatic threshold (90% by default) the record
+   links, but only when family name and birth date both agree and no second person
+   scores as high. Between the review threshold (60%) and that, it becomes a new
+   person and the possible match waits on the review queue. Below, it is a new
+   person.
+
+A date written day- or month-first (`08/15/1972`) is kept as written and does not
+match a year-first one: the US and European orders disagree, and guessing would link
+the wrong people.
+
+**The Patient index screen** (Exchange) shows the counts, finds people by name,
+number, EUID or birth date, and opens each person: their records, every identifier,
+and the history of what happened to them and who did it. Editors decide reviews
+(**The same person** links them; **Different people** keeps them apart for good),
+move a record to another person, take a record out (**Not this person**), and merge
+two people. Administrators set the thresholds, the trusted identifier systems and the
+EUID's system. Every search and every person read is written to the audit log.
+
+**Answering others.** `POST /fhir/Patient/$match` (FHIR's operation, as IHE PDQm
+ITI-119 uses it) takes a Patient and returns the people who could be it, best first,
+each a Patient whose id is the EUID, with every identifier, `search.score`, and the
+match-grade extension (`certain`, `probable`, `possible`); `onlyCertainMatches` and
+`count` are honoured. PIXm (`/mhd/Patient/$ihe-pix`, ITI-83) answers from the index:
+every identifier of every record linked to the person, and the EUID.
+
+The API is `/api/mpi` (summary and search), `/api/mpi/persons/{euid}`,
+`/api/mpi/find`, `/api/mpi/reviews`, `/api/mpi/records` (register, link, unlink),
+`/api/mpi/merge` and `/api/mpi/settings`.
+
+The default weights come from the record-linkage literature for hospital
+registration data; they are not measured on any site's data. A site with a linked
+sample of its own can do better, and should check the review queue for a few weeks
+before trusting automatic links.
+
 ## Delimited
 
 CSV and its relatives. The options are on the source in the builder, and the [format reference](#format-reference) lists the file keys.
@@ -795,3 +867,58 @@ set to the https address patients' phones reach; the manifest URL it builds must
 
 **Verifying a card.** *Verify a card* takes a numeric `shc:/` QR (one chunk or several), a `.smart-health-card` file or a JWS, and
 says whether the signature matches the issuer's key.
+
+## UN/EDIFACT
+
+`dataType: edifact` reads UN/EDIFACT interchanges (ISO 9735): ORDERS, INVOIC,
+DESADV, IFTSTA and the rest, including the European healthcare claim and
+laboratory messages. The service string advice (UNA) is honoured, with the release
+character and, for syntax version 4, the repetition separator; functional groups
+(UNG/UNE) are optional. The interchange is delivered exactly as the sender wrote it.
+
+```yaml
+name: supplier-orders
+dataType: edifact
+edifact:
+  envelope: require      # require (default), warn, or ignore
+  split: false           # true: one interchange per message
+  acknowledge: contrl    # none (default) or contrl
+filter: 'UNB-2.1 == "5412345000013"'
+source:
+  type: as2              # or http, sftp, file, email ...
+  # ...
+destinations:
+  - name: orders
+    type: file
+    dir: /data/orders
+    filter: 'UNH-2.1 == "ORDERS"'
+```
+
+**The envelope.** UNT's segment count and reference, UNE's message count and
+reference, and UNZ's count and reference are compared with what the interchange
+holds. With `require`, the default, a mismatch refuses the interchange (it is how a
+transfer cut short shows); `warn` accepts it and logs a warning; `ignore` does not
+check.
+
+**Paths**, for the channel and destination filters, count elements and components
+from 1 in the order the segment is written, as implementation guides number them:
+`BGM-2` (the document number), `BGM-1.1`, `NAD(2)-2.1` (the second NAD's party),
+`LIN-3(2).1` (a repetition), `UNB-2.1` (the sender), `UNH-2.1` (the message type).
+A path without an occurrence addresses every one.
+
+**Splitting** delivers one interchange per message, each with the original UNB
+(and group header) and trailers that count one, so an order can be filtered,
+searched and retried on its own. Destination filters see each piece. A file
+destination names files by message type (`ORDERS_INVOIC-20261017.edi`), and
+`${control_id}` is the interchange reference.
+
+**CONTRL.** With `acknowledge: contrl`, a sender posting over HTTP is answered
+with a CONTRL syntax and service report: UCI action 7
+when the interchange was read and delivered, 4 when it was refused or could not be
+delivered (HTTP 400 or 502 then). It cannot be combined with `split`, since a CONTRL
+answers a whole interchange. Over AS2 the partner's receipt is the acknowledgement.
+
+Not offered: the message directories (which segments ORDERS D.96A allows), so the
+structure is checked, not the content; transformations, which would rewrite a
+partner's document; and filter or transformer scripts (a preprocessor runs, before
+parsing). Checked against pydifact 0.1.8, an independent parser, in both directions.

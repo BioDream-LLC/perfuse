@@ -457,6 +457,9 @@ const (
 	// DestinationDirect sends each message as Direct secure messaging through a HISP.
 	DestinationDirect DestinationType = "direct"
 
+	// DestinationMPI registers each message's patient in this server's patient index.
+	DestinationMPI DestinationType = "mpi"
+
 	// DestinationAS2 sends each message as AS2 (RFC 4130) to a trading partner, delivered once its receipt confirms it.
 	DestinationAS2 DestinationType = "as2"
 	// DestinationJavaScript runs a script instead of sending, which is Mirth's
@@ -529,6 +532,7 @@ var allDestinationTypes = []DestinationType{
 	DestinationXDS,
 	DestinationDirect,
 	DestinationAS2,
+	DestinationMPI,
 	DestinationBroker,
 	DestinationKafka,
 	DestinationSQS,
@@ -639,6 +643,9 @@ type Destination struct {
 
 	// AS2 configures an as2 destination.
 	AS2 *AS2Destination `yaml:"as2,omitempty"`
+
+	// MPI configures a patient index destination.
+	MPI *MPIDestination `yaml:"mpi,omitempty"`
 
 	// DICOM applies to a dicom destination.
 	DICOM *DICOMDestination `yaml:"dicom,omitempty"`

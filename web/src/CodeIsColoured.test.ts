@@ -36,6 +36,7 @@ const allowedPlain: Record<string, string> = {
   'HealthLinks.tsx': 'a SMART Health Link is one base64url token after shlink:/, with no structure to colour',
   'Drugs.tsx': "a prior authorization question's free-text answer is the prescriber's prose; the SCRIPT XML uses CodeArea",
   'CodeArea.tsx': 'the implementation. The textarea underneath the coloured layer is the whole mechanism',
+  'PatientIndex.tsx': 'a list of identifier system URLs, one per line',
 }
 
 function sourceFiles(): string[] {

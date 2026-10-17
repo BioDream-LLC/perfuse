@@ -860,6 +860,8 @@ type buildDest struct {
 	Direct *buildDirectDest `json:"direct,omitempty" yaml:"direct,omitempty"`
 	// AS2 sends to a trading partner over AS2.
 	AS2 *buildAS2Dest `json:"as2,omitempty" yaml:"as2,omitempty"`
+	// MPI registers patients in the patient index.
+	MPI *buildMPIDest `json:"mpi,omitempty" yaml:"mpi,omitempty"`
 
 	// JavaScript applies to a javascript destination.
 	JavaScript *buildJSDest `json:"javascript,omitempty" yaml:"javascript,omitempty"`
@@ -1559,6 +1561,14 @@ type buildXDSDest struct {
 }
 
 // buildDirectSource receives Direct mail for one address.
+// buildMPIDest is config.MPIDestination on the wire.
+type buildMPIDest struct {
+	Authorities map[string]string `json:"authorities,omitempty" yaml:"authorities,omitempty"`
+	IDType      string            `json:"idType,omitempty" yaml:"id_type,omitempty"`
+	SSNSystem   string            `json:"ssnSystem,omitempty" yaml:"ssn_system,omitempty"`
+	NoMerge     bool              `json:"noMerge,omitempty" yaml:"no_merge,omitempty"`
+}
+
 // buildAS2Partner is config.AS2Partner on the wire.
 type buildAS2Partner struct {
 	ID               string `json:"id,omitempty" yaml:"id,omitempty"`

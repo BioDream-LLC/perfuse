@@ -38,6 +38,7 @@ export type DestinationType =
   | 'xds'
   | 'direct'
   | 'as2'
+  | 'mpi'
   | 'javascript'
 
 export const destinationLabels: Record<DestinationType, string> = {
@@ -60,6 +61,7 @@ export const destinationLabels: Record<DestinationType, string> = {
   xds: 'A document repository (IHE XDS.b ITI-41)',
   direct: 'A Direct address, through a HISP (Direct secure messaging)',
   as2: 'A trading partner over AS2 (EDI, signed and encrypted, with a receipt)',
+  mpi: 'The patient index (register each patient, follow merges)',
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
   kafka: 'A Kafka topic',
@@ -101,6 +103,8 @@ export const destinationHints: Record<DestinationType, string> = {
     'Sends imaging objects to a PACS or workstation as a C-STORE user, the same operation a scanner uses. Verified against DCMTK, the toolkit most hospital imaging equipment is built on. Encryption is included — Mirth needs a paid extension for it, and DICOM metadata carries patient names.',
   xds:
     "Publishes each clinical document to an IHE XDS.b repository with ITI-41 Provide and Register: a CDA document, or one carried in an HL7 v2 message (MDM, ORU). The metadata is read from the document - patient, title, type, time, author, confidentiality - and completed from what you set here. The repository's answer decides: an XDS error is a failed delivery with its error code.",
+  mpi:
+    "Registers each message's patient in this server's patient index: the PID of an HL7 v2 message, or a FHIR Patient on a raw channel. The index links records from different systems that are the same person, queues the ones it is not sure about for review, and follows A40 merges. It needs the server started with the patient index on.",
   as2:
     "Posts each message to a trading partner over AS2 (RFC 4130): signed with our certificate, encrypted to theirs. With a synchronous receipt, the default, a message counts as delivered only when the partner's signed receipt says processed and names the digest of what was sent; anything else is a failed delivery and is retried. Tested against pyas2lib.",
   direct:
@@ -449,6 +453,12 @@ export interface Destination {
   soapUsername: string
   soapPassword: string
   soapFaultIsSuccess: string
+
+  /** A patient index destination: assigning authority namespaces to systems ("HOSP=urn:oid:1.2.3", one per line). */
+  mpiAuthorities: string
+  mpiIdType: string
+  mpiSsnSystem: string
+  mpiNoMerge: boolean
 
   /** An AS2 destination: a trading partner's endpoint, our identity and theirs. */
   as2Url: string
@@ -2521,6 +2531,21 @@ function destinationToWire(d: Destination): unknown {
     case 'channel':
       out.channel = { name: d.routeTo }
       break
+    case 'mpi': {
+      const authorities: Record<string, string> = {}
+      for (const line of d.mpiAuthorities.split('\n')) {
+        const [ns, ...rest] = line.split('=')
+        const sys = rest.join('=').trim()
+        if (ns && ns.trim() && sys) authorities[ns.trim()] = sys
+      }
+      out.mpi = {
+        authorities: Object.keys(authorities).length ? authorities : undefined,
+        idType: d.mpiIdType.trim() || undefined,
+        ssnSystem: d.mpiSsnSystem.trim() || undefined,
+        noMerge: d.mpiNoMerge || undefined,
+      }
+      break
+    }
     case 'as2':
       out.as2 = {
         url: d.as2Url || undefined,
@@ -2918,6 +2943,10 @@ export function newDestination(): Destination {
     directKeyFile: '',
     directAnchorsFile: '',
     directTo: '',
+    mpiAuthorities: '',
+    mpiIdType: '',
+    mpiSsnSystem: '',
+    mpiNoMerge: false,
     as2Url: '',
     as2From: '',
     as2To: '',

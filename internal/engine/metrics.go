@@ -26,7 +26,15 @@ func (c *Channel) SetMetrics(m *metrics.Collector) { c.metrics = m }
 // Empty means single-tenant, which reports as the default tenant rather than as an
 // empty label. An empty label value in Prometheus is indistinguishable from an
 // absent one and would make a single-tenant series impossible to select.
-func (c *Channel) SetTenant(id string) { c.tenantID = id }
+func (c *Channel) SetTenant(id string) {
+	c.tenantID = id
+	// Destinations that keep data per tenant (the patient index) are told whose it is.
+	for _, d := range c.dests {
+		if t, ok := d.sender.(interface{ SetTenant(string) }); ok {
+			t.SetTenant(id)
+		}
+	}
+}
 
 // SetQueryState gives a channel somewhere to record what its DICOM query source has already seen.
 //

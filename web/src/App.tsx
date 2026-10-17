@@ -51,6 +51,7 @@ const Views = lazy(() => import('./Views').then((m) => ({ default: m.Views })))
 const Measures = lazy(() => import('./Measures').then((m) => ({ default: m.Measures })))
 const AlignedNetwork = lazy(() => import('./AlignedNetwork').then((m) => ({ default: m.AlignedNetwork })))
 const Direct = lazy(() => import('./Direct').then((m) => ({ default: m.Direct })))
+const PatientIndex = lazy(() => import('./PatientIndex').then((m) => ({ default: m.PatientIndex })))
 const DocumentSharing = lazy(() => import('./DocumentSharing').then((m) => ({ default: m.DocumentSharing })))
 const Certificates = lazy(() => import('./Certificates').then((m) => ({ default: m.Certificates })))
 const MirthMigration = lazy(() => import('./MirthMigration').then((m) => ({ default: m.MirthMigration })))
@@ -90,6 +91,7 @@ export type Tab =
   | 'drugs'
   | 'xds'
   | 'direct'
+  | 'mpi'
   | 'aligned'
   | 'views'
   | 'measures'
@@ -614,6 +616,12 @@ function Console() {
       about: 'Direct secure messaging: this server\'s Direct addresses and the address book of correspondents and their certificates',
     },
     {
+      id: 'mpi',
+      label: 'Patient index',
+      minRole: 'viewer',
+      about: 'The master patient index: one enterprise identifier per person across every system, the matches waiting for review, links and merges',
+    },
+    {
       id: 'imaging',
       label: 'Imaging',
       minRole: 'viewer',
@@ -985,6 +993,7 @@ function Console() {
           {tab === 'drugs' && <Drugs />}
           {tab === 'xds' && <DocumentSharing />}
           {tab === 'direct' && <Direct />}
+          {tab === 'mpi' && <PatientIndex />}
           {tab === 'aligned' && <AlignedNetwork />}
           {tab === 'views' && <Views />}
           {tab === 'measures' && <Measures />}

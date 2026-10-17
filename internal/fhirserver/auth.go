@@ -368,6 +368,8 @@ var readOperations = map[string]bool{
 	"$expand": true, "$validate-code": true, "$translate": true, "$lookup": true, "$everything": true,
 	// HRex's $member-match finds a member and stores nothing, and the payer calling it holds read scopes (PDex).
 	"$member-match": true,
+	// Patient/$match searches the patient index and stores nothing.
+	"$match": true,
 	// SQL on FHIR's $sql-run reads resources into rows and stores nothing; the OperationDefinition calls it safe.
 	"$sql-run": true,
 	// $evaluate-measure computes a MeasureReport and returns it without storing it.

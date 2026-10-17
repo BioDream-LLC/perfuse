@@ -35,6 +35,7 @@ var settingFlags = map[string]string{
 	"scim":                              "signin.scimEnabled",
 	"scim-default-role":                 "signin.scimDefaultRole",
 	"fhir":                              "fhir.serve",
+	"mpi":                               "data.patientIndex",
 	"fhir-version":                      "fhir.version",
 	"fhir-open":                         "fhir.open",
 	"fhir-subscriptions":                "fhir.subscriptions",

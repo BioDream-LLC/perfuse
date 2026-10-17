@@ -1460,6 +1460,39 @@ function DestinationCard({
           </>
         )}
 
+        {dest.type === 'mpi' && (
+          <>
+            <Field
+              label="Assigning authorities"
+              hint="One per line, NAMESPACE=system, for senders whose PID-3.4 names an authority without its OID. Unlisted ones become urn:perfuse:aa:NAMESPACE."
+            >
+              <textarea
+                className="input font-mono text-xs"
+                rows={3}
+                value={dest.mpiAuthorities}
+                onChange={(e) => onChange({ mpiAuthorities: e.target.value })}
+                placeholder={'HOSP=urn:oid:1.2.840.114350.1.13.1\nCLINIC=urn:oid:2.16.840.1.113883.3.42'}
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Which identifier is the record's own" hint="The PID-3.5 type code. Default MR; the first identifier when none has it.">
+                <input className="input font-mono" value={dest.mpiIdType} onChange={(e) => onChange({ mpiIdType: e.target.value })} placeholder="MR" />
+              </Field>
+              <Field label="System for PID-19" hint="Default http://hl7.org/fhir/sid/us-ssn.">
+                <input className="input font-mono" value={dest.mpiSsnSystem} onChange={(e) => onChange({ mpiSsnSystem: e.target.value })} />
+              </Field>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-slate-400">
+              <input type="checkbox" checked={dest.mpiNoMerge} onChange={(e) => onChange({ mpiNoMerge: e.target.checked })} />
+              Do not follow merges (A40, A34, A18, A39) from this feed
+            </label>
+            <p className="rounded-lg border border-teal-800/60 bg-teal-950/20 p-3 text-xs leading-relaxed text-teal-200">
+              How sure a match must be to link without review, and which identifiers are trusted to be one per person, are set on the
+              Patient index screen.
+            </p>
+          </>
+        )}
+
         {dest.type === 'as2' && (
           <>
             <Field label="Partner's AS2 URL" hint="Where the partner receives AS2. Usually HTTPS.">

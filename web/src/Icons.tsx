@@ -418,6 +418,30 @@ export function IconCertificates(props: IconProps) {
   )
 }
 
+/** IconPatientIndex is two people joined by a link: records from different systems that are one person. */
+export function IconPatientIndex(props: IconProps) {
+  return (
+    <SvgWrapper {...props}>
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-a`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#38bdf8" />
+            </linearGradient>
+          </defs>
+          <circle cx="6" cy="7" r="2.6" fill={`url(#${id}-a)`} />
+          <path d="M1.5 18v-1.5A3.5 3.5 0 0 1 5 13h2a3.5 3.5 0 0 1 3.5 3.5V18" fill={`url(#${id}-a)`} opacity="0.75" />
+          <circle cx="18" cy="7" r="2.6" fill={`url(#${id}-a)`} />
+          <path d="M13.5 18v-1.5A3.5 3.5 0 0 1 17 13h2a3.5 3.5 0 0 1 3.5 3.5V18" fill={`url(#${id}-a)`} opacity="0.75" />
+          <path d="M9.5 9.5h5" stroke={`url(#${id}-a)`} strokeWidth="1.6" strokeLinecap="round" strokeDasharray="1.5 1.8" />
+          <rect x="7" y="20" width="10" height="2" rx="1" fill={`url(#${id}-a)`} opacity="0.6" />
+        </>
+      )}
+    </SvgWrapper>
+  )
+}
+
 export function IconUsers(props: IconProps) {
   return (
     <SvgWrapper {...props}>
@@ -1700,6 +1724,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Drugs': IconPill,
   'Document sharing': IconDocuments,
   'Direct': IconDirect,
+  'Patient index': IconPatientIndex,
   'CMS Aligned Network': IconCheck,
   'SQL on FHIR': IconTables,
   'Quality measures': IconMeasure,
@@ -1732,6 +1757,7 @@ export const sourceIcons: Record<string, React.ComponentType<IconProps>> = {
   'dicomweb': IconDicom,
   'direct': IconDirect,
   'as2': IconDirect,
+  'mpi': IconPatientIndex,
   'email': IconEmail,
   'javascript': IconJavaScript,
 }

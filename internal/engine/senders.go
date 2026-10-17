@@ -60,6 +60,8 @@ func DefaultSenderFactory(d config.Destination) (Sender, error) {
 		return NewDirectSender(d)
 	case config.DestinationAS2:
 		return NewAS2Sender(d)
+	case config.DestinationMPI:
+		return NewMPISender(d)
 	case config.DestinationBroker:
 		return NewBrokerSender(d)
 	case config.DestinationKafka:

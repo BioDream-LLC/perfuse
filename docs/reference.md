@@ -1922,6 +1922,78 @@ Inspectors, like the attachment and prior authorisation ones: they build or read
 Built interchanges are read back and envelope-checked before they are returned, with any problem listed. The 277 that answers a 276 is
 read by the existing claim status reader.
 
+## The patient index (MPI)
+
+A master patient index links the records every system keeps for a person (the
+hospital's MRN, the clinic's, the lab's) into one enterprise identifier, the EUID.
+It is off until somebody decides to keep one, because it is a table of patients'
+names, birth dates and identifiers: turn on **Settings → Data → Patient index**
+(or `serve -mpi`) and restart. It lives in `mpi.db` beside the main database.
+
+**Feeding it.** Add a destination of type `mpi` (**The patient index** in the
+builder) to the channels that carry registrations. It reads the PID of each HL7 v2
+message, or a FHIR Patient on a raw channel. The record's own identifier is the
+PID-3 repetition of type MR (`id_type` changes it); the others, and PID-19, become
+its other identifiers. An assigning authority with a universal identifier (PID-3.4.2
+with type ISO) becomes `urn:oid:...`; one with only a namespace is mapped by
+`authorities`, or becomes `urn:perfuse:aa:<namespace>`. An A40, A34, A18 or A39
+merges the person holding MRG-1's identifier into the person holding PID-3's
+(`no_merge` ignores them).
+
+```yaml
+destinations:
+  - name: index
+    type: mpi
+    mpi:
+      authorities: { HOSP: "urn:oid:1.2.840.114350.1.13.1" }
+```
+
+**Matching.** A new record is linked in this order:
+
+1. **Trusted identifiers.** A record sharing an identifier from a system listed as
+   trusted (a national identifier, an enterprise number) is the same person, with no
+   scoring. Never list a system a family shares, such as a payer's subscriber number.
+2. **Score.** Otherwise the people whose records could match are found by blocking
+   (the same-sounding family name and birth year, the same birth date, or the same
+   phone number) and scored with Fellegi-Sunter weights over family and given name
+   (Jaro-Winkler and Soundex, accents and punctuation ignored, swapped names
+   noticed), birth date (a day and month swapped is partial agreement), sex, postal
+   code, phone and address. Only fields both records have count. The score is the
+   evidence found as a share of the evidence possible.
+3. **Decision.** At or above the automatic threshold (90% by default) the record
+   links, but only when family name and birth date both agree and no second person
+   scores as high. Between the review threshold (60%) and that, it becomes a new
+   person and the possible match waits on the review queue. Below, it is a new
+   person.
+
+A date written day- or month-first (`08/15/1972`) is kept as written and does not
+match a year-first one: the US and European orders disagree, and guessing would link
+the wrong people.
+
+**The Patient index screen** (Exchange) shows the counts, finds people by name,
+number, EUID or birth date, and opens each person: their records, every identifier,
+and the history of what happened to them and who did it. Editors decide reviews
+(**The same person** links them; **Different people** keeps them apart for good),
+move a record to another person, take a record out (**Not this person**), and merge
+two people. Administrators set the thresholds, the trusted identifier systems and the
+EUID's system. Every search and every person read is written to the audit log.
+
+**Answering others.** `POST /fhir/Patient/$match` (FHIR's operation, as IHE PDQm
+ITI-119 uses it) takes a Patient and returns the people who could be it, best first,
+each a Patient whose id is the EUID, with every identifier, `search.score`, and the
+match-grade extension (`certain`, `probable`, `possible`); `onlyCertainMatches` and
+`count` are honoured. PIXm (`/mhd/Patient/$ihe-pix`, ITI-83) answers from the index:
+every identifier of every record linked to the person, and the EUID.
+
+The API is `/api/mpi` (summary and search), `/api/mpi/persons/{euid}`,
+`/api/mpi/find`, `/api/mpi/reviews`, `/api/mpi/records` (register, link, unlink),
+`/api/mpi/merge` and `/api/mpi/settings`.
+
+The default weights come from the record-linkage literature for hospital
+registration data; they are not measured on any site's data. A site with a linked
+sample of its own can do better, and should check the review queue for a few weeks
+before trusting automatic links.
+
 ## UN/EDIFACT
 
 `dataType: edifact` reads UN/EDIFACT interchanges (ISO 9735): ORDERS, INVOIC,

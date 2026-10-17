@@ -362,6 +362,10 @@ func NewChannel(cfg *config.Channel, factory SenderFactory, log *slog.Logger) (*
 			dest.sender = sender
 		}
 
+		if named, ok := sender.(interface{ SetChannel(string) }); ok {
+			named.SetChannel(cfg.Name)
+		}
+
 		// A destination writing named files seals the final bytes itself (see bodySealer); set before the ELR wrap, which
 		// hides the sender's type.
 		sealedInside := false
