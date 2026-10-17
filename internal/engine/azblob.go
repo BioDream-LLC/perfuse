@@ -23,10 +23,15 @@ func azblobClient(a *config.AzureBlobAccess, tier string) (*azblob.Client, error
 
 // AzureBlobSender writes each message as a blob.
 type AzureBlobSender struct {
+	sealer func([]byte) ([]byte, error)
+
 	cfg    *config.AzureBlobDestination
 	name   string
 	client *azblob.Client
 }
+
+// SetSeal makes the sender encrypt each object's bytes (a pgp block).
+func (s *AzureBlobSender) SetSeal(f func([]byte) ([]byte, error)) { s.sealer = f }
 
 // NewAzureBlobSender builds the sender.
 func NewAzureBlobSender(d config.Destination) (*AzureBlobSender, error) {
@@ -49,6 +54,12 @@ func (s *AzureBlobSender) Send(ctx context.Context, msg []byte) error {
 	ct := s.cfg.ContentType
 	if ct == "" {
 		ct = "application/hl7-v2"
+	}
+	if s.sealer != nil {
+		if msg, err = s.sealer(msg); err != nil {
+			return err
+		}
+		ct = "application/pgp-encrypted"
 	}
 	return s.client.Put(ctx, name, msg, ct)
 }
@@ -149,6 +160,14 @@ func (c *Channel) handleBlob(ctx context.Context, client *azblob.Client, cfg *co
 		c.log.Error("reading a blob failed and will be retried at the next poll", "blob", b.Name, "err", err)
 		return
 	}
+	// Opened whole, before it is split: the messages are inside the encryption.
+	plain, err := c.openPGP(body)
+	if err != nil {
+		fail(err)
+		return
+	}
+	body = plain
+	ctx = withPGPOpened(ctx)
 	messages := [][]byte{body}
 	if cfg.Framed {
 		messages = nil

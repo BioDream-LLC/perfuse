@@ -32,6 +32,26 @@ describe('reading a channel back into the form', () => {
     expect(plain.destinations[0]?.elr).toBeUndefined()
   })
 
+  it('keeps PGP on the source and a destination through a round trip', () => {
+    const model = {
+      ...minimal,
+      source: { type: 'sftp', sftp: { host: 'payer.example', user: 'u', dir: 'out' },
+        pgp: { decryptWith: 'keys/ours.asc', passphrase: '${PGP}', verifyWith: ['keys/payer.asc', 'keys/payer2.asc'], requireSignature: true } },
+      destinations: [{ name: 'back', type: 'file', dir: '/tmp/out',
+        pgp: { encryptTo: ['keys/payer.asc'], signWith: 'keys/ours.asc', passphrase: '${PGP}', armor: true } }],
+    } as WireModel
+    const out = roundTrip(model) as unknown as {
+      source: { pgp?: unknown }
+      destinations: { pgp?: unknown }[]
+    }
+    expect(out.source.pgp).toEqual({ decryptWith: 'keys/ours.asc', passphrase: '${PGP}',
+      verifyWith: ['keys/payer.asc', 'keys/payer2.asc'], requireSignature: true })
+    expect(out.destinations[0]?.pgp).toEqual({ encryptTo: ['keys/payer.asc'], signWith: 'keys/ours.asc', passphrase: '${PGP}', armor: true })
+    const plain = roundTrip(minimal) as unknown as { source: { pgp?: unknown }; destinations: { pgp?: unknown }[] }
+    expect(plain.source.pgp).toBeUndefined()
+    expect(plain.destinations[0]?.pgp).toBeUndefined()
+  })
+
   it('keeps the name, source and destination', () => {
     const draft = wireToDraft(minimal)
     expect(draft.name).toBe('feed')

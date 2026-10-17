@@ -218,6 +218,25 @@ func (c *Channel) Validate() error {
 		}
 	}
 
+	// PGP keys likewise: read and unlocked now, relative to the channel file.
+	if p := c.Source.PGP; p != nil {
+		if errs2 := p.validate("source"); len(errs2) > 0 {
+			errs = append(errs, errs2...)
+		} else {
+			errs = append(errs, p.load(filepath.Dir(c.path), "source")...)
+		}
+	}
+	for i := range c.Destinations {
+		if p := c.Destinations[i].PGP; p != nil {
+			where := fmt.Sprintf("destination %q", c.Destinations[i].Name)
+			if errs2 := p.validate(where); len(errs2) > 0 {
+				errs = append(errs, errs2...)
+			} else {
+				errs = append(errs, p.load(filepath.Dir(c.path), where)...)
+			}
+		}
+	}
+
 	if c.Contract != nil {
 		if err := c.Contract.load(filepath.Dir(c.path)); err != nil {
 			errs = append(errs, err)

@@ -150,6 +150,11 @@ func (c *Channel) handlePostedMessage(src *config.HTTPSource, maxSize int) http.
 			http.Error(w, err.Error(), http.StatusTooManyRequests)
 			return
 		}
+		if errors.Is(err, ErrPGPRefused) {
+			// The reason names keys and what was missing, never content, and is what the sender needs to fix it.
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		if err != nil {
 			c.log.Error("handling a posted message failed", "error", err)
 			http.Error(w, "the message could not be processed", http.StatusInternalServerError)

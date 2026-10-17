@@ -498,6 +498,15 @@ export interface Destination {
   elrConfig: string
   /** elrRctc is the trigger codes file; empty uses the built-in sample. */
   elrRctc: string
+  /** OpenPGP on what the destination delivers: encrypted to the receivers' keys, signed with ours. */
+  pgpEnabled: boolean
+  /** pgpEncryptTo is the receivers' public key files, comma or space separated. */
+  pgpEncryptTo: string
+  pgpSignWith: string
+  pgpPassphrase: string
+  pgpArmor: boolean
+  pgpNoCompress: boolean
+  pgpFileName: string
   jsTimeout: string
   jsRequireResult: boolean
 
@@ -1255,6 +1264,16 @@ export interface ChannelDraft {
   azSrcPollSeconds: number
   azSrcFramed: boolean
 
+  /** OpenPGP on what the source receives: decrypted with our key, the sender's signature checked. */
+  srcPgpEnabled: boolean
+  srcPgpDecryptWith: string
+  srcPgpPassphrase: string
+  /** srcPgpVerifyWith is the senders' public key files, comma or space separated. */
+  srcPgpVerifyWith: string
+  srcPgpRequireSignature: boolean
+  srcPgpAllowUnencrypted: boolean
+  srcPgpPassPlain: boolean
+
   /** The email source: a mailbox read over IMAP or POP3. */
   mailProtocol: 'imap' | 'pop3'
   mailHost: string
@@ -1530,6 +1549,20 @@ function framingBlock(draft: ChannelDraft): Record<string, unknown> {
       break
   }
   return out
+}
+
+/** The sources whose messages can arrive as OpenPGP files or bodies. */
+export const pgpSourceKinds: ReadonlySet<SourceKind> = new Set<SourceKind>([
+  'file', 'sftp', 'ftp', 'smb', 'webdav', 's3', 'azure_blob', 'gcs', 'email', 'http', 'soap', 'sqs', 'kafka', 'amqp',
+  'broker', 'mqtt', 'ibm_mq', 'pubsub',
+])
+
+/** pgpKeyList splits a list of key files written with commas, spaces or new lines. */
+export function pgpKeyList(v: string): string[] {
+  return v
+    .split(/[,\s]+/)
+    .map((x) => x.trim())
+    .filter(Boolean)
 }
 
 export function draftToWire(draft: ChannelDraft): unknown {
@@ -1940,6 +1973,19 @@ export function draftToWire(draft: ChannelDraft): unknown {
     if (draft.ackFacility) ack.facility = draft.ackFacility
     if (draft.ackIncludeTriggerEvent) ack.includeTriggerEvent = true
     if (Object.keys(ack).length > 0) source.ack = ack
+  }
+
+  // PGP, like TLS, sits on the source itself.
+  if (draft.srcPgpEnabled && pgpSourceKinds.has(draft.sourceKind)) {
+    const verify = pgpKeyList(draft.srcPgpVerifyWith)
+    source.pgp = {
+      decryptWith: draft.srcPgpDecryptWith.trim() || undefined,
+      passphrase: draft.srcPgpDecryptWith.trim() ? draft.srcPgpPassphrase || undefined : undefined,
+      verifyWith: verify.length ? verify : undefined,
+      requireSignature: draft.srcPgpRequireSignature || undefined,
+      allowUnencrypted: draft.srcPgpAllowUnencrypted || undefined,
+      passPlain: draft.srcPgpPassPlain || undefined,
+    }
   }
 
   // TLS sits on the source rather than under a per-kind block, so it is set here rather than in the switch above.
@@ -2630,6 +2676,17 @@ function destinationToWire(d: Destination): unknown {
 
   if (d.responseTransformer.trim()) out.responseTransformer = d.responseTransformer
   if (d.elrConfig.trim()) out.elr = { config: d.elrConfig.trim(), rctc: d.elrRctc.trim() || undefined }
+  if (d.pgpEnabled) {
+    const to = pgpKeyList(d.pgpEncryptTo)
+    out.pgp = {
+      encryptTo: to.length ? to : undefined,
+      signWith: d.pgpSignWith.trim() || undefined,
+      passphrase: d.pgpSignWith.trim() ? d.pgpPassphrase || undefined : undefined,
+      armor: d.pgpArmor || undefined,
+      noCompress: d.pgpNoCompress || undefined,
+      fileName: d.pgpFileName.trim() || undefined,
+    }
+  }
 
   if (d.queueEnabled) {
     out.queue = {
@@ -2804,6 +2861,13 @@ export function newDestination(): Destination {
     responseTransformer: '',
     elrConfig: '',
     elrRctc: '',
+    pgpEnabled: false,
+    pgpEncryptTo: '',
+    pgpSignWith: '',
+    pgpPassphrase: '',
+    pgpArmor: false,
+    pgpNoCompress: false,
+    pgpFileName: '',
     jsTimeout: '',
     jsRequireResult: false,
     docDir: '',
@@ -3191,6 +3255,14 @@ export function emptyDraft(): ChannelDraft {
     azSrcErrorPrefix: '',
     azSrcPollSeconds: 30,
     azSrcFramed: false,
+
+    srcPgpEnabled: false,
+    srcPgpDecryptWith: '',
+    srcPgpPassphrase: '',
+    srcPgpVerifyWith: '',
+    srcPgpRequireSignature: false,
+    srcPgpAllowUnencrypted: false,
+    srcPgpPassPlain: false,
 
     mailProtocol: 'imap',
     mailHost: '',

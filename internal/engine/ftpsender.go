@@ -21,9 +21,14 @@ import (
 // message after a quiet period. Reconnecting costs a few hundred milliseconds and buys a session that is
 // provably clean.
 type FTPSender struct {
+	sealer func([]byte) ([]byte, error)
+
 	cfg  *config.FTPDestination
 	name string
 }
+
+// SetSeal makes the sender encrypt each object's bytes (a pgp block).
+func (s *FTPSender) SetSeal(f func([]byte) ([]byte, error)) { s.sealer = f }
 
 // NewFTPSender builds the sender.
 func NewFTPSender(d config.Destination) (*FTPSender, error) {
@@ -43,6 +48,9 @@ func (s *FTPSender) Send(ctx context.Context, msg []byte) error {
 	body := msg
 	if s.cfg.Framed {
 		body = mllp.Frame(msg)
+	}
+	if body, err = seal(s.sealer, body); err != nil {
+		return err
 	}
 
 	security := ftpconn.Security(s.cfg.Security)

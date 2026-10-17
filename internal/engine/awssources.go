@@ -183,6 +183,14 @@ func (c *Channel) handleS3Object(ctx context.Context, client *s3put.Client, cfg 
 		return
 	}
 
+	// Opened whole, before it is split: the messages are inside the encryption.
+	plain, err := c.openPGP(body)
+	if err != nil {
+		fail(err)
+		return
+	}
+	body = plain
+	ctx = withPGPOpened(ctx)
 	messages := [][]byte{body}
 	if cfg.Framed {
 		messages = nil

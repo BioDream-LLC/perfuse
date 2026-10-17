@@ -335,6 +335,11 @@ func directDependencies() map[string]bool {
 		// touched in years.
 		"github.com/cloudsoda/go-smb2": true,
 
+		// OpenPGP, for payers, clearinghouses and agencies that exchange files only encrypted. The maintained fork of
+		// x/crypto/openpgp, which Go deprecated; it brings Cloudflare's circl for the newer curves. Cryptography is the
+		// one thing never written here.
+		"github.com/ProtonMail/go-crypto": true,
+
 		"github.com/dop251/goja":          true,
 		"github.com/yuin/gopher-lua":      true,
 		"github.com/go-sql-driver/mysql":  true,

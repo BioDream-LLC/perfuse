@@ -78,6 +78,8 @@ only from YAML or the command line is treated as a bug.
   (Carequality and eHealth Exchange style), tested against the NIST XDS Toolkit.
 - **Direct secure messaging:** S/MIME signed and encrypted mail with XDM packages and MDN receipts, certificates from an address
   book or DNS, an SMTP source; checked against OpenSSL in both directions.
+- **OpenPGP:** decrypt and verify what a source receives, encrypt and sign what a destination sends (files, SFTP, S3, email,
+  HTTP), with keys checked when the channel loads; tested against GnuPG in both directions.
 - **DICOMweb:** an imaging archive over QIDO-RS, WADO-RS and STOW-RS, browsed by OHIF; tested against Orthanc both ways.
 - **Immunization registries:** the CDC IIS web service as source and destination, VXU with ACK handling, QBP/RSP queries.
 - **International Patient Summary:** `Patient/$summary`, also used by Health links to share a visit.
@@ -166,6 +168,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li>CDA and document destinations, and a browser lab</li>
 <li><b>IHE XDS.b</b> registry and repository, <b>XCA</b> gateway and <b>MHD</b>, <b>PIXm</b>, <b>PDQm</b>; an xds destination publishing CDA; checked with the <b>NIST XDS Toolkit</b></li>
 <li><b>Direct secure messaging</b> through your HISP: S/MIME signed and encrypted, <b>IHE XDM</b> packages, MDNs, certificates from an address book or <b>DNS CERT</b>; checked with OpenSSL</li>
+<li><b>OpenPGP</b> on any source or destination: decrypt, verify, encrypt, sign; checked with GnuPG</li>
 </ul>
 </td>
 <td width="50%" valign="top">

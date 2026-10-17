@@ -197,7 +197,11 @@ type FileSender struct {
 	files    map[string]*os.File
 	day      string
 	dataType config.DataType
+	sealer   func([]byte) ([]byte, error)
 }
+
+// SetSeal makes the sender encrypt each file's bytes (a pgp block).
+func (s *FileSender) SetSeal(f func([]byte) ([]byte, error)) { s.sealer = f }
 
 // NewFileSender builds a sender for a file destination, creating the directory.
 func NewFileSender(d config.Destination) (*FileSender, error) {
@@ -239,8 +243,12 @@ func (s *FileSender) Send(ctx context.Context, msg []byte) error {
 	s.prune(now)
 
 	name, ext := s.describe(msg)
+	body, err := seal(s.sealer, s.frame(msg))
+	if err != nil {
+		return err
+	}
 	if s.fileName != "" && !s.appendTo {
-		return s.writeOne(filepath.Join(s.dir, s.render(now, name, ext, msg)), s.frame(msg))
+		return s.writeOne(filepath.Join(s.dir, s.render(now, name, ext, msg)), body)
 	}
 
 	var filename string
@@ -270,7 +278,7 @@ func (s *FileSender) Send(ctx context.Context, msg []byte) error {
 		}
 		s.files[filename] = f
 	}
-	if _, err := f.Write(s.frame(msg)); err != nil {
+	if _, err := f.Write(body); err != nil {
 		return err
 	}
 	// Sync before reporting success. Without it, "delivered" means the bytes

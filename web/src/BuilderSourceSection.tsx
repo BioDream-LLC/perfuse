@@ -8,6 +8,7 @@ import {
   WebDAVSourceFields,
 } from './BuilderFileSources'
 import type { ChannelDraft, SourceKind } from './model'
+import { pgpSourceKinds } from './model'
 import { useState } from 'react'
 
 // Where messages arrive, for every transport the engine supports.
@@ -66,6 +67,7 @@ export function SourceSection({
   const [showDirectAdvanced, setShowDirectAdvanced] = useState(false)
   const [showDicomAdvanced, setShowDicomAdvanced] = useState(false)
   const [showMllpTls, setShowMllpTls] = useState(false)
+  const [showPgp, setShowPgp] = useState(draft.srcPgpEnabled)
   const isX12 = draft.dataType === 'x12'
 
   return (
@@ -152,6 +154,77 @@ export function SourceSection({
                   mono
                   hint="Required when a client certificate is demanded. Without it there is nothing to check the sender's certificate against."
                 />
+              )}
+            </>
+          )}
+        </Advanced>
+      )}
+
+      {pgpSourceKinds.has(draft.sourceKind) && (
+        <Advanced
+          title="Open PGP-encrypted messages"
+          hint="For payers, clearinghouses and agencies that send files under OpenPGP. Decrypted before anything else reads them."
+          open={showPgp}
+          onToggle={() => setShowPgp((v) => !v)}
+        >
+          <Check
+            label="Messages arrive encrypted with OpenPGP"
+            value={draft.srcPgpEnabled}
+            onChange={(v) => set('srcPgpEnabled', v)}
+            hint="Each file, object or body is decrypted whole, then split into messages as usual. One that will not open is refused, and a file source moves it to its error folder."
+          />
+          {draft.srcPgpEnabled && (
+            <>
+              <Pair>
+                <Text
+                  label="Our secret key"
+                  value={draft.srcPgpDecryptWith}
+                  onChange={(v) => set('srcPgpDecryptWith', v)}
+                  placeholder="keys/our-secret.asc"
+                  mono
+                  hint="Armored or binary, as gpg --export-secret-keys writes it. Relative to the channel file. Give the sender the matching public key."
+                />
+                <Secret
+                  label="Passphrase"
+                  value={draft.srcPgpPassphrase}
+                  onChange={(v) => set('srcPgpPassphrase', v)}
+                  hint="Write ${PGP_PASSPHRASE} to read it from the environment. Checked when the channel starts, so a wrong one stops it there."
+                />
+              </Pair>
+              <Text
+                label="Senders' public keys"
+                value={draft.srcPgpVerifyWith}
+                onChange={(v) => set('srcPgpVerifyWith', v)}
+                placeholder="keys/payer.asc, keys/payer-2027.asc"
+                mono
+                hint="Signatures by these keys are checked. Several are allowed, for a sender rolling over to a new key."
+              />
+              <Check
+                label="Refuse a message these keys did not sign"
+                value={draft.srcPgpRequireSignature}
+                onChange={(v) => set('srcPgpRequireSignature', v)}
+                hint="Encryption says only we can read it; a signature says who wrote it. Without this, anybody holding our public key can send to this channel."
+              />
+              <Check
+                label="Accept messages that are signed but not encrypted"
+                value={draft.srcPgpAllowUnencrypted}
+                onChange={(v) => set('srcPgpAllowUnencrypted', v)}
+              />
+              <Check
+                label="Let messages that are not PGP at all through unchanged"
+                value={draft.srcPgpPassPlain}
+                onChange={(v) => set('srcPgpPassPlain', v)}
+                hint="For a folder that receives both. Off, a sender who forgot to encrypt is refused and told, which is usually what a contract requires."
+              />
+              {draft.srcPgpRequireSignature && !draft.srcPgpVerifyWith.trim() && (
+                <p className="rounded border border-rose-700 bg-rose-950/40 px-2 py-1.5 text-xs text-rose-200">
+                  Requiring a signature needs the senders' public keys. The server will refuse this channel otherwise.
+                </p>
+              )}
+              {!draft.srcPgpDecryptWith.trim() && !draft.srcPgpAllowUnencrypted && (
+                <p className="rounded border border-rose-700 bg-rose-950/40 px-2 py-1.5 text-xs text-rose-200">
+                  Our secret key is needed to decrypt. Without one, only messages that are signed and not encrypted can be read.
+                </p>
               )}
             </>
           )}

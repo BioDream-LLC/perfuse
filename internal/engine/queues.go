@@ -404,10 +404,15 @@ func (c *Channel) startPubSubSource() error {
 
 // GCSSender writes each message as an object.
 type GCSSender struct {
+	sealer func([]byte) ([]byte, error)
+
 	cfg    *config.GCSDestination
 	name   string
 	client *gcp.Storage
 }
+
+// SetSeal makes the sender encrypt each object's bytes (a pgp block).
+func (s *GCSSender) SetSeal(f func([]byte) ([]byte, error)) { s.sealer = f }
 
 // NewGCSSender makes the sender.
 func NewGCSSender(d config.Destination) (*GCSSender, error) {
@@ -434,6 +439,12 @@ func (s *GCSSender) Send(ctx context.Context, msg []byte) error {
 	ct := s.cfg.ContentType
 	if ct == "" {
 		ct = "application/hl7-v2"
+	}
+	if s.sealer != nil {
+		if msg, err = s.sealer(msg); err != nil {
+			return err
+		}
+		ct = "application/pgp-encrypted"
 	}
 	return s.client.Put(ctx, name, msg, ct)
 }
@@ -521,6 +532,14 @@ func (c *Channel) handleGCSObject(ctx context.Context, client *gcp.Storage, cfg 
 		c.log.Error("reading an object failed and will be retried at the next poll", "object", o.Name, "err", err)
 		return
 	}
+	// Opened whole, before it is split: the messages are inside the encryption.
+	plain, err := c.openPGP(body)
+	if err != nil {
+		fail(err)
+		return
+	}
+	body = plain
+	ctx = withPGPOpened(ctx)
 	messages := [][]byte{body}
 	if cfg.Framed {
 		messages = nil

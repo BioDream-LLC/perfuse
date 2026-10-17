@@ -19,10 +19,15 @@ import (
 
 // S3Sender writes each message as an object.
 type S3Sender struct {
+	sealer func([]byte) ([]byte, error)
+
 	cfg    *config.S3Destination
 	name   string
 	client *s3put.Client
 }
+
+// SetSeal makes the sender encrypt each object's bytes (a pgp block).
+func (s *S3Sender) SetSeal(f func([]byte) ([]byte, error)) { s.sealer = f }
 
 // NewS3Sender builds the sender.
 func NewS3Sender(d config.Destination) (*S3Sender, error) {
@@ -75,6 +80,12 @@ func (s *S3Sender) Send(ctx context.Context, msg []byte) error {
 
 	// The engine already retries, so this does not. Two layers of retry multiply rather than add, and the
 	// result is a destination that keeps trying for an hour when its policy said thirty seconds.
+	if s.sealer != nil {
+		if body, err = s.sealer(body); err != nil {
+			return err
+		}
+		contentType = "application/pgp-encrypted"
+	}
 	return s.client.Put(ctx, key, body, contentType)
 }
 

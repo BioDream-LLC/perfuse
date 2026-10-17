@@ -3240,6 +3240,51 @@ function DestinationCard({
         </div>
       )}
 
+      {/* OpenPGP, for receivers that take files only encrypted. Offered where there is a payload to protect: not a script
+          destination, which delivers nothing itself. */}
+      {dest.type !== 'javascript' && (
+        <div className="mt-4 rounded-lg border border-slate-800 p-3" data-testid="pgp-settings">
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" checked={dest.pgpEnabled} onChange={(e) => onChange({ pgpEnabled: e.target.checked })} />
+            <span>
+              <span className="text-emerald-300">Encrypt with OpenPGP.</span> Encrypt each message to the receiver's public key and
+              sign it with ours, after every other step.
+            </span>
+          </label>
+          {dest.pgpEnabled && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <Field label="Receivers' public keys" hint="Comma separated, relative to the channel file. Readable by any of them. Empty: signed only.">
+                <input className="input font-mono text-xs" value={dest.pgpEncryptTo} onChange={(e) => onChange({ pgpEncryptTo: e.target.value })} placeholder="keys/payer.asc" />
+              </Field>
+              <Field label="Sign with our secret key" hint="Empty: encrypted, not signed. Most payers ask for both.">
+                <input className="input font-mono text-xs" value={dest.pgpSignWith} onChange={(e) => onChange({ pgpSignWith: e.target.value })} placeholder="keys/our-secret.asc" />
+              </Field>
+              {dest.pgpSignWith.trim() && (
+                <Field label="Passphrase" hint="Write ${PGP_PASSPHRASE} to read it from the environment.">
+                  <input type="password" className="input font-mono text-xs" value={dest.pgpPassphrase} onChange={(e) => onChange({ pgpPassphrase: e.target.value })} autoComplete="off" />
+                </Field>
+              )}
+              <Field label="Original file name" hint="Carried inside the message; some receivers name what they decrypt from it. Optional.">
+                <input className="input font-mono text-xs" value={dest.pgpFileName} onChange={(e) => onChange({ pgpFileName: e.target.value })} placeholder="claims.x12" />
+              </Field>
+              <label className="flex items-center gap-2 text-xs text-slate-400">
+                <input type="checkbox" checked={dest.pgpArmor} onChange={(e) => onChange({ pgpArmor: e.target.checked })} />
+                ASCII armor (.asc text) rather than binary (.pgp)
+              </label>
+              <label className="flex items-center gap-2 text-xs text-slate-400">
+                <input type="checkbox" checked={dest.pgpNoCompress} onChange={(e) => onChange({ pgpNoCompress: e.target.checked })} />
+                Do not compress before encrypting
+              </label>
+              {!dest.pgpEncryptTo.trim() && !dest.pgpSignWith.trim() && (
+                <p className="rounded border border-rose-700 bg-rose-950/40 px-2 py-1.5 text-xs text-rose-200 sm:col-span-2">
+                  Name the receivers' public keys, our secret key, or both. The server will refuse this channel otherwise.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* The queue, which the builder could not write at all.
           
           Separate from the retry settings above and easy to confuse with them. Retry governs immediate attempts inside one delivery,

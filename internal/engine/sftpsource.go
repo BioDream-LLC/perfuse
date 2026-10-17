@@ -283,6 +283,11 @@ func (p *sftpPoller) handleFile(conn *sftpconn.Conn, name string) {
 		p.fileFailed(conn, name, err)
 		return
 	}
+	// Opened whole, before it is split: the messages are inside the encryption.
+	if body, err = p.ch.openPGP(body); err != nil {
+		p.fileFailed(conn, name, err)
+		return
+	}
 
 	messages, err := p.split(body)
 	if err != nil {
@@ -299,7 +304,7 @@ func (p *sftpPoller) handleFile(conn *sftpconn.Conn, name string) {
 	// Every message in the file has to be accepted before the file is disposed of.
 	// Moving a file whose second message failed would lose that message with no
 	// record anywhere, and the file is the only copy.
-	ctx := context.Background()
+	ctx := withPGPOpened(context.Background())
 	accepted := 0
 
 	for i, msg := range messages {

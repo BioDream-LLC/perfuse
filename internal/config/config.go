@@ -340,6 +340,10 @@ type Source struct {
 	// Email applies to an email source.
 	Email *EmailSource `yaml:"email,omitempty"`
 
+	// PGP decrypts and verifies each received message with OpenPGP before anything else reads it: a file a payer
+	// dropped on SFTP, an email attachment, an HTTP body.
+	PGP *PGPReceive `yaml:"pgp,omitempty"`
+
 	// MQTT applies to an mqtt source.
 	MQTT *MQTTSource `yaml:"mqtt,omitempty"`
 
@@ -658,6 +662,10 @@ type Destination struct {
 	// reportable is not sent at all. Applies to destinations that deliver an HL7 v2 message as it is (mllp, http, file,
 	// sftp and the rest), on an hl7 channel.
 	ELR *ELRDestination `yaml:"elr,omitempty"`
+
+	// PGP encrypts and signs what this destination delivers with OpenPGP, after every other step, so the receiver gets
+	// exactly the bytes it would have, protected.
+	PGP *PGPSend `yaml:"pgp,omitempty"`
 
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	//

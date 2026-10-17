@@ -307,6 +307,12 @@ func (p *filePoller) handleFile(ctx context.Context, fs vfs.FS, name string) {
 		p.fileFailed(ctx, fs, name, err)
 		return
 	}
+	// Opened whole, before it is split: the messages are inside the encryption.
+	if body, err = p.ch.openPGP(body); err != nil {
+		p.fileFailed(ctx, fs, name, err)
+		return
+	}
+	ctx = withPGPOpened(ctx)
 
 	messages, err := p.split(body)
 	if err != nil {

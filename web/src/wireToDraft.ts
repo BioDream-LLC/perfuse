@@ -141,6 +141,16 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
 
   draft.sourceKind = (source.type as ChannelDraft['sourceKind']) ?? 'mllp'
 
+  if (source.pgp) {
+    draft.srcPgpEnabled = true
+    draft.srcPgpDecryptWith = source.pgp.decryptWith ?? ''
+    draft.srcPgpPassphrase = source.pgp.passphrase ?? ''
+    draft.srcPgpVerifyWith = (source.pgp.verifyWith ?? []).join(', ')
+    draft.srcPgpRequireSignature = source.pgp.requireSignature ?? false
+    draft.srcPgpAllowUnencrypted = source.pgp.allowUnencrypted ?? false
+    draft.srcPgpPassPlain = source.pgp.passPlain ?? false
+  }
+
   switch (draft.sourceKind) {
     case 'mllp':
       draft.listen = source.listen ?? ''
@@ -1101,6 +1111,13 @@ function readDestination(d: WireDest): Destination {
   dest.responseTransformer = d.responseTransformer ?? ''
   dest.elrConfig = d.elr?.config ?? ''
   dest.elrRctc = d.elr?.rctc ?? ''
+  dest.pgpEnabled = d.pgp !== undefined
+  dest.pgpEncryptTo = (d.pgp?.encryptTo ?? []).join(', ')
+  dest.pgpSignWith = d.pgp?.signWith ?? ''
+  dest.pgpPassphrase = d.pgp?.passphrase ?? ''
+  dest.pgpArmor = d.pgp?.armor ?? false
+  dest.pgpNoCompress = d.pgp?.noCompress ?? false
+  dest.pgpFileName = d.pgp?.fileName ?? ''
   dest.queueEnabled = d.queue?.enabled === true
   dest.queueMaxAttempts = d.queue?.maxAttempts ? String(d.queue.maxAttempts) : ''
   dest.queueBackoff = d.queue?.backoff ?? ''
@@ -1232,6 +1249,14 @@ interface WireGCP {
 interface WireSource {
   type?: string
   listen?: string
+  pgp?: {
+    decryptWith?: string
+    passphrase?: string
+    verifyWith?: string[]
+    requireSignature?: boolean
+    allowUnencrypted?: boolean
+    passPlain?: boolean
+  }
 
   sqs?: WireAWSAccess & { queueUrl?: string; waitSeconds?: number; maxMessages?: number; visibilityTimeout?: string }
   amqp?: WireAMQP & { prefetch?: number }
@@ -1416,6 +1441,7 @@ interface WireStep {
 interface WireDest {
   responseTransformer?: string
   elr?: { config?: string; rctc?: string }
+  pgp?: { encryptTo?: string[]; signWith?: string; passphrase?: string; armor?: boolean; noCompress?: boolean; fileName?: string }
 
   queue?: {
     enabled?: boolean

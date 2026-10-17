@@ -1635,6 +1635,57 @@ from the sending system and it ends up in a path; without that, a message carryi
 because MSH can appear inside a free-text field and an unframed multi-message file
 cannot be split again reliably.
 
+## OpenPGP
+
+Payers, clearinghouses and state agencies often take and send files only under
+OpenPGP. A `pgp` block on a source opens what arrives; one on a destination
+protects what leaves. Both are on the channel builder: **Open PGP-encrypted
+messages** under the source, **Encrypt with OpenPGP** on each destination.
+
+```yaml
+source:
+  type: sftp
+  sftp: { host: sftp.payer.example, user: hospital, key_file: keys/id_ed25519, dir: outbound }
+  pgp:
+    decrypt_with: keys/our-secret.asc      # our secret key, armored or binary
+    passphrase: ${PGP_PASSPHRASE}
+    verify_with: [keys/payer.asc]          # the senders' public keys
+    require_signature: true
+destinations:
+  - name: claims
+    type: sftp
+    sftp: { host: sftp.payer.example, user: hospital, key_file: keys/id_ed25519, dir: inbound,
+            file_name: "${date}-${control_id}.x12.pgp" }
+    pgp:
+      encrypt_to: [keys/payer.asc]
+      sign_with: keys/our-secret.asc
+      passphrase: ${PGP_PASSPHRASE}
+```
+
+Key files are read relative to the channel file, and are read and unlocked when the
+channel loads: a missing key or a wrong passphrase stops the channel there, not on
+the first file.
+
+- **On a source**, the whole file, object, email attachment or request body is
+  opened first and then split into messages, so a batch encrypted as one file
+  works. One that will not open is refused: a file source moves it to its error
+  folder, an HTTP sender is answered 400 with the reason. `require_signature` refuses a message not
+  signed by one of `verify_with`; `allow_unencrypted` accepts one that is only
+  signed; `pass_plain` lets a message that is not PGP at all through unchanged,
+  for a folder that receives both.
+- **On a destination**, what would have been delivered is encrypted (to any of
+  `encrypt_to`) and signed (with `sign_with`), after every other step. A file,
+  SFTP, FTP, S3, Azure Blob or GCS destination still names the file from the plain
+  message, so `${control_id}` works, and any framing is inside the encryption.
+  `armor: true` writes `.asc` text rather than binary; `no_compress` turns off
+  compression; `file_name` is the name carried inside the message.
+
+Messages are written with AES-256 in the RFC 4880 format older receivers read, and
+the newer RFC 9580 format is read as well. The cryptography is
+`ProtonMail/go-crypto`; Perfuse implements no primitive. Interoperability is tested
+against GnuPG in both directions: gpg decrypts and verifies what Perfuse writes, and
+Perfuse opens and verifies what gpg writes.
+
 ## Kafka
 
 A health system with an event backbone has a Kafka one, and the services built in
@@ -2356,9 +2407,11 @@ FHIR resources; never a channel.
 
 **One static binary, and dependencies chosen deliberately.** No JVM, no ODBC layer,
 no native client library to install on a hospital server. Every dependency is pure
-Go, which is what makes that possible: 15 direct, three of which are the database
-drivers. That number went up from four when the database connectors landed and again
-when Kafka did, and both were the right trade — an interface engine that cannot reach
+Go, which is what makes that possible: 16 direct, three of which are the database
+drivers. That number went up from four when the database connectors landed, again
+when Kafka did, and again for OpenPGP (`ProtonMail/go-crypto`, the maintained fork of
+the old `x/crypto/openpgp`: cryptography is the one thing never written here), and each
+was the right trade — an interface engine that cannot reach
 the hospital's SQL Server, or the event backbone the rest of the estate publishes to,
 is not a replacement for one that can. Where a dependency would buy convenience
 rather than capability it is refused: alerting is webhook-only for that reason.

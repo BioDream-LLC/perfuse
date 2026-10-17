@@ -325,6 +325,8 @@ type buildSource struct {
 
 	// Email reads a mailbox over IMAP or POP3.
 	Email *buildEmailSource `json:"email,omitempty" yaml:"email,omitempty"`
+	// PGP decrypts and verifies what the source receives.
+	PGP *buildPGPReceive `json:"pgp,omitempty" yaml:"pgp,omitempty"`
 
 	// MQTT, IBMMQ, PubSub and GCS are the MQTT, IBM MQ, Google Cloud Pub/Sub and Cloud Storage sources.
 	MQTT   *buildMQTTSource   `json:"mqtt,omitempty" yaml:"mqtt,omitempty"`
@@ -816,6 +818,8 @@ type buildDest struct {
 
 	// ELR sends lab results to public health as ELR 2.5.1, reportable ones only, over whatever this destination is.
 	ELR *buildELR `json:"elr,omitempty" yaml:"elr,omitempty"`
+	// PGP encrypts and signs what the destination delivers.
+	PGP *buildPGPSend `json:"pgp,omitempty" yaml:"pgp,omitempty"`
 
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	ResponseTransformer string `json:"responseTransformer,omitempty" yaml:"response_transformer,omitempty"`
@@ -930,6 +934,26 @@ type buildFHIRDest struct {
 type buildELR struct {
 	Config string `json:"config,omitempty" yaml:"config,omitempty"`
 	RCTC   string `json:"rctc,omitempty" yaml:"rctc,omitempty"`
+}
+
+// buildPGPSend is config.PGPSend on the wire.
+type buildPGPSend struct {
+	EncryptTo  []string `json:"encryptTo,omitempty" yaml:"encrypt_to,omitempty"`
+	SignWith   string   `json:"signWith,omitempty" yaml:"sign_with,omitempty"`
+	Passphrase string   `json:"passphrase,omitempty" yaml:"passphrase,omitempty"`
+	Armor      bool     `json:"armor,omitempty" yaml:"armor,omitempty"`
+	NoCompress bool     `json:"noCompress,omitempty" yaml:"no_compress,omitempty"`
+	FileName   string   `json:"fileName,omitempty" yaml:"file_name,omitempty"`
+}
+
+// buildPGPReceive is config.PGPReceive on the wire.
+type buildPGPReceive struct {
+	DecryptWith      string   `json:"decryptWith,omitempty" yaml:"decrypt_with,omitempty"`
+	Passphrase       string   `json:"passphrase,omitempty" yaml:"passphrase,omitempty"`
+	VerifyWith       []string `json:"verifyWith,omitempty" yaml:"verify_with,omitempty"`
+	RequireSignature bool     `json:"requireSignature,omitempty" yaml:"require_signature,omitempty"`
+	AllowUnencrypted bool     `json:"allowUnencrypted,omitempty" yaml:"allow_unencrypted,omitempty"`
+	PassPlain        bool     `json:"passPlain,omitempty" yaml:"pass_plain,omitempty"`
 }
 
 type buildECR struct {

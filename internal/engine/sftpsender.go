@@ -26,6 +26,8 @@ import (
 // under a suffix and renamed once it is closed, because a rename within a directory
 // is atomic on every server worth using.
 type SFTPSender struct {
+	sealer func([]byte) ([]byte, error)
+
 	name string
 	cfg  *config.SFTPDestination
 	log  *slog.Logger
@@ -34,6 +36,9 @@ type SFTPSender struct {
 	conn  *sftpconn.Conn
 	stats SFTPStats
 }
+
+// SetSeal makes the sender encrypt each object's bytes (a pgp block).
+func (s *SFTPSender) SetSeal(f func([]byte) ([]byte, error)) { s.sealer = f }
 
 // SFTPStats reports what the destination has done.
 type SFTPStats struct {
@@ -113,6 +118,10 @@ func (s *SFTPSender) Send(ctx context.Context, raw []byte) error {
 			return fmt.Errorf("framing the message: %w", err)
 		}
 		body = []byte(framed.String())
+	}
+	if body, err = seal(s.sealer, body); err != nil {
+		s.fail(err)
+		return err
 	}
 
 	if s.cfg.AppendToFile {

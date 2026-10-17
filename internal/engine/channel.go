@@ -362,6 +362,16 @@ func NewChannel(cfg *config.Channel, factory SenderFactory, log *slog.Logger) (*
 			dest.sender = sender
 		}
 
+		// A destination writing named files seals the final bytes itself (see bodySealer); set before the ELR wrap, which
+		// hides the sender's type.
+		sealedInside := false
+		if resolved.PGP != nil {
+			if bs, ok := sender.(bodySealer); ok {
+				bs.SetSeal(resolved.PGP.Seal)
+				sealedInside = true
+			}
+		}
+
 		// After the script swap, so the ELR message is what any destination type delivers.
 		if resolved.ELR != nil {
 			wrapped, err := wrapELR(resolved.ELR, sender, ch.log.With("destination", resolved.Name))
@@ -371,6 +381,12 @@ func NewChannel(cfg *config.Channel, factory SenderFactory, log *slog.Logger) (*
 				return nil, fmt.Errorf("channel %q destination %q: %w", cfg.Name, d.Name, err)
 			}
 			sender = wrapped
+			dest.sender = sender
+		}
+
+		// Last, so what is encrypted is exactly what the destination would otherwise have delivered.
+		if resolved.PGP != nil && !sealedInside {
+			sender = wrapPGP(resolved.PGP, sender)
 			dest.sender = sender
 		}
 
@@ -780,6 +796,16 @@ func (c *Channel) handle(ctx context.Context, raw []byte) ([]byte, error) {
 			c.log.Warn("a received message was refused; the sender should resend it", "reason", err.Error())
 			return nil, fmt.Errorf("%w: %w", ErrNotAdmitted, err)
 		}
+	}
+
+	// An OpenPGP message is opened before anything reads it, whatever the data type. Sources that split a file into
+	// messages have opened the whole file already and say so in the context.
+	if !pgpOpened(ctx) {
+		plain, err := c.openPGP(raw)
+		if err != nil {
+			return nil, err
+		}
+		raw = plain
 	}
 
 	// X12 is handled separately, before anything else here runs.
