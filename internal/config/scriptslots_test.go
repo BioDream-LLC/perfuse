@@ -138,8 +138,9 @@ func TestTheFormatsWithoutScriptedFiltersAreTheOnesThatCannotBeAddressed(t *test
 	// DICOM is the deliberate one. Tag-level writing through a script is the same hazard as a general path writer, which is
 	// why the transformations are named steps instead.
 	expectedAbsent := map[DataType]string{
-		DataRaw:   "no addressable structure: a filter could only ask about the bytes",
-		DataDICOM: "deliberate: tag-level script writing is the hazard named steps exist to avoid",
+		DataRaw:     "no addressable structure: a filter could only ask about the bytes",
+		DataDICOM:   "deliberate: tag-level script writing is the hazard named steps exist to avoid",
+		DataEDIFACT: "never rewritten, and filtered by element paths; a scripted filter has no binding for interchanges yet",
 	}
 
 	for dt, why := range expectedAbsent {

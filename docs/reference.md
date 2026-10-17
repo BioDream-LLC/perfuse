@@ -1922,6 +1922,61 @@ Inspectors, like the attachment and prior authorisation ones: they build or read
 Built interchanges are read back and envelope-checked before they are returned, with any problem listed. The 277 that answers a 276 is
 read by the existing claim status reader.
 
+## UN/EDIFACT
+
+`dataType: edifact` reads UN/EDIFACT interchanges (ISO 9735): ORDERS, INVOIC,
+DESADV, IFTSTA and the rest, including the European healthcare claim and
+laboratory messages. The service string advice (UNA) is honoured, with the release
+character and, for syntax version 4, the repetition separator; functional groups
+(UNG/UNE) are optional. The interchange is delivered exactly as the sender wrote it.
+
+```yaml
+name: supplier-orders
+dataType: edifact
+edifact:
+  envelope: require      # require (default), warn, or ignore
+  split: false           # true: one interchange per message
+  acknowledge: contrl    # none (default) or contrl
+filter: 'UNB-2.1 == "5412345000013"'
+source:
+  type: as2              # or http, sftp, file, email ...
+  # ...
+destinations:
+  - name: orders
+    type: file
+    dir: /data/orders
+    filter: 'UNH-2.1 == "ORDERS"'
+```
+
+**The envelope.** UNT's segment count and reference, UNE's message count and
+reference, and UNZ's count and reference are compared with what the interchange
+holds. With `require`, the default, a mismatch refuses the interchange (it is how a
+transfer cut short shows); `warn` accepts it and logs a warning; `ignore` does not
+check.
+
+**Paths**, for the channel and destination filters, count elements and components
+from 1 in the order the segment is written, as implementation guides number them:
+`BGM-2` (the document number), `BGM-1.1`, `NAD(2)-2.1` (the second NAD's party),
+`LIN-3(2).1` (a repetition), `UNB-2.1` (the sender), `UNH-2.1` (the message type).
+A path without an occurrence addresses every one.
+
+**Splitting** delivers one interchange per message, each with the original UNB
+(and group header) and trailers that count one, so an order can be filtered,
+searched and retried on its own. Destination filters see each piece. A file
+destination names files by message type (`ORDERS_INVOIC-20261017.edi`), and
+`${control_id}` is the interchange reference.
+
+**CONTRL.** With `acknowledge: contrl`, a sender posting over HTTP is answered
+with a CONTRL syntax and service report: UCI action 7
+when the interchange was read and delivered, 4 when it was refused or could not be
+delivered (HTTP 400 or 502 then). It cannot be combined with `split`, since a CONTRL
+answers a whole interchange. Over AS2 the partner's receipt is the acknowledgement.
+
+Not offered: the message directories (which segments ORDERS D.96A allows), so the
+structure is checked, not the content; transformations, which would rewrite a
+partner's document; and filter or transformer scripts (a preprocessor runs, before
+parsing). Checked against pydifact 0.1.8, an independent parser, in both directions.
+
 ## SMART Health Links and Cards
 
 | Endpoint | |

@@ -54,6 +54,14 @@ export function wireToDraft(model: WireModel): ChannelDraft {
     draft.x12Split = model.x12?.split ?? draft.x12Split
   }
 
+  if (model.dataType === 'edifact') {
+    draft.dataType = 'edifact'
+    const e = model.edifact
+    draft.edifactEnvelope = e?.envelope === 'warn' || e?.envelope === 'ignore' ? e.envelope : 'require'
+    draft.edifactSplit = e?.split === true
+    draft.edifactAcknowledge = e?.acknowledge === 'contrl' ? 'contrl' : 'none'
+  }
+
   if (model.dataType === 'delimited') {
     draft.dataType = 'delimited'
     draft.delimitedDelimiter = model.delimited?.delimiter ?? ''
@@ -1192,6 +1200,7 @@ export interface WireModel {
     ackSenderId?: string
     ackSenderQualifier?: string
   }
+  edifact?: { envelope?: string; split?: boolean; acknowledge?: string }
   // An imaging channel's named steps. Loosely typed because the four actions carry different fields and a
   // discriminated union here would have to be kept in step with the Go build model by hand - readDICOMStep
   // is where the shape is interpreted, and it defaults every field.

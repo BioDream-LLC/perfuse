@@ -57,10 +57,12 @@ type buildModel struct {
 	// the channel default is true and an absent key should mean the default.
 	Enabled *bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 
-	DataType string      `json:"dataType,omitempty" yaml:"dataType,omitempty"`
-	X12      *buildX12   `json:"x12,omitempty" yaml:"x12,omitempty"`
-	NCPDP    *buildNCPDP `json:"ncpdp,omitempty" yaml:"ncpdp,omitempty"`
-	HL7v3    *buildHL7v3 `json:"hl7v3,omitempty" yaml:"hl7v3,omitempty"`
+	DataType string    `json:"dataType,omitempty" yaml:"dataType,omitempty"`
+	X12      *buildX12 `json:"x12,omitempty" yaml:"x12,omitempty"`
+	// EDIFACT holds an EDIFACT channel's envelope, split and acknowledgement settings.
+	EDIFACT *buildEDIFACT `json:"edifact,omitempty" yaml:"edifact,omitempty"`
+	NCPDP   *buildNCPDP   `json:"ncpdp,omitempty" yaml:"ncpdp,omitempty"`
+	HL7v3   *buildHL7v3   `json:"hl7v3,omitempty" yaml:"hl7v3,omitempty"`
 
 	// Script carries an NCPDP SCRIPT channel's declarative steps.
 	//
@@ -91,6 +93,13 @@ type buildX12 struct {
 	Acknowledge        string `json:"acknowledge,omitempty" yaml:"acknowledge,omitempty"`
 	AckSenderID        string `json:"ackSenderId,omitempty" yaml:"ack_sender_id,omitempty"`
 	AckSenderQualifier string `json:"ackSenderQualifier,omitempty" yaml:"ack_sender_qualifier,omitempty"`
+}
+
+// buildEDIFACT is config.EDIFACTOptions on the wire.
+type buildEDIFACT struct {
+	Envelope    string `json:"envelope,omitempty" yaml:"envelope,omitempty"`
+	Split       bool   `json:"split,omitempty" yaml:"split,omitempty"`
+	Acknowledge string `json:"acknowledge,omitempty" yaml:"acknowledge,omitempty"`
 }
 
 // buildNCPDP is the pharmacy claim block.

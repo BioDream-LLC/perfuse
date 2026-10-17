@@ -936,7 +936,7 @@ export interface ChannelDraft {
    * chosen from the form at all - a channel carrying a CSV feed or an imaging object had to be written by
    * hand, which is against the principle that everything is reachable from the interface.
    */
-  dataType: 'hl7' | 'x12' | 'hl7v3' | 'ncpdp' | 'script' | 'delimited' | 'dicom' | 'raw'
+  dataType: 'hl7' | 'x12' | 'edifact' | 'hl7v3' | 'ncpdp' | 'script' | 'delimited' | 'dicom' | 'raw'
   /** Delimited format options. A delimited channel was choosable and had no options at all in the interface. */
   delimitedDelimiter: string
   delimitedQuote: string
@@ -950,6 +950,11 @@ export interface ChannelDraft {
 
   x12Envelope: 'require' | 'warn' | 'ignore'
   x12Split: boolean
+
+  /** An EDIFACT channel: envelope checking, one interchange per message, and a CONTRL back. */
+  edifactEnvelope: 'require' | 'warn' | 'ignore'
+  edifactSplit: boolean
+  edifactAcknowledge: 'none' | 'contrl'
 
   /** Which acknowledgement to send a trading partner back, or none.
    *
@@ -2128,6 +2133,14 @@ export function draftToWire(draft: ChannelDraft): unknown {
               draft.x12Acknowledge === 'none' ? undefined : draft.x12AckSenderQualifier || undefined,
           }
         : undefined,
+    edifact:
+      draft.dataType === 'edifact'
+        ? {
+            envelope: draft.edifactEnvelope === 'require' ? undefined : draft.edifactEnvelope,
+            split: draft.edifactSplit || undefined,
+            acknowledge: draft.edifactAcknowledge === 'none' ? undefined : draft.edifactAcknowledge,
+          }
+        : undefined,
     delimited:
       draft.dataType === 'delimited'
         ? {
@@ -3127,6 +3140,9 @@ export function emptyDraft(): ChannelDraft {
     v3SenderOid: '',
     x12Envelope: 'require',
     x12Split: true,
+    edifactEnvelope: 'require',
+    edifactSplit: false,
+    edifactAcknowledge: 'none',
     // None by default. Classical X12 acknowledgement is asynchronous, and a partner who is
     // not expecting one may treat it as an unsolicited interchange.
     x12Acknowledge: 'none',

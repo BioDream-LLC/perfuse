@@ -109,6 +109,11 @@ var scriptSlotsRun = map[DataType]map[scriptSlot]bool{
 		slotPreprocessor: true, slotPostprocessor: true, slotDeploy: true, slotUndeploy: true,
 	},
 
+	// EDIFACT, like raw: the preprocessor can repair text before it is parsed; nothing rewrites the interchange after.
+	DataEDIFACT: {
+		slotPreprocessor: true, slotPostprocessor: true, slotDeploy: true, slotUndeploy: true,
+	},
+
 	// DICOM gets no preprocessor. An object is binary with pixel data in it, and a script editing it as text will corrupt an
 	// image - the same reason DICOM gets named transformation steps rather than a path writer. Postprocessing is safe because
 	// it cannot change anything.

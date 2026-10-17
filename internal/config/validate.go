@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/delimited"
+	"github.com/biodream-llc/perfuse/internal/edifact"
 	"github.com/biodream-llc/perfuse/internal/egress"
 	"github.com/biodream-llc/perfuse/internal/ncpdp"
 	"github.com/biodream-llc/perfuse/internal/x12"
@@ -971,6 +972,13 @@ func (d *Destination) validate(dataType DataType) []error {
 				errs = append(errs, fmt.Errorf("filter: %w", err))
 			} else {
 				d.ncpdpcompiled = compiled
+			}
+		case DataEDIFACT:
+			compiled, err := edifact.ParseFilter(d.Filter)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("filter: %w", err))
+			} else {
+				d.edifactcompiled = compiled
 			}
 		default:
 			// HL7 v2, and every type that refuses destination filters at load - for those the refusal is reported

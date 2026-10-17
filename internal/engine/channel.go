@@ -827,6 +827,11 @@ func (c *Channel) handle(ctx context.Context, raw []byte) ([]byte, error) {
 		return c.handleX12(ctx, raw)
 	}
 
+	// EDIFACT for the same reason: no segments in the HL7 sense, and its own acknowledgement (CONTRL) when one is asked for.
+	if c.cfg.Type() == config.DataEDIFACT {
+		return c.handleEDIFACT(ctx, raw)
+	}
+
 	// Same reasoning as X12: an imaging object has no segments or fields, so it needs its own path rather than a nil
 	// parsed message travelling through code that assumes one exists. Found by sending a real study through and watching
 	// it rejected as "input does not start with an MSH segment".

@@ -142,6 +142,12 @@ func cmdCheck(args []string, stdout, stderr io.Writer) error {
 			} else {
 				fmt.Fprintf(stdout, "  acknowledges  nothing synchronously; X12 uses a 997 or 999 sent separately\n")
 			}
+		} else if c.Type() == config.DataEDIFACT {
+			if c.EDIFACT != nil && c.EDIFACT.Acknowledge == config.EDIFACTAckCONTRL {
+				fmt.Fprintf(stdout, "  acknowledges  with a CONTRL in the HTTP response\n")
+			} else {
+				fmt.Fprintf(stdout, "  acknowledges  nothing; set edifact.acknowledge: contrl for a CONTRL\n")
+			}
 		} else {
 			fmt.Fprintf(stdout, "  acknowledges  %s\n", c.Source.AckWhen())
 		}

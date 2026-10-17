@@ -1739,6 +1739,7 @@ export const sourceIcons: Record<string, React.ComponentType<IconProps>> = {
 export const formatIcons: Record<string, React.ComponentType<IconProps>> = {
   'hl7': IconHl7,
   'x12': IconX12,
+  'edifact': IconX12,
   'hl7v3': IconCda,
   'fhir': IconFhir,
   'cda': IconCda,

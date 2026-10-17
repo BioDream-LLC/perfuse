@@ -81,6 +81,11 @@ var formatBlocks = []formatBlock{
 		},
 	},
 	{
+		name:    "edifact",
+		owner:   DataEDIFACT,
+		present: func(c *Channel) bool { return c.EDIFACT != nil },
+	},
+	{
 		name:    "script",
 		owner:   DataScript,
 		present: func(c *Channel) bool { return c.Script != nil },

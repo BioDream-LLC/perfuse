@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/config"
+	"github.com/biodream-llc/perfuse/internal/edifact"
 	"github.com/biodream-llc/perfuse/internal/hl7v3"
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
 	"github.com/biodream-llc/perfuse/internal/x12"
@@ -308,7 +309,7 @@ func (s *FileSender) frame(msg []byte) []byte {
 	// separators, so wrapping it in MLLP's 0x0B and 0x1C puts a second, different meaning on a byte the claim is already
 	// using - and a reader unframing it would stop at the first field separator inside the first segment. A prescription
 	// is an XML document, and a document with control characters around it is not well-formed XML.
-	if s.dataType != config.DataX12 && s.dataType != config.DataDelimited &&
+	if s.dataType != config.DataX12 && s.dataType != config.DataDelimited && s.dataType != config.DataEDIFACT &&
 		s.dataType != config.DataDICOM && s.dataType != config.DataRaw &&
 		s.dataType != config.DataNCPDP && s.dataType != config.DataScript {
 		out = mllp.Frame(msg)
@@ -325,6 +326,10 @@ func (s *FileSender) render(now time.Time, name, ext string, msg []byte) string 
 				controlID = msh.Field(10).String()
 			}
 		}
+	}
+	if controlID == "" && (s.dataType == config.DataX12 || s.dataType == config.DataEDIFACT) {
+		// The interchange's own reference (ISA13, UNB 0020), which is what a trading partner will quote.
+		controlID = interchangeID(msg)
 	}
 	if controlID == "" {
 		controlID = "noid-" + uniqueStamp()
@@ -429,6 +434,24 @@ func (s *FileSender) describe(msg []byte) (name, ext string) {
 
 	if s.dataType == config.DataScript {
 		return "prescriptions", "xml"
+	}
+
+	if s.dataType == config.DataEDIFACT {
+		// By message type, as X12 is by transaction set: the ORDERS file, not everything the partner sent.
+		if ic, err := edifact.Parse(msg); err == nil {
+			seen := map[string]bool{}
+			var types []string
+			for _, m := range ic.AllMessages() {
+				if t := m.Segments[0].Value(2, 1, 1); t != "" && !seen[t] {
+					seen[t] = true
+					types = append(types, t)
+				}
+			}
+			if len(types) > 0 {
+				return strings.Join(types, "_"), "edi"
+			}
+		}
+		return "UNKNOWN", "edi"
 	}
 
 	if s.dataType == config.DataX12 {

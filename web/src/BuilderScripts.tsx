@@ -116,6 +116,9 @@ export function BuilderScripts({
 
       // The two formats that genuinely cannot, each for its own reason. A single message covering both would have to be
       // vague enough to be useless to either.
+      if (draft.dataType === 'edifact') {
+        return `An EDIFACT interchange is delivered as the sender wrote it, so there is no ${slot} script. Filter by element paths on the Filter tab (BGM-2, UNB-2.1); a preprocessor works here, because it sees the text before it is read.`
+      }
       return imaging
         ? `An imaging object is binary with pixel data inside it, so a ${slot} script would have to edit it as text and could produce a study that opens and is wrong. Use the transformation steps above, which name what to change.`
         : `A raw channel has no addressable structure, so a ${slot} script would have nothing to read. A preprocessor works here, because it sees the text as it arrived.`

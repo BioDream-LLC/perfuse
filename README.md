@@ -43,7 +43,7 @@ parses each of them properly, transforms what needs transforming, and delivers w
 
 **What it reads and writes:** HL7 v2 · FHIR R4, R4B and R5 · DICOM and DICOMweb · X12 837, 835, 270/271, 276/277, 834 and 278 ·
 SMART Health Links and Cards · International Patient Summary · IHE XDS/XDM documents · S/MIME Direct messages ·
-C-CDA and CDA · HL7 v3 · NCPDP Telecommunication, SCRIPT (with ePA) and RTPB · delimited and raw formats.
+C-CDA and CDA · HL7 v3 · NCPDP Telecommunication, SCRIPT (with ePA) and RTPB · UN/EDIFACT · delimited and raw formats.
 
 **How it connects:** MLLP, TCP, HTTP, SOAP, files, FTP, SFTP, SMB, WebDAV, databases, DICOM, DICOMweb, Kafka, message
 brokers, AMQP 1.0 (Azure Service Bus, RabbitMQ 4), MQTT, IBM MQ, Azure Blob Storage, Google Cloud (Pub/Sub and Cloud
@@ -154,6 +154,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Da Vinci PAS to and from the X12 278</b>, and 278 decisions to PAS ClaimResponses that pass the HL7 validator</li>
 <li>997 and 999 are separate, and Perfuse says so rather than pretending acknowledgement is synchronous</li>
 <li>Pharmacy too: <b>NCPDP Telecommunication</b> claims and <b>NCPDP SCRIPT</b> prescriptions, with a missing substitution flag refused</li>
+<li><b>UN/EDIFACT</b> interchanges: envelope counts checked, filtered by element, split per message, <b>CONTRL</b> acknowledgements; checked with pydifact</li>
 </ul>
 </td>
 </tr>

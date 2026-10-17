@@ -150,6 +150,20 @@ func (c *Channel) handlePostedMessage(src *config.HTTPSource, maxSize int) http.
 			http.Error(w, err.Error(), http.StatusTooManyRequests)
 			return
 		}
+		// A CONTRL is the answer whether the interchange was accepted or not: it says which, in the format the sender reads.
+		if c.cfg.Type() == config.DataEDIFACT && len(ack) > 0 {
+			status := http.StatusOK
+			if err != nil {
+				status = http.StatusBadRequest
+				if c.LastOutcomeForTest() == Failed {
+					status = http.StatusBadGateway
+				}
+			}
+			w.Header().Set("Content-Type", "application/EDIFACT")
+			w.WriteHeader(status)
+			_, _ = w.Write(ack)
+			return
+		}
 		if errors.Is(err, ErrPGPRefused) {
 			// The reason names keys and what was missing, never content, and is what the sender needs to fix it.
 			http.Error(w, err.Error(), http.StatusBadRequest)

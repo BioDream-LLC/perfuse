@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/dicom"
+	"github.com/biodream-llc/perfuse/internal/edifact"
 	"github.com/biodream-llc/perfuse/internal/hl7v3"
 )
 
@@ -98,7 +99,79 @@ const (
 	// element trees. An hl7v3 filter on a prescription would compile and never match, which is the failure
 	// this project spends most of its time refusing to ship.
 	DataScript DataType = "script"
+
+	// DataEDIFACT is a UN/EDIFACT interchange (ISO 9735): ORDERS, INVOIC, DESADV, and in healthcare the European claim and
+	// laboratory messages. Parsed and its envelope checked, filtered by element paths, optionally split into one interchange
+	// per message, and acknowledged with CONTRL on request. Never rewritten: the bytes delivered are the sender's.
+	DataEDIFACT DataType = "edifact"
 )
+
+// EDIFACT acknowledgements.
+const (
+	EDIFACTAckNone   = "none"
+	EDIFACTAckCONTRL = "contrl"
+)
+
+// EDIFACTOptions are the settings that only apply to an EDIFACT channel.
+type EDIFACTOptions struct {
+	// Envelope is what to do when UNT, UNE or UNZ disagrees with what the interchange holds: require (the default) refuses
+	// it, as the sign of a transfer cut short; warn accepts it with a warning; ignore does not check.
+	Envelope string `yaml:"envelope,omitempty"`
+	// Split delivers one interchange per message (the original UNB, UNZ counting one), so each order or invoice can be
+	// searched, filtered and retried on its own.
+	Split bool `yaml:"split,omitempty"`
+	// Acknowledge answers a sender posting over HTTP with a CONTRL in the response: accepted
+	// (action 7) when the interchange was read and delivered, rejected (4) otherwise. Default none.
+	Acknowledge string `yaml:"acknowledge,omitempty"`
+}
+
+// EnvelopeMode is Envelope with its default.
+func (o *EDIFACTOptions) EnvelopeMode() string {
+	if o == nil || o.Envelope == "" {
+		return "require"
+	}
+	return o.Envelope
+}
+
+func validateEDIFACT(c *Channel) []error {
+	var errs []error
+	if len(c.Transformations) > 0 {
+		errs = append(errs, fmt.Errorf("this channel has %d transformation(s) but dataType is edifact. The declarative steps "+
+			"address HL7 fields, and an EDIFACT channel delivers the interchange as the sender wrote it", len(c.Transformations)))
+	}
+	if c.Contract != nil {
+		errs = append(errs, fmt.Errorf("this channel has a contract but dataType is edifact; contracts describe HL7 feeds"))
+	}
+	if c.Attachments != nil {
+		errs = append(errs, fmt.Errorf("attachments are set but dataType is edifact; extraction paths are HL7 fields such as "+
+			"OBX-5, which an interchange does not have"))
+	}
+	if c.Filter != "" {
+		compiled, ferr := edifact.ParseFilter(c.Filter)
+		if ferr != nil {
+			errs = append(errs, fmt.Errorf("filter: %w", ferr))
+		} else {
+			c.edifactFilter = compiled
+		}
+	}
+	if o := c.EDIFACT; o != nil {
+		switch o.EnvelopeMode() {
+		case "require", "warn", "ignore":
+		default:
+			errs = append(errs, fmt.Errorf("edifact.envelope %q is not require, warn or ignore", o.Envelope))
+		}
+		switch o.Acknowledge {
+		case "", EDIFACTAckNone, EDIFACTAckCONTRL:
+		default:
+			errs = append(errs, fmt.Errorf("edifact.acknowledge %q is not none or contrl", o.Acknowledge))
+		}
+		if o.Acknowledge == EDIFACTAckCONTRL && o.Split {
+			errs = append(errs, fmt.Errorf("edifact: acknowledge and split cannot both be on: a CONTRL answers a whole "+
+				"interchange, and the sender could not reconcile one per message"))
+		}
+	}
+	return errs
+}
 
 // HL7v3Options are the settings that only apply to an HL7 v3 channel.
 type HL7v3Options struct {
@@ -183,7 +256,7 @@ func (h *HL7v3Options) FilterExpression() string {
 }
 
 // KnownDataTypes lists the accepted values, for error messages.
-var KnownDataTypes = []DataType{DataHL7, DataX12, DataDICOM, DataDelimited, DataHL7v3, DataRaw, DataNCPDP, DataScript}
+var KnownDataTypes = []DataType{DataHL7, DataX12, DataDICOM, DataDelimited, DataHL7v3, DataRaw, DataNCPDP, DataScript, DataEDIFACT}
 
 // shadowRuns names the data types whose handler actually observes a shadow.
 //
@@ -539,6 +612,9 @@ func (c *Channel) validateDataType() []error {
 		// Worth stating explicitly because it is the exception, and because the first version of the guard below covered
 		// v3 too and broke four working tests.
 		return append(errs, validateHL7v3(c)...)
+
+	case DataEDIFACT:
+		return append(errs, validateEDIFACT(c)...)
 
 	case DataX12:
 		// fall through to the X12 checks below

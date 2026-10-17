@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/codeset"
+	"github.com/biodream-llc/perfuse/internal/edifact"
 	"github.com/biodream-llc/perfuse/internal/ncpdp"
 	"github.com/biodream-llc/perfuse/internal/x12"
 	"io"
@@ -100,6 +101,9 @@ type Channel struct {
 	// NCPDP holds the settings that only apply to a pharmacy claim channel.
 	NCPDP *NCPDPOptions `yaml:"ncpdp,omitempty"`
 
+	// EDIFACT holds the settings for an EDIFACT channel.
+	EDIFACT *EDIFACTOptions `yaml:"edifact,omitempty"`
+
 	// Script configures an NCPDP SCRIPT channel. Its steps live here rather than in the top-level transformations for the same
 	// reason every other non-v2 format's do: the step types differ per format, so one key would mean different things depending on
 	// dataType.
@@ -144,6 +148,8 @@ type Channel struct {
 
 	// ncpdpFilter is the channel filter compiled against NCPDP paths, set for an ncpdp channel instead of compiled.
 	ncpdpFilter expr.Expr[*ncpdp.Message]
+	// edifactFilter is the channel filter compiled against EDIFACT paths.
+	edifactFilter expr.Expr[*edifact.Interchange]
 
 	// scriptFilter is the channel filter compiled against a SCRIPT prescription, which is XML.
 	scriptFilter expr.Expr[eprescribe.Tree]
@@ -708,6 +714,8 @@ type Destination struct {
 
 	// ncpdpcompiled is the destination filter compiled against NCPDP paths.
 	ncpdpcompiled expr.Expr[*ncpdp.Message]
+	// edifactcompiled is the destination filter compiled against EDIFACT paths.
+	edifactcompiled expr.Expr[*edifact.Interchange]
 }
 
 // FHIRDestination configures conversion to FHIR and delivery to a FHIR server.
@@ -849,6 +857,9 @@ func (c *Channel) FilterExpr() expr.HL7Expr { return c.compiled }
 // NCPDPFilter returns the channel filter compiled for NCPDP, or nil when there is none.
 func (c *Channel) NCPDPFilter() expr.Expr[*ncpdp.Message] { return c.ncpdpFilter }
 
+// EDIFACTFilter returns the channel filter compiled for EDIFACT, or nil.
+func (c *Channel) EDIFACTFilter() expr.Expr[*edifact.Interchange] { return c.edifactFilter }
+
 // ScriptFilter returns the compiled SCRIPT filter, or nil when there is none.
 func (c *Channel) ScriptFilter() expr.Expr[eprescribe.Tree] { return c.scriptFilter }
 
@@ -884,6 +895,9 @@ func (d *Destination) HasFilter() bool { return strings.TrimSpace(d.Filter) != "
 
 // NCPDPFilterExpr returns the destination filter compiled for NCPDP, or nil when there is none.
 func (d *Destination) NCPDPFilterExpr() expr.Expr[*ncpdp.Message] { return d.ncpdpcompiled }
+
+// EDIFACTFilterExpr returns the destination filter compiled for EDIFACT, or nil.
+func (d *Destination) EDIFACTFilterExpr() expr.Expr[*edifact.Interchange] { return d.edifactcompiled }
 
 // X12FilterExpr returns the destination filter compiled for X12, or nil when there is none.
 func (d *Destination) X12FilterExpr() expr.Expr[*x12.Message] { return d.x12compiled }

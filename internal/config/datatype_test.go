@@ -65,7 +65,7 @@ func TestAnX12ChannelLoads(t *testing.T) {
 }
 
 func TestAnUnknownDataTypeIsRefused(t *testing.T) {
-	_, err := loadYAML(t, strings.Replace(x12Base, "dataType: x12", "dataType: edifact", 1))
+	_, err := loadYAML(t, strings.Replace(x12Base, "dataType: x12", "dataType: tradacoms", 1))
 	if err == nil {
 		t.Fatal("an unsupported data type was accepted")
 	}

@@ -65,6 +65,14 @@ describe('reading a channel back into the form', () => {
     expect(out.destinations[0]?.as2).toEqual(as2Dest)
   })
 
+  it('keeps an EDIFACT channel through a round trip', () => {
+    const model = { ...minimal, dataType: 'edifact', source: { type: 'http', http: { listen: ':9000', path: '/edi' } },
+      edifact: { envelope: 'warn', acknowledge: 'contrl' } } as unknown as WireModel
+    const out = roundTrip(model) as unknown as { dataType?: string; edifact?: unknown }
+    expect(out.dataType).toBe('edifact')
+    expect(out.edifact).toEqual({ envelope: 'warn', acknowledge: 'contrl' })
+  })
+
   it('keeps the name, source and destination', () => {
     const draft = wireToDraft(minimal)
     expect(draft.name).toBe('feed')

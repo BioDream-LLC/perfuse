@@ -34,6 +34,7 @@ func blockFixtures() map[string]string {
 		"ncpdp":     "ncpdp:\n  transformations:\n    - set: {path: A3, value: B1}\n",
 		"script":    "script:\n  transformations:\n    - clear: {path: \"//DrugDescription\"}\n",
 		"dicom":     "dicom:\n  transformations:\n    - deidentify: {}\n",
+		"edifact":   "edifact:\n  envelope: warn\n",
 	}
 }
 
@@ -119,7 +120,7 @@ func TestEveryFormatSpecificBlockHasARowInTheTable(t *testing.T) {
 	// The format-specific blocks, by their yaml key. Kept here rather than derived, because deriving it from the struct would
 	// have to guess which blocks are format-specific and which are cross-cutting like attachments or scripts - and a wrong
 	// guess in either direction makes this test useless.
-	want := []string{"hl7v3", "x12", "delimited", "ncpdp", "script", "dicom"}
+	want := []string{"hl7v3", "x12", "delimited", "ncpdp", "script", "dicom", "edifact"}
 
 	have := map[string]bool{}
 	for _, b := range formatBlocks {

@@ -248,6 +248,9 @@ func (s *SMTPSender) attachName(raw []byte) string {
 	if s.dataType == config.DataX12 {
 		ext = ".x12"
 	}
+	if s.dataType == config.DataEDIFACT {
+		ext = ".edi"
+	}
 
 	// The control ID, which is what somebody asking about a message will quote.
 	if id := s.value(raw, "MSH-10"); id != "" {

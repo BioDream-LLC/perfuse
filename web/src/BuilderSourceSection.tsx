@@ -2057,6 +2057,7 @@ export function FormatSection({
           // switching format moves the source rather than leaving a combination that
           // cannot load. Being helpful here rather than reporting an error later.
           if (dataType === 'x12' && draft.sourceKind === 'mllp') set('sourceKind', 'http')
+          if (dataType === 'edifact' && draft.sourceKind === 'mllp') set('sourceKind', 'http')
           // The same reasoning for v3: MLLP answers with a v2 acknowledgement, which a v3
           // sender cannot read, so the loader refuses the combination.
           if (dataType === 'hl7v3' && draft.sourceKind === 'mllp') set('sourceKind', 'http')
@@ -2071,6 +2072,7 @@ export function FormatSection({
         options={[
           { value: 'hl7', label: 'HL7 v2 — the usual choice' },
           { value: 'x12', label: 'X12 — claims, remittances, eligibility' },
+          { value: 'edifact', label: 'UN/EDIFACT — orders, invoices, European claims' },
           { value: 'hl7v3', label: 'HL7 v3 — IHE PIX and PDQ' },
           { value: 'ncpdp', label: 'NCPDP — pharmacy claims' },
           { value: 'script', label: 'NCPDP SCRIPT — prescriptions' },
@@ -2254,6 +2256,48 @@ export function FormatSection({
             mono
             hint="One character. Empty means no line is treated as a comment."
           />
+        </div>
+      )}
+
+      {draft.dataType === 'edifact' && (
+        <div className="space-y-3 rounded-lg border border-slate-800 p-3" data-testid="edifact-settings">
+          <Choose
+            label="Envelope checking"
+            value={draft.edifactEnvelope}
+            onChange={(v) => set('edifactEnvelope', v)}
+            options={[
+              { value: 'require', label: 'reject an interchange whose UNT, UNE or UNZ does not match' },
+              { value: 'warn', label: 'accept it, but record a warning' },
+              { value: 'ignore', label: 'do not check' },
+            ]}
+            hint="An interchange states its own segment and message counts and repeats its references in the trailers, which is what makes a transfer cut short detectable."
+          />
+          <Check
+            label="Split each interchange into one per message"
+            value={draft.edifactSplit}
+            onChange={(v) => set('edifactSplit', v)}
+            hint="Each order or invoice becomes its own interchange with the original UNB, so it can be searched, filtered and retried on its own."
+          />
+          <Choose
+            label="Answer the sender with"
+            value={draft.edifactAcknowledge}
+            onChange={(v) => set('edifactAcknowledge', v)}
+            options={[
+              { value: 'none', label: 'nothing' },
+              { value: 'contrl', label: 'a CONTRL in the HTTP response: accepted (7) or rejected (4)' },
+            ]}
+            hint="For a sender posting over HTTP, which gets it in the response. Over AS2 the partner's receipt is the acknowledgement."
+          />
+          {draft.edifactSplit && draft.edifactAcknowledge === 'contrl' && (
+            <p className="rounded border border-amber-800/50 bg-amber-950/20 p-2 text-xs leading-relaxed text-amber-200/90">
+              Splitting and acknowledging cannot both be on: a CONTRL answers a whole interchange. Turn one of the two off.
+            </p>
+          )}
+          <p className="text-xs leading-relaxed text-slate-400">
+            The filter addresses elements by segment and position: <code className="font-mono">BGM-2</code>,{' '}
+            <code className="font-mono">NAD(2)-2.1</code>, <code className="font-mono">UNB-2.1</code> for the sender. The interchange is
+            delivered as the sender wrote it.
+          </p>
         </div>
       )}
 

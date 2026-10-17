@@ -116,6 +116,8 @@ func (s *AS2Sender) contentType() string {
 	switch s.dataType {
 	case config.DataX12:
 		return "application/edi-x12"
+	case config.DataEDIFACT:
+		return "application/edifact"
 	case config.DataHL7, "":
 		return "application/hl7-v2"
 	case config.DataHL7v3, config.DataScript:

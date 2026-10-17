@@ -108,6 +108,12 @@ var featureSupport = map[DataType]map[Feature]bool{
 		FeatureFilter: true, FeatureTransformations: false, FeatureScripts: true,
 		FeatureShadow: false, FeatureContract: false, FeatureAttachments: true,
 	},
+
+	// EDIFACT takes the top-level filter, compiled against EDIFACT element paths; it is never rewritten.
+	DataEDIFACT: {
+		FeatureFilter: true, FeatureTransformations: false, FeatureScripts: true,
+		FeatureShadow: false, FeatureContract: false, FeatureAttachments: false,
+	},
 }
 
 // featureAcceptedButSuspectedInert records cells the loader accepts and that probably cannot work.
