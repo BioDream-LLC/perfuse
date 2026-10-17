@@ -18,7 +18,9 @@ func (f fakeCodes) LookupCode(_ context.Context, system, _, code string) (string
 	return c.display, "v1", c.active, ok, nil
 }
 
-func (f fakeCodes) HasSystem(_ context.Context, system string) bool { return system == "http://loinc.org" }
+func (f fakeCodes) HasSystem(_ context.Context, system string) bool {
+	return system == "http://loinc.org"
+}
 
 func TestCodeSystemLookupAndValidate(t *testing.T) {
 	srv, _ := newTestServer(t)
