@@ -286,10 +286,6 @@ func hl7Time(t time.Time) string {
 	return t.Format("20060102150405-0700")
 }
 
-func hl7Date(t time.Time) string {
-	return t.Format("20060102")
-}
-
 // msh builds the header.
 func (g *Generator) msh(kind, event, structure, controlID string, at time.Time) string {
 	return fmt.Sprintf("MSH|^~\\&|%s|%s|%s|%s|%s||%s^%s^%s|%s|P|%s",

@@ -1,8 +1,6 @@
 package v2fhir
 
 import (
-	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -68,32 +66,6 @@ func mshFields(messageType, controlID, timestamp string) map[int]string {
 		11: "P",
 		12: "2.5.1",
 	}
-}
-
-// describe renders a segment with its field numbers, for a failure message that
-// shows where a value actually landed.
-func describe(segment string) string {
-	parts := strings.Split(segment, "|")
-	if len(parts) == 0 {
-		return segment
-	}
-
-	name := parts[0]
-	var lines []string
-	offset := 0
-	if name == "MSH" {
-		// parts[1] is MSH-2 because MSH-1 is the separator.
-		offset = 1
-	}
-
-	for i := 1; i < len(parts); i++ {
-		if strings.TrimSpace(parts[i]) == "" {
-			continue
-		}
-		lines = append(lines, fmt.Sprintf("  %s-%d = %q", name, i+offset, parts[i]))
-	}
-	sort.Strings(lines)
-	return name + "\n" + strings.Join(lines, "\n")
 }
 
 // adtWithEvent rebuilds the ADT fixture with a different trigger event.

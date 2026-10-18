@@ -3,14 +3,14 @@ package engine
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
-	"github.com/biodream-llc/perfuse/internal/trace"
 	"io"
 	"log/slog"
 	"net/http"
 	"strings"
 	"sync/atomic"
+
+	"github.com/biodream-llc/perfuse/internal/trace"
 
 	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
@@ -185,14 +185,4 @@ func summariseBody(text string) string {
 		return text[:limit] + "…"
 	}
 	return text
-}
-
-// tlsClientConfigFor is kept separate so a test can assert what was built without
-// making a request.
-func tlsClientConfigFor(s *HTTPSender) *tls.Config {
-	t, ok := s.client.Transport.(*http.Transport)
-	if !ok {
-		return nil
-	}
-	return t.TLSClientConfig
 }

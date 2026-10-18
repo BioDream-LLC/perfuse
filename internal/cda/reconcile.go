@@ -78,13 +78,11 @@ func ReconcileMedications(before, after *Document) ReconcileReport {
 	for i := range beforeMeds {
 		b := &beforeMeds[i]
 		var match *Entry
-		var matchKey string
 
 		// Match by code first.
 		if key := medCodeKey(b); key != "" {
 			if a, ok := afterByCode[key]; ok {
 				match = a
-				matchKey = key
 			}
 		}
 
@@ -93,10 +91,6 @@ func ReconcileMedications(before, after *Document) ReconcileReport {
 			if name := medNormName(b); name != "" {
 				if a, ok := afterByName[name]; ok {
 					match = a
-					matchKey = medCodeKey(a)
-					if matchKey == "" {
-						matchKey = "name:" + medNormName(a)
-					}
 				}
 			}
 		}

@@ -1,11 +1,5 @@
 package config
 
-import (
-	"fmt"
-	"sort"
-	"strings"
-)
-
 // Feature is a cross-cutting channel capability: one whose support depends on the data type.
 //
 // # Why only six
@@ -154,29 +148,4 @@ var featureAcceptedButSuspectedInert = map[DataType]map[Feature]string{
 // Supports reports whether a data type honours a feature.
 func Supports(dt DataType, f Feature) bool {
 	return featureSupport[dt][f]
-}
-
-// featuresFor returns the supported features for a data type, sorted, for an error message.
-func featuresFor(dt DataType) []string {
-	var out []string
-	for _, f := range AllFeatures {
-		if featureSupport[dt][f] {
-			out = append(out, string(f))
-		}
-	}
-	sort.Strings(out)
-
-	return out
-}
-
-// describeFeatureRefusal builds the load error for an unsupported feature.
-func describeFeatureRefusal(dt DataType, f Feature) error {
-	supported := featuresFor(dt)
-	if len(supported) == 0 {
-		return fmt.Errorf("%s is set but dataType %q honours none of the cross-cutting features; it would validate "+
-			"here and then never take effect", f, dt)
-	}
-
-	return fmt.Errorf("%s is set but dataType %q does not honour it: it would validate here and then never take effect. "+
-		"On this data type the features that work are %s", f, dt, strings.Join(supported, ", "))
 }

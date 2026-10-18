@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"time"
 )
 
 // RetrieveRequest asks an archive to send objects back.
@@ -340,10 +339,3 @@ func getRQ(sopClass string, messageID uint16) []byte {
 		{Tag: tagCommandDataSetType, Value: uint16Value(0x0000)},
 	})
 }
-
-// retrieveTimeout is how long to wait for the next message during a retrieve.
-//
-// Separate from the association timeout because a retrieve is long-lived: a study of six hundred images takes as long as it
-// takes, and a timeout covering the whole operation would abort large studies while passing small ones. This bounds the gap
-// between messages instead, which is what actually indicates a stalled archive.
-const retrieveTimeout = 5 * time.Minute

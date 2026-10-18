@@ -425,18 +425,6 @@ func removeSignature(n *xmlNode) *xmlNode {
 	return clone
 }
 
-// extractText returns the concatenation of all text nodes under n.
-func extractText(n *xmlNode) string {
-	if n.IsText {
-		return n.Text
-	}
-	var sb strings.Builder
-	for _, c := range n.Children {
-		sb.WriteString(extractText(c))
-	}
-	return sb.String()
-}
-
 // writtenPrefix recovers the prefix a start tag actually used.
 //
 // end is the decoder's input offset immediately after the tag, so the tag text is the last "<...>" before it. Read from the source

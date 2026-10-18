@@ -306,9 +306,3 @@ func translateJSON(w io.Writer, results []*translate.Result, libraries []transla
 	}
 	return translateExit(results, failures, strict)
 }
-
-// suggestChannelName is used by the tests to check the sanitiser through the
-// command surface.
-func suggestChannelName(name string) string {
-	return strings.TrimSuffix((&translate.Result{Name: name}).FileName(), ".yaml")
-}

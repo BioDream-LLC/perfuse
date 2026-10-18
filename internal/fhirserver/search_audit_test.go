@@ -2,11 +2,14 @@ package fhirserver
 
 import (
 	"context"
-	"github.com/biodream-llc/perfuse/internal/sqlitedb"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
+
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 
 	_ "modernc.org/sqlite"
 
@@ -250,8 +253,28 @@ func TestSearchOrderIsDeterministic(t *testing.T) {
 	rec1 := do(t, h, http.MethodGet, "/Patient?name=Sorted", nil)
 	rec2 := do(t, h, http.MethodGet, "/Patient?name=Sorted", nil)
 
-	if rec1.Body.String() != rec2.Body.String() {
-		t.Error("search results are not deterministically ordered between identical queries")
+	// The order of the resources, not the whole body: the Bundle carries its own timestamp, and two searches either side
+	// of a second differ there however they are ordered (seen under -race).
+	ids := func(body string) []string {
+		var b struct {
+			Entry []struct {
+				Resource struct {
+					ID string `json:"id"`
+				} `json:"resource"`
+			} `json:"entry"`
+		}
+		if err := json.Unmarshal([]byte(body), &b); err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, e := range b.Entry {
+			out = append(out, e.Resource.ID)
+		}
+		return out
+	}
+	first, second := ids(rec1.Body.String()), ids(rec2.Body.String())
+	if len(first) != 5 || strings.Join(first, ",") != strings.Join(second, ",") {
+		t.Errorf("search results are not deterministically ordered between identical queries: %v then %v", first, second)
 	}
 }
 

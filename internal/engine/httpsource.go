@@ -6,12 +6,13 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/biodream-llc/perfuse/internal/trace"
 	"io"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/trace"
 
 	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
@@ -251,12 +252,4 @@ func (c *Channel) stopHTTPSource(ctx context.Context) error {
 	err := c.httpServer.Shutdown(ctx)
 	c.httpServer = nil
 	return err
-}
-
-// logHTTPSource is used by tests to confirm what was configured.
-func (c *Channel) httpAddr() string {
-	if c.httpServer == nil {
-		return ""
-	}
-	return c.httpServer.Addr
 }

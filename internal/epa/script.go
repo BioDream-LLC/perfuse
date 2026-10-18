@@ -361,12 +361,3 @@ func (m *Message) boolean(v bool) string {
 	}
 	return "false"
 }
-
-// truthy reads a yes or no in either spelling.
-func truthy(s string) bool {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "y", "yes", "true", "1":
-		return true
-	}
-	return false
-}

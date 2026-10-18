@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/biodream-llc/perfuse/hl7"
-	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/queue"
 )
 
@@ -317,19 +316,4 @@ func (o channelQueueObserver) QueueRetried(channel, destination string, attempts
 
 func (o channelQueueObserver) QueueGaveUp(channel, destination string, attempts int, cause string) {
 	o.c.recordQueueAbandoned(destination)
-}
-
-// queuePolicyFor is used by tests and by the API to show what a destination will
-// actually do, rather than what the file says before defaults are applied.
-func queuePolicyFor(d config.Destination) queue.Policy {
-	cfg := d.Queue
-	if cfg == nil {
-		return queue.Policy{}
-	}
-	return queue.Policy{
-		MaxAttempts: cfg.MaxAttempts,
-		Backoff:     cfg.Backoff,
-		MaxBackoff:  cfg.MaxBackoff,
-		Timeout:     d.Timeout,
-	}
 }

@@ -12,17 +12,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/biodream-llc/perfuse/internal/crd"
-	"github.com/biodream-llc/perfuse/internal/dashboards"
-	"github.com/biodream-llc/perfuse/internal/dicomweb"
-	"github.com/biodream-llc/perfuse/internal/fhirserver"
-	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/crd"
+	"github.com/biodream-llc/perfuse/internal/dashboards"
+	"github.com/biodream-llc/perfuse/internal/dicomweb"
+	"github.com/biodream-llc/perfuse/internal/fhirserver"
+	"github.com/biodream-llc/perfuse/internal/publichealth"
 
 	"github.com/biodream-llc/perfuse/internal/alerts"
 	"github.com/biodream-llc/perfuse/internal/authlimit"
@@ -847,10 +848,6 @@ func (s *Server) withSecurityHeaders(next http.Handler) http.Handler {
 }
 
 // ---------- authentication ----------
-
-type ctxKey int
-
-const sessionKey ctxKey = iota
 
 // require wraps a handler with authentication and a minimum role.
 func (s *Server) require(minimum store.Role, h func(http.ResponseWriter, *http.Request, *store.Session)) http.Handler {

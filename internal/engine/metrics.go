@@ -156,14 +156,6 @@ func (c *Channel) recordScript(kind string, took time.Duration, err error, timed
 	}
 }
 
-// recordConnections reports how many inbound connections are open.
-func (c *Channel) recordConnections(n int) {
-	if c.metrics == nil {
-		return
-	}
-	c.metrics.Set(metrics.ConnectionsOpen, float64(n), c.tenantLabel(), c.cfg.Name)
-}
-
 // Queue metrics. These are what an alert fires on, and there are three of them
 // rather than one because "how many are waiting" cannot on its own distinguish a
 // busy queue that is draining from a small one stuck since Tuesday.

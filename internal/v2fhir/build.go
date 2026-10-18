@@ -330,15 +330,6 @@ func containsIdentifierExact(ids []fhir.Identifier, id fhir.Identifier) bool {
 	return false
 }
 
-func containsIdentifier(ids []fhir.Identifier, value string) bool {
-	for _, id := range ids {
-		if id.Value == value {
-			return true
-		}
-	}
-	return false
-}
-
 // unknownClass is an Encounter.class for a patient class that is absent or has no ActCode equivalent: the v3 null flavor
 // UNK, which an R4 Coding can carry, with the sender's code kept as text where R5's CodeableConcept can hold it.
 func unknownClass(text string) fhir.CodeableConcept {

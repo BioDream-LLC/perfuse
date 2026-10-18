@@ -281,11 +281,6 @@ func (p *parser) isOp(s string) bool {
 	return t.kind == tOp && t.s == s
 }
 
-func (p *parser) isWord(s string) bool {
-	t := p.peek()
-	return t.kind == tIdent && t.s == s
-}
-
 func (p *parser) expect(s string) error {
 	if !p.isOp(s) {
 		return evalErr("expected %q at %d, found %q", s, p.peek().pos, p.peek().s)

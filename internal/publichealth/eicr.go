@@ -743,14 +743,19 @@ func conceptText(cc map[string]any) string {
 	if t := str(cc, "text"); t != "" {
 		return t
 	}
+	// Any coding's display before a bare code: the display is often on the second coding (a local code first, then the
+	// standard one with its name), and the narrative is for a person to read.
+	first := ""
 	for _, c := range arr(cc, "coding") {
-		m := c.(map[string]any)
+		m, _ := c.(map[string]any)
 		if d := str(m, "display"); d != "" {
 			return d
 		}
-		return str(m, "code")
+		if first == "" {
+			first = str(m, "code")
+		}
 	}
-	return ""
+	return first
 }
 
 // describe is a section's narrative: one line per resource, in words.

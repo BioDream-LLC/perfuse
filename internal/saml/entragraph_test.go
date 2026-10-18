@@ -201,26 +201,6 @@ func federationMetadataURL(tenantID, appID string) string {
 	)
 }
 
-// exists reports whether a Graph resource is there yet, without failing when it is not.
-func (g *graph) exists(path string) bool {
-	g.t.Helper()
-
-	req, err := http.NewRequest(http.MethodGet, "https://graph.microsoft.com/v1.0"+path, nil)
-	if err != nil {
-		g.t.Fatalf("building the existence check for %s: %v", path, err)
-	}
-	req.Header.Set("Authorization", "Bearer "+g.token)
-
-	res, err := g.client.Do(req)
-	if err != nil {
-		return false
-	}
-	defer res.Body.Close()
-	_, _ = io.Copy(io.Discard, res.Body)
-
-	return res.StatusCode == http.StatusOK
-}
-
 // deleteQuietly removes a resource, retrying while Graph says it does not exist, and reporting a failure without failing the test.
 //
 // A tidy-up problem must not turn a passing verification red, but a tenant quietly filling with applications from every run has to be

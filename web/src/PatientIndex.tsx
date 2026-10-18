@@ -301,17 +301,49 @@ function Find() {
   const [q, setQ] = useState({ family: '', given: '', birthDate: '', sex: '', postal: '', identifier: '' })
   const [found, setFound] = useState<MPIMatch[] | null>(null)
   const [error, setError] = useState<UiError | null>(null)
-  const run = () =>
-    api
+  const [busy, setBusy] = useState(false)
+  // What the last search was and when, said every time: a second search with the same empty answer otherwise changes nothing
+  // on the screen, which reads as a button that does nothing.
+  const [said, setSaid] = useState('')
+  const run = () => {
+    const id = q.identifier.trim()
+    if (id && !id.includes('|')) {
+      setFound(null)
+      setSaid('')
+      setError({ message: 'An identifier is its system and value with a | between them, such as urn:oid:1.2.3|12345.', problems: [] })
+      return Promise.resolve()
+    }
+    if (!Object.values(q).some((v) => v.trim())) {
+      setFound(null)
+      setSaid('')
+      setError({ message: 'Give at least one thing to search by: a name, a birth date, a postal code or an identifier.', problems: [] })
+      return Promise.resolve()
+    }
+    setError(null)
+    setBusy(true)
+    return api
       .mpiFind({
         family: q.family || undefined,
         given: q.given || undefined,
         birthDate: q.birthDate || undefined,
         sex: q.sex || undefined,
         postal: q.postal || undefined,
-        identifiers: q.identifier.includes('|') ? [q.identifier.trim()] : undefined,
+        identifiers: id ? [id] : undefined,
       })
-      .then((r) => setFound(r.matches), (e) => setError(toError(e)))
+      .then(
+        (r) => {
+          setFound(r.matches)
+          const n = r.matches.length
+          setSaid(`${n === 0 ? 'No one' : n === 1 ? '1 person' : `${n} people`} found at ${new Date().toLocaleTimeString()}.`)
+        },
+        (e) => {
+          setFound(null)
+          setSaid('')
+          setError(toError(e))
+        },
+      )
+      .finally(() => setBusy(false))
+  }
   return (
     <Section
       title="Find a person"
@@ -343,9 +375,14 @@ function Find() {
           <input className="input font-mono text-xs" value={q.identifier} onChange={(e) => setQ({ ...q, identifier: e.target.value })} />
         </Field>
       </div>
-      <button type="button" className="btn-primary mt-3 py-1 text-xs" onClick={() => void run()}>
-        <IconSearch className="h-3.5 w-3.5" aria-hidden="true" /> Find
-      </button>
+      <div className="mt-3 flex items-center gap-3">
+        <button type="button" className="btn-primary py-1 text-xs" onClick={() => void run()} disabled={busy}>
+          <IconSearch className="h-3.5 w-3.5" aria-hidden="true" /> {busy ? 'Finding…' : 'Find'}
+        </button>
+        <span role="status" className="text-xs text-slate-400">
+          {said}
+        </span>
+      </div>
       {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
       {found && (
         <ul className="mt-3 space-y-2" data-testid="mpi-find-results">

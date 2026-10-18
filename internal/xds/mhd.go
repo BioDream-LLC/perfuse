@@ -53,15 +53,6 @@ func codeOf(cc any) Code {
 	return Code{}
 }
 
-// cxOf turns a FHIR identifier (system urn:oid:..., value) into a CX.
-func cxOf(id map[string]any) string {
-	sys, val := s(id["system"]), s(id["value"])
-	if val == "" || !strings.HasPrefix(sys, "urn:oid:") {
-		return ""
-	}
-	return val + "^^^&" + oidOf(sys) + "&ISO"
-}
-
 // dtmOf turns a FHIR instant or dateTime into a DTM in UTC.
 func dtmOf(v string) string {
 	if v == "" {

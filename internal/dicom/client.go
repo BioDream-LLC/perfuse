@@ -260,14 +260,6 @@ func (c *Client) associateWithRoles(conn net.Conn, contexts []PresentationContex
 	}
 }
 
-func decodeAssociateAcceptOrFail(data []byte) ([]PresentationContext, uint32, error) {
-	contexts, _, maxLength, err := decodeAssociateAccept(data)
-	if err != nil {
-		return nil, 0, err
-	}
-	return contexts, maxLength, nil
-}
-
 // readResponse reads DIMSE PDUs until a complete command has arrived.
 func readResponse(conn net.Conn, maxLength uint32) (*command, []byte, error) {
 	var commandBuf, dataBuf bytes.Buffer

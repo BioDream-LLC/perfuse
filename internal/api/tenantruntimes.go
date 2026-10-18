@@ -190,9 +190,3 @@ func (s *Server) optionalRuntime(sess *store.Session) *Runtime {
 	}
 	return rt
 }
-
-// requireRuntimeFor is runtimeFor for handlers that only need to know an engine exists.
-func (s *Server) requireRuntimeFor(w http.ResponseWriter, r *http.Request, sess *store.Session) bool {
-	_, ok := s.runtimeFor(w, r, sess)
-	return ok
-}

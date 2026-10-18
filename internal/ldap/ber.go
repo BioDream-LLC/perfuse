@@ -164,9 +164,6 @@ type element struct {
 	children []*element
 }
 
-// class returns the tag's class bits.
-func (e *element) class() byte { return e.tag & 0xc0 }
-
 // isConstructed reports whether the element has children.
 func (e *element) isConstructed() bool { return e.tag&constructed != 0 }
 

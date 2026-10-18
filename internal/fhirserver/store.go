@@ -14,7 +14,6 @@ package fhirserver
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -546,23 +545,6 @@ func supportedType(resourceType string) bool {
 		}
 	}
 	return false
-}
-
-// jsonPath reads a nested value out of a raw resource, for indexing.
-func jsonPath(raw []byte, path ...string) any {
-	var tree any
-	if err := json.Unmarshal(raw, &tree); err != nil {
-		return nil
-	}
-	cur := tree
-	for _, key := range path {
-		m, ok := cur.(map[string]any)
-		if !ok {
-			return nil
-		}
-		cur = m[key]
-	}
-	return cur
 }
 
 func referenceID(ref *fhir.Reference) string {

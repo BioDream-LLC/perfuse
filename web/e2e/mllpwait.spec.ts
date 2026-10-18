@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
 import { createServer } from "node:net";
+
+/** freePort asks the system for a port nobody holds. A fixed number collided on a CI machine with something else bound to it. */
+async function freePort(): Promise<number> {
+  const probe = createServer();
+  await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", resolve));
+  const port = (probe.address() as { port: number }).port;
+  await new Promise((resolve) => probe.close(resolve));
+  return port;
+}
 import { sendMLLP, waitForListener } from "./mllp";
 
 // Guards on the MLLP helper's waiting, which is what the flaky-spec investigation ended at.
@@ -18,7 +27,7 @@ import { sendMLLP, waitForListener } from "./mllp";
 test("waitForListener gives up with a message naming the port", async () => {
   // A port with nothing on it. The failure has to name the port and say what it means, because the investigation this came from was
   // slowed by messages that described a missing feature instead of a timing problem.
-  const deadPort = 59_999;
+  const deadPort = await freePort(); // free a moment ago, and nobody listens on it
 
   const started = Date.now();
   let message = "";
@@ -38,7 +47,7 @@ test("waitForListener gives up with a message naming the port", async () => {
 
 test("waitForListener returns as soon as a late listener comes up", async () => {
   // The positive control. Without it the test above would pass just as well against a helper that always threw.
-  const port = 59_998;
+  const port = await freePort();
 
   // Bound deliberately late, which is what a channel being started looks like from the outside.
   const server = createServer();
@@ -61,7 +70,7 @@ test("waitForListener returns as soon as a late listener comes up", async () => 
 test("a send retries a connection refused before anything was written", async () => {
   // The retry that makes the helper survive a listener still binding. Safe only because nothing has been sent yet - a retry after a
   // write could deliver the same admission twice, which would be a worse defect than the flake it was covering.
-  const port = 59_997;
+  const port = await freePort();
 
   const server = createServer((socket) => {
     // A minimal MLLP acknowledgement, framed the way the helper expects to read it.

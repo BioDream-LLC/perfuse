@@ -106,8 +106,6 @@ type node struct {
 	done    chan struct{}
 	mu      sync.Mutex
 	running map[string]bool
-	log     *[]string
-	logMu   *sync.Mutex
 }
 
 func (n *node) runs() []string {

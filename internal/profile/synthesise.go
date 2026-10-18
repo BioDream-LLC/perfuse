@@ -157,7 +157,6 @@ type synthesisTable struct {
 	path    string
 	name    string
 	entries []synthesisEntry
-	strict  bool
 }
 
 type synthesisEntry struct {

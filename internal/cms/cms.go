@@ -37,13 +37,12 @@ var (
 	oidSHA256        = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 1}
 	oidRSA           = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 1}
 	oidRSAOAEP       = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 7}
-	oidSHA256RSA     = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 11}
-	oidSHA1RSA       = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 5}
-	oidAES128CBC     = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 2}
-	oidAES256CBC     = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 42}
-	oidAES192CBC     = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 22}
-	oidDESEDE3CBC    = asn1.ObjectIdentifier{1, 2, 840, 113549, 3, 7}
-	oidMGF1          = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 8}
+
+	oidAES128CBC  = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 2}
+	oidAES256CBC  = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 42}
+	oidAES192CBC  = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 22}
+	oidDESEDE3CBC = asn1.ObjectIdentifier{1, 2, 840, 113549, 3, 7}
+	oidMGF1       = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 8}
 )
 
 type contentInfo struct {
@@ -88,14 +87,6 @@ type signedData struct {
 	Certificates     asn1.RawValue `asn1:"optional,tag:0"`
 	CRLs             asn1.RawValue `asn1:"optional,tag:1"`
 	SignerInfos      []signerInfo  `asn1:"set"`
-}
-
-func rawSequenceOf(v any) (asn1.RawValue, error) {
-	b, err := asn1.Marshal(v)
-	if err != nil {
-		return asn1.RawValue{}, err
-	}
-	return asn1.RawValue{FullBytes: b}, nil
 }
 
 func null() asn1.RawValue { return asn1.RawValue{Tag: asn1.TagNull} }

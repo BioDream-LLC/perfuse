@@ -96,7 +96,6 @@ var (
 	tagNumberOfCompletedSuboperations = Tag{0x0000, 0x1021}
 	tagNumberOfFailedSuboperations    = Tag{0x0000, 0x1022}
 	tagNumberOfWarningSuboperations   = Tag{0x0000, 0x1023}
-	tagMoveDestination                = Tag{0x0000, 0x0600}
 )
 
 // findRQ builds a C-FIND-RQ command set.
@@ -112,23 +111,5 @@ func findRQ(sopClass string, messageID uint16) []byte {
 		// 0x0000 means a data set follows, which for C-FIND is the identifier being matched. Not optional here: a
 		// C-FIND with no identifier is a query with no keys.
 		{Tag: tagCommandDataSetType, Value: uint16Value(0x0000)},
-	})
-}
-
-// findRSP builds a C-FIND-RSP command set.
-func findRSP(sopClass string, respondingTo, status uint16, hasDataSet bool) []byte {
-	// 0x0101 means no data set follows, which is what the final response uses; a pending response carrying a match says
-	// one does.
-	dataSetType := uint16(0x0101)
-	if hasDataSet {
-		dataSetType = 0x0000
-	}
-
-	return commandSet([]Element{
-		{Tag: tagAffectedSOPClassUID, Value: []byte(sopClass)},
-		{Tag: tagCommandField, Value: uint16Value(cmdCFindRSP)},
-		{Tag: tagMessageIDRespondingTo, Value: uint16Value(respondingTo)},
-		{Tag: tagStatus, Value: uint16Value(status)},
-		{Tag: tagCommandDataSetType, Value: uint16Value(dataSetType)},
 	})
 }

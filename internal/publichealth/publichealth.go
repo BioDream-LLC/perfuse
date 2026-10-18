@@ -44,17 +44,6 @@ func hl7Escape(s string) string {
 	return s
 }
 
-// hl7EscapeAll escapes ALL HL7 v2 special characters including ^.
-// Use this for subcomponent-level text that must not contain any delimiter.
-func hl7EscapeAll(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\E\`)
-	s = strings.ReplaceAll(s, "|", `\F\`)
-	s = strings.ReplaceAll(s, "^", `\S\`)
-	s = strings.ReplaceAll(s, "~", `\R\`)
-	s = strings.ReplaceAll(s, "&", `\T\`)
-	return s
-}
-
 // ---------------------------------------------------------------------------
 // Reportable condition detection
 // ---------------------------------------------------------------------------

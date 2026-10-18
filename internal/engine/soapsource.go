@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"context"
 	"crypto/subtle"
 	"crypto/tls"
 	"encoding/base64"
@@ -433,11 +432,6 @@ func (c *Channel) serveWSDL(w http.ResponseWriter, r *http.Request, src *config.
 		c.log.Warn("could not write the WSDL", "err", err)
 	}
 	_ = r
-}
-
-// stopSOAPSource shuts the listener down.
-func (c *Channel) stopSOAPSource(ctx context.Context) error {
-	return c.stopHTTPSource(ctx)
 }
 
 // handleIISRequest answers one call on the CDC immunization registry interface.

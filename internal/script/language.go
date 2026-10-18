@@ -76,18 +76,6 @@ func ParseLanguage(s string) (Language, error) {
 	return "", fmt.Errorf("%q is not a scripting language Perfuse runs; use one of %s", s, strings.Join(names, ", "))
 }
 
-// runtime is what a language must provide.
-//
-// Deliberately narrow. Everything a script can observe - the globals, the maps, the log, the timeout - is arranged by the
-// engine and handed over, so a language implementation cannot accidentally offer more or less than the other one.
-type runtime interface {
-	// compile turns source into something runnable, reporting a syntax error with a line number.
-	compile(name, source string, kind Kind) (compiled, error)
-
-	// language names it, for error messages.
-	language() Language
-}
-
 // compiled is one prepared script.
 type compiled interface {
 	// run executes against a context and reports what the script did.

@@ -35,12 +35,6 @@ func (r *replyDest) SendForResponse(_ context.Context, _ []byte) ([]byte, error)
 func (r *replyDest) Describe() string { return "a fake receiver" }
 func (r *replyDest) Close() error     { return nil }
 
-func (r *replyDest) attempts() int {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.sent
-}
-
 // mute is a sender with no reply at all, like a file.
 type mute struct{}
 

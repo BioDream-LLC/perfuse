@@ -203,32 +203,6 @@ func isAlphanumeric(b byte) bool {
 	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
 }
 
-// split indexes the segments.
-func (m *Message) split() {
-	term := m.delim.Segment
-
-	start := 0
-	for i := 0; i <= len(m.raw); i++ {
-		atEnd := i == len(m.raw)
-		if !atEnd && m.raw[i] != term {
-			continue
-		}
-
-		seg := m.raw[start:i]
-		// Trailing whitespace after a terminator is common: many partners write one
-		// segment per line for readability, which is legal because the terminator is
-		// what ends a segment, not the newline.
-		seg = bytes.Trim(seg, " \t\r\n")
-		if len(seg) > 0 {
-			m.segs = append(m.segs, newSegment(seg, m.delim))
-		}
-		start = i + 1
-		if atEnd {
-			break
-		}
-	}
-}
-
 func newSegment(raw []byte, d Delimiters) Segment {
 	s := Segment{raw: raw, delim: d}
 

@@ -96,6 +96,10 @@ type Runtime struct {
 	running map[string]*engine.Channel
 	started map[string]time.Time
 	failed  map[string]string
+	// starting holds the channels between the "already running?" check and their entry in running, so two starts of one
+	// channel at once (two people, or the cluster's reconciler beside a person) cannot both build and start it: the second
+	// would leave the first running, out of running, and impossible to stop.
+	starting map[string]bool
 }
 
 // NewRuntime prepares a runtime.
@@ -148,7 +152,20 @@ func (rt *Runtime) Start(name string, log *slog.Logger) error {
 		rt.mu.Unlock()
 		return fmt.Errorf("channel %q is already running", name)
 	}
+	if rt.starting[name] {
+		rt.mu.Unlock()
+		return fmt.Errorf("channel %q is already starting", name)
+	}
+	if rt.starting == nil {
+		rt.starting = map[string]bool{}
+	}
+	rt.starting[name] = true
 	rt.mu.Unlock()
+	defer func() {
+		rt.mu.Lock()
+		delete(rt.starting, name)
+		rt.mu.Unlock()
+	}()
 	if rt.Gate != nil {
 		if err := rt.Gate(name); err != nil {
 			return err

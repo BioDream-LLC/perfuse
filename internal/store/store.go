@@ -15,10 +15,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 
 	"github.com/biodream-llc/perfuse/internal/tenant"
 
@@ -420,19 +421,6 @@ func isUniqueViolation(err error) bool {
 		return false
 	}
 	return sqlitedb.IsUniqueViolation(err)
-}
-
-func contains(s, sub string) bool {
-	return len(sub) > 0 && len(s) >= len(sub) && indexOf(s, sub) >= 0
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }
 
 func parseTime(s string) time.Time {
