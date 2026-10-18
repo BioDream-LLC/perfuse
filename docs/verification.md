@@ -1128,6 +1128,32 @@ The 10 failures are forward chains through `partof`, `network` and a service's o
 from the first Organization it has seen rather than one the searched resources refer to; the network case is reported
 upstream (davinci-plan-net-test-kit issue 34).
 
+## AS2, EDIFACT, mail and the patient index, against pyas2lib, pydifact, GreenMail and FEBRL
+
+Repeatable with `sh conformance/interop/run.sh`, which builds each reference from a pinned version
+([conformance/interop](https://github.com/biodream-llc/perfuse/tree/main/conformance/interop)).
+
+- **AS2, against pyas2lib 1.4.3, both ways.** Triple DES (pyas2lib's default) and AES-256, signed and
+  encrypted, compressed (RFC 5402) and not, signed synchronous receipts whose MIC each side checks. Writing
+  the compressed case found that the RFC's MIC rule differs between signed and unsigned messages; both are
+  followed. A fuzzer on the new BER reader (Java gateways write CMS with indefinite lengths) found an
+  out-of-range read on a truncated OCTET STRING segment within seconds; fixed before it was committed.
+- **A resend (RFC 4130 section 7.5).** The same message posted three times, once compressed, and ten copies
+  at once: passed on once each time, every copy answered `processed`, and still recognised after a restart.
+  Removing the check makes the test fail ("passed on 3 times").
+- **UN/EDIFACT, against pydifact 0.1.8, both ways.** What Perfuse writes pydifact reads segment for segment,
+  and the reverse, release characters and UNA included.
+- **IMAP, POP3 and SMTP, against GreenMail 2.1.3.** The POP3 test failed on mail left behind by an earlier
+  run; it now empties the mailbox first.
+- **The patient index, on FEBRL dataset 3** (5,000 synthetic records of 2,000 people). No record linked to
+  the wrong person with automatic linking off (the default), on with the published weights, or on with
+  weights the index estimated from the records. Measuring found that one blocking key per record let 902
+  duplicates (30%) go unseen: a mistyped birth year, or no birth date, hid the person. Two more keys
+  (both names in either order; postal code and given name) brought that to 351, and every one of those
+  left differs on nearly every field. The estimate itself first came out wrong (chance agreement on the
+  birth date put at 45%), because the pairs it learned from had been chosen for agreeing on names and
+  dates; chance agreement now comes from random pairs, as Splink and fastLink do it.
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was

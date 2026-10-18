@@ -194,8 +194,42 @@ WebAssembly modules are compiled when the channel loads, not on the first messag
 
 ## Shared mapping tables
 
-A map step can use a table shared by every channel that needs it (`use:` instead of an inline `table:`), kept in a
-`*.codeset.yaml` file beside the channels with who decided each mapping and why. Tables are made and changed on **Build → Tables** as well as in the file. Saving a
+The other half of the same problem: a site's sex codes and patient classes get
+translated identically in every channel that touches them, and a table inside a
+channel is a table only that channel can use.
+
+```yaml
+# codes.codeset.yaml
+tables:
+  - name: sex-to-lab
+    describes: the hospital's sex codes into the numeric codes the lab expects
+    decided_by: Dave, during the 2019 migration
+    decided_on: 2019-04-11
+    source: the lab's interface specification, version 3
+    entries:
+      - from: M
+        to: "1"
+      - from: U
+        to: "9"
+        why: the lab has no 'unknown', and 9 is its 'not stated'
+```
+
+```yaml
+# in the channel
+tables:
+  - codes.codeset.yaml
+transformations:
+  - map:
+      path: PID-8
+      use: sex-to-lab
+```
+
+The provenance is the point. Most of what makes an interface hard to maintain is that
+nobody knows *why* a mapping is the way it is, and the person who knew has left. A
+mapping with a reason can be argued with; one without becomes something nobody dares
+change and nobody dares delete.
+
+Tables are made and changed on **Build → Tables** as well as in the file. Saving a
 table that is in force restarts the running channels that load its file, so the
 next message uses it; a draft restarts nothing.
 

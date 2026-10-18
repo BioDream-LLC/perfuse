@@ -20,7 +20,7 @@ func loadFEBRL(t *testing.T) []febrlRecord {
 	t.Helper()
 	path := os.Getenv("PERFUSE_TEST_FEBRL")
 	if path == "" {
-		t.Skip("set PERFUSE_TEST_FEBRL to FEBRL's dataset3.csv (testdata/interop/febrl builds an image that writes it)")
+		t.Skip("set PERFUSE_TEST_FEBRL to FEBRL's dataset3.csv (conformance/interop/febrl builds an image that writes it)")
 	}
 	f, err := os.Open(path)
 	if err != nil {
