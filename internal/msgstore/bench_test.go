@@ -181,8 +181,20 @@ func TestSustainedWriteRate(t *testing.T) {
 	//
 	// PRAGMA synchronous=FULL was tried as a way to simulate one and moved the ratio not
 	// at all on macOS, which is worth knowing before reaching for it again.
+	//
+	// The ratio only means something where a bare insert waits for the disk. On Linux with WAL a commit need not, and a bare
+	// insert runs at 120,000 a second; the ratio is then CPU against CPU (about 8x, at 15,000 messages a second), so an
+	// absolute floor stands in for it there. Under the race detector, which slows the recorder's goroutines far more than
+	// one insert, it is logged and not judged.
 	const maxRatio = 8
-	if ratio > maxRatio {
+	switch {
+	case raceOn:
+		t.Log("the race detector is on: the ratio is not judged")
+	case baseRate > 20000:
+		if rate < 2000 {
+			t.Errorf("recorded %.0f messages a second on a disk that does %.0f bare inserts a second; under 2,000 is a regression", rate, baseRate)
+		}
+	case ratio > maxRatio:
 		t.Errorf("recording a message costs %.1fx a bare insert on this same disk, above the %.0fx ceiling; "+
 			"the store is the slowest thing on the delivery path, so this is the channel's ceiling too",
 			ratio, float64(maxRatio))

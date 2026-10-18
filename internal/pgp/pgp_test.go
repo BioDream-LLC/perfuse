@@ -159,6 +159,10 @@ func TestInteroperatesWithGnuPG(t *testing.T) {
 		var out, errb bytes.Buffer
 		cmd.Stdout, cmd.Stderr = &out, &errb
 		if err := cmd.Run(); err != nil {
+			if strings.Contains(errb.String(), "gpg-agent") && strings.Contains(errb.String(), "not installed") {
+				// Amazon Linux's gnupg2-minimal, for one, has no agent, and gpg cannot make a key without it.
+				t.Skip("this gpg has no gpg-agent: " + strings.TrimSpace(errb.String()))
+			}
 			t.Fatalf("gpg %v: %v\n%s", args, err, errb.String())
 		}
 		return out.Bytes()

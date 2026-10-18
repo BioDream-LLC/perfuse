@@ -29,6 +29,7 @@ export interface SettingDescriptor {
   flag?: string
   advanced?: boolean
   sensitive?: boolean
+  perServer?: boolean
 }
 
 export interface SettingsSubgroup {
@@ -49,6 +50,8 @@ export interface SettingsSchema {
   path: string
   writable: boolean
   restartRequired: string[]
+  /** Settings each server of a cluster takes from its own command line. */
+  perServer?: string[]
 }
 
 // ---------------------------------------------------------------------------

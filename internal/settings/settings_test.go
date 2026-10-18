@@ -453,3 +453,50 @@ func TestAnUnknownKeyPanicsRatherThanReturningZero(t *testing.T) {
 
 	_ = store.Get("data.retentionDayz")
 }
+
+// In a cluster one settings file serves every server, so one server's certificate path must never land in it: found
+// with servers on Linux and Windows, where the first server's /home/... path won on the Windows one and stopped it.
+func TestASharedFileKeepsPerServerSettingsOut(t *testing.T) {
+	reg, err := NewRegistry(Default())
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "s.yaml")
+	if err := os.WriteFile(path, []byte("security:\n  tlsCert: /home/other/node1.crt\nfhir:\n  serve: false\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	st, err := NewStore(reg, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.ShareAcrossServers()
+	if st.IsSet("security.tlsCert") {
+		t.Fatal("another server's certificate path is still read from the shared file")
+	}
+	if !st.IsSet("fhir.serve") {
+		t.Fatal("a shared setting was dropped")
+	}
+	if c := st.Conflicts(map[string]any{"security.tlsCert": `C:\perfuse\win1.crt`}); len(c) != 0 {
+		t.Fatalf("a per-server flag was reported as overridden: %v", c)
+	}
+	if err := st.SeedMissing(map[string]any{"security.tlsCert": `C:\perfuse\win1.crt`, "monitoring.snmpCommunity": "x"}); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(path)
+	if strings.Contains(string(b), "tlsCert") || strings.Contains(string(b), "win1") {
+		t.Fatalf("a per-server setting was written into the shared file:\n%s", b)
+	}
+	if !strings.Contains(string(b), "snmpCommunity") {
+		t.Fatalf("a shared flag was not seeded:\n%s", b)
+	}
+	if err := st.Set(map[string]any{"security.tlsKey": "/x.key"}); err == nil || !strings.Contains(err.Error(), "-tls-key") {
+		t.Fatalf("saving a per-server setting into the shared file was not refused with its flag: %v", err)
+	}
+	_ = os.WriteFile(path, []byte("security:\n  tlsKey: /home/other/node1.key\n"), 0o600)
+	if _, err := st.Reload(); err != nil {
+		t.Fatal(err)
+	}
+	if st.IsSet("security.tlsKey") {
+		t.Fatal("a per-server setting arrived through a reload of the shared file")
+	}
+}

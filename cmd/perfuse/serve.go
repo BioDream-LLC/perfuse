@@ -392,6 +392,12 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		}
 	}
 
+	// In a cluster every server reads one settings file (kept the same on each through the database), so what names
+	// something on this machine (its certificate, its own listening address) stays on its command line.
+	if *clusterMode != "" {
+		settingsStore.ShareAcrossServers()
+	}
+
 	// Existing installations keep working: their flags become the initial file on first start, and from then on the
 	// interface can manage them without anybody editing a service definition.
 	if err := settingsStore.SeedFromFlags(flagSettings(fset)); err != nil {

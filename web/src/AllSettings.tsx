@@ -266,6 +266,7 @@ export function AllSettings() {
                     explicit={schema.explicit.includes(setting.key)}
                     dirty={setting.key in draft}
                     disabled={!schema.writable}
+                    perServer={schema.perServer?.includes(setting.key) ?? false}
                     onChange={(v) => setValue(setting.key, v)}
                   />
                 ))}
@@ -289,6 +290,7 @@ export function AllSettings() {
                       explicit={schema.explicit.includes(setting.key)}
                       dirty={setting.key in draft}
                       disabled={!schema.writable}
+                    perServer={schema.perServer?.includes(setting.key) ?? false}
                       onChange={(v) => setValue(setting.key, v)}
                     />
                   ))}
@@ -332,6 +334,7 @@ function SettingRow({
   explicit,
   dirty,
   disabled,
+  perServer,
   breadcrumb,
   onChange,
 }: {
@@ -341,6 +344,7 @@ function SettingRow({
   explicit: boolean
   dirty: boolean
   disabled: boolean
+  perServer?: boolean
   breadcrumb?: string
   onChange: (v: unknown) => void
 }) {
@@ -393,7 +397,13 @@ function SettingRow({
         {setting.help}
       </p>
 
-      <div className={`mt-3 ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
+      {perServer && (
+        <p className="mt-2 text-xs text-sky-300">
+          In this cluster each server takes this from its own command line (-{setting.flag}), not from the settings every
+          server shares.
+        </p>
+      )}
+      <div className={`mt-3 ${disabled || perServer ? 'pointer-events-none opacity-50' : ''}`}>
         <SettingControl
           setting={setting}
           value={value}

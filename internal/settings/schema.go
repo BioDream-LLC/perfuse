@@ -215,6 +215,11 @@ type Setting struct {
 	// nobody can find is one they will instead ask for as a feature.
 	Advanced bool `json:"advanced,omitempty"`
 
+	// PerServer marks a setting that names something on one machine (a certificate's path, an address to listen on, its
+	// own name). In a cluster every server shares one settings file, so these are left out of it and each server takes
+	// them from its own command line.
+	PerServer bool `json:"perServer,omitempty"`
+
 	// Sensitive marks a setting whose change is worth an audit entry beyond the ordinary.
 	//
 	// Anything that alters who can get in or what leaves the building.

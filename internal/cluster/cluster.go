@@ -161,6 +161,9 @@ type Coordinator struct {
 	// seen is when this server first saw each lease at its current counter, by its own monotonic clock: a lease whose
 	// counter has stood still for a whole lease has been given up by a holder that crashed or was cut off.
 	seen map[string]observation
+	// gaveBack holds the channels this server gave up to even the spread, and when: it leaves them for the others for a
+	// few leases rather than taking them straight back, which made two busy servers hand the same channel to and fro.
+	gaveBack map[string]time.Time
 
 	// leaseMu serialises the hooks of one lease, so its Gain and Lose never interleave, while the watchdog can stop one
 	// lease's work even as the renewal loop is busy starting another's.
@@ -206,7 +209,7 @@ func New(ctx context.Context, db *sql.DB, cfg Config, hooks Hooks, log *slog.Log
 	if err := prepare(ctx, db); err != nil {
 		return nil, fmt.Errorf("cluster: preparing its tables: %w", err)
 	}
-	return &Coordinator{db: db, cfg: cfg, log: log, hooks: hooks, held: map[string]holding{}, seen: map[string]observation{},
+	return &Coordinator{db: db, cfg: cfg, log: log, hooks: hooks, held: map[string]holding{}, seen: map[string]observation{}, gaveBack: map[string]time.Time{},
 		started: time.Now()}, nil
 }
 
@@ -572,7 +575,14 @@ func (c *Coordinator) channels(ctx context.Context, sent time.Time) error {
 		askedForMe := exists && r.wanted == c.cfg.NodeID
 		askedForOther := exists && r.wanted != "" && r.wanted != c.cfg.NodeID && liveIDs[r.wanted]
 		free := !exists || c.free(name, r.holder, r.seq)
-		if !askedForMe && (askedForOther || !free || mine >= share) {
+		c.mu.Lock()
+		gave, recently := c.gaveBack[name]
+		if recently && time.Since(gave) > 3*c.cfg.TTL {
+			delete(c.gaveBack, name)
+			recently = false
+		}
+		c.mu.Unlock()
+		if !askedForMe && (askedForOther || !free || mine >= share || recently) {
 			continue
 		}
 		ok, epoch, err := c.take(ctx, name)
@@ -584,9 +594,27 @@ func (c *Coordinator) channels(ctx context.Context, sent time.Time) error {
 			mine++
 		}
 	}
-	// Over its share with others under theirs: give one back per round, so a server that joins gets work without a storm.
-	// A channel a person moved here stays: the move is a preference that lasts until it is moved again or this server goes.
-	if mine > share {
+	// Over its share, or two or more ahead of the least busy live server (4 channels on 3 servers is 2, 1, 1, not 2, 2, 0):
+	// give one back per round, so a server that joins gets work without a storm. A channel a person moved here stays: the
+	// move is a preference that lasts until it is moved again or this server goes.
+	least := mine
+	if len(liveIDs) > 1 {
+		count := map[string]int{}
+		for id := range liveIDs {
+			if id != c.cfg.NodeID {
+				count[id] = 0
+			}
+		}
+		for name, r := range leases {
+			if _, live := count[r.holder]; live && want[name] && !c.free(name, r.holder, r.seq) {
+				count[r.holder]++
+			}
+		}
+		for _, n := range count {
+			least = min(least, n)
+		}
+	}
+	if mine > share || mine-least >= 2 {
 		held := c.heldChannels()
 		spare := make([]string, 0, len(held))
 		for name := range held {
@@ -596,7 +624,11 @@ func (c *Coordinator) channels(ctx context.Context, sent time.Time) error {
 		}
 		sort.Strings(spare)
 		if len(spare) > 0 {
-			c.drop(ctx, spare[len(spare)-1], "rebalancing")
+			name := spare[len(spare)-1]
+			c.mu.Lock()
+			c.gaveBack[name] = time.Now()
+			c.mu.Unlock()
+			c.drop(ctx, name, "rebalancing")
 		}
 	}
 	return nil

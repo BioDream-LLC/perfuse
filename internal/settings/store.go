@@ -30,6 +30,48 @@ type Store struct {
 	// the old value rather than a value that is only in memory - a settings page that shows a change the file does not
 	// have is a settings page that lies after a restart.
 	dirty bool
+
+	// shared is set when every server of a cluster reads this file: per-server settings are then never kept in it.
+	shared bool
+}
+
+// ShareAcrossServers says the file is shared by the servers of a cluster. Per-server settings (PerServer) are dropped from
+// it, refused when saved, and never seeded from flags, so each server takes them from its own command line: one server's
+// certificate path in the shared file would otherwise win on every server.
+func (s *Store) ShareAcrossServers() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.shared = true
+	s.values = s.withoutPerServer(s.values)
+}
+
+// SharedAcrossServers reports whether ShareAcrossServers was called.
+func (s *Store) SharedAcrossServers() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.shared
+}
+
+// withoutPerServer drops per-server settings when the file is shared. The caller holds the lock.
+func (s *Store) withoutPerServer(values map[string]any) map[string]any {
+	if !s.shared {
+		return values
+	}
+	out := make(map[string]any, len(values))
+	for k, v := range values {
+		if setting, ok := s.registry.Lookup(k); ok && setting.PerServer {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+func (s *Store) perServerShared(key string) bool {
+	setting, ok := s.registry.Lookup(key)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return ok && setting.PerServer && s.shared
 }
 
 // NewStore builds a store over a file, creating nothing.
@@ -353,6 +395,9 @@ func (s *Store) Set(changes map[string]any) error {
 			return fmt.Errorf("%q is not a setting", key)
 		}
 
+		if setting.PerServer && s.SharedAcrossServers() {
+			return fmt.Errorf("%s is set on each server of the cluster with -%s, not in the settings every server shares", setting.Label, setting.Flag)
+		}
 		value, err := coerce(setting, changes[key])
 		if err != nil {
 			return fmt.Errorf("%s: %w", setting.Label, err)
@@ -488,7 +533,7 @@ func (s *Store) SeedFromFlags(flagValues map[string]any) error {
 		return nil
 	}
 
-	return s.Set(flagValues)
+	return s.Set(s.sharedOnly(flagValues))
 }
 
 // SeedMissing records the flags the process was started with that the file has no value for yet. A setting added after the
@@ -499,7 +544,7 @@ func (s *Store) SeedMissing(flagValues map[string]any) error {
 		return nil
 	}
 	missing := map[string]any{}
-	for k, v := range flagValues {
+	for k, v := range s.sharedOnly(flagValues) {
 		if _, ok := s.registry.Lookup(k); ok && !s.IsSet(k) {
 			missing[k] = v
 		}
@@ -528,7 +573,7 @@ func (s *Store) Conflicts(flagValues map[string]any) []string {
 
 	for _, key := range keys {
 		setting, ok := s.registry.Lookup(key)
-		if !ok {
+		if !ok || (setting.PerServer && s.shared) {
 			continue
 		}
 		fileValue, inFile := s.values[key]
@@ -565,6 +610,7 @@ func (s *Store) Reload() ([]string, error) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	loaded = s.withoutPerServer(loaded)
 	var changed []string
 	for k, v := range loaded {
 		if old, ok := s.values[k]; !ok || fmt.Sprint(old) != fmt.Sprint(v) {
@@ -579,4 +625,16 @@ func (s *Store) Reload() ([]string, error) {
 	sort.Strings(changed)
 	s.values = loaded
 	return changed, nil
+}
+
+// sharedOnly leaves out per-server settings when the file is shared.
+func (s *Store) sharedOnly(values map[string]any) map[string]any {
+	out := make(map[string]any, len(values))
+	for k, v := range values {
+		if s.perServerShared(k) {
+			continue
+		}
+		out[k] = v
+	}
+	return out
 }

@@ -151,6 +151,9 @@ any server (in the console, by hand, by a `git pull`) reaches the others within 
 another server restarts with its new file. The same file changed on two servers at once keeps the version that reached
 the database first, and the other beside it as `NAME.conflict-SERVER`. Settings that apply only at a restart (the
 message database, the ports the console listens on) are applied by each server at its next restart, and the log says so.
+What names something on one machine stays on that server's command line and out of the shared file: the certificate and
+key (`-tls-cert`, `-tls-key`), the SNMP listening address and the server's name in traces. Settings shows them as set
+on each server.
 
 **Start and stop.** Starting or stopping a channel on any server applies to the cluster: the server that runs it starts or
 stops it within a second, and the answer says which server that is.
@@ -160,6 +163,12 @@ address (a load balancer, a floating IP, a DNS name with a short TTL) and have t
 `/readyz?channel=NAME`, which answers 200 only on the server running that channel, and 503 on the others. For the console,
 `/readyz` is 200 on every live server; `/readyz?role=leader` only on the leader.
 
+On an AWS Network Load Balancer, use a target group per feed with an HTTPS health check on `/readyz?channel=NAME`, a
+5-second interval and a threshold of 2, and turn **cross-zone load balancing on**. With it off, the load balancer's node
+in a zone where no server runs the feed sees only unhealthy targets, sends to all of them anyway, and a sender that
+resolved to that node waits until the feed comes back to its zone (95 seconds in a test). Set the deregistration delay
+to 0, since a server that stops running a feed has nothing to drain.
+
 **What was tested.** Two servers on PostgreSQL 16, a sender streaming 300 messages, resending until answered, and the
 server running the feed killed with SIGKILL twice (the first, then the second after the first came back). Every
 acknowledged message reached the receiver, in both shapes tried: delivered before the acknowledgement, and queued in the
@@ -168,6 +177,22 @@ delivered them all). Failover took 3 to 4 seconds on a 3-second lease. A duplica
 message the dying server delivered and could not acknowledge, which the sender resent. The coordinator's own tests cover
 a crash, a server cut off from the database while it runs on, step-down, spreading, moves, and shared configuration
 with conflicts. They run in CI against PostgreSQL with the race detector, with the whole suite.
+
+The same was then done on AWS: two Linux servers (ARM) and one Windows Server 2022 in three availability zones, Amazon
+RDS PostgreSQL 16 over TLS with the certificate checked (`sslmode=verify-full`), an internal Network Load Balancer in
+front, and senders resending until answered:
+
+| Test | Messages | Acknowledged but lost | Duplicates | Longest a sender waited |
+|---|---|---|---|---|
+| Active-passive, the server running the feed killed twice (Linux, then Windows), receiver refusing in between | 2,000 | 0 | 0 | 15 s |
+| A Linux leader cut off from the database (firewall), its process left running | 3,000 | 0 | 1 | 16 s |
+| A Windows leader cut off from the database | 3,000 | 0 | 0 | 20 s |
+| The leader killed while one server's clock ran 2 minutes fast and another's 90 seconds slow | 2,000 | 0 | 0 | 18 s |
+| Active-active, four feeds over three servers, one killed and brought back | 6,000 | 0 | 2 | 24 s |
+
+With the default 15-second lease, a server cut off from the database stopped its feed 10 seconds after its last renewal,
+and the next server started it 6 to 8 seconds after that: never both at once. The skewed clocks changed nothing, since no
+clock is compared with another.
 
 **Not yet.** A cluster serves one organisation: `-cluster` with `-multi-tenant` is refused. Listeners move with their
 channel, so the load balancer is the site's to provide.

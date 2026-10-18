@@ -1154,15 +1154,46 @@ Repeatable with `sh conformance/interop/run.sh`, which builds each reference fro
   birth date put at 45%), because the pairs it learned from had been chosen for agreeing on names and
   dates; chance agreement now comes from random pairs, as Splink and fastLink do it.
 
+## Clusters on AWS (2026-10-18)
+
+Two Linux servers (t4g.medium, ARM64) and one Windows Server 2022 (t3.large) in three availability zones of us-east-1,
+sharing Amazon RDS for PostgreSQL 16 (db.t4g.large) over TLS with `sslmode=verify-full` against the RDS CA bundle. Each
+server served its console over HTTPS with its own certificate. An internal Network Load Balancer, one target group per
+feed with HTTPS health checks on `/readyz?channel=NAME`, carried the feeds; a sender on a fourth instance resent each
+message until answered with AA, and a receiver counted what arrived.
+
+- Active-passive: the server running the feed killed with SIGKILL / Stop-Process -Force twice, the receiver refusing in
+  between so acknowledged messages waited in the shared queue: 2,000 acknowledged, 0 lost, 0 duplicates.
+- A leader cut off from the database by a firewall rule (Linux iptables; Windows outbound block) with its process left
+  running: it stopped its feed 7-10 s after its last renewal; another started it 6-8 s after that. 3,000 + 3,000
+  messages, 0 lost, 1 duplicate.
+- Clocks: one server 120 s fast, one 90 s slow, leader killed: takeover after about a lease; 2,000 messages, 0 lost.
+- Active-active, four feeds on three servers, one killed and restarted: 6,000 messages, 0 lost, 2 duplicates.
+
+Found and fixed on the way:
+- Every server's first start wrote its own certificate path into the settings file every server shares, so the Windows
+  server tried to open `/home/.../node1.crt`. Per-server settings (TLS certificate and key, SNMP address, trace name) are
+  now kept out of the shared file and refused there.
+- A server that came back after a crash stayed idle beside two holding two channels each (4 over 3 rounded up is 2).
+  Servers now give one back when two or more ahead of the least busy, and leave it a few leases rather than retaking it.
+- With cross-zone load balancing off, the AWS NLB node in a zone with no healthy target failed open and a sender waited
+  95 s. Documented: turn it on.
+
+The full suite with the race detector also ran on Linux x86-64 (c7i.2xlarge), on SQLite and on PostgreSQL 16.4. Two tests
+were wrong for that machine and were fixed: the message-store speed test compared against a bare insert that on Linux
+never waits for the disk (now an absolute floor there, and not judged under the race detector), and the GnuPG test failed
+where gpg has no agent (now skipped there).
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was
 checked.
 
 - **Windows has been tested only on GitHub's runners** (above): no desktop session, installer or hospital group policy.
-- **The Linux arm64 binary has been built and not run.** The amd64 binary was verified inside Alpine,
-  which has no glibc, confirming the static-linking claim; it serves the embedded web interface and
-  answers a JSON 404 for unknown API paths.
+- **The Linux arm64 binary has run only in the cluster tests on AWS Graviton** (above). The amd64 binary was verified inside
+  Alpine, which has no glibc, confirming the static-linking claim.
+- **Clusters have run only in the tests above**: three servers, one region, one load balancer type (AWS NLB). Not
+  across regions, not behind an F5 or HAProxy, not with PostgreSQL failing over to a standby of its own.
 - **No container image has been published**, though the build file and the README both name one.
 - **No payer or clearinghouse has received a 275 built here**, and it was built from published companion guides rather than the X12 technical report. See above.
 - **The Inferno US Core SMART groups have not been run as US Core groups.** The SMART App Launch STU2.2 suite they are built on

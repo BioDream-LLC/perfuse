@@ -46,6 +46,10 @@ type settingsSchemaResponse struct {
 	// The single most important field here. Without it somebody changes a passkey domain, sees it saved, and believes it -
 	// and finds out at the next sign-in.
 	RestartRequired []string `json:"restartRequired"`
+
+	// PerServer lists the settings each server of a cluster takes from its own command line, left out of the settings
+	// every server shares. Empty on a server on its own.
+	PerServer []string `json:"perServer"`
 }
 
 // settingsGroup is one section of the settings area.
@@ -117,6 +121,14 @@ func (s *Server) handleSettingsSchema(w http.ResponseWriter, r *http.Request, se
 	}
 
 	sort.Strings(explicit)
+	perServer := []string{}
+	if s.Settings.SharedAcrossServers() {
+		for _, setting := range reg.All() {
+			if setting.PerServer {
+				perServer = append(perServer, setting.Key)
+			}
+		}
+	}
 
 	s.ok(w, settingsSchemaResponse{
 		Groups:          groups,
@@ -126,6 +138,7 @@ func (s *Server) handleSettingsSchema(w http.ResponseWriter, r *http.Request, se
 		Path:            s.Settings.Path(),
 		Writable:        s.Settings.Path() != "",
 		RestartRequired: s.pendingRestartSettings(),
+		PerServer:       perServer,
 	})
 }
 

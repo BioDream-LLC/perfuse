@@ -365,3 +365,36 @@ func TestDesiredStateIsShared(t *testing.T) {
 		t.Error("start not recorded")
 	}
 }
+
+// A server that joins late gets work even when the others are already at their rounded-up share: four channels on three
+// servers settle as 2, 1, 1. Found on EC2, where a server back from a crash sat idle beside two holding two each.
+func TestALateServerGetsAShare(t *testing.T) {
+	w := newWorld(t)
+	for i := 0; i < 4; i++ {
+		w.channels = append(w.channels, ChannelLease("main", fmt.Sprintf("ch%d", i)))
+	}
+	ttl := 2 * time.Second
+	a := w.start("a", ActiveActive, ttl)
+	b := w.start("b", ActiveActive, ttl)
+	count := func(n *node) int {
+		k := 0
+		for _, l := range n.runs() {
+			if l != LeaderLease {
+				k++
+			}
+		}
+		return k
+	}
+	eventually(t, 10*ttl, "four channels spread two each", func() bool { return count(a) == 2 && count(b) == 2 })
+	c := w.start("c", ActiveActive, ttl)
+	eventually(t, 15*ttl, "the late server takes a share", func() bool {
+		return count(c) >= 1 && count(a)+count(b)+count(c) == 4 && max(count(a), count(b), count(c))-min(count(a), count(b), count(c)) <= 1
+	})
+	time.Sleep(3 * ttl)
+	if count(a)+count(b)+count(c) != 4 || count(c) == 0 || max(count(a), count(b), count(c))-min(count(a), count(b), count(c)) > 1 {
+		t.Errorf("not settled: a %d, b %d, c %d", count(a), count(b), count(c))
+	}
+	if len(w.overlaps) > 0 {
+		t.Fatalf("overlap: %v", w.overlaps)
+	}
+}
