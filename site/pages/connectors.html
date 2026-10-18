@@ -28,6 +28,8 @@
         HL7 v2 messages. Checked, signed, repaired and rendered to PDF.</p></div>
       <div class="card"><div class="icon">ICON:flask</div><h3>NCPDP, JSON, XML and delimited</h3><p>Pharmacy messages, and the
         general formats partners invent for themselves.</p></div>
+      <div class="card"><div class="icon">ICON:globe</div><h3>UN/EDIFACT</h3><p>Orders, invoices and claims in the European EDI
+        standard: envelope counts checked, one message per UNH, CONTRL acknowledgements. Checked against pydifact.</p></div>
     </div>
   </div>
 </section>
@@ -43,11 +45,13 @@
         <div class="chips">
           <span>MLLP, with TLS</span><span>TCP</span><span>HTTP and REST</span><span>SOAP web services</span><span>Files and folders</span>
           <span>FTP and FTPS</span><span>SFTP</span><span>Windows shares (SMB)</span><span>WebDAV</span><span>Email (SMTP)</span>
+          <span>Mailboxes (IMAP, POP3, Microsoft 365, Gmail)</span><span>AS2, with signed receipts</span><span>OpenPGP</span>
           <span>Serial cables</span><span>DICOM</span><span>DICOM query (C-FIND)</span><span>PostgreSQL</span><span>MySQL</span>
           <span>SQL Server</span><span>Oracle</span><span>SQLite</span><span>Another channel</span><span>JavaScript reader and writer</span>
         </div>
         <p style="margin-top:18px">Each is tested against the real thing: SFTP against OpenSSH, databases against PostgreSQL, mutual
-          TLS against OpenSSL, DICOM against the Orthanc archive.</p>
+          TLS against OpenSSL, DICOM against the Orthanc archive, AS2 against pyas2lib, OpenPGP against GnuPG and mailboxes
+          against GreenMail.</p>
       </div>
       <div class="frame"><img src="/assets/architecture.svg" loading="lazy"
         alt="Perfuse in the middle: a lab system over MLLP, radiology over DICOM and a payer over X12 on one side; the EHR, a FHIR API and an archive on the other."></div>

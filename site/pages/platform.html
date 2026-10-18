@@ -144,6 +144,30 @@
   </div>
 </section>
 
+<section class="band soft" id="availability">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Always on</p>
+      <h2>When one server stops, another carries on</h2>
+      <p>Two or more servers share one PostgreSQL database and agree, through it, which of them runs each feed. A server that
+        crashes or loses the database stops its feeds by itself; another starts them within about one lease, 15 seconds by
+        default. Built on main, in the next release.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:server</div><h3>Active-passive or active-active</h3><p>One leader running
+        everything with the others standing by, or the feeds spread over every server and moved by hand from the console.</p></div>
+      <div class="card"><div class="icon">ICON:check</div><h3>Nothing acknowledged is lost</h3><p>Tested by killing the server
+        running a feed, cutting it off from the database and running clocks minutes apart, on Linux and Windows behind an AWS load
+        balancer: 16,000 acknowledged messages, none lost.</p></div>
+      <div class="card"><div class="icon">ICON:layers</div><h3>One configuration</h3><p>Channels, settings, alert rules and
+        sign-on files are kept the same on every server; a change on any one reaches the rest in seconds.</p></div>
+      <div class="card"><div class="icon">ICON:chart</div><h3>Monitored the usual way</h3><p>A health check for the load balancer
+        that says where each feed runs, Prometheus metrics, OpenTelemetry traces, and a read-only SNMP agent with alert traps for
+        tools that speak SNMP.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="band" id="analytics">
   <div class="wrap">
     <div class="intro">

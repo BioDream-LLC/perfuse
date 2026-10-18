@@ -133,7 +133,31 @@
   </div>
 </section>
 
-<section class="band soft" id="registries">
+<section class="band soft" id="patient-index">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Master patient index</p>
+      <h2>One person, however many systems know them</h2>
+    </div>
+    <div class="wwh">
+      <div><h4>What it is</h4><p>An index of the patients every system sends, linking each person's records under one
+        enterprise identifier, with the reasons each link was made.</p></div>
+      <div><h4>Why it exists</h4><p>The lab, the clinic and the hospital each give the same person their own number, and a record
+        that cannot be matched is a history nobody sees.</p></div>
+      <div><h4>How you use it</h4><p>Turn it on, add a patient index destination to the channels carrying registrations, and
+        review the possible matches it queues. Other systems ask it through FHIR <code>Patient/$match</code> and PIXm.</p></div>
+    </div>
+    <ul class="ticks">
+      <li>Trusted identifiers link at once; everything else is scored (Fellegi-Sunter weights, Jaro-Winkler names) and waits
+        for a person, unless an administrator lets the certain ones link</li>
+      <li>Weights estimated from the site's own records</li>
+      <li>Measured on the FEBRL test data: no record linked to the wrong person</li>
+      <li>A40 merges, links and unlinks kept with their history; built on main, in the next release</li>
+    </ul>
+  </div>
+</section>
+
+<section class="band" id="registries">
   <div class="wrap">
     <div class="intro">
       <p class="eyebrow">Immunization registries and patient summaries</p>

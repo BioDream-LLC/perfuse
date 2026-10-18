@@ -68,6 +68,41 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
+## Since v0.1.16, on main and not yet released
+
+These are built and tested on `main`; the next release will carry them. The downloads below are v0.1.16, so build from
+source (`make build`) to try them now.
+
+- **Clusters:** two or more servers on one PostgreSQL store take over from each other: active-passive (the leader runs
+  everything) or active-active (channels spread over the servers, moved by hand from the console). Leases measured on
+  each server's own clock, so no two servers ever run one feed; configuration kept the same on every server through the
+  store; `/readyz?channel=` for the load balancer. Killed with SIGKILL mid-stream in the tests: nothing acknowledged lost.
+  Tested on AWS too: Linux and Windows servers in three zones, Amazon RDS over checked TLS, a Network Load Balancer, a
+  leader cut off from the database and clocks two minutes apart; 16,000 acknowledged messages, none lost.
+- **PostgreSQL for everything:** messages, queues, accounts, the audit log, the FHIR store, terminology and the patient
+  index, with `-db postgres://...`; SQLite stays the default for one server.
+- **Master patient index:** records from every system linked into one enterprise identifier per person, deterministic
+  (trusted identifiers) and probabilistic (Fellegi-Sunter, Jaro-Winkler) matching, a review queue, links, unlinks and A40
+  merges with their history, FHIR `Patient/$match` and PIXm; off until a site turns it on, and automatic linking off
+  until an administrator trusts it (measured on FEBRL: no wrong links), with weights it can estimate from the site's records.
+- **AS2 (RFC 4130):** EDI with trading partners over HTTP, signed and encrypted with S/MIME, delivered only when the partner's
+  signed receipt names the digest of what was sent; synchronous and asynchronous receipts; tested against pyas2lib both ways.
+  Compressed messages (RFC 5402) both ways, and a resend of a message already passed on is answered with a receipt and
+  not delivered twice.
+- **OpenPGP:** decrypt and verify what a source receives, encrypt and sign what a destination sends (files, SFTP, S3, email,
+  HTTP), with keys checked when the channel loads; tested against GnuPG in both directions.
+- **UN/EDIFACT:** a data type with envelope checks (UNB/UNZ, UNH/UNT counts), element filters and paths, one message per
+  UNH, and CONTRL acknowledgements; tested against pydifact.
+- **Mailbox source:** IMAP and POP3, with Microsoft 365 and Gmail sign-in by OAuth 2.0; the body or attachments become the
+  messages, then the mail is moved, flagged or deleted; tested against GreenMail.
+- **Terminology:** mapping tables with editions and effective dates (each message uses the edition in force that day),
+  and an optional second person's approval; values no table maps, counted and listed; LOINC, SNOMED CT, RxNorm,
+  ICD-10-CM and local code systems imported for search, `CodeSystem/$lookup` and `$validate-code`.
+- **SNMP:** a read-only SNMPv2c agent (channel states, message counts, queue depths) and alert traps, with a MIB to
+  download from the console.
+- **Mirth scripts:** JavaScript equivalents of the Java classes Mirth scripts use most, so more of them run unchanged.
+- **Supply chain:** `govulncheck` runs in CI and gates every release; Go 1.27.2 and current x/crypto, x/net and x/text.
+
 ## New in v0.1.16
 
 - **Drug prior authorization (CMS-0062-P):** a formulary, the Da Vinci US Drug Formulary API, NCPDP RTPB real-time benefit
@@ -78,18 +113,6 @@ only from YAML or the command line is treated as a bug.
   (Carequality and eHealth Exchange style), tested against the NIST XDS Toolkit.
 - **Direct secure messaging:** S/MIME signed and encrypted mail with XDM packages and MDN receipts, certificates from an address
   book or DNS, an SMTP source; checked against OpenSSL in both directions.
-- **Clusters:** two or more servers on one PostgreSQL store take over from each other: active-passive (the leader runs
-  everything) or active-active (channels spread over the servers, moved by hand from the console). Leases measured on
-  each server's own clock, so no two servers ever run one feed; configuration kept the same on every server through the
-  store; `/readyz?channel=` for the load balancer. Killed with SIGKILL mid-stream in the tests: nothing acknowledged lost.
-- **Master patient index:** records from every system linked into one enterprise identifier per person, deterministic
-  (trusted identifiers) and probabilistic (Fellegi-Sunter, Jaro-Winkler) matching, a review queue, links, unlinks and A40
-  merges with their history, FHIR `Patient/$match` and PIXm; off until a site turns it on, and automatic linking off
-  until an administrator trusts it (measured on FEBRL: no wrong links), with weights it can estimate from the site's records.
-- **AS2 (RFC 4130):** EDI with trading partners over HTTP, signed and encrypted with S/MIME, delivered only when the partner's
-  signed receipt names the digest of what was sent; synchronous and asynchronous receipts; tested against pyas2lib both ways.
-- **OpenPGP:** decrypt and verify what a source receives, encrypt and sign what a destination sends (files, SFTP, S3, email,
-  HTTP), with keys checked when the channel loads; tested against GnuPG in both directions.
 - **DICOMweb:** an imaging archive over QIDO-RS, WADO-RS and STOW-RS, browsed by OHIF; tested against Orthanc both ways.
 - **Immunization registries:** the CDC IIS web service as source and destination, VXU with ACK handling, QBP/RSP queries.
 - **International Patient Summary:** `Patient/$summary`, also used by Health links to share a visit.
