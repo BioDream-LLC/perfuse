@@ -1579,14 +1579,15 @@ type buildAS2Partner struct {
 
 // buildAS2Source is config.AS2Source on the wire.
 type buildAS2Source struct {
-	Listen         string            `json:"listen,omitempty" yaml:"listen,omitempty"`
-	Path           string            `json:"path,omitempty" yaml:"path,omitempty"`
-	TLS            *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
-	ID             string            `json:"id,omitempty" yaml:"id,omitempty"`
-	CertFile       string            `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
-	KeyFile        string            `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
-	Partners       []buildAS2Partner `json:"partners,omitempty" yaml:"partners,omitempty"`
-	MaxMessageSize int64             `json:"maxMessageSize,omitempty" yaml:"max_message_size,omitempty"`
+	Listen          string            `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Path            string            `json:"path,omitempty" yaml:"path,omitempty"`
+	TLS             *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
+	ID              string            `json:"id,omitempty" yaml:"id,omitempty"`
+	CertFile        string            `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile         string            `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
+	Partners        []buildAS2Partner `json:"partners,omitempty" yaml:"partners,omitempty"`
+	MaxMessageSize  int64             `json:"maxMessageSize,omitempty" yaml:"max_message_size,omitempty"`
+	DuplicateWindow string            `json:"duplicateWindow,omitempty" yaml:"duplicate_window,omitempty"`
 }
 
 // buildAS2Dest is config.AS2Destination on the wire.
@@ -1599,6 +1600,7 @@ type buildAS2Dest struct {
 	PartnerCertFile string    `json:"partnerCertFile,omitempty" yaml:"partner_cert_file,omitempty"`
 	Unsigned        bool      `json:"unsigned,omitempty" yaml:"unsigned,omitempty"`
 	Unencrypted     bool      `json:"unencrypted,omitempty" yaml:"unencrypted,omitempty"`
+	Compress        bool      `json:"compress,omitempty" yaml:"compress,omitempty"`
 	Receipt         string    `json:"receipt,omitempty" yaml:"receipt,omitempty"`
 	UnsignedReceipt bool      `json:"unsignedReceipt,omitempty" yaml:"unsigned_receipt,omitempty"`
 	ReceiptURL      string    `json:"receiptUrl,omitempty" yaml:"receipt_url,omitempty"`

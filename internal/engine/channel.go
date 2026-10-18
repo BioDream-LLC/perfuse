@@ -200,6 +200,9 @@ type Channel struct {
 	// queryState remembers what a DICOM query source has already seen. Nil when the channel does not poll an archive.
 	queryState DICOMQueryState
 
+	// as2Dup remembers the AS2 messages already passed on, so a partner's resend is answered and not processed twice.
+	as2Dup as2Duplicates
+
 	// dicomQuery is the archive polling goroutine, nil unless this is a dicom_query source.
 	dicomQuery *dicomQueryPoller
 

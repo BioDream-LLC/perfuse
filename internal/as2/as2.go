@@ -61,6 +61,9 @@ type Outgoing struct {
 	AsyncURL string
 	// MessageID is generated when empty.
 	MessageID string
+	// Compress compresses the payload with zlib before it is signed and encrypted (RFC 5402 sections 3.2 and 3.5, the order
+	// most gateways use).
+	Compress bool
 }
 
 // Built is what goes on the wire, and what the receipt is checked against.
@@ -179,7 +182,21 @@ func Build(o Outgoing) (*Built, error) {
 		return nil, errors.New("as2: AS2-From and AS2-To are both required")
 	}
 	entity := payloadEntity(o)
+	// Unsigned, the MIC is over the uncompressed entity (RFC 5402 sections 4.2 and 4.3); signed, over what is signed, which
+	// is the compressed entity when it is compressed (4.1).
 	out := &Built{MIC: mic(entity, "sha-256"), MessageID: o.MessageID}
+	if o.Compress {
+		z, err := cms.Compress(entity)
+		if err != nil {
+			return nil, err
+		}
+		entity = append([]byte("Content-Type: application/pkcs7-mime; smime-type=compressed-data; name=\"smime.p7z\"\r\n"+
+			"Content-Transfer-Encoding: binary\r\n"+
+			"Content-Disposition: attachment; filename=\"smime.p7z\"\r\n\r\n"), z...)
+		if o.Signer != nil {
+			out.MIC = mic(entity, "sha-256")
+		}
+	}
 	if out.MessageID == "" {
 		out.MessageID = msgID(o.From)
 	}

@@ -59,12 +59,14 @@ func TestSendReceiveAndReceipt(t *testing.T) {
 	payload := []byte("ISA*00*          *00*          *ZZ*PERFUSE        *ZZ*PAYER          *261017*1200*^*00501*000000001*0*P*:~")
 
 	for _, c := range []struct {
-		name          string
-		sign, encrypt bool
-	}{{"signed and encrypted", true, true}, {"signed", true, false}, {"encrypted", false, true}, {"neither", false, false}} {
+		name                    string
+		sign, encrypt, compress bool
+	}{{"signed and encrypted", true, true, false}, {"signed", true, false, false}, {"encrypted", false, true, false},
+		{"neither", false, false, false}, {"compressed, signed and encrypted", true, true, true}, {"compressed and signed", true, false, true},
+		{"compressed and encrypted", false, true, true}, {"compressed only", false, false, true}} {
 		t.Run(c.name, func(t *testing.T) {
 			o := Outgoing{From: "PERFUSE", To: "PAYER", Payload: payload, ContentType: "application/edi-x12", FileName: "claims.x12",
-				MDN: MDNSync, SignedMDN: true}
+				MDN: MDNSync, SignedMDN: true, Compress: c.compress}
 			if c.sign {
 				o.Signer = &us.kp
 			}
@@ -79,7 +81,7 @@ func TestSendReceiveAndReceipt(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(got.Payload, payload) || got.FileName != "claims.x12" || got.Signed != c.sign || got.Encrypted != c.encrypt ||
+			if !bytes.Equal(got.Payload, payload) || got.FileName != "claims.x12" || got.Signed != c.sign || got.Encrypted != c.encrypt || got.Compressed != c.compress ||
 				got.From != "PERFUSE" || got.To != "PAYER" || got.MDN != MDNSync || !got.SignedMDN {
 				t.Fatalf("%+v", got)
 			}
@@ -98,6 +100,94 @@ func TestSendReceiveAndReceipt(t *testing.T) {
 				t.Error(err)
 			}
 		})
+	}
+}
+
+// RFC 5402 section 3.3: a signed message compressed whole. The MIC is over what was signed, the uncompressed entity; and the
+// compressed layer arrives as streaming BER with indefinite lengths, as Java gateways write it.
+func TestReceiveASignedMessageCompressedWholeInBER(t *testing.T) {
+	us, partner := newParty(t, "PERFUSE"), newParty(t, "PAYER")
+	payload := []byte("UNA:+.? 'UNB+UNOC:3+PERFUSE+PAYER+261017:1200+1'UNZ+0+1'")
+	built, err := Build(Outgoing{From: "PERFUSE", To: "PAYER", Payload: payload, ContentType: "application/edifact", Signer: &us.kp,
+		MDN: MDNSync})
+	if err != nil {
+		t.Fatal(err)
+	}
+	signed := []byte("Content-Type: " + built.Header.Get("Content-Type") + "\r\n\r\n")
+	signed = append(signed, built.Body...)
+	z, err := cms.Compress(signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := built.Header.Clone()
+	h.Set("Content-Type", `application/pkcs7-mime; smime-type=compressed-data; name="smime.p7z"`)
+	h.Set("Content-Transfer-Encoding", "binary")
+	got, err := Receive(h, indefinite(t, z), ReceiveOptions{Partner: us.pool, RequireSigned: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Compressed || !got.Signed || !bytes.Equal(got.Payload, payload) || got.MIC != built.MIC {
+		t.Fatalf("compressed %v signed %v payload %q MIC %q (sent %q)", got.Compressed, got.Signed, got.Payload, got.MIC, built.MIC)
+	}
+	_ = partner
+}
+
+// indefinite re-encodes the outer three constructed layers of DER with indefinite lengths, as a streaming encoder writes them.
+func indefinite(t *testing.T, der []byte) []byte {
+	t.Helper()
+	var wrap func(b []byte, depth int) []byte
+	wrap = func(b []byte, depth int) []byte {
+		if depth == 0 || b[0]&0x20 == 0 {
+			return b
+		}
+		n, l := int(b[1]), 1
+		if b[1]&0x80 != 0 {
+			k := int(b[1] & 0x7f)
+			n = 0
+			for i := 0; i < k; i++ {
+				n = n<<8 | int(b[2+i])
+			}
+			l = 1 + k
+		}
+		content := b[1+l : 1+l+n]
+		var inner []byte
+		for len(content) > 0 {
+			cn, cl := int(content[1]), 1
+			if content[1]&0x80 != 0 {
+				k := int(content[1] & 0x7f)
+				cn = 0
+				for i := 0; i < k; i++ {
+					cn = cn<<8 | int(content[2+i])
+				}
+				cl = 1 + k
+			}
+			inner = append(inner, wrap(content[:1+cl+cn], depth-1)...)
+			content = content[1+cl+cn:]
+		}
+		return append(append([]byte{b[0], 0x80}, inner...), 0, 0)
+	}
+	out := wrap(der, 3)
+	if bytes.Equal(out, der) {
+		t.Fatal("nothing was re-encoded")
+	}
+	return out
+}
+
+// A compressed message that would expand past the limit is refused with decompression-failed, not read into memory.
+func TestReceiveRefusesACompressionBomb(t *testing.T) {
+	us := newParty(t, "PERFUSE")
+	big := bytes.Repeat([]byte("A"), 4<<20)
+	built, err := Build(Outgoing{From: "PERFUSE", To: "PAYER", Payload: big, Compress: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(built.Body) > 64<<10 {
+		t.Fatalf("4 MB of one letter compressed to %d bytes", len(built.Body))
+	}
+	_, err = Receive(built.Header, built.Body, ReceiveOptions{Partner: us.pool, MaxExpanded: 1 << 20})
+	var f *Failure
+	if !errors.As(err, &f) || f.Kind != "decompression-failed" {
+		t.Fatalf("got %v", err)
 	}
 }
 
@@ -148,9 +238,11 @@ from pyas2lib import Organization, Partner, Message, Mdn
 d = '/work/'
 rd = lambda n: open(d + n, 'rb').read()
 mode, enc_alg = sys.argv[1], sys.argv[2]
+compress = sys.argv[-1] == 'compress'
 org = Organization(as2_name='PAYER', sign_key=rd('payer.pem'), sign_key_pass=None, decrypt_key=rd('payer.pem'), decrypt_key_pass=None)
 partner = Partner(as2_name='PERFUSE', verify_cert=rd('perfuse.crt'), encrypt_cert=rd('perfuse.crt'), validate_certs=False,
-                  sign=True, encrypt=True, enc_alg=enc_alg, digest_alg='sha256', mdn_mode='SYNC', mdn_digest_alg='sha256')
+                  sign=True, encrypt=True, enc_alg=enc_alg, digest_alg='sha256', mdn_mode='SYNC', mdn_digest_alg='sha256',
+                  compress=compress)
 out = {}
 if mode == 'send':
     # pyas2lib sends to Perfuse over HTTP and reads Perfuse's synchronous receipt.
@@ -169,7 +261,8 @@ else:
     raw = b''.join(k.encode() + b': ' + v.encode() + b'\r\n' for k, v in req['headers'].items()) + b'\r\n' + base64.b64decode(req['body'])
     msg = Message()
     status, exc, mdn = msg.parse(raw, lambda as2_id: org, lambda as2_id: partner)
-    out = {'status': status, 'error': str(exc[0]) if exc and exc[0] else '', 'payload': base64.b64encode(msg.content or b'').decode()}
+    out = {'status': status, 'error': str(exc[0]) if exc and exc[0] else '', 'payload': base64.b64encode(msg.content or b'').decode(),
+           'compressed': bool(msg.compressed)}
     if mdn is None:
         mdn = Mdn(mdn_mode='SYNC')
         mdn.build(message=msg, status=status)
@@ -239,19 +332,34 @@ func TestInteroperatesWithPyAS2Lib(t *testing.T) {
 	go func() { _ = srv.Serve(ln) }()
 	t.Cleanup(func() { _ = srv.Close() })
 	port := ln.Addr().(*net.TCPAddr).Port
-	for _, alg := range []string{"tripledes_192_cbc", "aes_256_cbc"} {
-		out := py("send", alg, "http://host.docker.internal:"+strconv.Itoa(port)+"/as2")
+	for _, alg := range []string{"tripledes_192_cbc", "aes_256_cbc", "aes_256_cbc compress"} {
+		received = nil
+		args := append([]string{"send"}, strings.Fields(alg)...)
+		args = append(args[:2], "http://host.docker.internal:"+strconv.Itoa(port)+"/as2")
+		if strings.HasSuffix(alg, "compress") {
+			args = append(args, "compress")
+		}
+		out := py(args...)
 		if out["status"] != "processed" {
 			t.Errorf("%s: pyas2lib read Perfuse's receipt as %v (%v)", alg, out["status"], out["detail"])
 		}
-		if received == nil || !bytes.HasPrefix(received.Payload, []byte("UNA:+.? 'UNB")) || received.FileName != "orders.edi" {
+		if received == nil || !bytes.HasPrefix(received.Payload, []byte("UNA:+.? 'UNB")) || received.FileName != "orders.edi" ||
+			received.Compressed != strings.HasSuffix(alg, "compress") {
 			t.Errorf("%s: Perfuse received %+v", alg, received)
 		}
 	}
 
 	// Perfuse to pyas2lib: pyas2lib opens it and answers; Perfuse checks the receipt and its MIC.
+	for _, compress := range []bool{false, true} {
+		pyReceives(t, py, work, us, payer, compress)
+	}
+}
+
+// pyReceives sends pyas2lib one message from Perfuse and checks its receipt.
+func pyReceives(t *testing.T, py func(...string) map[string]any, work string, us, payer party, compress bool) {
+	t.Helper()
 	built, err := Build(Outgoing{From: "PERFUSE", To: "PAYER", Payload: []byte("ISA*00*~GS*HC~ST*837*0001~"), ContentType: "application/edi-x12",
-		FileName: "claims.x12", Signer: &us.kp, EncryptTo: payer.kp.Certificate, MDN: MDNSync, SignedMDN: true})
+		FileName: "claims.x12", Signer: &us.kp, EncryptTo: payer.kp.Certificate, MDN: MDNSync, SignedMDN: true, Compress: compress})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,6 +377,9 @@ func TestInteroperatesWithPyAS2Lib(t *testing.T) {
 	}
 	if p, _ := out["payload"].(string); p != "SVNBKjAwKn5HUypIQ35TVCo4MzcqMDAwMX4=" {
 		t.Errorf("pyas2lib read %q", p)
+	}
+	if c, _ := out["compressed"].(bool); c != compress {
+		t.Errorf("pyas2lib saw compressed=%v, sent compressed=%v", c, compress)
 	}
 	mh := http.Header{}
 	for k, v := range out["mdn_headers"].(map[string]any) {
@@ -292,4 +403,19 @@ func decode64(t *testing.T, s string) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// Whatever arrives, Receive answers with a message or a failure and never panics.
+func FuzzReceive(f *testing.F) {
+	z, _ := cms.Compress([]byte("Content-Type: text/plain\r\n\r\nhello"))
+	f.Add(`application/pkcs7-mime; smime-type=compressed-data`, z)
+	f.Add(`application/pkcs7-mime`, []byte{0x30, 0x80, 0x06, 0x00, 0x00, 0x00})
+	f.Add(`multipart/signed; boundary=b; micalg=sha-256`, []byte("--b\r\nContent-Type: text/plain\r\n\r\nx\r\n--b--"))
+	f.Fuzz(func(t *testing.T, ct string, body []byte) {
+		h := http.Header{}
+		h.Set("Content-Type", ct)
+		h.Set("AS2-From", "A")
+		h.Set("AS2-To", "B")
+		_, _ = Receive(h, body, ReceiveOptions{MaxExpanded: 1 << 20})
+	})
 }

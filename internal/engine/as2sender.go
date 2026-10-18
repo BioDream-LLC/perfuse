@@ -174,7 +174,8 @@ func (s *AS2Sender) Send(ctx context.Context, msg []byte) error {
 func (s *AS2Sender) SendForResponse(ctx context.Context, msg []byte) ([]byte, error) {
 	mode := as2.MDNMode(s.cfg.ReceiptMode())
 	o := as2.Outgoing{From: s.cfg.From, To: s.cfg.To, Payload: msg, ContentType: s.contentType(), FileName: s.fileName(msg),
-		Subject: s.cfg.Subject, Signer: s.self, Chain: s.chain, MDN: mode, SignedMDN: !s.cfg.UnsignedReceipt, AsyncURL: s.cfg.ReceiptURL}
+		Subject: s.cfg.Subject, Signer: s.self, Chain: s.chain, MDN: mode, SignedMDN: !s.cfg.UnsignedReceipt, AsyncURL: s.cfg.ReceiptURL,
+		Compress: s.cfg.Compress}
 	if !s.cfg.Unencrypted {
 		o.EncryptTo = s.partner
 	}

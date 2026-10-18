@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -125,7 +126,8 @@ func (c *Channel) handleAS2(src *config.AS2Source, self *cms.KeyPair, chain []*x
 		}
 
 		got, err := as2.Receive(r.Header, body, as2.ReceiveOptions{Keys: []cms.KeyPair{*self}, Partner: partner.pool,
-			RequireSigned: !partner.cfg.AllowUnsigned, RequireEncrypted: !partner.cfg.AllowUnencrypted})
+			RequireSigned: !partner.cfg.AllowUnsigned, RequireEncrypted: !partner.cfg.AllowUnencrypted,
+			MaxExpanded: 10 * maxSize})
 		var failure *as2.Failure
 		if err != nil {
 			if !errors.As(err, &failure) {
@@ -133,14 +135,7 @@ func (c *Channel) handleAS2(src *config.AS2Source, self *cms.KeyPair, chain []*x
 			}
 			c.log.Warn("as2: a message was refused", "as2_from", from, "message_id", r.Header.Get("Message-ID"), "reason", err.Error())
 		} else {
-			ctx := r.Context()
-			if _, herr := c.handle(ctx, got.Payload); herr != nil {
-				failure = &as2.Failure{Kind: "unexpected-processing-error", Err: herr}
-				c.log.Warn("as2: a message could not be processed", "as2_from", from, "message_id", got.MessageID, "reason", herr.Error())
-			} else {
-				c.log.Info("as2: message received", "as2_from", from, "message_id", got.MessageID, "file", got.FileName,
-					"signed", got.Signed, "encrypted", got.Encrypted)
-			}
+			failure = c.passOnAS2(r.Context(), src, from, got)
 		}
 
 		mode, signed, asyncURL, _ := as2.Requested(r.Header)
@@ -175,6 +170,44 @@ func (c *Channel) handleAS2(src *config.AS2Source, self *cms.KeyPair, chain []*x
 		}
 		_, _ = w.Write(b)
 	}
+}
+
+// passOnAS2 hands a received message to the channel once, however many times the partner sends it. A copy already passed on
+// is answered with a receipt (the partner is retrying because it never got the first) and not processed again. A copy that
+// failed is not remembered, so the partner's retry is processed.
+func (c *Channel) passOnAS2(ctx context.Context, src *config.AS2Source, from string, got *as2.Received) *as2.Failure {
+	window := src.Duplicates()
+	var key string
+	if strings.Trim(strings.TrimSpace(got.MessageID), "<>") != "" {
+		key = as2DuplicateKey(from, got.MessageID)
+		defer c.as2Dup.lock(key)()
+		dup, err := c.as2Seen(ctx, key, window)
+		if err != nil {
+			// Refused rather than risked: the partner retries, and by then the store may answer.
+			c.log.Error("as2: could not check for a resend", "as2_from", from, "message_id", got.MessageID, "error", err)
+			return &as2.Failure{Kind: "unexpected-processing-error", Err: fmt.Errorf("could not check whether this message was received before; send it again later")}
+		}
+		if dup {
+			c.log.Warn("as2: a message received before was sent again; answered with a receipt and not passed on twice",
+				"as2_from", from, "message_id", got.MessageID)
+			return nil
+		}
+	} else {
+		c.log.Warn("as2: the message has no Message-ID, so a resend of it cannot be recognised", "as2_from", from)
+	}
+	if _, herr := c.handle(ctx, got.Payload); herr != nil {
+		c.log.Warn("as2: a message could not be processed", "as2_from", from, "message_id", got.MessageID, "reason", herr.Error())
+		return &as2.Failure{Kind: "unexpected-processing-error", Err: herr}
+	}
+	c.log.Info("as2: message received", "as2_from", from, "message_id", got.MessageID, "file", got.FileName,
+		"signed", got.Signed, "encrypted", got.Encrypted)
+	if key != "" {
+		if err := c.as2Remember(ctx, key, window); err != nil {
+			c.log.Error("as2: the message was passed on, but could not be recorded as received; a resend of it would be passed on again",
+				"as2_from", from, "message_id", got.MessageID, "error", err)
+		}
+	}
+	return nil
 }
 
 // postAS2Receipt delivers an asynchronous receipt, trying a few times.

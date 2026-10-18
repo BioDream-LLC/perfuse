@@ -619,10 +619,30 @@ for gateways that require it. The content type follows the channel's format
 (`application/edi-x12` for X12) unless `content_type` sets one.
 
 Triple DES, AES-128 and AES-192 are read as well as AES-256, since partners still
-send them. Not offered: compression (RFC 5402; a compressed message is refused with
-a receipt saying so), and detection of a message sent twice with the same
-Message-ID. Interoperability is tested against pyas2lib 1.4.3 in both directions,
-with Triple DES and AES-256, signed synchronous receipts included.
+send them, and so is the streaming BER (indefinite lengths) that Java gateways write.
+
+**Compression (RFC 5402).** A compressed message is read whichever way it was built:
+compressed before signing or encryption, or a signed message compressed whole. The
+receipt's MIC follows the RFC: over what was signed when it is signed, over the
+uncompressed content when it is not. A message that would expand past ten times the
+source's `max_message_size` is refused with `decompression-failed`, so a few
+kilobytes cannot claim gigabytes of memory. A destination compresses with
+`compress: true`, before signing and encryption, as most gateways do; ask the partner
+first.
+
+**A message sent twice.** A partner that never got our receipt sends the message
+again with the same Message-ID (RFC 4130 section 7.5). The source remembers each
+partner's Message-IDs for `duplicate_window` (default `720h`, 30 days; an hour at
+least) and answers a resend with a `processed` receipt without passing it on again.
+The record is kept in the database, so a restart does not forget it. A message whose
+processing failed is not remembered, so the partner's retry goes through. Copies
+arriving at the same moment wait for one another, and only the first is passed on.
+If the record cannot be read, the message is refused with
+`unexpected-processing-error` and the partner retries later, rather than risking a
+second copy. A message with no Message-ID cannot be recognised and is logged as such.
+
+Interoperability is tested against pyas2lib 1.4.3 in both directions, with Triple
+DES and AES-256, compressed and not, signed synchronous receipts included.
 
 ## OpenPGP
 

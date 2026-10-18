@@ -403,7 +403,14 @@ var ErrNotForUs = errors.New("cms: the message is not encrypted to any certifica
 func Decrypt(der []byte, keys []KeyPair) ([]byte, error) {
 	var ci contentInfo
 	if rest, err := asn1.Unmarshal(der, &ci); err != nil || len(rest) != 0 {
-		return nil, fmt.Errorf("cms: the message is not a ContentInfo: %v", err)
+		// Streaming BER (indefinite lengths), as Java gateways write it.
+		d, berr := ToDER(der)
+		if berr != nil {
+			return nil, fmt.Errorf("cms: the message is not a ContentInfo: %v", err)
+		}
+		if rest, err = asn1.Unmarshal(d, &ci); err != nil || len(rest) != 0 {
+			return nil, fmt.Errorf("cms: the message is not a ContentInfo: %v", err)
+		}
 	}
 	if !ci.ContentType.Equal(oidEnvelopedData) {
 		return nil, errors.New("cms: the message is not EnvelopedData")

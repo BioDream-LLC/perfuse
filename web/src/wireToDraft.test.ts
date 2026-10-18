@@ -55,14 +55,23 @@ describe('reading a channel back into the form', () => {
   it('keeps an AS2 source and destination through a round trip', () => {
     const as2Source = { listen: ':4080', id: 'HOSPITAL', certFile: 'ours.crt', keyFile: 'ours.key',
       tls: { enabled: true, certFile: 't.crt', keyFile: 't.key' },
-      partners: [{ id: 'PAYER', certFile: 'payer.crt' }, { id: 'LAB', certFile: 'lab.crt', allowUnencrypted: true }] }
+      partners: [{ id: 'PAYER', certFile: 'payer.crt' }, { id: 'LAB', certFile: 'lab.crt', allowUnencrypted: true }],
+      maxMessageSize: 1000000, duplicateWindow: '168h' }
     const as2Dest = { url: 'https://as2.payer.example/as2', from: 'HOSPITAL', to: 'PAYER', certFile: 'ours.crt', keyFile: 'ours.key',
-      partnerCertFile: 'payer.crt', receipt: 'async', receiptUrl: 'https://us.example/as2', fileName: '${control_id}.x12' }
+      partnerCertFile: 'payer.crt', compress: true, receipt: 'async', receiptUrl: 'https://us.example/as2', fileName: '${control_id}.x12' }
     const model = { ...minimal, source: { type: 'as2', as2: as2Source },
       destinations: [{ name: 'payer', type: 'as2', as2: as2Dest }] } as unknown as WireModel
     const out = roundTrip(model) as unknown as { source: { as2?: unknown }; destinations: { as2?: unknown }[] }
     expect(out.source.as2).toEqual(as2Source)
     expect(out.destinations[0]?.as2).toEqual(as2Dest)
+  })
+
+  it('keeps a patient index destination through a round trip', () => {
+    const mpi = { authorities: { HOSP: 'urn:oid:1.2.3', CLIN: 'urn:oid:1.2.4' }, idType: 'PI', ssnSystem: 'urn:oid:2.16.840.1.113883.4.1', noMerge: true }
+    const model = { ...minimal, destinations: [{ name: 'index', type: 'mpi', mpi }] } as unknown as WireModel
+    const out = roundTrip(model) as unknown as { destinations: { type?: string; mpi?: unknown }[] }
+    expect(out.destinations[0]?.type).toBe('mpi')
+    expect(out.destinations[0]?.mpi).toEqual(mpi)
   })
 
   it('keeps an EDIFACT channel through a round trip', () => {

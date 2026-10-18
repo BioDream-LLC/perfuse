@@ -1553,6 +1553,9 @@ function DestinationCard({
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={dest.as2Unencrypted} onChange={(e) => onChange({ as2Unencrypted: e.target.checked })} /> do not encrypt
               </label>
+              <label className="flex items-center gap-2" title="zlib (RFC 5402) before signing and encryption. Ask the partner first: every AS2 1.1 receiver reads it, older ones do not.">
+                <input type="checkbox" checked={dest.as2Compress} onChange={(e) => onChange({ as2Compress: e.target.checked })} /> compress
+              </label>
               {dest.as2Receipt !== 'none' && (
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={dest.as2UnsignedReceipt} onChange={(e) => onChange({ as2UnsignedReceipt: e.target.checked })} /> accept an unsigned receipt
@@ -3324,7 +3327,7 @@ function DestinationCard({
           
           Refused at load on a destination that receives no reply, so it is offered only where it can run - a control that saves a
           script which is then refused is worse than no control. */}
-      {(dest.type === 'mllp' || dest.type === 'http' || dest.type === 'soap' || dest.type === 'fhir') && (
+      {(dest.type === 'mllp' || dest.type === 'soap' || dest.type === 'as2') && (
         <div className="mt-4">
           <Field
             label="Inspect the reply"

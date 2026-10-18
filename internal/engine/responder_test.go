@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"os"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -140,4 +143,30 @@ func configAcceptsResponseTransformer(t *testing.T, dt config.DestinationType) b
 		}
 	}
 	return true
+}
+
+// The builder offers "Inspect the reply" on the same destination types. It offered it on http and fhir, which validation
+// refuses, so a script saved there stopped the channel loading.
+func TestTheBuilderOffersAResponseTransformerWhereItRuns(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("..", "..", "web", "src", "ChannelBuilder.tsx"))
+	if err != nil {
+		t.Skip("no web source here")
+	}
+	src := string(b)
+	at := strings.Index(src, `label="Inspect the reply"`)
+	if at < 0 {
+		t.Fatal(`ChannelBuilder.tsx has no "Inspect the reply" field`)
+	}
+	start := strings.LastIndex(src[:at], "{(dest.type")
+	cond := src[start:at]
+	offered := map[string]bool{}
+	for _, m := range regexp.MustCompile(`dest\.type === '([a-z0-9]+)'`).FindAllStringSubmatch(cond, -1) {
+		offered[m[1]] = true
+	}
+	for dt, sender := range respondingSenders {
+		_, responds := sender.(Responder)
+		if responds != offered[string(dt)] {
+			t.Errorf("%s: responds %v, offered in the builder %v", dt, responds, offered[string(dt)])
+		}
+	}
 }

@@ -469,6 +469,7 @@ export interface Destination {
   as2PartnerCertFile: string
   as2Unsigned: boolean
   as2Unencrypted: boolean
+  as2Compress: boolean
   as2Receipt: 'sync' | 'async' | 'none'
   as2UnsignedReceipt: boolean
   as2ReceiptUrl: string
@@ -1052,6 +1053,8 @@ export interface ChannelDraft {
   as2SrcTlsEnabled: boolean
   as2SrcTlsCertFile: string
   as2SrcTlsKeyFile: string
+  as2SrcMaxMessageSize: string
+  as2SrcDuplicateWindow: string
   directSrcCertFile: string
   directSrcKeyFile: string
   directSrcAnchorsFile: string
@@ -1948,6 +1951,8 @@ export function draftToWire(draft: ChannelDraft): unknown {
         tls: draft.as2SrcTlsEnabled
           ? { enabled: true, certFile: draft.as2SrcTlsCertFile || undefined, keyFile: draft.as2SrcTlsKeyFile || undefined }
           : undefined,
+        maxMessageSize: Number(draft.as2SrcMaxMessageSize) > 0 ? Number(draft.as2SrcMaxMessageSize) : undefined,
+        duplicateWindow: draft.as2SrcDuplicateWindow.trim() || undefined,
         partners: draft.as2SrcPartners
           .filter((p) => p.id.trim())
           .map((p) => ({
@@ -2556,6 +2561,7 @@ function destinationToWire(d: Destination): unknown {
         partnerCertFile: d.as2PartnerCertFile || undefined,
         unsigned: d.as2Unsigned || undefined,
         unencrypted: d.as2Unencrypted || undefined,
+        compress: d.as2Compress || undefined,
         receipt: d.as2Receipt === 'sync' ? undefined : d.as2Receipt,
         unsignedReceipt: d.as2Receipt !== 'none' && d.as2UnsignedReceipt ? true : undefined,
         receiptUrl: d.as2Receipt === 'async' ? d.as2ReceiptUrl || undefined : undefined,
@@ -2955,6 +2961,7 @@ export function newDestination(): Destination {
     as2PartnerCertFile: '',
     as2Unsigned: false,
     as2Unencrypted: false,
+    as2Compress: false,
     as2Receipt: 'sync',
     as2UnsignedReceipt: false,
     as2ReceiptUrl: '',
@@ -3212,6 +3219,8 @@ export function emptyDraft(): ChannelDraft {
     as2SrcTlsEnabled: false,
     as2SrcTlsCertFile: '',
     as2SrcTlsKeyFile: '',
+    as2SrcMaxMessageSize: '',
+    as2SrcDuplicateWindow: '',
     directSrcCertFile: '',
     directSrcKeyFile: '',
     directSrcAnchorsFile: '',

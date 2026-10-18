@@ -1474,6 +1474,24 @@ export function SourceSection({
               mono
             />
           </Pair>
+          <Pair>
+            <Text
+              label="Remember Message-IDs for"
+              value={draft.as2SrcDuplicateWindow}
+              onChange={(v) => set('as2SrcDuplicateWindow', v)}
+              placeholder="720h"
+              mono
+              hint="A partner that never got our receipt sends the message again with the same Message-ID; within this time it gets a receipt and is not passed on twice. Hours, such as 720h (30 days, the default). Kept in the database, so a restart does not forget."
+            />
+            <Text
+              label="Largest message (bytes)"
+              value={draft.as2SrcMaxMessageSize}
+              onChange={(v) => set('as2SrcMaxMessageSize', v.replace(/[^0-9]/g, ''))}
+              placeholder="52428800"
+              mono
+              hint="Empty: 50 MB. A compressed message may expand to ten times this."
+            />
+          </Pair>
           <div className="space-y-2 rounded-lg border border-slate-800 p-3" data-testid="as2-partners">
             <p className="text-sm text-slate-300">
               <span className="text-sky-300">Trading partners.</span> Only these may send here. Each must sign and encrypt unless

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/biodream-llc/perfuse/internal/tlsconf"
 )
@@ -40,6 +41,20 @@ type AS2Source struct {
 	Partners []AS2Partner `yaml:"partners"`
 	// MaxMessageSize bounds one request; default 50 MB.
 	MaxMessageSize int64 `yaml:"max_message_size,omitempty"`
+	// DuplicateWindow is how long a partner's Message-ID is remembered, so a message sent again (the partner never got our
+	// receipt, and retried) is answered with a receipt and not passed on twice (RFC 4130 section 7.5). Default 30 days.
+	DuplicateWindow time.Duration `yaml:"duplicate_window,omitempty"`
+}
+
+// DefaultAS2DuplicateWindow is how long Message-IDs are remembered when the source sets no window.
+const DefaultAS2DuplicateWindow = 30 * 24 * time.Hour
+
+// Duplicates is the duplicate window, with its default.
+func (s *AS2Source) Duplicates() time.Duration {
+	if s.DuplicateWindow <= 0 {
+		return DefaultAS2DuplicateWindow
+	}
+	return s.DuplicateWindow
 }
 
 // AS2Path is the path, with its default.
@@ -57,6 +72,9 @@ func (s *AS2Source) validate() []error {
 	var errs []error
 	if strings.TrimSpace(s.Listen) == "" {
 		errs = append(errs, fmt.Errorf("source.as2.listen is required, such as \":4080\""))
+	}
+	if s.DuplicateWindow < 0 || (s.DuplicateWindow > 0 && s.DuplicateWindow < time.Hour) {
+		errs = append(errs, fmt.Errorf("source.as2.duplicate_window must be an hour or more: partners retry for hours, and a shorter window passes their resends on twice"))
 	}
 	if strings.TrimSpace(s.ID) == "" {
 		errs = append(errs, fmt.Errorf("source.as2.id is required: our AS2 identifier, which partners send in AS2-To"))
@@ -102,6 +120,9 @@ type AS2Destination struct {
 	// Unsigned and Unencrypted turn off signing or encryption, for a partner whose agreement says so.
 	Unsigned    bool `yaml:"unsigned,omitempty"`
 	Unencrypted bool `yaml:"unencrypted,omitempty"`
+	// Compress compresses the payload (zlib, RFC 5402) before signing and encryption. Every AS2 receiver that announces
+	// version 1.1 or later reads it; ask the partner before turning it on.
+	Compress bool `yaml:"compress,omitempty"`
 	// Receipt is sync (the default: the receipt comes back in the response, and the message counts as delivered only when it
 	// says processed with the right digest), async (posted later to receipt_url) or none.
 	Receipt string `yaml:"receipt,omitempty"`

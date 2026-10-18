@@ -938,11 +938,11 @@ func (d *Destination) validate(dataType DataType) []error {
 		// Wrong in both directions, which is the shape of a list maintained by hand next to the thing it describes.
 		// There is now a test in internal/engine that walks the sender factory and fails if the two disagree.
 		switch d.Type {
-		case DestinationMLLP, DestinationSOAP:
+		case DestinationMLLP, DestinationSOAP, DestinationAS2:
 		default:
 			errs = append(errs, fmt.Errorf(
 				"destination %q is a %s destination, which receives no reply to inspect, so a "+
-					"response_transformer would never run; it applies to mllp and soap destinations",
+					"response_transformer would never run; it applies to mllp, soap and as2 (the receipt) destinations",
 				d.Name, d.Type))
 		}
 	}

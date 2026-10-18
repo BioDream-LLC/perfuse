@@ -188,6 +188,8 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.as2SrcTlsEnabled = a?.tls?.enabled === true
       draft.as2SrcTlsCertFile = a?.tls?.certFile ?? ''
       draft.as2SrcTlsKeyFile = a?.tls?.keyFile ?? ''
+      draft.as2SrcMaxMessageSize = a?.maxMessageSize ? String(a.maxMessageSize) : ''
+      draft.as2SrcDuplicateWindow = a?.duplicateWindow ?? ''
       draft.as2SrcPartners = (a?.partners ?? []).map((p) => ({
         id: p.id ?? '',
         certFile: p.certFile ?? '',
@@ -917,6 +919,7 @@ function readDestination(d: WireDest): Destination {
       dest.as2PartnerCertFile = a?.partnerCertFile ?? ''
       dest.as2Unsigned = a?.unsigned === true
       dest.as2Unencrypted = a?.unencrypted === true
+      dest.as2Compress = a?.compress === true
       dest.as2Receipt = a?.receipt === 'async' || a?.receipt === 'none' ? a.receipt : 'sync'
       dest.as2UnsignedReceipt = a?.unsignedReceipt === true
       dest.as2ReceiptUrl = a?.receiptUrl ?? ''
@@ -1312,6 +1315,8 @@ interface WireSource {
     keyFile?: string
     tls?: { enabled?: boolean; certFile?: string; keyFile?: string }
     partners?: { id?: string; certFile?: string; allowUnsigned?: boolean; allowUnencrypted?: boolean }[]
+    maxMessageSize?: number
+    duplicateWindow?: string
   }
   pgp?: {
     decryptWith?: string
@@ -1515,6 +1520,7 @@ interface WireDest {
     partnerCertFile?: string
     unsigned?: boolean
     unencrypted?: boolean
+    compress?: boolean
     receipt?: string
     unsignedReceipt?: boolean
     receiptUrl?: string

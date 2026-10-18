@@ -41,6 +41,8 @@ type ReceiveOptions struct {
 	Partner *x509.CertPool
 	// RequireSigned and RequireEncrypted refuse a message that is not.
 	RequireSigned, RequireEncrypted bool
+	// MaxExpanded bounds what a compressed message may expand to; zero means 1 GiB.
+	MaxExpanded int64
 }
 
 // Received is one message, opened.
@@ -50,6 +52,8 @@ type Received struct {
 	ContentType         string
 	FileName            string
 	Signed, Encrypted   bool
+	// Compressed reports that the message, or its signed content, was compressed (RFC 5402).
+	Compressed bool
 	// SignedBy is the certificate subject of the signer.
 	SignedBy string
 	// MIC is what the receipt returns.
@@ -121,17 +125,8 @@ func Receive(h http.Header, body []byte, o ReceiveOptions) (*Received, error) {
 	}
 	entity := append([]byte(head+"\r\n"), body...)
 
-	if mt == "application/pkcs7-mime" || mt == "application/x-pkcs7-mime" {
-		if st := strings.ToLower(params["smime-type"]); st == "compressed-data" {
-			return r, fail("unexpected-processing-error", "the message is compressed (RFC 5402), which Perfuse does not read; ask the partner to send it uncompressed")
-		}
-		der := body
-		// Some senders base64 the envelope without saying so.
-		if len(der) > 0 && der[0] != 0x30 {
-			if d, err := base64.StdEncoding.DecodeString(strings.Join(strings.Fields(string(der)), "")); err == nil {
-				der = d
-			}
-		}
+	if isPKCS7(mt) && !isCompressed(params, body) {
+		der := cmsBytes(body)
 		inner, err := cms.Decrypt(der, o.Keys)
 		if err != nil {
 			return r, fail("decryption-failed", "%v", err)
@@ -145,8 +140,28 @@ func Receive(h http.Header, body []byte, o ReceiveOptions) (*Received, error) {
 		if mt, params, err = mime.ParseMediaType(hdr.Get("Content-Type")); err != nil {
 			return r, fail("unexpected-processing-error", "the decrypted entity has no readable Content-Type")
 		}
-		if strings.EqualFold(params["smime-type"], "compressed-data") {
-			return r, fail("unexpected-processing-error", "the message is compressed (RFC 5402), which Perfuse does not read")
+		body = ib
+		if strings.EqualFold(strings.TrimSpace(hdr.Get("Content-Transfer-Encoding")), "base64") {
+			if d, err := base64.StdEncoding.DecodeString(strings.Join(strings.Fields(string(body)), "")); err == nil {
+				body = d
+			}
+		}
+	}
+	// Compressed before it was signed or encrypted (RFC 5402 sections 3.1, 3.2, 3.4, 3.5), or a signed message compressed
+	// whole (3.3, 3.6): either way it is opened here, and what it held is read on as if it had arrived so.
+	if isPKCS7(mt) && isCompressed(params, body) {
+		inner, err := cms.Decompress(cmsBytes(body), o.MaxExpanded)
+		if err != nil {
+			return r, fail("decompression-failed", "%v", err)
+		}
+		r.Compressed = true
+		entity = inner
+		hdr, ib, err := splitEntity(inner)
+		if err != nil {
+			return r, fail("decompression-failed", "what decompressed is not a MIME entity: %v", err)
+		}
+		if mt, params, err = mime.ParseMediaType(hdr.Get("Content-Type")); err != nil {
+			return r, fail("unexpected-processing-error", "the decompressed entity has no readable Content-Type")
 		}
 		body = ib
 	}
@@ -186,9 +201,29 @@ func Receive(h http.Header, body []byte, o ReceiveOptions) (*Received, error) {
 	if o.RequireSigned && !r.Signed {
 		return r, fail("insufficient-message-security", "the message is not signed, and this partner must sign")
 	}
+	// For a signed message the MIC is over what was signed, compressed or not (RFC 5402 section 4.1); for an unsigned one, over
+	// the uncompressed entity (4.2, 4.3), which is what payloadEntity already is.
 	r.MIC = mic(payloadEntity, r.MICAlg)
 
 	ph, pb, err := splitEntity(payloadEntity)
+	if err == nil && !r.Compressed {
+		if pmt, pparams, perr := mime.ParseMediaType(ph.Get("Content-Type")); perr == nil && isPKCS7(pmt) {
+			cb := pb
+			if strings.EqualFold(strings.TrimSpace(ph.Get("Content-Transfer-Encoding")), "base64") {
+				if d, derr := base64.StdEncoding.DecodeString(strings.Join(strings.Fields(string(pb)), "")); derr == nil {
+					cb = d
+				}
+			}
+			if isCompressed(pparams, cb) {
+				inner, derr := cms.Decompress(cmsBytes(cb), o.MaxExpanded)
+				if derr != nil {
+					return r, fail("decompression-failed", "%v", derr)
+				}
+				r.Compressed = true
+				ph, pb, err = splitEntity(inner)
+			}
+		}
+	}
 	if err != nil {
 		return r, fail("unexpected-processing-error", "the payload is not a MIME entity: %v", err)
 	}
@@ -208,6 +243,32 @@ func Receive(h http.Header, body []byte, o ReceiveOptions) (*Received, error) {
 		r.FileName = dp["filename"]
 	}
 	return r, nil
+}
+
+func isPKCS7(mt string) bool {
+	return mt == "application/pkcs7-mime" || mt == "application/x-pkcs7-mime"
+}
+
+// isCompressed reports whether a pkcs7-mime body is CompressedData: by its smime-type, or by its content when a sender left the
+// parameter out.
+func isCompressed(params map[string]string, body []byte) bool {
+	switch strings.ToLower(params["smime-type"]) {
+	case "compressed-data":
+		return true
+	case "enveloped-data", "signed-data":
+		return false
+	}
+	return cms.IsCompressed(cmsBytes(body))
+}
+
+// cmsBytes is a CMS body as DER or BER, decoding the base64 some senders apply without saying so.
+func cmsBytes(b []byte) []byte {
+	if len(b) > 0 && b[0] != 0x30 {
+		if d, err := base64.StdEncoding.DecodeString(strings.Join(strings.Fields(string(b)), "")); err == nil {
+			return d
+		}
+	}
+	return b
 }
 
 func toCRLF(b []byte) []byte {
