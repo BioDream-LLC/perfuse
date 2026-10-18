@@ -3368,12 +3368,17 @@ function DestinationCard({
       {dest.type !== 'javascript' && (
         <div className="mt-4 rounded-lg border border-slate-800 p-3" data-testid="pgp-settings">
           <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={dest.pgpEnabled} onChange={(e) => onChange({ pgpEnabled: e.target.checked })} />
-            <span>
-              <span className="text-emerald-300">Encrypt with OpenPGP.</span> Encrypt each message to the receiver's public key and
-              sign it with ours, after every other step.
-            </span>
+            <input
+              type="checkbox"
+              checked={dest.pgpEnabled}
+              onChange={(e) => onChange({ pgpEnabled: e.target.checked })}
+              aria-describedby={`dest-${index}-pgp-help`}
+            />
+            <span className="text-emerald-300">Encrypt with OpenPGP</span>
           </label>
+          <p id={`dest-${index}-pgp-help`} className="mt-1 text-xs text-slate-400">
+            Encrypt each message to the receiver's public key and sign it with ours, after every other step.
+          </p>
           {dest.pgpEnabled && (
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <Field label="Receivers' public keys" hint="Comma separated, relative to the channel file. Readable by any of them. Empty: signed only.">

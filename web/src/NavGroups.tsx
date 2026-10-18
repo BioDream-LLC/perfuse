@@ -74,7 +74,9 @@ export const NAV_GROUPS: NavGroup[] = [
       ring: 'border-t-violet-500/60',
       dot: 'bg-violet-400',
     },
-    members: ['scripts', 'contracts', 'tables', 'mapper', 'playground', 'shadow'],
+    // The patient index sits with the tables and the mapper: like them, it is reference data the channels use to transform what
+    // passes through (which local identifiers are one person), and it is reviewed and curated the same way.
+    members: ['scripts', 'contracts', 'tables', 'mapper', 'mpi', 'playground', 'shadow'],
   },
   {
     name: 'Exchange',
@@ -85,7 +87,7 @@ export const NAV_GROUPS: NavGroup[] = [
       ring: 'border-t-emerald-500/60',
       dot: 'bg-emerald-400',
     },
-    members: ['fhir', 'subscriptions', 'documents', 'xds', 'direct', 'mpi', 'shl', 'imaging', 'tefca'],
+    members: ['fhir', 'subscriptions', 'documents', 'xds', 'direct', 'shl', 'imaging', 'tefca'],
   },
   {
     name: 'Payers',

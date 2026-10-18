@@ -362,6 +362,8 @@ export default async function globalSetup() {
       // The CMS-0057 payer operations and bulk export, so the CMS-0057 view reports APIs that can actually answer rather than
       // only the "start it with" advice.
       "-fhir-payer-apis",
+      // A patient index, so its screen is driven rather than showing "not turned on".
+      "-mpi",
       // The test server is plain HTTP on loopback, and the health links test reads back a link this server hosts.
       "-shl-allow-http",
       // Da Vinci CRD, with the example rules, so the coverage requirements tab answers from a real rules file.

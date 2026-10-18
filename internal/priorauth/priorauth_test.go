@@ -3,6 +3,7 @@ package priorauth
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -516,7 +517,8 @@ func TestAnOpenedTrackerSurvivesARestart(t *testing.T) {
 		&PriorAuthResponse{RequestID: "pa-2", Decision: DecisionModified, ValidTo: soon}); err != nil {
 		t.Fatal(err)
 	}
-	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+	// Unix permission bits only: Windows reports 0666 for any writable file, whatever its ACL says.
+	if info, err := os.Stat(path); err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o600) {
 		t.Fatalf("the tracker file is %v (%v), want readable by its owner only", info, err)
 	}
 

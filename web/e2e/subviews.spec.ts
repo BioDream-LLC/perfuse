@@ -220,7 +220,8 @@ test("the v3 field picker handles both a real message and a structure-only one",
   }
 
   if (await page.getByRole("button", { name: /Read this message/i }).count()) {
-    const box = page.locator("textarea").last();
+    // By its label: "the last textarea" became the Mirth script box once the Playground gained a section below this one.
+    const box = page.getByRole("textbox", { name: "HL7 v3 message to read" });
 
     // The structure-only document first, because that is the case that crashed.
     await box.fill(

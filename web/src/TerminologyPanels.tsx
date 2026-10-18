@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, ApiError } from './api'
+import { useSelector } from 'react-redux'
+import { api, ApiError, atLeast } from './api'
 import type { CodeSystemInfo, Concept, TableDiff, TableEdition, TableEditions, UnmappedValue } from './api'
 import { ErrorBox, Section, Spinner } from './ui'
-import type { UiError } from './store'
+import type { RootState, UiError } from './store'
 import { IconCheck, IconDelete, IconEdit, IconSearch, IconUpload, IconWarning } from './Icons'
 
 function toError(e: unknown): UiError {
@@ -236,7 +237,16 @@ export function UnmappedValues({ onMap, reloadKey }: { onMap: (table: string, va
   const [data, setData] = useState<{ values: UnmappedValue[]; recording: boolean } | null>(null)
   const [error, setError] = useState<UiError | null>(null)
 
+  // Editors and above only: the values are what arrived in messages, and can be patient data. A viewer is not asked to fetch
+  // a list it may not read (and refused), the section is simply left out.
+  const me = useSelector((s: RootState) => s.session.me)
+  const mayRead = atLeast(me?.role, 'editor')
+
   const load = useCallback(async () => {
+    if (!mayRead) {
+      setData({ values: [], recording: false })
+      return
+    }
     try {
       setData(await api.unmapped())
       setError(null)
@@ -245,7 +255,7 @@ export function UnmappedValues({ onMap, reloadKey }: { onMap: (table: string, va
       if (e instanceof ApiError && e.status === 403) setData({ values: [], recording: false })
       else setError(toError(e))
     }
-  }, [])
+  }, [mayRead])
 
   useEffect(() => {
     void load()
@@ -453,45 +463,49 @@ export function CodeSystems() {
           </table>
         )}
 
-        <div className="rounded-xl border border-slate-800 p-3">
-          <h3 className="mb-2 text-sm font-medium text-slate-300">Find a code</h3>
-          <div className="flex flex-wrap gap-2">
-            <select
-              aria-label="Code system to search"
-              className="input py-1 text-xs"
-              value={searchSystem}
-              onChange={(e) => setSearchSystem(e.target.value)}
-            >
-              {[...new Map(systems.map((c) => [c.system, c])).values()].map((c) => (
-                <option key={c.system} value={c.system}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <input
-              aria-label="Code or words"
-              className="input flex-1 py-1 text-xs"
-              placeholder="a code, or words in its name"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void search()}
-            />
-            <button type="button" className="btn-ghost py-1 text-xs" onClick={() => void search()} disabled={!searchSystem || !q}>
-              <IconSearch className="h-3.5 w-3.5" aria-hidden="true" /> Search
-            </button>
+        {/* Only once there is something to search: an empty list of code systems and a search that can never run is a
+            control that does nothing (and a select with no options, which a keyboard user lands on and cannot leave). */}
+        {systems.length > 0 && (
+          <div className="rounded-xl border border-slate-800 p-3">
+            <h3 className="mb-2 text-sm font-medium text-slate-300">Find a code</h3>
+            <div className="flex flex-wrap gap-2">
+              <select
+                aria-label="Code system to search"
+                className="input py-1 text-xs"
+                value={searchSystem}
+                onChange={(e) => setSearchSystem(e.target.value)}
+              >
+                {[...new Map(systems.map((c) => [c.system, c])).values()].map((c) => (
+                  <option key={c.system} value={c.system}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                aria-label="Code or words"
+                className="input flex-1 py-1 text-xs"
+                placeholder="a code, or words in its name"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && void search()}
+              />
+              <button type="button" className="btn-ghost py-1 text-xs" onClick={() => void search()} disabled={!searchSystem || !q}>
+                <IconSearch className="h-3.5 w-3.5" aria-hidden="true" /> Search
+              </button>
+            </div>
+            {found && (
+              <ul className="mt-2 max-h-72 divide-y divide-slate-800 overflow-y-auto text-sm" data-testid="code-search-results">
+                {found.length === 0 && <li className="py-1 text-slate-500">No codes match.</li>}
+                {found.map((c) => (
+                  <li key={c.code} className="flex gap-3 py-1">
+                    <span className="w-28 shrink-0 font-mono text-sky-300">{c.code}</span>
+                    <span className={c.active ? 'text-slate-200' : 'text-slate-500 line-through'}>{c.display}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {found && (
-            <ul className="mt-2 max-h-72 divide-y divide-slate-800 overflow-y-auto text-sm" data-testid="code-search-results">
-              {found.length === 0 && <li className="py-1 text-slate-500">No codes match.</li>}
-              {found.map((c) => (
-                <li key={c.code} className="flex gap-3 py-1">
-                  <span className="w-28 shrink-0 font-mono text-sky-300">{c.code}</span>
-                  <span className={c.active ? 'text-slate-200' : 'text-slate-500 line-through'}>{c.display}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        )}
 
         <details className="rounded-xl border border-slate-800 p-3">
           <summary className="cursor-pointer text-sm font-medium text-slate-300">Import a code system</summary>
