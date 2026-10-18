@@ -46,6 +46,40 @@ jobs:
       - name: build
         run: go build ./...
 
+  # The whole suite again on PostgreSQL, the store a cluster shares, and the cluster's own tests: failover, a cut-off
+  # leader stopping first, and two servers killed in turn with SIGKILL while a sender streams messages, every
+  # acknowledged message checked at the receiver.
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: perfuse
+          POSTGRES_PASSWORD: perfuse
+          POSTGRES_DB: perfuse
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U perfuse" --health-interval 2s --health-timeout 5s --health-retries 20
+    env:
+      PERFUSE_TEST_POSTGRES: postgres://perfuse:perfuse@127.0.0.1:5432/perfuse?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: true
+
+      - name: raise max_connections
+        run: |
+          docker exec ${{ job.services.postgres.id }} sh -c "echo 'max_connections = 1000' >> /var/lib/postgresql/data/postgresql.conf"
+          docker restart ${{ job.services.postgres.id }}
+          for i in $(seq 1 30); do docker exec ${{ job.services.postgres.id }} pg_isready -U perfuse && break; sleep 1; done
+
+      - name: test on PostgreSQL
+        run: go test -race -timeout 20m ./...
+
   cross:
     runs-on: ubuntu-latest
     strategy:
