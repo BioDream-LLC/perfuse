@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Donut, HBar } from './charts'
 import { ErrorBox, Section, Spinner } from './ui'
 import type { UiError } from './store'
+import { ClusterPanel } from './ClusterPanel'
 import { FleetPeersPanel } from './FleetPeersPanel'
 
 type Reachability = 'unknown' | 'reachable' | 'unreachable' | 'unauthorised' | 'incompatible'
@@ -291,6 +292,7 @@ export function Fleet() {
   if (!data.configured) {
     return (
       <div className="space-y-6">
+        <ClusterPanel />
         <Section
           title="Fleet"
           description="Watch every Perfuse instance from any one of them. No agent to install and no monitoring server to buy — the console is already in every binary."
@@ -339,6 +341,7 @@ export function Fleet() {
 
   return (
     <div className="space-y-6">
+      <ClusterPanel />
       <Section
         title="Fleet"
         description={`${roll.total} instance(s), refreshed every ${Math.round(data.pollEverySeconds)}s. Mirth sells this as a separate product; here it is a config file.`}

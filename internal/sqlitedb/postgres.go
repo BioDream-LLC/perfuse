@@ -73,7 +73,18 @@ func (pgDriver) Open(name string) (driver.Conn, error) {
 	return &pgConn{Conn: conn}, nil
 }
 
-type pgConnector struct{ base *pq.Connector }
+type pgConnector struct {
+	base *pq.Connector
+	// drop is a test's schema, removed when the pool is closed (database/sql calls Close on a connector that has one).
+	drop, target string
+}
+
+func (c pgConnector) Close() error {
+	if c.drop != "" {
+		dropTestSchema(c.target, c.drop)
+	}
+	return nil
+}
 
 func (c pgConnector) Connect(ctx context.Context) (driver.Conn, error) {
 	conn, err := c.base.Connect(ctx)
@@ -92,7 +103,11 @@ func openPostgres(target string, readers int) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("sqlitedb: %s: %w", RedactURL(target), err)
 	}
-	db := sql.OpenDB(pgConnector{base: c})
+	conn := pgConnector{base: c}
+	if testing.Testing() {
+		conn.drop, conn.target = testSchemaToDrop(target), target
+	}
+	db := sql.OpenDB(conn)
 	db.SetMaxOpenConns(max(4, readers*2))
 	db.SetMaxIdleConns(max(2, readers))
 	if testing.Testing() {
@@ -113,6 +128,81 @@ func openPostgres(target string, readers int) (*DB, error) {
 			"CREATE EXTENSION citext once): %w", RedactURL(target), err)
 	}
 	return &DB{Write: db, Read: db, Path: RedactURL(target), memory: true}, nil
+}
+
+// testSchemaToDrop is the schema a test database lives in, made by TestURL or testMemory, which goes when it is closed:
+// a suite opens hundreds, and kept they filled the disk.
+func testSchemaToDrop(target string) string {
+	u, err := url.Parse(target)
+	if err != nil {
+		return ""
+	}
+	schema, _, _ := strings.Cut(u.Query().Get("search_path"), ",")
+	testSchemas.Lock()
+	defer testSchemas.Unlock()
+	if !testSchemas.fresh[schema] {
+		return ""
+	}
+	return schema
+}
+
+var testSchemas = struct {
+	sync.Mutex
+	// fresh are the schemas standing in for an in-memory database: one pool each, so they go when it closes. A schema a
+	// test asked for by URL may be opened by several pools, and is left for the next run to reap.
+	fresh map[string]bool
+}{fresh: map[string]bool{}}
+
+var reapOnce sync.Once
+
+// reapTestSchemas drops, once per test binary, the schemas earlier test processes left: a run that was killed, or tests
+// that never closed their database.
+func reapTestSchemas(dsn string) {
+	reapOnce.Do(func() {
+		db, err := sql.Open("postgres", dsn)
+		if err != nil {
+			return
+		}
+		defer db.Close()
+		rows, err := db.Query(`SELECT nspname FROM pg_namespace WHERE nspname ~ '^t_[0-9a-f]+_[0-9a-f]+$'`)
+		if err != nil {
+			return
+		}
+		var gone []string
+		for rows.Next() {
+			var n string
+			if rows.Scan(&n) != nil {
+				continue
+			}
+			pidHex, _, _ := strings.Cut(strings.TrimPrefix(n, "t_"), "_")
+			var pid int
+			if _, err := fmt.Sscanf(pidHex, "%x", &pid); err != nil || pid == os.Getpid() || processAlive(pid) {
+				continue
+			}
+			gone = append(gone, n)
+		}
+		rows.Close()
+		for _, n := range gone {
+			_, _ = db.Exec(`DROP SCHEMA IF EXISTS ` + n + ` CASCADE`)
+		}
+	})
+}
+
+// dropTestSchema removes a test's schema after its pool is closed.
+func dropTestSchema(target, schema string) {
+	u, err := url.Parse(target)
+	if err != nil || !regexp.MustCompile(`^t_[a-f0-9_]+$`).MatchString(schema) {
+		return
+	}
+	q := u.Query()
+	q.Del("search_path")
+	u.RawQuery = q.Encode()
+	db, err := sql.Open("postgres", u.String())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	_, _ = db.Exec(`DROP SCHEMA IF EXISTS ` + schema + ` CASCADE`)
 }
 
 // RedactURL hides the password in a database URL, for logs and error messages.
@@ -509,7 +599,9 @@ func testSchema(path string) (string, bool) {
 	}
 	abs, _ := filepath.Abs(strings.TrimPrefix(path, "file:"))
 	sum := sha256.Sum256([]byte(abs))
-	schema := "t_" + hex.EncodeToString(sum[:10])
+	// Named after this process too, so the next run reaps it: the data must outlive a close and reopen within a run, not the run.
+	reapTestSchemas(dsn)
+	schema := fmt.Sprintf("t_%x_%s", os.Getpid(), hex.EncodeToString(sum[:10]))
 	return withSearchPath(dsn, schema), true
 }
 
@@ -519,7 +611,14 @@ func testMemory() string {
 	if os.Getenv("PERFUSE_TEST_POSTGRES") == "" || !testing.Testing() {
 		return ""
 	}
-	return TestURL("memory")
+	target := TestURL("memory")
+	if u, err := url.Parse(target); err == nil {
+		schema, _, _ := strings.Cut(u.Query().Get("search_path"), ",")
+		testSchemas.Lock()
+		testSchemas.fresh[schema] = true
+		testSchemas.Unlock()
+	}
+	return target
 }
 
 // TestURL is a fresh schema in PERFUSE_TEST_POSTGRES for a test that wants PostgreSQL without a path, or "" when the
@@ -532,7 +631,9 @@ func TestURL(name string) string {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
 	_ = name
-	target := withSearchPath(dsn, "t_"+hex.EncodeToString(b))
+	reapTestSchemas(dsn)
+	schema := fmt.Sprintf("t_%x_%s", os.Getpid(), hex.EncodeToString(b))
+	target := withSearchPath(dsn, schema)
 	if err := ensureSchema(target); err != nil {
 		return ""
 	}

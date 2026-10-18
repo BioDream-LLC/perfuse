@@ -237,6 +237,7 @@ var schema = []string{
 		expires_at TIMESTAMPTZ NOT NULL, acquired_at TIMESTAMPTZ NOT NULL, wanted_by TEXT NOT NULL DEFAULT '',
 		seq BIGINT NOT NULL DEFAULT 0)`,
 	`ALTER TABLE cluster_leases ADD COLUMN IF NOT EXISTS seq BIGINT NOT NULL DEFAULT 0`,
+	`ALTER TABLE cluster_nodes ADD COLUMN IF NOT EXISTS beat BIGINT NOT NULL DEFAULT 0`,
 	`CREATE TABLE IF NOT EXISTS cluster_events (id BIGSERIAL PRIMARY KEY, at TIMESTAMPTZ NOT NULL, node TEXT NOT NULL,
 		kind TEXT NOT NULL, lease TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '')`,
 	`CREATE INDEX IF NOT EXISTS cluster_events_at ON cluster_events (at DESC)`,
@@ -356,10 +357,11 @@ func (c *Coordinator) round(ctx context.Context) {
 }
 
 func (c *Coordinator) heartbeat(ctx context.Context) error {
-	_, err := c.db.ExecContext(ctx, `INSERT INTO cluster_nodes (id, name, address, version, mode, started_at, seen_at, leaving)
-		VALUES (?, ?, ?, ?, ?, ?, now(), 0)
+	_, err := c.db.ExecContext(ctx, `INSERT INTO cluster_nodes (id, name, address, version, mode, started_at, seen_at, leaving, beat)
+		VALUES (?, ?, ?, ?, ?, ?, now(), 0, 1)
 		ON CONFLICT (id) DO UPDATE SET name = excluded.name, address = excluded.address, version = excluded.version,
-			mode = excluded.mode, started_at = excluded.started_at, seen_at = now(), leaving = 0`,
+			mode = excluded.mode, started_at = excluded.started_at, seen_at = now(), leaving = 0,
+			beat = cluster_nodes.beat + 1`,
 		c.cfg.NodeID, c.cfg.Name, c.cfg.Address, c.cfg.Version, string(c.cfg.Mode), c.started)
 	return err
 }
@@ -494,33 +496,17 @@ func (c *Coordinator) channels(ctx context.Context, sent time.Time) error {
 	for _, l := range c.hooks.Channels() {
 		want[l] = true
 	}
-	var live int
-	if err := c.db.QueryRowContext(ctx, `SELECT count(*) FROM cluster_nodes WHERE leaving = 0
-		AND seen_at > now() - make_interval(secs => ?)`, c.cfg.TTL.Seconds()).Scan(&live); err != nil {
+	liveIDs, err := c.liveNodes(ctx)
+	if err != nil {
 		return err
 	}
-	live = max(live, 1)
+	live := max(len(liveIDs), 1)
 	share := int(math.Ceil(float64(len(want)) / float64(live)))
 
 	type row struct {
 		holder, wanted string
 		seq            int64
 	}
-	var liveIDs = map[string]bool{}
-	lrows, err := c.db.QueryContext(ctx, `SELECT id FROM cluster_nodes WHERE leaving = 0 AND seen_at > now() - make_interval(secs => ?)`,
-		c.cfg.TTL.Seconds())
-	if err != nil {
-		return err
-	}
-	for lrows.Next() {
-		var id string
-		if err := lrows.Scan(&id); err != nil {
-			lrows.Close()
-			return err
-		}
-		liveIDs[id] = true
-	}
-	lrows.Close()
 	rows, err := c.db.QueryContext(ctx, `SELECT name, holder, wanted_by, seq FROM cluster_leases WHERE name LIKE 'channel:%'`)
 	if err != nil {
 		return err
@@ -616,6 +602,37 @@ func (c *Coordinator) channels(ctx context.Context, sent time.Time) error {
 	return nil
 }
 
+// liveNodes reads the servers and says which are live: this one, and any whose heartbeat counter this server has seen move
+// within a lease, by its own clock. Like the leases, no clock is compared with another.
+func (c *Coordinator) liveNodes(ctx context.Context) (map[string]bool, error) {
+	rows, err := c.db.QueryContext(ctx, `SELECT id, beat, leaving FROM cluster_nodes`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	live := map[string]bool{}
+	now := time.Now()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for rows.Next() {
+		var id string
+		var beat, leaving int64
+		if err := rows.Scan(&id, &beat, &leaving); err != nil {
+			return nil, err
+		}
+		key := "node:" + id
+		o, seen := c.seen[key]
+		if !seen || o.seq != beat {
+			o = observation{holder: id, seq: beat, since: now}
+			c.seen[key] = o
+		}
+		if leaving == 0 && (id == c.cfg.NodeID || now.Sub(o.since) < c.cfg.TTL) {
+			live[id] = true
+		}
+	}
+	return live, rows.Err()
+}
+
 func (c *Coordinator) heldChannels() map[string]bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -693,12 +710,11 @@ func (c *Coordinator) Move(ctx context.Context, lease, toNode, by string) error 
 	if c.cfg.Mode != ActiveActive {
 		return errors.New("cluster: channels move between servers only in active-active mode; in active-passive the leader runs them all")
 	}
-	var alive int
-	if err := c.db.QueryRowContext(ctx, `SELECT count(*) FROM cluster_nodes WHERE id = ? AND leaving = 0
-		AND seen_at > now() - make_interval(secs => ?)`, toNode, c.cfg.TTL.Seconds()).Scan(&alive); err != nil {
+	live, err := c.liveNodes(ctx)
+	if err != nil {
 		return err
 	}
-	if alive == 0 {
+	if !live[toNode] {
 		return fmt.Errorf("cluster: %s is not a live server of this cluster", toNode)
 	}
 	name := lease
@@ -717,11 +733,17 @@ func (c *Coordinator) Move(ctx context.Context, lease, toNode, by string) error 
 	return nil
 }
 
-// Holder names the server holding a lease now (its id and name), or "" when none does.
+// Holder names the server holding a lease now (its id and name), or "" when none does: as this server sees it, a lease
+// whose counter has not moved for a whole lease has no holder.
 func (c *Coordinator) Holder(ctx context.Context, lease string) (id, name string) {
-	_ = c.db.QueryRowContext(ctx, `SELECT l.holder, COALESCE(n.name, l.holder) FROM cluster_leases l
-		LEFT JOIN cluster_nodes n ON n.id = l.holder WHERE l.name = ? AND l.holder <> ''
-		AND l.expires_at > now() - make_interval(secs => ?)`, lease, c.cfg.TTL.Seconds()).Scan(&id, &name)
+	var seq int64
+	if err := c.db.QueryRowContext(ctx, `SELECT l.holder, COALESCE(n.name, l.holder), l.seq FROM cluster_leases l
+		LEFT JOIN cluster_nodes n ON n.id = l.holder WHERE l.name = ?`, lease).Scan(&id, &name, &seq); err != nil {
+		return "", ""
+	}
+	if id == "" || (id != c.cfg.NodeID && c.stale(lease, id, seq)) {
+		return "", ""
+	}
 	return id, name
 }
 
@@ -806,6 +828,9 @@ type Status struct {
 	Leases []Lease `json:"leases"`
 	Events []Event `json:"events"`
 	Error  string  `json:"error,omitempty"`
+	// Members lists, per channel lease, the channels it covers when more than one: channels that route to one another
+	// run on one server and move together.
+	Members map[string][]string `json:"members,omitempty"`
 }
 
 // Status reads the whole cluster.
@@ -814,18 +839,20 @@ func (c *Coordinator) Status(ctx context.Context) (Status, error) {
 	if err := c.Healthy(); err != nil {
 		st.Error = err.Error()
 	}
-	rows, err := c.db.QueryContext(ctx, `SELECT name, holder, epoch, expires_at, acquired_at, wanted_by,
-		holder = '' OR expires_at < now() FROM cluster_leases ORDER BY name`)
+	rows, err := c.db.QueryContext(ctx, `SELECT name, holder, epoch, expires_at, acquired_at, wanted_by, seq
+		FROM cluster_leases ORDER BY name`)
 	if err != nil {
 		return st, err
 	}
 	byHolder := map[string][]string{}
 	for rows.Next() {
 		var l Lease
-		if err := rows.Scan(&l.Name, &l.Holder, &l.Epoch, &l.Expires, &l.Acquired, &l.WantedBy, &l.Lapsed); err != nil {
+		var seq int64
+		if err := rows.Scan(&l.Name, &l.Holder, &l.Epoch, &l.Expires, &l.Acquired, &l.WantedBy, &seq); err != nil {
 			rows.Close()
 			return st, err
 		}
+		l.Lapsed = l.Holder == "" || (l.Holder != c.cfg.NodeID && c.stale(l.Name, l.Holder, seq))
 		if l.Name == LeaderLease && !l.Lapsed {
 			st.Leader = l.Holder
 		}
@@ -835,20 +862,23 @@ func (c *Coordinator) Status(ctx context.Context) (Status, error) {
 		st.Leases = append(st.Leases, l)
 	}
 	rows.Close()
-	rows, err = c.db.QueryContext(ctx, `SELECT id, name, address, version, mode, started_at, seen_at, leaving,
-		seen_at > now() - make_interval(secs => ?) FROM cluster_nodes ORDER BY name`, c.cfg.TTL.Seconds())
+	liveIDs, err := c.liveNodes(ctx)
+	if err != nil {
+		return st, err
+	}
+	rows, err = c.db.QueryContext(ctx, `SELECT id, name, address, version, mode, started_at, seen_at, leaving
+		FROM cluster_nodes ORDER BY name`)
 	if err != nil {
 		return st, err
 	}
 	for rows.Next() {
 		var n Node
 		var leaving int64
-		var live bool
-		if err := rows.Scan(&n.ID, &n.Name, &n.Address, &n.Version, &n.Mode, &n.Started, &n.Seen, &leaving, &live); err != nil {
+		if err := rows.Scan(&n.ID, &n.Name, &n.Address, &n.Version, &n.Mode, &n.Started, &n.Seen, &leaving); err != nil {
 			rows.Close()
 			return st, err
 		}
-		n.Leaving, n.Live = leaving != 0, live && leaving == 0
+		n.Leaving, n.Live = leaving != 0, liveIDs[n.ID]
 		n.Leader = n.ID == st.Leader
 		n.This = n.ID == c.cfg.NodeID
 		n.Channels = byHolder[n.ID]

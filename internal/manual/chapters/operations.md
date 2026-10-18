@@ -108,9 +108,71 @@ The log carries what the store cannot: startup and shutdown, configuration load 
 
 ## Running two instances
 
-Two Perfuse processes against the same channel directory and the same database is not supported and will not behave well — both will try to listen on the same ports and both will write to the same SQLite file.
+Two or more servers can run as one cluster: when the one running a feed stops, another takes it over within a few
+seconds, and the sender's next attempt reaches it. They share one PostgreSQL database instead of each keeping a SQLite
+file, and agree between them, through it, which of them runs what.
 
-For availability, run one instance and make its restart fast. MLLP senders queue and retry, so a short outage is absorbed by the sender rather than losing data. This is a deliberate trade in favour of simplicity, and it means Perfuse is not the right choice if your requirement is continuous availability through a host failure.
+```sh
+perfuse serve -db 'postgres://perfuse:SECRET@db.hospital.internal/perfuse?sslmode=verify-full' \
+  -cluster active-passive -node-name perfuse-01 -node-address https://perfuse-01.hospital.internal:8443 \
+  -data /var/lib/perfuse
+```
+
+Start each server the same way with its own name and address. The database account needs to create tables and, once,
+the `citext` extension (or an administrator runs `CREATE EXTENSION citext` first). Each server keeps its own files in
+`-data`: its log, its node id, and its copies of the configuration.
+
+**Two ways of sharing the work.**
+
+- `active-passive`: the leader runs every channel and every job that must run once (FHIR subscription notifications). The
+  others wait. The simplest to reason about, and what a site with one busy server and a standby wants.
+- `active-active`: the channels are spread over the live servers, about evenly. A server that stops hands its channels
+  to the rest; one that joins takes its share as channels come free, one at a time. Channels that route to one another
+  (a channel destination) run on one server and move together, because routing happens inside a server. An
+  administrator can move a channel by hand from **Monitor → Fleet**; it stays where it was put while that server lives.
+
+**Who runs what, and no moment with two.** Each piece of work is a lease in the database, renewed every fifth of
+`-cluster-lease` (15 s by default). A server that cannot renew it (it crashed, its network failed, the database is
+unreachable) stops that work by itself once its own clock says the lease is nearly done, with a third of the lease to
+spare. Another server takes the lease only after its own clock has watched the lease's counter stand still for a whole
+lease. No clock is compared with another, so the servers' clocks and the database's need not agree; they need only run
+at about the same rate, which every clock does. Between the old holder stopping and the new one starting there is a short
+gap with nobody listening, which a sender sees as a refused connection and retries; there is never a moment with two
+listening on one feed or two workers draining one queue.
+
+A server shutting down cleanly, or an administrator choosing **Step down** on the leader, hands over at once rather than
+after the lease.
+
+**What every server shares.** Messages, the delivery queue, accounts and sessions, the audit log, the FHIR store, the
+terminology tables and the patient index are in the database, so whichever server runs a channel finds the queue the last
+one left. The channel files, the settings file, the alert rules, single sign-on files, the logo, Direct certificates and
+saved views are kept the same on every server through the database: each keeps its own copy on its own disk, a change on
+any server (in the console, by hand, by a `git pull`) reaches the others within two seconds, and a channel changed on
+another server restarts with its new file. The same file changed on two servers at once keeps the version that reached
+the database first, and the other beside it as `NAME.conflict-SERVER`. Settings that apply only at a restart (the
+message database, the ports the console listens on) are applied by each server at its next restart, and the log says so.
+
+**Start and stop.** Starting or stopping a channel on any server applies to the cluster: the server that runs it starts or
+stops it within a second, and the answer says which server that is.
+
+**The load balancer in front.** A feed's address must reach whichever server runs it. Point the sender at a virtual
+address (a load balancer, a floating IP, a DNS name with a short TTL) and have the load balancer check
+`/readyz?channel=NAME`, which answers 200 only on the server running that channel, and 503 on the others. For the console,
+`/readyz` is 200 on every live server; `/readyz?role=leader` only on the leader.
+
+**What was tested.** Two servers on PostgreSQL 16, a sender streaming 300 messages, resending until answered, and the
+server running the feed killed with SIGKILL twice (the first, then the second after the first came back). Every
+acknowledged message reached the receiver, in both shapes tried: delivered before the acknowledgement, and queued in the
+shared store while the receiver refused (185 acknowledged messages waited in the queue at the kill; the survivor
+delivered them all). Failover took 3 to 4 seconds on a 3-second lease. A duplicate is possible and was seen once in 600: a
+message the dying server delivered and could not acknowledge, which the sender resent. The coordinator's own tests cover
+a crash, a server cut off from the database while it runs on, step-down, spreading, moves, and shared configuration
+with conflicts. They run in CI against PostgreSQL with the race detector, with the whole suite.
+
+**Not yet.** A cluster serves one organisation: `-cluster` with `-multi-tenant` is refused. Listeners move with their
+channel, so the load balancer is the site's to provide.
+
+A server on its own keeps working as it always has, on SQLite, with no cluster at all.
 
 ## More than one server
 

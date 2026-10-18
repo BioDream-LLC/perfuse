@@ -31,6 +31,11 @@ func (s *Server) selfReport(r *http.Request) peers.SelfReport {
 
 	if s.Runtime != nil {
 		for _, st := range s.Runtime.States() {
+			// In a cluster, a channel another server runs is that server's to report: counting it here as stopped
+			// would show every member of a healthy cluster as half down.
+			if s.Cluster != nil && !st.Running && !s.Cluster.Runs("", st.Name) {
+				continue
+			}
 			report.Health.ChannelsTotal++
 			switch {
 			case st.Error != "":

@@ -327,7 +327,27 @@ func (c *clusterRun) mayAlert(channel string) bool {
 
 // ---------- api.ClusterControl ----------
 
-func (c *clusterRun) Status(ctx context.Context) (cluster.Status, error) { return c.coord.Status(ctx) }
+func (c *clusterRun) Status(ctx context.Context) (cluster.Status, error) {
+	st, err := c.coord.Status(ctx)
+	if c.coord.Config().Mode == cluster.ActiveActive {
+		c.gmu.Lock()
+		members := map[string][]string{}
+		for ch, l := range c.groups {
+			members[l] = append(members[l], ch)
+		}
+		c.gmu.Unlock()
+		for l, m := range members {
+			if len(m) > 1 {
+				sort.Strings(m)
+				if st.Members == nil {
+					st.Members = map[string][]string{}
+				}
+				st.Members[l] = m
+			}
+		}
+	}
+	return st, err
+}
 
 func (c *clusterRun) Runs(_ string, channel string) bool { return c.runs(channel) }
 

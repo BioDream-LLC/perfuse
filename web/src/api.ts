@@ -1571,6 +1571,10 @@ export const api = {
     table,
   ),
 
+  cluster: () => request<ClusterStatus>('GET', '/api/cluster'),
+  clusterStepDown: (minutes = 0) => request<{ status: string }>('POST', '/api/cluster/step-down', { minutes }),
+  clusterMove: (channel: string, node: string) =>
+    request<{ status: string }>('POST', `/api/cluster/channels/${encodeURIComponent(channel)}/move`, { node }),
   mpiSummary: (q = '') => request<MPISummary>('GET', `/api/mpi${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   mpiPerson: (euid: string) => request<MPIPersonView>('GET', `/api/mpi/persons/${encodeURIComponent(euid)}`),
   mpiReviews: () => request<{ reviews: MPIReview[] }>('GET', '/api/mpi/reviews'),
@@ -3675,4 +3679,52 @@ export interface MPIPersonView {
   golden: MPIRecord
   history: MPIEvent[]
   identifiers: string[]
+}
+
+/** One server of a cluster sharing a PostgreSQL store. */
+export interface ClusterNode {
+  id: string
+  name: string
+  address: string
+  version: string
+  mode: string
+  startedAt: string
+  seenAt: string
+  live: boolean
+  leaving: boolean
+  leader: boolean
+  channels?: string[]
+  this: boolean
+}
+
+export interface ClusterLease {
+  name: string
+  holder: string
+  epoch: number
+  expiresAt: string
+  acquiredAt: string
+  wantedBy?: string
+  lapsed: boolean
+}
+
+export interface ClusterEvent {
+  at: string
+  node: string
+  kind: string
+  lease?: string
+  detail?: string
+}
+
+export interface ClusterStatus {
+  enabled: boolean
+  mode?: 'active-passive' | 'active-active'
+  this?: string
+  leader?: string
+  leaseSeconds?: number
+  nodes?: ClusterNode[]
+  leases?: ClusterLease[]
+  events?: ClusterEvent[]
+  error?: string
+  /** Channel leases covering more than one channel (channels that route to one another), with those channels. */
+  members?: Record<string, string[]>
 }

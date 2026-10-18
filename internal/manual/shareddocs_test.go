@@ -19,6 +19,11 @@ var sharedSections = map[string]string{
 	"The patient index (MPI)": "formats.md",
 }
 
+// sharedRenamed are sections whose heading differs between the two (reference title, chapter title, chapter).
+var sharedRenamed = [][3]string{
+	{"Running two instances as one (a cluster)", "Running two instances", "operations.md"},
+}
+
 var headingLine = regexp.MustCompile(`^(#{2,6}) (.+)$`)
 
 // section is the text under a heading, to the next heading of the same or a higher level, with every heading inside it
@@ -56,9 +61,18 @@ func section(t *testing.T, path, title string) string {
 
 func TestSectionsInTheReferenceAndTheManualAgree(t *testing.T) {
 	ref := filepath.Join("..", "..", "docs", "reference.md")
+	type pair struct{ refTitle, chTitle, chapter string }
+	var pairs []pair
 	for title, chapter := range sharedSections {
-		a := section(t, ref, title)
-		b := section(t, filepath.Join("chapters", chapter), title)
+		pairs = append(pairs, pair{title, title, chapter})
+	}
+	for _, r := range sharedRenamed {
+		pairs = append(pairs, pair{r[0], r[1], r[2]})
+	}
+	for _, p := range pairs {
+		title, chapter := p.refTitle, p.chapter
+		a := section(t, ref, p.refTitle)
+		b := section(t, filepath.Join("chapters", chapter), p.chTitle)
 		if a == b {
 			continue
 		}

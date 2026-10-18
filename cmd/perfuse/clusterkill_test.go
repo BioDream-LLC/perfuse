@@ -48,8 +48,8 @@ func TestKillingTheServerRunningAFeedLosesNothing(t *testing.T) {
 
 // receiver is the system downstream: an MLLP listener that records every message, and can refuse for a while.
 type receiver struct {
-	ln     net.Listener
-	mu     sync.Mutex
+	ln      net.Listener
+	mu      sync.Mutex
 	got     map[string]int
 	refuse  bool
 	refused int
@@ -195,6 +195,15 @@ func killTest(t *testing.T, bin string, queued bool) {
 	rcv := newReceiver(t)
 	feed := freePort(t)
 	a, b := &clusterNode{}, &clusterNode{}
+	t.Cleanup(func() {
+		if t.Failed() {
+			for _, n := range []*clusterNode{a, b} {
+				if n.log != nil {
+					t.Logf("%s's log:\n%s", n.name, tail(n.log.String(), 60))
+				}
+			}
+		}
+	})
 	startNode(t, bin, db, "a", a)
 	queue := ""
 	if queued {
@@ -314,9 +323,6 @@ destinations:
 		if refused == 0 {
 			t.Error("nothing waited in the queue at the kill, so the queue's failover was not tested")
 		}
-	}
-	if t.Failed() {
-		t.Logf("a:\n%s\nb:\n%s", tail(a.log.String(), 40), tail(b.log.String(), 40))
 	}
 }
 

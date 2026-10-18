@@ -78,6 +78,10 @@ only from YAML or the command line is treated as a bug.
   (Carequality and eHealth Exchange style), tested against the NIST XDS Toolkit.
 - **Direct secure messaging:** S/MIME signed and encrypted mail with XDM packages and MDN receipts, certificates from an address
   book or DNS, an SMTP source; checked against OpenSSL in both directions.
+- **Clusters:** two or more servers on one PostgreSQL store take over from each other: active-passive (the leader runs
+  everything) or active-active (channels spread over the servers, moved by hand from the console). Leases measured on
+  each server's own clock, so no two servers ever run one feed; configuration kept the same on every server through the
+  store; `/readyz?channel=` for the load balancer. Killed with SIGKILL mid-stream in the tests: nothing acknowledged lost.
 - **Master patient index:** records from every system linked into one enterprise identifier per person, deterministic
   (trusted identifiers) and probabilistic (Fellegi-Sunter, Jaro-Winkler) matching, a review queue, links, unlinks and A40
   merges with their history, FHIR `Patient/$match` and PIXm; off until a site turns it on, and automatic linking off
@@ -661,7 +665,7 @@ top ten:
 | Their recommendation | Perfuse |
 |---|---|
 | **#1** Silent-interface / SLA / heartbeat alerting — *"deadliest failure mode, cheapest win"* | Has it — eleven rule kinds, evaluated on a 30s schedule over a 5m window |
-| **#2** HA / clustering / failover | Fleet view across instances |
+| **#2** HA / clustering / failover | **Has it** — servers sharing one PostgreSQL store, active-passive or active-active, failover in seconds; tested by killing the server running a feed with SIGKILL, every acknowledged message delivered |
 | **#3** Keyed partitioning / per-patient ordering | **Stricter than proposed** — once anything queues for a destination, everything for it goes behind, and it is not configurable |
 | **#4** End-to-end lineage + tracing | Flow map with a scrubber, and OTLP export |
 | **#5** Interface test framework in CI | `perfuse test` |
@@ -798,7 +802,8 @@ word for it.
 <details>
 <summary><b>What is missing?</b></summary>
 
-A smaller connector catalogue than Mirth's, no clustering yet, and no plugin ecosystem. Filters,
+A smaller connector catalogue than Mirth's, and no plugin ecosystem; a cluster serves one organisation (not yet with
+`-multi-tenant`). Filters,
 transformations, scripts, contracts, shadow comparisons and mapping tables do not survive a round trip out
 to Mirth and back — each is reported when it cannot be converted. Missing capabilities are refused by name
 rather than approximated.
