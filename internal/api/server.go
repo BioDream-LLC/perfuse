@@ -52,6 +52,9 @@ type Server struct {
 
 	// PatientIndex is the master patient index; nil when the server keeps none (serve -mpi).
 	PatientIndex *mpi.Store
+
+	// Cluster is this server's place in a cluster of servers sharing one store; nil for a server on its own.
+	Cluster ClusterControl
 	// SNMP is the SNMP agent and trap sender, nil when SNMP is off.
 	SNMP *snmp.Service
 
@@ -461,6 +464,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/codesets/unmapped", s.require(store.RoleEditor, s.handleUnmapped))
 	mux.Handle("POST /api/codesets/unmapped/dismiss", s.require(store.RoleEditor, s.handleUnmappedDismiss))
 	s.registerMPI(mux)
+	s.registerCluster(mux)
 	mux.Handle("GET /api/terminology/systems", s.require(store.RoleViewer, s.handleTermSystems))
 	mux.Handle("POST /api/terminology/import", s.require(store.RoleAdmin, s.handleTermImport))
 	mux.Handle("DELETE /api/terminology/systems", s.require(store.RoleAdmin, s.handleTermDelete))

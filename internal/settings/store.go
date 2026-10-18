@@ -544,3 +544,39 @@ func (s *Store) Conflicts(flagValues map[string]any) []string {
 
 	return out
 }
+
+// Reload reads the file again, for a server in a cluster whose settings another server changed. A file that does not
+// parse leaves the values as they were. It reports the keys whose values changed.
+func (s *Store) Reload() ([]string, error) {
+	if s.path == "" {
+		return nil, nil
+	}
+	data, err := os.ReadFile(s.path)
+	if errors.Is(err, os.ErrNotExist) {
+		data = nil
+	} else if err != nil {
+		return nil, fmt.Errorf("settings: reading %s: %w", s.path, err)
+	}
+	loaded := map[string]any{}
+	if len(data) > 0 {
+		if loaded, err = parse(s.registry, data); err != nil {
+			return nil, fmt.Errorf("settings: %s: %w", s.path, err)
+		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var changed []string
+	for k, v := range loaded {
+		if old, ok := s.values[k]; !ok || fmt.Sprint(old) != fmt.Sprint(v) {
+			changed = append(changed, k)
+		}
+	}
+	for k := range s.values {
+		if _, ok := loaded[k]; !ok {
+			changed = append(changed, k)
+		}
+	}
+	sort.Strings(changed)
+	s.values = loaded
+	return changed, nil
+}

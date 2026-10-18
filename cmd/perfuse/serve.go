@@ -27,6 +27,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/alerts"
 	"github.com/biodream-llc/perfuse/internal/api"
 	"github.com/biodream-llc/perfuse/internal/branding"
+	"github.com/biodream-llc/perfuse/internal/cluster"
 	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/dicomstate"
 	"github.com/biodream-llc/perfuse/internal/egress"
@@ -76,7 +77,16 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	multiTenant := fset.Bool("multi-tenant", false,
 		"keep each tenant's channels in their own subdirectory of -channels, so one server can run "+
 			"integration for several organisations without them being able to see each other")
-	dbPath := fset.String("db", "./perfuse.db", "database file for users, messages and stored resources")
+	dbPath := fset.String("db", "./perfuse.db", "database for users, messages and stored resources: a file, or a "+
+		"postgres:// URL for servers that share one store (a cluster)")
+	clusterMode := fset.String("cluster", "", "share the work with other servers on the same PostgreSQL -db: "+
+		"active-passive (one runs everything, another takes over when it stops) or active-active (channels spread over all)")
+	nodeName := fset.String("node-name", "", "this server's name in the cluster (default: an id kept in -data)")
+	nodeAddress := fset.String("node-address", "", "this server's console URL as the other servers and a load balancer reach it")
+	clusterLease := fset.Duration("cluster-lease", 15*time.Second, "how long a crashed server holds its work before another "+
+		"takes it over; renewed five times as often")
+	dataFlag := fset.String("data", "", "directory for this server's own files (settings, alerts, sign-in configuration, "+
+		"the log): default beside -db when it is a file, the current directory when it is a PostgreSQL URL")
 	settingsFile := fset.String("settings", "",
 		"settings file the web interface may edit (default: perfuse-settings.yaml beside the database)")
 	certFile := fset.String("tls-cert", "", "TLS certificate file")
@@ -305,11 +315,34 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	if err := fset.Parse(args); err != nil {
 		return err
 	}
+	shared := sqlitedb.IsPostgresURL(*dbPath)
+	dataDir := *dataFlag
+	if dataDir == "" {
+		dataDir = filepath.Dir(*dbPath)
+		if shared {
+			dataDir = "."
+		}
+	}
+	if err := os.MkdirAll(dataDir, 0o750); err != nil {
+		return fmt.Errorf("-data: %w", err)
+	}
+	switch cluster.Mode(*clusterMode) {
+	case "":
+	case cluster.ActivePassive, cluster.ActiveActive:
+		if !shared {
+			return cluster.ErrNeedsPostgres
+		}
+		if *multiTenant {
+			return fmt.Errorf("-cluster with -multi-tenant is not supported yet: run a cluster per tenant, or one server for many tenants")
+		}
+	default:
+		return fmt.Errorf("-cluster is active-passive or active-active, not %q", *clusterMode)
+	}
 
 	// A Windows service's standard output and error go nowhere, and they carry the log and the one-time administrator
 	// password. Without a file the first install is a server nobody can sign in to and no log saying why.
 	if *logFile == "" && underServiceManager {
-		*logFile = filepath.Join(filepath.Dir(*dbPath), "perfuse.log")
+		*logFile = filepath.Join(dataDir, "perfuse.log")
 	}
 	if *logFile != "" {
 		f, err := os.OpenFile(*logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
@@ -328,7 +361,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	// decide whether a file is a channel.
 	settingsPath := *settingsFile
 	if settingsPath == "" {
-		settingsPath = filepath.Join(filepath.Dir(*dbPath), "perfuse-settings.yaml")
+		settingsPath = filepath.Join(dataDir, "perfuse-settings.yaml")
 	}
 
 	settingsRegistry, err := settings.NewRegistry(settings.Default())
@@ -479,7 +512,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	// would hold the connection every arriving message needs.
 	pool, err := sqlitedb.Open(*dbPath, sqlitedb.Options{})
 	if err != nil {
-		return fmt.Errorf("opening %s: %w", *dbPath, err)
+		return fmt.Errorf("opening %s: %w", sqlitedb.RedactURL(*dbPath), err)
 	}
 	defer pool.Close()
 	db := pool.Write
@@ -621,10 +654,14 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	// arriving message needs to be recorded.
 	var termStore *terminology.Store
 	if !isMemoryPath(*dbPath) {
-		termPath := filepath.Join(filepath.Dir(*dbPath), "terminology.db")
+		// On a shared PostgreSQL store, the same database: it runs an import beside delivery without holding anything up.
+		termPath := filepath.Join(dataDir, "terminology.db")
+		if shared {
+			termPath = *dbPath
+		}
 		termPool, err := sqlitedb.Open(termPath, sqlitedb.Options{})
 		if err != nil {
-			return fmt.Errorf("opening %s: %w", termPath, err)
+			return fmt.Errorf("opening %s: %w", sqlitedb.RedactURL(termPath), err)
 		}
 		defer termPool.Close()
 		if termStore, err = terminology.Open(context.Background(), termPool.Write); err != nil {
@@ -640,28 +677,50 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	// table of patients to protect.
 	var mpiStore *mpi.Store
 	if *keepMPI {
-		mpiPath := filepath.Join(filepath.Dir(*dbPath), "mpi.db")
+		mpiPath := filepath.Join(dataDir, "mpi.db")
+		if shared {
+			mpiPath = *dbPath
+		}
 		if isMemoryPath(*dbPath) {
 			mpiPath = filepath.Join(os.TempDir(), fmt.Sprintf("perfuse-mpi-%d.db", os.Getpid()))
 			defer os.Remove(mpiPath)
 		}
 		mpiPool, err := sqlitedb.Open(mpiPath, sqlitedb.Options{})
 		if err != nil {
-			return fmt.Errorf("opening %s: %w", mpiPath, err)
+			return fmt.Errorf("opening %s: %w", sqlitedb.RedactURL(mpiPath), err)
 		}
 		defer mpiPool.Close()
 		if mpiStore, err = mpi.Open(context.Background(), mpiPool.Write); err != nil {
 			return err
 		}
 		engine.PatientIndex = mpiStore
-		log.Info("keeping a patient index", "database", mpiPath)
+		log.Info("keeping a patient index", "database", sqlitedb.RedactURL(mpiPath))
 	}
 
 	var runtime *api.Runtime
+	var clusterRunner *clusterRun
 	if *runEngine {
 		runtime = api.NewRuntime(repo, messages, fhirStore)
 		runtime.Tracer = tracer
 		runtime.Terminology = termStore
+		if *clusterMode != "" {
+			id, err := cluster.NodeID(dataDir)
+			if err != nil {
+				return err
+			}
+			clusterRunner = newClusterRun(runtime, repo, log)
+			coord, err := cluster.New(context.Background(), pool.Write, cluster.Config{
+				Mode: cluster.Mode(*clusterMode), NodeID: id, Name: *nodeName, Address: *nodeAddress, Version: version,
+				TTL: *clusterLease, Renew: *clusterLease / 5,
+			}, clusterRunner.hooks(), log)
+			if err != nil {
+				return err
+			}
+			clusterRunner.coord = coord
+			runtime.Gate = clusterRunner.gate
+			runtime.Expected = clusterRunner.expected
+			log.Info("in a cluster", "mode", *clusterMode, "node", coord.Config().Name, "id", id, "lease", *clusterLease)
+		}
 
 		// Say what the delivery limits are and how they were arrived at.
 		//
@@ -759,7 +818,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		// A rules file named with -alerts must exist; the one beside the database is written at the first save.
 		rulesFrom := *alertsFile
 		if *alertsFile == "" {
-			*alertsFile = filepath.Join(filepath.Dir(*dbPath), "alerts.yaml")
+			*alertsFile = filepath.Join(dataDir, "alerts.yaml")
 			if _, err := os.Stat(*alertsFile); err == nil {
 				rulesFrom = *alertsFile
 			}
@@ -812,6 +871,16 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		notify := func(a alerts.Alert) {}
 		if notifier != nil {
 			notify = notifier.Notify
+		}
+		if clusterRunner != nil {
+			// Each server alerts about the channels it runs; the leader about the rest of the cluster, so an alert comes
+			// once and not from every server.
+			inner := notify
+			notify = func(a alerts.Alert) {
+				if clusterRunner.mayAlert(a.Channel) {
+					inner(a)
+				}
+			}
 		}
 		if srvSNMP != nil {
 			webhook := notify
@@ -887,7 +956,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		if *f.flag != "" {
 			continue
 		}
-		*f.save = filepath.Join(filepath.Dir(*dbPath), f.name)
+		*f.save = filepath.Join(dataDir, f.name)
 		if _, err := os.Stat(*f.save); err == nil {
 			*f.flag = *f.save
 		}
@@ -1017,7 +1086,7 @@ oidcDone:
 		Startup: api.StartupSettings{
 			Addr:          *addr,
 			ChannelsDir:   *channelsDir,
-			DatabasePath:  *dbPath,
+			DatabasePath:  sqlitedb.RedactURL(*dbPath),
 			TLS:           useTLS,
 			MultiTenant:   *multiTenant,
 			EngineRunning: *runEngine,
@@ -1097,7 +1166,7 @@ oidcDone:
 	// settings file, so the section can add one and have it polled without a restart.
 	peersPath := *peersFile
 	if peersPath == "" {
-		peersPath = filepath.Join(filepath.Dir(*dbPath), "perfuse-peers.yaml")
+		peersPath = filepath.Join(dataDir, "perfuse-peers.yaml")
 	}
 
 	{
@@ -1133,8 +1202,8 @@ oidcDone:
 			CallsPerMinute: func() int { return settingsStore.Int("security.mcpCallsPerMinute") },
 		}
 		// The Direct address book sits beside the database, and direct destinations read it unless they name their own.
-		srv.DirectDir = filepath.Join(filepath.Dir(*dbPath), "direct-certs")
-		srv.ViewsDir = filepath.Join(filepath.Dir(*dbPath), "views")
+		srv.DirectDir = filepath.Join(dataDir, "direct-certs")
+		srv.ViewsDir = filepath.Join(dataDir, "views")
 		engine.DefaultDirectCertsDir = srv.DirectDir
 		if oid := strings.TrimSpace(*xdsRepository); oid != "" {
 			if !regexp.MustCompile(`^[0-2](\.(0|[1-9][0-9]*))+$`).MatchString(oid) {
@@ -1221,7 +1290,7 @@ oidcDone:
 		// hold a signing certificate, and tying the two together would mean the only way to sign was to also terminate
 		// TLS here.
 		// National exchange, when it is configured. Absent is the normal case and is silent.
-		tefcaParticipant, tefcaAudit, err := buildTEFCA(settingsStore, *dbPath, log)
+		tefcaParticipant, tefcaAudit, err := buildTEFCA(settingsStore, filepath.Join(dataDir, "perfuse.db"), log)
 		if err != nil {
 			return err
 		}
@@ -1474,9 +1543,14 @@ oidcDone:
 			if err != nil {
 				return fmt.Errorf("enabling FHIR subscriptions: %w", err)
 			}
-			subsCtx, stopSubs := context.WithCancel(context.Background())
-			defer stopSubs()
-			go subs.Run(subsCtx)
+			if clusterRunner != nil {
+				// Notifications go out once: from the leader.
+				clusterRunner.leaderOnly("FHIR subscription notifications", subs.Run)
+			} else {
+				subsCtx, stopSubs := context.WithCancel(context.Background())
+				defer stopSubs()
+				go subs.Run(subsCtx)
+			}
 			log.Info("FHIR subscriptions are enabled",
 				"topics", fhirserver.TopicEncounter+", "+fhirserver.TopicAppointment,
 				"note", "clients choose where notifications go; endpoints must be https unless -fhir-subscriptions-allow-http")
@@ -1692,7 +1766,45 @@ oidcDone:
 
 	// Channels start after the listener is configured but before it accepts, so a
 	// feed is not refused while the interface is still coming up.
-	if runtime != nil {
+	clusterCtx, stopCluster := context.WithCancel(context.Background())
+	defer stopCluster()
+	clusterDone := make(chan struct{})
+	if clusterRunner != nil {
+		srv.Cluster = clusterRunner
+		// The channel files and the shared settings are made the same as the other servers' before any channel starts,
+		// and kept so: through the store, so the servers need no shared disk.
+		files, err := cluster.NewFiles(clusterCtx, pool.Write, clusterRunner.coord.Config().NodeID, []cluster.Area{
+			{Name: "channels", Dir: *channelsDir},
+			{Name: "data", Dir: filepath.Dir(settingsPath), Keep: sharedDataFile},
+		}, log)
+		if err != nil {
+			return fmt.Errorf("cluster: %w", err)
+		}
+		var logo interface{ Reload() error }
+		if brandingStore != nil {
+			logo = brandingStore
+		}
+		files.Changed = func(area, rel string, deleted bool) {
+			clusterRunner.fileChanged(area, rel, deleted, settingsStore, logo, func(key string) bool {
+				st, ok := settingsRegistry.Lookup(key)
+				return ok && st.Effect == settings.EffectRestart
+			})
+		}
+		if err := files.Sync(clusterCtx); err != nil {
+			log.Error("cluster: the shared configuration could not be read at start; this server starts with its own", "error", err)
+		}
+		go files.Run(clusterCtx, 2*time.Second)
+		go func() {
+			defer close(clusterDone)
+			clusterRunner.coord.Run(clusterCtx)
+		}()
+		go clusterRunner.loop(clusterCtx)
+	} else {
+		close(clusterDone)
+	}
+	// Leaving the cluster stops this server's channels before it lets their leases go, so the next server never overlaps.
+	defer func() { stopCluster(); <-clusterDone }()
+	if runtime != nil && clusterRunner == nil {
 		if errs := runtime.StartEnabled(log); len(errs) > 0 {
 			for _, err := range errs {
 				log.Error("a channel failed to start", "err", err)
@@ -1705,7 +1817,7 @@ oidcDone:
 	log.Info("serving",
 		"url", fmt.Sprintf("%s://%s", schemeFor(useTLS), *addr),
 		"channels", *channelsDir,
-		"database", *dbPath,
+		"database", sqlitedb.RedactURL(*dbPath),
 		"tls", useTLS,
 		"engine", *runEngine,
 		"messages", *storeMessages,
@@ -1770,6 +1882,8 @@ oidcDone:
 	// Channels stop first and are given time to finish the message in flight.
 	// Cutting a connection mid-message loses the acknowledgement and makes the
 	// sender resend work that was already done.
+	stopCluster()
+	<-clusterDone
 	if runtime != nil {
 		runtime.StopAll(shutdownCtx)
 	}

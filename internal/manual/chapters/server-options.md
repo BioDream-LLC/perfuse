@@ -15,12 +15,15 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-allow-metadata-egress` | on/off | — | permit destinations pointed at cloud instance metadata addresses, which hold this machine's credentials | **Settings › Security › What may leave**: Allow destinations at cloud instance metadata addresses |
 | `-cds-clients` | string | — | the EHRs trusted to call the CDS services with signed JWTs (issuer and jwks_url) | **Settings › Payers › Prior authorization**: EHRs trusted to call the CDS services |
 | `-channels` | string | `./channels` | directory holding channel files | — |
+| `-cluster` | string | — | share the work with other servers on the same PostgreSQL -db: active-passive (one runs everything, another takes over when it stops) or active-active (channels spread over all) | — |
+| `-cluster-lease` | duration | `15s` | how long a crashed server holds its work before another takes it over; renewed five times as often | — |
 | `-crd-advisor-ca` | string | — | a PEM file of certificate authorities to trust for -crd-advisor-url beside the system's (Vaglio's is its DATA/tls/ca.crt) | **Settings › Payers › Decision service**: Certificate authorities to trust for the advice service |
 | `-crd-advisor-token-env` | string | — | name of an environment variable holding a bearer token for -crd-advisor-url (the token itself is never a flag) | **Settings › Payers › Decision service**: Environment variable holding the advice service's token |
 | `-crd-advisor-url` | string | — | with -crd-rules, ask the decision service at this URL (such as Vaglio's /api/pas/advise) what a prior authorization request for each order needing one would be told as the record stands, shown as one more CRD card; the prefetched record is POSTed to it. No answer, or any failure, leaves the cards as they are without it | **Settings › Payers › Decision service**: Advice before submitting (CRD) |
 | `-crd-rules` | string | — | a Da Vinci CRD rules file: serve coverage requirements over CDS Hooks at /cds-services | **Settings › Payers › Prior authorization**: Coverage rules file (Da Vinci CRD) |
 | `-dashboards` | string | — | a file mapping directory groups and roles to the dashboard each opens on | **Settings › Monitoring › Dashboards**: Which dashboard each group opens on (file) |
-| `-db` | string | `./perfuse.db` | database file for users, messages and stored resources | — |
+| `-data` | string | — | directory for this server's own files (settings, alerts, sign-in configuration, the log): default beside -db when it is a file, the current directory when it is a PostgreSQL URL | — |
+| `-db` | string | `./perfuse.db` | database for users, messages and stored resources: a file, or a postgres:// URL for servers that share one store (a cluster) | — |
 | `-demo-account` | string | — | for a public demonstration server: username:password of a shared viewer account shown on the sign-in page | — |
 | `-dicomweb-archive` | string | — | keep imaging objects in this directory and serve them over DICOMweb (QIDO-RS, WADO-RS, WADO-URI, STOW-RS) at /dicomweb | **Settings › Data › Imaging archive**: Keep images in this folder and serve them over DICOMweb |
 | `-dicomweb-cors` | string | — | comma-separated browser origins, such as an OHIF viewer's, allowed to call /dicomweb | **Settings › Data › Imaging archive**: Browser origins allowed to call it |
@@ -57,6 +60,8 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-metrics-token` | string | — | credential the Prometheus scrape endpoint requires. Give the scraper the same value in bearer_token_file. Without this, only a signed-in operator can read /metrics | **Settings › Security › Metrics**: Token a metrics scraper presents |
 | `-mpi` | on/off | — | keep a patient index (master patient index) in mpi.db beside the database: patient records from every system linked into one enterprise identifier per person, fed by mpi destinations, answering Patient/$match and PIXm | **Settings › Data › Patient index**: Keep a patient index |
 | `-multi-tenant` | on/off | — | keep each tenant's channels in their own subdirectory of -channels, so one server can run integration for several organisations without them being able to see each other | — |
+| `-node-address` | string | — | this server's console URL as the other servers and a load balancer reach it | — |
+| `-node-name` | string | — | this server's name in the cluster (default: an id kept in -data) | — |
 | `-oidc` | string | — | YAML file configuring OpenID Connect sign-in (default: oidc.yaml beside the database, once saved in the console) | — |
 | `-pas` | on/off | — | serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result | **Settings › Payers › Prior authorization**: Da Vinci PAS prior authorization server |
 | `-pas-278-payer-id` | string | — | the UMO's payer ID (NM1*X3) when the request's insurer carries no identifier | **Settings › Payers › X12 278 bridge**: Payer ID for the 278s |

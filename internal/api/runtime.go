@@ -86,6 +86,12 @@ type Runtime struct {
 	// the tenant's limits (tenant.Gate), so one customer cannot crowd out the rest of a shared server.
 	Admission func() error
 
+	// Gate, on a server in a cluster, refuses to start a channel another server runs: the error says where.
+	Gate func(name string) error
+	// Expected, on a server in a cluster, says whether a channel not running here counts as down: one another server
+	// runs does not.
+	Expected func(name string) bool
+
 	mu      sync.RWMutex
 	running map[string]*engine.Channel
 	started map[string]time.Time
@@ -143,6 +149,11 @@ func (rt *Runtime) Start(name string, log *slog.Logger) error {
 		return fmt.Errorf("channel %q is already running", name)
 	}
 	rt.mu.Unlock()
+	if rt.Gate != nil {
+		if err := rt.Gate(name); err != nil {
+			return err
+		}
+	}
 
 	cfg, err := rt.Repo.Get(name)
 	if err != nil {
@@ -450,6 +461,19 @@ func (s *Server) handleStartChannel(w http.ResponseWriter, r *http.Request, sess
 		return
 	}
 	name := r.PathValue("name")
+	if s.Cluster != nil {
+		channels, ok := s.channelsFor(w, r, sess)
+		if !ok {
+			return
+		}
+		if _, err := channels.Get(name); err != nil {
+			s.failErr(w, r, err)
+			return
+		}
+	}
+	if s.clusterStartStop(w, r, sess, rt, name, true) {
+		return
+	}
 
 	if err := rt.Start(name, s.log()); err != nil {
 		s.fail(w, r, http.StatusConflict, err.Error())
@@ -485,6 +509,10 @@ func (s *Server) handleStopChannel(w http.ResponseWriter, r *http.Request, sess 
 	}
 	if _, err := channels.Get(name); err != nil {
 		s.failErr(w, r, err)
+		return
+	}
+
+	if s.clusterStartStop(w, r, sess, rt, name, false) {
 		return
 	}
 
@@ -1299,6 +1327,9 @@ func (rt *Runtime) ChannelStates() (configured []string, running map[string]bool
 	for _, ch := range list {
 		// A channel deliberately turned off is not a channel that is down.
 		if !ch.Enabled {
+			continue
+		}
+		if rt.Expected != nil && !running[ch.Name] && !rt.Expected(ch.Name) {
 			continue
 		}
 		configured = append(configured, ch.Name)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -124,6 +125,27 @@ func (s *Server) handleReadiness(w http.ResponseWriter, r *http.Request) {
 		checks["channels"] = strconv.Itoa(running) + " running"
 		if failed > 0 {
 			checks["channels_failed"] = strconv.Itoa(failed) + " failed to start (does not affect readiness)"
+		}
+	}
+
+	// In a cluster: the role, and with ?channel= whether this server runs that channel, so a load balancer in front of the
+	// servers sends a feed to the one that has it. Without ?channel=, a standby is ready: it serves the console and API.
+	if s.Cluster != nil {
+		if s.Cluster.IsLeader() {
+			checks["cluster"] = "leader"
+		} else {
+			checks["cluster"] = "member"
+		}
+		if ch := strings.TrimSpace(r.URL.Query().Get("channel")); ch != "" {
+			if s.Cluster.Runs("", ch) && s.Runtime != nil && s.Runtime.IsRunning(ch) {
+				checks["channel"] = ch + " runs here"
+			} else {
+				checks["channel"] = ch + " does not run here"
+				ready = false
+			}
+		}
+		if r.URL.Query().Get("role") == "leader" && !s.Cluster.IsLeader() {
+			ready = false
 		}
 	}
 

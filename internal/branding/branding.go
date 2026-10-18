@@ -541,3 +541,18 @@ func writeFileAtomic(path string, data []byte) error {
 	}
 	return nil
 }
+
+// Reload reads the logo again, for a server in a cluster whose logo another server changed.
+func (s *Store) Reload() error {
+	if s.dir == "" {
+		return nil
+	}
+	fresh := &Store{dir: s.dir}
+	if err := fresh.load(); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.logo = fresh.logo
+	s.mu.Unlock()
+	return nil
+}
