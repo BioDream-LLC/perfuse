@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -146,8 +147,13 @@ func TestInteroperatesWithGnuPG(t *testing.T) {
 	if err != nil {
 		t.Skip("gpg not installed")
 	}
-	// Short and private: gpg-agent's socket path must fit a Unix socket name, which a macOS test directory does not.
-	home, err := os.MkdirTemp("/tmp", "pfgpg")
+	// Short and private: gpg-agent's socket path must fit a Unix socket name, which a macOS test directory does not. Windows
+	// has no /tmp, and its gpg-agent takes no Unix socket, so its own temporary directory serves there.
+	base := "/tmp"
+	if runtime.GOOS == "windows" {
+		base = ""
+	}
+	home, err := os.MkdirTemp(base, "pfgpg")
 	if err != nil {
 		t.Fatal(err)
 	}

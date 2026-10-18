@@ -326,6 +326,9 @@ destinations:
 	if err := payer.Stop(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	// A kept-alive connection to the stopped server is dead, and a POST is not retried on one: Windows answered it with EOF.
+	// A partner's resend opens a new connection, so this does too.
+	http.DefaultClient.CloseIdleConnections()
 	startYAMLWith(t, dir, "payer", payerYAML, setup)
 	if got := post(id, false); got != "processed" || count() != 3 {
 		t.Fatalf("after a restart the resend was %s and %d messages were passed on", got, count())
