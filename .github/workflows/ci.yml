@@ -38,6 +38,11 @@ jobs:
       - name: test and vet
         run: make check-go
 
+      # Known vulnerabilities in what Perfuse calls, the standard library included. With the toolchain line in go.mod
+      # this checks the Go releases are built with, whatever setup-go installed.
+      - name: govulncheck
+        run: make vulncheck
+
       - name: build
         run: go build ./...
 

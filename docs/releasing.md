@@ -28,6 +28,11 @@ has passed 336 of 336 repeatedly.
 make release                      # six targets, archives, checksums, SBOM
 ```
 
+`make release` first runs `make vulncheck` (govulncheck, pinned) and stops if anything Perfuse calls has a known
+vulnerability, in a module or in the Go standard library. The toolchain line in `go.mod` makes every build use the
+same patched Go, whatever is installed. When a fix is out, raise the module or the toolchain line and release; when
+none is, say so in the release notes rather than skipping the check.
+
 `make release` produces, in `dist/`:
 
 - six binaries — linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64, windows/arm64

@@ -50,6 +50,9 @@ var syntheticSurnames = map[string]bool{
 	// Boundary cases for field length and character handling, named after what they test.
 	"SHORT": true, "AVERYMUCHLONGERFAMILYNAMEINDEED": true, "N": true, "EVRARD": true,
 
+	// Invented for the patient index tests: one person registered by a hospital and a clinic, written differently.
+	"MOREAU": true,
+
 	// The rest come from generate.SyntheticSurnames, merged in by init below rather than
 	// copied here, so this check and the generator cannot disagree about what is synthetic.
 
@@ -151,7 +154,8 @@ func TestNoUnexpectedPatientNamesInFixtures(t *testing.T) {
 		for _, m := range pid.FindAllStringSubmatch(content, -1) {
 			// Repetitions are separated by ~, components by ^. The surname is the first component of each repetition.
 			for _, repeat := range strings.Split(m[1], "~") {
-				surname := strings.ToUpper(strings.TrimSpace(strings.Split(repeat, "^")[0]))
+				// The family name is XPN-1, itself an FN whose first subcomponent is the surname: DOE&&Doe is Doe.
+				surname := strings.ToUpper(strings.TrimSpace(strings.Split(strings.Split(repeat, "^")[0], "&")[0]))
 				if surname == "" {
 					continue
 				}

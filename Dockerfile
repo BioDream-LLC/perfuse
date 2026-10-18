@@ -8,7 +8,7 @@
 # no libc has no package CVEs, because it has no packages. A Java integration engine's base image needs
 # patching on somebody else's schedule for as long as it runs.
 
-FROM golang:1.26-alpine AS build
+FROM golang:1.27.2-alpine AS build
 
 # Node is needed for the web interface, which is compiled into the binary rather than served from a
 # directory. One artefact means the UI cannot drift out of step with the API it talks to.

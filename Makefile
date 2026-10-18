@@ -12,7 +12,7 @@ PKG     := ./cmd/perfuse
 VERSION ?= v0.1.16
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs site screens publish
+.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs site screens publish vulncheck
 
 all: check build
 
@@ -161,7 +161,14 @@ wasm:
 publish:
 	@./scripts/publish-release.sh "$(VERSION)" "$(NOTES)"
 
-release: cross sbom package
+# vulncheck fails when code Perfuse calls has a known vulnerability, in a module or in the Go standard library the build
+# uses. A release depends on it: x/crypto, x/net and x/text had sat twenty-two reachable advisories behind, and nothing said
+# so until it was run by hand. Pinned, and run with go run so it is never a dependency of Perfuse itself.
+GOVULNCHECK ?= golang.org/x/vuln/cmd/govulncheck@v1.1.4
+vulncheck:
+	go run $(GOVULNCHECK) ./...
+
+release: vulncheck cross sbom package
 	@cd dist && shasum -a 256 perfuse-* > SHA256SUMS && 		echo "  dist/SHA256SUMS"
 
 # package wraps each binary with the things somebody needs beside it.

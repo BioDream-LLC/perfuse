@@ -93,7 +93,7 @@ cd perfuse
 make build          # -> bin/perfuse
 ```
 
-Requires Go 1.26 or later. No cgo, so `make cross` produces static binaries for
+Requires Go 1.26.9 or later (earlier patch releases carry fixed security bugs); the toolchain line in go.mod fetches Go 1.27.2, which releases are built with. No cgo, so `make cross` produces static binaries for
 Linux, macOS and Windows on amd64 and arm64. Each one is about 25 MB and has
 nothing to install alongside it — no JVM, no database server, no web server, no
 runtime of any kind.
