@@ -1979,12 +1979,19 @@ destinations:
    (Jaro-Winkler and Soundex, accents and punctuation ignored, swapped names
    noticed), birth date (a day and month swapped is partial agreement), sex, postal
    code, phone and address. Only fields both records have count. The score is the
-   evidence found as a share of the evidence possible.
-3. **Decision.** At or above the automatic threshold (90% by default) the record
-   links, but only when family name and birth date both agree and no second person
-   scores as high. Between the review threshold (60%) and that, it becomes a new
-   person and the possible match waits on the review queue. Below, it is a new
-   person.
+   evidence found as a share of the evidence possible. Blocking uses five keys, so
+   one error does not hide a person: family-name sound and birth year, birth date,
+   phone, both names' sounds (in either order), and postal code with the given
+   name's sound.
+3. **Decision.** **By default nothing links on a score alone.** A record scoring at
+   or above the review threshold (60%) becomes a new person and the possible match
+   waits on the review queue; those at or above the automatic threshold (90%) with
+   family name and birth date both agreeing are marked *certain*. Linking two people
+   into one (an overlay) puts one patient's results in another's chart, so automatic
+   linking is a switch an administrator turns on (**Link certain matches without
+   asking anybody**) once the queue has shown the certain ones are right. With it
+   on, a certain match links when no second person scores as high. Below the review
+   threshold the record is a new person.
 
 A date written day- or month-first (`08/15/1972`) is kept as written and does not
 match a year-first one: the US and European orders disagree, and guessing would link
@@ -2009,10 +2016,33 @@ The API is `/api/mpi` (summary and search), `/api/mpi/persons/{euid}`,
 `/api/mpi/find`, `/api/mpi/reviews`, `/api/mpi/records` (register, link, unlink),
 `/api/mpi/merge` and `/api/mpi/settings`.
 
-The default weights come from the record-linkage literature for hospital
-registration data; they are not measured on any site's data. A site with a linked
-sample of its own can do better, and should check the review queue for a few weeks
-before trusting automatic links.
+**Weights.** The default Fellegi-Sunter weights come from the record-linkage
+literature for hospital registration data. **Estimate from our records** (in the
+settings, administrators; `POST /api/mpi/estimate`) fits them to the site's own
+index with expectation-maximisation, no reviewed pairs needed: m (agreement among
+true matches) from the pairs blocking brings together, u (agreement by chance) from
+20,000 pairs drawn at random, since blocked pairs agree on names and dates by
+construction. The estimate is shown beside the weights in use and changes nothing
+until it is used and saved. A field compared on too few pairs keeps its default. The
+fit assumes the fields are independent given the class, which they are not quite,
+so treat a large change with suspicion.
+
+**Measured.** On FEBRL dataset 3 (5,000 synthetic records of 2,000 people, the
+duplicates carrying typing errors, swapped fields, missing values and nicknames;
+`PERFUSE_TEST_FEBRL`), registered in file order with a reviewer answering every
+queued pair correctly:
+
+| | Linked on their own | Put in front of a reviewer with the right person | Missed | Wrong links |
+|---|---|---|---|---|
+| Automatic linking off (the default) | 0 | 2,649 of 3,000 | 351 | 0 |
+| On, default weights | 1,637 | 1,012 | 351 | 0 |
+| On, weights estimated from the records | 1,622 | 1,070 | 308 | 0 |
+
+No record was ever linked to the wrong person, and none of the 2,000 new people was
+queued needlessly. The missed ones differ on nearly every field (a birth date and an
+address both mistyped, say) and score below the review threshold. FEBRL is
+synthetic and has few namesakes; a real index has more, so its review queue will be
+longer, and these numbers are a floor on care, not a promise.
 
 ## UN/EDIFACT
 

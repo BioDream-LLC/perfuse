@@ -51,7 +51,12 @@ func (r *Record) Key() string { return r.System + "|" + r.Value }
 
 // Settings are the matching thresholds and rules.
 type Settings struct {
-	// AutoLink is the score at or above which a pair links without review, when name and birth date also agree. Default 0.9.
+	// Automatic links a record to a person by score without asking anybody. Off by default: linking two people into one
+	// (an overlay) puts one patient's results in another's chart, so until a site has watched the review queue and trusts
+	// what it would have done, every scored match goes to a person. Trusted identifiers link either way.
+	Automatic bool `json:"automatic"`
+	// AutoLink is the score at or above which a pair links without review, when Automatic is on and name and birth date
+	// also agree. Default 0.9. With Automatic off, matches above it are still queued, marked certain.
 	AutoLink float64 `json:"autoLink"`
 	// Review is the score at or above which a pair goes to the review queue. Default 0.6: low enough that twins and a sex
 	// keyed wrongly reach a person, since only a person can tell those apart.
@@ -61,6 +66,26 @@ type Settings struct {
 	Trusted []string `json:"trusted"`
 	// EUIDSystem names the enterprise identifier in FHIR and PIX answers.
 	EUIDSystem string `json:"euidSystem"`
+	// Weights replaces DefaultWeights field by field, typically with values estimated from the site's own records
+	// (EstimateWeights). Empty: the defaults.
+	Weights map[string]Weights `json:"weights,omitempty"`
+}
+
+// weights is the full weight table: the site's where it has them, the defaults for the rest.
+func (s Settings) weights() map[string]Weights {
+	if len(s.Weights) == 0 {
+		return DefaultWeights
+	}
+	out := make(map[string]Weights, len(DefaultWeights))
+	for k, w := range DefaultWeights {
+		out[k] = w
+	}
+	for k, w := range s.Weights {
+		if _, known := DefaultWeights[k]; known && w.valid() {
+			out[k] = w
+		}
+	}
+	return out
 }
 
 func (s Settings) withDefaults() Settings {
@@ -92,11 +117,14 @@ func Open(ctx context.Context, db *sql.DB) (*Store, error) {
 			sex TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '', line TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '',
 			postal TEXT NOT NULL DEFAULT '', identifiers TEXT NOT NULL DEFAULT '[]', source TEXT NOT NULL DEFAULT '',
 			person_id INTEGER NOT NULL, family_sx TEXT NOT NULL DEFAULT '', dob TEXT NOT NULL DEFAULT '', phone_key TEXT NOT NULL DEFAULT '',
+			name_key TEXT NOT NULL DEFAULT '', place_key TEXT NOT NULL DEFAULT '',
 			updated_at TEXT NOT NULL, UNIQUE (tenant, system, value))`,
 		`CREATE INDEX IF NOT EXISTS mpi_records_person ON mpi_records (person_id)`,
 		`CREATE INDEX IF NOT EXISTS mpi_records_block_name ON mpi_records (tenant, family_sx, dob)`,
 		`CREATE INDEX IF NOT EXISTS mpi_records_block_dob ON mpi_records (tenant, dob)`,
 		`CREATE INDEX IF NOT EXISTS mpi_records_block_phone ON mpi_records (tenant, phone_key)`,
+		`CREATE INDEX IF NOT EXISTS mpi_records_block_names ON mpi_records (tenant, name_key)`,
+		`CREATE INDEX IF NOT EXISTS mpi_records_block_place ON mpi_records (tenant, place_key)`,
 		`CREATE TABLE IF NOT EXISTS mpi_identifiers (tenant TEXT NOT NULL, ident TEXT NOT NULL, record_id INTEGER NOT NULL,
 			PRIMARY KEY (tenant, ident, record_id))`,
 		`CREATE TABLE IF NOT EXISTS mpi_reviews (id INTEGER PRIMARY KEY, tenant TEXT NOT NULL, record_id INTEGER NOT NULL,
@@ -124,6 +152,26 @@ func newEUID() string {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
 	return "E" + strings.ToUpper(hex.EncodeToString(b))
+}
+
+// blocks are the keys that bring records together for comparison. Each catches what the others miss: a typo in the year
+// (both names), a missing birth date (both names, or postal code and given name), a changed surname (birth date, phone).
+type blocks struct{ sx, dob, phone, names, place string }
+
+func blockKeys(r *Record) blocks {
+	b := blocks{sx: soundex(r.Family), dob: digits(r.BirthDate), phone: phoneKey(r.Phone)}
+	fs, gs := soundex(r.Family), soundex(r.Given)
+	if fs != "" && gs != "" {
+		// In order, so a swapped family and given name block together.
+		if gs < fs {
+			fs, gs = gs, fs
+		}
+		b.names = fs + "|" + gs
+	}
+	if pk, g := postalKey(r.Postal), soundex(r.Given); pk != "" && g != "" {
+		b.place = pk + "|" + g
+	}
+	return b
 }
 
 // normDate writes a year-first date (1980-04-03, 19800403, an HL7 timestamp) as YYYY-MM-DD, or "" for anything else. A
@@ -244,7 +292,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 	}
 	defer tx.Rollback()
 
-	blockSx, dob, ph := soundex(in.Family), digits(in.BirthDate), phoneKey(in.Phone)
+	bk := blockKeys(&in)
 	existing, persons, err := s.queryRecords(ctx, tx, `r.tenant = ? AND r.system = ? AND r.value = ?`, tenant, in.System, in.Value)
 	if err != nil {
 		return nil, err
@@ -254,9 +302,10 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 		// reason to move the record to somebody else.
 		id := existing[0].ID
 		if _, err := tx.ExecContext(ctx, `UPDATE mpi_records SET family = ?, given = ?, birth_date = ?, sex = ?, phone = ?, line = ?,
-			city = ?, postal = ?, identifiers = ?, source = ?, family_sx = ?, dob = ?, phone_key = ?, updated_at = ? WHERE id = ?`,
+			city = ?, postal = ?, identifiers = ?, source = ?, family_sx = ?, dob = ?, phone_key = ?, name_key = ?, place_key = ?,
+			updated_at = ? WHERE id = ?`,
 			in.Family, in.Given, in.BirthDate, in.Sex, in.Phone, in.Line, in.City, in.Postal, string(idJSON), in.Source,
-			blockSx, dob, ph, s.stamp(), id); err != nil {
+			bk.sx, bk.dob, bk.phone, bk.names, bk.place, s.stamp(), id); err != nil {
 			return nil, err
 		}
 		if err := s.indexIdentifiers(ctx, tx, tenant, id, idents); err != nil {
@@ -293,13 +342,13 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 	}
 	var best, second cand
 	if personID == 0 {
-		cands, cpersons, err := s.candidates(ctx, tx, tenant, blockSx, dob, ph)
+		cands, cpersons, err := s.candidates(ctx, tx, tenant, bk)
 		if err != nil {
 			return nil, err
 		}
 		byPerson := map[int64]cand{}
 		for i, c := range cands {
-			cmp := Compare(&in, c, nil)
+			cmp := Compare(&in, c, set.weights())
 			if prev, ok := byPerson[cpersons[i]]; !ok || cmp.Score > prev.cmp.Score {
 				byPerson[cpersons[i]] = cand{cpersons[i], cmp}
 			}
@@ -312,7 +361,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 			}
 		}
 		// Certain only when one person stands out: two people scoring above the line is exactly the case for a reviewer.
-		if best.person != 0 && best.cmp.Score >= set.AutoLink && best.cmp.Safe && second.cmp.Score < set.AutoLink {
+		if set.Automatic && best.person != 0 && best.cmp.Score >= set.AutoLink && best.cmp.Safe && second.cmp.Score < set.AutoLink {
 			personID, how, score = best.person, "score", best.cmp.Score
 		}
 	}
@@ -327,9 +376,10 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 		_ = euid
 	}
 	res, err := tx.ExecContext(ctx, `INSERT INTO mpi_records (tenant, system, value, family, given, birth_date, sex, phone, line, city,
-		postal, identifiers, source, person_id, family_sx, dob, phone_key, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		postal, identifiers, source, person_id, family_sx, dob, phone_key, name_key, place_key, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		tenant, in.System, in.Value, in.Family, in.Given, in.BirthDate, in.Sex, in.Phone, in.Line, in.City, in.Postal, string(idJSON),
-		in.Source, personID, blockSx, dob, ph, s.stamp())
+		in.Source, personID, bk.sx, bk.dob, bk.phone, bk.names, bk.place, s.stamp())
 	if err != nil {
 		return nil, err
 	}
@@ -408,21 +458,29 @@ func (s *Store) indexIdentifiers(ctx context.Context, q txer, tenant string, rec
 // candidates finds records that could be the same person: same sounding family name and birth year, same birth date, or
 // the same phone number. A search that compared every record would not scale; these blocks are where nearly every true
 // match is found.
-func (s *Store) candidates(ctx context.Context, q txer, tenant, sx, dob, ph string) ([]*Record, []int64, error) {
+func (s *Store) candidates(ctx context.Context, q txer, tenant string, b blocks) ([]*Record, []int64, error) {
 	var conds []string
 	var args []any
 	args = append(args, tenant)
-	if sx != "" && len(dob) >= 4 {
+	if b.sx != "" && len(b.dob) >= 4 {
 		conds = append(conds, `(r.family_sx = ? AND substr(r.dob, 1, 4) = ?)`)
-		args = append(args, sx, dob[:4])
+		args = append(args, b.sx, b.dob[:4])
 	}
-	if len(dob) >= 8 {
+	if len(b.dob) >= 8 {
 		conds = append(conds, `r.dob = ?`)
-		args = append(args, dob)
+		args = append(args, b.dob)
 	}
-	if ph != "" {
+	if b.phone != "" {
 		conds = append(conds, `r.phone_key = ?`)
-		args = append(args, ph)
+		args = append(args, b.phone)
+	}
+	if b.names != "" {
+		conds = append(conds, `r.name_key = ?`)
+		args = append(args, b.names)
+	}
+	if b.place != "" {
+		conds = append(conds, `r.place_key = ?`)
+		args = append(args, b.place)
 	}
 	if len(conds) == 0 {
 		return nil, nil, nil

@@ -2,6 +2,7 @@ package mpi
 
 import (
 	"context"
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -53,10 +54,40 @@ func TestCompare(t *testing.T) {
 	}
 }
 
-func TestRegisterLinksReviewsAndUnlinks(t *testing.T) {
+// By default nothing links on a score alone: a clear match is queued for a person, and only a trusted identifier links.
+func TestByDefaultEveryScoredMatchIsReviewed(t *testing.T) {
 	ctx := context.Background()
 	s := openTest(t)
 	set := Settings{Trusted: []string{ssn}}
+	first, err := s.Register(ctx, "default", "test", Record{System: hospital, Value: "1", Family: "Garcia", Given: "Maria",
+		BirthDate: "1972-08-15", Sex: "F", Postal: "60614", Identifiers: []string{ssn + "|123-45-6789"}}, set)
+	if err != nil {
+		t.Fatal(err)
+	}
+	same, err := s.Register(ctx, "default", "test", Record{System: clinic, Value: "2", Family: "Garcia", Given: "Maria",
+		BirthDate: "1972-08-15", Sex: "F", Postal: "60614"}, set)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if same.Action != "review" || same.Score < 0.99 || same.Record.EUID == first.Record.EUID {
+		t.Fatalf("a clear match without automatic linking: %+v", same)
+	}
+	byID, err := s.Register(ctx, "default", "test", Record{System: lab, Value: "3", Family: "Garcia", Identifiers: []string{ssn + "|123-45-6789"}}, set)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if byID.Action != "linked" || byID.Record.EUID != first.Record.EUID {
+		t.Fatalf("a trusted identifier: %+v", byID)
+	}
+	if def, _ := s.Settings(ctx, "default"); def.Automatic {
+		t.Error("automatic linking is on by default")
+	}
+}
+
+func TestRegisterLinksReviewsAndUnlinks(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t)
+	set := Settings{Trusted: []string{ssn}, Automatic: true}
 	reg := func(r Record) *Outcome {
 		t.Helper()
 		o, err := s.Register(ctx, "default", "test", r, set)
@@ -246,5 +277,75 @@ func TestFromHL7AndFHIR(t *testing.T) {
 	pat := ToFHIR(p, "urn:perfuse:mpi")
 	if pat["id"] != "E1" || pat["birthDate"] != "1990-01-02" || pat["gender"] != "female" {
 		t.Errorf("to fhir %v", pat)
+	}
+}
+
+// EM recovers m and u from unlabelled pairs drawn with known ones.
+func TestEstimateWeightsRecoversKnownProbabilities(t *testing.T) {
+	want := map[string]Weights{"family": {M: 0.9, U: 0.05}, "given": {M: 0.85, U: 0.1}, "birth_date": {M: 0.95, U: 0.02},
+		"postal": {M: 0.8, U: 0.15}, "line": {M: 0.75, U: 0.03}}
+	x := uint64(7)
+	rnd := func() float64 {
+		x = x*6364136223846793005 + 1442695040888963407
+		return float64(x>>11) / float64(1<<53)
+	}
+	var pairs []Comparison
+	for i := 0; i < 20000; i++ {
+		match := rnd() < 0.3
+		var c Comparison
+		for _, f := range []string{"family", "given", "birth_date", "postal", "line"} {
+			p := want[f].U
+			if match {
+				p = want[f].M
+			}
+			r := "disagree"
+			if rnd() < p {
+				r = "agree"
+			}
+			c.Fields = append(c.Fields, FieldResult{Field: f, Result: r})
+		}
+		pairs = append(pairs, c)
+	}
+	est, err := EstimateWeights(pairs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !est.Converged || math.Abs(est.MatchShare-0.3) > 0.02 {
+		t.Fatalf("match share %v converged %v", est.MatchShare, est.Converged)
+	}
+	for f, w := range want {
+		got := est.Weights[f]
+		if math.Abs(got.M-w.M) > 0.03 || math.Abs(got.U-w.U) > 0.03 {
+			t.Errorf("%s: estimated %+v, drawn with %+v", f, got, w)
+		}
+	}
+	if _, err := EstimateWeights(pairs[:10]); err != ErrTooFewPairs {
+		t.Errorf("ten pairs: %v", err)
+	}
+}
+
+// Estimated weights are used once saved, and refused when they make no sense.
+func TestSiteWeightsAreCheckedAndUsed(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t)
+	if err := s.SaveSettings(ctx, "default", "admin", Settings{Weights: map[string]Weights{"family": {M: 0.1, U: 0.5}}}); err == nil {
+		t.Error("weights with m below u were saved")
+	}
+	if err := s.SaveSettings(ctx, "default", "admin", Settings{Weights: map[string]Weights{"shoe_size": {M: 0.9, U: 0.1}}}); err == nil {
+		t.Error("weights for a field the index does not compare were saved")
+	}
+	// Postal code made decisive: two records agreeing on it and the name, with different birth dates, now score higher.
+	a := &Record{Family: "Lee", Given: "Ann", BirthDate: "1990-01-01", Postal: "02139"}
+	b := &Record{Family: "Lee", Given: "Ann", BirthDate: "1991-05-07", Postal: "02139"}
+	set := Settings{Weights: map[string]Weights{"postal": {M: 0.99, U: 0.00001}}}
+	if Compare(a, b, set.weights()).Score <= Compare(a, b, nil).Score {
+		t.Error("the site's weights were not used")
+	}
+	if err := s.SaveSettings(ctx, "default", "admin", set); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.Settings(ctx, "default")
+	if got.Weights["postal"].M != 0.99 {
+		t.Errorf("saved %+v", got.Weights)
 	}
 }

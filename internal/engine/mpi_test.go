@@ -23,6 +23,9 @@ func TestAChannelFeedsThePatientIndex(t *testing.T) {
 	}
 	PatientIndex = idx
 	t.Cleanup(func() { PatientIndex = nil })
+	if err := idx.SaveSettings(context.Background(), "default", "test", mpi.Settings{Automatic: true}); err != nil {
+		t.Fatal(err)
+	}
 
 	dir := t.TempDir()
 	ch := startYAML(t, dir, "adt", `name: adt

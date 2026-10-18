@@ -1582,6 +1582,7 @@ export const api = {
   mpiFind: (q: Partial<MPIRecord>) => request<{ matches: MPIMatch[] }>('POST', '/api/mpi/find', q),
   mpiRegister: (r: Partial<MPIRecord>) => request<{ action: string; record: MPIRecord }>('POST', '/api/mpi/records', r),
   mpiSaveSettings: (s: MPISettings) => request<MPISettings>('PUT', '/api/mpi/settings', s),
+  mpiEstimate: () => request<{ estimate: MPIEstimate; defaults: Record<string, MPIWeights> }>('POST', '/api/mpi/estimate'),
 
   /** tableEditions returns every edition of one table, with its entries. */
   tableEditions: (file: string, name: string) =>
@@ -3601,7 +3602,23 @@ export interface MPIPerson {
   created: string
 }
 
+export interface MPIWeights {
+  m: number
+  u: number
+}
+
+export interface MPIEstimate {
+  weights: Record<string, MPIWeights>
+  compared: Record<string, number>
+  pairs: number
+  matchShare: number
+  iterations: number
+  converged: boolean
+}
+
 export interface MPISettings {
+  automatic: boolean
+  weights?: Record<string, MPIWeights>
   autoLink: number
   review: number
   trusted: string[]

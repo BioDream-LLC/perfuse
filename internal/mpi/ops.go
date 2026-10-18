@@ -45,7 +45,7 @@ func (s *Store) Find(ctx context.Context, tenant string, q Record, set Settings,
 			}
 		}
 	}
-	cands, persons, err := s.candidates(ctx, s.db, tenant, soundex(q.Family), digits(q.BirthDate), phoneKey(q.Phone))
+	cands, persons, err := s.candidates(ctx, s.db, tenant, blockKeys(&q))
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *Store) Find(ctx context.Context, tenant string, q Record, set Settings,
 		if m, ok := byPerson[persons[i]]; ok && m.Grade == "certain" && m.Score == 1 && len(m.Why.Fields) == 1 {
 			continue
 		}
-		cmp := Compare(&q, c, nil)
+		cmp := Compare(&q, c, set.weights())
 		if cmp.Score < set.Review*0.85 {
 			continue
 		}
@@ -438,6 +438,14 @@ func (s *Store) SaveSettings(ctx context.Context, tenant, actor string, set Sett
 	}
 	if set.Review > 0 && set.AutoLink > 0 && set.Review > set.AutoLink {
 		return errors.New("mpi: the review threshold cannot be above the automatic link threshold")
+	}
+	for field, w := range set.Weights {
+		if _, known := DefaultWeights[field]; !known {
+			return fmt.Errorf("mpi: %q is not a field the index compares", field)
+		}
+		if !w.valid() {
+			return fmt.Errorf("mpi: the weights for %s need 0 < u < m < 1", field)
+		}
 	}
 	set = set.withDefaults()
 	b, _ := json.Marshal(set)

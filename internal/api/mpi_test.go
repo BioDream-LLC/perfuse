@@ -37,6 +37,13 @@ func TestPatientIndexEndpoints(t *testing.T) {
 		}
 		return decodeBody[mpi.Outcome](t, res)
 	}
+	// Automatic linking is off until an administrator turns it on.
+	if res := h.do(string(store.RoleEditor), "PUT", "/api/mpi/settings", map[string]any{"automatic": true}); res.Code != http.StatusForbidden {
+		t.Fatalf("an editor turned on automatic linking: %d", res.Code)
+	}
+	if res := h.do(string(store.RoleAdmin), "PUT", "/api/mpi/settings", map[string]any{"automatic": true}); res.Code != http.StatusOK {
+		t.Fatalf("settings: %d %s", res.Code, res.Body.String())
+	}
 	a := reg(map[string]any{"system": "urn:oid:1.1", "value": "A1", "family": "Silva", "given": "Ana", "birthDate": "1988-02-29", "sex": "F"})
 	b := reg(map[string]any{"system": "urn:oid:1.2", "value": "B1", "family": "Silva", "given": "Ana", "birthDate": "1988-02-29", "sex": "F", "postal": "1000"})
 	c := reg(map[string]any{"system": "urn:oid:1.2", "value": "B2", "family": "Silva", "given": "Anna", "birthDate": "1988-02-29", "sex": "M"})
@@ -85,7 +92,7 @@ func TestPatientIndexEndpoints(t *testing.T) {
 	if res := h.do(string(store.RoleAdmin), "PUT", "/api/mpi/settings", map[string]any{"autoLink": 0.5, "review": 0.8}); res.Code != http.StatusBadRequest {
 		t.Errorf("review above auto: %d", res.Code)
 	}
-	set := decodeBody[mpi.Settings](t, h.do(string(store.RoleAdmin), "PUT", "/api/mpi/settings", map[string]any{"autoLink": 0.95, "review": 0.65,
+	set := decodeBody[mpi.Settings](t, h.do(string(store.RoleAdmin), "PUT", "/api/mpi/settings", map[string]any{"automatic": true, "autoLink": 0.95, "review": 0.65,
 		"trusted": []string{"http://hl7.org/fhir/sid/us-ssn"}}))
 	if set.AutoLink != 0.95 || len(set.Trusted) != 1 || set.EUIDSystem == "" {
 		t.Errorf("settings %+v", set)
@@ -94,6 +101,13 @@ func TestPatientIndexEndpoints(t *testing.T) {
 	seen := map[string]bool{}
 	for _, e := range entries {
 		seen[e.Action] = true
+	}
+	// An estimate needs records to estimate from; three is too few, and says so.
+	if res := h.do(string(store.RoleAdmin), "POST", "/api/mpi/estimate", nil); res.Code != http.StatusConflict {
+		t.Errorf("estimate from three records: %d %s", res.Code, res.Body.String())
+	}
+	if res := h.do(string(store.RoleEditor), "POST", "/api/mpi/estimate", nil); res.Code != http.StatusForbidden {
+		t.Errorf("an editor estimated: %d", res.Code)
 	}
 	for _, a := range []string{"mpi.search", "mpi.read", "mpi.review", "mpi.unlink", "mpi.settings", "pixm.query"} {
 		if !seen[a] {

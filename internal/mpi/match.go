@@ -160,7 +160,13 @@ func jaroWinkler(a, b string) float64 {
 
 // Weights are the Fellegi-Sunter agreement probabilities for one field: M, that the field agrees when two records are the
 // same person; U, that it agrees by chance when they are not. Agreement adds log2(M/U); disagreement adds log2((1-M)/(1-U)).
-type Weights struct{ M, U float64 }
+type Weights struct {
+	M float64 `json:"m"`
+	U float64 `json:"u"`
+}
+
+// valid is a usable pair: both strict probabilities, and agreement more likely among matches than by chance.
+func (w Weights) valid() bool { return w.M > 0 && w.M < 1 && w.U > 0 && w.U < 1 && w.M > w.U }
 
 func (w Weights) agree() float64    { return math.Log2(w.M / w.U) }
 func (w Weights) disagree() float64 { return math.Log2((1 - w.M) / (1 - w.U)) }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { api, ApiError, atLeast } from './api'
-import type { MPIComparison, MPIMatch, MPIPerson, MPIPersonView, MPIReview, MPISettings, MPISummary } from './api'
+import type { MPIComparison, MPIEstimate, MPIMatch, MPIPerson, MPIPersonView, MPIReview, MPISettings, MPISummary, MPIWeights } from './api'
 import type { RootState, UiError } from './store'
 import { ErrorBox, Field, Section, Spinner } from './ui'
 import { IconCheck, IconPatientIndex, IconSearch, IconSettings, IconWarning } from './Icons'
@@ -231,7 +231,7 @@ function PersonDetail({ euid, canEdit, onChanged }: { euid: string; canEdit: boo
   )
 }
 
-function Reviews({ onChanged }: { onChanged: () => void }) {
+function Reviews({ onChanged, autoLink }: { onChanged: () => void; autoLink: number }) {
   const [list, setList] = useState<MPIReview[] | null>(null)
   const [error, setError] = useState<UiError | null>(null)
   const load = useCallback(() => {
@@ -262,6 +262,11 @@ function Reviews({ onChanged }: { onChanged: () => void }) {
             <li key={rv.id} className="space-y-2 rounded-xl border border-slate-800 p-3">
               <div className="flex flex-wrap items-center gap-3">
                 <Score score={rv.score} />
+                {rv.why.safe && rv.score >= autoLink && (
+                  <span className="rounded border border-emerald-800 bg-emerald-950/40 px-1.5 py-0.5 text-[11px] text-emerald-300">
+                    certain: would have linked on its own
+                  </span>
+                )}
                 <Why why={rv.why} />
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
@@ -364,6 +369,22 @@ function SettingsPanel({ settings, onSaved }: { settings: MPISettings; onSaved: 
   const [trusted, setTrusted] = useState(settings.trusted.join('\n'))
   const [error, setError] = useState<UiError | null>(null)
   const [saved, setSaved] = useState(false)
+  const [estimate, setEstimate] = useState<{ estimate: MPIEstimate; defaults: Record<string, MPIWeights> } | null>(null)
+  const [estimating, setEstimating] = useState(false)
+  const runEstimate = () => {
+    setEstimating(true)
+    api.mpiEstimate().then(
+      (e) => {
+        setEstimate(e)
+        setError(null)
+        setEstimating(false)
+      },
+      (e) => {
+        setError(toError(e))
+        setEstimating(false)
+      },
+    )
+  }
   const save = () =>
     api
       .mpiSaveSettings({
@@ -383,6 +404,17 @@ function SettingsPanel({ settings, onSaved }: { settings: MPISettings; onSaved: 
       )
   return (
     <Section title="How the index matches" icon={IconSettings} description="For administrators. A change applies to records registered from now on.">
+      <label className="mb-4 flex items-start gap-3 rounded-lg border border-slate-800 p-3">
+        <input type="checkbox" className="mt-1" checked={s.automatic} onChange={(e) => setS({ ...s, automatic: e.target.checked })} />
+        <span className="text-sm">
+          <span className={s.automatic ? 'text-amber-300' : 'text-slate-200'}>Link certain matches without asking anybody</span>
+          <span className="mt-1 block text-xs leading-relaxed text-slate-400">
+            Off, every match found by scoring waits on the review queue, the certain ones marked certain; only a trusted identifier links
+            on its own. Linking two different people puts one patient's results in the other's chart, so leave this off until the review
+            queue has shown, for some weeks, that the matches it calls certain are right.
+          </span>
+        </span>
+      </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           label={`Link without review at ${(s.autoLink * 100).toFixed(0)}%`}
@@ -418,6 +450,74 @@ function SettingsPanel({ settings, onSaved }: { settings: MPISettings; onSaved: 
         <Field label="System for the enterprise identifier" hint="How the EUID is named in FHIR and PIX answers.">
           <input className="input font-mono text-xs" value={s.euidSystem} onChange={(e) => setS({ ...s, euidSystem: e.target.value })} />
         </Field>
+      </div>
+      <div className="mt-5 space-y-2 rounded-lg border border-slate-800 p-3" data-testid="mpi-weights">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-slate-200">
+            Field weights{' '}
+            <span className="text-xs text-slate-500">
+              {s.weights && Object.keys(s.weights).length > 0 ? '(this site’s own, for the fields listed)' : '(the published defaults)'}
+            </span>
+          </p>
+          <span className="flex gap-2">
+            <button type="button" className="btn-ghost py-0.5 text-xs" disabled={estimating} onClick={runEstimate}>
+              {estimating ? 'Estimating…' : 'Estimate from our records'}
+            </button>
+            {s.weights && Object.keys(s.weights).length > 0 && (
+              <button type="button" className="btn-ghost py-0.5 text-xs" onClick={() => setS({ ...s, weights: {} })}>
+                Back to the defaults
+              </button>
+            )}
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-slate-500">
+          m is how often a field agrees when two records are one person; u, how often it agrees by chance. An estimate fits m to the pairs the
+          index compares (expectation-maximisation, no reviewed pairs needed) and u to pairs drawn at random. Nothing changes until you use
+          it and save.
+        </p>
+        {estimate && (
+          <>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
+                  <th className="py-1 pr-3">Field</th>
+                  <th className="py-1 pr-3">In use (m / u)</th>
+                  <th className="py-1 pr-3">Estimated (m / u)</th>
+                  <th className="py-1">Pairs compared</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 font-mono">
+                {Object.keys(estimate.defaults).map((f) => {
+                  const cur = s.weights?.[f] ?? estimate.defaults[f]!
+                  const est = estimate.estimate.weights[f]
+                  return (
+                    <tr key={f}>
+                      <td className="py-1 pr-3 font-sans text-slate-300">{fieldLabel[f] ?? f}</td>
+                      <td className="py-1 pr-3 text-slate-400">
+                        {cur.m.toFixed(3)} / {cur.u.toFixed(4)}
+                      </td>
+                      <td className={`py-1 pr-3 ${est ? 'text-sky-300' : 'text-slate-600'}`}>
+                        {est ? `${est.m.toFixed(3)} / ${est.u.toFixed(4)}` : 'too few pairs: default kept'}
+                      </td>
+                      <td className="py-1 text-slate-500">{(estimate.estimate.compared[f] ?? 0).toLocaleString()}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            <p className={`text-xs ${estimate.estimate.converged ? 'text-slate-500' : 'text-amber-300'}`}>
+              From {estimate.estimate.pairs.toLocaleString()} candidate pairs, {estimate.estimate.iterations} iterations
+              {estimate.estimate.converged ? '' : ', not converged: treat it with care'}.
+            </p>
+            <button
+              type="button"
+              className="btn-ghost py-0.5 text-xs text-sky-300"
+              onClick={() => setS({ ...s, weights: estimate.estimate.weights })}
+            >
+              Use the estimate (then save)
+            </button>
+          </>
+        )}
       </div>
       {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
       <div className="mt-3 flex items-center gap-3">
@@ -513,7 +613,7 @@ export function PatientIndex() {
           ))}
         </ul>
       </Section>
-      {canEdit && <Reviews key={reload} onChanged={changed} />}
+      {canEdit && <Reviews key={reload} onChanged={changed} autoLink={data.settings.autoLink} />}
       <Find />
       {isAdmin && <SettingsPanel settings={data.settings} onSaved={changed} />}
     </div>

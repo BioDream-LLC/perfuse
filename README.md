@@ -80,7 +80,8 @@ only from YAML or the command line is treated as a bug.
   book or DNS, an SMTP source; checked against OpenSSL in both directions.
 - **Master patient index:** records from every system linked into one enterprise identifier per person, deterministic
   (trusted identifiers) and probabilistic (Fellegi-Sunter, Jaro-Winkler) matching, a review queue, links, unlinks and A40
-  merges with their history, FHIR `Patient/$match` and PIXm; off until a site turns it on.
+  merges with their history, FHIR `Patient/$match` and PIXm; off until a site turns it on, and automatic linking off
+  until an administrator trusts it (measured on FEBRL: no wrong links), with weights it can estimate from the site's records.
 - **AS2 (RFC 4130):** EDI with trading partners over HTTP, signed and encrypted with S/MIME, delivered only when the partner's
   signed receipt names the digest of what was sent; synchronous and asynchronous receipts; tested against pyas2lib both ways.
 - **OpenPGP:** decrypt and verify what a source receives, encrypt and sign what a destination sends (files, SFTP, S3, email,

@@ -27,6 +27,7 @@ func (s *Server) registerMPI(mux *recordingMux) {
 	mux.Handle("POST /api/mpi/records/{id}/unlink", s.require(store.RoleEditor, s.handleMPIUnlink))
 	mux.Handle("POST /api/mpi/merge", s.require(store.RoleEditor, s.handleMPIMerge))
 	mux.Handle("PUT /api/mpi/settings", s.require(store.RoleAdmin, s.handleMPISettings))
+	mux.Handle("POST /api/mpi/estimate", s.require(store.RoleAdmin, s.handleMPIEstimate))
 }
 
 func mpiTenant(sess *store.Session) string { return mpi.TenantOf(string(sess.TenantID)) }
@@ -283,6 +284,26 @@ func (s *Server) handleMPISettings(w http.ResponseWriter, r *http.Request, sess 
 		return
 	}
 	saved, _ := s.PatientIndex.Settings(r.Context(), mpiTenant(sess))
-	s.mpiAudit(r, sess, "mpi.settings", "", fmt.Sprintf("auto %.2f review %.2f trusted %v", saved.AutoLink, saved.Review, saved.Trusted))
+	s.mpiAudit(r, sess, "mpi.settings", "", fmt.Sprintf("automatic %v at %.2f, review %.2f, trusted %v, %d site weights",
+		saved.Automatic, saved.AutoLink, saved.Review, saved.Trusted, len(saved.Weights)))
 	s.ok(w, saved)
+}
+
+// handleMPIEstimate estimates matching weights from the index's own records. It changes nothing: the administrator sees the
+// estimate beside the weights in use and saves it, or not, through the settings.
+func (s *Server) handleMPIEstimate(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	if !s.mpiReady(w, r) {
+		return
+	}
+	est, err := s.PatientIndex.EstimateFromRecords(r.Context(), mpiTenant(sess))
+	if errors.Is(err, mpi.ErrTooFewPairs) {
+		s.fail(w, r, http.StatusConflict, err.Error())
+		return
+	}
+	if err != nil {
+		s.mpiFail(w, r, err)
+		return
+	}
+	s.mpiAudit(r, sess, "mpi.estimate", "", fmt.Sprintf("%d pairs, converged %v", est.Pairs, est.Converged))
+	s.ok(w, map[string]any{"estimate": est, "defaults": mpi.DefaultWeights})
 }
