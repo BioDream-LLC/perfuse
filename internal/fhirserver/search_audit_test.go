@@ -2,7 +2,7 @@ package fhirserver
 
 import (
 	"context"
-	"database/sql"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,7 +17,7 @@ import (
 func newAuditServer(t *testing.T) (*Server, http.Handler) {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

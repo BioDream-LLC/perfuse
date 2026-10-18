@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"net/http"
@@ -23,7 +23,7 @@ import (
 
 func ecrServer(t *testing.T, h *ecrMessages) (*httptest.Server, *fhirserver.Store) {
 	t.Helper()
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

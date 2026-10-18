@@ -303,10 +303,25 @@ func (a *Archive) Search(ctx context.Context, q Query, base string) ([]JSON, err
 		series_desc, body_part, instance_number, rows, columns, frames, charset,
 		COUNT(DISTINCT series_uid), COUNT(*), GROUP_CONCAT(DISTINCT modality)
 		FROM instances`
+	order := " ORDER BY study_date DESC, study_uid, series_number+0, instance_number+0"
+	if sqlitedb.IsPostgres(a.db.Read) {
+		// SQLite answers a grouped query's other columns from one row of the group; PostgreSQL wants each said how. The
+		// first value of each is what SQLite would give for the study and series attributes, which are the same across
+		// the group anyway.
+		cols := []string{"study_uid", "series_uid", "sop_uid", "sop_class", "transfer_syntax", "patient_id", "patient_name",
+			"birth_date", "sex", "study_date", "study_time", "accession", "study_id", "study_desc", "referring", "modality",
+			"series_number", "series_desc", "body_part", "instance_number", "rows", "columns", "frames", "charset"}
+		for i, c := range cols {
+			cols[i] = "MIN(" + c + ")"
+		}
+		sqlText = "SELECT " + strings.Join(cols, ", ") +
+			", COUNT(DISTINCT series_uid), COUNT(*), string_agg(DISTINCT modality, ',') FROM instances"
+		order = " ORDER BY MIN(study_date) DESC, MIN(study_uid), MIN(perfuse_num(series_number)), MIN(perfuse_num(instance_number))"
+	}
 	if len(where) > 0 {
 		sqlText += " WHERE " + strings.Join(where, " AND ")
 	}
-	sqlText += " GROUP BY " + group + " ORDER BY study_date DESC, study_uid, series_number+0, instance_number+0"
+	sqlText += " GROUP BY " + group + order
 	limit := q.Limit
 	if limit <= 0 || limit > 1000 {
 		limit = 1000

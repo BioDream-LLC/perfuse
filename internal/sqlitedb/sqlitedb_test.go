@@ -9,6 +9,9 @@ import (
 )
 
 func TestOpenGivesSeparatePools(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	db := openTemp(t)
 
 	if db.Write == db.Read {
@@ -23,6 +26,9 @@ func TestOpenGivesSeparatePools(t *testing.T) {
 }
 
 func TestReadersAreBounded(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	// A very large read pool is not better. Each connection has its own page
 	// cache, and a burst of expensive reports would then compete for memory
 	// instead of for the disk.
@@ -41,6 +47,9 @@ func TestReadersAreBounded(t *testing.T) {
 }
 
 func TestWALIsEnabled(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	// Without WAL a reader and a writer block each other in SQLite itself, and
 	// splitting the pools would achieve nothing.
 	db := openTemp(t)
@@ -55,6 +64,9 @@ func TestWALIsEnabled(t *testing.T) {
 }
 
 func TestTheReadPoolRefusesWrites(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	db := openTemp(t)
 
 	if _, err := db.Write.Exec(`CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)`); err != nil {
@@ -69,6 +81,9 @@ func TestTheReadPoolRefusesWrites(t *testing.T) {
 }
 
 func TestReadsSeeCommittedWrites(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	db := openTemp(t)
 
 	if _, err := db.Write.Exec(`CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)`); err != nil {
@@ -108,6 +123,9 @@ func TestReadsSeeCommittedWrites(t *testing.T) {
 // and TestTheReadPoolRefusesWrites. This test is the one that proves the combination delivers the behaviour
 // they exist for.
 func TestAWriteSucceedsWhileAReadIsOpen(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	db := openTemp(t)
 	ctx := context.Background()
 
@@ -158,6 +176,9 @@ func TestAWriteSucceedsWhileAReadIsOpen(t *testing.T) {
 }
 
 func TestMemoryDatabaseSharesOnePool(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	// An in-memory database belongs to its connection. A second pool would be a
 	// second, empty database, and a test against it would pass for the wrong
 	// reason.
@@ -180,6 +201,9 @@ func TestMemoryDatabaseSharesOnePool(t *testing.T) {
 }
 
 func TestCloseIsSafeForAMemoryDatabase(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	db, err := Open(":memory:", Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -192,6 +216,9 @@ func TestCloseIsSafeForAMemoryDatabase(t *testing.T) {
 }
 
 func TestOpenRejectsAnEmptyPath(t *testing.T) {
+	if TestPostgres() {
+		t.Skip("the two SQLite pools; PostgreSQL has one")
+	}
 	if _, err := Open("  ", Options{}); err == nil {
 		t.Error("an empty path should be refused")
 	}

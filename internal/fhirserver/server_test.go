@@ -3,9 +3,9 @@ package fhirserver
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"net/http"
@@ -21,7 +21,7 @@ import (
 func newTestServer(t *testing.T) (*Server, http.Handler) {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

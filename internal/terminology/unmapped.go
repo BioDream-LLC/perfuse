@@ -70,7 +70,7 @@ func (s *Store) Flush(ctx context.Context) error {
 	defer func() { _ = tx.Rollback() }()
 	st, err := tx.PrepareContext(ctx, `INSERT INTO unmapped_values (tenant, channel, table_name, value, count, first_seen, last_seen)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT (tenant, channel, table_name, value) DO UPDATE SET count = count + excluded.count,
+		ON CONFLICT (tenant, channel, table_name, value) DO UPDATE SET count = unmapped_values.count + excluded.count,
 			last_seen = excluded.last_seen, dismissed = 0`)
 	if err != nil {
 		return err

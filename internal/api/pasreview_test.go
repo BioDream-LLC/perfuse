@@ -2,8 +2,8 @@ package api
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"net/http"
@@ -33,7 +33,7 @@ func TestTheReviewerQueueShowsAndDecidesPendedRequests(t *testing.T) {
 	if rec := h.do("viewer", http.MethodGet, "/api/pas/cases", nil); rec.Code != http.StatusNotFound {
 		t.Fatalf("with PAS off the queue says so: %d", rec.Code)
 	}
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

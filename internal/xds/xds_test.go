@@ -3,8 +3,8 @@ package xds
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/xml"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,7 +18,7 @@ const patient = "DWMRN1^^^&1.2.826.0.1.3680043.10.1337.99&ISO"
 
 func rig(t *testing.T) (*Registry, *httptest.Server) {
 	t.Helper()
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

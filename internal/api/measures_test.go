@@ -1,8 +1,8 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"strings"
@@ -46,7 +46,7 @@ func TestMeasures(t *testing.T) {
 		t.Errorf("no store: %d", rr.Code)
 	}
 
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

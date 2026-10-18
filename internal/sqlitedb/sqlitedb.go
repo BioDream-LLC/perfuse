@@ -75,9 +75,25 @@ const (
 // connection: an in-memory database belongs to its connection, so a second one
 // would silently be a different, empty database. That is the kind of thing that
 // makes a test pass for the wrong reason.
+//
+// A postgres:// or postgresql:// URL opens PostgreSQL instead, for servers that share one store (see postgres.go).
 func Open(path string, opts Options) (*DB, error) {
 	if strings.TrimSpace(path) == "" {
 		return nil, fmt.Errorf("sqlitedb: no path")
+	}
+	if IsPostgresURL(path) {
+		return openPostgres(path, opts.Readers)
+	}
+	if isMemory(path) {
+		if target := testMemory(); target != "" {
+			return openPostgres(target, opts.Readers)
+		}
+	}
+	if target, ok := testSchema(path); ok {
+		if err := ensureSchema(target); err != nil {
+			return nil, err
+		}
+		return openPostgres(target, opts.Readers)
 	}
 
 	if opts.BusyTimeoutMS <= 0 {
@@ -190,4 +206,20 @@ func dsn(path string, busyMS int, foreignKeys, readOnly bool) string {
 
 func isMemory(path string) bool {
 	return path == ":memory:" || strings.Contains(path, "mode=memory")
+}
+
+// OpenSQL opens one pool, for a caller that wants a single *sql.DB: an in-memory or file SQLite database limited to one
+// connection, as the stores expect, or PostgreSQL for a URL (and, in a test binary with PERFUSE_TEST_POSTGRES set, for
+// every target: see testSchema).
+func OpenSQL(target string) (*sql.DB, error) {
+	d, err := Open(strings.TrimPrefix(target, "file:"), Options{})
+	if err != nil {
+		return nil, err
+	}
+	if d.memory {
+		return d.Write, nil
+	}
+	// The read pool is not wanted: one pool, one writer, as SQLite needs.
+	_ = d.Read.Close()
+	return d.Write, nil
 }

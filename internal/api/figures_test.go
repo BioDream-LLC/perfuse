@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -31,7 +31,7 @@ func TestEveryFiguresTileIsComputed(t *testing.T) {
 func figuresHarness(t *testing.T) (*harness, *msgstore.Store) {
 	t.Helper()
 	h := newHarness(t)
-	db, err := sql.Open("sqlite", "file:"+t.TempDir()+"/m.db")
+	db, err := sqlitedb.OpenSQL("file:" + t.TempDir() + "/m.db")
 	if err != nil {
 		t.Fatal(err)
 	}

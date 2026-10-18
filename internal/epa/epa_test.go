@@ -2,8 +2,8 @@ package epa
 
 import (
 	"context"
-	"database/sql"
 	"encoding/xml"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"os"
 	"strings"
 	"sync"
@@ -29,7 +29,7 @@ type rig struct {
 
 func newRig(t *testing.T) *rig {
 	t.Helper()
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

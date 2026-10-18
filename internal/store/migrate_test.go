@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"testing"
 )
 
@@ -69,6 +70,9 @@ func TestSchemaVersionIsRecordedOnceNotAppended(t *testing.T) {
 }
 
 func TestExistingUsersSurviveTheTenancyMigration(t *testing.T) {
+	if sqlitedb.TestPostgres() {
+		t.Skip("the upgrade of a SQLite database from before tenancy; a PostgreSQL store starts at the current schema")
+	}
 	// The upgrade path for every installation that exists today. The users table is
 	// rebuilt rather than altered, because username was globally UNIQUE and SQLite
 	// cannot drop that. A rebuild that dropped the rows would lock the operator out

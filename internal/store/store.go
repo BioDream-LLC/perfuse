@@ -15,6 +15,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"sort"
 	"strings"
 	"time"
@@ -293,6 +294,13 @@ func Open(path string) (*Store, error) {
 	//
 	// Found by writing a test that a deleted account takes its passkeys with it. It failed, the cascade was correct, and
 	// the divergence was here.
+	if sqlitedb.IsPostgresURL(path) || sqlitedb.TestPostgres() {
+		db, err := sqlitedb.OpenSQL(path)
+		if err != nil {
+			return nil, err
+		}
+		return OpenDB(db)
+	}
 	dsn := "file::memory:?_pragma=foreign_keys(1)"
 	if path != ":memory:" {
 		// WAL for concurrent readers alongside a writer, and a busy timeout so a
@@ -411,8 +419,7 @@ func isUniqueViolation(err error) bool {
 	if err == nil {
 		return false
 	}
-	msg := err.Error()
-	return contains(msg, "UNIQUE constraint failed") || contains(msg, "constraint failed: UNIQUE")
+	return sqlitedb.IsUniqueViolation(err)
 }
 
 func contains(s, sub string) bool {

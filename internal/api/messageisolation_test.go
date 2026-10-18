@@ -2,7 +2,7 @@ package api
 
 import (
 	"context"
-	"database/sql"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"testing"
 	"time"
@@ -49,7 +49,7 @@ func newMessageHarness(t *testing.T) *harness {
 
 	h := newHarness(t)
 
-	db, err := sql.Open("sqlite", "file:"+t.TempDir()+"/m.db")
+	db, err := sqlitedb.OpenSQL("file:" + t.TempDir() + "/m.db")
 	if err != nil {
 		t.Fatal(err)
 	}

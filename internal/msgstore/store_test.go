@@ -2,8 +2,8 @@ package msgstore
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +14,7 @@ import (
 func open(t *testing.T) *Store {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,9 +3,9 @@ package api
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -24,7 +24,7 @@ import (
 func xdsHarness(t *testing.T) (*harness, string, string, *httptest.Server) {
 	t.Helper()
 	h := newHarness(t)
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

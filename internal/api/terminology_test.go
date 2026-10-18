@@ -3,7 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
-	"database/sql"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,7 +15,7 @@ import (
 
 func withTerminology(t *testing.T, h *harness) *terminology.Store {
 	t.Helper()
-	db, err := sql.Open("sqlite", "file:"+t.TempDir()+"/term.db")
+	db, err := sqlitedb.OpenSQL("file:" + t.TempDir() + "/term.db")
 	if err != nil {
 		t.Fatal(err)
 	}

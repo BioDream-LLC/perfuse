@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 )
 
 // Versioned migrations, for changes the base schema cannot express.
@@ -31,6 +33,9 @@ type migration struct {
 	name string
 	// stmts run in order inside one transaction.
 	stmts []string
+	// pg replaces stmts on PostgreSQL, for the one change SQLite could only make by rebuilding a table. PostgreSQL
+	// alters the table instead: a rebuild there would have to drop every foreign key pointing at it.
+	pg []string
 	// addColumns are added only when missing, which plain ALTER TABLE cannot express in SQLite. For a column that a
 	// database may already have - one rebuilt from a later schema, or migrated, rolled back and migrated again.
 	addColumns []columnAdd
@@ -128,6 +133,22 @@ var migrations = []migration{
 			// The index leads with tenant_id, because every scoped query filters on
 			// it first. One that did not would make a fifty-tenant instance scan
 			// forty-nine tenants' rows to answer one tenant's question.
+			`CREATE INDEX IF NOT EXISTS audit_tenant ON audit(tenant_id, at DESC)`,
+		},
+		pg: []string{
+			`CREATE TABLE IF NOT EXISTS tenants (
+				id         TEXT    PRIMARY KEY,
+				name       TEXT    NOT NULL,
+				disabled   INTEGER NOT NULL DEFAULT 0,
+				created_at TEXT    NOT NULL,
+				notes      TEXT
+			)`,
+			`INSERT OR IGNORE INTO tenants (id, name, disabled, created_at, notes)
+			 VALUES ('main', 'Main', 0, datetime('now'), 'Created automatically when this installation gained multi-tenancy. Everything that existed beforehand belongs to it.')`,
+			`ALTER TABLE users ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'main' REFERENCES tenants(id) ON DELETE CASCADE`,
+			`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key`,
+			`ALTER TABLE users ADD CONSTRAINT users_tenant_username UNIQUE (tenant_id, username)`,
+			`ALTER TABLE audit ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'main'`,
 			`CREATE INDEX IF NOT EXISTS audit_tenant ON audit(tenant_id, at DESC)`,
 		},
 	},
@@ -511,7 +532,25 @@ func (s *Store) applyMigration(ctx context.Context, index int, m migration) erro
 	// from than one that failed cleanly.
 	defer func() { _ = tx.Rollback() }()
 
-	for j, stmt := range m.stmts {
+	stmts := m.stmts
+	if sqlitedb.IsPostgres(s.db) {
+		// Servers of one cluster start together and would each run the migration. The lock makes the second wait, and
+		// the version read after it makes it skip what the first applied.
+		if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(7212001)`); err != nil {
+			return err
+		}
+		var have int
+		if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(version), 0) FROM schema_version`).Scan(&have); err != nil {
+			return err
+		}
+		if have > index {
+			return nil
+		}
+		if m.pg != nil {
+			stmts = m.pg
+		}
+	}
+	for j, stmt := range stmts {
 		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return fmt.Errorf("statement %d: %w", j, err)
 		}

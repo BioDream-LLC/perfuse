@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -46,7 +46,7 @@ func newGroupHarness(t *testing.T) (*harness, map[string]int64) {
 		}
 	}
 
-	db, err := sql.Open("sqlite", "file:"+t.TempDir()+"/m.db")
+	db, err := sqlitedb.OpenSQL("file:" + t.TempDir() + "/m.db")
 	if err != nil {
 		t.Fatal(err)
 	}

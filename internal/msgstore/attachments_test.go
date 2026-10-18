@@ -3,7 +3,7 @@ package msgstore
 import (
 	"bytes"
 	"context"
-	"database/sql"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"testing"
 
 	"github.com/biodream-llc/perfuse/internal/attach"
@@ -13,7 +13,7 @@ import (
 func attachStore(t *testing.T) *Store {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", "file:"+t.TempDir()+"/a.db")
+	db, err := sqlitedb.OpenSQL("file:" + t.TempDir() + "/a.db")
 	if err != nil {
 		t.Fatal(err)
 	}

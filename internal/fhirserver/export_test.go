@@ -2,9 +2,9 @@ package fhirserver
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -433,7 +433,7 @@ func TestBulkExportIsDeclaredAndItsManifestIsPlainJSON(t *testing.T) {
 // server read an Encounter as R4 (class a Coding, status "finished") and exported it as R5 (class a list, status
 // "completed"), which fails R4 validation; Inferno's Bulk Data suite found it.
 func TestAnR4ServerExportsR4(t *testing.T) {
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

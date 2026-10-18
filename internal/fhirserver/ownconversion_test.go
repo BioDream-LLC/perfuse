@@ -1,7 +1,7 @@
 package fhirserver
 
 import (
-	"database/sql"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"strings"
@@ -18,7 +18,7 @@ import (
 // carries Encounter.class, which the outbound downgrade reshaped and the inbound path did not reverse. The pipeline the
 // product exists for - v2 in, FHIR out, stored - had never been run end to end against its own store.
 func TestOwnConversionsAreAcceptedByOwnR4Server(t *testing.T) {
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

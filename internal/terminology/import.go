@@ -97,7 +97,8 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 	if _, err := tx.ExecContext(ctx, `DELETE FROM term_concepts WHERE system = ? AND version = ?`, system, version); err != nil {
 		return ImportResult{}, err
 	}
-	ins, err := tx.PrepareContext(ctx, `INSERT OR REPLACE INTO term_concepts (system, version, code, display, active) VALUES (?, ?, ?, ?, ?)`)
+	ins, err := tx.PrepareContext(ctx, `INSERT INTO term_concepts (system, version, code, display, active) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT (system, version, code) DO UPDATE SET display = excluded.display, active = excluded.active`)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -158,8 +159,10 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 	if res.Concepts == 0 {
 		return ImportResult{}, fmt.Errorf("no codes were found: is this the %s file?", describeFormat(req.Format))
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO term_systems (system, version, name, format, concepts, imported_at,
-		imported_by, licence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, system, version, name, req.Format, res.Concepts,
+	if _, err := tx.ExecContext(ctx, `INSERT INTO term_systems (system, version, name, format, concepts, imported_at,
+		imported_by, licence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (system, version) DO UPDATE SET name = excluded.name, format = excluded.format, concepts = excluded.concepts,
+		imported_at = excluded.imported_at, imported_by = excluded.imported_by, licence = excluded.licence`, system, version, name, req.Format, res.Concepts,
 		time.Now().UTC().Format(time.RFC3339), req.By, req.Licence); err != nil {
 		return ImportResult{}, err
 	}

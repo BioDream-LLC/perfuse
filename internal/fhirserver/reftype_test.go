@@ -3,6 +3,7 @@ package fhirserver
 import (
 	"context"
 	"database/sql"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"path/filepath"
 	"testing"
 
@@ -13,7 +14,7 @@ import (
 func newTestStore(t *testing.T) *Store {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

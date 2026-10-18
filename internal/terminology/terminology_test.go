@@ -2,8 +2,8 @@ package terminology
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"strings"
 	"testing"
 	"time"
@@ -13,7 +13,7 @@ import (
 
 func open(t *testing.T) *Store {
 	t.Helper()
-	db, err := sql.Open("sqlite", "file:"+t.TempDir()+"/t.db")
+	db, err := sqlitedb.OpenSQL("file:" + t.TempDir() + "/t.db")
 	if err != nil {
 		t.Fatal(err)
 	}

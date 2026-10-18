@@ -2,8 +2,8 @@ package fhirserver
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"net/http"
@@ -229,7 +229,7 @@ func TestCompartmentTypesComeFromTheSearchRegistry(t *testing.T) {
 // TestEverythingOnAnR4ServerIsR4 covers $everything written without the per-entry version conversion a search applies: an
 // R4 server returned R5 Encounters (class a list). Inferno's PDex suite found it.
 func TestEverythingOnAnR4ServerIsR4(t *testing.T) {
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,7 +269,7 @@ func TestEverythingOnAnR4ServerIsR4(t *testing.T) {
 // TestAnR4StatusSearchFindsTheEncounter covers status=finished finding nothing on an R4 server, because the index holds
 // R5's "completed". Inferno's PDex (US Core 3.1.1) suite found it.
 func TestAnR4StatusSearchFindsTheEncounter(t *testing.T) {
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"io"
 	"log/slog"
 	"net/http"
@@ -67,7 +68,7 @@ type subFixture struct {
 
 func newSubFixture(t *testing.T, allowHTTP bool) *subFixture {
 	t.Helper()
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sqlitedb.OpenSQL(":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,7 +440,7 @@ func TestCapabilityStatementNamesTheTopics(t *testing.T) {
 }
 
 func TestSubscriptionsNeedR4(t *testing.T) {
-	db, _ := sql.Open("sqlite", ":memory:")
+	db, _ := sqlitedb.OpenSQL(":memory:")
 	defer db.Close()
 	store, err := NewStore(db, fhir.R5)
 	if err != nil {
