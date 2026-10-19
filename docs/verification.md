@@ -1043,7 +1043,7 @@ there, because the runner's Docker runs Windows containers and xmlsec1 comes in 
 ## The public test instance, test.perfuse.health
 
 A Perfuse anyone can test against, with test data only: FHIR, CRD, DTR, PAS and SMART, on the released binary (checked
-against `SHA256SUMS`), with a Let's Encrypt certificate. It is built from the repository by `deploy/test-instance`, and a
+against `SHA256SUMS`) or one built from `main` (below), with a Let's Encrypt certificate. It is built from the repository by `deploy/test-instance`, and a
 workflow checks every half hour that it answers and that its certificate has more than 14 days left. Certificate renewal was
 tested (`certbot renew --dry-run`). The data are the conformance runs' fixtures; Inferno's backend client may read everything
 and write only Claims and Subscriptions, and a write to anything else was checked to be refused.
@@ -1061,6 +1061,51 @@ gave the same results as the local runs (DTR and PAS run again on 15 October 202
 
 The first DTR run found one difference, in the run rather than the server: the order it asks CRD about named a patient no
 member record matches, which the local payer never checks and the public one does. The order is now Amy Shaw's.
+
+Since 19 October 2026 the instance runs `main` (built by `provision.sh main`) and every screen carries invented data, so a
+visitor sees each one at work: `deploy/test-instance/seed.py` fills the FHIR store (30 patients with encounters, conditions,
+HbA1c results and blood pressures), the patient index (admissions from three systems, NHS numbers from the synthetic 999
+range), the imaging archive (8 studies drawn by the script), users and machine tokens, data protection requests and a legal
+hold, a local code system, the Direct address book, a SMART Health Link, saved views and measures, and a TEFCA participant
+declaration; the demonstration channels add a patient index destination, an MLLP hop over TLS, publishing to the server's own
+XDS.b registry, a feed contract, a shadow comparison, a shared mapping table, and a billing system switched off on purpose so
+the queue and its alerts have something to show. The shared demo account may now read the administrators' screens. Every
+screen was then swept as that account with Playwright, as the live instance and as a local copy built the same way.
+
+The sweep found five defects, fixed:
+- The console's channel list reported a feed contract beside its channel (the documented layout) as a channel that would not
+  load; the loader that runs channels already skipped it.
+- A shadow comparison started from the console named its candidate by file name alone, and the engine read that from the
+  working directory, so on a service (whose working directory is not the channels folder) every such comparison failed to start.
+- The XDS destination sent `${NAME}` references in its token, username, password and headers as written.
+- The DICOMweb source and destination did the same, so a source configured as the manual shows (`token: ${STOW_TOKEN}`)
+  accepted the literal text `${STOW_TOKEN}` as its token. A reference to an unset variable now refuses every request.
+- A data protection request giving a record number on its own found the person's messages but not their patient index record,
+  so an erasure left the index record behind. A bare number now finds the one person holding it, and nobody when two do.
+
+Also found: `perfuse generate` restarted its control ids and document numbers at 1 on every run, so a demonstration feeding it
+once a minute sent the same document number again and again (an XDS registry refuses a second document under one uniqueId).
+Without `-seed` the identifiers now start from the clock. And the manual's section on paths was wrong twice: it wrote a
+repetition as `PID-3[2]` (the parser takes `PID-3(2)`) and said a path without an index means the first repetition and the first
+occurrence, when it means every one (deliberately, as in filters).
+
+## The UK and Europe (October 2026, on main, not yet released)
+
+- **Translations** (twelve languages): every string of the console is in each catalogue with its placeholders (a unit test),
+  and a Playwright sweep of every screen in every language fails on any catalogued text left in English, a page error or a
+  horizontal overflow; all eleven pass. The manual's translations keep every code span and every list and table row (a unit
+  test). Made by machine (Llama 3.3 70B through OpenRouter); **not reviewed by a native speaker in any language**.
+- **National patient numbers**: each of the 37 schemes' check digits is tested against valid numbers and one-digit
+  errors. The FHIR system URIs marked verified are taken from the national guides named beside them; about seventeen
+  are defaults (marked unverified in the scheme list) for a site to confirm.
+- **National code systems**: SNOMED CT RF2, ClaML and the ICD-11 tabulation are read from fixtures written for the tests in the
+  published formats, not from a real national release (most need a licence); the WHO ICD API client was tested against a stand-in written from WHO's API documentation, not against WHO.
+  The module identifiers given for six editions (Belgium, Ireland, Norway, Switzerland, Estonia, Spain) are unverified.
+- **GDPR tooling**: find, export, erase with a second administrator's approval, holds, the erasure ledger and its reapplication
+  after a restore are tested on SQLite and PostgreSQL. The draft data processing agreement (`docs/legal`) has not been read by
+  a lawyer.
+- **Residency and hosting**: the region lists are tested; the OpenTofu stacks pass `tofu validate` and `tofu plan` (eu-west-2:
+  55 resources, all in the Region) against a real AWS account but **have never been applied**. The costs are AWS list prices.
 
 ### Bulk Data Access v2.0.0, the first run
 
@@ -1207,6 +1252,7 @@ checked.
   codes were the built-in sample, not the RCTC. No state has received an ELR message from here; see the ELR section for what the
   NIST validator does and does not show.
 - **No third-party FHIR subscriber has received a notification from here.** Delivery was tested against receivers written for the tests.
+- **No translation has been reviewed by a native speaker**, and the hosted-region stacks have never been applied (above).
 - **No site has run production clinical traffic through any of this.** The engine, transports, queue and
   web interface are tested, and the parts that talk to other software are verified as described above.
   That is not the same as having survived a real hospital's Monday morning.

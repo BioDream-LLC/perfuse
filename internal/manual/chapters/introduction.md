@@ -61,6 +61,6 @@ The reference chapters near the end list every configuration key, its type, whet
 
 Configuration is YAML. Most keys are `snake_case` on the wire — `max_message_size`, `idle_timeout` — and this manual always gives the wire form, because that is what you type. There is one long-standing exception, `dataType` on a channel, which is camelCase; it is documented that way in the [channel reference](#channel-reference) and accepted only in that spelling.
 
-Field references in HL7 use the usual notation: `PID-5` is the fifth field of the PID segment, `PID-5.1` its first component, and `PID-3[2]` the second repetition of the third field. Where a path is written without a repetition it addresses the first.
+Field references in HL7 use the usual notation: `PID-5` is the fifth field of the PID segment, `PID-5.1` its first component, and `PID-3(2)` the second repetition of the third field. A path written without a repetition addresses every repetition (see [paths](#paths)).
 
 Durations are written as a number and a unit — `30s`, `5m`, `2h`. A bare number is not a duration and will be refused rather than guessed at.

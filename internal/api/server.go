@@ -863,7 +863,7 @@ func (s *Server) require(minimum store.Role, h func(http.ResponseWriter, *http.R
 			return
 		}
 
-		if !sess.Role.AtLeast(minimum) {
+		if !sess.Role.AtLeast(minimum) && !s.demoMayRead(sess, r) {
 			s.log().Warn("permission denied",
 				"user", sess.Username, "role", string(sess.Role),
 				"needed", string(minimum), "path", r.URL.Path)
@@ -935,6 +935,8 @@ type meResponse struct {
 	ChannelGroups []string `json:"channelGroups,omitempty"`
 	// GroupRoles is the role in each channel group, when they differ; Role is then the strongest of them.
 	GroupRoles map[string]string `json:"groupRoles,omitempty"`
+	// Demo is the shared account of a public demonstration server: a viewer that may look at every screen.
+	Demo bool `json:"demo,omitempty"`
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -1068,7 +1070,7 @@ func (s *Server) finishLogin(w http.ResponseWriter, r *http.Request, token strin
 		Username: user.Username, Action: "login", IP: clientIP(r),
 	})
 
-	s.ok(w, meFor(store.SessionFor(user)))
+	s.ok(w, s.meFor(store.SessionFor(user)))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -1095,12 +1097,12 @@ func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request, sess *store.Session) {
-	s.ok(w, meFor(sess))
+	s.ok(w, s.meFor(sess))
 }
 
 // meFor describes a session to the browser.
-func meFor(sess *store.Session) meResponse {
-	out := meResponse{Username: sess.Username, Role: string(sess.Role), ChannelGroups: sess.ChannelGroups}
+func (s *Server) meFor(sess *store.Session) meResponse {
+	out := meResponse{Username: sess.Username, Role: string(sess.Role), ChannelGroups: sess.ChannelGroups, Demo: s.isDemo(sess)}
 	if len(sess.GroupRoles) > 0 {
 		out.GroupRoles = map[string]string{}
 		for _, g := range sess.ChannelGroups {

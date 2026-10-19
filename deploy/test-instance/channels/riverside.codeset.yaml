@@ -1,0 +1,38 @@
+# The demonstration hospital's shared mapping tables (invented). Used by lab-results; shown under Build › Tables.
+tables:
+  - name: sex-to-results-archive
+    describes: the hospital's administrative sex codes into the codes the results archive accepts
+    decided_by: the interface team, when the results archive was connected
+    decided_on: 2026-03-02
+    source: the results archive's interface specification, version 2
+    entries:
+      - from: M
+        to: M
+      - from: F
+        to: F
+      - from: U
+        to: "9"
+        why: the archive has no 'unknown'; its code for 'not stated' is 9
+      - from: O
+        to: "9"
+        why: the archive has no 'other' either, and refuses a message carrying it
+      - from: A
+        to: "9"
+        why: HL7 table 0001's 'ambiguous', which the archive does not know
+  - name: ward-to-cost-centre
+    describes: the hospital's ward codes into the finance system's cost centres
+    decided_by: finance and the interface team
+    decided_on: 2026-05-14
+    source: the finance cost-centre list, May 2026
+    entries:
+      - from: MED
+        to: CC-4100
+      - from: SURG
+        to: CC-4200
+      - from: ICU
+        to: CC-4300
+        why: intensive care is charged to its own centre since the 2026 budget
+      - from: ED
+        to: CC-4400
+      - from: OBS
+        to: CC-4500

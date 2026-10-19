@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/config"
@@ -129,7 +130,15 @@ func (c *Channel) startShadow(load func(path string) (*config.Channel, error)) e
 	// LoadFile validates as well as reads, which is what is wanted here: a shadow that
 	// tolerated an invalid candidate would report differences for a version that could
 	// never be promoted, and that is misleading rather than merely useless.
-	candidateCfg, err := load(c.cfg.Shadow.Channel)
+	//
+	// A relative candidate is beside the channel file, as a contract or a mapping table is: the console writes the candidate's
+	// file name alone, and reading it from the working directory instead made every comparison started from the console fail
+	// on a server whose working directory is not the channels folder (a service's, normally).
+	candidatePath := c.cfg.Shadow.Channel
+	if !filepath.IsAbs(candidatePath) && c.cfg.Path() != "" {
+		candidatePath = filepath.Join(filepath.Dir(c.cfg.Path()), candidatePath)
+	}
+	candidateCfg, err := load(candidatePath)
 	if err != nil {
 		return fmt.Errorf("channel %q shadow: the candidate %s could not be loaded, so "+
 			"it could not be promoted even if it compared cleanly: %w",

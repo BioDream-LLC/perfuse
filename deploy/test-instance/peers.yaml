@@ -1,0 +1,6 @@
+# The Fleet page's other instances. The demonstration has one other site, switched off on purpose, to show what the
+# fleet view is for: a server that has stopped does not look like a quiet one. Its address does not exist.
+peers:
+  - name: Riverside clinic (switched off for the demonstration)
+    url: https://clinic.riverside.example
+    token: not-a-real-token

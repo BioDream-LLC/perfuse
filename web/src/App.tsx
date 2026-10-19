@@ -768,7 +768,9 @@ function Console() {
   // ignored and the tab shown to everybody - which for a tab whose endpoints require
   // editor means a viewer clicking it gets a 403 and concludes the product is broken.
   // Platform outranks admin, so it must not be excluded either.
-  const visible = tabs.filter((t) => atLeast(me.role, t.minRole as Role))
+  // The shared demo account looks at every screen (the server lets it read, never change); only a multi-tenant server's
+  // tenants view stays a platform account's.
+  const visible = tabs.filter((t) => atLeast(me.role, t.minRole as Role) || (me.demo && t.minRole !== 'platform'))
 
   // A URL cannot open a view above the signed-in role: the view is hidden from them, so an address naming it lands on the
   // dashboard rather than on a screen full of refusals.

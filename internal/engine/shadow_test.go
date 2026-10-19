@@ -620,3 +620,31 @@ func TestNoShadowMeansNoReport(t *testing.T) {
 		t.Error("a channel with no shadow should have no report")
 	}
 }
+
+// The console writes a comparison's candidate as its file name alone. It is read from beside the channel file, not from the
+// working directory: a service's working directory is not its channels folder, and every comparison started there failed.
+func TestAShadowCandidateIsReadFromBesideItsChannel(t *testing.T) {
+	dir := t.TempDir()
+	for name, body := range map[string]string{
+		"live.yaml": "name: live\nsource:\n  type: mllp\n  listen: 127.0.0.1:0\nshadow:\n  channel: candidate.yaml\n" +
+			"destinations:\n  - name: out\n    type: mllp\n    address: 127.0.0.1:1\n",
+		"candidate.yaml": "name: candidate\nsource:\n  type: mllp\n  listen: 127.0.0.1:0\n" +
+			"destinations:\n  - name: out\n    type: mllp\n    address: 127.0.0.1:1\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg, err := config.LoadFile(filepath.Join(dir, "live.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ch, err := NewChannel(cfg, func(d config.Destination) (Sender, error) { return &captureDest{}, nil }, quiet())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ch.startShadow(config.LoadFile); err != nil {
+		t.Fatalf("the candidate beside the channel was not found: %v", err)
+	}
+	_ = ch.stopShadow()
+}

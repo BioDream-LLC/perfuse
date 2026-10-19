@@ -17,7 +17,7 @@ import (
 
 func (g *Generator) mdm(p person, at time.Time, awkward string) Message {
 	controlID := g.controlID("MDM")
-	docID := fmt.Sprintf("DOC%08d", 30000000+g.seq)
+	docID := fmt.Sprintf("DOC%08d", 30000000+g.idBase+g.seq)
 
 	doc := g.clinicalDocument(p, at, docID, awkward)
 	encoded := base64.StdEncoding.EncodeToString([]byte(doc))
@@ -43,7 +43,7 @@ func (g *Generator) mdm(p person, at time.Time, awkward string) Message {
 		// that files both versions holds two contradictory records with nothing to
 		// say which is current.
 		event = "T02"
-		txa[13] = fmt.Sprintf("DOC%08d^%s", 30000000+g.seq-1, g.opts.Facility)
+		txa[13] = fmt.Sprintf("DOC%08d^%s", 30000000+g.idBase+g.seq-1, g.opts.Facility)
 	}
 	if awkward == "missing-optional" {
 		delete(txa, 17)

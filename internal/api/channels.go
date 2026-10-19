@@ -555,7 +555,9 @@ func (r *ChannelRepo) files() ([]string, error) {
 // channel file was quietly reclassified as something else, which is the fault this is meant to prevent.
 var companionSuffixes = []string{".codeset.yaml", ".codeset.yml"}
 
-// companionFile reports whether a filename is a companion rather than a channel.
+// companionFile reports whether a filename is a companion rather than a channel: a mapping table, or anything the channel loader
+// itself skips (a feed contract, a channel test). The loader's list is used too, because the two disagreed: a contract beside
+// its channel, the documented layout, ran fine and was reported here as a channel that would not load.
 func companionFile(name string) bool {
 	lower := strings.ToLower(name)
 
@@ -565,7 +567,7 @@ func companionFile(name string) bool {
 		}
 	}
 
-	return false
+	return config.IsSidecar(name)
 }
 
 // filenameFor derives a filename from a channel name.

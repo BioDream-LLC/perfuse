@@ -11,11 +11,28 @@ source:
 
 filter: MSH-9.1 == "ORU"
 
+# The hospital's own codes, in a shared table that records who decided each mapping and why.
+tables:
+  - riverside.codeset.yaml
+
+# What a lab result from this sender looks like, learned from its traffic: the day the sender changes, it says so.
+contract:
+  file: lab-results.contract.yaml
+
+# A rewrite on trial beside the live channel, compared on every message and delivering nothing.
+shadow:
+  channel: lab-results-v2.yaml
+  ignore: [MSH-7, MSH-10]
+
 transformations:
   - description: The results archive's name for the sending lab
     set:
       path: MSH-4
       value: RIVERSIDE-LAB
+  - description: The results archive's codes for administrative sex
+    map:
+      path: PID-8
+      use: sex-to-results-archive
 
 destinations:
   - name: results-archive

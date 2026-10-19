@@ -157,6 +157,10 @@ type Generator struct {
 	opts Options
 	rng  *rand.Rand
 	seq  int
+	// idBase is added to the identifiers a message carries (control ids, order and document numbers). Zero for a seeded
+	// run, so fixtures stay the same; otherwise from the clock, so a demonstration that runs the generator every minute
+	// does not send the same document number twice, which a document registry rightly refuses.
+	idBase int
 }
 
 // New builds a generator.
@@ -166,8 +170,13 @@ func New(opts Options) *Generator {
 	if seed == 0 {
 		seed = uint64(time.Now().UnixNano())
 	}
+	idBase := 0
+	if opts.Seed == 0 {
+		idBase = int(time.Now().Unix()-1_700_000_000) * 10
+	}
 	return &Generator{
-		opts: opts,
+		opts:   opts,
+		idBase: idBase,
 		// Two seeds because PCG takes two; deriving the second keeps one Seed
 		// option reproducible.
 		rng: rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
@@ -295,7 +304,7 @@ func (g *Generator) msh(kind, event, structure, controlID string, at time.Time) 
 }
 
 func (g *Generator) controlID(prefix string) string {
-	return fmt.Sprintf("%s%06d", prefix, g.seq)
+	return fmt.Sprintf("%s%06d", prefix, g.idBase+g.seq)
 }
 
 // pid builds the patient identification segment.
@@ -416,7 +425,7 @@ var observations = []observation{
 
 func (g *Generator) oru(p person, at time.Time, awkward string) Message {
 	controlID := g.controlID("ORU")
-	filler := fmt.Sprintf("F%08d", 10000000+g.seq)
+	filler := fmt.Sprintf("F%08d", 10000000+g.idBase+g.seq)
 
 	segments := []string{
 		g.msh("ORU", "R01", "ORU_R01", controlID, at),
@@ -482,7 +491,7 @@ func (g *Generator) oru(p person, at time.Time, awkward string) Message {
 
 func (g *Generator) orm(p person, at time.Time, awkward string) Message {
 	controlID := g.controlID("ORM")
-	placer := fmt.Sprintf("P%08d", 20000000+g.seq)
+	placer := fmt.Sprintf("P%08d", 20000000+g.idBase+g.seq)
 
 	orders := []struct{ code, name string }{
 		{"CBC", "Complete Blood Count"},

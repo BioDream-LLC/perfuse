@@ -71,17 +71,25 @@ func (c *Channel) startDICOMwebSource() error {
 }
 
 func (c *Channel) dicomwebAuthorised(r *http.Request, src *config.DICOMwebSource) bool {
+	// Credentials may be ${ENV} references, as the manual's own example writes them. They were compared as written, so the
+	// expected token was the text "${STOW_TOKEN}" itself. A reference that names an unset variable refuses everything
+	// rather than leaving the endpoint open.
 	if src.Token != "" {
+		token := config.ResolveSecret(src.Token)
 		h := r.Header.Get("Authorization")
-		if len(h) < 7 || !strings.EqualFold(h[:7], "Bearer ") {
+		if token == "" || len(h) < 7 || !strings.EqualFold(h[:7], "Bearer ") {
 			return false
 		}
-		return subtle.ConstantTimeCompare([]byte(strings.TrimSpace(h[7:])), []byte(src.Token)) == 1
+		return subtle.ConstantTimeCompare([]byte(strings.TrimSpace(h[7:])), []byte(token)) == 1
 	}
 	if src.Username != "" {
+		user, pass := config.ResolveSecret(src.Username), config.ResolveSecret(src.Password)
+		if user == "" || pass == "" {
+			return false
+		}
 		u, p, ok := r.BasicAuth()
-		uOK := subtle.ConstantTimeCompare([]byte(u), []byte(src.Username)) == 1
-		pOK := subtle.ConstantTimeCompare([]byte(p), []byte(src.Password)) == 1
+		uOK := subtle.ConstantTimeCompare([]byte(u), []byte(user)) == 1
+		pOK := subtle.ConstantTimeCompare([]byte(p), []byte(pass)) == 1
 		return ok && uOK && pOK
 	}
 	return true
@@ -209,8 +217,8 @@ func NewDICOMwebSender(d config.Destination) (*DICOMwebSender, error) {
 		hc.Transport = &http.Transport{TLSClientConfig: tlsCfg}
 	}
 	return &DICOMwebSender{url: cfg.URL, client: &dicomweb.Client{
-		URL: cfg.URL, BearerToken: cfg.Token, Username: cfg.Username, Password: cfg.Password,
-		Headers: cfg.Headers, HTTP: hc,
+		URL: cfg.URL, BearerToken: config.ResolveSecret(cfg.Token), Username: config.ResolveSecret(cfg.Username),
+		Password: config.ResolveSecret(cfg.Password), Headers: resolvedHeaders(cfg.Headers), HTTP: hc,
 	}}, nil
 }
 
@@ -228,3 +236,15 @@ func (s *DICOMwebSender) Describe() string { return s.url + " (DICOMweb STOW-RS)
 
 // Close releases nothing.
 func (s *DICOMwebSender) Close() error { return nil }
+
+// resolvedHeaders expands ${ENV} references in header values (an API key kept out of the channel file).
+func resolvedHeaders(h map[string]string) map[string]string {
+	if h == nil {
+		return nil
+	}
+	out := make(map[string]string, len(h))
+	for k, v := range h {
+		out[k] = config.ResolveSecret(v)
+	}
+	return out
+}

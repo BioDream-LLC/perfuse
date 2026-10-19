@@ -39,6 +39,31 @@ func TestTheSharedDemoAccountIsShownAndCannotBeTakenOver(t *testing.T) {
 	if rec := h.do("demo", http.MethodPost, "/api/channels", map[string]string{"yaml": "name: x"}); rec.Code != http.StatusForbidden {
 		t.Errorf("the demo account creating a channel: %d, want 403", rec.Code)
 	}
+	// It looks at the administrators' screens too, and changes nothing on them.
+	if rec := h.do("demo", http.MethodGet, "/api/users", nil); rec.Code != http.StatusOK {
+		t.Errorf("the demo account reading users: %d, want 200", rec.Code)
+	}
+	if rec := h.do("demo", http.MethodGet, "/api/settings", nil); rec.Code != http.StatusOK {
+		t.Errorf("the demo account reading settings: %d, want 200", rec.Code)
+	}
+	if rec := h.do("demo", http.MethodPost, "/api/users", map[string]string{"username": "x", "password": "long enough password", "role": "admin"}); rec.Code != http.StatusForbidden {
+		t.Errorf("the demo account adding a user: %d, want 403", rec.Code)
+	}
+	var me struct{ Demo bool }
+	_ = json.Unmarshal(h.do("demo", http.MethodGet, "/api/me", nil).Body.Bytes(), &me)
+	if !me.Demo {
+		t.Error("/api/me does not say this is the demo account")
+	}
+	// An ordinary viewer still cannot.
+	if _, err := h.store.CreateUser(t.Context(), "vera", "a viewer password", store.RoleViewer); err != nil {
+		t.Fatal(err)
+	}
+	vt, _, _ := h.store.Authenticate(t.Context(), "vera", "a viewer password", "test", "test")
+	h.tokens["vera"] = vt
+	if rec := h.do("vera", http.MethodGet, "/api/users", nil); rec.Code != http.StatusForbidden {
+		t.Errorf("a viewer reading users: %d, want 403", rec.Code)
+	}
+
 	// The first visitor to change the password would lock out everyone else.
 	if rec := h.do("demo", http.MethodPost, "/api/me/password",
 		map[string]string{"current": "try-perfuse-demo", "new": "mine now, all mine"}); rec.Code != http.StatusForbidden {

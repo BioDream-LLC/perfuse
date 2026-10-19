@@ -33,7 +33,36 @@ func (s *Store) SubjectPersons(ctx context.Context, tenant string, idents []stri
 	}
 	for _, ident := range idents {
 		sys, val, ok := strings.Cut(strings.TrimSpace(ident), "|")
-		if !ok || sys == "" || val == "" {
+		if !ok {
+			// A number on its own, as a data protection request is often given one: the person whose record carries it as
+			// its own number, in whatever system, when exactly one person does. Two people holding the same bare number (two
+			// hospitals' MRN 1001) is not an answer, and erasing either would be wrong, so neither is found by it; the request
+			// then needs system|value. It was skipped altogether, so an erasure by a bare record number left the index record.
+			val = strings.TrimSpace(ident)
+			if val == "" {
+				continue
+			}
+			rows, qerr := s.db.QueryContext(ctx, `SELECT DISTINCT p.euid FROM mpi_records r JOIN mpi_persons p ON p.id = r.person_id
+				WHERE r.tenant = ? AND r.value = ?`, tenant, val)
+			if qerr != nil {
+				return nil, qerr
+			}
+			var found []string
+			for rows.Next() {
+				var e string
+				if rows.Scan(&e) == nil {
+					found = append(found, e)
+				}
+			}
+			rows.Close()
+			if len(found) == 1 {
+				if err := add(found[0]); err != nil {
+					return nil, err
+				}
+			}
+			continue
+		}
+		if sys == "" || val == "" {
 			continue
 		}
 		if sys == set.EUIDSystem {

@@ -7,6 +7,8 @@ Wants=network-online.target
 User=perfuse
 Group=perfuse
 WorkingDirectory=/opt/perfuse
+# PERFUSE_DEMO_TOKEN: the API token clinical-documents publishes to this server's document registry with (setup.sh makes it).
+EnvironmentFile=-/opt/perfuse/conf/demo.env
 ExecStart=/opt/perfuse/perfuse serve -db /opt/perfuse/data/perfuse.db -channels /opt/perfuse/channels \
   -addr :443 -tls-cert /opt/perfuse/tls/fullchain.pem -tls-key /opt/perfuse/tls/privkey.pem \
   -public-url https://test.perfuse.health -fleet-label "Perfuse public test" \
@@ -14,7 +16,9 @@ ExecStart=/opt/perfuse/perfuse serve -db /opt/perfuse/data/perfuse.db -channels 
   -crd-rules /opt/perfuse/conf/rules.yaml -cds-clients /opt/perfuse/conf/cds-clients.yaml \
   -smart-clients /opt/perfuse/conf/clients.yaml -smart-users /opt/perfuse/conf/users.yaml \
   -smart-key /opt/perfuse/data/smart-signing.key \
-  -demo-account demo:try-perfuse-demo -fhir-writes-per-minute 300 -fhir-max-resources 200000
+  -demo-account demo:try-perfuse-demo -fhir-writes-per-minute 300 -fhir-max-resources 200000 -fhir-api-tokens \
+  -mpi -dicomweb-archive /opt/perfuse/data/dicom -xds 2.16.840.1.113883.3.9999.3 \
+  -formulary /opt/perfuse/conf/formulary.yaml -peers /opt/perfuse/data/peers.yaml
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=90

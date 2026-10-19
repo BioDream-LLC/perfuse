@@ -69,3 +69,17 @@ func (s *Server) refuseDemo(w http.ResponseWriter, r *http.Request, sess *store.
 	s.fail(w, r, http.StatusForbidden, "this is the shared demo account, so it cannot "+what+": everybody signs in with it")
 	return true
 }
+
+// demoMayRead says whether the shared demo account may read what its role alone would not let it.
+//
+// A demonstration is judged by its screens, and a viewer's console hides the administrators' ones (users, settings, data
+// protection, fleet, tokens). So the demo account may read every screen: GET and HEAD only, never a change, and every
+// handler still redacts credentials for a role that may not read them (settings, channels and sign-on show that a secret
+// is set, never its value). SCIM is left out: it is a provisioning interface, not a screen. Only on a server started with
+// -demo-account, whose data is invented.
+func (s *Server) demoMayRead(sess *store.Session, r *http.Request) bool {
+	if !s.isDemo(sess) || (r.Method != http.MethodGet && r.Method != http.MethodHead) {
+		return false
+	}
+	return !strings.HasPrefix(r.URL.Path, "/scim/")
+}

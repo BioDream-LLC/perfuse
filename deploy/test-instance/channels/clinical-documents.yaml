@@ -1,5 +1,7 @@
 name: clinical-documents
-description: Clinical documents (MDM), kept for a day.
+description: >
+  Clinical documents (MDM), kept for a day and published to this server's own XDS.b document
+  registry, where Exchange › Document sharing finds them.
 
 source:
   type: mllp
@@ -16,3 +18,14 @@ destinations:
     file_name: ${date}-MDM.hl7
     append: true
     retain_hours: 24
+  - name: document-registry
+    type: xds
+    xds:
+      url: https://test.perfuse.health/xds/repository
+      token: ${PERFUSE_DEMO_TOKEN}
+      source_id: 2.16.840.1.113883.3.9999.2
+      # The documents' own patient numbering (the CDA recordTarget's id root, as perfuse generate writes it).
+      patient_domain: 2.16.840.1.113883.19.5.99999.2
+      facility_type: { code: "225732001", scheme: 2.16.840.1.113883.6.96, display: Community hospital }
+      practice_setting: { code: "394802001", scheme: 2.16.840.1.113883.6.96, display: General medicine }
+    queue: { enabled: true, max_attempts: 5, backoff: 30s, max_backoff: 5m, retain_hours: 24 }

@@ -140,7 +140,10 @@ agent only where that model is allowed to see them, and give it the lowest role 
 
 `serve -demo-account demo:PASSWORD` creates a shared account for a public demonstration server, and the sign-in page shows its
 username and password with a button that signs in with them. The account is a viewer, so it can look at everything and change
-nothing. It cannot change its password or add a passkey, because the first visitor to do either would lock out everyone after them.
+nothing. Unlike any other viewer it may also open the administrators' screens (users, machine tokens, settings, data protection,
+the fleet's peers), read-only: a demonstration is judged by its screens. It reads them as a viewer reads channels, with every
+credential shown as set or not, never its value, and every change refused. It cannot change its password or add a passkey,
+because the first visitor to do either would lock out everyone after them.
 Each start puts it back as a viewer with the published password. The password must be at least 12 characters, like any other.
 Only use it on a server holding test data: anyone who reads the sign-in page can read every message on the server.
 

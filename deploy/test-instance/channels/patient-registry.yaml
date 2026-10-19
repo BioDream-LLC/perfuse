@@ -6,6 +6,10 @@ description: >
 source:
   type: mllp
   listen: "127.0.0.1:6671"
+  tls:
+    enabled: true
+    cert_file: /opt/perfuse/data/demo-tls/registry.pem
+    key_file: /opt/perfuse/data/demo-tls/registry.key
   ack:
     when: on_receipt
 

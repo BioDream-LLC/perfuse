@@ -92,6 +92,12 @@ build from source (`make build`) to try them now.
   channels; retention per kind of record; a draft data processing agreement for hosting.
 - **Data residency:** `-residency eea` (or `uk`, `ch`, region codes) refuses channels whose cloud connectors are elsewhere.
   OpenTofu for hosting one organisation in Frankfurt, Ireland or London with everything in the Region, with list-price costs.
+- **Fixed on the way:** a feed contract beside its channel was listed as a broken channel; a shadow comparison started from
+  the console never started on a server run as a service; the XDS and DICOMweb connectors sent `${ENV}` credentials
+  literally (a DICOMweb source accepted the text `${STOW_TOKEN}` as its token); a data protection erasure by a bare record
+  number left the patient index record behind. See [verification](docs/verification.md).
+- **The public test server shows every screen at work**, with invented data, and its shared demo account may read the
+  administrators' screens too.
 
 ## New in v0.1.17
 

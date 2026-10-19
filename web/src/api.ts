@@ -22,6 +22,8 @@ export interface Me {
   channelGroups?: string[]
   /** The role in each channel group, present when they differ; role is then the strongest. */
   groupRoles?: Record<string, Role>
+  /** The shared account of a public demonstration server: a viewer that may look at every screen and change nothing. */
+  demo?: boolean
 }
 
 /** How this server allows people to sign in. */

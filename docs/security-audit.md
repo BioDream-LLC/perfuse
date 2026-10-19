@@ -229,6 +229,14 @@ server for all four paths — no credential 401, right token 200 with 39 metric 
 One ordering detail worth keeping: the authentication check runs **before** the "metrics are not being collected" response,
 so an anonymous caller cannot even learn whether this server collects metrics.
 
+### 9. A DICOMweb source's token could be the text of its own reference — FIXED (October 2026)
+
+Found while filling the public test server's screens. A DICOMweb source configured as the manual shows it, `token:
+${STOW_TOKEN}`, compared callers against the literal text `${STOW_TOKEN}`: the variable was never read. So the real token
+was refused and anybody who had read the manual could send images into the channel. The destination, and the XDS
+destination, sent such references as written too (a failure, not an opening). All now read the environment, and a source
+whose reference names an unset variable refuses every request rather than accepting all of them.
+
 ### Superseded: the decision that was open
 
 `/metrics` takes no credentials, by design, because a Prometheus scraper has none to give. That is defensible for a single

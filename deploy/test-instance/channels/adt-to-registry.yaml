@@ -2,7 +2,7 @@ name: adt-to-registry
 description: >
   Admissions, discharges and transfers. Identifier merges (A28) are declined, the hospital's
   record number is labelled with its assigning authority, and the rest goes to the patient
-  registry over MLLP, with a copy kept for a day.
+  registry over MLLP with TLS, into the patient index, and to an archive kept for a day.
 
 source:
   type: mllp
@@ -13,9 +13,9 @@ source:
 filter: MSH-9.1 == "ADT" && MSH-9.2 != "A28"
 
 transformations:
-  - description: Say whose record number this is
+  - description: Say whose record number this is (the first identifier only, so a national number keeps its own)
     set:
-      path: PID-3.4
+      path: PID-3(1).4
       value: RIVERSIDE
   - description: The registry wants the receiving application named
     set:
@@ -27,10 +27,19 @@ destinations:
     type: mllp
     address: 127.0.0.1:6671
     timeout: 10s
+    # The demonstration's own certificate authority (setup.sh makes it), so the Certificates screen has an endpoint to show.
+    tls:
+      enabled: true
+      ca_file: /opt/perfuse/data/demo-tls/ca.pem
+      server_name: registry.riverside.example
     retry:
       attempts: 3
       backoff: 1s
       max_backoff: 10s
+  - name: patient-index
+    type: mpi
+    mpi:
+      authorities: { RIVERSIDE: "urn:oid:2.16.840.1.113883.3.9999.1" }
   - name: archive
     type: file
     dir: /opt/perfuse/data/demo-archive/adt

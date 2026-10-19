@@ -63,6 +63,14 @@ destinations:
 	} else if len(broken) != 0 {
 		t.Errorf("the .yml spelling of a companion file was reported as broken: %v", broken)
 	}
+
+	// A feed contract beside its channel, which the channel loader already skips: it was reported here as a broken channel.
+	writeFile(t, dir, "feed.contract.yaml", "expectations:\n  - path: MSH-9\n    rule: populated\n")
+	if _, broken, err = repo.List(); err != nil {
+		t.Fatalf("listing failed: %v", err)
+	} else if len(broken) != 0 {
+		t.Errorf("a feed contract was reported as a broken channel: %v", broken)
+	}
 }
 
 // A genuinely broken channel must still be reported.

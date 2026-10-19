@@ -1002,6 +1002,9 @@ var sidecarSuffixes = []string{
 }
 
 // isSidecar reports whether a path is a companion file rather than a channel.
+// IsSidecar reports whether a file beside the channels is not a channel: a contract, a mapping table or a channel test.
+func IsSidecar(path string) bool { return isSidecar(path) }
+
 func isSidecar(path string) bool {
 	lower := strings.ToLower(filepath.Base(path))
 	for _, suffix := range sidecarSuffixes {

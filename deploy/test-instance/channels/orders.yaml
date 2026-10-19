@@ -1,5 +1,8 @@
 name: orders
-description: Orders from the hospital, kept for a day.
+description: >
+  Orders from the hospital, kept for a day and sent to the billing system. The billing system is
+  switched off on purpose, so the demonstration shows what a destination that is down looks like:
+  its orders wait in the queue, retried, and alert, rather than being lost.
 
 source:
   type: mllp
@@ -16,3 +19,14 @@ destinations:
     file_name: ${date}-ORM.hl7
     append: true
     retain_hours: 24
+  - name: billing-system
+    type: mllp
+    address: 127.0.0.1:6699
+    timeout: 5s
+    queue:
+      enabled: true
+      max_attempts: 8
+      backoff: 1m
+      max_backoff: 10m
+      max_depth: 500
+      retain_hours: 24

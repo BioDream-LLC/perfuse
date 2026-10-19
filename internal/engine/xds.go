@@ -36,15 +36,17 @@ func NewXDSSender(d config.Destination) (*XDSSender, error) {
 		hc.Transport = &http.Transport{TLSClientConfig: tlsCfg}
 	}
 	headers := map[string]string{}
+	// Credentials may be ${ENV} references, as on every other destination; they were sent as written, so a token kept out of
+	// the channel file the documented way reached the repository as the literal text "${NAME}".
 	for k, v := range cfg.Headers {
-		headers[k] = v
+		headers[k] = config.ResolveSecret(v)
 	}
-	if cfg.Token != "" {
-		headers["Authorization"] = "Bearer " + cfg.Token
+	if token := config.ResolveSecret(cfg.Token); token != "" {
+		headers["Authorization"] = "Bearer " + token
 	}
 	c := &xds.Client{HTTP: hc, Headers: headers}
-	if cfg.Username != "" {
-		hc.Transport = basicAuth{next: transportOf(hc), user: cfg.Username, pass: cfg.Password}
+	if user := config.ResolveSecret(cfg.Username); user != "" {
+		hc.Transport = basicAuth{next: transportOf(hc), user: user, pass: config.ResolveSecret(cfg.Password)}
 	}
 	return &XDSSender{cfg: cfg, client: c}, nil
 }

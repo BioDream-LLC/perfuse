@@ -65,12 +65,13 @@ A step whose condition is false is recorded as **skipped**, and this is reported
 
 ## Paths
 
-A path addresses a field: `PID-5` is the fifth field of PID, `PID-5.1` its first component, `PID-3[2]` the second repetition. Without a repetition index a path addresses the first repetition.
+A path addresses a field: `PID-5` is the fifth field of PID, `PID-5.1` its first component, `PID-3(2)` the second repetition of
+PID-3 and `OBX(3)-5` the fifth field of the third OBX segment.
 
 Two behaviours worth knowing:
 
 - `set` creates whatever path it addresses, including intervening structure. This is convenient, and it means `set` can never demonstrate that a field was absent — after the step it exists. To test what happens when a field is missing, use `copy` from a path that is not there.
-- A path addressing a segment that occurs several times, without an index, addresses the first occurrence. On a message with five OBX segments, `OBX-5` is the first one's fifth field. To reach all of them the path needs an index, and a channel that assumes one OBX will silently ignore the rest.
+- A path without an index addresses **every** repetition and every occurrence, as it does in a filter (where `PID-3.5 == "SS"` is true when any repetition is). On a message with five OBX segments, `set` on `OBX-5` changes all five, and `set` on `PID-3.4` relabels every identifier in PID-3, the national number's included. To change one, give its index: `PID-3(1).4`, `OBX(2)-5`.
 
 ## Errors
 
