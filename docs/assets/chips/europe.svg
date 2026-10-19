@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 40" width="168" height="40" role="img" aria-label="UK &amp; Europe">
-  <title>UK &amp; Europe</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 40" width="168" height="40" role="img" aria-label="UK and Europe">
+  <title>UK and Europe</title>
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#1d4ed8"/>
@@ -17,5 +17,5 @@
   <g clip-path="url(#c)"><rect x="2" y="2" width="164" height="34" fill="url(#sheen)"/></g>
   <path d="M12 2.8 H156" stroke="#fff" stroke-opacity="0.42" stroke-width="1.1" fill="none"/>
   <text x="84.0" y="25" text-anchor="middle" font-size="15" font-weight="700" fill="#fff"
-        font-family="system-ui, -apple-system, Segoe UI, sans-serif">UK &amp; Europe</text>
+        font-family="system-ui, -apple-system, Segoe UI, sans-serif">UK and Europe</text>
 </svg>
