@@ -68,10 +68,7 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
-## Since v0.1.16, on main and not yet released
-
-These are built and tested on `main`; the next release will carry them. The downloads below are v0.1.16, so build from
-source (`make build`) to try them now.
+## New in v0.1.17
 
 - **Clusters:** two or more servers on one PostgreSQL store take over from each other: active-passive (the leader runs
   everything) or active-active (channels spread over the servers, moved by hand from the console). Leases measured on
@@ -102,29 +99,6 @@ source (`make build`) to try them now.
   download from the console.
 - **Mirth scripts:** JavaScript equivalents of the Java classes Mirth scripts use most, so more of them run unchanged.
 - **Supply chain:** `govulncheck` runs in CI and gates every release; Go 1.27.2 and current x/crypto, x/net and x/text.
-
-## New in v0.1.16
-
-- **Drug prior authorization (CMS-0062-P):** a formulary, the Da Vinci US Drug Formulary API, NCPDP RTPB real-time benefit
-  checks and NCPDP SCRIPT ePA, all through the same decision hook as medical prior authorization.
-- **AI agents over MCP:** a built-in Model Context Protocol server at `/mcp`. Agents search messages, the FHIR store, queues and
-  channels under the token's own role, channel groups and tenant; read-only by default, every call audited.
-- **IHE document sharing:** an XDS.b registry and repository, an XCA gateway, MHD, PIXm and PDQm, and an XDS destination
-  (Carequality and eHealth Exchange style), tested against the NIST XDS Toolkit.
-- **Direct secure messaging:** S/MIME signed and encrypted mail with XDM packages and MDN receipts, certificates from an address
-  book or DNS, an SMTP source; checked against OpenSSL in both directions.
-- **DICOMweb:** an imaging archive over QIDO-RS, WADO-RS and STOW-RS, browsed by OHIF; tested against Orthanc both ways.
-- **Immunization registries:** the CDC IIS web service as source and destination, VXU with ACK handling, QBP/RSP queries.
-- **International Patient Summary:** `Patient/$summary`, also used by Health links to share a visit.
-- **SQL on FHIR v2:** its own FHIRPath engine, ViewDefinitions run from the console, `$sql-run` and `perfuse sof`, to CSV,
-  NDJSON or Parquet for DuckDB, Athena or Spark. Passes all 144 official tests.
-- **Digital quality measures:** FHIRPath Measures, `Measure/$evaluate-measure` and `perfuse measure`, giving MeasureReports that
-  pass the Da Vinci DEQM 5.0.0 profiles. (Published CQL eCQMs need a CQL engine, which is not built yet.)
-- **CMS Aligned Network readiness:** each of the 26 CMS Interoperability Framework criteria and where this server stands.
-- **Prior authorization decision services:** `-pas-decider-url` (questionnaires and CDex attachment requests on a pend,
-  a private CA with `-pas-decider-ca`) and `-crd-advisor-url`, which adds a decision service's advice as one more CRD card.
-  [Vaglio](https://github.com/BioDream-LLC/vaglio) (source-available, PolyForm Shield) is the recommended engine; any service
-  speaking the hook plugs in, and Perfuse never requires one.
 
 ## Everything it does
 
