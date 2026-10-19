@@ -1068,8 +1068,8 @@ HbA1c results and blood pressures), the patient index (admissions from three sys
 range), the imaging archive (8 studies drawn by the script), users and machine tokens, data protection requests and a legal
 hold, a local code system, the Direct address book, a SMART Health Link, saved views and measures, and a TEFCA participant
 declaration; the demonstration channels add a patient index destination, an MLLP hop over TLS, publishing to the server's own
-XDS.b registry, a feed contract, a shadow comparison, a shared mapping table, and a billing system switched off on purpose so
-the queue and its alerts have something to show. The shared demo account may now read the administrators' screens. Every
+XDS.b registry, a feed contract, a shadow comparison, a shared mapping table, and a billing system that goes away for ten minutes
+every three hours, so the queue fills and drains. The shared demo account may now read the administrators' screens. Every
 screen was then swept as that account with Playwright, as the live instance and as a local copy built the same way.
 
 The sweep found five defects, fixed:

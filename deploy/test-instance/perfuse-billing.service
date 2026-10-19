@@ -1,0 +1,21 @@
+[Unit]
+Description=Stand-in billing system for the Perfuse test instance's orders channel (acknowledges and discards)
+After=perfuse-test.service
+
+[Service]
+User=perfuse
+Group=perfuse
+# Up for three hours, then down for ten minutes, over and over: the orders channel's queue and the Queue and Alerts
+# screens show a receiver going away and the backlog draining once it is back, without the demonstration looking
+# broken the rest of the time. The listener acknowledges what it receives and keeps nothing.
+ExecStart=/opt/perfuse/perfuse listen -addr 127.0.0.1:6699 -app BILLING -quiet
+RuntimeMaxSec=3h
+Restart=always
+RestartSec=10min
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -54,8 +54,9 @@ chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/perfuse.sh
 install -o root -g perfuse -m 0640 "/etc/letsencrypt/live/$host/fullchain.pem" "/etc/letsencrypt/live/$host/privkey.pem" /opt/perfuse/tls/
 
 install -m 0644 "$here/perfuse-test.service" "$here/perfuse-backup.service" "$here/perfuse-backup.timer" \
-  "$here/perfuse-traffic.service" "$here/perfuse-traffic.timer" /etc/systemd/system/
+  "$here/perfuse-traffic.service" "$here/perfuse-traffic.timer" "$here/perfuse-billing.service" /etc/systemd/system/
 systemctl daemon-reload
+systemctl enable --now perfuse-billing
 systemctl enable --now perfuse-backup.timer
 systemctl enable --now perfuse-traffic.timer
 systemctl enable --now perfuse-test
@@ -76,6 +77,9 @@ fi
 # Data for every screen (invented), through the API with two administrators' tokens revoked straight after.
 seed=$(token "seed-$(date +%s)" admin); approver=$(token "seed-approver-$(date +%s)" admin)
 sudo -u perfuse env PERFUSE_SEED_TOKEN="$seed" PERFUSE_SEED_APPROVER_TOKEN="$approver" python3 "$here/seed.py" "https://$host" || true
+# Whatever waited for the billing system while it was down (or given up on before it existed) goes now.
+curl -fsS -m 10 -o /dev/null -H "Authorization: Bearer $seed" -H 'Content-Type: application/json' \
+  -d '{"channel":"orders","destination":"billing-system"}' "https://$host/api/queue/retry" || true
 for label in $(sudo -u perfuse /opt/perfuse/perfuse token list -db /opt/perfuse/data/perfuse.db | awk '$1 ~ /^seed-/ && $NF == "active" {print $1}'); do
   sudo -u perfuse /opt/perfuse/perfuse token revoke -db /opt/perfuse/data/perfuse.db -label "$label" >/dev/null
 done

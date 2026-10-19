@@ -22,8 +22,8 @@ Eight demonstration channels (`channels/`) carry invented HL7 v2 traffic so the 
 receives a few messages of every kind each minute from `perfuse-traffic.timer` (`perfuse generate`) and routes them by type to
 `adt-to-registry` (which relabels the record number, sends over MLLP with TLS to `patient-registry` and feeds the patient index),
 `lab-results` (a shared mapping table, a feed contract, and a rewrite, `lab-results-v2`, compared beside it in shadow),
-`orders` (which also sends to a billing system that is switched off on purpose, so the queue and its alerts have something to
-show) and `clinical-documents` (published to this server's own XDS.b registry). Every listener is on 127.0.0.1, and the archive
+`orders` (which also sends to a stand-in billing system, `perfuse-billing.service`, that goes away for ten minutes every three
+hours, so the queue fills and drains) and `clinical-documents` (published to this server's own XDS.b registry). Every listener is on 127.0.0.1, and the archive
 files are deleted after a day.
 
 `seed.py` fills the other screens with invented data, through the API, each time `setup.sh` runs (it looks before it adds): 30

@@ -96,7 +96,7 @@ For the UK and Europe, and every screen of the public test server at work.
   literally (a DICOMweb source accepted the text `${STOW_TOKEN}` as its token); a data protection erasure by a bare record
   number left the patient index record behind. See [verification](docs/verification.md).
 - **The public test server shows every screen at work**, with invented data (patients, results, the patient index, imaging,
-  documents, a queue held up by a receiver switched off on purpose, a shadow comparison, data protection requests), and its
+  documents, a queue that fills while a receiver is away and drains when it is back, a shadow comparison, data protection requests), and its
   shared demo account may read the administrators' screens too. [Try it](https://test.perfuse.health).
 - **`perfuse generate`** gives small mixed batches every kind of message, and no longer repeats its identifiers between runs.
 

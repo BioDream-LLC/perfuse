@@ -1,8 +1,8 @@
 name: orders
 description: >
-  Orders from the hospital, kept for a day and sent to the billing system. The billing system is
-  switched off on purpose, so the demonstration shows what a destination that is down looks like:
-  its orders wait in the queue, retried, and alert, rather than being lost.
+  Orders from the hospital, kept for a day and sent to the billing system. The billing system goes
+  away for ten minutes every three hours, so the demonstration shows what happens when a destination
+  is down: its orders wait in the queue, retried, and are delivered once it is back, never lost.
 
 source:
   type: mllp
