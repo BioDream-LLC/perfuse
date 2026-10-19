@@ -68,10 +68,9 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
-## Since v0.1.17, on main and not yet released
+## New in v0.1.18
 
-Built and tested on `main` for the UK and Europe; the next release will carry them. The downloads below are v0.1.17, so
-build from source (`make build`) to try them now.
+For the UK and Europe, and every screen of the public test server at work.
 
 - **The console in twelve languages:** English, German, French, Dutch, Spanish, Italian, Portuguese, Polish, Swedish, Danish,
   Norwegian and Finnish, chosen in the header, with dates and numbers written the locale's way. Every screen in every language
@@ -96,10 +95,15 @@ build from source (`make build`) to try them now.
   the console never started on a server run as a service; the XDS and DICOMweb connectors sent `${ENV}` credentials
   literally (a DICOMweb source accepted the text `${STOW_TOKEN}` as its token); a data protection erasure by a bare record
   number left the patient index record behind. See [verification](docs/verification.md).
-- **The public test server shows every screen at work**, with invented data, and its shared demo account may read the
-  administrators' screens too.
+- **The public test server shows every screen at work**, with invented data (patients, results, the patient index, imaging,
+  documents, a queue held up by a receiver switched off on purpose, a shadow comparison, data protection requests), and its
+  shared demo account may read the administrators' screens too. [Try it](https://test.perfuse.health).
+- **`perfuse generate`** gives small mixed batches every kind of message, and no longer repeats its identifiers between runs.
 
 ## New in v0.1.17
+
+<details><summary>Clusters, PostgreSQL, the patient index, AS2, OpenPGP, EDIFACT, mailboxes, terminology, SNMP</summary>
+
 
 - **Clusters:** two or more servers on one PostgreSQL store take over from each other: active-passive (the leader runs
   everything) or active-active (channels spread over the servers, moved by hand from the console). Leases measured on
@@ -130,6 +134,8 @@ build from source (`make build`) to try them now.
   download from the console.
 - **Mirth scripts:** JavaScript equivalents of the Java classes Mirth scripts use most, so more of them run unchanged.
 - **Supply chain:** `govulncheck` runs in CI and gates every release; Go 1.27.2 and current x/crypto, x/net and x/text.
+
+</details>
 
 ## Everything it does
 
@@ -345,6 +351,29 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><code>github.com/biodream-llc/perfuse/hl7</code>: the HL7 v2 parser as a standalone library</li>
 <li><code>…/perfuse/fhir</code> (the FHIR model) and <code>…/perfuse/pas</code> (the PAS request reader), standard library only</li>
 <li><code>perfuse sbom</code> lists everything linked in; every release ships an SBOM and checksums</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/scale.svg" width="168" height="40" alt="Scale"><br>
+<b>Clusters, PostgreSQL, the patient index</b>
+<ul>
+<li><b>Clusters</b>, active-passive or active-active, on one PostgreSQL store: no two servers ever run one feed, and nothing acknowledged is lost when one is killed</li>
+<li><b>PostgreSQL for everything</b> (messages, queues, FHIR, terminology, audit), SQLite for one server</li>
+<li>A <b>master patient index</b>: deterministic and probabilistic matching, a review queue, merges with their history, <code>Patient/$match</code> and PIXm</li>
+<li><b>AS2</b>, <b>OpenPGP</b>, <b>UN/EDIFACT</b> and <b>mailboxes</b> for trading partners; <b>SNMP</b> for the network team</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/chips/europe.svg" width="168" height="40" alt="UK and Europe"><br>
+<b>The UK and Europe</b>
+<ul>
+<li>The console and the manual in <b>twelve languages</b> (machine translated, marked as such)</li>
+<li><b>37 national patient numbers</b> checked by their check digits: NHS, CHI, PPSN, KVNR, BSN, INS, codice fiscale, the Nordic numbers…</li>
+<li><b>SNOMED CT national editions</b>, ClaML (ICD-10-GM, OPS, CIM-10), <b>ICD-11</b></li>
+<li><b>GDPR and UK GDPR</b>: find, export, erase with a second approval, legal holds, an erasure ledger that survives a restore</li>
+<li><b>Data residency</b> checks, and OpenTofu for hosting in Frankfurt, Ireland or London</li>
 </ul>
 </td>
 </tr>

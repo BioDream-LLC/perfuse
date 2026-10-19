@@ -45,7 +45,7 @@ Lightsail account, not ours.
 ## Running it
 
 ```sh
-deploy/test-instance/provision.sh v0.1.17  # create or upgrade to a release: Lightsail nano, static IP, DNS, certificate, service
+deploy/test-instance/provision.sh v0.1.18  # create or upgrade to a release: Lightsail nano, static IP, DNS, certificate, service
 deploy/test-instance/provision.sh main     # or to this checkout, built here for Linux
 deploy/test-instance/load.py               # the test data, signed in as the loader client
 ```

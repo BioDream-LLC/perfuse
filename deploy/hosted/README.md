@@ -51,7 +51,7 @@ belt to this module's braces and is set by whoever runs the AWS organisation.
 cd regions/eu-west-2
 tofu init
 tofu plan -var customer=example -var domain=perfuse.example.org \
-  -var certificate_arn=arn:aws:acm:eu-west-2:ACCOUNT:certificate/ID -var perfuse_version=v0.1.17
+  -var certificate_arn=arn:aws:acm:eu-west-2:ACCOUNT:certificate/ID -var perfuse_version=v0.1.18
 tofu apply ...
 ```
 

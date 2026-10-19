@@ -1062,7 +1062,7 @@ gave the same results as the local runs (DTR and PAS run again on 15 October 202
 The first DTR run found one difference, in the run rather than the server: the order it asks CRD about named a patient no
 member record matches, which the local payer never checks and the public one does. The order is now Amy Shaw's.
 
-Since 19 October 2026 the instance runs `main` (built by `provision.sh main`) and every screen carries invented data, so a
+Since 19 October 2026 (v0.1.18) every screen carries invented data, so a
 visitor sees each one at work: `deploy/test-instance/seed.py` fills the FHIR store (30 patients with encounters, conditions,
 HbA1c results and blood pressures), the patient index (admissions from three systems, NHS numbers from the synthetic 999
 range), the imaging archive (8 studies drawn by the script), users and machine tokens, data protection requests and a legal
@@ -1091,7 +1091,7 @@ timer. A batch under twenty is now drawn kind by kind, and an unseeded run start
 repetition as `PID-3[2]` (the parser takes `PID-3(2)`) and said a path without an index means the first repetition and the first
 occurrence, when it means every one (deliberately, as in filters).
 
-## The UK and Europe (October 2026, on main, not yet released)
+## The UK and Europe (v0.1.18, October 2026)
 
 - **Translations** (twelve languages): every string of the console is in each catalogue with its placeholders (a unit test),
   and a Playwright sweep of every screen in every language fails on any catalogued text left in English, a page error or a

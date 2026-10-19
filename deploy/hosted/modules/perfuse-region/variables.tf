@@ -36,7 +36,7 @@ variable "certificate_arn" {
 }
 
 variable "perfuse_version" {
-  description = "The Perfuse release to install, such as v0.1.17."
+  description = "The Perfuse release to install, such as v0.1.18."
   type        = string
 }
 

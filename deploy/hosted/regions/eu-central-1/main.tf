@@ -1,7 +1,7 @@
 # Hosted Perfuse in eu-central-1 (Frankfurt). Data residency: eea.
 #
 #   tofu init && tofu plan -var customer=example -var domain=perfuse.example.org \
-#     -var certificate_arn=arn:aws:acm:eu-central-1:ACCOUNT:certificate/ID -var perfuse_version=v0.1.17
+#     -var certificate_arn=arn:aws:acm:eu-central-1:ACCOUNT:certificate/ID -var perfuse_version=v0.1.18
 #
 # State is kept in this Region too (an S3 bucket the operator creates once, with versioning and encryption): a state file
 # names every resource and holds the database's endpoint, so it belongs with the data it describes.
