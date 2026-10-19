@@ -26,6 +26,11 @@ var liveSettings = map[string]bool{
 	// Read from the settings store by the table write and approve handlers, at the moment of each request.
 	"data.tableApproval": true,
 
+	// Read from the settings store by the data protection handlers, at the moment of each request.
+	"privacy.controller":   true,
+	"privacy.dpo":          true,
+	"privacy.dataLocation": true,
+
 	// Read through a function field on the user store, assigned in serve.go, at the moment a session is created
 	// or refreshed. Sessions already issued keep the expiry they were given.
 	"signin.sessionHours": true,

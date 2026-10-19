@@ -164,6 +164,95 @@ The message store holds messages as received, which for a clinical feed means pa
 
 `cleanup.periodDays` limits how long it is kept. See [the message store](#the-message-store) for the tension between that and having enough history for rhythm-aware alerting.
 
+## Data protection (GDPR and UK GDPR)
+
+The **Data protection** screen (Administer, administrators only) answers a
+person's requests under the GDPR and the UK GDPR. It decides nothing on the
+controller's behalf: whether a request must be granted, and whether an exemption
+applies, is the controller's decision, recorded with the request.
+
+**Finding what is held.** A person is named by identifiers: `system|value` (an NHS
+number, an MRN with its assigning authority) or a number on its own. With a patient
+index, those widen to every number of every record linked to the same person, so a
+request quoting one hospital number finds the records filed under the others.
+**See what is held** then searches every store that keeps patient data:
+
+| Store | Found by |
+|---|---|
+| Messages | the identity index (Settings → Data → Index patient identifiers); without it, messages cannot be found by identifier |
+| The delivery queue | reading each queued message's identifiers |
+| The FHIR store | the Patient resources carrying an identifier, and every resource whose indexed references point at one |
+| Prior authorization requests | the identifiers of the request's patient |
+| The patient index | the identifier, or the EUID |
+
+What it cannot reach it says: traces sent to a collector (`-trace-endpoint`), the
+audit log (kept: it is the record of who did what, this request included), and
+backups.
+
+**Requests.** A request is recorded with its kind (access, Article 15;
+portability, Article 20; erasure, Article 17; restriction, Article 18), who it is
+from as the controller's records refer to them, the identifiers, and a note (how
+the identity was confirmed, an extension and its reason). It is due one month after
+receipt (Article 12(3)); an overdue one is shown in red.
+
+- **Access and portability:** **Download the copy** gives a zip: every message as
+  received with its record, every FHIR resource with every stored version, prior
+  authorization requests and their answers, and the patient index's records, JSON
+  throughout, with a README saying what each part is. **Mark answered** closes it.
+- **Erasure:** a second administrator approves it (whoever recorded it cannot).
+  **Erase now** deletes everything found: messages whole (record, body, deliveries,
+  identifiers, attachments no other message uses), queued deliveries (they are not
+  sent), the FHIR resources with their history, prior authorization requests with
+  their answers, attachments and tracking numbers, and the person in the patient
+  index with every linked record and its history (one event records that an erasure
+  happened, and by whom).
+- **Restriction:** recorded as a legal hold, so nothing is erased or expires while
+  it lasts.
+- **Refuse** closes a request with its reason, which the person must be told.
+
+A closed request keeps only the last characters of the person's numbers: it stays as
+the record of an answer without being another copy of them. Every step is in the
+audit log with the numbers masked.
+
+**Legal holds.** A hold names a person by identifiers, with its reason and an
+optional end date. While it is in force an erasure is refused outright, and the
+message store's retention window spares the person's messages (records and bodies)
+until the hold is lifted.
+
+**Backups and the erasure ledger.** A backup made before an erasure still holds what
+was erased until it expires. Every erasure is written to a ledger: when, by whom,
+approved by whom, how much went from each store, and the person's identifiers as
+salted SHA-256 hashes rather than in clear. After restoring a backup, **Apply erasures
+again** hashes the identifiers the restored stores hold with each entry's salt and
+erases every person the ledger names. Short numbers can be found from their hashes
+by trying every value, so the ledger is itself personal data and is kept with the
+database's own protection.
+
+**Retention.** The screen lists how long each kind of record is kept here and what
+changes it: message records and bodies by their retention windows, the queue until
+delivered or removed, the FHIR store, prior authorization requests and the patient
+index until erased (clinical records are not deleted on a schedule), the audit log
+kept.
+
+**Record of processing (Article 30).** **Record of processing** downloads, as
+Markdown or CSV, what this server knows of it: the controller, the data protection
+officer and where the data is kept (Settings → Data → Data protection), the retention
+of each kind of record, and one processing activity per channel with what it
+receives, from where, to which destinations, and the hosts it sends to. The purposes,
+lawful bases and categories of data subject are left for the controller to fill in,
+and say so. A CSV cell beginning with `=`, `+`, `-` or `@` is written with a leading
+apostrophe, so a spreadsheet does not run it.
+
+**Where the data is kept.** **Where the data is kept** (Settings → Data → Data
+protection) states, in words a regulator can check, where the server, its database
+and its backups run; the Data protection screen and the record show it. A draft data
+processing agreement for organisations BioDream hosts is in
+`docs/legal/dpa-template.md`; it is a draft for a lawyer, not legal advice.
+
+The API is `/api/privacy` (summary), `/api/privacy/find`, `/api/privacy/requests`
+(and `/{id}/approve`, `/{id}/export`, `/{id}/erase`, `/{id}/close`),
+`/api/privacy/holds`, `/api/privacy/reapply` and `/api/privacy/register`.
+
 ## Tenants
 
 A tenant is an isolation boundary: channels, messages, users and settings belong to one, and nothing crosses.

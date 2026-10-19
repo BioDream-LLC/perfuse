@@ -37,6 +37,7 @@ const allowedPlain: Record<string, string> = {
   'Drugs.tsx': "a prior authorization question's free-text answer is the prescriber's prose; the SCRIPT XML uses CodeArea",
   'CodeArea.tsx': 'the implementation. The textarea underneath the coloured layer is the whole mechanism',
   'PatientIndex.tsx': 'a list of identifier system URLs, one per line',
+  'DataProtection.tsx': 'a person’s identifiers, one per line, and free-text notes on a request',
 }
 
 function sourceFiles(): string[] {

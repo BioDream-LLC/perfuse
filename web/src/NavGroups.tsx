@@ -100,7 +100,8 @@ export const NAV_GROUPS: NavGroup[] = [
       dot: 'bg-cyan-400',
     },
     // Claims & auth first: the everyday X12 and PAS tools, then drugs, then the rule's own screen.
-    members: ['payer', 'drugs', 'cms0057'],
+    // The CMS Aligned Network criteria with the CMS payer rule: both are CMS's conditions for exchanging with payers.
+    members: ['payer', 'drugs', 'cms0057', 'aligned'],
   },
   {
     name: 'Administer',
@@ -111,7 +112,7 @@ export const NAV_GROUPS: NavGroup[] = [
       ring: 'border-t-amber-500/60',
       dot: 'bg-amber-400',
     },
-    members: ['users', 'tenants', 'certificates', 'audit', 'aligned', 'fleet', 'migrate', 'settings'],
+    members: ['users', 'tenants', 'certificates', 'audit', 'privacy', 'fleet', 'migrate', 'settings'],
   },
 ]
 

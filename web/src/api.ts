@@ -1585,6 +1585,18 @@ export const api = {
   mpiMerge: (from: string, into: string, why: string) => request<{ euid: string }>('POST', '/api/mpi/merge', { from, into, why }),
   mpiFind: (q: Partial<MPIRecord>) => request<{ matches: MPIMatch[] }>('POST', '/api/mpi/find', q),
   mpiRegister: (r: Partial<MPIRecord>) => request<{ action: string; record: MPIRecord; warnings?: string[] }>('POST', '/api/mpi/records', r),
+  privacySummary: () => request<PrivacySummary>('GET', '/api/privacy'),
+  privacyFind: (identifiers: string[]) => request<PrivacyFinding>('POST', '/api/privacy/find', { identifiers }),
+  privacyCreate: (r: { kind: string; subject: string; identifiers: string[]; note?: string; due?: string }) =>
+    request<{ id: number }>('POST', '/api/privacy/requests', r),
+  privacyApprove: (id: number) => request<{ approved: number }>('POST', `/api/privacy/requests/${id}/approve`),
+  privacyErase: (id: number) => request<{ counts: Record<string, number>; notes: string[] }>('POST', `/api/privacy/requests/${id}/erase`),
+  privacyClose: (id: number, status: 'done' | 'refused', outcome: string) =>
+    request<{ closed: number }>('POST', `/api/privacy/requests/${id}/close`, { status, outcome }),
+  privacyHold: (identifiers: string[], reason: string, until: string) =>
+    request<{ id: number }>('POST', '/api/privacy/holds', { identifiers, reason, until }),
+  privacyLift: (id: number) => request<{ lifted: number }>('DELETE', `/api/privacy/holds/${id}`),
+  privacyReapply: () => request<{ counts: Record<string, number> }>('POST', '/api/privacy/reapply'),
   mpiSchemes: () => request<{ schemes: MPIScheme[] }>('GET', '/api/mpi/schemes'),
   mpiCheck: (system: string, value: string) => request<MPICheck>('POST', '/api/mpi/check', { system, value }),
   mpiSaveSettings: (s: MPISettings) => request<MPISettings>('PUT', '/api/mpi/settings', s),
@@ -3637,6 +3649,57 @@ export interface MPISettings {
   nationalSystems?: Record<string, string>
   /** The lowest role that sees national numbers in full; everyone below sees the last few characters. */
   showNumbersTo?: 'viewer' | 'operator' | 'editor' | 'admin'
+}
+
+export interface PrivacyRequest {
+  id: number
+  kind: 'access' | 'portability' | 'erasure' | 'restriction'
+  subject: string
+  identifiers: string[]
+  note?: string
+  status: 'open' | 'approved' | 'done' | 'refused'
+  createdAt: string
+  createdBy: string
+  due: string
+  approvedBy?: string
+  closedAt?: string
+  closedBy?: string
+  outcome?: string
+}
+
+export interface PrivacyHold {
+  id: number
+  identifiers: string[]
+  reason: string
+  until?: string
+  createdAt: string
+  createdBy: string
+  liftedAt?: string
+  liftedBy?: string
+}
+
+export interface PrivacyFinding {
+  identifiers: string[]
+  indexed: boolean
+  messages: { id: number; channel: string; receivedAt: string; controlId?: string; matched: string }[]
+  queue: { id: number; channel: string; destination: string; state: string }[]
+  patients: string[]
+  fhir: { type: string; id: string }[]
+  pas: { id: string; created: number }[]
+  persons: { euid: string; records: number }[]
+  holds: PrivacyHold[]
+  notes: string[]
+  counts: Record<string, number>
+}
+
+export interface PrivacySummary {
+  requests: PrivacyRequest[]
+  holds: PrivacyHold[]
+  erasures: { id: number; requestId: number; at: string; actor: string; approver: string; counts: Record<string, number> }[]
+  retention: { category: string; kept: string; setting?: string }[]
+  indexed: boolean
+  stores: string[]
+  location: string
 }
 
 /** A national patient or person identifier the index knows (natid.Scheme). */

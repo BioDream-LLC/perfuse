@@ -1741,6 +1741,7 @@ export const viewIcons: Record<string, React.ComponentType<IconProps>> = {
   'Users': IconUsers,
   'Tenants': IconUsers,
   'Activity': IconActivity,
+  'Data protection': IconShield,
   'Settings': IconSettings,
 }
 

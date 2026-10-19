@@ -39,6 +39,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/oidc"
 	"github.com/biodream-llc/perfuse/internal/peers"
+	"github.com/biodream-llc/perfuse/internal/privacy"
 	"github.com/biodream-llc/perfuse/internal/queue"
 	"github.com/biodream-llc/perfuse/internal/settings"
 	"github.com/biodream-llc/perfuse/internal/smartauth"
@@ -1138,6 +1139,25 @@ oidcDone:
 		Branding:           brandingStore,
 		PasskeyAttestation: attestation,
 	}
+	// Data protection requests (GDPR, UK GDPR): in the server's own database, reaching every store that holds patient data.
+	// Its legal holds also tell the message store's pruner which people's messages to keep past the retention window.
+	privSvc, err := privacy.Open(context.Background(), db)
+	if err != nil {
+		return err
+	}
+	privSvc.Messages, privSvc.FHIR, privSvc.Index = messages, fhirStore, mpiStore
+	if runtime.Queues != nil {
+		privSvc.Queue = runtime.Queues.Store()
+	}
+	if ep := strings.TrimSpace(*traceEndpoint); ep != "" {
+		privSvc.Elsewhere = append(privSvc.Elsewhere, "Message traces are sent to "+ep+": an erasure here does not reach them; "+
+			"erase them in the trace store, or keep traces free of patient data.")
+	}
+	if messages != nil {
+		messages.SetHolds(privSvc.HeldNorms)
+	}
+	srv.Privacy = privSvc
+
 	if *vpnFile != "" {
 		f, err := vpn.Load(*vpnFile)
 		if err != nil {

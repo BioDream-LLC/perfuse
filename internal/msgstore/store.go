@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/attach"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/dbtime"
@@ -163,6 +164,10 @@ type Store struct {
 	StorePayloadsFn func() bool
 	PayloadDaysFn   func() int
 	IndexIdentityFn func() bool
+
+	// holds names the identifiers under a legal hold (SetHolds); the pruner spares their messages.
+	holdsMu sync.Mutex
+	holds   func(ctx context.Context) []string
 }
 
 // payloadDays is how long to keep message bodies.
@@ -1016,15 +1021,17 @@ func (s *Store) Prune(ctx context.Context) (payloads, rows int64, err error) {
 	payloadCutoff := dbtime.Format(time.Now().
 		AddDate(0, 0, -maxInt(1, s.payloadDays())))
 
+	// Messages about a person under a legal hold are kept, body and all, until the hold is lifted.
+	held, heldArgs := s.heldClause(ctx)
 	res, err := s.db.ExecContext(ctx,
-		`UPDATE messages SET raw = NULL WHERE raw IS NOT NULL AND received_at < ?`,
-		payloadCutoff)
+		`UPDATE messages SET raw = NULL WHERE raw IS NOT NULL AND received_at < ?`+held,
+		append([]any{payloadCutoff}, heldArgs...)...)
 	if err != nil {
 		return 0, 0, err
 	}
 	payloads, _ = res.RowsAffected()
 
-	res, err = s.db.ExecContext(ctx, `DELETE FROM messages WHERE received_at < ?`, cutoff)
+	res, err = s.db.ExecContext(ctx, `DELETE FROM messages WHERE received_at < ?`+held, append([]any{cutoff}, heldArgs...)...)
 	if err != nil {
 		return payloads, 0, err
 	}

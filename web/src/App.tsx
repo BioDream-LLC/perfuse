@@ -52,6 +52,7 @@ const Measures = lazy(() => import('./Measures').then((m) => ({ default: m.Measu
 const AlignedNetwork = lazy(() => import('./AlignedNetwork').then((m) => ({ default: m.AlignedNetwork })))
 const Direct = lazy(() => import('./Direct').then((m) => ({ default: m.Direct })))
 const PatientIndex = lazy(() => import('./PatientIndex').then((m) => ({ default: m.PatientIndex })))
+const DataProtection = lazy(() => import('./DataProtection').then((m) => ({ default: m.DataProtection })))
 const DocumentSharing = lazy(() => import('./DocumentSharing').then((m) => ({ default: m.DocumentSharing })))
 const Certificates = lazy(() => import('./Certificates').then((m) => ({ default: m.Certificates })))
 const MirthMigration = lazy(() => import('./MirthMigration').then((m) => ({ default: m.MirthMigration })))
@@ -108,6 +109,7 @@ export type Tab =
   | 'mapper'
   | 'users'
   | 'audit'
+  | 'privacy'
   | 'settings'
   | 'tenants'
 
@@ -740,6 +742,12 @@ function Console() {
       about: 'Who changed what, and when',
     },
     {
+      id: 'privacy',
+      label: 'Data protection',
+      minRole: 'admin',
+      about: 'A person’s requests under the GDPR and the UK GDPR: what is held, a copy, erasure, legal holds, the record of processing',
+    },
+    {
       id: 'tenants',
       label: 'Tenants',
       minRole: 'platform',
@@ -1030,6 +1038,7 @@ function Console() {
             </div>
           )}
           {tab === 'audit' && <Audit />}
+          {tab === 'privacy' && <DataProtection />}
           {tab === 'tenants' && <Tenants />}
           {tab === 'settings' && <Settings />}
         </Suspense>

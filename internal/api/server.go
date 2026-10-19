@@ -31,6 +31,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/mpi"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
 	"github.com/biodream-llc/perfuse/internal/peers"
+	"github.com/biodream-llc/perfuse/internal/privacy"
 	"github.com/biodream-llc/perfuse/internal/settings"
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/snmp"
@@ -53,6 +54,9 @@ type Server struct {
 
 	// PatientIndex is the master patient index; nil when the server keeps none (serve -mpi).
 	PatientIndex *mpi.Store
+
+	// Privacy answers data protection requests (GDPR, UK GDPR); nil without a database.
+	Privacy *privacy.Service
 
 	// Cluster is this server's place in a cluster of servers sharing one store; nil for a server on its own.
 	Cluster ClusterControl
@@ -465,6 +469,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/codesets/unmapped", s.require(store.RoleEditor, s.handleUnmapped))
 	mux.Handle("POST /api/codesets/unmapped/dismiss", s.require(store.RoleEditor, s.handleUnmappedDismiss))
 	s.registerMPI(mux)
+	s.registerPrivacy(mux)
 	s.registerCluster(mux)
 	mux.Handle("GET /api/terminology/systems", s.require(store.RoleViewer, s.handleTermSystems))
 	mux.Handle("POST /api/terminology/import", s.require(store.RoleAdmin, s.handleTermImport))

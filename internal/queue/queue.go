@@ -583,3 +583,40 @@ func truncateError(s string) string {
 	}
 	return s[:limit] + "… (truncated)"
 }
+
+// ScanPayloads calls fn for every item still held (pending, failed or given up), with its payload. It is for finding a data
+// subject's queued messages, which have no identity index: the queue is short-lived, so reading it whole is acceptable.
+func (s *Store) ScanPayloads(ctx context.Context, fn func(id int64, channel, destination, state string, raw []byte) error) error {
+	rows, err := s.querier().QueryContext(ctx, `SELECT id, channel, destination, state, raw FROM queue ORDER BY id`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var ch, dest, state string
+		var raw []byte
+		if err := rows.Scan(&id, &ch, &dest, &state, &raw); err != nil {
+			return err
+		}
+		if err := fn(id, ch, dest, state, raw); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+// Erase deletes items whatever their state, for a data protection erasure: a pending delivery of an erased person's message
+// is not sent. A worker that already took one finds it gone when it reports back, which changes nothing.
+func (s *Store) Erase(ctx context.Context, ids []int64) (int64, error) {
+	var n int64
+	for _, id := range ids {
+		res, err := s.db.ExecContext(ctx, `DELETE FROM queue WHERE id = ?`, id)
+		k, err := affected(res, err)
+		if err != nil {
+			return n, err
+		}
+		n += k
+	}
+	return n, nil
+}
