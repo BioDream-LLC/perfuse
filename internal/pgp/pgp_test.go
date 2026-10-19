@@ -143,17 +143,16 @@ func TestKeysFromFiles(t *testing.T) {
 
 // Against GnuPG both ways: a payer's gpg must read what Perfuse writes, and Perfuse must read what gpg writes.
 func TestInteroperatesWithGnuPG(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// The gpg on Windows runners is Git's MSYS build: it reads C:\ paths as relative MSYS paths and starts no agent.
+		t.Skip("no native GnuPG on this Windows machine; the test runs on Linux and macOS")
+	}
 	gpg, err := exec.LookPath("gpg")
 	if err != nil {
 		t.Skip("gpg not installed")
 	}
-	// Short and private: gpg-agent's socket path must fit a Unix socket name, which a macOS test directory does not. Windows
-	// has no /tmp, and its gpg-agent takes no Unix socket, so its own temporary directory serves there.
-	base := "/tmp"
-	if runtime.GOOS == "windows" {
-		base = ""
-	}
-	home, err := os.MkdirTemp(base, "pfgpg")
+	// Short and private: gpg-agent's socket path must fit a Unix socket name, which a macOS test directory does not.
+	home, err := os.MkdirTemp("/tmp", "pfgpg")
 	if err != nil {
 		t.Fatal(err)
 	}

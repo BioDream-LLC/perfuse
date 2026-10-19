@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"os"
@@ -218,11 +219,20 @@ func TestAnHTTPSenderIsToldWhyPGPRefusedIt(t *testing.T) {
 		b, _ := io.ReadAll(res.Body)
 		return res.StatusCode, string(b)
 	}
-	unsigned, _ := pgp.Seal([]byte(lsADT), pgp.SealOptions{To: openpgp.EntityList{us}})
-	if code, body := post(unsigned); code != http.StatusBadRequest || !strings.Contains(body, "not signed") {
-		t.Errorf("unsigned: %d %s", code, body)
+	unsigned, err := pgp.Seal([]byte(lsADT), pgp.SealOptions{To: openpgp.EntityList{us}})
+	if err != nil {
+		t.Fatal(err)
 	}
-	signed, _ := pgp.Seal([]byte(lsADT), pgp.SealOptions{To: openpgp.EntityList{us}, Signer: payer})
+	if code, body := post(unsigned); code != http.StatusBadRequest || !strings.Contains(body, "not signed") {
+		// Seen once on Windows arm64 ("decryption with session key failed: parsing error") and never in 30,000 local
+		// tries: the message and its throwaway key, so it can be replayed.
+		key, _ := os.ReadFile(filepath.Join(dir, "ours.asc"))
+		t.Errorf("unsigned: %d %s\nmessage (base64): %s\nkey:\n%s", code, body, base64.StdEncoding.EncodeToString(unsigned), key)
+	}
+	signed, err := pgp.Seal([]byte(lsADT), pgp.SealOptions{To: openpgp.EntityList{us}, Signer: payer})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if code, body := post(signed); code != http.StatusOK {
 		t.Errorf("signed: %d %s", code, body)
 	}

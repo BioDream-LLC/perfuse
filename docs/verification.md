@@ -1192,6 +1192,10 @@ checked.
 - **Windows has been tested only on GitHub's runners** (above): no desktop session, installer or hospital group policy.
 - **The Linux arm64 binary has run only in the cluster tests on AWS Graviton** (above). The amd64 binary was verified inside
   Alpine, which has no glibc, confirming the static-linking claim.
+- **OpenPGP against GnuPG has run on Linux and macOS only.** GitHub's Windows runners carry Git's MSYS gpg, which cannot
+  start an agent for native paths; Perfuse's own OpenPGP tests run there. One OpenPGP decryption failed once on Windows
+  arm64 (`decryption with session key failed: parsing error`) and never in 30,000 local tries; the test now records the
+  message and key if it happens again.
 - **Clusters have run only in the tests above**: three servers, one region, one load balancer type (AWS NLB). Not
   across regions, not behind an F5 or HAProxy, not with PostgreSQL failing over to a standby of its own.
 - **No container image has been published**, though the build file and the README both name one.
