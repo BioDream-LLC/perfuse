@@ -234,6 +234,8 @@ func TestAnHTTPSenderIsToldWhyPGPRefusedIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	if code, body := post(signed); code != http.StatusOK {
-		t.Errorf("signed: %d %s", code, body)
+		// The same failure, seen a second time on Windows arm64 (19 October 2026) on the signed message: recorded the same way.
+		key, _ := os.ReadFile(filepath.Join(dir, "ours.asc"))
+		t.Errorf("signed: %d %s\nmessage (base64): %s\nkey:\n%s", code, body, base64.StdEncoding.EncodeToString(signed), key)
 	}
 }
