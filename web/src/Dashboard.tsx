@@ -12,6 +12,7 @@ import type {
 import { Donut, HBar, Sparkline, StackedAreaChart, outcomeColours } from './charts'
 import type { RootState } from './store'
 import { Confirm, ErrorBox, Section, Spinner } from './ui'
+import { IconShield } from './Icons'
 
 /**
  * The dashboard.
@@ -406,6 +407,16 @@ export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
           </div>
         )}
       </Section>
+
+      {status?.residency && (
+        <p className="flex items-center gap-2 text-xs text-slate-400" data-testid="residency">
+          <IconShield className="h-3.5 w-3.5 text-emerald-300" aria-hidden="true" />
+          <span>
+            Data stays in <span className="text-emerald-300">{status.residency.spec}</span>: channels whose cloud connectors are elsewhere
+            are refused ({status.residency.regions.join(', ')}).
+          </span>
+        </p>
+      )}
 
       <div>
         <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-300 uppercase">

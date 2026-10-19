@@ -196,6 +196,8 @@ export interface StatusResponse {
   channelsBroken?: number
   fhirVersion?: string | null
   fhirResources?: Record<string, number>
+  /** Where this server's data may go (serve -residency): the setting and the regions it allows. Absent: no limit. */
+  residency?: { spec: string; regions: string[] }
   time: string
 }
 
@@ -3700,6 +3702,8 @@ export interface PrivacySummary {
   indexed: boolean
   stores: string[]
   location: string
+  residency?: string
+  regions?: string[]
 }
 
 /** A national patient or person identifier the index knows (natid.Scheme). */

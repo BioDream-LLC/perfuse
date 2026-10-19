@@ -83,3 +83,9 @@ perfuse-settings.yaml
 data/
 archive/
 claims/
+
+# OpenTofu / Terraform working files (the lock files are kept: they pin the provider)
+deploy/hosted/**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan

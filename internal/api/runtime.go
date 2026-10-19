@@ -23,6 +23,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/hl7dict"
 	"github.com/biodream-llc/perfuse/internal/metrics"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
+	"github.com/biodream-llc/perfuse/internal/residency"
 	"github.com/biodream-llc/perfuse/internal/store"
 	"github.com/biodream-llc/perfuse/internal/tenant"
 	"github.com/biodream-llc/perfuse/internal/terminology"
@@ -463,6 +464,10 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request, sess *stor
 			body["fhirResources"] = counts
 		}
 		body["fhirVersion"] = string(rt.FHIR.Version())
+	}
+	// Where this server's data may go, so the dashboard can say it: a site that must keep data in the UK sees that it does.
+	if p := residency.Default(); p.Set() {
+		body["residency"] = map[string]any{"spec": p.Spec, "regions": p.Codes()}
 	}
 
 	s.ok(w, body)

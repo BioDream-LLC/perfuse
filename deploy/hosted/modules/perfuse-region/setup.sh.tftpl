@@ -1,0 +1,134 @@
+#!/bin/sh
+# First boot of a hosted Perfuse server (Amazon Linux 2023, arm64). Written by OpenTofu from setup.sh.tftpl.
+#
+# Installs the release named, checked against its SHA256SUMS; makes the server's own TLS certificate for the hop from the
+# load balancer; reads the database password from Secrets Manager in this Region; runs Perfuse on PostgreSQL with
+# -residency; ships its log to CloudWatch Logs in this Region; and backs its files up nightly to the Region's bucket.
+set -eu
+
+REGION='${region}'
+VERSION='${version}'
+DOMAIN='${domain}'
+BUCKET='${bucket}'
+
+dnf install -y -q jq openssl amazon-cloudwatch-agent >/dev/null
+
+id perfuse >/dev/null 2>&1 || useradd --system --home /opt/perfuse --shell /sbin/nologin perfuse
+install -d -o perfuse -g perfuse -m 0700 /opt/perfuse/data /opt/perfuse/channels /var/log/perfuse
+install -d -o root -g perfuse -m 0750 /opt/perfuse/conf /opt/perfuse/tls
+
+# The release: from the Region's bucket when it was put there (a server without a NAT gateway has no other way), else from
+# GitHub. Either way it must match the release's own checksums.
+cd /tmp
+name="perfuse-$VERSION-linux-arm64.tar.gz"
+if ! aws s3 cp --region "$REGION" "s3://$BUCKET/releases/$VERSION/$name" perfuse.tgz --only-show-errors 2>/dev/null ||
+   ! aws s3 cp --region "$REGION" "s3://$BUCKET/releases/$VERSION/SHA256SUMS" SHA256SUMS --only-show-errors 2>/dev/null; then
+  base="https://github.com/BioDream-LLC/perfuse/releases/download/$VERSION"
+  curl -fsSL -o perfuse.tgz "$base/$name"
+  curl -fsSL -o SHA256SUMS "$base/SHA256SUMS"
+fi
+echo "$(grep " $name\$" SHA256SUMS | cut -d' ' -f1)  perfuse.tgz" | sha256sum -c -
+tar xzf perfuse.tgz
+install -m 0755 "perfuse-$VERSION-linux-arm64/perfuse-linux-arm64" /opt/perfuse/perfuse
+rm -rf perfuse.tgz SHA256SUMS "perfuse-$VERSION-linux-arm64"
+
+# The server's certificate for the load balancer's second TLS hop (the load balancer does not check it; clients see the
+# organisation's ACM certificate).
+if [ ! -f /opt/perfuse/tls/server.key ]; then
+  openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 3650 -subj "/CN=$DOMAIN" \
+    -addext "subjectAltName=DNS:$DOMAIN" -keyout /opt/perfuse/tls/server.key -out /opt/perfuse/tls/server.crt 2>/dev/null
+  chown root:perfuse /opt/perfuse/tls/server.key /opt/perfuse/tls/server.crt
+  chmod 0640 /opt/perfuse/tls/server.key /opt/perfuse/tls/server.crt
+fi
+
+# The database: its password from Secrets Manager (in this Region, through the VPC endpoint), its CA from AWS's bundle for
+# this Region, so the connection is checked TLS.
+curl -fsSL -o /opt/perfuse/conf/rds-ca.pem "https://truststore.pki.rds.amazonaws.com/$REGION/$REGION-bundle.pem"
+pw=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id '${secret_arn}' --query SecretString --output text | jq -r .password)
+# The password is given as PGPASSWORD (which the PostgreSQL driver reads), never on the command line, where any local user
+# could read it in the process list.
+umask 077
+# Quoted for systemd's EnvironmentFile: backslashes and double quotes escaped.
+pw_q=$(printf %s "$pw" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+printf 'PGPASSWORD="%s"\n' "$pw_q" > /opt/perfuse/conf/perfuse.env
+chown root:perfuse /opt/perfuse/conf/perfuse.env
+chmod 0640 /opt/perfuse/conf/perfuse.env
+umask 022
+
+cat > /etc/systemd/system/perfuse.service <<UNIT
+[Unit]
+Description=Perfuse
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=perfuse
+Group=perfuse
+EnvironmentFile=/opt/perfuse/conf/perfuse.env
+ExecStart=/opt/perfuse/perfuse serve -addr :8443 -tls-cert /opt/perfuse/tls/server.crt -tls-key /opt/perfuse/tls/server.key \
+  -db 'postgres://perfuse@${db_host}:5432/perfuse?sslmode=verify-full&sslrootcert=/opt/perfuse/conf/rds-ca.pem' -data /opt/perfuse/data -channels /opt/perfuse/channels -residency '${residency}' -json-logs
+StandardOutput=append:/var/log/perfuse/perfuse.log
+StandardError=append:/var/log/perfuse/perfuse.log
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/perfuse/data /opt/perfuse/channels /var/log/perfuse
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+cat > /etc/logrotate.d/perfuse <<ROT
+/var/log/perfuse/perfuse.log {
+  daily
+  rotate 7
+  compress
+  copytruncate
+  missingok
+}
+ROT
+
+# The log to CloudWatch Logs in this Region (the agent's endpoint is the Region's, through the VPC endpoint).
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CW
+{"agent": {"region": "$REGION"},
+ "logs": {"logs_collected": {"files": {"collect_list": [
+   {"file_path": "/var/log/perfuse/perfuse.log", "log_group_name": "${log_group}", "log_stream_name": "{instance_id}"}]}}}}
+CW
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json >/dev/null
+
+# Nightly backup of the server's own files (settings, channels, sign-in configuration) to the Region's bucket, encrypted
+# with the Region's key. The database has its own automated backups in the same Region.
+cat > /usr/local/sbin/perfuse-backup <<'BAK'
+#!/bin/sh
+set -eu
+tar czf - -C /opt/perfuse data channels conf | aws s3 cp - "s3://$1/files/perfuse-$(date -u +%Y%m%dT%H%M%SZ).tgz" \
+  --region "$2" --sse aws:kms --only-show-errors
+BAK
+chmod 0700 /usr/local/sbin/perfuse-backup
+cat > /etc/systemd/system/perfuse-backup.service <<UNIT
+[Unit]
+Description=Back Perfuse's files up to S3 in $REGION
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/perfuse-backup $BUCKET $REGION
+UNIT
+cat > /etc/systemd/system/perfuse-backup.timer <<UNIT
+[Unit]
+Description=Nightly Perfuse file backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now perfuse.service perfuse-backup.timer

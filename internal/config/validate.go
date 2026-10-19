@@ -7,6 +7,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/edifact"
 	"github.com/biodream-llc/perfuse/internal/egress"
 	"github.com/biodream-llc/perfuse/internal/ncpdp"
+	"github.com/biodream-llc/perfuse/internal/residency"
 	"github.com/biodream-llc/perfuse/internal/x12"
 	"net"
 	"net/url"
@@ -37,6 +38,8 @@ func (c *Channel) Validate() error {
 
 	errs = append(errs, c.Source.validate()...)
 	errs = append(errs, c.validateSourcePayloadAgreement()...)
+	// Where its cloud connectors are, against where this server's data may go (serve -residency).
+	errs = append(errs, c.checkResidency(residency.Default())...)
 	errs = append(errs, c.validateDICOMwebDataType()...)
 
 	// Checked before the filter, transformations and scripts are compiled, because on

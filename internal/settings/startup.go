@@ -10,6 +10,12 @@ func startupSettings() []Setting {
 				"fed by patient index destinations, answering Patient/$match and PIXm. It holds patient names, birth dates and " +
 				"identifiers, so it is off until somebody decides to keep one.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: false, Flag: "mpi"},
+		{Key: "privacy.residency", Group: GroupData, Subgroup: "Data protection", Label: "Where data may go (cloud regions)",
+			Help: "The cloud regions this server's data may be sent to or read from: areas (eea, uk, ch) and region codes " +
+				"(eu-central-1, uksouth), comma-separated. A channel whose S3, SQS or SNS connector, or whose destination's cloud " +
+				"hostname, is in another region is refused when saved and when loaded, and so is a trace collector or alert " +
+				"webhook in one. Empty: no limit. Hosts that name no region (a hospital's own systems) are not judged.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "residency"},
 		{Key: "data.icd11ClientId", Group: GroupData, Subgroup: "Code systems", Label: "WHO ICD API client ID",
 			Help: "A client registered at icd.who.int. With it, ICD-11 codes that are not imported are looked up in the WHO ICD API " +
 				"(their titles kept for a day): CodeSystem/$lookup, $validate-code and the code-system search. Empty is off.",

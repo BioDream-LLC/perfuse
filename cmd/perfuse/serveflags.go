@@ -37,6 +37,7 @@ var settingFlags = map[string]string{
 	"fhir":                              "fhir.serve",
 	"mpi":                               "data.patientIndex",
 	"icd11-client-id":                   "data.icd11ClientId",
+	"residency":                         "privacy.residency",
 	"icd11-client-secret":               "data.icd11ClientSecret",
 	"icd11-release":                     "data.icd11Release",
 	"fhir-version":                      "fhir.version",

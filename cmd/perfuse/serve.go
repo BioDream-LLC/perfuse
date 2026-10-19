@@ -15,6 +15,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -41,6 +42,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/peers"
 	"github.com/biodream-llc/perfuse/internal/privacy"
 	"github.com/biodream-llc/perfuse/internal/queue"
+	"github.com/biodream-llc/perfuse/internal/residency"
 	"github.com/biodream-llc/perfuse/internal/settings"
 	"github.com/biodream-llc/perfuse/internal/smartauth"
 	"github.com/biodream-llc/perfuse/internal/snmp"
@@ -207,6 +209,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	snmpContact := fset.String("snmp-contact", "", "sysContact the SNMP agent reports")
 	snmpLocation := fset.String("snmp-location", "", "sysLocation the SNMP agent reports")
 
+	residencySpec := fset.String("residency", "", "cloud regions this server's data may go to or come from: areas (eea, uk, ch) "+
+		"and region codes (eu-central-1), comma-separated; channels with connectors elsewhere are refused")
 	icd11ID := fset.String("icd11-client-id", "", "a WHO ICD API client: ICD-11 codes not imported are looked up there")
 	icd11Secret := fset.String("icd11-client-secret", "", "the WHO ICD API client's secret")
 	icd11Release := fset.String("icd11-release", "2025-01", "the ICD-11 MMS release the WHO ICD API is asked about")
@@ -466,6 +470,22 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	// exemption they could grant themselves would only stop somebody who was not trying.
 	if *allowMetadataEgress {
 		egress.SetDefault(egress.Policy{AllowMetadata: true})
+	}
+	// Where data may go, before any channel is read for the same reason. The trace collector and the alert webhook are
+	// this process's own destinations, so they are checked here rather than with the channels.
+	resPolicy, err := residency.Parse(*residencySpec)
+	if err != nil {
+		return fmt.Errorf("-residency: %w", err)
+	}
+	residency.SetDefault(resPolicy)
+	for what, raw := range map[string]string{"the trace collector (-trace-endpoint)": *traceEndpoint, "the alert webhook (-alert-webhook)": *alertWebhook} {
+		if u, err := url.Parse(strings.TrimSpace(raw)); err == nil && u.Host != "" {
+			if _, region, ok := residency.RegionOfHost(u.Host); ok {
+				if err := resPolicy.Check(what, region); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	var handler slog.Handler

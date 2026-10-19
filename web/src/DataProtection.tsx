@@ -350,11 +350,17 @@ export function DataProtection() {
         icon={IconShield}
         description="Requests under the GDPR and the UK GDPR: what is held about a person, a copy for them, erasure, restriction. Administrators only; every step is audited with the person's numbers masked."
       >
-        <div className="grid gap-3 text-sm sm:grid-cols-3">
+        <div className="grid gap-3 text-sm sm:grid-cols-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">Where the data is kept</p>
             <p className={summary.location ? 'text-slate-200' : 'text-amber-300'}>
               {summary.location || 'Not stated: Settings → Data → Data protection'}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Where data may go</p>
+            <p className={summary.residency ? 'text-emerald-300' : 'text-slate-400'} title={summary.regions?.join(', ')}>
+              {summary.residency ? `${summary.residency} (${summary.regions?.length ?? 0} regions)` : 'Anywhere: Settings → Data → Where data may go'}
             </p>
           </div>
           <div>

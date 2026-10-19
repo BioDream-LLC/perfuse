@@ -11,6 +11,35 @@ perfuse serve -channels ./channels -db ./perfuse.db -addr 0.0.0.0:8443 \
 
 Run it under whatever supervises services on the host — systemd, launchd, a container runtime. It expects to be restarted if it exits.
 
+## Where data may go (data residency)
+
+`serve -residency` (**Settings → Data → Where data may go**) names the cloud regions
+this server's data may be sent to or read from: areas (`eea`, `uk`, `ch`) and region
+codes (`eu-central-1`, `uksouth`, `europe-west2`), comma-separated. `eea` is the AWS,
+Azure and Google Cloud regions in the European Economic Area (Frankfurt, Ireland,
+Paris, Stockholm, Milan, Spain; Netherlands, Germany, France, Sweden, Norway, Italy,
+Poland, Spain; Belgium, Netherlands, Germany, Italy, France, Finland, Spain, Poland),
+`uk` those in the United Kingdom, `ch` those in Switzerland.
+
+With it set, a channel is refused, when it is saved and when it is loaded, if a
+connector names a region outside the list: an S3, SQS or SNS source or destination's
+`region` (or its `endpoint`, when that is an AWS hostname), or any destination whose
+address is an AWS hostname carrying a region (`sqs.us-east-1.amazonaws.com`, an API
+Gateway URL). The server refuses to start with a trace collector or alert webhook
+in another region. A connector pointed at a host that names no region (a hospital's
+own system, MinIO on the site's network) is not judged: the record of processing on
+the Data protection screen lists every host each channel sends to, for the controller
+to check. The dashboard and the Data protection screen say where data may go.
+
+**Hosting in the EU and the UK.** `deploy/hosted` holds OpenTofu (or Terraform) for
+one hosted server per organisation in Frankfurt, Ireland or London: the server, its
+PostgreSQL database and backups, a backup bucket, logs and support-session records,
+all encrypted with a key in the Region, nothing replicated to another Region, support
+through Session Manager only, and Perfuse run with `-residency`. Its README says what
+it builds, what it does not cover, what has been verified (validated, and planned
+against a real account; not yet applied) and what it costs at list price in each
+Region.
+
 ## Configuration as files
 
 Channels are files, which means they can be in version control, reviewed before deployment, and diffed after an incident.

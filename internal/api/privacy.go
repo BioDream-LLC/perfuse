@@ -12,6 +12,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/mpi"
 	"github.com/biodream-llc/perfuse/internal/natid"
 	"github.com/biodream-llc/perfuse/internal/privacy"
+	"github.com/biodream-llc/perfuse/internal/residency"
 	"github.com/biodream-llc/perfuse/internal/store"
 )
 
@@ -84,6 +85,9 @@ type privacySummary struct {
 	Indexed   bool                    `json:"indexed"`
 	Stores    []string                `json:"stores"`
 	Location  string                  `json:"location"`
+	// Residency is where this server's data may go (serve -residency), and its regions; empty when no limit is set.
+	Residency string   `json:"residency,omitempty"`
+	Regions   []string `json:"regions,omitempty"`
 }
 
 func (s *Server) handlePrivacySummary(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -122,6 +126,9 @@ func (s *Server) handlePrivacySummary(w http.ResponseWriter, r *http.Request, se
 	}
 	if s.Settings != nil {
 		out.Location = s.Settings.String("privacy.dataLocation")
+	}
+	if p := residency.Default(); p.Set() {
+		out.Residency, out.Regions = p.Spec, p.Codes()
 	}
 	s.ok(w, out)
 }

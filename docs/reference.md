@@ -2724,10 +2724,12 @@ FHIR resources; never a channel.
 
 **One static binary, and dependencies chosen deliberately.** No JVM, no ODBC layer,
 no native client library to install on a hospital server. Every dependency is pure
-Go, which is what makes that possible: 16 direct, three of which are the database
+Go, which is what makes that possible: 17 direct, three of which are the database
 drivers. That number went up from four when the database connectors landed, again
-when Kafka did, and again for OpenPGP (`ProtonMail/go-crypto`, the maintained fork of
-the old `x/crypto/openpgp`: cryptography is the one thing never written here), and each
+when Kafka did, again for OpenPGP (`ProtonMail/go-crypto`, the maintained fork of
+the old `x/crypto/openpgp`: cryptography is the one thing never written here), and
+once more when `golang.org/x/text`, already in the build, became direct to read
+code-system files published in Latin-1 and Windows-1252, and each
 was the right trade — an interface engine that cannot reach
 the hospital's SQL Server, or the event backbone the rest of the estate publishes to,
 is not a replacement for one that can. Where a dependency would buy convenience
