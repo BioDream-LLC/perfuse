@@ -9,6 +9,7 @@ import type { FieldView, MessageView, SegmentView, StoredMessage } from './api'
 import { outcomeColours } from './charts'
 import type { RootState } from './store'
 import { Confirm, ErrorBox, Field, Section, Spinner } from './ui'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The message browser.
@@ -216,7 +217,7 @@ export function Messages() {
                 className="cursor-pointer transition hover:bg-slate-900/60"
               >
                 <td className="px-4 py-2.5 whitespace-nowrap text-slate-500">
-                  {new Date(m.receivedAt).toLocaleString()}
+                  {new Date(m.receivedAt).toLocaleString(uiLocale())}
                 </td>
                 <td className="px-4 py-2.5 text-slate-300">{m.channel}</td>
                 <td className="px-4 py-2.5">
@@ -252,7 +253,7 @@ export function Messages() {
 
       {!loading && (
         <p role="status" className="text-xs text-slate-400">
-          {total.toLocaleString()} {total === 1 ? 'message' : 'messages'}
+          {total.toLocaleString(uiLocale())} {total === 1 ? 'message' : 'messages'}
           {filtering ? ' match these filters' : ' stored'}
         </p>
       )}
@@ -260,7 +261,7 @@ export function Messages() {
       {total > 50 && (
         <div className="flex items-center justify-between text-sm text-slate-500">
           <span>
-            {offset + 1}–{Math.min(offset + 50, total)} of {total.toLocaleString()}
+            {offset + 1}–{Math.min(offset + 50, total)} of {total.toLocaleString(uiLocale())}
           </span>
           <div className="flex gap-2">
             <button
@@ -430,7 +431,7 @@ function MessageDetail({
             </h2>
             {message && (
               <p className="mt-1 text-sm text-slate-500">
-                {message.channel} · {new Date(message.receivedAt).toLocaleString()} ·{' '}
+                {message.channel} · {new Date(message.receivedAt).toLocaleString(uiLocale())} ·{' '}
                 {message.size} bytes
                 {parsed?.version && ` · HL7 ${parsed.version}`}
               </p>

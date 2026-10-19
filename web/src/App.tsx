@@ -146,11 +146,13 @@ export default function App() {
 
 import { useBranding, BrandMark } from './Branding'
 import { THEMES, THEME_LABELS, useTheme, type Theme } from './Theme'
+import { LanguagePicker } from './i18n/LanguagePicker'
 import { FrictionPanel } from './FrictionPanel'
 import { IconTheme, viewIcons } from './Icons'
 import { NAV_GROUPS, DIRECT_TABS, GroupMenu, type NavItem } from './NavGroups'
 import { explainPasskeyError, passkeysSupported, usePasskey } from './passkey'
 import { TAB_IDS, viewFromHash } from './tabHash'
+import { uiLocale } from './i18n/locale'
 
 function Login() {
   const dispatch = useDispatch<AppDispatch>()
@@ -960,6 +962,7 @@ function Console() {
               Manual
             </a>
             <ThemePicker />
+            <LanguagePicker />
             <button className="btn-ghost" onClick={() => dispatch(signOut())}>
               Sign out
             </button>
@@ -1496,7 +1499,7 @@ function Users() {
                   />
                 </td>
                 <td className="px-5 py-3 text-slate-500">
-                  {u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'never'}
+                  {u.lastLogin ? new Date(u.lastLogin).toLocaleString(uiLocale()) : 'never'}
                 </td>
                 <td className="px-5 py-3">
                   <div className="flex justify-end gap-2">
@@ -1664,7 +1667,7 @@ function Audit() {
             {entries.map((e) => (
               <tr key={e.id}>
                 <td className="px-5 py-2.5 whitespace-nowrap text-slate-500">
-                  {new Date(e.at).toLocaleString()}
+                  {new Date(e.at).toLocaleString(uiLocale())}
                 </td>
                 <td className="px-5 py-2.5 text-slate-300">{e.username}</td>
                 <td className="px-5 py-2.5">

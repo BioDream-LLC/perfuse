@@ -4,6 +4,7 @@ import type { HealthCard, SHLCreated, SHLHosted, SHLResolved } from './api'
 import { CodeArea } from './CodeArea'
 import { ErrorBox, Field, Section } from './ui'
 import type { UiError } from './store'
+import { uiLocale } from './i18n/locale'
 
 /**
  * SMART Health Links and Cards: CMS's "Kill the Clipboard".
@@ -377,7 +378,7 @@ function Share() {
                     {l.accesses} time{l.accesses === 1 ? '' : 's'}
                     {l.lastRecipient ? `, last by ${l.lastRecipient}` : ''}
                   </td>
-                  <td className="py-1 pr-2">{l.revokedAt ? 'revoked' : l.expiresAt ? new Date(l.expiresAt).toLocaleDateString() : ''}</td>
+                  <td className="py-1 pr-2">{l.revokedAt ? 'revoked' : l.expiresAt ? new Date(l.expiresAt).toLocaleDateString(uiLocale()) : ''}</td>
                   <td className="py-1 text-right">
                     {!l.revokedAt && (
                       <button
@@ -436,7 +437,7 @@ function Verify() {
           <div key={i} className="card p-4 text-sm" data-testid="shc-result">
             <CardLine card={c} />
             <p className="mt-1 text-xs text-slate-400">
-              Issued {new Date(c.issuedAt).toLocaleDateString()} · {c.types.join(', ')}
+              Issued {new Date(c.issuedAt).toLocaleDateString(uiLocale())} · {c.types.join(', ')}
             </p>
             <pre className="mt-2 max-h-72 overflow-auto font-mono text-xs text-slate-300">{JSON.stringify(c.bundle, null, 2)}</pre>
           </div>

@@ -3,6 +3,7 @@ import { api, ApiError } from './api'
 import type { InspectedCertificate } from './api'
 import { ErrorBox, Field } from './ui'
 import type { UiError } from './store'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Checking a certificate before it goes anywhere near a channel.
@@ -119,11 +120,11 @@ export function InspectCertificate() {
                 </div>
                 <div>
                   <dt className="inline text-slate-500">Valid from </dt>
-                  <dd className="inline text-slate-300">{new Date(c.notBefore).toLocaleDateString()}</dd>
+                  <dd className="inline text-slate-300">{new Date(c.notBefore).toLocaleDateString(uiLocale())}</dd>
                 </div>
                 <div>
                   <dt className="inline text-slate-500">Until </dt>
-                  <dd className="inline text-slate-300">{new Date(c.notAfter).toLocaleDateString()}</dd>
+                  <dd className="inline text-slate-300">{new Date(c.notAfter).toLocaleDateString(uiLocale())}</dd>
                 </div>
               </dl>
 

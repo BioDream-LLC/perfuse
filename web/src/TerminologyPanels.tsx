@@ -13,7 +13,7 @@ function toError(e: unknown): UiError {
 
 function when(iso: string): string {
   const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString()
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(uiLocale())
 }
 
 /** StatusChip colours an edition by what it means for a message today. */
@@ -290,7 +290,7 @@ export function UnmappedValues({ onMap, reloadKey }: { onMap: (table: string, va
               <tr key={`${u.table}|${u.value}`}>
                 <td className="py-1.5 pr-3 text-slate-300">{u.table}</td>
                 <td className="py-1.5 pr-3 font-mono text-amber-300">{u.value}</td>
-                <td className="py-1.5 pr-3 text-slate-300">{u.count.toLocaleString()}</td>
+                <td className="py-1.5 pr-3 text-slate-300">{u.count.toLocaleString(uiLocale())}</td>
                 <td className="py-1.5 pr-3 text-xs text-slate-400">{u.channels.join(', ')}</td>
                 <td className="py-1.5 pr-3 text-xs text-slate-500">{when(u.lastSeen)}</td>
                 <td className="py-1.5 text-right">

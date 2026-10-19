@@ -3,6 +3,7 @@ import { api, ApiError } from './api'
 import type { SubscriptionsView, SubscriptionSummary } from './api'
 import { ErrorBox, Section, Spinner } from './ui'
 import type { UiError } from './store'
+import { uiLocale } from './i18n/locale'
 
 /**
  * FHIR subscriptions, and whether their notifications are arriving.
@@ -141,7 +142,7 @@ function SubscriptionCard({ s }: { s: SubscriptionSummary }) {
       <p className="mt-2 text-xs text-slate-400">
         {s.filter ? <>Filter: <span className="font-mono text-slate-300">{s.filter}</span></> : 'No filter: every change to this resource type.'}
         {s.headerNames.length > 0 && <> · Sends headers: {s.headerNames.join(', ')} (values withheld)</>}
-        {s.lastSuccess && <> · Last accepted {new Date(s.lastSuccess).toLocaleString()}</>}
+        {s.lastSuccess && <> · Last accepted {new Date(s.lastSuccess).toLocaleString(uiLocale())}</>}
       </p>
       {(s.error || s.lastError) && (
         <p role="status" className="mt-2 text-xs text-rose-300">

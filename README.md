@@ -68,6 +68,31 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
+## Since v0.1.17, on main and not yet released
+
+Built and tested on `main` for the UK and Europe; the next release will carry them. The downloads below are v0.1.17, so
+build from source (`make build`) to try them now.
+
+- **The console in twelve languages:** English, German, French, Dutch, Spanish, Italian, Portuguese, Polish, Swedish, Danish,
+  Norwegian and Finnish, chosen in the header, with dates and numbers written the locale's way. Every screen in every language
+  is checked by a test that fails on any text left in English; code, messages and anything typed are never translated. The
+  manual is published in the same languages. The translations were made by machine (Llama 3.3 70B) and have not yet been
+  reviewed by native speakers, and each says so.
+- **National patient numbers:** the NHS number (and Scotland's CHI and Northern Ireland's H&C number), PPSN, KVNR, SVNR, AHV,
+  BSN, the Belgian national register number, the French INS, codice fiscale, DNI/NIE, the Nordic, Baltic and central European
+  numbers: 37 schemes, each checked by its check digit and stored one way, so an NHS number sent under its OID and under its
+  FHIR URL is one identifier. A mistyped number is kept but never links two records. HL7 v2 `NN<country>` and `NH` types are
+  read; numbers are masked below a role an administrator sets.
+- **National code systems:** SNOMED CT national editions from their whole RF2 package (the display in the country's language,
+  every language's terms as designations, `$lookup` with `displayLanguage`); ClaML for WHO ICD-10, ICD-10-GM, OPS and CIM-10 FR;
+  the ICD-11 tabulation and the WHO ICD API; delimited national tables in any encoding; versions in force from an effective date.
+- **GDPR and UK GDPR:** a Data protection screen that finds everything held about a person in every store, gives them a copy,
+  erases it with a second administrator's approval, keeps it under a legal hold (which the retention window respects), and
+  re-applies erasures to a restored backup from a ledger of salted hashes. The record of processing (Article 30) from the
+  channels; retention per kind of record; a draft data processing agreement for hosting.
+- **Data residency:** `-residency eea` (or `uk`, `ch`, region codes) refuses channels whose cloud connectors are elsewhere.
+  OpenTofu for hosting one organisation in Frankfurt, Ireland or London with everything in the Region, with list-price costs.
+
 ## New in v0.1.17
 
 - **Clusters:** two or more servers on one PostgreSQL store take over from each other: active-passive (the leader runs

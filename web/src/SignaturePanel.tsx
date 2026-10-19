@@ -4,6 +4,7 @@ import { api, ApiError } from './api'
 import type { SigningIdentity, VerifyResult } from './api'
 import { ErrorBox, Field, Section } from './ui'
 import type { UiError } from './store'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Checking, and making, a signature on a clinical document.
@@ -225,7 +226,7 @@ function VerificationReport({ result }: { result: VerifyResult }) {
         {r.signingTime && (
           <div>
             <dt className="inline text-slate-500">Signed </dt>
-            <dd className="inline text-slate-300">{new Date(r.signingTime).toLocaleString()}</dd>
+            <dd className="inline text-slate-300">{new Date(r.signingTime).toLocaleString(uiLocale())}</dd>
           </div>
         )}
         {r.claimedRole && (

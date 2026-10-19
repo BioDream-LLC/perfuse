@@ -6,6 +6,7 @@ import type { RootState, UiError } from './store'
 import { ErrorBox, Field, Section, Spinner } from './ui'
 import { IconCheck, IconPatientIndex, IconSearch, IconSettings, IconWarning } from './Icons'
 import { NationalNumberField, NationalNumbersSettings, useSchemes } from './NationalNumbers'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The patient index: one enterprise identifier (EUID) per person, the records each source system holds for them, the
@@ -219,7 +220,7 @@ function PersonDetail({ euid, canEdit, onChanged }: { euid: string; canEdit: boo
         <ul className="mt-2 space-y-1 text-xs">
           {view.history.map((h, i) => (
             <li key={i} className="flex gap-2">
-              <span className="w-40 shrink-0 text-slate-500">{new Date(h.at).toLocaleString()}</span>
+              <span className="w-40 shrink-0 text-slate-500">{new Date(h.at).toLocaleString(uiLocale())}</span>
               <span className="w-20 shrink-0 text-violet-300">{h.action}</span>
               <span className="text-slate-300">
                 {h.detail} <span className="text-slate-500">by {h.actor}</span>
@@ -338,7 +339,7 @@ function Find() {
         (r) => {
           setFound(r.matches)
           const n = r.matches.length
-          setSaid(`${n === 0 ? 'No one' : n === 1 ? '1 person' : `${n} people`} found at ${new Date().toLocaleTimeString()}.`)
+          setSaid(`${n === 0 ? 'No one' : n === 1 ? '1 person' : `${n} people`} found at ${new Date().toLocaleTimeString(uiLocale())}.`)
         },
         (e) => {
           setFound(null)
@@ -550,14 +551,14 @@ function SettingsPanel({ settings, onSaved }: { settings: MPISettings; onSaved: 
                       <td className={`py-1 pr-3 ${est ? 'text-sky-300' : 'text-slate-600'}`}>
                         {est ? `${est.m.toFixed(3)} / ${est.u.toFixed(4)}` : 'too few pairs: default kept'}
                       </td>
-                      <td className="py-1 text-slate-500">{(estimate.estimate.compared[f] ?? 0).toLocaleString()}</td>
+                      <td className="py-1 text-slate-500">{(estimate.estimate.compared[f] ?? 0).toLocaleString(uiLocale())}</td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
             <p className={`text-xs ${estimate.estimate.converged ? 'text-slate-500' : 'text-amber-300'}`}>
-              From {estimate.estimate.pairs.toLocaleString()} candidate pairs, {estimate.estimate.iterations} iterations
+              From {estimate.estimate.pairs.toLocaleString(uiLocale())} candidate pairs, {estimate.estimate.iterations} iterations
               {estimate.estimate.converged ? '' : ', not converged: treat it with care'}.
             </p>
             <button
@@ -631,7 +632,7 @@ export function PatientIndex() {
             ['to review', c.reviews, c.reviews > 0 ? 'text-amber-300' : 'text-slate-400'],
           ].map(([label, n, colour]) => (
             <div key={label as string} className="rounded-xl border border-slate-800 p-3">
-              <p className={`text-2xl font-semibold ${colour}`}>{(n as number).toLocaleString()}</p>
+              <p className={`text-2xl font-semibold ${colour}`}>{(n as number).toLocaleString(uiLocale())}</p>
               <p className="text-xs text-slate-500">{label}</p>
             </div>
           ))}

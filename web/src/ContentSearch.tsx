@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, type ContentSearchResult, type StoredMessage } from './api'
 import { OutcomeBadge } from './Messages'
+import { uiLocale } from './i18n/locale'
 
 // Searching by what is inside the messages.
 //
@@ -130,10 +131,10 @@ function Results({
           ? 'Nothing matched.'
           : `${matches.length} message${matches.length === 1 ? '' : 's'} matched.`}{' '}
         <span className="text-slate-500">
-          Looked at {result.examined.toLocaleString()} of {result.available.toLocaleString()}{' '}
+          Looked at {result.examined.toLocaleString(uiLocale())} of {result.available.toLocaleString(uiLocale())}{' '}
           recorded.
           {result.unreadable > 0 &&
-            ` ${result.unreadable.toLocaleString()} could not be parsed and were not tested.`}
+            ` ${result.unreadable.toLocaleString(uiLocale())} could not be parsed and were not tested.`}
         </span>
       </p>
 
@@ -186,7 +187,7 @@ function Row({
       className={'border-t border-slate-800 ' + (onOpen ? 'cursor-pointer hover:bg-slate-900' : '')}
       onClick={() => onOpen?.(message.id)}
     >
-      <td className="py-1 text-slate-400">{new Date(message.receivedAt).toLocaleString()}</td>
+      <td className="py-1 text-slate-400">{new Date(message.receivedAt).toLocaleString(uiLocale())}</td>
       <td className="py-1 text-slate-300">{message.channel}</td>
       <td className="py-1 text-slate-400">
         {message.messageType}

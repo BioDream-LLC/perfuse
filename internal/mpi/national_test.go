@@ -14,15 +14,15 @@ func TestANationalNumberSentTwoWaysLinks(t *testing.T) {
 	s, ctx := openTest(t), context.Background()
 	set := Settings{Trusted: []string{nhs}}
 	a, err := s.Register(ctx, "", "t", Record{System: hospital, Value: "H1", Family: "Jones", Given: "Ann", BirthDate: "1970-01-01",
-		Identifiers: []string{"urn:oid:2.16.840.1.113883.2.1.4.1|943 476 5919"}}, set)
+		Identifiers: []string{"urn:oid:2.16.840.1.113883.2.1.4.1|999 000 0018"}}, set)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := a.Record.Identifiers; len(got) != 1 || got[0] != nhs+"|9434765919" {
+	if got := a.Record.Identifiers; len(got) != 1 || got[0] != nhs+"|9990000018" {
 		t.Fatalf("stored as %v", got)
 	}
 	b, err := s.Register(ctx, "", "t", Record{System: clinic, Value: "C9", Family: "Jonas", Given: "A",
-		Identifiers: []string{nhs + "|9434765919"}}, set)
+		Identifiers: []string{nhs + "|9990000018"}}, set)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestANationalNumberSentTwoWaysLinks(t *testing.T) {
 		t.Fatalf("not linked by the NHS number: %+v", b)
 	}
 	// And a search by the number, typed with spaces, finds the person.
-	found, err := s.Find(ctx, "", Record{Identifiers: []string{nhs + "|943 476 5919"}}, set, 5)
+	found, err := s.Find(ctx, "", Record{Identifiers: []string{nhs + "|999 000 0018"}}, set, 5)
 	if err != nil || len(found) == 0 || found[0].Grade != "certain" {
 		t.Fatalf("search: %v %+v", err, found)
 	}
@@ -42,22 +42,22 @@ func TestANationalNumberWithAWrongCheckDigitNeverLinks(t *testing.T) {
 	s, ctx := openTest(t), context.Background()
 	set := Settings{Trusted: []string{nhs}}
 	if _, err := s.Register(ctx, "", "t", Record{System: hospital, Value: "H1", Family: "Jones", Given: "Ann", BirthDate: "1970-01-01",
-		Identifiers: []string{nhs + "|9434765919"}}, set); err != nil {
+		Identifiers: []string{nhs + "|9990000018"}}, set); err != nil {
 		t.Fatal(err)
 	}
-	// 9434765918: one digit wrong, and the check digit says so.
+	// 9990000019: one digit wrong, and the check digit says so.
 	out, err := s.Register(ctx, "", "t", Record{System: lab, Value: "L7", Family: "Smith", Given: "Bob", BirthDate: "1980-05-05",
-		Identifiers: []string{nhs + "|943 476 5918"}}, set)
+		Identifiers: []string{nhs + "|999 000 0019"}}, set)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if out.Action == "linked" {
 		t.Fatal("a mistyped national number linked two different people")
 	}
-	if len(out.Warnings) != 1 || !strings.Contains(out.Warnings[0], "check digit") || strings.Contains(out.Warnings[0], "9434765918") {
+	if len(out.Warnings) != 1 || !strings.Contains(out.Warnings[0], "check digit") || strings.Contains(out.Warnings[0], "9990000019") {
 		t.Fatalf("warnings %v", out.Warnings)
 	}
-	if got := out.Record.Identifiers; len(got) != 1 || got[0] != nhs+"|9434765918" {
+	if got := out.Record.Identifiers; len(got) != 1 || got[0] != nhs+"|9990000019" {
 		t.Fatalf("the number should stay on the record for people to see: %v", got)
 	}
 }
@@ -71,12 +71,12 @@ func TestHL7NationalIdentifierTypes(t *testing.T) {
 	if len(x.Record.Identifiers) != 1 || x.Record.Identifiers[0] != "http://fhir.de/sid/gkv/kvid-10|A123456780" {
 		t.Fatalf("%+v", x.Record)
 	}
-	msg = "MSH|^~\\&|A|B|C|D|202601011200||ADT^A04|1|P|2.4\rPID|1||777^^^HOSP^MR~9434765919^^^NHS^NH||Jones^Ann\r"
+	msg = "MSH|^~\\&|A|B|C|D|202601011200||ADT^A04|1|P|2.4\rPID|1||777^^^HOSP^MR~9990000018^^^NHS^NH||Jones^Ann\r"
 	x, err = FromHL7([]byte(msg), FromOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(x.Record.Identifiers) != 1 || x.Record.Identifiers[0] != nhs+"|9434765919" {
+	if len(x.Record.Identifiers) != 1 || x.Record.Identifiers[0] != nhs+"|9990000018" {
 		t.Fatalf("%+v", x.Record)
 	}
 }

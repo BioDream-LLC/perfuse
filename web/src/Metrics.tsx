@@ -13,6 +13,7 @@ import {
 } from './metricCharts'
 import type { Series } from './metricCharts'
 import { ErrorBox, Section, Spinner } from './ui'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The metrics section.
@@ -160,7 +161,7 @@ export function Metrics() {
           <ul className="mt-2 space-y-0.5 font-mono text-xs">
             {Object.entries(snapshot.dropped).map(([name, count]) => (
               <li key={name}>
-                {name} — {count.toLocaleString()} collapsed
+                {name} — {count.toLocaleString(uiLocale())} collapsed
               </li>
             ))}
           </ul>
@@ -228,7 +229,7 @@ export function Metrics() {
             label="Messages in window"
             value={received}
             unit="count"
-            help={`${delivered.toLocaleString()} delivered`}
+            help={`${delivered.toLocaleString(uiLocale())} delivered`}
           />
         </MetricGaugeCard>
       </div>
@@ -580,14 +581,14 @@ function MetricTable({
                   <tr key={row.name}>
                     <td className="py-2 font-medium text-slate-200">{row.name}</td>
                     <td className="py-2 text-right font-mono text-slate-300">
-                      {row.delivered.toLocaleString()}
+                      {row.delivered.toLocaleString(uiLocale())}
                     </td>
                     <td
                       className={`py-2 text-right font-mono ${
                         row.failed > 0 ? 'text-rose-300' : 'text-slate-400'
                       }`}
                     >
-                      {row.failed.toLocaleString()}
+                      {row.failed.toLocaleString(uiLocale())}
                     </td>
                     <td
                       className={`py-2 text-right font-mono ${

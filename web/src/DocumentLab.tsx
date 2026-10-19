@@ -10,6 +10,7 @@ import { ReconcilePanel } from './ReconcilePanel'
 import { PrintPanel } from './PrintPanel'
 import { SignaturePanel } from './SignaturePanel'
 import { MergePanel } from './MergePanel'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The document lab.
@@ -276,7 +277,7 @@ export function DocumentLab() {
                       <li key={a.segment} className="rounded-md border border-slate-800 p-3 text-sm">
                         <p className="text-slate-300">
                           OBX {a.segment} — {a.mimeType || 'no declared type'} ·{' '}
-                          {a.bytes.toLocaleString()} bytes
+                          {a.bytes.toLocaleString(uiLocale())} bytes
                           {a.encoding && ` · ${a.encoding}`}
                         </p>
                         {a.notes?.map((n, i) => (

@@ -13,6 +13,7 @@ import { Donut, HBar, Sparkline, StackedAreaChart, outcomeColours } from './char
 import type { RootState } from './store'
 import { Confirm, ErrorBox, Section, Spinner } from './ui'
 import { IconShield } from './Icons'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The dashboard.
@@ -240,13 +241,13 @@ export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
         />
         <StatCard
           label="Messages, 24h"
-          value={stats ? stats.total.toLocaleString() : '—'}
+          value={stats ? stats.total.toLocaleString(uiLocale()) : '—'}
           icon="messages"
-          note={stats?.newestKept ? `latest ${new Date(stats.newestKept).toLocaleTimeString()}` : ''}
+          note={stats?.newestKept ? `latest ${new Date(stats.newestKept).toLocaleTimeString(uiLocale())}` : ''}
         />
         <StatCard
           label="Failures, 24h"
-          value={failing.toLocaleString()}
+          value={failing.toLocaleString(uiLocale())}
           tone={failing > 0 ? 'bad' : 'good'}
           icon="failures"
           note={failing > 0 ? 'needs attention' : 'none'}
@@ -255,7 +256,7 @@ export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
           label="Stored"
           value={stats ? formatBytes(stats.storedBytes) : '—'}
           icon="storage"
-          note={stats?.oldestKept ? `since ${new Date(stats.oldestKept).toLocaleDateString()}` : ''}
+          note={stats?.oldestKept ? `since ${new Date(stats.oldestKept).toLocaleDateString(uiLocale())}` : ''}
         />
       </div>
 
@@ -263,7 +264,7 @@ export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Queued now"
-          value={ops.queueDepth.toLocaleString()}
+          value={ops.queueDepth.toLocaleString(uiLocale())}
           tone={ops.queueDepth > 0 ? 'warn' : 'good'}
           icon="queue"
           note={
@@ -274,7 +275,7 @@ export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
         />
         <StatCard
           label="Alerts firing"
-          value={ops.alertsFiring.toLocaleString()}
+          value={ops.alertsFiring.toLocaleString(uiLocale())}
           tone={ops.alertsCritical > 0 ? 'bad' : ops.alertsFiring > 0 ? 'warn' : 'good'}
           icon="alerts"
           note={
@@ -287,7 +288,7 @@ export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
         />
         <StatCard
           label="Shadowed"
-          value={ops.shadows === 0 ? '—' : ops.shadows.toLocaleString()}
+          value={ops.shadows === 0 ? '—' : ops.shadows.toLocaleString(uiLocale())}
           tone={ops.shadowDiffering > 0 ? 'warn' : undefined}
           icon="shadow"
           note={
@@ -638,7 +639,7 @@ function ChannelCard({
           <p className="mt-1 text-xs text-slate-500">
             {channel.running
               ? channel.startedAt
-                ? `running since ${new Date(channel.startedAt).toLocaleTimeString()}`
+                ? `running since ${new Date(channel.startedAt).toLocaleTimeString(uiLocale())}`
                 : 'running'
               : 'stopped'}
           </p>
@@ -729,7 +730,7 @@ function Counter({
   }
   return (
     <div>
-      <dd className={`font-mono text-lg tabular-nums ${tones[tone]}`}>{value.toLocaleString()}</dd>
+      <dd className={`font-mono text-lg tabular-nums ${tones[tone]}`}>{value.toLocaleString(uiLocale())}</dd>
       <dt className="text-[10px] tracking-wide text-slate-500 uppercase">{label}</dt>
     </div>
   )

@@ -89,3 +89,6 @@ deploy/hosted/**/.terraform/
 *.tfstate
 *.tfstate.*
 *.tfplan
+
+# The manual's translations, built by make manuals for the website
+dist-manuals/

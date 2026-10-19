@@ -5,6 +5,7 @@ import type { ClusterLease, ClusterStatus } from './api'
 import type { RootState, UiError } from './store'
 import { ErrorBox, Section } from './ui'
 import { IconFleet } from './Icons'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The cluster: the servers sharing this one's PostgreSQL store, which leads, which runs each channel, and what happened
@@ -252,7 +253,7 @@ export function ClusterPanel() {
         <ul className="mt-2 space-y-1 text-xs" data-testid="cluster-events">
           {(st.events ?? []).map((e, i) => (
             <li key={i} className="flex gap-2">
-              <span className="w-40 shrink-0 text-slate-500">{new Date(e.at).toLocaleString()}</span>
+              <span className="w-40 shrink-0 text-slate-500">{new Date(e.at).toLocaleString(uiLocale())}</span>
               <span className="w-28 shrink-0 truncate text-slate-300">{name(e.node)}</span>
               <span className={`w-16 shrink-0 ${kindColour[e.kind] ?? 'text-slate-400'}`}>{e.kind}</span>
               <span className="text-slate-400">

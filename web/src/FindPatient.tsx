@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, type IdentitySearchResult } from './api'
 import { OutcomeBadge } from './Messages'
+import { uiLocale } from './i18n/locale'
 
 // Finding a message by what somebody knows about it.
 //
@@ -199,7 +200,7 @@ function Results({
                 onClick={() => onOpen?.(m.message.id)}
               >
                 <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
-                  {new Date(m.message.receivedAt).toLocaleString()}
+                  {new Date(m.message.receivedAt).toLocaleString(uiLocale())}
                 </td>
                 <td className="px-3 py-2">{m.message.channel}</td>
                 <td className="px-3 py-2 font-mono text-xs">

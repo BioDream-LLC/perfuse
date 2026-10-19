@@ -6,9 +6,14 @@ import { BrandingProvider } from './Branding'
 import { ThemeProvider } from './Theme'
 import { store } from './store'
 import './index.css'
+import { startLanguage } from './i18n/runtime'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('no #root element')
+
+// The language the person chose (or the browser's): its catalogue is loaded alongside the first screen, and text is
+// translated as it is drawn.
+void startLanguage()
 
 createRoot(root).render(
   <StrictMode>

@@ -5,6 +5,7 @@ import { CodeArea } from './CodeArea'
 import { IconPatient, IconQueue } from './Icons'
 import { ErrorBox, Field, Section } from './ui'
 import type { UiError } from './store'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The reviewer queue for Da Vinci PAS.
@@ -219,7 +220,7 @@ function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
                   {a.lineItems?.length ? ` · item ${a.lineItems.join(', ')}` : ''}
                   {a.final && <span className="ml-2 rounded bg-emerald-500/15 px-1.5 text-xs text-emerald-200">last submission</span>}
                 </p>
-                <p className="text-xs text-slate-500">received {new Date(a.received).toLocaleString()}</p>
+                <p className="text-xs text-slate-500">received {new Date(a.received).toLocaleString(uiLocale())}</p>
                 <DocumentText content={a.content} />
               </li>
             ))}

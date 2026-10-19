@@ -10,6 +10,7 @@ import { AllSettings } from './AllSettings'
 import { BrandingPanel } from './BrandingPanel'
 import { SnmpPanel } from './SnmpPanel'
 import { ErrorBox, Field, Section, Toggle } from './ui'
+import { uiLocale } from './i18n/locale'
 
 /** Settings edits the configuration files the server was started with.
  *
@@ -267,7 +268,7 @@ function SettingsFileEditor({
           <Detail label="Size" value={file.exists ? `${file.bytes} bytes` : 'not created yet'} />
           <Detail
             label="Changed"
-            value={file.modifiedAt ? new Date(file.modifiedAt).toLocaleString() : '—'}
+            value={file.modifiedAt ? new Date(file.modifiedAt).toLocaleString(uiLocale()) : '—'}
           />
           <Detail
             label="Takes effect"
@@ -340,7 +341,7 @@ function SettingsFileEditor({
 function StartupPanel({ startup }: { startup: StartupSettings }) {
   const started = useMemo(() => {
     if (!startup.startedAt) return '—'
-    return new Date(startup.startedAt).toLocaleString()
+    return new Date(startup.startedAt).toLocaleString(uiLocale())
   }, [startup.startedAt])
 
   return (

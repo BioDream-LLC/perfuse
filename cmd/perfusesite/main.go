@@ -189,6 +189,7 @@ func main() {
 	out := flag.String("out", "dist-site", "directory to write the site into")
 	base := flag.String("base", "https://perfuse.health", "canonical base URL, no trailing slash")
 	root := flag.String("root", ".", "module root")
+	flag.StringVar(&manualsDir, "manuals", "dist-manuals", "directory of the manual's translations (perfuse-manual.<lang>.html), from make manuals")
 	flag.Parse()
 
 	if err := run(*root, *out, strings.TrimSuffix(*base, "/")); err != nil {
@@ -196,6 +197,9 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+// manualsDir holds the manual's translations; each is published at /manual/<lang>/. Absent: English only.
+var manualsDir = "dist-manuals"
 
 // cssVersion is a short hash of site/static/site.css, put in the stylesheet's URL by layout.
 var cssVersion = "0"
@@ -282,6 +286,21 @@ func run(root, out, base string) error {
 		return err
 	}
 	urls = append(urls, sitemapEntry{Loc: base + "/manual/", Priority: "0.9"})
+
+	// The manual's translations, made by machine (each says so under its title), one page per language.
+	if files, err := filepath.Glob(filepath.Join(manualsDir, "perfuse-manual.*.html")); err == nil {
+		for _, f := range files {
+			lang := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(f), "perfuse-manual."), ".html")
+			b, err := os.ReadFile(f)
+			if err != nil {
+				return err
+			}
+			if err := writeFile(filepath.Join(out, "manual", lang, "index.html"), []byte(rewriteHost(string(b), base))); err != nil {
+				return err
+			}
+			urls = append(urls, sitemapEntry{Loc: base + "/manual/" + lang + "/", Priority: "0.5"})
+		}
+	}
 
 	pdf, err := os.ReadFile(filepath.Join(root, "docs/manual/perfuse-manual.pdf"))
 	if err != nil {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, type ReplayReport } from './api'
 import { Section } from './ui'
+import { uiLocale } from './i18n/locale'
 
 // Asking what a change would have done, before making it.
 //
@@ -63,7 +64,7 @@ export function ReplayPanel({ channel, candidateYaml }: { channel: string; candi
             >
               {LIMITS.map((n) => (
                 <option key={n} value={n}>
-                  the last {n.toLocaleString()}
+                  the last {n.toLocaleString(uiLocale())}
                 </option>
               ))}
             </select>
@@ -131,14 +132,14 @@ function Report({ report }: { report: ReplayReport }) {
       >
         <p className={'text-sm font-medium ' + (clean ? 'text-emerald-200' : 'text-amber-200')}>
           {clean
-            ? `No difference across ${report.examined.toLocaleString()} messages.`
-            : `${report.changed.toLocaleString()} of ${report.examined.toLocaleString()} messages come out differently (${pct}%).`}
+            ? `No difference across ${report.examined.toLocaleString(uiLocale())} messages.`
+            : `${report.changed.toLocaleString(uiLocale())} of ${report.examined.toLocaleString(uiLocale())} messages come out differently (${pct}%).`}
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          {report.examined.toLocaleString()} examined of {report.available.toLocaleString()}{' '}
+          {report.examined.toLocaleString(uiLocale())} examined of {report.available.toLocaleString(uiLocale())}{' '}
           recorded for this channel.
           {report.unparseable > 0 &&
-            ` ${report.unparseable.toLocaleString()} stored message(s) could not be read by either version and were not counted.`}
+            ` ${report.unparseable.toLocaleString(uiLocale())} stored message(s) could not be read by either version and were not counted.`}
         </p>
         {clean && (
           // Said explicitly, because the temptation to read "no differences" as "safe" is
@@ -165,7 +166,7 @@ function Report({ report }: { report: ReplayReport }) {
                   <tr key={path} className="border-t border-slate-800">
                     <td className="py-1 font-mono text-slate-300">{path}</td>
                     <td className="py-1 text-right text-slate-400">
-                      {count.toLocaleString()} message{count === 1 ? '' : 's'}
+                      {count.toLocaleString(uiLocale())} message{count === 1 ? '' : 's'}
                     </td>
                   </tr>
                 ))}

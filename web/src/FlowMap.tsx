@@ -4,6 +4,7 @@ import type { Bucket, FlowNode, FlowResponse } from './api'
 import { Section, ErrorBox } from './ui'
 import { toUiError } from './store'
 import type { UiError } from './store'
+import { uiLocale } from './i18n/locale'
 
 // The flow map: the shape of the site, and what was moving through it at any moment.
 //
@@ -219,7 +220,7 @@ function Scrubber({
           Moment shown
         </label>
         <span className="font-mono text-sm text-slate-200">
-          {at ? new Date(at).toLocaleString() : 'no data in this window'}
+          {at ? new Date(at).toLocaleString(uiLocale()) : 'no data in this window'}
           {live && <span className="ml-2 rounded bg-emerald-900/60 px-2 py-0.5 text-xs text-emerald-300 live-badge">live</span>}
         </span>
       </div>
@@ -489,7 +490,7 @@ function Explanation({ node, index }: { node: FlowNode; index: number }) {
 
       {at && (
         <p className="mt-3 border-t border-sky-900 pt-3 text-xs text-slate-400">
-          At {new Date(at.start).toLocaleString()} it received {at.total}
+          At {new Date(at.start).toLocaleString(uiLocale())} it received {at.total}
           {at.total > 0 && `, of which ${at.delivered} were delivered, ${at.filtered} filtered and ${at.failed} failed`}.
         </p>
       )}

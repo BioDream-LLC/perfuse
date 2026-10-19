@@ -47,7 +47,7 @@ type Scheme struct {
 	Check  string `json:"check"`
 	// Restricted says what the country's law says about using or showing it, when it says something particular.
 	Restricted string `json:"restricted,omitempty"`
-	// Example is a number that passes the check (made up, or a published test number).
+	// Example is a number that passes the check: made up, or from a published test range (the NHS synthetic 999 range).
 	Example string `json:"example"`
 
 	normalise func(string) string
@@ -72,7 +72,7 @@ func (s *Scheme) Validate(v string) error {
 	return s.validate(n)
 }
 
-// Display writes a normalised number the way it is usually printed (NHS 943 476 5919, AHV 756.1234.5678.97).
+// Display writes a normalised number the way it is usually printed (NHS 999 000 0018, AHV 756.1234.5678.97).
 func (s *Scheme) Display(v string) string {
 	n := s.Normalise(v)
 	if s.display != nil {

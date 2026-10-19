@@ -24,7 +24,7 @@ func init() {
 	register(&Scheme{ID: "uk-nhs", Country: "GB", ISO3: "GBR", Region: "England, Wales and the Isle of Man", Primary: true,
 		Name: "NHS number", System: "https://fhir.nhs.uk/Id/nhs-number", SystemVerified: true,
 		SystemSource: "NHS England FHIR R4 guides (UK Core)", Aliases: []string{"urn:oid:2.16.840.1.113883.2.1.4.1"},
-		Format: "10 digits, printed 3 3 4", Check: "modulus 11, weights 10 to 2", Example: "943 476 5919",
+		Format: "10 digits, printed 3 3 4", Check: "modulus 11, weights 10 to 2", Example: "999 000 0018",
 		validate: nhsMod11, display: groups(3, 3, 4)})
 	register(&Scheme{ID: "uk-chi", Country: "GB", ISO3: "GBR", Region: "Scotland",
 		Name: "CHI number", Local: "Community Health Index", System: "https://phf.nhs.scot/fhir/Id/chi-number",

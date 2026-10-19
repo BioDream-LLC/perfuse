@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { api } from './api'
 import type { ChannelHistory, ChannelVersion } from './api'
 import { Confirm, ErrorBox, Spinner } from './ui'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Channel history.
@@ -254,5 +255,5 @@ function formatWhen(iso: string): string {
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
   if (seconds < 2592000) return `${Math.floor(seconds / 86400)}d ago`
-  return new Date(iso).toLocaleDateString()
+  return new Date(iso).toLocaleDateString(uiLocale())
 }

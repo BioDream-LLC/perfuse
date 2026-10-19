@@ -148,7 +148,7 @@ function NewRequest({ onCreated }: { onCreated: () => void }) {
         </Field>
         <Field
           label="The person’s identifiers"
-          hint="One per line, as system|value (https://fhir.nhs.uk/Id/nhs-number|943 476 5919) or a number on its own. The patient index adds the person’s other numbers."
+          hint="One per line, as system|value (https://fhir.nhs.uk/Id/nhs-number|999 000 0018) or a number on its own. The patient index adds the person’s other numbers."
         >
           <textarea className="input font-mono text-xs" rows={3} value={idents} onChange={(e) => setIdents(e.target.value)} />
         </Field>

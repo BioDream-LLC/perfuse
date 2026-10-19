@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Charts, drawn as SVG with no charting library.
@@ -30,7 +31,7 @@ function niceMax(value: number): number {
 }
 
 function formatTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return new Date(ms).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })
 }
 
 /**
@@ -324,7 +325,7 @@ export function Donut({
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-semibold text-slate-100">{total.toLocaleString()}</span>
+          <span className="text-xl font-semibold text-slate-100">{total.toLocaleString(uiLocale())}</span>
           {label && <span className="text-[10px] tracking-wide text-slate-500 uppercase">{label}</span>}
         </div>
       </div>
@@ -334,7 +335,7 @@ export function Donut({
           <li key={a.name} className="flex items-center gap-2.5">
             <span className="size-2.5 rounded-sm" style={{ background: a.colour }} />
             <span className="text-slate-400">{a.name}</span>
-            <span className="ml-auto pl-4 font-mono text-slate-200">{a.value.toLocaleString()}</span>
+            <span className="ml-auto pl-4 font-mono text-slate-200">{a.value.toLocaleString(uiLocale())}</span>
             <span className="w-12 text-right font-mono text-xs text-slate-500">
               {a.percent.toFixed(0)}%
             </span>
@@ -366,7 +367,7 @@ export function HBar({
           <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
             <span className="truncate text-slate-300">{r.name}</span>
             <span className="shrink-0 font-mono text-slate-400">
-              {r.value.toLocaleString()}
+              {r.value.toLocaleString(uiLocale())}
               {r.note && <span className="ml-2 text-xs text-slate-400">{r.note}</span>}
             </span>
           </div>

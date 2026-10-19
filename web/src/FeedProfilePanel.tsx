@@ -3,6 +3,7 @@ import { GenerateTestMessages } from './GenerateTestMessages'
 import { api, type FeedProfile, type ProfileField, type ProfileSegment } from './api'
 import { Section } from './ui'
 import { useCopy } from './useCopy'
+import { uiLocale } from './i18n/locale'
 
 // What is actually in a feed.
 //
@@ -102,7 +103,7 @@ export function FeedProfilePanel({ channel }: { channel: string }) {
             >
               {SAMPLES.map((n) => (
                 <option key={n} value={n}>
-                  the last {n.toLocaleString()} messages
+                  the last {n.toLocaleString(uiLocale())} messages
                 </option>
               ))}
             </select>
@@ -232,10 +233,10 @@ export function FeedProfilePanel({ channel }: { channel: string }) {
             </div>
 
             <p className="text-xs text-slate-400">
-              {report.messages.toLocaleString()} messages read of{' '}
-              {report.available.toLocaleString()} recorded.
+              {report.messages.toLocaleString(uiLocale())} messages read of{' '}
+              {report.available.toLocaleString(uiLocale())} recorded.
               {report.unreadable > 0 &&
-                ` ${report.unreadable.toLocaleString()} could not be parsed and are excluded from every figure below.`}
+                ` ${report.unreadable.toLocaleString(uiLocale())} could not be parsed and are excluded from every figure below.`}
             </p>
 
             {report.notes && report.notes.length > 0 && (
@@ -261,7 +262,7 @@ export function FeedProfilePanel({ channel }: { channel: string }) {
                     <tr key={t.type} className="border-t border-slate-800">
                       <td className="py-1 font-mono text-slate-300">{t.type}</td>
                       <td className="py-1 text-right text-slate-400">
-                        {t.count.toLocaleString()}
+                        {t.count.toLocaleString(uiLocale())}
                       </td>
                       <td className="w-24 py-1 text-right text-slate-500">
                         {(t.rate * 100).toFixed(1)}%
@@ -367,7 +368,7 @@ function FieldRow({ field }: { field: ProfileField }) {
           {(field.fillRate * 100).toFixed(1)}%
         </td>
         <td className="py-1 pr-2 text-slate-400">
-          {field.distinct.toLocaleString()}
+          {field.distinct.toLocaleString(uiLocale())}
           {field.distinctCapped && '+'}
         </td>
         <td className="py-1 pr-2 text-slate-500">
@@ -398,7 +399,7 @@ function FieldRow({ field }: { field: ProfileField }) {
                   }
                 >
                   {c.code}
-                  <span className="ml-1 text-slate-500">{c.count.toLocaleString()}</span>
+                  <span className="ml-1 text-slate-500">{c.count.toLocaleString(uiLocale())}</span>
                 </span>
               ))}
             </div>

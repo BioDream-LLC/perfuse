@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type FrictionReport } from './api'
+import { uiLocale } from './i18n/locale'
 
 /**
  * What this installation has refused to do.
@@ -164,7 +165,7 @@ export function FrictionPanel() {
                         <span className="ml-2 text-xs text-slate-500">{r.status}</span>
                       </td>
                       <td className="px-4 py-2.5 whitespace-nowrap text-slate-500">
-                        {new Date(r.last).toLocaleString()}
+                        {new Date(r.last).toLocaleString(uiLocale())}
                       </td>
                     </tr>
                   ))}

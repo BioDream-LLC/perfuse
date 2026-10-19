@@ -4,6 +4,7 @@ import { api, atLeast } from './api'
 import type { QueueItem, QueueDepth, QueueSnapshot, MessageView, Role } from './api'
 import { Confirm, ErrorBox, Section, Spinner } from './ui'
 import { ParsedMessage } from './Messages'
+import { uiLocale } from './i18n/locale'
 
 /**
  * The queue.
@@ -132,7 +133,7 @@ export function Queue({ role }: { role: Role }) {
         <div className="grid gap-3 sm:grid-cols-3">
           <Stat
             label="Waiting"
-            value={totalPending.toLocaleString()}
+            value={totalPending.toLocaleString(uiLocale())}
             tone={totalPending > 0 ? 'amber' : 'plain'}
           />
           <Stat
@@ -145,7 +146,7 @@ export function Queue({ role }: { role: Role }) {
           />
           <Stat
             label="Given up on"
-            value={totalFailed.toLocaleString()}
+            value={totalFailed.toLocaleString(uiLocale())}
             tone={totalFailed > 0 ? 'rose' : 'plain'}
             hint={totalFailed > 0 ? 'these will not be retried without asking' : undefined}
           />
@@ -296,7 +297,7 @@ export function Queue({ role }: { role: Role }) {
             </table>
             {snapshot.total > snapshot.items.length && (
               <p className="mt-3 text-xs text-slate-400">
-                Showing {snapshot.items.length} of {snapshot.total.toLocaleString()}.
+                Showing {snapshot.items.length} of {snapshot.total.toLocaleString(uiLocale())}.
               </p>
             )}
           </div>
@@ -438,10 +439,10 @@ function DestinationRow({
 
         <div className="ml-auto flex flex-wrap items-center gap-4 text-sm">
           <span className="text-amber-300">
-            {depth.pending.toLocaleString()} waiting
+            {depth.pending.toLocaleString(uiLocale())} waiting
           </span>
           {depth.failed > 0 && (
-            <span className="text-rose-300">{depth.failed.toLocaleString()} gave up</span>
+            <span className="text-rose-300">{depth.failed.toLocaleString(uiLocale())} gave up</span>
           )}
           {depth.pending > 0 && (
             <span className={stale ? 'text-rose-300' : 'text-slate-400'}>

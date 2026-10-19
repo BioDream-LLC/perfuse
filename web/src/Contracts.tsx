@@ -14,6 +14,7 @@ import { Section, ErrorBox, Spinner } from './ui'
 import { Donut } from './charts'
 import type { UiError } from './store'
 import { ProposeContract } from './ProposeContract'
+import { uiLocale } from './i18n/locale'
 
 type ContractStatus = {
   channel: string
@@ -350,7 +351,7 @@ function TrendStrip({ trend }: { trend: Trend }) {
             <span
               key={`${v.at}-${i}`}
               className={`h-5 flex-1 rounded-sm ${colour}`}
-              title={`${new Date(v.at).toLocaleString()} — ${
+              title={`${new Date(v.at).toLocaleString(uiLocale())} — ${
                 !v.judged ? 'not judged' : v.violations === 0 ? 'held' : `${v.violations} violation(s)`
               }`}
             />

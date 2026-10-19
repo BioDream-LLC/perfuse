@@ -794,8 +794,8 @@ Denmark, Norway with its D number, Finland, Iceland), the Baltic codes, Poland's
 PESEL, the Czech and Slovak birth numbers, and the Hungarian, Romanian, Bulgarian,
 Croatian, Slovenian and Greek numbers are known to the index. Each is stored one
 way: under its scheme's system, spaces and dots removed, so the NHS number sent as
-`urn:oid:2.16.840.1.113883.2.1.4.1|943 476 5919` by one system and as
-`https://fhir.nhs.uk/Id/nhs-number|9434765919` by another is one identifier. An HL7
+`urn:oid:2.16.840.1.113883.2.1.4.1|999 000 0018` by one system and as
+`https://fhir.nhs.uk/Id/nhs-number|9990000018` by another is one identifier. An HL7
 v2 PID-3 repetition whose identifier type is `NN` and a country's three-letter code
 (`NNDEU`, `NNNLD`) is read as that country's main number, and type `NH` from the
 `NHS` authority as the NHS number. Every number's check digit is tested: one that

@@ -21,7 +21,7 @@ func TestDataProtectionEndpoints(t *testing.T) {
 		t.Fatalf("an editor read the data protection requests: %d", res.Code)
 	}
 	res := h.do(string(store.RoleAdmin), "POST", "/api/privacy/requests", map[string]any{"kind": "erasure", "subject": "letter 12",
-		"identifiers": []string{"https://fhir.nhs.uk/Id/nhs-number|943 476 5919"}})
+		"identifiers": []string{"https://fhir.nhs.uk/Id/nhs-number|999 000 0018"}})
 	if res.Code != http.StatusOK {
 		t.Fatalf("create: %d %s", res.Code, res.Body.String())
 	}
@@ -43,7 +43,7 @@ func TestDataProtectionEndpoints(t *testing.T) {
 	}
 	// The audit log names the request with the number masked.
 	audit := h.do(string(store.RoleAdmin), "GET", "/api/audit", nil).Body.String()
-	if strings.Contains(audit, "9434765919") || !strings.Contains(audit, "privacy.request") {
+	if strings.Contains(audit, "9990000018") || !strings.Contains(audit, "privacy.request") {
 		t.Fatalf("audit: %s", audit)
 	}
 	md := h.do(string(store.RoleAdmin), "GET", "/api/privacy/register", nil)

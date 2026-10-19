@@ -21,12 +21,29 @@ type Doc struct {
 	// archive contains a copy.
 	Canonical string
 
+	// Lang is the language the manual is written in: "" or "en" for the English original, or the language of a translation.
+	Lang string
+	// Notice is shown under the title of a translation (that it is one, and where the original is). Contents is the heading of
+	// the table of contents, "Table of Contents" when empty.
+	Notice, Contents string
+	// Languages are the other languages the manual is published in, linked under the title; OtherLanguages heads them.
+	Languages      []LanguageLink
+	OtherLanguages string
+
 	Chapters []Chapter
+}
+
+// LanguageLink is the manual in another language.
+type LanguageLink struct {
+	Code, Name, Href string
 }
 
 // Chapter is a numbered top-level division.
 type Chapter struct {
 	Title string
+	// Key is the English title in a translation, which the anchors are made from, so a link into the manual is the same in
+	// every language. Empty: the title.
+	Key string
 	// Intro is prose before the first section.
 	Intro string
 	// Sections are the numbered divisions within.
@@ -36,6 +53,7 @@ type Chapter struct {
 // Section is a numbered division within a chapter.
 type Section struct {
 	Title string
+	Key   string
 	Body  string
 	// Subsections nest one level further. Three levels is the limit, deliberately: the Hibernate manual goes to four
 	// and its table of contents runs to several screens of near-identical entries, which is harder to navigate than a
@@ -46,6 +64,7 @@ type Section struct {
 // Subsection is the deepest numbered division.
 type Subsection struct {
 	Title string
+	Key   string
 	Body  string
 }
 
@@ -53,6 +72,7 @@ type Subsection struct {
 type numbered struct {
 	number string
 	title  string
+	key    string // what the anchor is made from: the English title
 	anchor string
 	depth  int
 }
@@ -63,15 +83,24 @@ type numbered struct {
 // the heading it points at cannot disagree.
 func (d *Doc) toc() []numbered {
 	var out []numbered
+	key := func(k, t string) string {
+		if k != "" {
+			return k
+		}
+		return t
+	}
 	for ci, c := range d.Chapters {
 		cn := fmt.Sprint(ci + 1)
-		out = append(out, numbered{number: cn, title: c.Title, anchor: anchorFor(cn, c.Title), depth: 1})
+		ck := key(c.Key, c.Title)
+		out = append(out, numbered{number: cn, title: c.Title, key: ck, anchor: anchorFor(cn, ck), depth: 1})
 		for si, s := range c.Sections {
 			sn := fmt.Sprintf("%s.%d", cn, si+1)
-			out = append(out, numbered{number: sn, title: s.Title, anchor: anchorFor(sn, s.Title), depth: 2})
+			sk := key(s.Key, s.Title)
+			out = append(out, numbered{number: sn, title: s.Title, key: sk, anchor: anchorFor(sn, sk), depth: 2})
 			for ui, u := range s.Subsections {
 				un := fmt.Sprintf("%s.%d", sn, ui+1)
-				out = append(out, numbered{number: un, title: u.Title, anchor: anchorFor(un, u.Title), depth: 3})
+				uk := key(u.Key, u.Title)
+				out = append(out, numbered{number: un, title: u.Title, key: uk, anchor: anchorFor(un, uk), depth: 3})
 			}
 		}
 	}
@@ -104,8 +133,8 @@ func (d *Doc) Anchors() map[string]string {
 	out := map[string]string{}
 	for _, e := range d.toc() {
 		// First writer wins, so a chapter title beats a subsection that happens to share its slug.
-		if _, seen := out[slugFor(e.title)]; !seen {
-			out[slugFor(e.title)] = e.anchor
+		if _, seen := out[slugFor(e.key)]; !seen {
+			out[slugFor(e.key)] = e.anchor
 		}
 		// The numbered form resolves to itself, so an explicit anchor still works.
 		out[e.anchor] = e.anchor
@@ -142,7 +171,11 @@ func anchorFor(number, title string) string {
 func (d *Doc) HTML() string {
 	var b strings.Builder
 
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n")
+	lang := d.Lang
+	if lang == "" {
+		lang = "en"
+	}
+	fmt.Fprintf(&b, "<!DOCTYPE html>\n<html lang=\"%s\">\n<head>\n", html.EscapeString(lang))
 	b.WriteString("<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(d.Title))
@@ -181,8 +214,27 @@ func (d *Doc) HTML() string {
 	if d.Version != "" {
 		fmt.Fprintf(&b, "<p class=\"version\">%s</p>\n", html.EscapeString(d.Version))
 	}
+	if d.Notice != "" {
+		fmt.Fprintf(&b, "<p class=\"version\" role=\"note\">%s</p>\n", html.EscapeString(d.Notice))
+	}
+	if len(d.Languages) > 0 {
+		label := d.OtherLanguages
+		if label == "" {
+			label = "Other languages"
+		}
+		var links []string
+		for _, l := range d.Languages {
+			links = append(links, fmt.Sprintf("<a href=\"%s\" hreflang=\"%s\" lang=\"%s\">%s</a>", html.EscapeString(l.Href),
+				html.EscapeString(l.Code), html.EscapeString(l.Code), html.EscapeString(l.Name)))
+		}
+		fmt.Fprintf(&b, "<p class=\"version\">%s: %s</p>\n", html.EscapeString(label), strings.Join(links, " · "))
+	}
 	b.WriteString("</header>\n")
-	b.WriteString("<h2>Table of Contents</h2>\n")
+	contents := d.Contents
+	if contents == "" {
+		contents = "Table of Contents"
+	}
+	fmt.Fprintf(&b, "<h2>%s</h2>\n", html.EscapeString(contents))
 	for _, e := range entries {
 		fmt.Fprintf(&b, "<div class=\"toc-d%d\"><a href=\"#%s\"><span class=\"num\">%s</span> %s</a></div>\n",
 			e.depth, e.anchor, e.number, html.EscapeString(e.title))

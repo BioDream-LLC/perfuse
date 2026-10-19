@@ -1,3 +1,4 @@
+import { uiLocale } from './i18n/locale'
 // Sharing a playground session as a link.
 //
 // The playground runs the real engine compiled to WebAssembly, entirely in the browser. That makes it the natural way to ask somebody a
@@ -31,7 +32,7 @@ export const maxEncodedLength = 6000
 export class TooLargeToShare extends Error {
   constructor(readonly length: number) {
     super(
-      `this session encodes to ${length.toLocaleString()} characters, and the limit is ${maxEncodedLength.toLocaleString()}. ` +
+      `this session encodes to ${length.toLocaleString(uiLocale())} characters, and the limit is ${maxEncodedLength.toLocaleString(uiLocale())}. ` +
         `Links this long are wrapped or cut short by ticket systems and mail gateways, and a cut link decodes to nothing ` +
         `or to a shorter message that still looks valid. Trim the message or the script and try again`,
     )

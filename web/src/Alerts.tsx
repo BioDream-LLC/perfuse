@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { AlertRulesEditor } from './AlertRulesEditor'
 import { ApiError, api, atLeast } from './api'
 import type { Alert, AlertSnapshot, Role } from './api'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Alerts.
@@ -418,7 +419,7 @@ function formatThreshold(kind: string, value: number): string {
   // two orders of magnitude.
   if (kind === 'below-rhythm') return `${(value * 100).toFixed(0)}% below normal`
   if (kind === 'queue-age' || kind === 'slow-delivery') return formatSeconds(value)
-  return value.toLocaleString()
+  return value.toLocaleString(uiLocale())
 }
 
 function formatSeconds(seconds: number): string {

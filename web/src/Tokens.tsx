@@ -5,6 +5,7 @@ import type { UiError } from './store'
 import { toUiError } from './store'
 import { ErrorBox, Field, Section } from './ui'
 import { useCopy } from './useCopy'
+import { uiLocale } from './i18n/locale'
 
 /** Tokens manages the credentials machines use.
  *
@@ -235,13 +236,13 @@ export function Tokens() {
                       )}
                     </td>
                     <td className="py-2 pr-4 text-xs">
-                      {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '—'}
+                      {t.createdAt ? new Date(t.createdAt).toLocaleDateString(uiLocale()) : '—'}
                       {t.createdBy ? ` by ${t.createdBy}` : ''}
                     </td>
                     <td className="py-2 pr-4 text-xs">
                       {/* Never used is worth seeing plainly: it is either a token nobody
                           wired up, or one that was replaced and forgotten. */}
-                      {t.lastUsed ? new Date(t.lastUsed).toLocaleString() : 'never'}
+                      {t.lastUsed ? new Date(t.lastUsed).toLocaleString(uiLocale()) : 'never'}
                     </td>
                     <td className="py-2 pr-4 text-right">
                       {t.revoked ? (

@@ -12,7 +12,7 @@ PKG     := ./cmd/perfuse
 VERSION ?= v0.1.17
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs site screens publish vulncheck
+.PHONY: all build web test vet fmt check bench clean cross release package sbom docker wasm e2e docs manuals site screens publish vulncheck
 
 all: check build
 
@@ -265,8 +265,18 @@ screens:
 	   && mv /tmp/perfuse-sums docs/assets/screens/web/sources.sha256
 	@echo "  sources.sha256 updated"
 
-site: docs
-	go run ./cmd/perfusesite -out dist-site -base "$(SITE_BASE)"
+site: docs manuals
+	go run ./cmd/perfusesite -out dist-site -base "$(SITE_BASE)" -manuals dist-manuals
+
+# manuals builds the manual in each language docs/manual/i18n holds a translation for (web/scripts/i18n-manual.mjs makes
+# them), as HTML for the website. They are not committed: the translations are, and these are built from them.
+MANUAL_LANGS := $(basename $(notdir $(filter-out %/units.json,$(wildcard docs/manual/i18n/*.json))))
+manuals:
+	@mkdir -p dist-manuals
+	@for l in $(MANUAL_LANGS); do \
+		go run ./cmd/perfusedoc -lang $$l -out dist-manuals/perfuse-manual.$$l.html \
+			-version "$$(git describe --tags --abbrev=0 2>/dev/null || echo unreleased) · $$(git rev-parse --short HEAD)" || exit 1; \
+	done
 
 docs:
 	go run ./cmd/perfusedoc -version "$$(git describe --tags --abbrev=0 2>/dev/null || echo unreleased) · $$(git rev-parse --short HEAD)"

@@ -2,6 +2,7 @@ import { CodeArea } from './CodeArea'
 import { useState } from 'react'
 import { api, type ParityReport } from './api'
 import { ErrorBox, Section } from './ui'
+import { uiLocale } from './i18n/locale'
 
 /** ParityPanel compares this channel's output against the engine being replaced.
  *
@@ -95,7 +96,7 @@ export function ParityPanel({ channel }: { channel: string }) {
                 <ul className="mt-2 space-y-1.5">
                   {report.failureReasons.map((f, i) => (
                     <li key={i} className="text-xs text-rose-200">
-                      <span className="font-medium">{f.messages.toLocaleString()}×</span> {f.error}
+                      <span className="font-medium">{f.messages.toLocaleString(uiLocale())}×</span> {f.error}
                       {f.reference && <span className="ml-2 text-rose-400/70">e.g. {f.reference}</span>}
                     </li>
                   ))}
@@ -113,7 +114,7 @@ export function ParityPanel({ channel }: { channel: string }) {
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <span className="font-mono text-sm text-slate-200">{f.path}</span>
                       <span className="text-xs text-slate-400">
-                        {f.messages.toLocaleString()} message{f.messages === 1 ? '' : 's'}
+                        {f.messages.toLocaleString(uiLocale())} message{f.messages === 1 ? '' : 's'}
                       </span>
                       {/* The most useful thing on screen. One systematic difference across four
                           thousand messages is one decision, not four thousand problems. */}
@@ -123,7 +124,7 @@ export function ParityPanel({ channel }: { channel: string }) {
                         </span>
                       ) : (
                         <span className="rounded bg-amber-950/60 px-1.5 py-0.5 text-xs font-medium text-amber-300">
-                          {f.distinctPairs.toLocaleString()} different ways — the content differs
+                          {f.distinctPairs.toLocaleString(uiLocale())} different ways — the content differs
                         </span>
                       )}
                     </div>
@@ -136,7 +137,7 @@ export function ParityPanel({ channel }: { channel: string }) {
                           <span className="text-slate-600">→</span>
                           <span className="text-slate-500">Perfuse</span>
                           <span className="font-mono text-emerald-300">{e.got || '(empty)'}</span>
-                          <span className="text-slate-600">×{e.count.toLocaleString()}</span>
+                          <span className="text-slate-600">×{e.count.toLocaleString(uiLocale())}</span>
                           {e.reference && <span className="text-slate-500">{e.reference}</span>}
                         </li>
                       ))}
@@ -155,7 +156,7 @@ export function ParityPanel({ channel }: { channel: string }) {
 function Tally({ label, value, className }: { label: string; value: number; className: string }) {
   return (
     <div className={`rounded-lg border p-3 ${className}`}>
-      <span className="block text-xl font-semibold">{value.toLocaleString()}</span>
+      <span className="block text-xl font-semibold">{value.toLocaleString(uiLocale())}</span>
       <span className="block text-xs opacity-80">{label}</span>
     </div>
   )

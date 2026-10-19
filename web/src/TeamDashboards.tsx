@@ -16,6 +16,7 @@ import type {
 } from './api'
 import { ErrorBox, Section, Spinner } from './ui'
 import { IconDashboard, sectionIcons } from './Icons'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Team dashboards: a dashboard for each kind of person who watches Perfuse, made of tiles that show aggregates only - counts,
@@ -369,7 +370,7 @@ function TileBody({ tile, data, channel }: { tile: DashboardTile; data: Data; ch
         <ul className="space-y-1 text-sm">
           {firing.map((a) => (
             <li key={a.key} className={a.severity === 'critical' ? 'text-rose-300' : 'text-amber-300'}>
-              {a.summary} <span className="text-xs text-slate-500">since {new Date(a.firingSince).toLocaleTimeString()}</span>
+              {a.summary} <span className="text-xs text-slate-500">since {new Date(a.firingSince).toLocaleTimeString(uiLocale())}</span>
             </li>
           ))}
         </ul>
@@ -388,7 +389,7 @@ function TileBody({ tile, data, channel }: { tile: DashboardTile; data: Data; ch
       )
     }
     case 'audit': {
-      const rows = (data.audit ?? []).slice(0, 10).map((e) => [`${new Date(e.at).toLocaleString()} ${e.username}`, e.action] as [string, string])
+      const rows = (data.audit ?? []).slice(0, 10).map((e) => [`${new Date(e.at).toLocaleString(uiLocale())} ${e.username}`, e.action] as [string, string])
       return <Rows rows={rows} empty="No recent entries." />
     }
     case 'plain-summary':

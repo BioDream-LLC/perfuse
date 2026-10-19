@@ -6,13 +6,20 @@ The bar carries **Dashboard** and **Channels** directly, because those are where
 
 ## Reading the header
 
-Four things in the header are easy to miss.
+Five things in the header are easy to miss.
 
 **Every view has an address.** The address bar follows the view — `#/channels`, `#/messages`, `#/settings` — so a reload returns to it, a bookmark opens it, a link sent to a colleague lands them on it, and the back button moves between views rather than leaving the console. An address naming a view above your role opens the dashboard instead.
 
 **Search**, or `⌘K`. It searches across channels, settings, messages and the manual, which means it is usually faster than navigating — particularly for a setting whose name you half remember.
 
 **Theme.** Three of them: Midnight, Dark, and Light. Midnight is near-black and is what a wall display in a server room usually wants; Dark is a softer neutral grey; Light is for a laptop next to a window. The choice is stored in the browser rather than against the account, because a theme is a property of where somebody is sitting, not of who they are — the same operator wants Midnight on the wall and Light on a train. A machine's own preference is consulted once, to pick a sensible default the first time.
+
+**Language.** The console in English (UK or US date order), German, French, Dutch, Spanish, Italian, Portuguese, Polish,
+Swedish, Danish, Norwegian or Finnish, with dates and numbers written the way that locale writes them. The choice is kept in
+the browser, and the browser's own language is used until one is made. The translations were made by machine and have not
+yet been reviewed by native speakers; English is the reference, and the picker says so. Code, messages, payloads, channel
+names and anything typed are never translated. The manual is published in the same languages at
+`https://perfuse.health/manual/<language>/` (this server's own **Manual** is the English one).
 
 **Manual.** The document you are reading, served by the running server. It is the same file the binary can write to disk, so it always describes the version in front of you rather than the latest release.
 
@@ -257,6 +264,13 @@ The payer side of the CMS Interoperability and Prior Authorization rule, as five
 
 The conversions store nothing and send nothing.
 
+
+### CMS Aligned Network
+
+Readiness for the CMS Interoperability Framework: each of its 26 criteria, grouped as CMS groups them, with what Perfuse provides,
+whether it is on here, the setting that turns it on, and what is the organisation's to do. The counts at the top filter the list.
+See [CMS-0057](#cms-0057).
+
 ## Administer — who can do what, and how this server is set up
 
 ### Users
@@ -283,11 +297,10 @@ The TLS certificates in use and when they expire. The expiry dates are the point
 
 Who changed what, and when. Every configuration change is recorded, which is what makes "it started failing on Tuesday" answerable.
 
-### CMS Aligned Network
+### Data protection
 
-Readiness for the CMS Interoperability Framework: each of its 26 criteria, grouped as CMS groups them, with what Perfuse provides,
-whether it is on here, the setting that turns it on, and what is the organisation's to do. The counts at the top filter the list.
-See [CMS-0057](#cms-0057).
+A person's requests under the GDPR and the UK GDPR, legal holds, the erasure ledger, retention and the record of processing
+activities; administrators only. See [data protection](#data-protection-gdpr-and-uk-gdpr).
 
 ### Fleet
 

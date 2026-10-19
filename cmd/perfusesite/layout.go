@@ -64,6 +64,7 @@ var menu = []navSection{
 		{"/platform/#monitoring", "chart", "Monitoring and alerts", "Dashboards, flow map, alerts, message search"},
 		{"/platform/#safe-change", "eye", "Changing live interfaces", "Shadow mode, feed contracts, drift detection"},
 		{"/platform/#security", "shield", "Security and sign-on", "SAML, OIDC, LDAP, passkeys, SMART, audit"},
+		{"/platform/#europe", "globe", "The UK and Europe", "Twelve languages, national numbers, GDPR, residency"},
 		{"/platform/#operations", "server", "Running it", "One file, every platform, multi-tenant"},
 	}},
 	{key: "connectors", title: "Connectors", href: "/connectors/", items: []navItem{
@@ -89,6 +90,7 @@ var menu = []navSection{
 		{"/learn/", "book", "Guides", "Plain-language guides to the standards and the work"},
 		{"/manual/", "doc", "Manual", "Every feature, every setting, in one document"},
 		{"/manual/perfuse-manual.pdf", "download", "Manual as PDF", "The same manual, for printing"},
+		{"/manual/de/", "globe", "Manual in other languages", "Deutsch, Français, Nederlands, Español and eight more"},
 	}},
 }
 

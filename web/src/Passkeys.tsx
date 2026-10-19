@@ -10,6 +10,7 @@ import {
 import type { UiError } from './store'
 import { toUiError } from './store'
 import { ErrorBox, Field, Section } from './ui'
+import { uiLocale } from './i18n/locale'
 
 /** Passkeys manages a person's own sign-in credentials.
  *
@@ -173,14 +174,14 @@ export function Passkeys() {
                     <td className="py-2 pr-4">{passkey.label}</td>
                     <td className="py-2 pr-4 text-xs">
                       {passkey.createdAt
-                        ? new Date(passkey.createdAt).toLocaleDateString()
+                        ? new Date(passkey.createdAt).toLocaleDateString(uiLocale())
                         : '—'}
                     </td>
                     <td className="py-2 pr-4 text-xs">
                       {/* Never used is worth seeing plainly: it is either a device that was set up
                           and abandoned, or one somebody has lost. Both are worth removing. */}
                       {passkey.lastUsed
-                        ? new Date(passkey.lastUsed).toLocaleString()
+                        ? new Date(passkey.lastUsed).toLocaleString(uiLocale())
                         : 'never'}
                     </td>
                     <td className="py-2 pr-4 text-right">

@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Chart primitives for the metrics section.
@@ -73,7 +74,7 @@ export function formatValue(value: number, unit: Series['unit']): string {
     default:
       if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
       if (value >= 10_000) return `${(value / 1000).toFixed(1)}k`
-      return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(2)
+      return Number.isInteger(value) ? value.toLocaleString(uiLocale()) : value.toFixed(2)
   }
 }
 
@@ -293,7 +294,7 @@ export function TimeChart({
               fontSize={9}
               fill="#64748b"
             >
-              {new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(t).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}
             </text>
           )
         })}
@@ -313,7 +314,7 @@ export function TimeChart({
       {hoverTime !== null && (
         <div className="pointer-events-none absolute top-0 right-0 rounded-md border border-slate-700 bg-slate-900/95 p-2 text-xs shadow-lg">
           <p className="mb-1 font-medium text-slate-300">
-            {new Date(hoverTime).toLocaleTimeString()}
+            {new Date(hoverTime).toLocaleTimeString(uiLocale())}
           </p>
           {withPoints.map((s, index) => (
             <p key={s.name + index} className="flex items-center gap-2 whitespace-nowrap">

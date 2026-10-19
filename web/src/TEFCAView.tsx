@@ -4,6 +4,7 @@ import { api, ApiError } from './api'
 import type { TEFCAStatus, TEFCAAuditPage } from './api'
 import { ErrorBox, Section, Spinner } from './ui'
 import type { UiError } from './store'
+import { uiLocale } from './i18n/locale'
 
 /**
  * National exchange, and the record of it.
@@ -318,7 +319,7 @@ function AuditTrail({
                     <span className="text-amber-300">no purpose recorded</span>
                   )}
                   <span className="ml-auto font-mono text-[10px] text-slate-500">
-                    {new Date(e.timestamp).toLocaleString()}
+                    {new Date(e.timestamp).toLocaleString(uiLocale())}
                   </span>
                 </div>
 

@@ -68,22 +68,22 @@ func newRig(t *testing.T) *rig {
 func (r *rig) seed(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
-	for _, raw := range [][]byte{adt("H1", "9434765919"), adt("H1", "9434765919")} {
+	for _, raw := range [][]byte{adt("H1", "9990000018"), adt("H1", "9990000018")} {
 		if _, err := r.msgs.Record(ctx, &msgstore.Message{Channel: "adt", ReceivedAt: time.Now().UTC(), Outcome: msgstore.Delivered, Raw: raw, Size: len(raw)}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	other := adt("H2", "4010232137")
+	other := adt("H2", "9990000026")
 	if _, err := r.msgs.Record(ctx, &msgstore.Message{Channel: "adt", ReceivedAt: time.Now().UTC(), Outcome: msgstore.Delivered, Raw: other, Size: len(other)}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.queue.Enqueue(ctx, queue.Item{Channel: "adt", Destination: "epr", Raw: adt("H1", "9434765919")}); err != nil {
+	if _, err := r.queue.Enqueue(ctx, queue.Item{Channel: "adt", Destination: "epr", Raw: adt("H1", "9990000018")}); err != nil {
 		t.Fatal(err)
 	}
 	for _, body := range []string{
-		`{"resourceType":"Patient","id":"p1","identifier":[{"system":"` + nhsSys + `","value":"9434765919"}],"name":[{"family":"Jones"}]}`,
+		`{"resourceType":"Patient","id":"p1","identifier":[{"system":"` + nhsSys + `","value":"9990000018"}],"name":[{"family":"Jones"}]}`,
 		`{"resourceType":"Observation","id":"o1","status":"final","code":{"text":"x"},"subject":{"reference":"Patient/p1"}}`,
-		`{"resourceType":"Patient","id":"p2","identifier":[{"system":"` + nhsSys + `","value":"4010232137"}]}`,
+		`{"resourceType":"Patient","id":"p2","identifier":[{"system":"` + nhsSys + `","value":"9990000026"}]}`,
 	} {
 		res, err := fhir.UnmarshalResource([]byte(body))
 		if err != nil {
@@ -95,11 +95,11 @@ func (r *rig) seed(t *testing.T) {
 	}
 	set := mpi.Settings{Trusted: []string{nhsSys}}
 	if _, err := r.index.Register(ctx, mpi.TenantOf(""), "t", mpi.Record{System: "urn:oid:1.1", Value: "H1", Family: "Jones", Given: "Ann",
-		Identifiers: []string{nhsSys + "|9434765919"}}, set); err != nil {
+		Identifiers: []string{nhsSys + "|9990000018"}}, set); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.index.Register(ctx, mpi.TenantOf(""), "t", mpi.Record{System: "urn:oid:1.2", Value: "C77", Family: "Jones",
-		Identifiers: []string{nhsSys + "|943 476 5919"}}, set); err != nil {
+		Identifiers: []string{nhsSys + "|999 000 0018"}}, set); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -147,7 +147,7 @@ func TestFindExportAndEraseAPersonEverywhere(t *testing.T) {
 	}
 
 	// A legal hold refuses the erasure.
-	hid, err := r.svc.PlaceHold(ctx, "", "dpo", []string{nhsSys + "|9434765919"}, "claim 2026/17", "")
+	hid, err := r.svc.PlaceHold(ctx, "", "dpo", []string{nhsSys + "|9990000018"}, "claim 2026/17", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,14 +170,14 @@ func TestFindExportAndEraseAPersonEverywhere(t *testing.T) {
 	if counts["messages"] != 2 || counts["queue"] != 1 || counts["fhir"] != 2 || counts["persons"] != 1 || counts["records"] != 2 {
 		t.Fatalf("erased %v", counts)
 	}
-	after, _ := r.svc.Find(ctx, "", []string{nhsSys + "|9434765919"}, mpi.Settings{})
+	after, _ := r.svc.Find(ctx, "", []string{nhsSys + "|9990000018"}, mpi.Settings{})
 	for _, k := range []string{"messages", "queue", "fhir", "persons"} {
 		if after.Counts[k] != 0 {
 			t.Errorf("%s still holds %d", k, after.Counts[k])
 		}
 	}
 	// The other person is untouched.
-	other, _ := r.svc.Find(ctx, "", []string{nhsSys + "|4010232137"}, mpi.Settings{})
+	other, _ := r.svc.Find(ctx, "", []string{nhsSys + "|9990000026"}, mpi.Settings{})
 	if other.Counts["messages"] != 1 || other.Counts["fhir"] != 1 {
 		t.Fatalf("someone else's records went too: %v", other.Counts)
 	}
@@ -187,7 +187,7 @@ func TestFindExportAndEraseAPersonEverywhere(t *testing.T) {
 		t.Fatalf("ledger %+v", ers)
 	}
 	for _, h := range ers[0].hashes {
-		if strings.Contains(h, "9434765919") {
+		if strings.Contains(h, "9990000018") {
 			t.Fatal("the ledger holds the number")
 		}
 	}
@@ -205,19 +205,19 @@ func TestFindExportAndEraseAPersonEverywhere(t *testing.T) {
 	if again["messages"] != 2 || again["fhir"] != 2 {
 		t.Fatalf("reapplied %v", again)
 	}
-	if other, _ := r.svc.Find(ctx, "", []string{nhsSys + "|4010232137"}, mpi.Settings{}); other.Counts["messages"] != 2 {
+	if other, _ := r.svc.Find(ctx, "", []string{nhsSys + "|9990000026"}, mpi.Settings{}); other.Counts["messages"] != 2 {
 		t.Fatalf("reapplying took someone else's: %v", other.Counts)
 	}
 }
 
 func TestRequestsNeedASecondPersonToErase(t *testing.T) {
 	r, ctx := newRig(t), context.Background()
-	id, err := r.svc.Create(ctx, "", "alice", Request{Kind: "erasure", Subject: "Ann Jones, letter of 3 January", Identifiers: []string{nhsSys + "|943 476 5919"}})
+	id, err := r.svc.Create(ctx, "", "alice", Request{Kind: "erasure", Subject: "Ann Jones, letter of 3 January", Identifiers: []string{nhsSys + "|999 000 0018"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	req, _ := r.svc.Get(ctx, "", id)
-	if req.Identifiers[0] != nhsSys+"|9434765919" || req.Due != time.Now().UTC().AddDate(0, 1, 0).Format("2006-01-02") {
+	if req.Identifiers[0] != nhsSys+"|9990000018" || req.Due != time.Now().UTC().AddDate(0, 1, 0).Format("2006-01-02") {
 		t.Fatalf("%+v", req)
 	}
 	if err := r.svc.Approve(ctx, "", "alice", id); err == nil {

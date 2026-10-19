@@ -5,6 +5,7 @@ import { api } from './api'
 import type { ChannelSummary, ShadowReport, ShadowSummary } from './api'
 import { ShadowEditor } from './ShadowEditor'
 import { ErrorBox, Section, Spinner } from './ui'
+import { uiLocale } from './i18n/locale'
 
 /**
  * Shadow.
@@ -243,7 +244,7 @@ function ShadowDetail({ report }: { report: ShadowReport }) {
           <div className="mt-4">
             <div className="flex justify-between text-xs text-slate-500">
               <span>{rate.toFixed(1)}% of messages came out differently</span>
-              <span>{s.compared.toLocaleString()} compared</span>
+              <span>{s.compared.toLocaleString(uiLocale())} compared</span>
             </div>
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-800">
               <div
@@ -292,7 +293,7 @@ function ShadowDetail({ report }: { report: ShadowReport }) {
                       <span className="font-mono text-slate-400">{d.controlId}</span>
                     )}
                     <span className="ml-auto text-slate-400">
-                      {new Date(d.at).toLocaleTimeString()}
+                      {new Date(d.at).toLocaleTimeString(uiLocale())}
                     </span>
                   </div>
 
@@ -357,7 +358,7 @@ function Stat({
 
   return (
     <div title={hint}>
-      <div className={`text-xl font-semibold ${colour}`}>{value.toLocaleString()}</div>
+      <div className={`text-xl font-semibold ${colour}`}>{value.toLocaleString(uiLocale())}</div>
       <div className="text-xs text-slate-400">{label}</div>
     </div>
   )

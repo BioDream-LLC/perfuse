@@ -40,7 +40,7 @@ func TestEveryExamplePassesAndATypoFails(t *testing.T) {
 // Numbers published as valid by their issuers or in standard references.
 func TestPublishedNumbers(t *testing.T) {
 	for id, v := range map[string]string{
-		"uk-nhs":   "943 476 5919",
+		"uk-nhs":   "999 000 0018",
 		"nl-bsn":   "111222333",
 		"pl-pesel": "44051401359",
 		"fi-hetu":  "131052-308T",
@@ -55,12 +55,12 @@ func TestPublishedNumbers(t *testing.T) {
 }
 
 func TestCanonicaliseRewritesAliasesAndSpacing(t *testing.T) {
-	c := Canonicalise("2.16.840.1.113883.2.1.4.1", "943 476 5919", nil)
-	if c.System != "https://fhir.nhs.uk/Id/nhs-number" || c.Value != "9434765919" || c.Problem != "" {
+	c := Canonicalise("2.16.840.1.113883.2.1.4.1", "999 000 0018", nil)
+	if c.System != "https://fhir.nhs.uk/Id/nhs-number" || c.Value != "9990000018" || c.Problem != "" {
 		t.Fatalf("%+v", c)
 	}
-	c = Canonicalise("urn:oid:2.16.840.1.113883.2.1.4.1", "943 476 5918", nil)
-	if c.Problem == "" || !strings.Contains(c.Problem, "••••••5918") {
+	c = Canonicalise("urn:oid:2.16.840.1.113883.2.1.4.1", "999 000 0019", nil)
+	if c.Problem == "" || !strings.Contains(c.Problem, "••••••0019") {
 		t.Fatalf("a wrong check digit was not reported (masked): %+v", c)
 	}
 	c = Canonicalise("http://example.org/mrn", " 42 ", nil)
@@ -105,7 +105,7 @@ func TestHL7Types(t *testing.T) {
 }
 
 func TestMask(t *testing.T) {
-	if got := Mask("943 476 5919"); got != "••••••5919" {
+	if got := Mask("999 000 0018"); got != "••••••0018" {
 		t.Fatal(got)
 	}
 }
