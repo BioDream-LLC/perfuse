@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/mpi"
+	"github.com/biodream-llc/perfuse/internal/natid"
 	"github.com/biodream-llc/perfuse/internal/store"
 )
 
@@ -19,6 +20,8 @@ import (
 func (s *Server) registerMPI(mux *recordingMux) {
 	mux.Handle("GET /api/mpi", s.require(store.RoleViewer, s.handleMPISummary))
 	mux.Handle("GET /api/mpi/persons/{euid}", s.require(store.RoleViewer, s.handleMPIPerson))
+	mux.Handle("GET /api/mpi/schemes", s.require(store.RoleViewer, s.handleMPISchemes))
+	mux.Handle("POST /api/mpi/check", s.require(store.RoleViewer, s.handleMPICheck))
 	mux.Handle("POST /api/mpi/find", s.require(store.RoleViewer, s.handleMPIFind))
 	mux.Handle("GET /api/mpi/reviews", s.require(store.RoleEditor, s.handleMPIReviews))
 	mux.Handle("POST /api/mpi/reviews/{id}", s.require(store.RoleEditor, s.handleMPIDecide))
@@ -56,6 +59,22 @@ func (s *Server) mpiAudit(r *http.Request, sess *store.Session, action, target, 
 	_ = s.Store.Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: action, Target: target, Detail: detail, IP: clientIP(r)})
 }
 
+// mpiFull says whether this session sees national numbers in full; everyone below the index's setting sees them masked.
+func mpiFull(sess *store.Session, set mpi.Settings) bool {
+	return sess.Role.AtLeast(store.Role(set.NumbersRole()))
+}
+
+func mpiMaskPersons(sess *store.Session, set mpi.Settings, list []*mpi.Person) []*mpi.Person {
+	if mpiFull(sess, set) {
+		return list
+	}
+	out := make([]*mpi.Person, len(list))
+	for i, p := range list {
+		out[i] = set.MaskedPerson(p)
+	}
+	return out
+}
+
 type mpiSummary struct {
 	Enabled  bool          `json:"enabled"`
 	Counts   mpi.Counts    `json:"counts"`
@@ -88,7 +107,7 @@ func (s *Server) handleMPISummary(w http.ResponseWriter, r *http.Request, sess *
 	if q != "" {
 		s.mpiAudit(r, sess, "mpi.search", q, fmt.Sprintf("%d persons", len(persons)))
 	}
-	s.ok(w, mpiSummary{Enabled: true, Counts: c, Persons: persons, Settings: set})
+	s.ok(w, mpiSummary{Enabled: true, Counts: c, Persons: mpiMaskPersons(sess, set, persons), Settings: set})
 }
 
 type mpiPersonView struct {
@@ -115,7 +134,11 @@ func (s *Server) handleMPIPerson(w http.ResponseWriter, r *http.Request, sess *s
 	}
 	set, _ := s.PatientIndex.Settings(r.Context(), t)
 	s.mpiAudit(r, sess, "mpi.read", euid, "")
-	s.ok(w, mpiPersonView{Person: p, Golden: p.Golden(), History: h, IDs: p.Identifiers(set.EUIDSystem)})
+	golden, ids := p.Golden(), p.Identifiers(set.EUIDSystem)
+	if !mpiFull(sess, set) {
+		p, golden, ids = set.MaskedPerson(p), *set.MaskedRecord(&golden), set.MaskedIdentifiers(ids)
+	}
+	s.ok(w, mpiPersonView{Person: p, Golden: golden, History: h, IDs: ids})
 }
 
 func (s *Server) handleMPIFind(w http.ResponseWriter, r *http.Request, sess *store.Session) {
@@ -140,6 +163,11 @@ func (s *Server) handleMPIFind(w http.ResponseWriter, r *http.Request, sess *sto
 	if found == nil {
 		found = []mpi.Match{}
 	}
+	if !mpiFull(sess, set) {
+		for i := range found {
+			found[i].Person = set.MaskedPerson(found[i].Person)
+		}
+	}
 	s.mpiAudit(r, sess, "mpi.find", strings.TrimSpace(q.Family+" "+q.Given+" "+q.BirthDate), fmt.Sprintf("%d matches", len(found)))
 	s.ok(w, map[string]any{"matches": found})
 }
@@ -152,6 +180,11 @@ func (s *Server) handleMPIReviews(w http.ResponseWriter, r *http.Request, sess *
 	if err != nil {
 		s.failErr(w, r, err)
 		return
+	}
+	if set, _ := s.PatientIndex.Settings(r.Context(), mpiTenant(sess)); !mpiFull(sess, set) {
+		for i := range list {
+			list[i].Record, list[i].Candidate = set.MaskedRecord(list[i].Record), set.MaskedPerson(list[i].Candidate)
+		}
 	}
 	s.mpiAudit(r, sess, "mpi.reviews", "", fmt.Sprintf("%d open", len(list)))
 	s.ok(w, map[string]any{"reviews": list})
@@ -205,6 +238,9 @@ func (s *Server) handleMPIRegister(w http.ResponseWriter, r *http.Request, sess 
 		return
 	}
 	s.mpiAudit(r, sess, "mpi.register", rec.Key(), out.Action)
+	if set, _ := s.PatientIndex.Settings(r.Context(), mpiTenant(sess)); !mpiFull(sess, set) {
+		out.Record = set.MaskedRecord(out.Record)
+	}
 	s.ok(w, out)
 }
 
@@ -306,4 +342,33 @@ func (s *Server) handleMPIEstimate(w http.ResponseWriter, r *http.Request, sess 
 	}
 	s.mpiAudit(r, sess, "mpi.estimate", "", fmt.Sprintf("%d pairs, converged %v", est.Pairs, est.Converged))
 	s.ok(w, map[string]any{"estimate": est, "defaults": mpi.DefaultWeights})
+}
+
+// handleMPISchemes lists the national identifier schemes the index knows: format, check digit, FHIR system and whether that
+// system comes from the country's own guide.
+func (s *Server) handleMPISchemes(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	s.ok(w, map[string]any{"schemes": natid.All()})
+}
+
+// handleMPICheck checks one identifier as the index would store it, for the console's forms: its scheme, the system and
+// value it would be stored as, and what is wrong with it. Nothing is stored or looked up.
+func (s *Server) handleMPICheck(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	var req struct{ System, Value string }
+	if !s.decode(w, r, &req) {
+		return
+	}
+	var over map[string]string
+	if s.PatientIndex != nil {
+		if set, err := s.PatientIndex.Settings(r.Context(), mpiTenant(sess)); err == nil {
+			over = set.NationalSystems
+		}
+	}
+	c := natid.Canonicalise(req.System, req.Value, over)
+	out := map[string]any{"system": c.System, "value": c.Value, "problem": c.Problem}
+	if c.Scheme != nil {
+		out["scheme"] = c.Scheme.ID
+		out["name"] = c.Scheme.Name
+		out["display"] = c.Scheme.Display(c.Value)
+	}
+	s.ok(w, out)
 }

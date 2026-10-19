@@ -785,17 +785,49 @@ destinations:
    on, a certain match links when no second person scores as high. Below the review
    threshold the record is a new person.
 
+**National numbers.** The NHS number (and Scotland's CHI and Northern Ireland's
+Health and Care number), Ireland's PPSN and IHI, Germany's KVNR, Austria's SVNR,
+Switzerland's AHV number, the Netherlands' BSN, Belgium's national register number,
+Luxembourg's matricule, France's INS (NIR and NIA), Italy's codice fiscale, Spain's
+DNI/NIE and CIP-SNS, Portugal's SNS number, the Nordic personal numbers (Sweden,
+Denmark, Norway with its D number, Finland, Iceland), the Baltic codes, Poland's
+PESEL, the Czech and Slovak birth numbers, and the Hungarian, Romanian, Bulgarian,
+Croatian, Slovenian and Greek numbers are known to the index. Each is stored one
+way: under its scheme's system, spaces and dots removed, so the NHS number sent as
+`urn:oid:2.16.840.1.113883.2.1.4.1|943 476 5919` by one system and as
+`https://fhir.nhs.uk/Id/nhs-number|9434765919` by another is one identifier. An HL7
+v2 PID-3 repetition whose identifier type is `NN` and a country's three-letter code
+(`NNDEU`, `NNNLD`) is read as that country's main number, and type `NH` from the
+`NHS` authority as the NHS number. Every number's check digit is tested: one that
+fails is kept on its record, reported (masked) in the answer, and never used to link
+or to find anybody, since a mistyped digit usually makes somebody else's number.
+Denmark's CPR is checked for its date only, because numbers issued since 2007 need not
+pass the old modulus 11.
+
+The settings list every scheme with its format, its check and the system it is stored
+under. Systems taken from the country's own FHIR guide (UK Core, fhir.de, Nictiz, CH
+Core, ANS, HL7 Italia, MedCom, the Swedish, Norwegian and Finnish OID registers) are
+marked as such; the others are defaults to change to the national value, which a site
+can do per scheme (the old one is still recognised). Trusting a scheme is one tick.
+National numbers are shown in full to editors and above by default and masked (the
+last few characters) to everyone else; **Who sees numbers in full** changes that, down
+to viewers or up to administrators only. Where a country's law limits a number's use
+(France's Référentiel INS, Ireland's PPSN, Belgium's national register number,
+Germany's §290 SGB V), the settings say so. `GET /api/mpi/schemes` lists the schemes
+and `POST /api/mpi/check` checks one number without storing it. FHIR `$match` and PIXm
+answer authorised clients with numbers in full.
+
 A date written day- or month-first (`08/15/1972`) is kept as written and does not
 match a year-first one: the US and European orders disagree, and guessing would link
 the wrong people.
 
-**The Patient index screen** (Exchange) shows the counts, finds people by name,
+**The Patient index screen** (Build) shows the counts, finds people by name,
 number, EUID or birth date, and opens each person: their records, every identifier,
 and the history of what happened to them and who did it. Editors decide reviews
 (**The same person** links them; **Different people** keeps them apart for good),
 move a record to another person, take a record out (**Not this person**), and merge
-two people. Administrators set the thresholds, the trusted identifier systems and the
-EUID's system. Every search and every person read is written to the audit log.
+two people. Administrators set the thresholds, the trusted identifier systems, the national
+numbers and the EUID's system. Every search and every person read is written to the audit log.
 
 **Answering others.** `POST /fhir/Patient/$match` (FHIR's operation, as IHE PDQm
 ITI-119 uses it) takes a Patient and returns the people who could be it, best first,

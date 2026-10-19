@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/natid"
 )
 
 // Match is one person found for a query, with how sure the index is.
@@ -29,10 +31,14 @@ func (s *Store) Find(ctx context.Context, tenant string, q Record, set Settings,
 	if d := normDate(q.BirthDate); d != "" {
 		q.BirthDate = d
 	}
+	// The query's identifiers are written as stored ones are, so an NHS number typed with spaces, or sent under its OID, is
+	// found. A national number that fails its check finds nobody: it names someone, but probably not this patient.
+	q.Identifiers = append([]string(nil), q.Identifiers...)
+	bad, _ := set.canonical(&q)
 	byPerson := map[int64]*Match{}
 	var order []int64
 	for _, ident := range append(q.Identifiers, q.Key()) {
-		if !strings.Contains(ident, "|") || strings.HasPrefix(ident, "|") || strings.HasSuffix(ident, "|") {
+		if bad[ident] || !strings.Contains(ident, "|") || strings.HasPrefix(ident, "|") || strings.HasSuffix(ident, "|") {
 			continue
 		}
 		var pid int64
@@ -445,6 +451,22 @@ func (s *Store) SaveSettings(ctx context.Context, tenant, actor string, set Sett
 		}
 		if !w.valid() {
 			return fmt.Errorf("mpi: the weights for %s need 0 < u < m < 1", field)
+		}
+	}
+	switch set.ShowNumbersTo {
+	case "", "viewer", "operator", "editor", "admin":
+	default:
+		return fmt.Errorf("mpi: who sees national numbers in full is viewer, operator, editor or admin, not %q", set.ShowNumbersTo)
+	}
+	for id, uri := range set.NationalSystems {
+		if _, ok := natid.ByID(id); !ok {
+			return fmt.Errorf("mpi: %q is not a national identifier scheme", id)
+		}
+		if uri = strings.TrimSpace(uri); !strings.Contains(uri, ":") {
+			return fmt.Errorf("mpi: the system for %s should be a URL or URN, not %q", id, uri)
+		}
+		if other, taken := natid.ForSystem(uri); taken && other.ID != id {
+			return fmt.Errorf("mpi: %s is already the system of %s", uri, other.Name)
 		}
 	}
 	set = set.withDefaults()

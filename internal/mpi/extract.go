@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/hl7"
+	"github.com/biodream-llc/perfuse/internal/natid"
 )
 
 // FromOptions says how to read a source system's identifiers.
@@ -68,6 +69,13 @@ func FromHL7(raw []byte, o FromOptions) (*Extracted, error) {
 				break
 			}
 			sys := o.system(get(base+".4.1"), get(base+".4.2"), get(base+".4.3"))
+			// A national number is often sent by its identifier type alone (NNDEU, NNNLD; NH from the NHS), with no
+			// assigning authority or only a local name for one: its scheme names the system then.
+			if sch, ok := natid.ForHL7Type(get(base+".5"), get(base+".4.1")); ok && (sys == "" || strings.HasPrefix(sys, "urn:perfuse:aa:")) {
+				if _, mapped := o.Authorities[get(base+".4.1")]; !mapped {
+					sys = sch.System
+				}
+			}
 			if sys == "" {
 				continue
 			}

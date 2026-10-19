@@ -20,6 +20,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/natid"
 )
 
 // Record is one source system's record of a patient.
@@ -69,6 +71,12 @@ type Settings struct {
 	// Weights replaces DefaultWeights field by field, typically with values estimated from the site's own records
 	// (EstimateWeights). Empty: the defaults.
 	Weights map[string]Weights `json:"weights,omitempty"`
+	// NationalSystems replaces a national identifier scheme's system URI (natid scheme ID to URI) where the country's guide
+	// names it differently from Perfuse's default.
+	NationalSystems map[string]string `json:"nationalSystems,omitempty"`
+	// ShowNumbersTo is the lowest role that sees national numbers in full: viewer, operator, editor (the default) or admin.
+	// Everybody below sees the last few characters only.
+	ShowNumbersTo string `json:"showNumbersTo,omitempty"`
 }
 
 // weights is the full weight table: the site's where it has them, the defaults for the rest.
@@ -98,7 +106,36 @@ func (s Settings) withDefaults() Settings {
 	if s.EUIDSystem == "" {
 		s.EUIDSystem = "urn:perfuse:mpi"
 	}
+	if s.ShowNumbersTo == "" {
+		s.ShowNumbersTo = "editor"
+	}
 	return s
+}
+
+// canonical writes a record's identifiers the one way the index stores them: a national number under its scheme's system
+// (an OID or an older URL rewritten), without spacing. A national number whose check digit fails is kept on the record
+// for people to see, but never indexed, so it cannot link the record to the person whose number it happens to be.
+func (s Settings) canonical(in *Record) (bad map[string]bool, problems []string) {
+	c := natid.Canonicalise(in.System, in.Value, s.NationalSystems)
+	in.System, in.Value = c.System, c.Value
+	bad = map[string]bool{}
+	if c.Problem != "" {
+		problems = append(problems, c.Problem)
+		bad[in.Key()] = true
+	}
+	for i, ident := range in.Identifiers {
+		sys, val, ok := strings.Cut(ident, "|")
+		if !ok {
+			continue
+		}
+		c := natid.Canonicalise(sys, val, s.NationalSystems)
+		in.Identifiers[i] = c.System + "|" + c.Value
+		if c.Problem != "" {
+			problems = append(problems, c.Problem)
+			bad[in.Identifiers[i]] = true
+		}
+	}
+	return bad, problems
 }
 
 // Store is the index, in a database of its own.
@@ -200,6 +237,8 @@ type Outcome struct {
 	Score  float64 `json:"score,omitempty"`
 	// ReviewID is the queued decision, when there is one.
 	ReviewID int64 `json:"reviewId,omitempty"`
+	// Warnings are national numbers whose check digit failed (masked): kept on the record, never used to link it.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 type txer interface {
@@ -272,6 +311,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 	if in.System == "" || in.Value == "" {
 		return nil, errors.New("mpi: a record needs the identifier's system (its assigning authority) and value")
 	}
+	bad, problems := set.canonical(&in)
 	if d := normDate(in.BirthDate); d != "" {
 		in.BirthDate = d
 	}
@@ -282,6 +322,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 	idents := uniqueIdents(in.Identifiers, in.Key())
 	in.Identifiers = idents
 	idJSON, _ := json.Marshal(idents)
+
 	if idents == nil {
 		idJSON = []byte("[]")
 	}
@@ -308,7 +349,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 			bk.sx, bk.dob, bk.phone, bk.names, bk.place, s.stamp(), id); err != nil {
 			return nil, err
 		}
-		if err := s.indexIdentifiers(ctx, tx, tenant, id, idents); err != nil {
+		if err := s.indexIdentifiers(ctx, tx, tenant, id, idents, bad); err != nil {
 			return nil, err
 		}
 		if err := tx.Commit(); err != nil {
@@ -316,7 +357,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 		}
 		rec, _ := s.Record(ctx, tenant, id)
 		_ = persons
-		return &Outcome{Record: rec, Action: "updated"}, nil
+		return &Outcome{Record: rec, Action: "updated", Warnings: problems}, nil
 	}
 
 	// A trusted identifier shared with a known record: the same person, no scoring needed.
@@ -324,7 +365,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 	how, score := "", 0.0
 	for _, ident := range append([]string{in.Key()}, idents...) {
 		sys, _, _ := strings.Cut(ident, "|")
-		if !contains(set.Trusted, sys) {
+		if bad[ident] || !contains(set.Trusted, sys) {
 			continue
 		}
 		var pid int64
@@ -384,7 +425,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 		return nil, err
 	}
 	recID, _ := res.LastInsertId()
-	if err := s.indexIdentifiers(ctx, tx, tenant, recID, idents); err != nil {
+	if err := s.indexIdentifiers(ctx, tx, tenant, recID, idents, bad); err != nil {
 		return nil, err
 	}
 	euid := s.euidOf(ctx, tx, personID)
@@ -412,6 +453,7 @@ func (s *Store) Register(ctx context.Context, tenant, actor string, in Record, s
 		return nil, err
 	}
 	out.Record, _ = s.Record(ctx, tenant, recID)
+	out.Warnings = problems
 	return out, nil
 }
 
@@ -439,7 +481,7 @@ func uniqueIdents(list []string, self string) []string {
 	return out
 }
 
-func (s *Store) indexIdentifiers(ctx context.Context, q txer, tenant string, recID int64, idents []string) error {
+func (s *Store) indexIdentifiers(ctx context.Context, q txer, tenant string, recID int64, idents []string, bad map[string]bool) error {
 	if _, err := q.ExecContext(ctx, `DELETE FROM mpi_identifiers WHERE tenant = ? AND record_id = ?`, tenant, recID); err != nil {
 		return err
 	}
@@ -448,6 +490,9 @@ func (s *Store) indexIdentifiers(ctx context.Context, q txer, tenant string, rec
 		return err
 	}
 	for _, i := range append([]string{key}, idents...) {
+		if bad[i] {
+			continue
+		}
 		if _, err := q.ExecContext(ctx, `INSERT INTO mpi_identifiers (tenant, ident, record_id) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`, tenant, i, recID); err != nil {
 			return err
 		}
@@ -594,4 +639,49 @@ func TenantOf(id string) string {
 		return DefaultTenant
 	}
 	return id
+}
+
+// NumbersRole is the lowest role that sees national numbers in full.
+func (s Settings) NumbersRole() string { return s.withDefaults().ShowNumbersTo }
+
+// MaskedRecord is a copy of a record with its national numbers masked (all but the last few characters).
+func (s Settings) MaskedRecord(r *Record) *Record {
+	if r == nil {
+		return nil
+	}
+	c := *r
+	if sch := natid.Canonicalise(c.System, c.Value, s.NationalSystems).Scheme; sch != nil {
+		c.Value = natid.Mask(c.Value)
+	}
+	c.Identifiers = s.MaskedIdentifiers(r.Identifiers)
+	return &c
+}
+
+// MaskedIdentifiers masks the national numbers in a list of system|value identifiers.
+func (s Settings) MaskedIdentifiers(list []string) []string {
+	if list == nil {
+		return nil
+	}
+	out := make([]string, len(list))
+	for i, ident := range list {
+		sys, val, ok := strings.Cut(ident, "|")
+		if ok && natid.Canonicalise(sys, val, s.NationalSystems).Scheme != nil {
+			val = natid.Mask(val)
+		}
+		out[i] = sys + "|" + val
+	}
+	return out
+}
+
+// MaskedPerson is a copy of a person with every record's national numbers masked.
+func (s Settings) MaskedPerson(p *Person) *Person {
+	if p == nil {
+		return nil
+	}
+	c := *p
+	c.Records = make([]*Record, len(p.Records))
+	for i, r := range p.Records {
+		c.Records[i] = s.MaskedRecord(r)
+	}
+	return &c
 }

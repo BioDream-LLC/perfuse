@@ -1584,7 +1584,9 @@ export const api = {
   mpiUnlink: (recordId: number, why: string) => request<{ euid: string }>('POST', `/api/mpi/records/${recordId}/unlink`, { why }),
   mpiMerge: (from: string, into: string, why: string) => request<{ euid: string }>('POST', '/api/mpi/merge', { from, into, why }),
   mpiFind: (q: Partial<MPIRecord>) => request<{ matches: MPIMatch[] }>('POST', '/api/mpi/find', q),
-  mpiRegister: (r: Partial<MPIRecord>) => request<{ action: string; record: MPIRecord }>('POST', '/api/mpi/records', r),
+  mpiRegister: (r: Partial<MPIRecord>) => request<{ action: string; record: MPIRecord; warnings?: string[] }>('POST', '/api/mpi/records', r),
+  mpiSchemes: () => request<{ schemes: MPIScheme[] }>('GET', '/api/mpi/schemes'),
+  mpiCheck: (system: string, value: string) => request<MPICheck>('POST', '/api/mpi/check', { system, value }),
   mpiSaveSettings: (s: MPISettings) => request<MPISettings>('PUT', '/api/mpi/settings', s),
   mpiEstimate: () => request<{ estimate: MPIEstimate; defaults: Record<string, MPIWeights> }>('POST', '/api/mpi/estimate'),
 
@@ -3627,6 +3629,38 @@ export interface MPISettings {
   review: number
   trusted: string[]
   euidSystem: string
+  /** A national scheme's system URI where the country's guide names it differently from Perfuse's default (scheme ID to URI). */
+  nationalSystems?: Record<string, string>
+  /** The lowest role that sees national numbers in full; everyone below sees the last few characters. */
+  showNumbersTo?: 'viewer' | 'operator' | 'editor' | 'admin'
+}
+
+/** A national patient or person identifier the index knows (natid.Scheme). */
+export interface MPIScheme {
+  id: string
+  country: string
+  iso3: string
+  region?: string
+  name: string
+  local?: string
+  system: string
+  systemVerified: boolean
+  systemSource?: string
+  aliases?: string[]
+  primary?: boolean
+  format: string
+  check: string
+  restricted?: string
+  example: string
+}
+
+export interface MPICheck {
+  system: string
+  value: string
+  problem: string
+  scheme?: string
+  name?: string
+  display?: string
 }
 
 export interface MPISummary {

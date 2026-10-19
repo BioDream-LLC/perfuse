@@ -5,6 +5,7 @@ import type { MPIComparison, MPIEstimate, MPIMatch, MPIPerson, MPIPersonView, MP
 import type { RootState, UiError } from './store'
 import { ErrorBox, Field, Section, Spinner } from './ui'
 import { IconCheck, IconPatientIndex, IconSearch, IconSettings, IconWarning } from './Icons'
+import { NationalNumberField, NationalNumbersSettings, useSchemes } from './NationalNumbers'
 
 /**
  * The patient index: one enterprise identifier (EUID) per person, the records each source system holds for them, the
@@ -298,7 +299,8 @@ function Reviews({ onChanged, autoLink }: { onChanged: () => void; autoLink: num
 }
 
 function Find() {
-  const [q, setQ] = useState({ family: '', given: '', birthDate: '', sex: '', postal: '', identifier: '' })
+  const [q, setQ] = useState({ family: '', given: '', birthDate: '', sex: '', postal: '', identifier: '', scheme: '', number: '' })
+  const schemes = useSchemes()
   const [found, setFound] = useState<MPIMatch[] | null>(null)
   const [error, setError] = useState<UiError | null>(null)
   const [busy, setBusy] = useState(false)
@@ -307,16 +309,18 @@ function Find() {
   const [said, setSaid] = useState('')
   const run = () => {
     const id = q.identifier.trim()
+    const sch = schemes?.find((x) => x.id === q.scheme)
+    const national = sch && q.number.trim() ? `${sch.system}|${q.number.trim()}` : ''
     if (id && !id.includes('|')) {
       setFound(null)
       setSaid('')
       setError({ message: 'An identifier is its system and value with a | between them, such as urn:oid:1.2.3|12345.', problems: [] })
       return Promise.resolve()
     }
-    if (!Object.values(q).some((v) => v.trim())) {
+    if (![q.family, q.given, q.birthDate, q.sex, q.postal, q.identifier, q.number].some((v) => v.trim())) {
       setFound(null)
       setSaid('')
-      setError({ message: 'Give at least one thing to search by: a name, a birth date, a postal code or an identifier.', problems: [] })
+      setError({ message: 'Give at least one thing to search by: a name, a birth date, a postal code, an identifier or a national number.', problems: [] })
       return Promise.resolve()
     }
     setError(null)
@@ -328,7 +332,7 @@ function Find() {
         birthDate: q.birthDate || undefined,
         sex: q.sex || undefined,
         postal: q.postal || undefined,
-        identifiers: id ? [id] : undefined,
+        identifiers: [id, national].filter(Boolean).length ? [id, national].filter(Boolean) : undefined,
       })
       .then(
         (r) => {
@@ -374,6 +378,7 @@ function Find() {
         <Field label="Identifier (system|value)">
           <input className="input font-mono text-xs" value={q.identifier} onChange={(e) => setQ({ ...q, identifier: e.target.value })} />
         </Field>
+        <NationalNumberField scheme={q.scheme} number={q.number} onChange={(scheme, number) => setQ({ ...q, scheme, number })} />
       </div>
       <div className="mt-3 flex items-center gap-3">
         <button type="button" className="btn-primary py-1 text-xs" onClick={() => void run()} disabled={busy}>
@@ -488,6 +493,15 @@ function SettingsPanel({ settings, onSaved }: { settings: MPISettings; onSaved: 
           <input className="input font-mono text-xs" value={s.euidSystem} onChange={(e) => setS({ ...s, euidSystem: e.target.value })} />
         </Field>
       </div>
+      <NationalNumbersSettings
+        settings={s}
+        onSettings={setS}
+        trusted={trusted
+          .split('\n')
+          .map((x) => x.trim())
+          .filter(Boolean)}
+        onTrusted={(list) => setTrusted(list.join('\n'))}
+      />
       <div className="mt-5 space-y-2 rounded-lg border border-slate-800 p-3" data-testid="mpi-weights">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-slate-200">
