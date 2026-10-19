@@ -470,6 +470,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/terminology/import", s.require(store.RoleAdmin, s.handleTermImport))
 	mux.Handle("DELETE /api/terminology/systems", s.require(store.RoleAdmin, s.handleTermDelete))
 	mux.Handle("GET /api/terminology/search", s.require(store.RoleViewer, s.handleTermSearch))
+	mux.Handle("GET /api/terminology/editions", s.require(store.RoleViewer, s.handleTermEditions))
 	mux.Handle("GET /api/terminology/lookup", s.require(store.RoleViewer, s.handleTermLookup))
 
 	mux.Handle("GET /api/fleet", s.require(store.RoleViewer, s.handleFleet))

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { uiLocale } from './i18n/locale'
 import { useSelector } from 'react-redux'
 import { api, ApiError, atLeast } from './api'
 import type { CodeSystemInfo, Concept, TableDiff, TableEdition, TableEditions, UnmappedValue } from './api'
@@ -315,11 +316,54 @@ export function UnmappedValues({ onMap, reloadKey }: { onMap: (table: string, va
 
 const formats = [
   { value: 'loinc', label: 'LOINC (Loinc.csv)', licence: 'LOINC is free with a loinc.org account under its licence.' },
-  { value: 'snomed', label: 'SNOMED CT (RF2 description snapshot)', licence: 'SNOMED CT needs an affiliate licence (free in member countries through the national release centre; in the US through UMLS).' },
+  {
+    value: 'snomed-rf2',
+    label: 'SNOMED CT edition (the whole RF2 release package, zip)',
+    licence:
+      'SNOMED CT needs an affiliate licence: free in member countries through the national release centre (NHS England TRUD, the BfArM, Nictiz, the Swedish eHealth Agency ...).',
+  },
+  { value: 'snomed', label: 'SNOMED CT (one RF2 description snapshot file)', licence: 'SNOMED CT needs an affiliate licence (free in member countries through the national release centre; in the US through UMLS).' },
+  {
+    value: 'claml',
+    label: 'ClaML: WHO ICD-10, ICD-10-GM, OPS, CIM-10 FR',
+    licence: 'The WHO, the BfArM (ICD-10-GM, OPS) and the ATIH (CIM-10 FR) each publish under their own terms of use, accepted when downloading.',
+  },
+  { value: 'icd11', label: 'ICD-11 MMS (the WHO simple tabulation, tab-separated)', licence: 'ICD-11 is published by the WHO under CC BY-ND 3.0 IGO.' },
   { value: 'rxnorm', label: 'RxNorm (RXNCONSO.RRF)', licence: 'The RxNorm full release needs a UMLS licence (free from the National Library of Medicine).' },
   { value: 'icd10cm', label: 'ICD-10-CM (CMS order or codes file)', licence: '' },
-  { value: 'csv', label: 'CSV: CPT, HCPCS or local codes', licence: 'CPT needs a licence from the AMA.' },
+  {
+    value: 'csv',
+    label: 'Delimited text: national tables, CPT, HCPCS or local codes',
+    licence: 'Some tables need a licence from their publisher (CPT from the AMA; the UK ICD-10 and OPCS-4 through TRUD).',
+  },
 ]
+
+/** Settings for delimited files published by national bodies. Their exact columns are not documented publicly in every case:
+ *  check them against the header of the file you have. */
+const presets: { label: string; system: string; name: string; delimiter: string; encoding: string; codeColumn: string; displayColumn: string; noHeader?: boolean }[] = [
+  { label: 'UK ICD-10 5th Edition (TRUD, tab-separated)', system: 'http://hl7.org/fhir/sid/icd-10-uk', name: 'ICD-10 UK', delimiter: 'tab', encoding: 'utf-8', codeColumn: 'CODE', displayColumn: 'DESCRIPTION' },
+  { label: 'UK OPCS-4 codes and titles (TRUD, tab-separated, no header)', system: 'http://hl7.org/fhir/sid/opcs-4', name: 'OPCS-4', delimiter: 'tab', encoding: 'utf-8', codeColumn: '1', displayColumn: '2', noHeader: true },
+  { label: 'France CIM-10 FR table of labels (ATIH, |, Windows-1252)', system: 'https://smt.esante.gouv.fr/terminologie-cim-10/', name: 'CIM-10 FR', delimiter: '|', encoding: 'windows-1252', codeColumn: '1', displayColumn: '2', noHeader: true },
+  { label: 'Belgium ICD-10-BE (CM-based; as a delimited export)', system: 'https://www.ehealth.fgov.be/standards/fhir/CodeSystem/icd-10-be', name: 'ICD-10-BE', delimiter: ';', encoding: 'utf-8', codeColumn: 'code', displayColumn: 'display' },
+]
+
+const languages = [
+  ['', 'the package’s own (English when it has it)'],
+  ['en-GB', 'English (UK)'],
+  ['en-US', 'English (US)'],
+  ['de', 'German'],
+  ['fr', 'French'],
+  ['nl', 'Dutch'],
+  ['it', 'Italian'],
+  ['es', 'Spanish'],
+  ['pt', 'Portuguese'],
+  ['sv', 'Swedish'],
+  ['da', 'Danish'],
+  ['no', 'Norwegian'],
+  ['fi', 'Finnish'],
+  ['et', 'Estonian'],
+  ['pl', 'Polish'],
+] as const
 
 /** CodeSystems lists imported code systems, imports a publisher's file, and searches codes. */
 export function CodeSystems() {
@@ -334,6 +378,15 @@ export function CodeSystems() {
   const [codeColumn, setCodeColumn] = useState('code')
   const [displayColumn, setDisplayColumn] = useState('display')
   const [licensed, setLicensed] = useState(false)
+  const [effective, setEffective] = useState('')
+  const [language, setLanguage] = useState('')
+  const [edition, setEdition] = useState('')
+  const [editions, setEditions] = useState<{ module: string; country: string; name: string; verified: boolean }[]>([])
+  const [icd11API, setIcd11API] = useState(false)
+  const [blocks, setBlocks] = useState(false)
+  const [delimiter, setDelimiter] = useState(',')
+  const [encoding, setEncoding] = useState('utf-8')
+  const [noHeader, setNoHeader] = useState(false)
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const [searchSystem, setSearchSystem] = useState('')
@@ -354,6 +407,13 @@ export function CodeSystems() {
 
   useEffect(() => {
     void load()
+    api.termEditions().then(
+      (r) => {
+        setEditions(r.editions)
+        setIcd11API(r.icd11API)
+      },
+      () => undefined,
+    )
   }, [load])
 
   const fmt = formats.find((f) => f.value === format) ?? formats[0]!
@@ -373,7 +433,17 @@ export function CodeSystems() {
       params.set('system', system)
       params.set('codeColumn', codeColumn)
       params.set('displayColumn', displayColumn)
+      params.set('delimiter', delimiter)
+      params.set('encoding', encoding)
+      if (noHeader) params.set('noHeader', 'true')
     }
+    if (format === 'claml' && system) params.set('system', system)
+    if (format === 'snomed-rf2') {
+      if (language) params.set('language', language)
+      if (edition) params.set('edition', edition)
+    }
+    if ((format === 'claml' || format === 'icd11') && blocks) params.set('blocks', 'true')
+    if (effective) params.set('effective', effective)
     if (label) params.set('name', label)
     if (fmt.licence) params.set('licence', 'confirmed by the importer: ' + fmt.licence)
     try {
@@ -383,9 +453,23 @@ export function CodeSystems() {
         body: file,
         credentials: 'same-origin',
       })
-      const body = (await res.json().catch(() => ({}))) as { error?: string; concepts?: number; system?: string; version?: string }
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string
+        concepts?: number
+        system?: string
+        version?: string
+        languages?: string[]
+        designations?: number
+        derived?: number
+      }
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`)
-      setNote(`Imported ${body.concepts?.toLocaleString()} codes into ${body.system}, version ${body.version}.`)
+      setNote(
+        `Imported ${body.concepts?.toLocaleString(uiLocale())} codes into ${body.system}, version ${body.version}` +
+          (body.languages?.length ? `, in ${body.languages.join(', ')} (${body.designations?.toLocaleString(uiLocale())} names kept)` : '') +
+          (body.derived ? `, ${body.derived.toLocaleString(uiLocale())} of them made by the classification’s modifiers` : '') +
+          (effective ? `, in force from ${effective}` : '') +
+          '.',
+      )
       if (fileRef.current) fileRef.current.value = ''
       await load()
     } catch (e) {
@@ -430,6 +514,7 @@ export function CodeSystems() {
                 <th className="py-1 pr-3">System</th>
                 <th className="py-1 pr-3">Version</th>
                 <th className="py-1 pr-3">Codes</th>
+                <th className="py-1 pr-3">In force</th>
                 <th className="py-1 pr-3">Imported</th>
                 <th />
               </tr>
@@ -440,7 +525,10 @@ export function CodeSystems() {
                   <td className="py-1.5 pr-3 text-slate-200">{c.name}</td>
                   <td className="py-1.5 pr-3 font-mono text-xs text-sky-300">{c.system}</td>
                   <td className="py-1.5 pr-3 font-mono text-xs text-slate-300">{c.version}</td>
-                  <td className="py-1.5 pr-3 text-emerald-300">{c.concepts.toLocaleString()}</td>
+                  <td className="py-1.5 pr-3 text-emerald-300">{c.concepts.toLocaleString(uiLocale())}</td>
+                  <td className={`py-1.5 pr-3 text-xs ${c.effective && c.effective > new Date().toISOString().slice(0, 10) ? 'text-amber-300' : 'text-slate-400'}`}>
+                    {c.effective ? (c.effective > new Date().toISOString().slice(0, 10) ? `from ${c.effective}` : `since ${c.effective}`) : 'since its import'}
+                  </td>
                   <td className="py-1.5 pr-3 text-xs text-slate-500">
                     {when(c.importedAt)} by {c.importedBy}
                   </td>
@@ -524,8 +612,122 @@ export function CodeSystems() {
               Version
               <input className="input mt-1 w-full py-1 text-xs" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="2.80, 2026, 20250901" />
             </label>
+            <label className="text-xs text-slate-400">
+              In force from
+              <input
+                type="date"
+                className="input mt-1 w-full py-1 text-xs"
+                value={effective}
+                onChange={(e) => setEffective(e.target.value)}
+                aria-describedby="term-effective-hint"
+              />
+              <span id="term-effective-hint" className="mt-0.5 block text-[11px] text-slate-500">
+                Empty: at once. A later date imports it now and uses it from that day (ICD-10-GM each 1 January).
+              </span>
+            </label>
+            {format === 'snomed-rf2' && (
+              <>
+                <label className="text-xs text-slate-400">
+                  Display in
+                  <select className="input mt-1 w-full py-1 text-xs" value={language} onChange={(e) => setLanguage(e.target.value)}>
+                    {languages.map(([v, l]) => (
+                      <option key={v} value={v}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs text-slate-400">
+                  Edition
+                  <select className="input mt-1 w-full py-1 text-xs" value={edition} onChange={(e) => setEdition(e.target.value)}>
+                    <option value="">found in the package</option>
+                    {editions.map((e) => (
+                      <option key={e.module} value={e.module}>
+                        {e.name} ({e.module}){e.verified ? '' : ' – module to confirm'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+            {(format === 'claml' || format === 'icd11') && (
+              <>
+                {format === 'claml' && (
+                  <label className="text-xs text-slate-400">
+                    System URL
+                    <input
+                      className="input mt-1 w-full py-1 font-mono text-xs"
+                      value={system}
+                      onChange={(e) => setSystem(e.target.value)}
+                      placeholder="empty: from the file's title (ICD-10-GM, OPS, ICD-10, CIM-10)"
+                    />
+                  </label>
+                )}
+                <label className="flex items-center gap-2 text-xs text-slate-400">
+                  <input type="checkbox" checked={blocks} onChange={(e) => setBlocks(e.target.checked)} />
+                  Chapters and blocks too, not only codes
+                </label>
+                {format === 'icd11' && (
+                  <p className="text-[11px] text-slate-500 sm:col-span-2">
+                    {icd11API
+                      ? 'This server also asks the WHO ICD API for ICD-11 codes not imported.'
+                      : 'Without a file, ICD-11 codes can be looked up in the WHO ICD API: give a client ID and secret under Settings → Data → Code systems.'}
+                  </p>
+                )}
+              </>
+            )}
             {format === 'csv' && (
               <>
+                <label className="text-xs text-slate-400 sm:col-span-2">
+                  A national table
+                  <select
+                    className="input mt-1 w-full py-1 text-xs"
+                    value=""
+                    onChange={(e) => {
+                      const p = presets[Number(e.target.value)]
+                      if (!p) return
+                      setSystem(p.system)
+                      setLabel(p.name)
+                      setDelimiter(p.delimiter)
+                      setEncoding(p.encoding)
+                      setCodeColumn(p.codeColumn)
+                      setDisplayColumn(p.displayColumn)
+                      setNoHeader(!!p.noHeader)
+                    }}
+                  >
+                    <option value="">fill in the settings for …</option>
+                    {presets.map((p, i) => (
+                      <option key={p.label} value={i}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-0.5 block text-[11px] text-slate-500">
+                    Check the columns against your file: not every publisher documents them, and they have changed between releases.
+                  </span>
+                </label>
+                <label className="text-xs text-slate-400">
+                  Separator
+                  <select className="input mt-1 w-full py-1 text-xs" value={delimiter} onChange={(e) => setDelimiter(e.target.value)}>
+                    <option value=",">comma</option>
+                    <option value=";">semicolon</option>
+                    <option value="|">vertical bar</option>
+                    <option value="tab">tab</option>
+                  </select>
+                </label>
+                <label className="text-xs text-slate-400">
+                  Encoding
+                  <select className="input mt-1 w-full py-1 text-xs" value={encoding} onChange={(e) => setEncoding(e.target.value)}>
+                    <option value="utf-8">UTF-8</option>
+                    <option value="iso-8859-1">ISO-8859-1 (Latin-1)</option>
+                    <option value="iso-8859-15">ISO-8859-15 (Latin-9)</option>
+                    <option value="windows-1252">Windows-1252</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2 text-xs text-slate-400 sm:col-span-2">
+                  <input type="checkbox" checked={noHeader} onChange={(e) => setNoHeader(e.target.checked)} />
+                  The file has no header row: columns are numbered from 1
+                </label>
                 <label className="text-xs text-slate-400">
                   System URL
                   <input className="input mt-1 w-full py-1 font-mono text-xs" value={system} onChange={(e) => setSystem(e.target.value)} placeholder="http://www.ama-assn.org/go/cpt" />

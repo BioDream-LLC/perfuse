@@ -1609,6 +1609,8 @@ export const api = {
   dismissUnmapped: (table: string, value: string) =>
     request<{ dismissed: string }>('POST', '/api/codesets/unmapped/dismiss', { table, value }),
   termSystems: () => request<{ systems: CodeSystemInfo[]; available: boolean }>('GET', '/api/terminology/systems'),
+  termEditions: () =>
+    request<{ editions: { module: string; country: string; name: string; verified: boolean }[]; icd11API: boolean }>('GET', '/api/terminology/editions'),
   termSearch: (system: string, q: string) =>
     request<{ concepts: Concept[] }>(
       'GET',
@@ -3573,6 +3575,8 @@ export interface CodeSystemInfo {
   importedAt: string
   importedBy: string
   licence?: string
+  /** The day this version comes into force (YYYY-MM-DD); absent: since its import. */
+  effective?: string
 }
 
 export interface Concept {

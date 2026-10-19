@@ -426,9 +426,10 @@ func (s *Server) handleTermImport(w http.ResponseWriter, r *http.Request, sess *
 	q := r.URL.Query()
 	req := terminology.ImportRequest{Format: q.Get("format"), System: q.Get("system"), Version: q.Get("version"),
 		Name: q.Get("name"), CodeColumn: q.Get("codeColumn"), DisplayColumn: q.Get("displayColumn"), By: sess.Username,
-		Licence: q.Get("licence")}
+		Licence: q.Get("licence"), Effective: q.Get("effective"), Language: q.Get("language"), Edition: q.Get("edition"),
+		Blocks: q.Get("blocks") == "true", Delimiter: q.Get("delimiter"), Encoding: q.Get("encoding"), NoHeader: q.Get("noHeader") == "true"}
 	if _, _, known := terminology.Defaults(req.Format); !known {
-		s.fail(w, r, http.StatusBadRequest, "format must be loinc, icd10cm, rxnorm, snomed or csv")
+		s.fail(w, r, http.StatusBadRequest, "format must be loinc, icd10cm, rxnorm, snomed, snomed-rf2, claml, icd11 or csv")
 		return
 	}
 	// The largest of these files takes longer to send than the server's usual read deadline allows.
@@ -444,7 +445,7 @@ func (s *Server) handleTermImport(w http.ResponseWriter, r *http.Request, sess *
 		return
 	}
 	_ = s.Store.Audit(r.Context(), store.AuditEntry{Username: sess.Username, Action: "terminology.import", Target: res.System,
-		Detail: fmt.Sprintf("version %s, %d codes (%s)", res.Version, res.Concepts, req.Format), IP: clientIP(r)})
+		Detail: fmt.Sprintf("version %s, %d codes (%s)%s", res.Version, res.Concepts, req.Format, map[bool]string{true: ", in force from " + req.Effective}[req.Effective != ""]), IP: clientIP(r)})
 	s.ok(w, res)
 }
 
@@ -495,4 +496,9 @@ func (s *Server) handleTermLookup(w http.ResponseWriter, r *http.Request, sess *
 		return
 	}
 	s.ok(w, c)
+}
+
+// handleTermEditions lists the SNOMED CT editions Perfuse can name, and whether ICD-11 codes are answered by the WHO API.
+func (s *Server) handleTermEditions(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	s.ok(w, map[string]any{"editions": terminology.Editions, "icd11API": s.Terminology != nil && s.Terminology.ICD11 != nil})
 }

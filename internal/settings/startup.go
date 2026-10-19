@@ -10,6 +10,16 @@ func startupSettings() []Setting {
 				"fed by patient index destinations, answering Patient/$match and PIXm. It holds patient names, birth dates and " +
 				"identifiers, so it is off until somebody decides to keep one.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: false, Flag: "mpi"},
+		{Key: "data.icd11ClientId", Group: GroupData, Subgroup: "Code systems", Label: "WHO ICD API client ID",
+			Help: "A client registered at icd.who.int. With it, ICD-11 codes that are not imported are looked up in the WHO ICD API " +
+				"(their titles kept for a day): CodeSystem/$lookup, $validate-code and the code-system search. Empty is off.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "icd11-client-id"},
+		{Key: "data.icd11ClientSecret", Group: GroupData, Subgroup: "Code systems", Label: "WHO ICD API client secret",
+			Help: "The secret of the WHO ICD API client above, from icd.who.int/icdapi. Kept with the other secrets; never shown again once saved.",
+			Kind: KindSecret, Widget: WidgetSecret, Effect: EffectRestart, Default: "", Flag: "icd11-client-secret", Sensitive: true},
+		{Key: "data.icd11Release", Group: GroupData, Subgroup: "Code systems", Label: "ICD-11 release to ask for",
+			Help: "The MMS release the WHO ICD API is asked about, such as 2025-01.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "2025-01", Flag: "icd11-release", Advanced: true},
 		{Key: "fhir.serve", Group: GroupFHIR, Subgroup: "The FHIR server", Label: "Serve a FHIR endpoint at /fhir",
 			Help: "Serve a FHIR endpoint at /fhir, which the payer APIs, SMART apps, PAS and the FHIR lab all use. On by default.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: true, Flag: "fhir"},

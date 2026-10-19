@@ -47,6 +47,9 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-fhir-writes-per-minute` | int | — | for a public server: writes one client address may make to the FHIR endpoint a minute (0: no limit) | **Settings › FHIR › Access**: Writes a minute from one client |
 | `-fleet-label` | string | — | how this instance names itself in a fleet view (default: hostname) | **Settings › Fleet › This server**: Name for this server |
 | `-formulary` | string | — | publish this drug formulary over the Da Vinci US Drug Formulary API at /formulary/fhir and answer NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization from it | **Settings › Payers › Drug formulary**: Drug formulary file |
+| `-icd11-client-id` | string | — | a WHO ICD API client: ICD-11 codes not imported are looked up there | **Settings › Data › Code systems**: WHO ICD API client ID |
+| `-icd11-client-secret` | string | — | the WHO ICD API client's secret | **Settings › Data › Code systems**: WHO ICD API client secret |
+| `-icd11-release` | string | `2025-01` | the ICD-11 MMS release the WHO ICD API is asked about | **Settings › Data › Code systems**: ICD-11 release to ask for |
 | `-index-identity` | on/off | `true` | index patient identifiers from message contents so a message can be found by MRN, name or accession in any format; has no effect when -store-payloads is off | **Settings › Data › What is kept**: Index patient identifiers |
 | `-insecure` | on/off | — | serve over plain HTTP on a non-loopback address (not recommended) | — |
 | `-inventory` | string | — | write a Markdown inventory of every interface to this file, and keep it current | **Settings › Monitoring › Inventory**: Write an interface inventory to |

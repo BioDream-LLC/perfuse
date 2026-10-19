@@ -206,6 +206,10 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	snmpContact := fset.String("snmp-contact", "", "sysContact the SNMP agent reports")
 	snmpLocation := fset.String("snmp-location", "", "sysLocation the SNMP agent reports")
 
+	icd11ID := fset.String("icd11-client-id", "", "a WHO ICD API client: ICD-11 codes not imported are looked up there")
+	icd11Secret := fset.String("icd11-client-secret", "", "the WHO ICD API client's secret")
+	icd11Release := fset.String("icd11-release", "2025-01", "the ICD-11 MMS release the WHO ICD API is asked about")
+
 	serveFHIR := fset.Bool("fhir", true, "serve a FHIR endpoint at /fhir")
 	keepMPI := fset.Bool("mpi", false, "keep a patient index (master patient index) in mpi.db beside the database: patient "+
 		"records from every system linked into one enterprise identifier per person, fed by mpi destinations, answering "+
@@ -672,6 +676,12 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		defer termPool.Close()
 		if termStore, err = terminology.Open(context.Background(), termPool.Write); err != nil {
 			return err
+		}
+		if id := strings.TrimSpace(*icd11ID); id != "" {
+			if *icd11Secret == "" {
+				return errors.New("-icd11-client-id needs -icd11-client-secret")
+			}
+			termStore.ICD11 = &terminology.ICD11API{ClientID: id, ClientSecret: *icd11Secret, Release: strings.TrimSpace(*icd11Release)}
 		}
 		termCtx, stopTerm := context.WithCancel(context.Background())
 		defer stopTerm()

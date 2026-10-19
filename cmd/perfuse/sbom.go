@@ -305,6 +305,11 @@ func directDependencies() map[string]bool {
 		// that was not handed to it, so the sandbox is the default rather than a configuration.
 		"github.com/tetratelabs/wazero": true,
 
+		// The Go project's own character sets, to read code-system files published in ISO-8859-1, ISO-8859-15 or
+		// Windows-1252 (BfArM's ClaML, ATIH's tables). It was already in the build through x/net; reading those files is
+		// what made it direct. Hand-written tables for three code pages would be the same tables, less checked.
+		"golang.org/x/text": true,
+
 		// A Kafka client, so Perfuse can be the healthcare-aware edge of an event backbone
 		// without trying to be one. Kafka is what the systems built in the last decade
 		// publish to, and the existing STOMP connector reaches JMS brokers rather than this.

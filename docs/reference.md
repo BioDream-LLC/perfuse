@@ -830,7 +830,10 @@ Published code systems can be imported from their publishers' own files, under
 | `icd10cm` | the CMS order file (`icd10cm_order_*.txt`) or codes file | `http://hl7.org/fhir/sid/icd-10-cm` |
 | `rxnorm` | `RXNCONSO.RRF` from the RxNorm full release | `http://www.nlm.nih.gov/research/umls/rxnorm` |
 | `snomed` | the RF2 description snapshot (`sct2_Description_Snapshot-en_*.txt`) | `http://snomed.info/sct` |
-| `csv` | any CSV, with `system`, `codeColumn` and `displayColumn` (CPT, HCPCS, local codes) | the given `system` |
+| `snomed-rf2` | a whole SNOMED CT RF2 release package (the zip a national release centre publishes) | `http://snomed.info/sct`, version `http://snomed.info/sct/{module}/version/{date}` |
+| `claml` | a ClaML file: WHO ICD-10, ICD-10-GM and OPS (BfArM), CIM-10 FR (ATIH) | from the file's title, or the given `system` |
+| `icd11` | the WHO ICD-11 MMS simple tabulation (tab-separated, with `Code` and `Title` columns) | `http://id.who.int/icd/release/11/mms` |
+| `csv` | any delimited file, with `system`, `codeColumn` and `displayColumn` (CPT, HCPCS, local codes, national tables) | the given `system` |
 
 None ships with Perfuse: LOINC, SNOMED CT, RxNorm and CPT each have their own
 licence, and the screen asks the importer to confirm the organisation holds it
@@ -842,6 +845,42 @@ licence, and the screen asks the importer to confirm the organisation holds it
 - the FHIR server answers `CodeSystem/$lookup` and `CodeSystem/$validate-code`
   for them (see the FHIR server options). ICD-10-CM codes are accepted with or
   without the dot.
+
+**National editions and classifications.** A SNOMED CT edition is imported from
+its whole RF2 package: concepts with their real status, every active description,
+and the language reference sets. The edition is found from the package (the national
+module with the most concepts; `edition` names it instead) and becomes the version
+URI. `language` chooses whose preferred term is each concept's display (`sv`, `da`,
+`nl`, `de`, `fr`, `en-GB`, `en-US` ...; English otherwise), and every language's
+preferred term and fully specified name are kept as designations: `$lookup` returns
+them, and its `displayLanguage` picks one (`de-CH` falls back to `de`). The editions
+Perfuse names (International, UK, Germany, Netherlands, Sweden, Denmark, Belgium,
+Ireland, Norway, Switzerland, Estonia, Spain) are listed by
+`GET /api/terminology/editions`, the module IDs not checked against a published
+source marked as such; any other edition imports too, named by its module.
+
+ClaML files are read in UTF-8, ISO-8859-1, ISO-8859-15 or Windows-1252, as their XML
+declaration says. Each category's title is its preferred rubric (nested terms
+included); a modifier (a fifth character for the site of a fracture, say) makes the
+codes it adds, with the modifier's title after the category's, unless the category
+excludes it; `blocks=true` imports chapters and blocks as well. The ICD-11 tabulation's
+columns are found by name, since their order has changed between releases, and the
+dashes that show depth are removed from titles. A delimited file takes `delimiter`
+(`,` `;` `|` or `tab`), `encoding` (`utf-8`, `iso-8859-1`, `iso-8859-15`,
+`windows-1252`) and `noHeader=true`, with columns then numbered from 1. The console
+offers settings for the UK ICD-10 5th Edition and OPCS-4 files (TRUD), France's
+CIM-10 FR table of labels (ATIH) and an ICD-10-BE export; their publishers do not all
+document their columns, so check them against the file's header.
+
+**Effective dates.** `effective=YYYY-MM-DD` imports a version now and uses it from
+that day (ICD-10-GM, say, each 1 January): until then a lookup that names no version
+is answered by the version already in force, and the screen shows the date.
+
+**ICD-11 from the WHO.** With a client registered at icd.who.int
+(**Settings → Data → Code systems**, `serve -icd11-client-id` and
+`-icd11-client-secret`; `-icd11-release`, 2025-01 by default), ICD-11 codes that are
+not imported are looked up in the WHO ICD API (`codeinfo`, then the entity's title)
+and kept for a day. Tested against a stand-in of the API, not yet against the WHO's.
 
 ## Metrics
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/fhir"
+	"github.com/biodream-llc/perfuse/internal/terminology"
 )
 
 // CodeLookup is a store of imported code systems (LOINC, SNOMED CT, RxNorm, ICD-10-CM, CPT, local ones).
@@ -71,13 +72,55 @@ func (s *Server) handleCodeLookup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	inactive := !active
-	out := &fhir.Parameters{Parameter: []fhir.ParametersParameter{
+	var designations []fhir.ParametersParameter
+	if dl, ok := s.Codes.(DesignationLookup); ok {
+		list, err := dl.Designations(r.Context(), system, ver, code)
+		if err != nil {
+			s.writeOutcome(w, r, http.StatusInternalServerError, "error", "exception", err.Error())
+			return
+		}
+		// displayLanguage: the display in that language when the code has a preferred name in it (de-CH falls back to de).
+		if want := strings.ToLower(r.Form.Get("displayLanguage")); want != "" {
+			base := strings.SplitN(want, "-", 2)[0]
+			pick := ""
+			for _, d := range list {
+				l := strings.ToLower(d.Language)
+				if d.Preferred && l == want {
+					pick = d.Value
+					break
+				}
+				if d.Preferred && l == base && pick == "" {
+					pick = d.Value
+				}
+			}
+			if pick != "" {
+				display = pick
+			}
+		}
+		for _, d := range list {
+			use := &fhir.Coding{System: "http://snomed.info/sct", Code: "900000000000013009", Display: "Synonym"}
+			if d.Use == "fsn" {
+				use = &fhir.Coding{System: "http://snomed.info/sct", Code: "900000000000003001", Display: "Fully specified name"}
+			}
+			designations = append(designations, fhir.ParametersParameter{Name: "designation", Part: []fhir.ParametersParameter{
+				{Name: "language", ValueCode: d.Language},
+				{Name: "use", ValueCoding: use},
+				{Name: "value", ValueString: d.Value},
+			}})
+		}
+	}
+	out := &fhir.Parameters{Parameter: append([]fhir.ParametersParameter{
 		{Name: "name", ValueString: system},
 		{Name: "version", ValueString: ver},
 		{Name: "display", ValueString: display},
 		{Name: "inactive", ValueBoolean: &inactive},
-	}}
+	}, designations...)}
 	s.writeResource(w, r, http.StatusOK, out)
+}
+
+// DesignationLookup is a CodeLookup that also knows a code's names in other languages (a SNOMED CT edition's).
+type DesignationLookup interface {
+	Designations(ctx context.Context, system, version, code string) ([]terminology.Designation, error)
 }
 
 func (s *Server) handleCodeValidate(w http.ResponseWriter, r *http.Request) {

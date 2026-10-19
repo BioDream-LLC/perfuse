@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/biodream-llc/perfuse/internal/terminology"
 )
 
 type fakeCodes map[string]struct {
@@ -54,5 +56,38 @@ func TestCodeSystemLookupAndValidate(t *testing.T) {
 	srv.Codes = nil
 	if code, _ := get("/CodeSystem/$lookup?system=http://loinc.org&code=2345-7"); code != 404 {
 		t.Errorf("without code systems %d", code)
+	}
+}
+
+type designatedCodes struct{ fakeCodes }
+
+func (designatedCodes) Designations(_ context.Context, system, version, code string) ([]terminology.Designation, error) {
+	return []terminology.Designation{
+		{Language: "en", Use: "fsn", Value: "Anemia (disorder)"},
+		{Language: "sv", Use: "preferred", Value: "anemi", Preferred: true},
+		{Language: "en-GB", Use: "preferred", Value: "Anaemia", Preferred: true},
+	}, nil
+}
+
+// A code with names in other languages answers $lookup with them as designations, and displayLanguage picks one.
+func TestLookupGivesDesignationsAndDisplayLanguage(t *testing.T) {
+	srv, _ := newTestServer(t)
+	srv.Codes = designatedCodes{fakeCodes{"http://loinc.org|271737000": {"Anemia", true}}}
+	h := srv.Handler()
+	get := func(path string) string {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		return strings.Join(strings.Fields(rec.Body.String()), "")
+	}
+	body := get("/CodeSystem/$lookup?system=http://loinc.org&code=271737000&displayLanguage=sv-SE")
+	if !strings.Contains(body, `"name":"display","valueString":"anemi"`) || !strings.Contains(body, `"name":"designation"`) ||
+		!strings.Contains(body, `"code":"900000000000003001"`) {
+		t.Fatal(body)
+	}
+	if body := get("/CodeSystem/$lookup?system=http://loinc.org&code=271737000&displayLanguage=en-GB"); !strings.Contains(body, `"name":"display","valueString":"Anaemia"`) {
+		t.Fatal(body)
+	}
+	if body := get("/CodeSystem/$lookup?system=http://loinc.org&code=271737000"); !strings.Contains(body, `"name":"display","valueString":"Anemia"`) {
+		t.Fatal(body)
 	}
 }

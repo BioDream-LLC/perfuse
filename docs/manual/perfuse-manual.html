@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.17 · a5e4707</p>
+<p class="version">v0.1.17 · d63a695</p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
@@ -1930,7 +1930,10 @@ transformations:
 <tr><td><code>icd10cm</code></td><td>the CMS order file (<code>icd10cm_order_*.txt</code>) or codes file</td><td><code>http://hl7.org/fhir/sid/icd-10-cm</code></td></tr>
 <tr><td><code>rxnorm</code></td><td><code>RXNCONSO.RRF</code> from the RxNorm full release</td><td><code>http://www.nlm.nih.gov/research/umls/rxnorm</code></td></tr>
 <tr><td><code>snomed</code></td><td>the RF2 description snapshot (<code>sct2_Description_Snapshot-en_*.txt</code>)</td><td><code>http://snomed.info/sct</code></td></tr>
-<tr><td><code>csv</code></td><td>any CSV, with <code>system</code>, <code>codeColumn</code> and <code>displayColumn</code> (CPT, HCPCS, local codes)</td><td>the given <code>system</code></td></tr>
+<tr><td><code>snomed-rf2</code></td><td>a whole SNOMED CT RF2 release package (the zip a national release centre publishes)</td><td><code>http://snomed.info/sct</code>, version <code>http://snomed.info/sct/{module}/version/{date}</code></td></tr>
+<tr><td><code>claml</code></td><td>a ClaML file: WHO ICD-10, ICD-10-GM and OPS (BfArM), CIM-10 FR (ATIH)</td><td>from the file&#39;s title, or the given <code>system</code></td></tr>
+<tr><td><code>icd11</code></td><td>the WHO ICD-11 MMS simple tabulation (tab-separated, with <code>Code</code> and <code>Title</code> columns)</td><td><code>http://id.who.int/icd/release/11/mms</code></td></tr>
+<tr><td><code>csv</code></td><td>any delimited file, with <code>system</code>, <code>codeColumn</code> and <code>displayColumn</code> (CPT, HCPCS, local codes, national tables)</td><td>the given <code>system</code></td></tr>
 </tbody>
 </table>
 <p>None ships with Perfuse: LOINC, SNOMED CT, RxNorm and CPT each have their own licence, and the screen asks the importer to confirm the organisation holds it (recorded with the import). Imported codes are used three ways:</p>
@@ -1943,6 +1946,10 @@ transformations:
 <li>the FHIR server answers <code>CodeSystem/$lookup</code> and <code>CodeSystem/$validate-code</code></li>
 </ul>
 <p>  for them (see the FHIR server options). ICD-10-CM codes are accepted with or   without the dot.</p>
+<p><strong>National editions and classifications.</strong> A SNOMED CT edition is imported from its whole RF2 package: concepts with their real status, every active description, and the language reference sets. The edition is found from the package (the national module with the most concepts; <code>edition</code> names it instead) and becomes the version URI. <code>language</code> chooses whose preferred term is each concept&#39;s display (<code>sv</code>, <code>da</code>, <code>nl</code>, <code>de</code>, <code>fr</code>, <code>en-GB</code>, <code>en-US</code> ...; English otherwise), and every language&#39;s preferred term and fully specified name are kept as designations: <code>$lookup</code> returns them, and its <code>displayLanguage</code> picks one (<code>de-CH</code> falls back to <code>de</code>). The editions Perfuse names (International, UK, Germany, Netherlands, Sweden, Denmark, Belgium, Ireland, Norway, Switzerland, Estonia, Spain) are listed by <code>GET /api/terminology/editions</code>, the module IDs not checked against a published source marked as such; any other edition imports too, named by its module.</p>
+<p>ClaML files are read in UTF-8, ISO-8859-1, ISO-8859-15 or Windows-1252, as their XML declaration says. Each category&#39;s title is its preferred rubric (nested terms included); a modifier (a fifth character for the site of a fracture, say) makes the codes it adds, with the modifier&#39;s title after the category&#39;s, unless the category excludes it; <code>blocks=true</code> imports chapters and blocks as well. The ICD-11 tabulation&#39;s columns are found by name, since their order has changed between releases, and the dashes that show depth are removed from titles. A delimited file takes <code>delimiter</code> (<code>,</code> <code>;</code> <code>|</code> or <code>tab</code>), <code>encoding</code> (<code>utf-8</code>, <code>iso-8859-1</code>, <code>iso-8859-15</code>, <code>windows-1252</code>) and <code>noHeader=true</code>, with columns then numbered from 1. The console offers settings for the UK ICD-10 5th Edition and OPCS-4 files (TRUD), France&#39;s CIM-10 FR table of labels (ATIH) and an ICD-10-BE export; their publishers do not all document their columns, so check them against the file&#39;s header.</p>
+<p><strong>Effective dates.</strong> <code>effective=YYYY-MM-DD</code> imports a version now and uses it from that day (ICD-10-GM, say, each 1 January): until then a lookup that names no version is answered by the version already in force, and the screen shows the date.</p>
+<p><strong>ICD-11 from the WHO.</strong> With a client registered at icd.who.int (<strong>Settings → Data → Code systems</strong>, <code>serve -icd11-client-id</code> and <code>-icd11-client-secret</code>; <code>-icd11-release</code>, 2025-01 by default), ICD-11 codes that are not imported are looked up in the WHO ICD API (<code>codeinfo</code>, then the entity&#39;s title) and kept for a day. Tested against a stand-in of the API, not yet against the WHO&#39;s.</p>
 </section>
 <section class="chapter">
 <h2 id="s7-filtering"><span class="num">7</span> Filtering</h2>
@@ -4008,6 +4015,9 @@ rules:
 <tr><td><code>-fhir-writes-per-minute</code></td><td>int</td><td>—</td><td>for a public server: writes one client address may make to the FHIR endpoint a minute (0: no limit)</td><td><strong>Settings › FHIR › Access</strong>: Writes a minute from one client</td></tr>
 <tr><td><code>-fleet-label</code></td><td>string</td><td>—</td><td>how this instance names itself in a fleet view (default: hostname)</td><td><strong>Settings › Fleet › This server</strong>: Name for this server</td></tr>
 <tr><td><code>-formulary</code></td><td>string</td><td>—</td><td>publish this drug formulary over the Da Vinci US Drug Formulary API at /formulary/fhir and answer NCPDP Real-Time Prescription Benefit and SCRIPT electronic prior authorization from it</td><td><strong>Settings › Payers › Drug formulary</strong>: Drug formulary file</td></tr>
+<tr><td><code>-icd11-client-id</code></td><td>string</td><td>—</td><td>a WHO ICD API client: ICD-11 codes not imported are looked up there</td><td><strong>Settings › Data › Code systems</strong>: WHO ICD API client ID</td></tr>
+<tr><td><code>-icd11-client-secret</code></td><td>string</td><td>—</td><td>the WHO ICD API client&#39;s secret</td><td><strong>Settings › Data › Code systems</strong>: WHO ICD API client secret</td></tr>
+<tr><td><code>-icd11-release</code></td><td>string</td><td><code>2025-01</code></td><td>the ICD-11 MMS release the WHO ICD API is asked about</td><td><strong>Settings › Data › Code systems</strong>: ICD-11 release to ask for</td></tr>
 <tr><td><code>-index-identity</code></td><td>on/off</td><td><code>true</code></td><td>index patient identifiers from message contents so a message can be found by MRN, name or accession in any format; has no effect when -store-payloads is off</td><td><strong>Settings › Data › What is kept</strong>: Index patient identifiers</td></tr>
 <tr><td><code>-insecure</code></td><td>on/off</td><td>—</td><td>serve over plain HTTP on a non-loopback address (not recommended)</td><td>—</td></tr>
 <tr><td><code>-inventory</code></td><td>string</td><td>—</td><td>write a Markdown inventory of every interface to this file, and keep it current</td><td><strong>Settings › Monitoring › Inventory</strong>: Write an interface inventory to</td></tr>

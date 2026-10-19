@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 // Import formats.
@@ -19,6 +22,10 @@ const (
 	FormatRxNorm  = "rxnorm"  // RXNCONSO.RRF from the RxNorm full release
 	FormatSNOMED  = "snomed"  // an RF2 sct2_Description_Snapshot file
 	FormatCSV     = "csv"     // any CSV with a header: code and display columns (CPT, HCPCS, local codes)
+	// Outside the US.
+	FormatSNOMEDRF2 = "snomed-rf2" // a whole SNOMED CT RF2 release package (zip): an edition with its languages
+	FormatClaML     = "claml"      // ClaML XML: WHO ICD-10, ICD-10-GM, OPS, CIM-10 FR
+	FormatICD11     = "icd11"      // the WHO's ICD-11 MMS simple tabulation (tab-separated)
 )
 
 // ImportRequest says what is being imported.
@@ -35,6 +42,18 @@ type ImportRequest struct {
 	By string
 	// Licence is what the importer confirmed about the licence, recorded with the import.
 	Licence string
+	// Effective is the day this version comes into force (YYYY-MM-DD); empty means at once.
+	Effective string
+	// Language is the language whose preferred term becomes a SNOMED CT package's display (sv, da, nl, de, fr, en-GB).
+	Language string
+	// Edition is a SNOMED CT edition's module, when the package's own should not be used.
+	Edition string
+	// Blocks imports a classification's chapters and blocks as well as its codes.
+	Blocks bool
+	// Delimiter is a CSV file's separator: , (the default), ; | or tab. Encoding is utf-8 (the default), iso-8859-1 or
+	// windows-1252. NoHeader reads a file without a header row, its columns named by number (1, 2 ...).
+	Delimiter, Encoding string
+	NoHeader            bool
 }
 
 // ImportResult says what was imported.
@@ -43,6 +62,12 @@ type ImportResult struct {
 	Version  string `json:"version"`
 	Concepts int    `json:"concepts"`
 	Skipped  int    `json:"skipped"`
+	// Edition and Languages say what a SNOMED CT package was; Designations how many names in other languages were kept.
+	Edition      string   `json:"edition,omitempty"`
+	Languages    []string `json:"languages,omitempty"`
+	Designations int      `json:"designations,omitempty"`
+	// Derived is how many of a ClaML file's codes were made by its modifiers.
+	Derived int `json:"derived,omitempty"`
 }
 
 // Defaults gives a format's system URL and name.
@@ -58,6 +83,12 @@ func Defaults(format string) (system, name string, ok bool) {
 		return SystemSNOMED, "SNOMED CT", true
 	case FormatCSV:
 		return "", "", true
+	case FormatSNOMEDRF2:
+		return SystemSNOMED, "SNOMED CT", true
+	case FormatClaML:
+		return "", "", true // named by the file's own Title, or given
+	case FormatICD11:
+		return SystemICD11, "ICD-11 MMS", true
 	}
 	return "", "", false
 }
@@ -67,7 +98,7 @@ func Defaults(format string) (system, name string, ok bool) {
 func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (ImportResult, error) {
 	system, name, ok := Defaults(req.Format)
 	if !ok {
-		return ImportResult{}, fmt.Errorf("format %q is not known; use loinc, icd10cm, rxnorm, snomed or csv", req.Format)
+		return ImportResult{}, fmt.Errorf("format %q is not known; use loinc, icd10cm, rxnorm, snomed, snomed-rf2, claml, icd11 or csv", req.Format)
 	}
 	if req.System != "" {
 		system = strings.TrimSpace(req.System)
@@ -75,27 +106,46 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 	if req.Name != "" {
 		name = strings.TrimSpace(req.Name)
 	}
-	if system == "" {
+	if system == "" && req.Format != FormatClaML {
 		return ImportResult{}, errors.New("a csv import needs the code system's URL (system), such as " + SystemCPT)
 	}
-	if !strings.Contains(system, ":") {
+	if system != "" && !strings.Contains(system, ":") {
 		return ImportResult{}, fmt.Errorf("system %q is not a URL or URN; code systems are named by URL, such as %s", system, SystemCPT)
 	}
-	if name == "" {
-		name = system
-	}
 	version := strings.TrimSpace(req.Version)
-	if version == "" {
-		version = time.Now().UTC().Format("2006-01-02")
+	effective := strings.TrimSpace(req.Effective)
+	if effective != "" {
+		if _, err := time.Parse("2006-01-02", effective); err != nil {
+			return ImportResult{}, fmt.Errorf("the effective date %q should be YYYY-MM-DD", effective)
+		}
 	}
+	// Some files name their own version (a SNOMED CT package, a ClaML title), known only once read: the codes go in under a
+	// working name, renamed in the same transaction when the import is complete.
+	working := "importing-" + strconv.FormatInt(time.Now().UnixNano(), 36)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return ImportResult{}, err
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.ExecContext(ctx, `DELETE FROM term_concepts WHERE system = ? AND version = ?`, system, version); err != nil {
-		return ImportResult{}, err
+	// A ClaML file names its system in its title; the system is settled before the first code is stored.
+	var claml *bufio.Reader
+	if req.Format == FormatClaML && system == "" {
+		claml = bufio.NewReaderSize(r, 1<<20)
+		head, _ := claml.Peek(64 << 10)
+		if m := clamlTitle.FindSubmatch(head); m != nil {
+			system, name = clamlSystem(string(m[1]))
+		}
+		if system == "" {
+			return ImportResult{}, errors.New("this ClaML file's title names no classification Perfuse knows (WHO ICD-10, ICD-10-GM, OPS, CIM-10): give the system's URL")
+		}
+		r = claml
+	}
+	if req.Name != "" {
+		name = strings.TrimSpace(req.Name)
+	}
+	if name == "" {
+		name = system
 	}
 	ins, err := tx.PrepareContext(ctx, `INSERT INTO term_concepts (system, version, code, display, active) VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT (system, version, code) DO UPDATE SET display = excluded.display, active = excluded.active`)
@@ -103,7 +153,18 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 		return ImportResult{}, err
 	}
 	defer ins.Close()
-	res := ImportResult{System: system, Version: version}
+	insD, err := tx.PrepareContext(ctx, `INSERT INTO term_designations (system, version, code, language, use_code, value, preferred)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return ImportResult{}, err
+	}
+	defer insD.Close()
+	res := ImportResult{System: system}
+	designate := func(code string, d Designation) error {
+		res.Designations++
+		_, err := insD.ExecContext(ctx, system, working, NormaliseCode(system, code), d.Language, d.Use, d.Value, map[bool]int{true: 1, false: 0}[d.Preferred])
+		return err
+	}
 	add := func(code, display string, active bool) error {
 		code = NormaliseCode(system, code)
 		display = strings.TrimSpace(display)
@@ -115,13 +176,14 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 			return ctx.Err()
 		}
 		res.Concepts++
-		_, err := ins.ExecContext(ctx, system, version, code, display, map[bool]int{true: 1, false: 0}[active])
+		_, err := ins.ExecContext(ctx, system, working, code, display, map[bool]int{true: 1, false: 0}[active])
 		return err
 	}
+	csvOpts := csvOptions{delimiter: req.Delimiter, encoding: req.Encoding, noHeader: req.NoHeader}
 
 	switch req.Format {
 	case FormatLOINC:
-		err = readCSV(r, []string{"LOINC_NUM"}, func(get func(string) string) error {
+		err = readCSV(r, csvOptions{}, []string{"LOINC_NUM"}, func(get func(string) string) error {
 			display := get("LONG_COMMON_NAME")
 			if display == "" {
 				display = get("SHORTNAME")
@@ -139,7 +201,7 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 		if dc == "" {
 			dc = "display"
 		}
-		err = readCSV(r, []string{cc, dc}, func(get func(string) string) error {
+		err = readCSV(r, csvOpts, []string{cc, dc}, func(get func(string) string) error {
 			active := true
 			if st := strings.ToLower(get("status")); st == "inactive" || st == "deprecated" || st == "retired" {
 				active = false
@@ -152,6 +214,31 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 		err = readRxNorm(r, add)
 	case FormatSNOMED:
 		err = readSNOMED(r, add)
+	case FormatSNOMEDRF2:
+		var pkg rf2Result
+		pkg, err = readRF2Package(r, req.Language, strings.TrimSpace(req.Edition), add, designate)
+		if err == nil {
+			res.Edition, res.Languages = pkg.module, pkg.languages
+			if version == "" {
+				version = "http://snomed.info/sct/" + pkg.module + "/version/" + pkg.date
+			}
+			if req.Name == "" {
+				if e, ok := EditionFor(pkg.module); ok {
+					name = "SNOMED CT " + e.Name
+				} else {
+					name = "SNOMED CT (module " + pkg.module + ")"
+				}
+			}
+		}
+	case FormatClaML:
+		var info ClaMLInfo
+		info, err = readClaML(r, req.Blocks, add)
+		res.Derived = info.Derived
+		if version == "" {
+			version = info.Version
+		}
+	case FormatICD11:
+		err = readICD11Tabulation(r, req.Blocks, add)
 	}
 	if err != nil {
 		return ImportResult{}, err
@@ -159,60 +246,124 @@ func (s *Store) Import(ctx context.Context, req ImportRequest, r io.Reader) (Imp
 	if res.Concepts == 0 {
 		return ImportResult{}, fmt.Errorf("no codes were found: is this the %s file?", describeFormat(req.Format))
 	}
+	if version == "" {
+		version = time.Now().UTC().Format("2006-01-02")
+	}
+	res.Version = version
+	for _, q := range []string{`DELETE FROM term_concepts WHERE system = ? AND version = ?`, `DELETE FROM term_designations WHERE system = ? AND version = ?`} {
+		if _, err := tx.ExecContext(ctx, q, system, version); err != nil {
+			return ImportResult{}, err
+		}
+	}
+	for _, q := range []string{`UPDATE term_concepts SET version = ? WHERE system = ? AND version = ?`, `UPDATE term_designations SET version = ? WHERE system = ? AND version = ?`} {
+		if _, err := tx.ExecContext(ctx, q, version, system, working); err != nil {
+			return ImportResult{}, err
+		}
+	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO term_systems (system, version, name, format, concepts, imported_at,
-		imported_by, licence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		imported_by, licence, effective_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (system, version) DO UPDATE SET name = excluded.name, format = excluded.format, concepts = excluded.concepts,
-		imported_at = excluded.imported_at, imported_by = excluded.imported_by, licence = excluded.licence`, system, version, name, req.Format, res.Concepts,
-		time.Now().UTC().Format(time.RFC3339), req.By, req.Licence); err != nil {
+		imported_at = excluded.imported_at, imported_by = excluded.imported_by, licence = excluded.licence,
+		effective_from = excluded.effective_from`, system, version, name, req.Format, res.Concepts,
+		time.Now().UTC().Format(time.RFC3339), req.By, req.Licence, effective); err != nil {
 		return ImportResult{}, err
 	}
 	return res, tx.Commit()
 }
 
+var clamlTitle = regexp.MustCompile(`<Title[^>]*\sname="([^"]+)"`)
+
 func describeFormat(f string) string {
 	return map[string]string{
-		FormatLOINC:   "Loinc.csv (LoincTable folder of the LOINC release)",
-		FormatICD10CM: "icd10cm_order_YYYY.txt or icd10cm_codes_YYYY.txt from CMS",
-		FormatRxNorm:  "RXNCONSO.RRF (rrf folder of the RxNorm full release)",
-		FormatSNOMED:  "sct2_Description_Snapshot-en_*.txt (Snapshot/Terminology of the RF2 release)",
-		FormatCSV:     "CSV with a header row naming the code and display columns",
+		FormatLOINC:     "Loinc.csv (LoincTable folder of the LOINC release)",
+		FormatICD10CM:   "icd10cm_order_YYYY.txt or icd10cm_codes_YYYY.txt from CMS",
+		FormatRxNorm:    "RXNCONSO.RRF (rrf folder of the RxNorm full release)",
+		FormatSNOMED:    "sct2_Description_Snapshot-en_*.txt (Snapshot/Terminology of the RF2 release)",
+		FormatCSV:       "CSV with a header row naming the code and display columns",
+		FormatSNOMEDRF2: "SNOMED CT RF2 release package (the zip as published)",
+		FormatClaML:     "ClaML XML file (the classification's Systematik/ClaML download)",
+		FormatICD11:     "ICD-11 MMS simple tabulation (tab-separated, with Code and Title columns)",
 	}[f]
 }
 
+// csvOptions say how a delimited file is written.
+type csvOptions struct {
+	delimiter, encoding string
+	noHeader            bool
+}
+
 // readCSV calls row for each line after the header, with a column getter by name (case-insensitive). The required columns
-// must be in the header.
-func readCSV(r io.Reader, required []string, row func(get func(string) string) error) error {
+// must be in the header. Without a header, columns are named by number from 1.
+func readCSV(r io.Reader, o csvOptions, required []string, row func(get func(string) string) error) error {
+	switch strings.ToLower(strings.TrimSpace(o.encoding)) {
+	case "", "utf-8", "utf8":
+	case "iso-8859-1", "latin1", "latin-1":
+		r = charmap.ISO8859_1.NewDecoder().Reader(r)
+	case "iso-8859-15", "latin9":
+		r = charmap.ISO8859_15.NewDecoder().Reader(r)
+	case "windows-1252", "cp1252":
+		r = charmap.Windows1252.NewDecoder().Reader(r)
+	default:
+		return fmt.Errorf("encoding %q is not read here: use utf-8, iso-8859-1, iso-8859-15 or windows-1252", o.encoding)
+	}
 	br := bufio.NewReaderSize(r, 1<<20)
 	// Excel and the LOINC release both write a byte-order mark, which would otherwise become part of the first column's name.
 	if b, err := br.Peek(3); err == nil && string(b) == "\ufeff" {
 		_, _ = br.Discard(3)
 	}
 	cr := csv.NewReader(br)
+	switch o.delimiter {
+	case "", ",":
+	case ";", "|":
+		cr.Comma = rune(o.delimiter[0])
+	case "tab", "\t", "\\t":
+		cr.Comma = '\t'
+	default:
+		return fmt.Errorf("delimiter %q is not one of , ; | or tab", o.delimiter)
+	}
 	cr.LazyQuotes = true
 	cr.FieldsPerRecord = -1
 	cr.ReuseRecord = true
-	header, err := cr.Read()
-	if err != nil {
-		return fmt.Errorf("reading the header row: %w", err)
-	}
 	cols := map[string]int{}
-	for i, h := range header {
-		cols[strings.ToLower(strings.TrimSpace(h))] = i
-	}
-	for _, c := range required {
-		if _, ok := cols[strings.ToLower(c)]; !ok {
-			return fmt.Errorf("the header has no %s column (it has %s)", c, strings.Join(header, ", "))
+	var first []string
+	if o.noHeader {
+		rec, err := cr.Read()
+		if err != nil {
+			return fmt.Errorf("reading the first row: %w", err)
+		}
+		first = append([]string(nil), rec...)
+		for i := range first {
+			cols[strconv.Itoa(i+1)] = i
+		}
+	} else {
+		header, err := cr.Read()
+		if err != nil {
+			return fmt.Errorf("reading the header row: %w", err)
+		}
+		for i, h := range header {
+			cols[strings.ToLower(strings.TrimSpace(h))] = i
+		}
+		for _, c := range required {
+			if _, ok := cols[strings.ToLower(c)]; !ok {
+				return fmt.Errorf("the header has no %s column (it has %s)", c, strings.Join(header, ", "))
+			}
 		}
 	}
 	line := 1
 	for {
-		rec, err := cr.Read()
-		if err == io.EOF {
-			return nil
-		}
-		line++
-		if err != nil {
-			return fmt.Errorf("line %d: %w", line, err)
+		var rec []string
+		if first != nil {
+			rec, first = first, nil
+		} else {
+			var err error
+			rec, err = cr.Read()
+			if err == io.EOF {
+				return nil
+			}
+			line++
+			if err != nil {
+				return fmt.Errorf("line %d: %w", line, err)
+			}
 		}
 		get := func(name string) string {
 			if i, ok := cols[strings.ToLower(name)]; ok && i < len(rec) {
