@@ -3,6 +3,7 @@ package generate
 import (
 	"encoding/base64"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 	"time"
 )
@@ -256,14 +257,38 @@ func Corpus(opts Options) []Message {
 		{MDM, 0.05},
 	}
 
+	// How many of each. Proportional for a corpus, the remainder going to the commonest kinds so the total is exact. A small batch is drawn
+	// kind by kind instead: the demonstration server sends three messages a minute, and three split by proportion is two
+	// ADTs and an MDM every time, so its lab and order channels never saw a message.
+	counts := make([]int, len(plan))
+	if total < 20 {
+		seed := opts.Seed
+		if seed == 0 {
+			seed = uint64(time.Now().UnixNano())
+		}
+		rng := rand.New(rand.NewPCG(seed, seed^0x51ed270b))
+		for range total {
+			x, i := rng.Float64(), 0
+			for ; i < len(plan)-1 && x >= plan[i].share; i++ {
+				x -= plan[i].share
+			}
+			counts[i]++
+		}
+	} else {
+		given := 0
+		for i, p := range plan {
+			counts[i] = int(float64(total) * p.share)
+			given += counts[i]
+		}
+		for i := 0; given < total; i = (i + 1) % len(plan) {
+			counts[i]++
+			given++
+		}
+	}
+
 	var out []Message
 	for i, p := range plan {
-		count := int(float64(total) * p.share)
-		if i == len(plan)-1 {
-			// Give the remainder to the last kind so the total is exact rather than
-			// approximately right, which would make a test asserting a count flaky.
-			count = total - len(out)
-		}
+		count := counts[i]
 		if count <= 0 {
 			continue
 		}

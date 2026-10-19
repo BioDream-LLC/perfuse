@@ -382,3 +382,25 @@ func TestNamesAreObviouslyFictional(t *testing.T) {
 		}
 	}
 }
+
+// A small batch has every kind now and then. Three messages split by proportion were two ADTs and an MDM every time, so a
+// demonstration sending three a minute never fed its lab or order channels.
+func TestASmallMixedBatchCarriesEveryKindOverTime(t *testing.T) {
+	kinds := map[string]int{}
+	for seed := uint64(1); seed <= 200; seed++ {
+		for _, m := range Corpus(Options{Count: 3, Seed: seed}) {
+			kinds[m.Type]++
+		}
+	}
+	for _, want := range []string{"ADT", "ORU", "ORM", "MDM"} {
+		if kinds[want] == 0 {
+			t.Errorf("200 batches of 3 had no %s: %v", want, kinds)
+		}
+	}
+	if kinds["ADT"] < kinds["MDM"]*4 {
+		t.Errorf("small batches are not mostly ADT: %v", kinds)
+	}
+	if n := len(Corpus(Options{Count: 3, Seed: 9})); n != 3 {
+		t.Errorf("a batch of 3 has %d messages", n)
+	}
+}

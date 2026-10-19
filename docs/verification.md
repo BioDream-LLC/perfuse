@@ -1085,7 +1085,9 @@ The sweep found five defects, fixed:
 
 Also found: `perfuse generate` restarted its control ids and document numbers at 1 on every run, so a demonstration feeding it
 once a minute sent the same document number again and again (an XDS registry refuses a second document under one uniqueId).
-Without `-seed` the identifiers now start from the clock. And the manual's section on paths was wrong twice: it wrote a
+Without `-seed` the identifiers now start from the clock. Worse, a mixed batch was split by proportion, and three messages
+split that way are two ADTs and an MDM every time: the instance's lab and order channels had never been fed by its traffic
+timer. A batch under twenty is now drawn kind by kind, and an unseeded run starts at a random patient. And the manual's section on paths was wrong twice: it wrote a
 repetition as `PID-3[2]` (the parser takes `PID-3(2)`) and said a path without an index means the first repetition and the first
 occurrence, when it means every one (deliberately, as in filters).
 

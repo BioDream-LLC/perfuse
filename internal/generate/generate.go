@@ -161,6 +161,9 @@ type Generator struct {
 	// run, so fixtures stay the same; otherwise from the clock, so a demonstration that runs the generator every minute
 	// does not send the same document number twice, which a document registry rightly refuses.
 	idBase int
+	// patientBase is where in the cycle of patients the run starts: zero for a seeded run, otherwise random, so a run of
+	// three messages a minute is not always about the same first patients.
+	patientBase int
 }
 
 // New builds a generator.
@@ -170,13 +173,15 @@ func New(opts Options) *Generator {
 	if seed == 0 {
 		seed = uint64(time.Now().UnixNano())
 	}
-	idBase := 0
+	idBase, patientBase := 0, 0
 	if opts.Seed == 0 {
 		idBase = int(time.Now().Unix()-1_700_000_000) * 10
+		patientBase = int(seed % uint64(max(opts.Patients, 1)))
 	}
 	return &Generator{
-		opts:   opts,
-		idBase: idBase,
+		opts:        opts,
+		idBase:      idBase,
+		patientBase: patientBase,
 		// Two seeds because PCG takes two; deriving the second keeps one Seed
 		// option reproducible.
 		rng: rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
@@ -196,7 +201,7 @@ func (g *Generator) All() []Message {
 func (g *Generator) Next() Message {
 	g.seq++
 	at := g.opts.Since.Add(time.Duration(g.seq-1) * g.opts.Spread)
-	p := g.patient(g.seq)
+	p := g.patient(g.seq + g.patientBase)
 
 	awkward := ""
 	if g.rng.Float64() < g.opts.Awkward {
