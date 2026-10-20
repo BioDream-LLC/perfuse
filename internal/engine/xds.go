@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/biodream-llc/perfuse/hl7"
@@ -45,6 +46,10 @@ func NewXDSSender(d config.Destination) (*XDSSender, error) {
 		headers["Authorization"] = "Bearer " + token
 	}
 	c := &xds.Client{HTTP: hc, Headers: headers}
+	if cfg.DirectFrom != "" {
+		// XDR as Direct's transport: the addressing block says who it is from and for.
+		c.SOAPHeaders = xds.DirectAddressBlock(cfg.DirectFrom, cfg.DirectTo)
+	}
 	if user := config.ResolveSecret(cfg.Username); user != "" {
 		hc.Transport = basicAuth{next: transportOf(hc), user: user, pass: config.ResolveSecret(cfg.Password)}
 	}
@@ -117,6 +122,10 @@ func (s *XDSSender) Send(ctx context.Context, msg []byte) error {
 	if err != nil {
 		return err
 	}
+	for _, to := range s.cfg.DirectTo {
+		// XON|XCN|XTN, the recipient as a telecom address of type Internet: how XDR for Direct names a Direct address.
+		meta.IntendedRecipients = append(meta.IntendedRecipients, "||^^Internet^"+to)
+	}
 	req, err := xds.Build(meta, time.Now())
 	if err != nil {
 		return err
@@ -132,7 +141,12 @@ func (s *XDSSender) Send(ctx context.Context, msg []byte) error {
 }
 
 // Describe names the destination, never the credentials.
-func (s *XDSSender) Describe() string { return s.cfg.URL + " (XDS.b ITI-41)" }
+func (s *XDSSender) Describe() string {
+	if s.cfg.DirectFrom != "" {
+		return s.cfg.URL + " (XDR to " + strings.Join(s.cfg.DirectTo, ", ") + ")"
+	}
+	return s.cfg.URL + " (XDS.b ITI-41)"
+}
 
 // Close releases nothing.
 func (s *XDSSender) Close() error { return nil }

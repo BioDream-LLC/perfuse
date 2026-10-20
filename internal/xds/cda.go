@@ -143,12 +143,24 @@ func MetaFromCDA(d *cda.Document, raw []byte, o CDAOptions) (DocumentMeta, error
 		m.ContentType = *o.ContentType
 	}
 	m.Format = FormatFor(d.TemplateIDs, raw)
-	conf := d.Confidentiality
+	// The CDA reader keeps the confidentiality's meaning ("normal"), not its code; the registry wants the code. Reading
+	// the meaning as the code sent nodeRepresentation="normal" with no display, which a lenient registry stored and the
+	// NIST XDS Toolkit's Document Recipient refused.
+	names := map[string]string{"N": "normal", "R": "restricted", "V": "very restricted", "L": "low", "M": "moderate", "U": "unrestricted"}
+	conf := strings.ToUpper(strings.TrimSpace(d.Confidentiality))
+	for code, name := range names {
+		if strings.EqualFold(d.Confidentiality, name) {
+			conf = code
+		}
+	}
 	if conf == "" {
 		conf = "N"
 	}
-	confName := map[string]string{"N": "normal", "R": "restricted", "V": "very restricted", "L": "low", "M": "moderate", "U": "unrestricted"}[conf]
-	m.Confidentiality = Code{conf, "2.16.840.1.113883.5.25", confName}
+	confName := names[conf]
+	if confName == "" {
+		confName = conf
+	}
+	m.Confidentiality = Code{Code: conf, Scheme: "2.16.840.1.113883.5.25", Display: confName}
 	if t, ok := parseTS(d.EffectiveTime); ok {
 		m.CreationTime = t
 	}

@@ -230,8 +230,10 @@ func (s *Server) directBook() *directBook {
 	return s.directBk
 }
 
-// directLookup is swapped in tests.
-var directLookup = direct.DNSCertificates
+// directLookup finds a correspondent's certificates in DNS, then in LDAP, and says where; swapped in tests.
+var directLookup = func(ctx context.Context, address, dns string) ([]*x509.Certificate, string, error) {
+	return direct.FindCertificates(ctx, address, dns, "")
+}
 
 func readAnchors(path string) ([]directCertShown, string) {
 	raw, err := os.ReadFile(path)
@@ -340,17 +342,19 @@ func (s *Server) handleDirectPut(w http.ResponseWriter, r *http.Request, sess *s
 			s.fail(w, r, http.StatusBadRequest, msg)
 			return
 		}
-		certs, err = directLookup(ctx, lookupAddr, strings.TrimSpace(in.DNS))
+		var from string
+		certs, from, err = directLookup(ctx, lookupAddr, strings.TrimSpace(in.DNS))
 		if err != nil {
 			// The lookup's own failure (no answer, a refused query) is about what was asked, not a fault here.
 			s.fail(w, r, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		if len(certs) == 0 {
-			s.fail(w, r, http.StatusNotFound, "DNS publishes no certificate for "+key+"; ask the correspondent's HISP for it and upload it")
+			s.fail(w, r, http.StatusNotFound, "neither DNS nor LDAP publishes a certificate for "+key+"; ask the correspondent's HISP for it "+
+				"and upload it")
 			return
 		}
-		source = "dns"
+		source = from
 	case strings.TrimSpace(in.Certificate) != "":
 		certs = parsePEMCerts([]byte(in.Certificate))
 		if len(certs) == 0 {
@@ -498,7 +502,7 @@ type directLookupIn struct {
 	DNS     string `json:"dns"`
 }
 
-// handleDirectLookup asks DNS for an address's certificates without saving them: what the book would get.
+// handleDirectLookup asks DNS, then LDAP, for an address's certificates without saving them: what the book would get.
 func (s *Server) handleDirectLookup(w http.ResponseWriter, r *http.Request, _ *store.Session) {
 	var in directLookupIn
 	if !s.decode(w, r, &in) {
@@ -515,7 +519,7 @@ func (s *Server) handleDirectLookup(w http.ResponseWriter, r *http.Request, _ *s
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	certs, err := directLookup(ctx, key, strings.TrimSpace(in.DNS))
+	certs, from, err := directLookup(ctx, key, strings.TrimSpace(in.DNS))
 	if err != nil {
 		s.fail(w, r, http.StatusUnprocessableEntity, err.Error())
 		return
@@ -524,5 +528,5 @@ func (s *Server) handleDirectLookup(w http.ResponseWriter, r *http.Request, _ *s
 	for _, c := range certs {
 		shown = append(shown, showCert(c, true))
 	}
-	s.ok(w, map[string]any{"address": key, "certificates": shown})
+	s.ok(w, map[string]any{"address": key, "certificates": shown, "from": from})
 }

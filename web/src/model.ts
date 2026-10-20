@@ -492,6 +492,8 @@ export interface Destination {
   directXdmSourceId: string
   directRecipientCertsDir: string
   directDns: string
+  /** directLdap is the directory a recipient's certificate is looked up in after DNS; empty finds it by SRV, off never asks. */
+  directLdap: string
   directSmtpHost: string
   directUsername: string
   directPassword: string
@@ -509,6 +511,9 @@ export interface Destination {
   xdsClassCode: string
   xdsClassScheme: string
   xdsToken: string
+  /** xdsDirectFrom and xdsDirectTo make the submission XDR as Direct's transport. */
+  xdsDirectFrom: string
+  xdsDirectTo: string
   /** dicomwebUrl and the rest describe a DICOMweb (STOW-RS) destination. */
   dicomwebUrl: string
   dicomwebToken: string
@@ -1065,6 +1070,22 @@ export interface ChannelDraft {
   directSrcSmtpHost: string
   directSrcUsername: string
   directSrcPassword: string
+  /** directSrcImap* is the address's mailbox at the HISP, read instead of (or as well as) SMTP deliveries. */
+  directSrcImapHost: string
+  directSrcImapPort: number
+  directSrcImapSecurity: string
+  directSrcImapUsername: string
+  directSrcImapPassword: string
+  directSrcImapMailbox: string
+  directSrcImapAfterRead: string
+  directSrcImapMoveTo: string
+  directSrcImapErrorFolder: string
+  directSrcImapPollInterval: string
+  /** directSrcXdr* is the HTTPS endpoint XDR is taken at. */
+  directSrcXdrListen: string
+  directSrcXdrTlsCert: string
+  directSrcXdrTlsKey: string
+  directSrcXdrClientCaFile: string
   /** dicomwebListen and the rest describe a STOW-RS endpoint. */
   dicomwebListen: string
   dicomwebPath: string
@@ -1976,6 +1997,28 @@ export function draftToWire(draft: ChannelDraft): unknown {
         smtpHost: draft.directSrcSmtpHost || undefined,
         username: draft.directSrcUsername || undefined,
         password: draft.directSrcPassword || undefined,
+        imap: draft.directSrcImapHost
+          ? {
+              host: draft.directSrcImapHost,
+              port: draft.directSrcImapPort || undefined,
+              security: draft.directSrcImapSecurity || undefined,
+              username: draft.directSrcImapUsername || undefined,
+              password: draft.directSrcImapPassword || undefined,
+              mailbox: draft.directSrcImapMailbox || undefined,
+              afterRead: draft.directSrcImapAfterRead || undefined,
+              moveTo: draft.directSrcImapMoveTo || undefined,
+              errorFolder: draft.directSrcImapErrorFolder || undefined,
+              pollInterval: draft.directSrcImapPollInterval || undefined,
+            }
+          : undefined,
+        xdr: draft.directSrcXdrListen
+          ? {
+              listen: draft.directSrcXdrListen,
+              tlsCert: draft.directSrcXdrTlsCert || undefined,
+              tlsKey: draft.directSrcXdrTlsKey || undefined,
+              clientCaFile: draft.directSrcXdrClientCaFile || undefined,
+            }
+          : undefined,
       }
       break
     case 'dicomweb':
@@ -2586,6 +2629,7 @@ function destinationToWire(d: Destination): unknown {
         xdmSourceId: d.directXdmSourceId || undefined,
         recipientCertsDir: d.directRecipientCertsDir || undefined,
         dns: d.directDns || undefined,
+        ldap: d.directLdap || undefined,
         smtpHost: d.directSmtpHost || undefined,
         username: d.directUsername || undefined,
         password: d.directPassword || undefined,
@@ -2601,6 +2645,8 @@ function destinationToWire(d: Destination): unknown {
         practiceSetting: { code: d.xdsPracticeCode || undefined, scheme: d.xdsPracticeScheme || undefined, display: d.xdsPracticeDisplay || undefined },
         class: d.xdsClassCode ? { code: d.xdsClassCode, scheme: d.xdsClassScheme || undefined } : undefined,
         token: d.xdsToken || undefined,
+        directFrom: d.xdsDirectFrom || undefined,
+        directTo: splitList(d.xdsDirectTo),
       }
       break
     case 'dicomweb':
@@ -2977,6 +3023,7 @@ export function newDestination(): Destination {
     directXdmSourceId: '',
     directRecipientCertsDir: '',
     directDns: '',
+    directLdap: '',
     directSmtpHost: '',
     directUsername: '',
     directPassword: '',
@@ -2993,6 +3040,8 @@ export function newDestination(): Destination {
     xdsClassCode: '',
     xdsClassScheme: '',
     xdsToken: '',
+    xdsDirectFrom: '',
+    xdsDirectTo: '',
     dicomwebUrl: '',
     dicomwebToken: '',
     dicomwebUsername: '',
@@ -3231,6 +3280,20 @@ export function emptyDraft(): ChannelDraft {
     directSrcSmtpHost: '',
     directSrcUsername: '',
     directSrcPassword: '',
+    directSrcImapHost: '',
+    directSrcImapPort: 0,
+    directSrcImapSecurity: '',
+    directSrcImapUsername: '',
+    directSrcImapPassword: '',
+    directSrcImapMailbox: '',
+    directSrcImapAfterRead: '',
+    directSrcImapMoveTo: '',
+    directSrcImapErrorFolder: '',
+    directSrcImapPollInterval: '',
+    directSrcXdrListen: '',
+    directSrcXdrTlsCert: '',
+    directSrcXdrTlsKey: '',
+    directSrcXdrClientCaFile: '',
     dicomwebListen: '',
     dicomwebPath: '',
     dicomwebToken: '',

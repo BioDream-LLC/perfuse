@@ -562,6 +562,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerMeasures(mux)
 	mux.Handle("GET /api/aligned-network", s.require(store.RoleViewer, s.handleAlignedNetwork))
 	s.registerMHD(mux)
+	s.registerPIXV3(mux)
 	mux.Handle("POST /api/crd/ask", s.require(store.RoleViewer, s.handleCRDAsk))
 	mux.Handle("POST /api/dtr/package", s.require(store.RoleViewer, s.handleDTRPackage))
 	mux.Handle("POST /api/shc/verify", s.require(store.RoleViewer, s.handleVerifySHC))

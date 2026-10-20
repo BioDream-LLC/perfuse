@@ -46,6 +46,13 @@ func TestTheSharedDemoAccountIsShownAndCannotBeTakenOver(t *testing.T) {
 	if rec := h.do("demo", http.MethodGet, "/api/settings", nil); rec.Code != http.StatusOK {
 		t.Errorf("the demo account reading settings: %d, want 200", rec.Code)
 	}
+	// The checks that change nothing work for it, as for an editor; one that would change something does not.
+	if rec := h.do("demo", http.MethodPost, "/api/scripts/check", map[string]string{"language": "javascript", "source": "msg"}); rec.Code == http.StatusForbidden {
+		t.Errorf("the demo account checking a script: %d %s", rec.Code, rec.Body)
+	}
+	if rec := h.do("demo", http.MethodPost, "/api/channels/validate", map[string]string{"yaml": "name: x"}); rec.Code == http.StatusForbidden {
+		t.Errorf("the demo account validating a channel: %d", rec.Code)
+	}
 	if rec := h.do("demo", http.MethodPost, "/api/users", map[string]string{"username": "x", "password": "long enough password", "role": "admin"}); rec.Code != http.StatusForbidden {
 		t.Errorf("the demo account adding a user: %d, want 403", rec.Code)
 	}
@@ -62,6 +69,9 @@ func TestTheSharedDemoAccountIsShownAndCannotBeTakenOver(t *testing.T) {
 	h.tokens["vera"] = vt
 	if rec := h.do("vera", http.MethodGet, "/api/users", nil); rec.Code != http.StatusForbidden {
 		t.Errorf("a viewer reading users: %d, want 403", rec.Code)
+	}
+	if rec := h.do("vera", http.MethodPost, "/api/scripts/check", map[string]string{"language": "javascript", "source": "msg"}); rec.Code != http.StatusForbidden {
+		t.Errorf("an ordinary viewer checking a script: %d, want 403", rec.Code)
 	}
 
 	// The first visitor to change the password would lock out everyone else.

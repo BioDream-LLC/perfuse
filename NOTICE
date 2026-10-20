@@ -21,3 +21,8 @@ materials, which every release ships beside the binaries as perfuse.cdx.json.
 It can also be produced from any build with:
 
     perfuse sbom -json
+
+The test fixtures in internal/pixv3/testdata/ihe are IHE International's PIX V3
+and PDQ V3 sample messages (https://github.com/IHE/ITI-Info), unchanged, under
+the Creative Commons Attribution 4.0 International licence. Copyright IHE
+International, Inc. They are used by the tests only and are not in the program.

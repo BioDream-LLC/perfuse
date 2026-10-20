@@ -58,11 +58,11 @@ func TestTheDirectAddressBook(t *testing.T) {
 	domainCert, _ := directTestCert(t, "", "direct.hospital.example")
 	orig := directLookup
 	t.Cleanup(func() { directLookup = orig })
-	directLookup = func(_ context.Context, addr, _ string) ([]*x509.Certificate, error) {
+	directLookup = func(_ context.Context, addr, _ string) ([]*x509.Certificate, string, error) {
 		if addr == "postmaster@direct.hospital.example" || addr == "any@direct.hospital.example" {
-			return []*x509.Certificate{domainCert}, nil
+			return []*x509.Certificate{domainCert}, "dns", nil
 		}
-		return nil, nil
+		return nil, "", nil
 	}
 	if rr := h.do("editor", "PUT", "/api/direct/contacts/direct.hospital.example", map[string]any{"lookUp": true}); rr.Code != http.StatusOK {
 		t.Fatalf("%d %s", rr.Code, rr.Body)

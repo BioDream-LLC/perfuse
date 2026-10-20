@@ -1231,6 +1231,33 @@ were wrong for that machine and were fixed: the message-store speed test compare
 never waits for the disk (now an absolute floor there, and not judged under the race detector), and the GnuPG test failed
 where gpg has no agent (now skipped there).
 
+## PIX and PDQ v3, and Direct over IMAP, XDR and LDAP (October 2026, on main)
+
+- **PIX and PDQ in HL7 v3** (`/pixv3`, `/pdqv3`). IHE's own sample messages (IHE/ITI-Info, `examples/PIXV3` and `PDQV3`, CC BY
+  4.0, kept in `internal/pixv3/testdata/ihe`) are fed and asked in IHE's order: two records added, one revised, the PIX query
+  answered with the cross-references the published response shows (the second domain's number and the social security number),
+  duplicates resolved into one person, and the PDQ query paged two at a time, continued and cancelled. Every answer Perfuse writes
+  (MCCI_IN000002UV01, PRPA_IN201310UV02, PRPA_IN201306UV02) validates against IHE's HL7 V3 schemas (NE2008 multicacheschemas,
+  `PERFUSE_HL7V3_SCHEMA`), the refusals included: an unknown patient, an unknown domain, a merge naming no prior record, a query
+  naming no demographics. Over SOAP with API tokens, a viewer may query and not feed, and a record fed in v3 is the one PIXm
+  answers over FHIR. **Not checked against an independent PIX or PDQ v3 implementation** (Gazelle's simulators, IPF, a vendor's
+  MPI): the schemas check the shape of every answer and IHE's samples their content, but no other system has read one.
+- **LDAP certificate discovery**, against OpenLDAP 2.4.57 (osixia/openldap 1.5.0, `PERFUSE_TEST_OPENLDAP`): an address-bound
+  certificate in `userSMIMECertificate` and a domain-bound one in `userCertificate;binary`, both written by OpenLDAP's own
+  `ldapadd`, are found through the root DSE's naming contexts with an anonymous bind; an address with no entry gets the
+  domain's; DNS first, then the directory, and `off` asks none. The SRV lookup for a domain's directory is tested only for a
+  domain that has none.
+- **A Direct mailbox read over IMAP**, against GreenMail 2.1.3: a message Perfuse sealed for the address is read, opened and
+  passed on, and a plain message that is not Direct moves to the error folder.
+- **XDR.** An `xds` destination with `direct_from` and `direct_to` posts to a `direct` source's XDR endpoint, which passes the
+  CDA document on and refuses a submission addressed to someone else with a RegistryResponse failure. The NIST XDS Toolkit's
+  Document Recipient simulator (7.13.0, `PERFUSE_NIST_REC`) accepted the XDR **after one fix it found**: the `xds` destination
+  sent a CDA document's confidentiality as the CDA reader's meaning (`normal`) rather than its code (`N`), and a coded attribute
+  without a display had no Name, which the recipient's metadata validator refuses (`XDSRegistryMetadataError`, "no name
+  attribute"). Perfuse's own registry, and the toolkit's Registry/Repository with validation as configured earlier, had stored
+  both. The code is now sent, with its meaning as the display, and a code without a display is named by itself. Not tested with
+  a HISP's XDR endpoint.
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"github.com/biodream-llc/perfuse/internal/cda"
 	"github.com/biodream-llc/perfuse/internal/sqlitedb"
 	"net/http"
 	"net/http/httptest"
@@ -284,4 +285,32 @@ func FuzzReadEnvelope(f *testing.F) {
 			_ = readParams(q.Query.Slots)
 		}
 	})
+}
+
+// The CDA reader keeps a confidentiality's meaning; the registry is sent its code, with the meaning as its display, and a
+// coded attribute with no display is named by its code.
+func TestConfidentialityIsSentAsItsCode(t *testing.T) {
+	doc, err := cda.Parse([]byte(`<ClinicalDocument xmlns="urn:hl7-org:v3"><id root="1.2.3" extension="9"/>
+<code code="11488-4" codeSystem="2.16.840.1.113883.6.1" displayName="Consult note"/><effectiveTime value="20261019"/>
+<confidentialityCode code="R" codeSystem="2.16.840.1.113883.5.25"/>
+<recordTarget><patientRole><id root="1.2.3.4" extension="P1"/></patientRole></recordTarget></ClinicalDocument>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := MetaFromCDA(doc, nil, CDAOptions{SourceID: "1.2", FacilityType: Code{Code: "F", Scheme: "1.1"}, PracticeSetting: Code{Code: "P", Scheme: "1.1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Confidentiality.Code != "R" || m.Confidentiality.Display != "restricted" {
+		t.Errorf("confidentiality %+v", m.Confidentiality)
+	}
+	sub, err := Build(m, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range sub.Objects.Extrinsic[0].Classifications {
+		if c.Scheme == SchemeFacilityType && (c.Name == nil || c.Name.Strings[0].Value != "F") {
+			t.Errorf("a code with no display has no name: %+v", c)
+		}
+	}
 }

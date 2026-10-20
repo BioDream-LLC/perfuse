@@ -49,6 +49,11 @@ type XDSDestination struct {
 	TLS      *tlsconf.Settings `yaml:"tls,omitempty"`
 	// Timeout bounds one submission; two minutes by default.
 	Timeout time.Duration `yaml:"timeout,omitempty"`
+	// DirectFrom and DirectTo make the submission XDR as Direct's transport: a Direct addressing block naming this
+	// sender's Direct address and the recipients', and the recipients in the submission's intendedRecipient. A HISP that
+	// takes XDR delivers it as Direct mail, or to the recipient's own XDR endpoint.
+	DirectFrom string   `yaml:"direct_from,omitempty"`
+	DirectTo   []string `yaml:"direct_to,omitempty"`
 }
 
 var oidPattern = regexp.MustCompile(`^[0-2](\.(0|[1-9][0-9]*))+$`)
@@ -92,6 +97,13 @@ func validateXDSDest(d *Destination) []error {
 	}
 	if (s.Username == "") != (s.Password == "") {
 		errs = append(errs, fmt.Errorf("destination %q has half a credential; set both username and password", d.Name))
+	}
+	if (s.DirectFrom == "") != (len(s.DirectTo) == 0) {
+		errs = append(errs, fmt.Errorf("destination %q: XDR needs both xds.direct_from (this sender's Direct address) and xds.direct_to "+
+			"(the recipients')", d.Name))
+	}
+	if s.DirectFrom != "" && !strings.Contains(s.DirectFrom, "@") {
+		errs = append(errs, fmt.Errorf("destination %q: xds.direct_from %q is not a Direct address", d.Name, s.DirectFrom))
 	}
 	if s.Timeout == 0 {
 		s.Timeout = 2 * time.Minute

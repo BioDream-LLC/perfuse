@@ -685,3 +685,22 @@ func (s Settings) MaskedPerson(p *Person) *Person {
 	}
 	return &c
 }
+
+// KnowsSystem reports whether any record in the index has an identifier from the system: whether it is a patient
+// identification domain the index manages, which an IHE query naming an unknown one must be told it is not.
+func (s *Store) KnowsSystem(ctx context.Context, tenant, system string) (bool, error) {
+	if system == "" {
+		return false, nil
+	}
+	prefix := system + "|"
+	var one int
+	err := s.db.QueryRowContext(ctx, `SELECT 1 FROM mpi_records WHERE tenant = ? AND system = ? LIMIT 1`, tenant, system).Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		err = s.db.QueryRowContext(ctx, `SELECT 1 FROM mpi_identifiers WHERE tenant = ? AND substr(ident, 1, ?) = ? LIMIT 1`,
+			tenant, len(prefix), prefix).Scan(&one)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
+}

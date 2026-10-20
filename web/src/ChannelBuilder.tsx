@@ -1634,11 +1634,17 @@ function DestinationCard({
                   <input className="input font-mono" value={dest.directXdmSourceId} onChange={(e) => onChange({ directXdmSourceId: e.target.value })} placeholder="1.2.840.114350.1.13.99" />
                 </Field>
               )}
-              <Field label="Recipient certificates directory" hint="Empty: the server's Direct address book (Exchange › Direct). Recipients not found there are looked up in DNS.">
+              <Field label="Recipient certificates directory" hint="Empty: the server's Direct address book (Exchange › Direct). Recipients not found there are looked up in DNS, then in LDAP.">
                 <input className="input font-mono text-xs" value={dest.directRecipientCertsDir} onChange={(e) => onChange({ directRecipientCertsDir: e.target.value })} />
               </Field>
               <Field label="DNS server for certificate lookup" hint="host:port. Empty: the system's resolver.">
                 <input className="input font-mono" value={dest.directDns} onChange={(e) => onChange({ directDns: e.target.value })} placeholder="1.1.1.1:53" />
+              </Field>
+              <Field
+                label="LDAP directory for certificate lookup"
+                hint="host:port, asked when DNS has no certificate. Empty: the directory the recipient's domain names in its _ldap._tcp SRV record. off: never ask a directory."
+              >
+                <input className="input font-mono" value={dest.directLdap} onChange={(e) => onChange({ directLdap: e.target.value })} placeholder="ldap.hisp.example:389" />
               </Field>
             </div>
           </>
@@ -1685,6 +1691,12 @@ function DestinationCard({
               </Field>
               <Field label="Bearer token (optional)" hint="Most affinity domains use mutual TLS instead.">
                 <input type="password" className="input font-mono" value={dest.xdsToken} onChange={(e) => onChange({ xdsToken: e.target.value })} />
+              </Field>
+              <Field label="XDR: from (this sender's Direct address)" hint="With recipients below, the submission is XDR as Direct's transport: a Direct addressing block and intendedRecipient name who it is for.">
+                <input className="input font-mono" value={dest.xdsDirectFrom} onChange={(e) => onChange({ xdsDirectFrom: e.target.value })} placeholder="referrals@direct.hospital.example" />
+              </Field>
+              <Field label="XDR: to (recipients' Direct addresses)" hint="Comma separated.">
+                <input className="input font-mono" value={dest.xdsDirectTo} onChange={(e) => onChange({ xdsDirectTo: e.target.value })} placeholder="intake@direct.clinic.example" />
               </Field>
             </div>
           </>

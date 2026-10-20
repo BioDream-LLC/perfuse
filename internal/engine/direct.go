@@ -97,13 +97,17 @@ func NewDirectSender(d config.Destination) (*DirectSender, error) {
 	}
 	var dl net.Dialer
 	return &DirectSender{cfg: cfg, self: self, chain: chain, anchors: anchors, fields: &SMTPSender{dataType: config.DataHL7},
-		dial: dl.DialContext, lookup: direct.DNSCertificates, now: time.Now}, nil
+		dial: dl.DialContext, now: time.Now, lookup: func(ctx context.Context, address, dns string) ([]*x509.Certificate, error) {
+			certs, _, err := direct.FindCertificates(ctx, address, dns, cfg.LDAP)
+			return certs, err
+		}}, nil
 }
 
 // SetDataType decides substitution and the attachment's default name.
 func (s *DirectSender) SetDataType(t config.DataType) { s.fields.dataType = t }
 
-// recipientCert finds a recipient's certificate: the directory first (address.pem, then domain.pem), then DNS. A certificate
+// recipientCert finds a recipient's certificate: the directory first (address.pem, then domain.pem), then DNS, then the
+// recipient domain's LDAP directory. A certificate
 // that does not chain to the anchors, has expired, or is not for the address or its domain is not used: sending to it
 // would encrypt the message for someone the recipient never vouched for.
 func (s *DirectSender) recipientCert(ctx context.Context, addr string) ([]*x509.Certificate, error) {
@@ -146,7 +150,7 @@ func (s *DirectSender) recipientCert(ctx context.Context, addr string) ([]*x509.
 		if len(why) > 0 {
 			return nil, fmt.Errorf("direct: no usable certificate for %s (%s)", addr, strings.Join(why, "; "))
 		}
-		return nil, fmt.Errorf("direct: no certificate was found for %s, in the directory or in DNS", addr)
+		return nil, fmt.Errorf("direct: no certificate was found for %s, in the directory, in DNS or in LDAP", addr)
 	}
 	return ok, nil
 }

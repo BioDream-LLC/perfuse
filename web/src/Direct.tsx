@@ -38,6 +38,7 @@ function CertLine({ c }: { c: DirectCert }) {
 const noCert = { text: 'No certificate', cls: 'text-amber-300' }
 const sourceLabel: Record<string, { text: string; cls: string }> = {
   dns: { text: 'DNS', cls: 'text-cyan-300' },
+  ldap: { text: 'LDAP', cls: 'text-cyan-300' },
   upload: { text: 'Pasted', cls: 'text-violet-300' },
   file: { text: 'File', cls: 'text-slate-300' },
   none: { text: 'No certificate', cls: 'text-amber-300' },
@@ -173,7 +174,7 @@ export function Direct() {
               <>
                 Correspondents and the certificates their mail is encrypted to. A direct destination reads these (from{' '}
                 <span className="font-mono text-xs text-slate-300">{view.certsDir || 'the server directory'}</span>) before it asks
-                DNS. A certificate must be for the address, or for its domain; a certificate for anyone else is refused, because the
+                DNS and then the recipient domain&apos;s LDAP directory. A certificate must be for the address, or for its domain; a certificate for anyone else is refused, because the
                 recipient could not read mail encrypted to it.
               </>
             }
@@ -205,7 +206,7 @@ export function Direct() {
                         </td>
                         <td className="py-1.5 pr-2">
                           {c.certificates.length === 0 ? (
-                            <span className="text-xs text-amber-300">None: messages to it need DNS</span>
+                            <span className="text-xs text-amber-300">None: messages to it need DNS or LDAP</span>
                           ) : (
                             c.certificates.map((x) => <CertLine key={x.sha256} c={x} />)
                           )}
@@ -244,7 +245,7 @@ export function Direct() {
                 <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
               </Field>
             </div>
-            <Field label="Certificate (PEM)" hint="Paste the certificate the correspondent's HISP gave you, or leave this empty and find it in DNS.">
+            <Field label="Certificate (PEM)" hint="Paste the certificate the correspondent's HISP gave you, or leave this empty and find it in DNS or LDAP.">
               <CodeArea value={pem} onChange={setPem} language="text" rows={5} placeholder="-----BEGIN CERTIFICATE-----" />
             </Field>
             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -252,7 +253,7 @@ export function Direct() {
                 Save
               </button>
               <button type="button" className="btn" disabled={busy || !address.trim()} onClick={() => save(true)}>
-                Save with the certificate from DNS
+                Save with the certificate from DNS or LDAP
               </button>
               {saved && (
                 <span className="text-sm text-emerald-300" data-testid="direct-saved">
@@ -263,8 +264,8 @@ export function Direct() {
           </Section>
 
           <Section
-            title="Find a certificate in DNS"
-            description="Direct publishes certificates as DNS CERT records (RFC 4398): under the address with its @ made a dot, else under the domain. This asks without saving anything."
+            title="Find a certificate in DNS or LDAP"
+            description="Direct publishes certificates as DNS CERT records (RFC 4398), under the address with its @ made a dot, else under the domain; failing that, in the domain's LDAP directory, found by its _ldap._tcp SRV record. This asks without saving anything."
           >
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Direct address">
@@ -282,7 +283,7 @@ export function Direct() {
             {found && (
               <div className="mt-3" data-testid="direct-found">
                 {found.length === 0 ? (
-                  <p className="text-sm text-amber-300">DNS publishes no certificate for that address or its domain.</p>
+                  <p className="text-sm text-amber-300">Neither DNS nor LDAP publishes a certificate for that address or its domain.</p>
                 ) : (
                   found.map((c) => (
                     <div key={c.sha256} className="mt-2 rounded-lg border border-slate-800 p-3">

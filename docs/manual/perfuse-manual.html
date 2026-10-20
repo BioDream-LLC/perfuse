@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.17 · 0100316</p>
+<p class="version">v0.1.18 · 6c5a83e</p>
 <p class="version">Other languages: <a href="https://perfuse.health/manual/da/" hreflang="da" lang="da">Dansk</a> · <a href="https://perfuse.health/manual/de/" hreflang="de" lang="de">Deutsch</a> · <a href="https://perfuse.health/manual/es/" hreflang="es" lang="es">Español</a> · <a href="https://perfuse.health/manual/fi/" hreflang="fi" lang="fi">Suomi</a> · <a href="https://perfuse.health/manual/fr/" hreflang="fr" lang="fr">Français</a> · <a href="https://perfuse.health/manual/it/" hreflang="it" lang="it">Italiano</a> · <a href="https://perfuse.health/manual/nb/" hreflang="nb" lang="nb">Norsk bokmål</a> · <a href="https://perfuse.health/manual/nl/" hreflang="nl" lang="nl">Nederlands</a> · <a href="https://perfuse.health/manual/pl/" hreflang="pl" lang="pl">Polski</a> · <a href="https://perfuse.health/manual/pt/" hreflang="pt" lang="pt">Português</a> · <a href="https://perfuse.health/manual/sv/" hreflang="sv" lang="sv">Svenska</a></p>
 </header>
 <h2>Table of Contents</h2>
@@ -489,7 +489,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s8-7-dicom"><span class="num">8.7</span> DICOM</a></div>
 <div class="toc-d3"><a href="#s8-7-1-what-a-c-store-listener-accepts"><span class="num">8.7.1</span> What a C-STORE listener accepts</a></div>
 <div class="toc-d3"><a href="#s8-7-2-dicomweb"><span class="num">8.7.2</span> DICOMweb</a></div>
-<div class="toc-d2"><a href="#s8-8-ihe-document-sharing-xdsb-xca-mhd-pixm-and-pdqm"><span class="num">8.8</span> IHE document sharing: XDS.b, XCA, MHD, PIXm and PDQm</a></div>
+<div class="toc-d2"><a href="#s8-8-ihe-document-sharing-xdsb-xca-xdr-mhd-pixm-and-pdqm"><span class="num">8.8</span> IHE document sharing: XDS.b, XCA, XDR, MHD, PIXm and PDQm</a></div>
 <div class="toc-d2"><a href="#s8-9-direct-secure-messaging"><span class="num">8.9</span> Direct secure messaging</a></div>
 <div class="toc-d2"><a href="#s8-10-sql-on-fhir-views"><span class="num">8.10</span> SQL on FHIR views</a></div>
 <div class="toc-d2"><a href="#s8-11-digital-quality-measures"><span class="num">8.11</span> Digital quality measures</a></div>
@@ -936,6 +936,7 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s23-11-direct-destination"><span class="num">23.11</span> Direct Destination</a></div>
 <div class="toc-d3"><a href="#s23-11-1-to"><span class="num">23.11.1</span> to</a></div>
 <div class="toc-d3"><a href="#s23-11-2-recipient-certs-dir"><span class="num">23.11.2</span> recipient_certs_dir</a></div>
+<div class="toc-d3"><a href="#s23-11-3-ldap"><span class="num">23.11.3</span> ldap</a></div>
 <div class="toc-d2"><a href="#s23-12-document-destination"><span class="num">23.12</span> Document Destination</a></div>
 <div class="toc-d3"><a href="#s23-12-1-format"><span class="num">23.12.1</span> format</a></div>
 <div class="toc-d3"><a href="#s23-12-2-template"><span class="num">23.12.2</span> template</a></div>
@@ -1047,6 +1048,8 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s23-32-4-password"><span class="num">23.32.4</span> password</a></div>
 <div class="toc-d3"><a href="#s23-32-5-headers"><span class="num">23.32.5</span> headers</a></div>
 <div class="toc-d3"><a href="#s23-32-6-tls"><span class="num">23.32.6</span> tls</a></div>
+<div class="toc-d3"><a href="#s23-32-7-direct-from"><span class="num">23.32.7</span> direct_from</a></div>
+<div class="toc-d3"><a href="#s23-32-8-direct-to"><span class="num">23.32.8</span> direct_to</a></div>
 <div class="toc-d1"><a href="#s24-format-reference"><span class="num">24</span> Format Reference</a></div>
 <div class="toc-d2"><a href="#s24-1-attachments"><span class="num">24.1</span> Attachments</a></div>
 <div class="toc-d3"><a href="#s24-1-1-reassemble"><span class="num">24.1.1</span> reassemble</a></div>
@@ -1101,80 +1104,83 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s25-8-1-cert-file"><span class="num">25.8.1</span> cert_file</a></div>
 <div class="toc-d3"><a href="#s25-8-2-key-file"><span class="num">25.8.2</span> key_file</a></div>
 <div class="toc-d3"><a href="#s25-8-3-anchors-file"><span class="num">25.8.3</span> anchors_file</a></div>
-<div class="toc-d2"><a href="#s25-9-ecr-facility"><span class="num">25.9</span> ECR Facility</a></div>
-<div class="toc-d2"><a href="#s25-10-edifact-options"><span class="num">25.10</span> EDIFACT Options</a></div>
-<div class="toc-d3"><a href="#s25-10-1-acknowledge"><span class="num">25.10.1</span> acknowledge</a></div>
-<div class="toc-d2"><a href="#s25-11-email-o-auth"><span class="num">25.11</span> Email O Auth</a></div>
-<div class="toc-d3"><a href="#s25-11-1-client-secret"><span class="num">25.11.1</span> client_secret</a></div>
-<div class="toc-d3"><a href="#s25-11-2-refresh-token"><span class="num">25.11.2</span> refresh_token</a></div>
-<div class="toc-d2"><a href="#s25-12-fhir-auth"><span class="num">25.12</span> FHIR Auth</a></div>
-<div class="toc-d3"><a href="#s25-12-1-region"><span class="num">25.12.1</span> region</a></div>
-<div class="toc-d3"><a href="#s25-12-2-token-url"><span class="num">25.12.2</span> token_url</a></div>
-<div class="toc-d3"><a href="#s25-12-3-client-id"><span class="num">25.12.3</span> client_id</a></div>
-<div class="toc-d3"><a href="#s25-12-4-client-secret"><span class="num">25.12.4</span> client_secret</a></div>
-<div class="toc-d3"><a href="#s25-12-5-scope"><span class="num">25.12.5</span> scope</a></div>
-<div class="toc-d2"><a href="#s25-13-file-poll"><span class="num">25.13</span> File Poll</a></div>
-<div class="toc-d3"><a href="#s25-13-1-pattern"><span class="num">25.13.1</span> pattern</a></div>
-<div class="toc-d3"><a href="#s25-13-2-error-dir"><span class="num">25.13.2</span> error_dir</a></div>
-<div class="toc-d3"><a href="#s25-13-3-raw"><span class="num">25.13.3</span> raw</a></div>
-<div class="toc-d3"><a href="#s25-13-4-batch-size"><span class="num">25.13.4</span> batch_size</a></div>
-<div class="toc-d3"><a href="#s25-13-5-sort-by"><span class="num">25.13.5</span> sort_by</a></div>
-<div class="toc-d2"><a href="#s25-14-gcp-access"><span class="num">25.14</span> GCP Access</a></div>
-<div class="toc-d3"><a href="#s25-14-1-credentials-file"><span class="num">25.14.1</span> credentials_file</a></div>
-<div class="toc-d2"><a href="#s25-15-gcs-access"><span class="num">25.15</span> GCS Access</a></div>
-<div class="toc-d2"><a href="#s25-16-ibmmq-connection"><span class="num">25.16</span> IBMMQ Connection</a></div>
-<div class="toc-d3"><a href="#s25-16-1-username"><span class="num">25.16.1</span> username</a></div>
-<div class="toc-d3"><a href="#s25-16-2-password"><span class="num">25.16.2</span> password</a></div>
-<div class="toc-d3"><a href="#s25-16-3-timeout"><span class="num">25.16.3</span> timeout</a></div>
-<div class="toc-d2"><a href="#s25-17-kafka-sasl"><span class="num">25.17</span> Kafka SASL</a></div>
-<div class="toc-d3"><a href="#s25-17-1-mechanism"><span class="num">25.17.1</span> mechanism</a></div>
-<div class="toc-d3"><a href="#s25-17-2-password"><span class="num">25.17.2</span> password</a></div>
-<div class="toc-d2"><a href="#s25-18-mqtt-connection"><span class="num">25.18</span> MQTT Connection</a></div>
-<div class="toc-d3"><a href="#s25-18-1-client-id"><span class="num">25.18.1</span> client_id</a></div>
-<div class="toc-d3"><a href="#s25-18-2-username"><span class="num">25.18.2</span> username</a></div>
-<div class="toc-d3"><a href="#s25-18-3-password"><span class="num">25.18.3</span> password</a></div>
-<div class="toc-d3"><a href="#s25-18-4-timeout"><span class="num">25.18.4</span> timeout</a></div>
-<div class="toc-d2"><a href="#s25-19-ncpdp-options"><span class="num">25.19</span> NCPDP Options</a></div>
-<div class="toc-d3"><a href="#s25-19-1-transformations"><span class="num">25.19.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s25-20-pgp-receive"><span class="num">25.20</span> PGP Receive</a></div>
-<div class="toc-d3"><a href="#s25-20-1-decrypt-with"><span class="num">25.20.1</span> decrypt_with</a></div>
-<div class="toc-d3"><a href="#s25-20-2-passphrase"><span class="num">25.20.2</span> passphrase</a></div>
-<div class="toc-d3"><a href="#s25-20-3-verify-with"><span class="num">25.20.3</span> verify_with</a></div>
-<div class="toc-d3"><a href="#s25-20-4-pass-plain"><span class="num">25.20.4</span> pass_plain</a></div>
-<div class="toc-d2"><a href="#s25-21-pgp-send"><span class="num">25.21</span> PGP Send</a></div>
-<div class="toc-d3"><a href="#s25-21-1-encrypt-to"><span class="num">25.21.1</span> encrypt_to</a></div>
-<div class="toc-d3"><a href="#s25-21-2-sign-with"><span class="num">25.21.2</span> sign_with</a></div>
-<div class="toc-d3"><a href="#s25-21-3-passphrase"><span class="num">25.21.3</span> passphrase</a></div>
-<div class="toc-d2"><a href="#s25-22-queue-config"><span class="num">25.22</span> Queue Config</a></div>
-<div class="toc-d3"><a href="#s25-22-1-max-attempts"><span class="num">25.22.1</span> max_attempts</a></div>
-<div class="toc-d3"><a href="#s25-22-2-max-backoff"><span class="num">25.22.2</span> max_backoff</a></div>
-<div class="toc-d3"><a href="#s25-22-3-max-depth"><span class="num">25.22.3</span> max_depth</a></div>
-<div class="toc-d3"><a href="#s25-22-4-retain-hours"><span class="num">25.22.4</span> retain_hours</a></div>
-<div class="toc-d2"><a href="#s25-23-retry"><span class="num">25.23</span> Retry</a></div>
-<div class="toc-d3"><a href="#s25-23-1-attempts"><span class="num">25.23.1</span> attempts</a></div>
-<div class="toc-d3"><a href="#s25-23-2-backoff"><span class="num">25.23.2</span> backoff</a></div>
-<div class="toc-d2"><a href="#s25-24-script-options"><span class="num">25.24</span> Script Options</a></div>
-<div class="toc-d3"><a href="#s25-24-1-transformations"><span class="num">25.24.1</span> transformations</a></div>
-<div class="toc-d2"><a href="#s25-25-scripts"><span class="num">25.25</span> Scripts</a></div>
-<div class="toc-d3"><a href="#s25-25-1-filter"><span class="num">25.25.1</span> filter</a></div>
-<div class="toc-d3"><a href="#s25-25-2-transformer"><span class="num">25.25.2</span> transformer</a></div>
-<div class="toc-d3"><a href="#s25-25-3-preprocessor"><span class="num">25.25.3</span> preprocessor</a></div>
-<div class="toc-d3"><a href="#s25-25-4-deploy"><span class="num">25.25.4</span> deploy</a></div>
-<div class="toc-d3"><a href="#s25-25-5-undeploy"><span class="num">25.25.5</span> undeploy</a></div>
-<div class="toc-d3"><a href="#s25-25-6-postprocessor"><span class="num">25.25.6</span> postprocessor</a></div>
-<div class="toc-d3"><a href="#s25-25-7-language"><span class="num">25.25.7</span> language</a></div>
-<div class="toc-d3"><a href="#s25-25-8-timeout"><span class="num">25.25.8</span> timeout</a></div>
-<div class="toc-d3"><a href="#s25-25-9-include"><span class="num">25.25.9</span> include</a></div>
-<div class="toc-d3"><a href="#s25-25-10-file-roots"><span class="num">25.25.10</span> file_roots</a></div>
-<div class="toc-d3"><a href="#s25-25-11-allow"><span class="num">25.25.11</span> allow</a></div>
-<div class="toc-d2"><a href="#s25-26-shadow"><span class="num">25.26</span> Shadow</a></div>
-<div class="toc-d3"><a href="#s25-26-1-channel"><span class="num">25.26.1</span> channel</a></div>
-<div class="toc-d3"><a href="#s25-26-2-sample"><span class="num">25.26.2</span> sample</a></div>
-<div class="toc-d3"><a href="#s25-26-3-compare"><span class="num">25.26.3</span> compare</a></div>
-<div class="toc-d3"><a href="#s25-26-4-ignore"><span class="num">25.26.4</span> ignore</a></div>
-<div class="toc-d3"><a href="#s25-26-5-max-differences"><span class="num">25.26.5</span> max_differences</a></div>
-<div class="toc-d3"><a href="#s25-26-6-timeout"><span class="num">25.26.6</span> timeout</a></div>
-<div class="toc-d2"><a href="#s25-27-xds-code"><span class="num">25.27</span> XDS Code</a></div>
+<div class="toc-d2"><a href="#s25-9-direct-imap"><span class="num">25.9</span> Direct IMAP</a></div>
+<div class="toc-d3"><a href="#s25-9-1-move-to"><span class="num">25.9.1</span> move_to</a></div>
+<div class="toc-d2"><a href="#s25-10-direct-xdr"><span class="num">25.10</span> Direct XDR</a></div>
+<div class="toc-d2"><a href="#s25-11-ecr-facility"><span class="num">25.11</span> ECR Facility</a></div>
+<div class="toc-d2"><a href="#s25-12-edifact-options"><span class="num">25.12</span> EDIFACT Options</a></div>
+<div class="toc-d3"><a href="#s25-12-1-acknowledge"><span class="num">25.12.1</span> acknowledge</a></div>
+<div class="toc-d2"><a href="#s25-13-email-o-auth"><span class="num">25.13</span> Email O Auth</a></div>
+<div class="toc-d3"><a href="#s25-13-1-client-secret"><span class="num">25.13.1</span> client_secret</a></div>
+<div class="toc-d3"><a href="#s25-13-2-refresh-token"><span class="num">25.13.2</span> refresh_token</a></div>
+<div class="toc-d2"><a href="#s25-14-fhir-auth"><span class="num">25.14</span> FHIR Auth</a></div>
+<div class="toc-d3"><a href="#s25-14-1-region"><span class="num">25.14.1</span> region</a></div>
+<div class="toc-d3"><a href="#s25-14-2-token-url"><span class="num">25.14.2</span> token_url</a></div>
+<div class="toc-d3"><a href="#s25-14-3-client-id"><span class="num">25.14.3</span> client_id</a></div>
+<div class="toc-d3"><a href="#s25-14-4-client-secret"><span class="num">25.14.4</span> client_secret</a></div>
+<div class="toc-d3"><a href="#s25-14-5-scope"><span class="num">25.14.5</span> scope</a></div>
+<div class="toc-d2"><a href="#s25-15-file-poll"><span class="num">25.15</span> File Poll</a></div>
+<div class="toc-d3"><a href="#s25-15-1-pattern"><span class="num">25.15.1</span> pattern</a></div>
+<div class="toc-d3"><a href="#s25-15-2-error-dir"><span class="num">25.15.2</span> error_dir</a></div>
+<div class="toc-d3"><a href="#s25-15-3-raw"><span class="num">25.15.3</span> raw</a></div>
+<div class="toc-d3"><a href="#s25-15-4-batch-size"><span class="num">25.15.4</span> batch_size</a></div>
+<div class="toc-d3"><a href="#s25-15-5-sort-by"><span class="num">25.15.5</span> sort_by</a></div>
+<div class="toc-d2"><a href="#s25-16-gcp-access"><span class="num">25.16</span> GCP Access</a></div>
+<div class="toc-d3"><a href="#s25-16-1-credentials-file"><span class="num">25.16.1</span> credentials_file</a></div>
+<div class="toc-d2"><a href="#s25-17-gcs-access"><span class="num">25.17</span> GCS Access</a></div>
+<div class="toc-d2"><a href="#s25-18-ibmmq-connection"><span class="num">25.18</span> IBMMQ Connection</a></div>
+<div class="toc-d3"><a href="#s25-18-1-username"><span class="num">25.18.1</span> username</a></div>
+<div class="toc-d3"><a href="#s25-18-2-password"><span class="num">25.18.2</span> password</a></div>
+<div class="toc-d3"><a href="#s25-18-3-timeout"><span class="num">25.18.3</span> timeout</a></div>
+<div class="toc-d2"><a href="#s25-19-kafka-sasl"><span class="num">25.19</span> Kafka SASL</a></div>
+<div class="toc-d3"><a href="#s25-19-1-mechanism"><span class="num">25.19.1</span> mechanism</a></div>
+<div class="toc-d3"><a href="#s25-19-2-password"><span class="num">25.19.2</span> password</a></div>
+<div class="toc-d2"><a href="#s25-20-mqtt-connection"><span class="num">25.20</span> MQTT Connection</a></div>
+<div class="toc-d3"><a href="#s25-20-1-client-id"><span class="num">25.20.1</span> client_id</a></div>
+<div class="toc-d3"><a href="#s25-20-2-username"><span class="num">25.20.2</span> username</a></div>
+<div class="toc-d3"><a href="#s25-20-3-password"><span class="num">25.20.3</span> password</a></div>
+<div class="toc-d3"><a href="#s25-20-4-timeout"><span class="num">25.20.4</span> timeout</a></div>
+<div class="toc-d2"><a href="#s25-21-ncpdp-options"><span class="num">25.21</span> NCPDP Options</a></div>
+<div class="toc-d3"><a href="#s25-21-1-transformations"><span class="num">25.21.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s25-22-pgp-receive"><span class="num">25.22</span> PGP Receive</a></div>
+<div class="toc-d3"><a href="#s25-22-1-decrypt-with"><span class="num">25.22.1</span> decrypt_with</a></div>
+<div class="toc-d3"><a href="#s25-22-2-passphrase"><span class="num">25.22.2</span> passphrase</a></div>
+<div class="toc-d3"><a href="#s25-22-3-verify-with"><span class="num">25.22.3</span> verify_with</a></div>
+<div class="toc-d3"><a href="#s25-22-4-pass-plain"><span class="num">25.22.4</span> pass_plain</a></div>
+<div class="toc-d2"><a href="#s25-23-pgp-send"><span class="num">25.23</span> PGP Send</a></div>
+<div class="toc-d3"><a href="#s25-23-1-encrypt-to"><span class="num">25.23.1</span> encrypt_to</a></div>
+<div class="toc-d3"><a href="#s25-23-2-sign-with"><span class="num">25.23.2</span> sign_with</a></div>
+<div class="toc-d3"><a href="#s25-23-3-passphrase"><span class="num">25.23.3</span> passphrase</a></div>
+<div class="toc-d2"><a href="#s25-24-queue-config"><span class="num">25.24</span> Queue Config</a></div>
+<div class="toc-d3"><a href="#s25-24-1-max-attempts"><span class="num">25.24.1</span> max_attempts</a></div>
+<div class="toc-d3"><a href="#s25-24-2-max-backoff"><span class="num">25.24.2</span> max_backoff</a></div>
+<div class="toc-d3"><a href="#s25-24-3-max-depth"><span class="num">25.24.3</span> max_depth</a></div>
+<div class="toc-d3"><a href="#s25-24-4-retain-hours"><span class="num">25.24.4</span> retain_hours</a></div>
+<div class="toc-d2"><a href="#s25-25-retry"><span class="num">25.25</span> Retry</a></div>
+<div class="toc-d3"><a href="#s25-25-1-attempts"><span class="num">25.25.1</span> attempts</a></div>
+<div class="toc-d3"><a href="#s25-25-2-backoff"><span class="num">25.25.2</span> backoff</a></div>
+<div class="toc-d2"><a href="#s25-26-script-options"><span class="num">25.26</span> Script Options</a></div>
+<div class="toc-d3"><a href="#s25-26-1-transformations"><span class="num">25.26.1</span> transformations</a></div>
+<div class="toc-d2"><a href="#s25-27-scripts"><span class="num">25.27</span> Scripts</a></div>
+<div class="toc-d3"><a href="#s25-27-1-filter"><span class="num">25.27.1</span> filter</a></div>
+<div class="toc-d3"><a href="#s25-27-2-transformer"><span class="num">25.27.2</span> transformer</a></div>
+<div class="toc-d3"><a href="#s25-27-3-preprocessor"><span class="num">25.27.3</span> preprocessor</a></div>
+<div class="toc-d3"><a href="#s25-27-4-deploy"><span class="num">25.27.4</span> deploy</a></div>
+<div class="toc-d3"><a href="#s25-27-5-undeploy"><span class="num">25.27.5</span> undeploy</a></div>
+<div class="toc-d3"><a href="#s25-27-6-postprocessor"><span class="num">25.27.6</span> postprocessor</a></div>
+<div class="toc-d3"><a href="#s25-27-7-language"><span class="num">25.27.7</span> language</a></div>
+<div class="toc-d3"><a href="#s25-27-8-timeout"><span class="num">25.27.8</span> timeout</a></div>
+<div class="toc-d3"><a href="#s25-27-9-include"><span class="num">25.27.9</span> include</a></div>
+<div class="toc-d3"><a href="#s25-27-10-file-roots"><span class="num">25.27.10</span> file_roots</a></div>
+<div class="toc-d3"><a href="#s25-27-11-allow"><span class="num">25.27.11</span> allow</a></div>
+<div class="toc-d2"><a href="#s25-28-shadow"><span class="num">25.28</span> Shadow</a></div>
+<div class="toc-d3"><a href="#s25-28-1-channel"><span class="num">25.28.1</span> channel</a></div>
+<div class="toc-d3"><a href="#s25-28-2-sample"><span class="num">25.28.2</span> sample</a></div>
+<div class="toc-d3"><a href="#s25-28-3-compare"><span class="num">25.28.3</span> compare</a></div>
+<div class="toc-d3"><a href="#s25-28-4-ignore"><span class="num">25.28.4</span> ignore</a></div>
+<div class="toc-d3"><a href="#s25-28-5-max-differences"><span class="num">25.28.5</span> max_differences</a></div>
+<div class="toc-d3"><a href="#s25-28-6-timeout"><span class="num">25.28.6</span> timeout</a></div>
+<div class="toc-d2"><a href="#s25-29-xds-code"><span class="num">25.29</span> XDS Code</a></div>
 <div class="toc-d1"><a href="#s26-how-each-component-works"><span class="num">26</span> How Each Component Works</a></div>
 <div class="toc-d2"><a href="#s26-1-fhir"><span class="num">26.1</span> fhir</a></div>
 <div class="toc-d2"><a href="#s26-2-hl7"><span class="num">26.2</span> hl7</a></div>
@@ -1249,52 +1255,53 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s26-71-pas278"><span class="num">26.71</span> pas278</a></div>
 <div class="toc-d2"><a href="#s26-72-pdf"><span class="num">26.72</span> pdf</a></div>
 <div class="toc-d2"><a href="#s26-73-pgp"><span class="num">26.73</span> pgp</a></div>
-<div class="toc-d2"><a href="#s26-74-priorauth"><span class="num">26.74</span> priorauth</a></div>
-<div class="toc-d2"><a href="#s26-75-privacy"><span class="num">26.75</span> privacy</a></div>
-<div class="toc-d2"><a href="#s26-76-publichealth"><span class="num">26.76</span> publichealth</a></div>
-<div class="toc-d2"><a href="#s26-77-published"><span class="num">26.77</span> published</a></div>
-<div class="toc-d2"><a href="#s26-78-queue"><span class="num">26.78</span> queue</a></div>
-<div class="toc-d2"><a href="#s26-79-residency"><span class="num">26.79</span> residency</a></div>
-<div class="toc-d2"><a href="#s26-80-rtpb"><span class="num">26.80</span> rtpb</a></div>
-<div class="toc-d2"><a href="#s26-81-s3put"><span class="num">26.81</span> s3put</a></div>
-<div class="toc-d2"><a href="#s26-82-saml"><span class="num">26.82</span> saml</a></div>
-<div class="toc-d2"><a href="#s26-83-scim"><span class="num">26.83</span> scim</a></div>
-<div class="toc-d2"><a href="#s26-84-script"><span class="num">26.84</span> script</a></div>
-<div class="toc-d2"><a href="#s26-85-settings"><span class="num">26.85</span> settings</a></div>
-<div class="toc-d2"><a href="#s26-86-sftpconn"><span class="num">26.86</span> sftpconn</a></div>
-<div class="toc-d2"><a href="#s26-87-shadow"><span class="num">26.87</span> shadow</a></div>
-<div class="toc-d2"><a href="#s26-88-shl"><span class="num">26.88</span> shl</a></div>
-<div class="toc-d2"><a href="#s26-89-smartauth"><span class="num">26.89</span> smartauth</a></div>
-<div class="toc-d2"><a href="#s26-90-snmp"><span class="num">26.90</span> snmp</a></div>
-<div class="toc-d2"><a href="#s26-91-soap"><span class="num">26.91</span> soap</a></div>
-<div class="toc-d2"><a href="#s26-92-sof"><span class="num">26.92</span> sof</a></div>
-<div class="toc-d2"><a href="#s26-93-sqldb"><span class="num">26.93</span> sqldb</a></div>
-<div class="toc-d2"><a href="#s26-94-sqlitedb"><span class="num">26.94</span> sqlitedb</a></div>
-<div class="toc-d2"><a href="#s26-95-steps"><span class="num">26.95</span> steps</a></div>
-<div class="toc-d2"><a href="#s26-96-stomp"><span class="num">26.96</span> stomp</a></div>
-<div class="toc-d2"><a href="#s26-97-store"><span class="num">26.97</span> store</a></div>
-<div class="toc-d2"><a href="#s26-98-tefca"><span class="num">26.98</span> tefca</a></div>
-<div class="toc-d2"><a href="#s26-99-tenant"><span class="num">26.99</span> tenant</a></div>
-<div class="toc-d2"><a href="#s26-100-terminology"><span class="num">26.100</span> terminology</a></div>
-<div class="toc-d2"><a href="#s26-101-tlsconf"><span class="num">26.101</span> tlsconf</a></div>
-<div class="toc-d2"><a href="#s26-102-tomirth"><span class="num">26.102</span> tomirth</a></div>
-<div class="toc-d2"><a href="#s26-103-trace"><span class="num">26.103</span> trace</a></div>
-<div class="toc-d2"><a href="#s26-104-transform"><span class="num">26.104</span> transform</a></div>
-<div class="toc-d2"><a href="#s26-105-translate"><span class="num">26.105</span> translate</a></div>
-<div class="toc-d2"><a href="#s26-106-udap"><span class="num">26.106</span> udap</a></div>
-<div class="toc-d2"><a href="#s26-107-v2fhir"><span class="num">26.107</span> v2fhir</a></div>
-<div class="toc-d2"><a href="#s26-108-vcs"><span class="num">26.108</span> vcs</a></div>
-<div class="toc-d2"><a href="#s26-109-vfs"><span class="num">26.109</span> vfs</a></div>
-<div class="toc-d2"><a href="#s26-110-vpn"><span class="num">26.110</span> vpn</a></div>
-<div class="toc-d2"><a href="#s26-111-web"><span class="num">26.111</span> web</a></div>
-<div class="toc-d2"><a href="#s26-112-webauthn"><span class="num">26.112</span> webauthn</a></div>
-<div class="toc-d2"><a href="#s26-113-winservice"><span class="num">26.113</span> winservice</a></div>
-<div class="toc-d2"><a href="#s26-114-x12"><span class="num">26.114</span> x12</a></div>
-<div class="toc-d2"><a href="#s26-115-x12xml"><span class="num">26.115</span> x12xml</a></div>
-<div class="toc-d2"><a href="#s26-116-xds"><span class="num">26.116</span> xds</a></div>
-<div class="toc-d2"><a href="#s26-117-xmldsig"><span class="num">26.117</span> xmldsig</a></div>
-<div class="toc-d2"><a href="#s26-118-xtree"><span class="num">26.118</span> xtree</a></div>
-<div class="toc-d2"><a href="#s26-119-pas"><span class="num">26.119</span> pas</a></div>
+<div class="toc-d2"><a href="#s26-74-pixv3"><span class="num">26.74</span> pixv3</a></div>
+<div class="toc-d2"><a href="#s26-75-priorauth"><span class="num">26.75</span> priorauth</a></div>
+<div class="toc-d2"><a href="#s26-76-privacy"><span class="num">26.76</span> privacy</a></div>
+<div class="toc-d2"><a href="#s26-77-publichealth"><span class="num">26.77</span> publichealth</a></div>
+<div class="toc-d2"><a href="#s26-78-published"><span class="num">26.78</span> published</a></div>
+<div class="toc-d2"><a href="#s26-79-queue"><span class="num">26.79</span> queue</a></div>
+<div class="toc-d2"><a href="#s26-80-residency"><span class="num">26.80</span> residency</a></div>
+<div class="toc-d2"><a href="#s26-81-rtpb"><span class="num">26.81</span> rtpb</a></div>
+<div class="toc-d2"><a href="#s26-82-s3put"><span class="num">26.82</span> s3put</a></div>
+<div class="toc-d2"><a href="#s26-83-saml"><span class="num">26.83</span> saml</a></div>
+<div class="toc-d2"><a href="#s26-84-scim"><span class="num">26.84</span> scim</a></div>
+<div class="toc-d2"><a href="#s26-85-script"><span class="num">26.85</span> script</a></div>
+<div class="toc-d2"><a href="#s26-86-settings"><span class="num">26.86</span> settings</a></div>
+<div class="toc-d2"><a href="#s26-87-sftpconn"><span class="num">26.87</span> sftpconn</a></div>
+<div class="toc-d2"><a href="#s26-88-shadow"><span class="num">26.88</span> shadow</a></div>
+<div class="toc-d2"><a href="#s26-89-shl"><span class="num">26.89</span> shl</a></div>
+<div class="toc-d2"><a href="#s26-90-smartauth"><span class="num">26.90</span> smartauth</a></div>
+<div class="toc-d2"><a href="#s26-91-snmp"><span class="num">26.91</span> snmp</a></div>
+<div class="toc-d2"><a href="#s26-92-soap"><span class="num">26.92</span> soap</a></div>
+<div class="toc-d2"><a href="#s26-93-sof"><span class="num">26.93</span> sof</a></div>
+<div class="toc-d2"><a href="#s26-94-sqldb"><span class="num">26.94</span> sqldb</a></div>
+<div class="toc-d2"><a href="#s26-95-sqlitedb"><span class="num">26.95</span> sqlitedb</a></div>
+<div class="toc-d2"><a href="#s26-96-steps"><span class="num">26.96</span> steps</a></div>
+<div class="toc-d2"><a href="#s26-97-stomp"><span class="num">26.97</span> stomp</a></div>
+<div class="toc-d2"><a href="#s26-98-store"><span class="num">26.98</span> store</a></div>
+<div class="toc-d2"><a href="#s26-99-tefca"><span class="num">26.99</span> tefca</a></div>
+<div class="toc-d2"><a href="#s26-100-tenant"><span class="num">26.100</span> tenant</a></div>
+<div class="toc-d2"><a href="#s26-101-terminology"><span class="num">26.101</span> terminology</a></div>
+<div class="toc-d2"><a href="#s26-102-tlsconf"><span class="num">26.102</span> tlsconf</a></div>
+<div class="toc-d2"><a href="#s26-103-tomirth"><span class="num">26.103</span> tomirth</a></div>
+<div class="toc-d2"><a href="#s26-104-trace"><span class="num">26.104</span> trace</a></div>
+<div class="toc-d2"><a href="#s26-105-transform"><span class="num">26.105</span> transform</a></div>
+<div class="toc-d2"><a href="#s26-106-translate"><span class="num">26.106</span> translate</a></div>
+<div class="toc-d2"><a href="#s26-107-udap"><span class="num">26.107</span> udap</a></div>
+<div class="toc-d2"><a href="#s26-108-v2fhir"><span class="num">26.108</span> v2fhir</a></div>
+<div class="toc-d2"><a href="#s26-109-vcs"><span class="num">26.109</span> vcs</a></div>
+<div class="toc-d2"><a href="#s26-110-vfs"><span class="num">26.110</span> vfs</a></div>
+<div class="toc-d2"><a href="#s26-111-vpn"><span class="num">26.111</span> vpn</a></div>
+<div class="toc-d2"><a href="#s26-112-web"><span class="num">26.112</span> web</a></div>
+<div class="toc-d2"><a href="#s26-113-webauthn"><span class="num">26.113</span> webauthn</a></div>
+<div class="toc-d2"><a href="#s26-114-winservice"><span class="num">26.114</span> winservice</a></div>
+<div class="toc-d2"><a href="#s26-115-x12"><span class="num">26.115</span> x12</a></div>
+<div class="toc-d2"><a href="#s26-116-x12xml"><span class="num">26.116</span> x12xml</a></div>
+<div class="toc-d2"><a href="#s26-117-xds"><span class="num">26.117</span> xds</a></div>
+<div class="toc-d2"><a href="#s26-118-xmldsig"><span class="num">26.118</span> xmldsig</a></div>
+<div class="toc-d2"><a href="#s26-119-xtree"><span class="num">26.119</span> xtree</a></div>
+<div class="toc-d2"><a href="#s26-120-pas"><span class="num">26.120</span> pas</a></div>
 <div class="toc-d1"><a href="#s27-index-of-configuration-keys"><span class="num">27</span> Index of Configuration Keys</a></div>
 <div class="toc-d2"><a href="#s27-1-all-keys"><span class="num">27.1</span> All keys</a></div>
 </nav>
@@ -2325,7 +2332,7 @@ destinations:
 <h4 id="pointing-ohif-at-the-archive">Pointing OHIF at the archive</h4>
 <p>Use a DICOMweb data source with <code>qidoRoot</code> and <code>wadoRoot</code> set to the archive&#39;s address (the <strong>Imaging</strong> screen shows it, with the whole data-source block to copy), <code>wadoUriRoot</code> to that address followed by <code>/wado</code>, <code>imageRendering</code> and <code>thumbnailRendering</code> to <code>wadors</code>, and <code>supportsFuzzyMatching</code> true. A viewer on another origin needs that origin in <code>-dicomweb-cors</code> (<strong>Browser origins allowed to call it</strong>), and its requests need an API token in the <code>Authorization</code> header, because a browser on another origin does not send the console&#39;s session cookie. Serving OHIF from the same origin through a reverse proxy avoids both.</p>
 <p>Tested against Orthanc with its DICOMweb plugin, in both directions: the destination stores into Orthanc, and Orthanc&#39;s DICOMweb client searches Perfuse&#39;s archive and retrieves a study byte-identical to the one stored. OHIF 3 lists the archive&#39;s studies and displays their frames with the settings above. OHIF and several other clients send <code>type=</code> unquoted in the Accept and Content-Type headers, which RFC 2045 does not allow; Perfuse accepts it.</p>
-<h3 id="s8-8-ihe-document-sharing-xdsb-xca-mhd-pixm-and-pdqm"><span class="num">8.8</span> IHE document sharing: XDS.b, XCA, MHD, PIXm and PDQm</h3>
+<h3 id="s8-8-ihe-document-sharing-xdsb-xca-xdr-mhd-pixm-and-pdqm"><span class="num">8.8</span> IHE document sharing: XDS.b, XCA, XDR, MHD, PIXm and PDQm</h3>
 <p>Clinical documents shared between organisations the way health information exchanges, Carequality and eHealth Exchange do: a repository holds them, a registry indexes their metadata, and a community answers other communities&#39; queries through a gateway. Start the server with <code>-xds REPOSITORY-OID</code> (<strong>Settings › Data › Document sharing</strong>) and it is all three, in this server&#39;s database, at these addresses, each taking an API token as a bearer token (the viewer role to query and retrieve, the operator role to submit; most affinity domains add mutual TLS in front):</p>
 <table>
 <thead><tr><th>Address</th><th>Actor</th><th>Transactions</th></tr></thead>
@@ -2335,6 +2342,8 @@ destinations:
 <tr><td><code>/xca/gateway</code></td><td>XCA Responding Gateway</td><td>ITI-38 Cross Gateway Query, ITI-39 Cross Gateway Retrieve, with <code>-xds-home-community urn:oid:...</code></td></tr>
 <tr><td><code>/mhd</code></td><td>MHD Document Recipient and Responder</td><td>ITI-65 Provide Document Bundle, ITI-66 Find Lists, ITI-67 Find Document References, ITI-68 Retrieve Document</td></tr>
 <tr><td><code>/mhd/Patient</code></td><td>PDQm Supplier and PIXm Manager</td><td>ITI-78 Patient Demographics Query, ITI-83 <code>Patient/$ihe-pix</code>, from the FHIR store&#39;s Patients</td></tr>
+<tr><td><code>/pixv3</code></td><td>PIX Manager (HL7 v3)</td><td>ITI-44 Patient Identity Feed HL7 V3, ITI-45 PIXV3 Query, from the patient index (<code>-mpi</code>)</td></tr>
+<tr><td><code>/pdqv3</code></td><td>PDQ Supplier (HL7 v3)</td><td>ITI-47 PDQV3 Query, with continuation and cancel, from the patient index</td></tr>
 </tbody>
 </table>
 <p>The SOAP transactions are SOAP 1.2 with WS-Addressing, and MTOM/XOP where documents travel (a document inline as base64 is accepted too). A failed transaction is answered with a RegistryResponse carrying IHE&#39;s error codes, not a SOAP fault: <code>XDSDuplicateUniqueIdInRegistry</code>, <code>XDSNonIdenticalHash</code>, <code>XDSPatientIdDoesNotMatch</code>, <code>XDSMissingDocument</code>, <code>XDSRegistryMetadataError</code> (with the field that is missing), <code>XDSStoredQueryMissingParam</code>, <code>XDSUnknownStoredQuery</code>, <code>XDSUnknownRepositoryId</code>, <code>XDSUnknownCommunity</code>, and <code>UnresolvedReferenceException</code>. A replacement (<code>RPLC</code>, <code>XFRM_RPLC</code>) deprecates the document it replaces, which then answers only queries asking for deprecated documents; <code>APND</code>, <code>XFRM</code> and <code>signs</code> are kept as associations. Hash and size are computed by the repository and checked against what the submission says. On-demand documents and metadata update (ITI-57) are not supported, and a submission asking for them is refused with the reason.</p>
@@ -2350,11 +2359,22 @@ destinations:
       facility_type: { code: &#34;225732001&#34;, scheme: 2.16.840.1.113883.6.96, display: Community hospital }
       practice_setting: { code: &#34;394802001&#34;, scheme: 2.16.840.1.113883.6.96, display: General medicine }
       tls: { enabled: true, cert_file: /etc/perfuse/hie.crt, key_file: /etc/perfuse/hie.key }</code></pre>
+<p><strong>XDR.</strong> Add <code>direct_from</code> (your Direct address) and <code>direct_to</code> (the recipients&#39;) and the same destination sends XDR as Direct&#39;s transport, as the Direct Project&#39;s *XDR and XDM for Direct Messaging* describes it: a Direct addressing block (<code>urn:direct:addressing</code>) in the SOAP header names sender and recipients, and the submission&#39;s <code>intendedRecipient</code> names each recipient (<code>||^^Internet^address</code>). Point <code>url</code> at the recipient&#39;s XDR endpoint or a HISP that takes XDR. XDR travels over TLS, usually with a client certificate (<code>tls</code>), and is not S/MIME. A <code>direct</code> source takes XDR too (see Direct below).</p>
+<pre class="code lang-yaml"><code>    xds:
+      url: https://xdr.hisp.example/xdr
+      source_id: 1.2.840.114350.1.13.99
+      patient_domain: 1.2.840.114350.1.13.99.2.7.5.737384.14
+      facility_type: { code: &#34;225732001&#34;, scheme: 2.16.840.1.113883.6.96, display: Community hospital }
+      practice_setting: { code: &#34;394802001&#34;, scheme: 2.16.840.1.113883.6.96, display: General medicine }
+      direct_from: referrals@direct.hospital.example
+      direct_to: [&#34;intake@direct.clinic.example&#34;]
+      tls: { enabled: true, cert_file: /etc/perfuse/xdr.crt, key_file: /etc/perfuse/xdr.key }</code></pre>
+<p><strong>PIX and PDQ in HL7 version 3.</strong> With the patient index on (<code>-mpi</code>), <code>/pixv3</code> is a PIX Manager and <code>/pdqv3</code> a PDQ Supplier over SOAP 1.2, for the hospitals and exchanges that still speak IHE&#39;s v3 profiles. A source feeds patients with ITI-44 (record added <code>PRPA_IN201301UV02</code>, revised <code>PRPA_IN201302UV02</code>, duplicates resolved <code>PRPA_IN201304UV02</code>): the patient&#39;s first identifier is its record, the others and those in <code>asOtherIDs</code> are identifiers it carries, and a merge folds the prior record&#39;s identifier into the surviving one, as an HL7 v2 A40 does. ITI-45 (<code>PRPA_IN201309UV02</code>) answers the other identifiers of the person holding one, narrowed by <code>dataSource</code>, in <code>Patient.id</code>; the queried identifier comes back only in the repeated query. ITI-47 (<code>PRPA_IN201305UV02</code>) matches demographics (name, gender, birth time, identifier, address, telecom) with the index&#39;s own matcher, <code>minimumDegreeMatch</code> as a score out of 100, <code>otherIDsScopingOrganization</code> limiting the domains, and <code>initialQuantity</code> paging the answer: the rest comes with <code>QUQI_IN000003UV01</code> for ten minutes, or is dropped by its cancel. The answers follow the transactions&#39; cases: an unknown patient or domain is <code>AE</code> with error 204 and the location of the parameter, a known patient with nothing in the domains asked for is <code>NF</code>. v3 names an authority by OID only, so an identifier whose system is a URL with no OID behind it (some national numbers) is left out of v3 answers and given over FHIR; set the enterprise identifier&#39;s system to an OID (<code>urn:oid:...</code>, in the index settings) for the EUID and the custodian to appear. The viewer role queries and the operator role feeds; every transaction is audited with an identifier, never a name. A bare v3 message posted as <code>application/xml</code> is answered in kind, which is handy for testing by hand.</p>
 <p><strong>Exchange › Document sharing</strong> shows what the registry holds and where it is reached, finds a patient&#39;s documents in this registry or another (a registry&#39;s ITI-18 or a gateway&#39;s ITI-38), downloads one, and publishes a CDA document by hand with the metadata a destination would give it.</p>
-<p><strong>Verified</strong> against the NIST XDS Toolkit 7.13.0, the IHE reference implementation: Perfuse&#39;s ITI-41, ITI-18 and ITI-43 against its Registry/Repository simulator (accepted with no validation errors, the document retrieved byte-identical), and its Initiating Gateway simulator querying and retrieving from Perfuse&#39;s Responding Gateway over XCA, with no errors in its log. Every SOAP message Perfuse writes validates against the ebXML Registry 3.0 and XDS.b schemas, and the MHD DocumentReference and SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. Not yet checked against Gazelle or at a Connectathon, and PIX/PDQ V3 (ITI-44, ITI-45, ITI-47 over SOAP) is not built.</p>
+<p><strong>Verified</strong> against the NIST XDS Toolkit 7.13.0, the IHE reference implementation: Perfuse&#39;s ITI-41, ITI-18 and ITI-43 against its Registry/Repository simulator (accepted with no validation errors, the document retrieved byte-identical), and its Initiating Gateway simulator querying and retrieving from Perfuse&#39;s Responding Gateway over XCA, with no errors in its log. Every SOAP message Perfuse writes validates against the ebXML Registry 3.0 and XDS.b schemas, and the MHD DocumentReference and SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. XDR from an <code>xds</code> destination with a Direct addressing block was accepted by the toolkit&#39;s Document Recipient simulator, whose metadata validation found the one defect described in docs/verification.md. The PIX and PDQ v3 answers validate against IHE&#39;s HL7 V3 schemas (NE2008 multicacheschemas), and IHE&#39;s own sample messages (the ITI-44 feed, merge, ITI-45 query, ITI-47 query, continuation and cancel) are answered as their published responses show. Not yet checked against an independent PIX or PDQ v3 implementation, Gazelle or a Connectathon.</p>
 <h3 id="s8-9-direct-secure-messaging"><span class="num">8.9</span> Direct secure messaging</h3>
-<p>Direct is how US providers send each other referrals, summaries and results by secure e-mail: every message is signed with the sender&#39;s certificate and encrypted to the recipient&#39;s (S/MIME), and travels between HISPs (Health Information Service Providers) that issue the addresses and vouch for them. Perfuse is the <strong>edge system</strong> beside your HISP, not a HISP: the HISP issues your address, its certificate and its key, and you keep its trust bundle (such as DirectTrust&#39;s). It follows the Direct Applicability Statement for Secure Health Transport 1.2, the Implementation Guide for Delivery Notification, and IHE XDM (ITI TF-1 Annex 15) for documents with metadata.</p>
-<p><strong>Sending.</strong> A <code>direct</code> destination signs each message as your address (SHA-256, RSA), encrypts it to every recipient&#39;s certificate and your own (AES-256-CBC, RSA key transport), and submits it to the HISP by SMTP with STARTTLS required. The message travels as an attachment named by its content (<code>document.xml</code>, <code>message.hl7</code>, <code>resource.json</code>), or, with <code>xdm: true</code>, a CDA document travels as an IHE XDM package (<code>IHE_XDM/SUBSET01/METADATA.XML</code> with the document and its hash and size, plus <code>INDEX.HTM</code> and <code>README.TXT</code>) that receiving EHRs import with its metadata. Recipient certificates come from the <strong>Direct address book</strong> (below), then from DNS, where Direct publishes them as CERT records (RFC 4398): under the address with its @ made a dot, else under its domain. A certificate is used only when it is for the address or its domain and chains to one of your anchors; a recipient with no such certificate is a failed delivery, never plain e-mail. <code>to</code> and <code>subject</code> take field references such as <code>{PV1-8.1}</code>, and <code>request_mdn</code> asks the recipient for a delivery notification.</p>
+<p>Direct is how US providers send each other referrals, summaries and results by secure e-mail: every message is signed with the sender&#39;s certificate and encrypted to the recipient&#39;s (S/MIME), and travels between HISPs (Health Information Service Providers) that issue the addresses and vouch for them. Perfuse is the <strong>edge system</strong> beside your HISP, not a HISP: the HISP issues your address, its certificate and its key, and you keep its trust bundle (such as DirectTrust&#39;s). It follows the Direct Applicability Statement for Secure Health Transport 1.2, the Implementation Guide for Delivery Notification, IHE XDM (ITI TF-1 Annex 15) for documents with metadata, the Certificate Discovery for Direct Project Implementation Guide (DNS and LDAP), and XDR and XDM for Direct Messaging.</p>
+<p><strong>Sending.</strong> A <code>direct</code> destination signs each message as your address (SHA-256, RSA), encrypts it to every recipient&#39;s certificate and your own (AES-256-CBC, RSA key transport), and submits it to the HISP by SMTP with STARTTLS required. The message travels as an attachment named by its content (<code>document.xml</code>, <code>message.hl7</code>, <code>resource.json</code>), or, with <code>xdm: true</code>, a CDA document travels as an IHE XDM package (<code>IHE_XDM/SUBSET01/METADATA.XML</code> with the document and its hash and size, plus <code>INDEX.HTM</code> and <code>README.TXT</code>) that receiving EHRs import with its metadata. Recipient certificates come from the <strong>Direct address book</strong> (below), then from DNS, where Direct publishes them as CERT records (RFC 4398): under the address with its @ made a dot, else under its domain; then from the recipient domain&#39;s LDAP directory, which its <code>_ldap._tcp</code> SRV record names (or <code>ldap: host:port</code>; <code>ldap: off</code> never asks one): each naming context is searched anonymously for an entry whose <code>mail</code> is the address, then the domain, and its <code>userSMIMECertificate</code> or <code>userCertificate</code> read. A certificate is used only when it is for the address or its domain and chains to one of your anchors; a recipient with no such certificate is a failed delivery, never plain e-mail. <code>to</code> and <code>subject</code> take field references such as <code>{PV1-8.1}</code>, and <code>request_mdn</code> asks the recipient for a delivery notification.</p>
 <pre class="code lang-yaml"><code>destinations:
   - name: referrals
     type: direct
@@ -2384,8 +2404,20 @@ destinations:
     tls_cert: /etc/perfuse/tls/server.crt
     tls_key: /etc/perfuse/tls/server.key
     smtp_host: smtp.hisp.example:587</code></pre>
-<p><strong>Exchange › Direct</strong> lists the Direct addresses your channels send and receive as, with their certificates, expiry and anchors; keeps the <strong>address book</strong> of correspondents (name, organisation, notes and certificate, pasted from their HISP or found in DNS, and refused when it is not for that address or domain); and looks up an address&#39;s certificates in DNS without saving them. The book is the directory <code>direct-certs</code> beside the database, one PEM file per address or domain, which a destination reads unless it names its own <code>recipient_certs_dir</code>.</p>
-<p><strong>Verified</strong> against OpenSSL 4.0&#39;s <code>cms</code> and <code>smime</code> in both directions: what Perfuse signs and encrypts OpenSSL verifies and decrypts (PKCS#1 v1.5 and OAEP key transport), and Perfuse opens what OpenSSL signs and encrypts (AES-128 and AES-256). A message made with <code>openssl smime</code> and delivered over SMTP is received, opened and stored by a channel, and one Perfuse sends a message to another through a HISP stand-in, which answers with an MDN the sender opens. Not yet tested against an accredited HISP or the ONC Edge Testing Tool; IMAP collection from a HISP mailbox, XDR (Direct over SOAP), and LDAP certificate discovery are not built.</p>
+<p><strong>From the HISP&#39;s mailbox.</strong> A HISP that keeps mail rather than delivering it gives the address an IMAP mailbox: <code>imap</code> reads it (TLS or STARTTLS, every poll a fresh session), opens each message as above, moves what was taken to <code>move_to</code> (or deletes it) and what could not be opened to <code>error_folder</code>, so nothing is read twice. <code>listen</code> may then be left out.</p>
+<pre class="code lang-yaml"><code>    imap:
+      host: imap.hisp.example
+      username: intake@direct.clinic.example
+      password: ${DIRECT_MAILBOX_PASSWORD}
+      move_to: Processed</code></pre>
+<p><strong>XDR.</strong> <code>xdr</code> takes XDR at <code>/xdr</code> on its own HTTPS address, as a HISP sends Direct it converted to SOAP or a partner sends point to point: an ITI-41 Provide and Register request whose documents each become a message. A submission whose Direct addressing block names another address is refused, and one the channel does not take is answered with a RegistryResponse failure saying why. <code>client_ca_file</code> requires a client certificate from those authorities. XDR is protected by TLS, not S/MIME, so a source that only takes XDR needs the address but not its certificate, key or anchors.</p>
+<pre class="code lang-yaml"><code>    xdr:
+      listen: 0.0.0.0:8445
+      tls_cert: /etc/perfuse/tls/server.crt
+      tls_key: /etc/perfuse/tls/server.key
+      client_ca_file: /etc/perfuse/direct/hisp-clients.pem</code></pre>
+<p><strong>Exchange › Direct</strong> lists the Direct addresses your channels send and receive as, with their certificates, expiry and anchors; keeps the <strong>address book</strong> of correspondents (name, organisation, notes and certificate, pasted from their HISP or found in DNS or LDAP, and refused when it is not for that address or domain); and looks up an address&#39;s certificates in DNS or LDAP without saving them. The book is the directory <code>direct-certs</code> beside the database, one PEM file per address or domain, which a destination reads unless it names its own <code>recipient_certs_dir</code>.</p>
+<p><strong>Verified</strong> against OpenSSL 4.0&#39;s <code>cms</code> and <code>smime</code> in both directions: what Perfuse signs and encrypts OpenSSL verifies and decrypts (PKCS#1 v1.5 and OAEP key transport), and Perfuse opens what OpenSSL signs and encrypts (AES-128 and AES-256). A message made with <code>openssl smime</code> and delivered over SMTP is received, opened and stored by a channel, and one Perfuse sends a message to another through a HISP stand-in, which answers with an MDN the sender opens. Certificates are found in OpenLDAP 2.4 (address-bound and domain-bound, written by OpenLDAP&#39;s own <code>ldapadd</code>); a Direct message is read from a GreenMail IMAP mailbox and opened, and one that is not Direct moved to the error folder; XDR from an <code>xds</code> destination is taken by a <code>direct</code> source and refused when addressed to someone else, and accepted by the NIST XDS Toolkit&#39;s Document Recipient. Not yet tested against an accredited HISP or the ONC Edge Testing Tool.</p>
 <h3 id="s8-10-sql-on-fhir-views"><span class="num">8.10</span> SQL on FHIR views</h3>
 <p>A <strong>ViewDefinition</strong> (HL7 SQL on FHIR v2) turns each FHIR resource of one type into rows of named columns, each column a FHIRPath expression, so FHIR data can be read as tables by DuckDB, Athena, Spark, a data warehouse or a spreadsheet. Perfuse runs them with its own FHIRPath engine: <code>column</code>, nested <code>select</code>, <code>forEach</code>, <code>forEachOrNull</code>, <code>repeat</code> and <code>unionAll</code>, <code>where</code>, <code>constant</code> (every value[x] type), <code>collection</code> columns, <code>%rowIndex</code>, and the <code>getResourceKey()</code> and <code>getReferenceKey(type)</code> join keys.</p>
 <pre class="code lang-json"><code>{
@@ -2456,7 +2488,7 @@ duckdb -c &#34;SELECT patient_id, avg(systolic) FROM &#39;bp.parquet&#39; GROUP 
 <p>The settings list every scheme with its format, its check and the system it is stored under. Systems taken from the country&#39;s own FHIR guide (UK Core, fhir.de, Nictiz, CH Core, ANS, HL7 Italia, MedCom, the Swedish, Norwegian and Finnish OID registers) are marked as such; the others are defaults to change to the national value, which a site can do per scheme (the old one is still recognised). Trusting a scheme is one tick. National numbers are shown in full to editors and above by default and masked (the last few characters) to everyone else; <strong>Who sees numbers in full</strong> changes that, down to viewers or up to administrators only. Where a country&#39;s law limits a number&#39;s use (France&#39;s Référentiel INS, Ireland&#39;s PPSN, Belgium&#39;s national register number, Germany&#39;s §290 SGB V), the settings say so. <code>GET /api/mpi/schemes</code> lists the schemes and <code>POST /api/mpi/check</code> checks one number without storing it. FHIR <code>$match</code> and PIXm answer authorised clients with numbers in full.</p>
 <p>A date written day- or month-first (<code>08/15/1972</code>) is kept as written and does not match a year-first one: the US and European orders disagree, and guessing would link the wrong people.</p>
 <p><strong>The Patient index screen</strong> (Build) shows the counts, finds people by name, number, EUID or birth date, and opens each person: their records, every identifier, and the history of what happened to them and who did it. Editors decide reviews (<strong>The same person</strong> links them; <strong>Different people</strong> keeps them apart for good), move a record to another person, take a record out (<strong>Not this person</strong>), and merge two people. Administrators set the thresholds, the trusted identifier systems, the national numbers and the EUID&#39;s system. Every search and every person read is written to the audit log.</p>
-<p><strong>Answering others.</strong> <code>POST /fhir/Patient/$match</code> (FHIR&#39;s operation, as IHE PDQm ITI-119 uses it) takes a Patient and returns the people who could be it, best first, each a Patient whose id is the EUID, with every identifier, <code>search.score</code>, and the match-grade extension (<code>certain</code>, <code>probable</code>, <code>possible</code>); <code>onlyCertainMatches</code> and <code>count</code> are honoured. PIXm (<code>/mhd/Patient/$ihe-pix</code>, ITI-83) answers from the index: every identifier of every record linked to the person, and the EUID.</p>
+<p><strong>Answering others.</strong> <code>POST /fhir/Patient/$match</code> (FHIR&#39;s operation, as IHE PDQm ITI-119 uses it) takes a Patient and returns the people who could be it, best first, each a Patient whose id is the EUID, with every identifier, <code>search.score</code>, and the match-grade extension (<code>certain</code>, <code>probable</code>, <code>possible</code>); <code>onlyCertainMatches</code> and <code>count</code> are honoured. PIXm (<code>/mhd/Patient/$ihe-pix</code>, ITI-83) answers from the index: every identifier of every record linked to the person, and the EUID. So do PIX and PDQ in HL7 v3 (<code>/pixv3</code>, <code>/pdqv3</code>; see IHE document sharing), which also feed it.</p>
 <p>The API is <code>/api/mpi</code> (summary and search), <code>/api/mpi/persons/{euid}</code>, <code>/api/mpi/find</code>, <code>/api/mpi/reviews</code>, <code>/api/mpi/records</code> (register, link, unlink), <code>/api/mpi/merge</code> and <code>/api/mpi/settings</code>.</p>
 <p><strong>Weights.</strong> The default Fellegi-Sunter weights come from the record-linkage literature for hospital registration data. <strong>Estimate from our records</strong> (in the settings, administrators; <code>POST /api/mpi/estimate</code>) fits them to the site&#39;s own index with expectation-maximisation, no reviewed pairs needed: m (agreement among true matches) from the pairs blocking brings together, u (agreement by chance) from 20,000 pairs drawn at random, since blocked pairs agree on names and dates by construction. The estimate is shown beside the weights in use and changes nothing until it is used and saved. A field compared on too few pairs keeps its default. The fit assumes the fields are independent given the class, which they are not quite, so treat a large change with suspicion.</p>
 <p><strong>Measured.</strong> On FEBRL dataset 3 (5,000 synthetic records of 2,000 people, the duplicates carrying typing errors, swapped fields, missing values and nicknames; <code>PERFUSE_TEST_FEBRL</code>), registered in file order with a reviewer answering every queued pair correctly:</p>
@@ -3642,7 +3674,7 @@ rules:
 <p>Every tool is answered by the same route or FHIR search a person&#39;s screen uses, called with the agent&#39;s own token, so the token&#39;s role, channel groups and tenant decide what it sees, exactly as they do in the console; and <code>fhir_search</code> gets the token&#39;s own access on the FHIR endpoint (which may refuse API tokens altogether; see the FHIR section above). An agent is offered only the tools its token may use. Reading is the default: a tool that changes something also needs the token&#39;s <strong>mcp:write</strong> scope (&#34;Let an AI agent act with it&#34; when issuing the token), so a token issued for a reporting agent cannot be talked into acting by a prompt. A monitor token&#39;s answers have message contents removed, whatever a route returns.</p>
 <p>Every call is in <strong>Activity</strong> as <code>mcp.tool</code> with the token&#39;s name, the tool, its arguments and the outcome (<code>ok</code>, <code>refused</code>, <code>invalid</code>, <code>rate-limited</code> or the HTTP status); <code>mcp.connect</code> records which client connected. Each token may make 60 tool calls a minute (<strong>Tool calls a minute from one token</strong>); over that, a call is answered with an error the agent can read, and nothing is done. A request from a browser page on another origin is refused, which MCP asks of a server to stop DNS rebinding. The transport is MCP&#39;s Streamable HTTP, answered as JSON with no event stream; protocol versions 2025-06-18, 2025-03-26 and 2024-11-05 are accepted. Messages and FHIR resources hold patient data: an agent&#39;s answers go to whatever model it runs on, so give a token to an agent only where that model is allowed to see them, and give it the lowest role that does the job.</p>
 <h3 id="s17-5-a-demonstration-account"><span class="num">17.5</span> A demonstration account</h3>
-<p><code>serve -demo-account demo:PASSWORD</code> creates a shared account for a public demonstration server, and the sign-in page shows its username and password with a button that signs in with them. The account is a viewer, so it can look at everything and change nothing. Unlike any other viewer it may also open the administrators&#39; screens (users, machine tokens, settings, data protection, the fleet&#39;s peers), read-only: a demonstration is judged by its screens. It reads them as a viewer reads channels, with every credential shown as set or not, never its value, and every change refused. It cannot change its password or add a passkey, because the first visitor to do either would lock out everyone after them. Each start puts it back as a viewer with the published password. The password must be at least 12 characters, like any other. Only use it on a server holding test data: anyone who reads the sign-in page can read every message on the server.</p>
+<p><code>serve -demo-account demo:PASSWORD</code> creates a shared account for a public demonstration server, and the sign-in page shows its username and password with a button that signs in with them. The account is a viewer, so it can look at everything and change nothing. Unlike any other viewer it may also open the administrators&#39; screens (users, machine tokens, settings, data protection, the fleet&#39;s peers), read-only: a demonstration is judged by its screens. It reads them as a viewer reads channels, with every credential shown as set or not, never its value, and every change refused. It may also press the checks that change nothing and reach nothing outside the server: a script&#39;s Check, and the channel editor&#39;s validate and parse. It cannot change its password or add a passkey, because the first visitor to do either would lock out everyone after them. Each start puts it back as a viewer with the published password. The password must be at least 12 characters, like any other. Only use it on a server holding test data: anyone who reads the sign-in page can read every message on the server.</p>
 <h3 id="s17-6-audit"><span class="num">17.6</span> Audit</h3>
 <p>Configuration changes, logins, and access to message content are recorded with who, what and when.</p>
 <p>The audit log is in the same database as the messages. That is convenient and it is a limitation: somebody who can modify the database can modify the audit log. If your requirements include tamper-evident audit, the log needs shipping somewhere append-only, and Perfuse&#39;s own log output is the way to do that.</p>
@@ -4079,7 +4111,7 @@ rules:
 <tr><td><code>-measure-reporter</code></td><td>string</td><td><code>Perfuse</code></td><td>the reporting organisation&#39;s name on MeasureReports from $evaluate-measure when the request names no reporter</td><td>—</td></tr>
 <tr><td><code>-metrics-open</code></td><td>on/off</td><td>—</td><td>serve /metrics to anybody who can reach the port. Only safe where that port is genuinely private: metric labels name your channels, and on a multi-tenant server they name every tenant&#39;s</td><td><strong>Settings › Security › Metrics</strong>: Serve /metrics without a token</td></tr>
 <tr><td><code>-metrics-token</code></td><td>string</td><td>—</td><td>credential the Prometheus scrape endpoint requires. Give the scraper the same value in bearer_token_file. Without this, only a signed-in operator can read /metrics</td><td><strong>Settings › Security › Metrics</strong>: Token a metrics scraper presents</td></tr>
-<tr><td><code>-mpi</code></td><td>on/off</td><td>—</td><td>keep a patient index (master patient index) in mpi.db beside the database: patient records from every system linked into one enterprise identifier per person, fed by mpi destinations, answering Patient/$match and PIXm</td><td><strong>Settings › Data › Patient index</strong>: Keep a patient index</td></tr>
+<tr><td><code>-mpi</code></td><td>on/off</td><td>—</td><td>keep a patient index (master patient index) in mpi.db beside the database: patient records from every system linked into one enterprise identifier per person, fed by mpi destinations and the PIX v3 identity feed, answering Patient/$match, PIXm, PIX v3 (/pixv3) and PDQ v3 (/pdqv3)</td><td><strong>Settings › Data › Patient index</strong>: Keep a patient index</td></tr>
 <tr><td><code>-multi-tenant</code></td><td>on/off</td><td>—</td><td>keep each tenant&#39;s channels in their own subdirectory of -channels, so one server can run integration for several organisations without them being able to see each other</td><td>—</td></tr>
 <tr><td><code>-node-address</code></td><td>string</td><td>—</td><td>this server&#39;s console URL as the other servers and a load balancer reach it</td><td>—</td></tr>
 <tr><td><code>-node-name</code></td><td>string</td><td>—</td><td>this server&#39;s name in the cluster (default: an id kept in -data)</td><td>—</td></tr>
@@ -4555,13 +4587,15 @@ rules:
 <table>
 <thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
 <tbody>
-<tr><td><code>listen</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>listen</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>tls_cert</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>tls_key</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>max_bytes</code></td><td>whole number</td><td>no</td><td>—</td></tr>
 <tr><td><code>smtp_host</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>username</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>password</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>imap</code></td><td>DirectIMAP (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
+<tr><td><code>xdr</code></td><td>DirectXDR (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
 <h4 id="s22-9-1-smtp-host"><span class="num">22.9.1</span> smtp_host</h4>
@@ -5524,6 +5558,7 @@ rules:
 <tr><td><code>xdm_source_id</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>recipient_certs_dir</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>dns</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>ldap</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>smtp_host</code></td><td>text</td><td>yes</td><td>—</td></tr>
 <tr><td><code>username</code></td><td>text</td><td>no</td><td>—</td></tr>
 <tr><td><code>password</code></td><td>text</td><td>no</td><td>—</td></tr>
@@ -5537,6 +5572,9 @@ rules:
 <h4 id="s23-11-2-recipient-certs-dir"><span class="num">23.11.2</span> recipient_certs_dir</h4>
 <p>RecipientCertsDir holds recipient certificates (PEM, one file per address or domain, address.pem or domain.pem) found in advance; empty reads the server&#39;s Direct address book (the Direct screen).</p>
 <p>Recipients not there are looked up in DNS (CERT records). Direct does not send to a recipient whose certificate cannot be found.</p>
+<h4 id="s23-11-3-ldap"><span class="num">23.11.3</span> ldap</h4>
+<p>LDAP is the directory a recipient&#39;s certificate is looked up in when DNS has none (host:port, port 389): the second way the Direct certificate discovery guide allows.</p>
+<p>Empty finds the recipient domain&#39;s directory by its DNS SRV record (_ldap._tcp), as the guide says; &#34;off&#34; never asks a directory.</p>
 <h3 id="s23-12-document-destination"><span class="num">23.12</span> Document Destination</h3>
 <p>DocumentDestination renders each message into a document.</p>
 <p>Defined as <code>DocumentDestination</code> in <code>internal/config</code>.</p>
@@ -6123,6 +6161,8 @@ rules:
 <tr><td><code>headers</code></td><td>mapping of text to text</td><td>no</td><td>—</td></tr>
 <tr><td><code>tls</code></td><td>tlsconf.Settings (a block, omit to leave off)</td><td>no</td><td>—</td></tr>
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
+<tr><td><code>direct_from</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>direct_to</code></td><td>list of text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
 <h4 id="s23-32-1-patient-domain"><span class="num">23.32.1</span> patient_domain</h4>
@@ -6143,6 +6183,12 @@ rules:
 <h4 id="s23-32-6-tls"><span class="num">23.32.6</span> tls</h4>
 <p>Token or Username/Password authenticate; Headers are added to each request.</p>
 <p>Most affinity domains use mutual TLS (tls) instead.</p>
+<h4 id="s23-32-7-direct-from"><span class="num">23.32.7</span> direct_from</h4>
+<p>DirectFrom and DirectTo make the submission XDR as Direct&#39;s transport: a Direct addressing block naming this sender&#39;s Direct address and the recipients&#39;, and the recipients in the submission&#39;s intendedRecipient.</p>
+<p>A HISP that takes XDR delivers it as Direct mail, or to the recipient&#39;s own XDR endpoint.</p>
+<h4 id="s23-32-8-direct-to"><span class="num">23.32.8</span> direct_to</h4>
+<p>DirectFrom and DirectTo make the submission XDR as Direct&#39;s transport: a Direct addressing block naming this sender&#39;s Direct address and the recipients&#39;, and the recipients in the submission&#39;s intendedRecipient.</p>
+<p>A HISP that takes XDR delivers it as Direct mail, or to the recipient&#39;s own XDR endpoint.</p>
 </section>
 <section class="chapter">
 <h2 id="s24-format-reference"><span class="num">24</span> Format Reference</h2>
@@ -6461,7 +6507,40 @@ rules:
 <h4 id="s25-8-3-anchors-file"><span class="num">25.8.3</span> anchors_file</h4>
 <p>AnchorsFile is the trust anchors (PEM): the certificate authorities whose senders and recipients this address trusts, such as the DirectTrust bundle.</p>
 <p>A message signed by anything else is refused.</p>
-<h3 id="s25-9-ecr-facility"><span class="num">25.9</span> ECR Facility</h3>
+<h3 id="s25-9-direct-imap"><span class="num">25.9</span> Direct IMAP</h3>
+<p>DirectIMAP is the HISP mailbox a Direct source reads.</p>
+<p>Defined as <code>DirectIMAP</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>host</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>port</code></td><td>whole number</td><td>no</td><td>—</td></tr>
+<tr><td><code>security</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>username</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>password</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>mailbox</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>after_read</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>move_to</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>error_folder</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>poll_interval</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h4 id="s25-9-1-move-to"><span class="num">25.9.1</span> move_to</h4>
+<p>MoveTo is the folder taken messages move to; Processed by default.</p>
+<p>Created when missing.</p>
+<h3 id="s25-10-direct-xdr"><span class="num">25.10</span> Direct XDR</h3>
+<p>DirectXDR is the endpoint a Direct source takes XDR at.</p>
+<p>Defined as <code>DirectXDR</code> in <code>internal/config</code>.</p>
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>listen</code></td><td>text</td><td>yes</td><td>—</td></tr>
+<tr><td><code>tls_cert</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>tls_key</code></td><td>text</td><td>no</td><td>—</td></tr>
+<tr><td><code>client_ca_file</code></td><td>text</td><td>no</td><td>—</td></tr>
+</tbody>
+</table>
+<h3 id="s25-11-ecr-facility"><span class="num">25.11</span> ECR Facility</h3>
 <p>ECRFacility is the organisation sending case reports.</p>
 <p>Defined as <code>ECRFacility</code> in <code>internal/config</code>.</p>
 <table>
@@ -6476,7 +6555,7 @@ rules:
 <tr><td><code>postal_code</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h3 id="s25-10-edifact-options"><span class="num">25.10</span> EDIFACT Options</h3>
+<h3 id="s25-12-edifact-options"><span class="num">25.12</span> EDIFACT Options</h3>
 <p>EDIFACTOptions are the settings that only apply to an EDIFACT channel.</p>
 <p>Defined as <code>EDIFACTOptions</code> in <code>internal/config</code>.</p>
 <table>
@@ -6487,10 +6566,10 @@ rules:
 <tr><td><code>acknowledge</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-10-1-acknowledge"><span class="num">25.10.1</span> acknowledge</h4>
+<h4 id="s25-12-1-acknowledge"><span class="num">25.12.1</span> acknowledge</h4>
 <p>Acknowledge answers a sender posting over HTTP with a CONTRL in the response: accepted (action 7) when the interchange was read and delivered, rejected (4) otherwise.</p>
 <p>Default none.</p>
-<h3 id="s25-11-email-o-auth"><span class="num">25.11</span> Email O Auth</h3>
+<h3 id="s25-13-email-o-auth"><span class="num">25.13</span> Email O Auth</h3>
 <p>EmailOAuth signs in with OAuth 2.0 (SASL XOAUTH2), which Microsoft 365 and Gmail require in place of a password.</p>
 <p>Defined as <code>EmailOAuth</code> in <code>internal/config</code>.</p>
 <table>
@@ -6505,13 +6584,13 @@ rules:
 <tr><td><code>scope</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-11-1-client-secret"><span class="num">25.11.1</span> client_secret</h4>
+<h4 id="s25-13-1-client-secret"><span class="num">25.13.1</span> client_secret</h4>
 <p>ClientSecret may be ${ENV}.</p>
 <p>With no refresh_token it selects Microsoft&#39;s app-only client-credentials grant.</p>
-<h4 id="s25-11-2-refresh-token"><span class="num">25.11.2</span> refresh_token</h4>
+<h4 id="s25-13-2-refresh-token"><span class="num">25.13.2</span> refresh_token</h4>
 <p>RefreshToken may be ${ENV}: a mailbox a person consented to.</p>
 <p>Required for Gmail.</p>
-<h3 id="s25-12-fhir-auth"><span class="num">25.12</span> FHIR Auth</h3>
+<h3 id="s25-14-fhir-auth"><span class="num">25.14</span> FHIR Auth</h3>
 <p>FHIRAuth is how a fhir destination authenticates to a hosted FHIR service.</p>
 <p>Three presets, because the hosted services are where a bearer token pasted into a file stops working within the hour:</p>
 <ul>
@@ -6534,22 +6613,22 @@ rules:
 <tr><td><code>scope</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-12-1-region"><span class="num">25.12.1</span> region</h4>
+<h4 id="s25-14-1-region"><span class="num">25.14.1</span> region</h4>
 <p>Region is the AWS region.</p>
 <p>Read from a HealthLake URL when it is not given.</p>
-<h4 id="s25-12-2-token-url"><span class="num">25.12.2</span> token_url</h4>
+<h4 id="s25-14-2-token-url"><span class="num">25.14.2</span> token_url</h4>
 <p>TokenURL is the OAuth token endpoint, for client_credentials.</p>
 <p>For azure it is derived from the tenant.</p>
-<h4 id="s25-12-3-client-id"><span class="num">25.12.3</span> client_id</h4>
+<h4 id="s25-14-3-client-id"><span class="num">25.14.3</span> client_id</h4>
 <p>ClientID and ClientSecret identify the application.</p>
 <p>The secret may be a ${ENV} reference, which is how it should be given.</p>
-<h4 id="s25-12-4-client-secret"><span class="num">25.12.4</span> client_secret</h4>
+<h4 id="s25-14-4-client-secret"><span class="num">25.14.4</span> client_secret</h4>
 <p>ClientID and ClientSecret identify the application.</p>
 <p>The secret may be a ${ENV} reference, which is how it should be given.</p>
-<h4 id="s25-12-5-scope"><span class="num">25.12.5</span> scope</h4>
+<h4 id="s25-14-5-scope"><span class="num">25.14.5</span> scope</h4>
 <p>Scope is requested with the token.</p>
 <p>For azure it defaults to the FHIR service URL followed by /.default, which is its audience.</p>
-<h3 id="s25-13-file-poll"><span class="num">25.13</span> File Poll</h3>
+<h3 id="s25-15-file-poll"><span class="num">25.15</span> File Poll</h3>
 <p>FilePoll is the part of a file-collecting source that has nothing to do with the transport.</p>
 <p>Shared by the local, FTP, SMB and WebDAV sources, and by SFTP. Every one of these settings exists because of a way files go wrong rather than a way transports differ, which is why they belong together: a site that has worked out the right stable_for for its analyser should not have to work it out again when the analyser moves to a share.</p>
 <p>Defined as <code>FilePoll</code> in <code>internal/config</code>.</p>
@@ -6570,23 +6649,23 @@ rules:
 <tr><td><code>sort_by</code></td><td>text</td><td>no</td><td>name</td></tr>
 </tbody>
 </table>
-<h4 id="s25-13-1-pattern"><span class="num">25.13.1</span> pattern</h4>
+<h4 id="s25-15-1-pattern"><span class="num">25.15.1</span> pattern</h4>
 <p>Pattern selects files by glob.</p>
 <p>Empty means every file.</p>
-<h4 id="s25-13-2-error-dir"><span class="num">25.13.2</span> error_dir</h4>
+<h4 id="s25-15-2-error-dir"><span class="num">25.15.2</span> error_dir</h4>
 <p>ErrorDir is where a file that could not be processed goes.</p>
 <p>Separate from MoveTo deliberately. A directory holding nothing but failures is one somebody can watch, and mixing failures into the archive means the only way to find them is to read every file.</p>
-<h4 id="s25-13-3-raw"><span class="num">25.13.3</span> raw</h4>
+<h4 id="s25-15-3-raw"><span class="num">25.15.3</span> raw</h4>
 <p>Raw treats the whole file as one message regardless of content.</p>
 <p>The setting that makes this connector useful for anything other than HL7. Without it a CSV batch, an X12 claim file or a PDF is split on lines beginning MSH and produces nothing, and the error says the file is not HL7 - true but not the point, since the file was never meant to be.</p>
-<h4 id="s25-13-4-batch-size"><span class="num">25.13.4</span> batch_size</h4>
+<h4 id="s25-15-4-batch-size"><span class="num">25.15.4</span> batch_size</h4>
 <p>BatchSize bounds how many files one poll will read.</p>
 <p>Zero means no limit.</p>
 <p>Exists for the first poll after an outage. A directory holding forty thousand files that accumulated overnight will otherwise be read in one pass, which holds the poll loop for as long as it takes and makes the channel look hung. Reading a bounded number per poll keeps the channel responsive and the queue draining visibly.</p>
-<h4 id="s25-13-5-sort-by"><span class="num">25.13.5</span> sort_by</h4>
+<h4 id="s25-15-5-sort-by"><span class="num">25.15.5</span> sort_by</h4>
 <p>SortBy orders the files within a poll: name, modified or none.</p>
 <p>Defaults to name. Ordering matters more than it looks: an ADT stream where A08 updates arrive before the A01 admission produces patients that do not exist yet. Directory listing order is arbitrary on most filesystems, so leaving it unsorted means the order changes between polls for no visible reason.</p>
-<h3 id="s25-14-gcp-access"><span class="num">25.14</span> GCP Access</h3>
+<h3 id="s25-16-gcp-access"><span class="num">25.16</span> GCP Access</h3>
 <p>GCPAccess is how to authenticate to Google Cloud.</p>
 <p>Defined as <code>GCPAccess</code> in <code>internal/config</code>.</p>
 <table>
@@ -6597,10 +6676,10 @@ rules:
 <tr><td><code>endpoint</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-14-1-credentials-file"><span class="num">25.14.1</span> credentials_file</h4>
+<h4 id="s25-16-1-credentials-file"><span class="num">25.16.1</span> credentials_file</h4>
 <p>CredentialsFile is a service account&#39;s JSON key.</p>
 <p>Empty uses the service account attached to the VM, GKE pod or Cloud Run service Perfuse runs on (the metadata server), unless Endpoint names an emulator.</p>
-<h3 id="s25-15-gcs-access"><span class="num">25.15</span> GCS Access</h3>
+<h3 id="s25-17-gcs-access"><span class="num">25.17</span> GCS Access</h3>
 <p>GCSAccess is a Cloud Storage bucket.</p>
 <p>Defined as <code>GCSAccess</code> in <code>internal/config</code>.</p>
 <table>
@@ -6609,7 +6688,7 @@ rules:
 <tr><td><code>bucket</code></td><td>text</td><td>yes</td><td>—</td></tr>
 </tbody>
 </table>
-<h3 id="s25-16-ibmmq-connection"><span class="num">25.16</span> IBMMQ Connection</h3>
+<h3 id="s25-18-ibmmq-connection"><span class="num">25.18</span> IBMMQ Connection</h3>
 <p>IBMMQConnection is a queue reached through the queue manager&#39;s messaging REST API.</p>
 <p>Defined as <code>IBMMQConnection</code> in <code>internal/config</code>.</p>
 <table>
@@ -6625,16 +6704,16 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>30s</td></tr>
 </tbody>
 </table>
-<h4 id="s25-16-1-username"><span class="num">25.16.1</span> username</h4>
+<h4 id="s25-18-1-username"><span class="num">25.18.1</span> username</h4>
 <p>Username and Password are an mqweb user with the MQWebUser role; the password may be ${ENV}.</p>
 <p>Leave both empty when a client certificate (tls.cert_file) authenticates.</p>
-<h4 id="s25-16-2-password"><span class="num">25.16.2</span> password</h4>
+<h4 id="s25-18-2-password"><span class="num">25.18.2</span> password</h4>
 <p>Username and Password are an mqweb user with the MQWebUser role; the password may be ${ENV}.</p>
 <p>Leave both empty when a client certificate (tls.cert_file) authenticates.</p>
-<h4 id="s25-16-3-timeout"><span class="num">25.16.3</span> timeout</h4>
+<h4 id="s25-18-3-timeout"><span class="num">25.18.3</span> timeout</h4>
 <p>Timeout bounds each request.</p>
 <p>Defaults to 30s.</p>
-<h3 id="s25-17-kafka-sasl"><span class="num">25.17</span> Kafka SASL</h3>
+<h3 id="s25-19-kafka-sasl"><span class="num">25.19</span> Kafka SASL</h3>
 <p>KafkaSASL authenticates to a Kafka cluster.</p>
 <p>Defined as <code>KafkaSASL</code> in <code>internal/config</code>.</p>
 <table>
@@ -6645,13 +6724,13 @@ rules:
 <tr><td><code>password</code></td><td>text</td><td>yes</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-17-1-mechanism"><span class="num">25.17.1</span> mechanism</h4>
+<h4 id="s25-19-1-mechanism"><span class="num">25.19.1</span> mechanism</h4>
 <p>Mechanism is &#34;plain&#34;, &#34;scram-sha-256&#34; or &#34;scram-sha-512&#34;.</p>
 <p>PLAIN sends the password readable on the wire, so it belongs with TLS. SCRAM does not, which is why it is worth naming the difference here rather than treating the three as interchangeable.</p>
-<h4 id="s25-17-2-password"><span class="num">25.17.2</span> password</h4>
+<h4 id="s25-19-2-password"><span class="num">25.19.2</span> password</h4>
 <p>Password is the SASL password.</p>
 <p>Supports ${ENV} references like every other secret here, so a cluster credential need not be written into the channel file.</p>
-<h3 id="s25-18-mqtt-connection"><span class="num">25.18</span> MQTT Connection</h3>
+<h3 id="s25-20-mqtt-connection"><span class="num">25.20</span> MQTT Connection</h3>
 <p>MQTTConnection is how to reach an MQTT 3.1.1 broker: Mosquitto, EMQX, HiveMQ, AWS IoT Core, Azure Event Grid.</p>
 <p>Defined as <code>MQTTConnection</code> in <code>internal/config</code>.</p>
 <table>
@@ -6666,19 +6745,19 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>30s</td></tr>
 </tbody>
 </table>
-<h4 id="s25-18-1-client-id"><span class="num">25.18.1</span> client_id</h4>
+<h4 id="s25-20-1-client-id"><span class="num">25.20.1</span> client_id</h4>
 <p>ClientID names the session.</p>
 <p>A source keeps its messages across reconnects only under a fixed client id; it defaults to perfuse-&lt;channel&gt;.</p>
-<h4 id="s25-18-2-username"><span class="num">25.18.2</span> username</h4>
+<h4 id="s25-20-2-username"><span class="num">25.20.2</span> username</h4>
 <p>Username and Password authenticate; either may be empty.</p>
 <p>The password may be ${ENV}.</p>
-<h4 id="s25-18-3-password"><span class="num">25.18.3</span> password</h4>
+<h4 id="s25-20-3-password"><span class="num">25.20.3</span> password</h4>
 <p>Username and Password authenticate; either may be empty.</p>
 <p>The password may be ${ENV}.</p>
-<h4 id="s25-18-4-timeout"><span class="num">25.18.4</span> timeout</h4>
+<h4 id="s25-20-4-timeout"><span class="num">25.20.4</span> timeout</h4>
 <p>Timeout bounds connecting and each wait for the broker.</p>
 <p>Defaults to 30s.</p>
-<h3 id="s25-19-ncpdp-options"><span class="num">25.19</span> NCPDP Options</h3>
+<h3 id="s25-21-ncpdp-options"><span class="num">25.21</span> NCPDP Options</h3>
 <p>NCPDPOptions are the settings that only apply to a pharmacy claim channel.</p>
 <p>Defined as <code>NCPDPOptions</code> in <code>internal/config</code>.</p>
 <table>
@@ -6687,10 +6766,10 @@ rules:
 <tr><td><code>transformations</code></td><td>list of ncpdp.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-19-1-transformations"><span class="num">25.19.1</span> transformations</h4>
+<h4 id="s25-21-1-transformations"><span class="num">25.21.1</span> transformations</h4>
 <p>Transformations are declarative changes applied to each transmission before delivery.</p>
 <p>The same vocabulary as every other format - set, copy, clear, map, replace, trim, case, each with an optional condition - because the step engine in internal/steps is generic. What differs is the notation: a path is written D1 or 07-D7, using the standard&#39;s own two-character field identifiers.</p>
-<h3 id="s25-20-pgp-receive"><span class="num">25.20</span> PGP Receive</h3>
+<h3 id="s25-22-pgp-receive"><span class="num">25.22</span> PGP Receive</h3>
 <p>PGPReceive opens what a source receives with OpenPGP: decrypted with our secret key, and its signature checked against the senders&#39; public keys.</p>
 <p>Defined as <code>PGPReceive</code> in <code>internal/config</code>.</p>
 <table>
@@ -6704,19 +6783,19 @@ rules:
 <tr><td><code>pass_plain</code></td><td>true or false</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-20-1-decrypt-with"><span class="num">25.20.1</span> decrypt_with</h4>
+<h4 id="s25-22-1-decrypt-with"><span class="num">25.22.1</span> decrypt_with</h4>
 <p>DecryptWith is our secret key file.</p>
 <p>Required unless allow_unencrypted is on and messages are only signed.</p>
-<h4 id="s25-20-2-passphrase"><span class="num">25.20.2</span> passphrase</h4>
+<h4 id="s25-22-2-passphrase"><span class="num">25.22.2</span> passphrase</h4>
 <p>Passphrase unlocks DecryptWith when it is protected.</p>
 <p>Prefer an environment variable reference, ${NAME}.</p>
-<h4 id="s25-20-3-verify-with"><span class="num">25.20.3</span> verify_with</h4>
+<h4 id="s25-22-3-verify-with"><span class="num">25.22.3</span> verify_with</h4>
 <p>VerifyWith are the senders&#39; public key files.</p>
 <p>A signature by any of them is checked and recorded.</p>
-<h4 id="s25-20-4-pass-plain"><span class="num">25.20.4</span> pass_plain</h4>
+<h4 id="s25-22-4-pass-plain"><span class="num">25.22.4</span> pass_plain</h4>
 <p>PassPlain lets a message that is not PGP at all through unchanged, for a folder that receives both.</p>
 <p>Off: such a message is refused, so a sender who forgot to encrypt is told.</p>
-<h3 id="s25-21-pgp-send"><span class="num">25.21</span> PGP Send</h3>
+<h3 id="s25-23-pgp-send"><span class="num">25.23</span> PGP Send</h3>
 <p>PGPSend protects what a destination delivers with OpenPGP: encrypted to the receiver&#39;s public key, signed with ours, or both.</p>
 <p>Payers, clearinghouses and state agencies often take files over SFTP only this way.</p>
 <p>Defined as <code>PGPSend</code> in <code>internal/config</code>.</p>
@@ -6731,16 +6810,16 @@ rules:
 <tr><td><code>file_name</code></td><td>text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-21-1-encrypt-to"><span class="num">25.21.1</span> encrypt_to</h4>
+<h4 id="s25-23-1-encrypt-to"><span class="num">25.23.1</span> encrypt_to</h4>
 <p>EncryptTo are the receivers&#39; public key files (armored or binary).</p>
 <p>The message is readable by any of them. Empty: the message is signed only.</p>
-<h4 id="s25-21-2-sign-with"><span class="num">25.21.2</span> sign_with</h4>
+<h4 id="s25-23-2-sign-with"><span class="num">25.23.2</span> sign_with</h4>
 <p>SignWith is our secret key file, to sign each message.</p>
 <p>Empty: encrypted only.</p>
-<h4 id="s25-21-3-passphrase"><span class="num">25.21.3</span> passphrase</h4>
+<h4 id="s25-23-3-passphrase"><span class="num">25.23.3</span> passphrase</h4>
 <p>Passphrase unlocks SignWith when it is protected.</p>
 <p>Prefer an environment variable reference, ${NAME}.</p>
-<h3 id="s25-22-queue-config"><span class="num">25.22</span> Queue Config</h3>
+<h3 id="s25-24-queue-config"><span class="num">25.24</span> Queue Config</h3>
 <p>QueueConfig turns on durable queueing for a destination.</p>
 <p>Without it, a destination that is down for two minutes loses everything sent during those two minutes: retries happen in memory and when they run out the message is recorded as failed and gone. With it, the message is on disk and keeps its place until the receiver comes back.</p>
 <p>It is off by default, which is a deliberate choice rather than caution. A queue changes what an acknowledgement means and it changes ordering behaviour during an outage, and both of those are things an operator should opt into knowingly rather than discover.</p>
@@ -6756,20 +6835,20 @@ rules:
 <tr><td><code>retain_hours</code></td><td>whole number</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-22-1-max-attempts"><span class="num">25.22.1</span> max_attempts</h4>
+<h4 id="s25-24-1-max-attempts"><span class="num">25.24.1</span> max_attempts</h4>
 <p>MaxAttempts is how many times the queue tries before marking a message failed and moving on to the next one.</p>
 <p>Zero means keep trying indefinitely, which is legitimate for a feed that must not lose anything but should be chosen rather than inherited.</p>
-<h4 id="s25-22-2-max-backoff"><span class="num">25.22.2</span> max_backoff</h4>
+<h4 id="s25-24-2-max-backoff"><span class="num">25.24.2</span> max_backoff</h4>
 <p>MaxBackoff caps the growing delay.</p>
 <p>The default is a minute rather than something larger because a receiver that comes back after a brief outage should be found quickly: an hour-long ceiling turns a two-minute blip into an hour of backlog.</p>
-<h4 id="s25-22-3-max-depth"><span class="num">25.22.3</span> max_depth</h4>
+<h4 id="s25-24-3-max-depth"><span class="num">25.24.3</span> max_depth</h4>
 <p>MaxDepth refuses new messages once this many are waiting, so a receiver that has been down for a week cannot fill the disk.</p>
 <p>Zero means no limit.</p>
 <p>When the limit is reached the message is failed rather than queued, and the sender is told so — which is the honest answer, because we are no longer promising to deliver it.</p>
-<h4 id="s25-22-4-retain-hours"><span class="num">25.22.4</span> retain_hours</h4>
+<h4 id="s25-24-4-retain-hours"><span class="num">25.24.4</span> retain_hours</h4>
 <p>RetainHours is how long delivered and abandoned items are kept before being purged.</p>
 <p>They are kept at all so somebody watching a backlog drain can see it happening, and so an abandoned message can be found afterwards.</p>
-<h3 id="s25-23-retry"><span class="num">25.23</span> Retry</h3>
+<h3 id="s25-25-retry"><span class="num">25.25</span> Retry</h3>
 <p>Retry controls redelivery after a failure.</p>
 <p>Defined as <code>Retry</code> in <code>internal/config</code>.</p>
 <table>
@@ -6780,13 +6859,13 @@ rules:
 <tr><td><code>max_backoff</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-23-1-attempts"><span class="num">25.23.1</span> attempts</h4>
+<h4 id="s25-25-1-attempts"><span class="num">25.25.1</span> attempts</h4>
 <p>Attempts is the total number of tries, including the first.</p>
 <p>Zero means the default.</p>
-<h4 id="s25-23-2-backoff"><span class="num">25.23.2</span> backoff</h4>
+<h4 id="s25-25-2-backoff"><span class="num">25.25.2</span> backoff</h4>
 <p>Backoff is the wait before the second attempt.</p>
 <p>It doubles each time, up to MaxBackoff.</p>
-<h3 id="s25-24-script-options"><span class="num">25.24</span> Script Options</h3>
+<h3 id="s25-26-script-options"><span class="num">25.26</span> Script Options</h3>
 <p>ScriptOptions configures an NCPDP SCRIPT channel.</p>
 <h1 id="why-script-gets-a-block-when-its-filter-is-top-level">Why SCRIPT gets a block when its filter is top-level</h1>
 <p>The channel filter for every data type is the top-level filter key, because internal/expr is generic over the message type: one key, compiled against whichever tree or claim the channel carries. Steps cannot be arranged that way. A v2 step addresses a segment and a field, an X12 step addresses a fixed-width element, and the types are different, so one yaml key would have to hold whichever the data type implied - which is a field that means different things depending on another field, and the failure mode is a step that silently does nothing.</p>
@@ -6798,11 +6877,11 @@ rules:
 <tr><td><code>transformations</code></td><td>list of hl7v3.Step</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-24-1-transformations"><span class="num">25.24.1</span> transformations</h4>
+<h4 id="s25-26-1-transformations"><span class="num">25.26.1</span> transformations</h4>
 <p>Transformations are the declarative steps, addressing the prescription as an XML tree.</p>
 <p>hl7v3.Step rather than a type of its own, and that is not laziness. A prescription and a v3 document are both XML, the path grammar is the same one, and internal/eprescribe already borrows hl7v3.Path for its filter with a comment saying so - v3 and CDA already use it, and a third copy would be a third set of answers to what //a/b[2]@c means.</p>
 <p>The steps that carry v3-only meaning are refused at load rather than being silently available. nullflavor is the one: it writes the v3 attribute stating why a value is absent, which a prescription has no equivalent of, and a step that wrote it would produce a document the receiver does not understand.</p>
-<h3 id="s25-25-scripts"><span class="num">25.25</span> Scripts</h3>
+<h3 id="s25-27-scripts"><span class="num">25.27</span> Scripts</h3>
 <p>Scripts holds the JavaScript attached to a channel.</p>
 <p>Defined as <code>Scripts</code> in <code>internal/config</code>.</p>
 <table>
@@ -6821,47 +6900,47 @@ rules:
 <tr><td><code>allow</code></td><td>list of text</td><td>no</td><td>—</td></tr>
 </tbody>
 </table>
-<h4 id="s25-25-1-filter"><span class="num">25.25.1</span> filter</h4>
+<h4 id="s25-27-1-filter"><span class="num">25.27.1</span> filter</h4>
 <p>Filter runs after the expression filter, if any, and must return a boolean.</p>
 <p>A Mirth filter script drops in here unchanged.</p>
-<h4 id="s25-25-2-transformer"><span class="num">25.25.2</span> transformer</h4>
+<h4 id="s25-27-2-transformer"><span class="num">25.27.2</span> transformer</h4>
 <p>Transformer runs after the declarative steps and may modify the message.</p>
 <p>A Mirth transformer script drops in here unchanged.</p>
-<h4 id="s25-25-3-preprocessor"><span class="num">25.25.3</span> preprocessor</h4>
+<h4 id="s25-27-3-preprocessor"><span class="num">25.27.3</span> preprocessor</h4>
 <p>Preprocessor runs before the message is parsed, reads the text as &#34;message&#34; and returns the text to parse.</p>
 <p>A Mirth preprocessor drops in here unchanged.</p>
 <p>This is the only place a message that does not parse can be repaired. Sites use it for a stray character from a serial gateway, a segment terminator that arrived as a line feed, or a vendor padding a field with something illegal for its position. Without it, Perfuse rejects traffic that Mirth accepts today.</p>
-<h4 id="s25-25-4-deploy"><span class="num">25.25.4</span> deploy</h4>
+<h4 id="s25-27-4-deploy"><span class="num">25.27.4</span> deploy</h4>
 <p>Deploy runs once when the channel starts, before it accepts anything.</p>
 <p>This is where sites warm a lookup cache or check that something they depend on is reachable. It runs before the source binds, so a deploy script that fails stops the channel from starting rather than letting it accept messages it cannot handle.</p>
-<h4 id="s25-25-5-undeploy"><span class="num">25.25.5</span> undeploy</h4>
+<h4 id="s25-27-5-undeploy"><span class="num">25.27.5</span> undeploy</h4>
 <p>Undeploy runs once when the channel stops.</p>
 <p>After the source has stopped accepting and after in-flight messages have finished, so it sees a channel that is genuinely idle. Its failure cannot stop a stop: a channel that could not be shut down because a cleanup script threw would be worse than one that logged and closed.</p>
-<h4 id="s25-25-6-postprocessor"><span class="num">25.25.6</span> postprocessor</h4>
+<h4 id="s25-27-6-postprocessor"><span class="num">25.27.6</span> postprocessor</h4>
 <p>Postprocessor runs after the message has been handled and cannot change it.</p>
 <p>The message and what happened to it are visible, so it can notify, count or record. It cannot alter what was sent: by the time it runs the sending has happened, and a script that appeared to change a delivered message would be lying about it.</p>
-<h4 id="s25-25-7-language"><span class="num">25.25.7</span> language</h4>
+<h4 id="s25-27-7-language"><span class="num">25.27.7</span> language</h4>
 <p>Language is which scripting language these scripts are written in: javascript or lua.</p>
 <h1 id="why-one-setting-for-the-whole-block-rather-than-one-per-script">Why one setting for the whole block rather than one per script</h1>
 <p>A channel&#39;s scripts share the channel map and the connector map, and they are read together by whoever maintains them. A filter in Lua beside a transformer in JavaScript would mean two languages in one review, sharing state through a map whose values would have to mean the same in both. Sites that want that can split the channel.</p>
 <h1 id="why-the-default-is-javascript">Why the default is javascript</h1>
 <p>Every script written before this setting existed is JavaScript and says nothing about its language. Making lua the default would silently reinterpret all of them; requiring the field would refuse them. Neither is acceptable for a setting added later.</p>
-<h4 id="s25-25-8-timeout"><span class="num">25.25.8</span> timeout</h4>
+<h4 id="s25-27-8-timeout"><span class="num">25.27.8</span> timeout</h4>
 <p>Timeout bounds each script.</p>
 <p>Zero means five seconds.</p>
 <p>There is deliberately no way to disable it. Mirth allows a transformer to loop forever, which stops the channel, and an interface that stops accepting admissions because of a typo is not something to offer as an option.</p>
-<h4 id="s25-25-9-include"><span class="num">25.25.9</span> include</h4>
+<h4 id="s25-27-9-include"><span class="num">25.27.9</span> include</h4>
 <p>Include names files of shared script source made available to every script on this channel, in whichever language scripts.language names.</p>
 <p>This is Mirth&#39;s code templates. A site with forty channels usually has one library every channel calls, and without it a migration means copying that library into forty files - forty places to fix the next time it changes.</p>
 <p>Paths are relative to the channel file, so a library beside the channels travels with them. It is a list because the alternative is one enormous file, and libraries tend to divide by subject.</p>
 <p>The files have to be in the channel&#39;s language. This was JavaScript-only for a while, and not by refusal: a Lua channel read the files, refused a missing one, and then the runtime installed none of it, so every call into the library failed on the first message with a nil global - the exact error the refusal above exists to avoid. Both languages install it now, and a library that does not parse is refused at load naming the file.</p>
-<h4 id="s25-25-10-file-roots"><span class="num">25.25.10</span> file_roots</h4>
+<h4 id="s25-27-10-file-roots"><span class="num">25.27.10</span> file_roots</h4>
 <p>FileRoots are the directories FileUtil may read and write.</p>
 <p>Required whenever &#34;file&#34; is allowed. Granting file access without naming directories used to mean the whole filesystem: a script could read Perfuse&#39;s own database, which holds password hashes, the LDAP service account password and the OIDC client secret. Creating a channel needs only the editor role, so the escalation completed the moment an administrator started it.</p>
-<h4 id="s25-25-11-allow"><span class="num">25.25.11</span> allow</h4>
+<h4 id="s25-27-11-allow"><span class="num">25.27.11</span> allow</h4>
 <p>Allow grants capabilities a script would otherwise be refused: &#34;file&#34;, &#34;database&#34;, &#34;route&#34;.</p>
 <p>Mirth grants all of these to every script; requiring them to be named means a transformer cannot quietly start reading the filesystem after a copy-paste.</p>
-<h3 id="s25-26-shadow"><span class="num">25.26</span> Shadow</h3>
+<h3 id="s25-28-shadow"><span class="num">25.28</span> Shadow</h3>
 <p>Shadow runs a candidate version of a channel beside the live one and reports where they differ.</p>
 <p>This is the answer to the question that makes interface work frightening: how do you know a change is safe? Not by reading it. A transformation is a program operating on messages whose variety nobody has catalogued, and the case that breaks is always the one nobody thought of - the patient with two identifiers, the result with an empty units field, the A08 that arrives before its A01.</p>
 <p>A channel test proves the cases somebody thought of. Shadow mode proves the cases that actually arrive, against real traffic, before the change carries any of it.</p>
@@ -6881,26 +6960,26 @@ rules:
 <tr><td><code>timeout</code></td><td>duration, such as 30s or 5m</td><td>no</td><td>5s</td></tr>
 </tbody>
 </table>
-<h4 id="s25-26-1-channel"><span class="num">25.26.1</span> channel</h4>
+<h4 id="s25-28-1-channel"><span class="num">25.28.1</span> channel</h4>
 <p>Channel is the path to the candidate channel file.</p>
 <p>A separate file rather than an inline block, on purpose: the candidate is meant to become the live channel, so it should be the artefact that gets reviewed, committed and promoted, not a fragment that has to be extracted.</p>
-<h4 id="s25-26-2-sample"><span class="num">25.26.2</span> sample</h4>
+<h4 id="s25-28-2-sample"><span class="num">25.28.2</span> sample</h4>
 <p>Sample is the fraction of messages to shadow, from 0 to 1. Defaults to 1.</p>
 <p>Worth lowering only on a busy feed, and worth understanding before doing so: sampling reduces cost and reduces confidence in exactly the same proportion, and the message that would have shown the difference is the unusual one.</p>
-<h4 id="s25-26-3-compare"><span class="num">25.26.3</span> compare</h4>
+<h4 id="s25-28-3-compare"><span class="num">25.28.3</span> compare</h4>
 <p>Compare limits the comparison to these field paths.</p>
 <p>Empty compares everything.</p>
-<h4 id="s25-26-4-ignore"><span class="num">25.26.4</span> ignore</h4>
+<h4 id="s25-28-4-ignore"><span class="num">25.28.4</span> ignore</h4>
 <p>Ignore excludes field paths from the comparison.</p>
 <p>Needed in practice, because a channel that stamps a timestamp or a sequence number differs on every single message and would report a difference rate of 100% while telling you nothing.</p>
-<h4 id="s25-26-5-max-differences"><span class="num">25.26.5</span> max_differences</h4>
+<h4 id="s25-28-5-max-differences"><span class="num">25.28.5</span> max_differences</h4>
 <p>MaxDifferences bounds how many differing messages are kept for inspection.</p>
 <p>Defaults to 100.</p>
-<h4 id="s25-26-6-timeout"><span class="num">25.26.6</span> timeout</h4>
+<h4 id="s25-28-6-timeout"><span class="num">25.28.6</span> timeout</h4>
 <p>Timeout bounds one shadow run.</p>
 <p>Defaults to 5s.</p>
 <p>Separate from the channel&#39;s own timeout, and shorter. A candidate with a runaway script must not accumulate goroutines behind the live traffic.</p>
-<h3 id="s25-27-xds-code"><span class="num">25.27</span> XDS Code</h3>
+<h3 id="s25-29-xds-code"><span class="num">25.29</span> XDS Code</h3>
 <p>XDSCode is a coded value in destination settings: code, coding scheme (an OID) and display.</p>
 <p>Defined as <code>XDSCode</code> in <code>internal/config</code>.</p>
 <table>
@@ -7395,15 +7474,22 @@ rules:
 <p>Package pgp encrypts, signs, decrypts and verifies OpenPGP messages (RFC 9580, and RFC 4880 for older peers), for payers, clearinghouses and state agencies that exchange files over SFTP or email under PGP.</p>
 <p>The cryptography is github.com/ProtonMail/go-crypto, the maintained fork of golang.org/x/crypto/openpgp; nothing here implements a primitive. This package only loads keys and decides what a message must carry.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/pgp</code></p>
-<h3 id="s26-74-priorauth"><span class="num">26.74</span> priorauth</h3>
+<h3 id="s26-74-pixv3"><span class="num">26.74</span> pixv3</h3>
+<p>Package pixv3 is the HL7 version 3 face of the patient index: the IHE Patient Identifier Cross-referencing and Patient Demographics Query profiles as most hospitals outside the FHIR world still speak them.</p>
+<ul>
+<li>ITI-44, Patient Identity Feed HL7 V3: a source adds a patient (PRPA_IN201301UV02), revises one (PRPA_IN201302UV02) or says two records are the same person (PRPA_IN201304UV02). Answered with MCCI_IN000002UV01. - ITI-45, PIXV3 Query: the other identifiers of the person holding one (PRPA_IN201309UV02 -&gt; PRPA_IN201310UV02). - ITI-47, PDQV3 Query: the people matching some demographics (PRPA_IN201305UV02 -&gt; PRPA_IN201306UV02), with continuation (QUQI_IN000003UV01) and cancel (QUQI_IN000003UV01_Cancel).</li>
+</ul>
+<p>The answers come from the same patient index as PIXm, PDQm, Patient/$match and the index screen, so a record fed in v3 is found over FHIR and the reverse. The messages are written by hand, in schema order, for the reason hl7v3.Ack gives.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/pixv3</code></p>
+<h3 id="s26-75-priorauth"><span class="num">26.75</span> priorauth</h3>
 <p>Package priorauth implements the provider-side prior authorization workflow required by CMS-0057. It submits prior auth requests to payer FHIR APIs, tracks responses, and converts between internal types and FHIR resources.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/priorauth</code></p>
-<h3 id="s26-75-privacy"><span class="num">26.75</span> privacy</h3>
+<h3 id="s26-76-privacy"><span class="num">26.76</span> privacy</h3>
 <p>Package privacy answers a data subject&#39;s requests under the GDPR and the UK GDPR: find everything this server holds about a person, give it to them (Articles 15 and 20), erase it (Article 17), and keep what a legal hold covers.</p>
 <p>It reaches every place Perfuse keeps patient data: the message store (through its identity index), the delivery queue, the FHIR store (the person&#39;s Patient resources and everything that refers to them, with their history), stored prior authorization requests, and the patient index, whose links widen one identifier into all of the person&#39;s numbers. What it cannot reach it names: traces sent to a collector, the audit log (kept, as the record of who did what), and backups, which keep what was erased until they expire - so every erasure is written to a ledger, as salted hashes of the identifiers rather than the identifiers, and can be applied again to a restored copy.</p>
 <p>It decides nothing on anybody&#39;s behalf. Whether a request must be granted, and whether an exemption applies, is the controller&#39;s decision; erasure needs a second administrator&#39;s approval, and a legal hold refuses it outright.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/privacy</code></p>
-<h3 id="s26-76-publichealth"><span class="num">26.76</span> publichealth</h3>
+<h3 id="s26-77-publichealth"><span class="num">26.77</span> publichealth</h3>
 <p>Package publichealth implements bidirectional public health reporting: electronic case reporting (eCR), electronic lab reporting (ELR), and immunization registry queries.</p>
 <p>Every hospital is legally required to report certain conditions — tuberculosis, measles, hepatitis, COVID-19, sexually transmitted infections, foodborne illness — to state and local public health agencies. The reporting happens through three distinct interfaces:</p>
 <ul>
@@ -7412,26 +7498,26 @@ rules:
 <p>The package is bidirectional: it reports outward (ELR, eCR, VXU) and queries back (VXQ/VXR). All operations are real-time rather than nightly batch.</p>
 <p>Thread safety: SubmissionLog is safe for concurrent use. The builder functions are pure and safe to call from any goroutine.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/publichealth</code></p>
-<h3 id="s26-77-published"><span class="num">26.77</span> published</h3>
+<h3 id="s26-78-published"><span class="num">26.78</span> published</h3>
 <p>Package published holds the guards for Perfuse&#39;s importable packages, in one place.</p>
 <p>hl7 was the first package published and carries its own copy of these checks. fhir and pas were published so that a decision service such as Vaglio reads FHIR and PAS requests with exactly the code Perfuse uses, rather than a copy that drifts: four readers of the X12 action codes in this repository once disagreed, and one read a denial as an approval. The guards are kept here rather than copied into each package, for the same reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/published</code></p>
-<h3 id="s26-78-queue"><span class="num">26.78</span> queue</h3>
+<h3 id="s26-79-queue"><span class="num">26.79</span> queue</h3>
 <p>Package queue is a durable, per-destination delivery queue.</p>
 <p>Without it, a destination that is down for two minutes loses everything sent during those two minutes: retries happen in memory, and when they run out the message is recorded as failed and gone. With it, the message is on disk and keeps its place until the destination comes back.</p>
 <p>Two design decisions shape everything else.</p>
 <p><strong>Order is preserved per destination, and that means a queued destination stops taking the fast path.</strong> HL7 is a stream of events about the same patients: an A01 admits, an A03 discharges. If a failed A01 goes to the queue while the next A03 is delivered directly, the receiving system sees a discharge for a patient it never admitted. So once anything is queued for a destination, everything for that destination queues behind it until the queue drains. That costs throughput during an outage and it is not optional, because the alternative is silent clinical nonsense. It is also the specific thing that goes wrong in other engines when somebody turns on concurrent queue threads to make a backlog drain faster.</p>
 <p><strong>A queued message is an accepted message.</strong> The sender is told AA, because the bytes are on disk and fsynced before the acknowledgement goes out. Saying AE would make a correctly functioning store-and-forward queue look like a fault and invite the sender to resend what we already hold.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/queue</code></p>
-<h3 id="s26-79-residency"><span class="num">26.79</span> residency</h3>
+<h3 id="s26-80-residency"><span class="num">26.80</span> residency</h3>
 <p>Package residency says where this server&#39;s data may go: the cloud regions a site allows (the EEA, the UK, Switzerland, or regions named one by one), and whether a connector&#39;s region is one of them.</p>
 <p>Perfuse checks what it can know. An AWS connector names its region (S3, SQS, SNS), and an AWS hostname carries one (sqs.eu-west-2.amazonaws.com); those are checked when a channel is saved and loaded, so a channel cannot send patient data to a bucket in Virginia from a server whose data must stay in Frankfurt. A plain hostname (a hospital&#39;s own system, a partner&#39;s MLLP listener) says nothing about where it is, and is not judged here: the record of processing lists every host a channel sends to, for the controller to check.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/residency</code></p>
-<h3 id="s26-80-rtpb"><span class="num">26.80</span> rtpb</h3>
+<h3 id="s26-81-rtpb"><span class="num">26.81</span> rtpb</h3>
 <p>Package rtpb answers NCPDP Real-Time Prescription Benefit requests from a formulary: what a drug will cost this member at this pharmacy, whether it needs a prior authorization or a step first, and which alternatives cost less.</p>
 <p>CMS-0062-P proposes RTPB for impacted payers from 1 October 2027. The XML is NCPDP RTPB v13 (PBv13). NCPDP&#39;s schema is licensed, so element names and order follow the public Surescripts RTPB examples and NCPDP&#39;s public RTPB Implementation Recommendations (coverage restriction codes and the coverage status each maps to); a response is not checked against the XSD here, and a network certification is where that happens.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/rtpb</code></p>
-<h3 id="s26-81-s3put"><span class="num">26.81</span> s3put</h3>
+<h3 id="s26-82-s3put"><span class="num">26.82</span> s3put</h3>
 <p>Package s3put writes objects to S3 using only the standard library.</p>
 <p>The obvious way to talk to S3 is the AWS SDK, and the SDK is enormous. This project sells a static binary with eight direct dependencies and a bill of materials that fits on one screen - that is a real argument with the person who reviews software before a hospital installs it, and trading it away for one connector would be a bad bargain.</p>
 <p>What S3 actually needs is an HTTP PUT and a signature. Signature Version 4 is fully specified, it is deterministic, and AWS publishes test vectors for it. So it is implemented here: about two hundred lines against crypto/hmac and net/http, with no new dependency and nothing to patch when the SDK has an advisory.</p>
@@ -7439,12 +7525,12 @@ rules:
 <p>No multipart upload, no retries of its own, no credential chain beyond static keys and the standard environment variables. An HL7 message is kilobytes, so multipart solves a problem this does not have; the engine already retries; and an instance-role credential chain would mean IMDS calls, caching and refresh logic, which is where a small implementation stops being small. If somebody needs those, the honest answer is a file destination and a sync tool, not a half-built SDK.</p>
 <p>It works with anything speaking the S3 API - MinIO, Ceph, Wasabi, Backblaze - because it is just signed HTTP. That is a side effect worth having, since a hospital object store is often not AWS.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/s3put</code></p>
-<h3 id="s26-82-saml"><span class="num">26.82</span> saml</h3>
+<h3 id="s26-83-saml"><span class="num">26.83</span> saml</h3>
 <p>Exclusive XML Canonicalization (exc-c14n) per https://www.w3.org/TR/xml-exc-c14n/</p>
 <p>This is the byte-exact canonical form that an XML signature signs. Getting it wrong means valid signatures appear invalid and - worse - an implementation that gets it mostly right will pass in testing against its own signatures while rejecting real IdP responses.</p>
 <p>The rules that matter for SAML: - Namespace declarations are rendered only if visibly utilised by the element or its attributes. - Inherited namespaces that an element uses but did not declare are rendered as if declared on that element. - Attributes are sorted: namespace declarations first (sorted by prefix), then other attributes (sorted by expanded name: namespace URI then local name). - Empty elements use start-tag/end-tag, never self-closing. - Text nodes are output verbatim; CDATA is replaced by its content with entity escaping. - Processing instructions and comments outside the document element are excluded.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/saml</code></p>
-<h3 id="s26-83-scim"><span class="num">26.83</span> scim</h3>
+<h3 id="s26-84-scim"><span class="num">26.84</span> scim</h3>
 <p>Package scim implements SCIM 2.0, the protocol identity providers use to provision accounts.</p>
 <p>Okta, Entra ID, Google Workspace and OneLogin all speak it. An administrator adds somebody to a group in the identity provider, and within a minute an account appears here with the right role. They remove them, and the account goes away.</p>
 <h1 id="deprovisioning-is-the-point">Deprovisioning is the point</h1>
@@ -7457,7 +7543,7 @@ rules:
 <h1 id="why-it-is-a-separate-package">Why it is a separate package</h1>
 <p>SCIM&#39;s shapes are not Perfuse&#39;s. It has its own error format, its own list envelope, its own patch language, and its own opinions about attribute casing. Keeping the translation in one place means the handlers can be about what happens to an account rather than about JSON.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/scim</code></p>
-<h3 id="s26-84-script"><span class="num">26.84</span> script</h3>
+<h3 id="s26-85-script"><span class="num">26.85</span> script</h3>
 <p>Package script runs Mirth Connect JavaScript.</p>
 <p>The goal is that a channel&#39;s scripts move across untouched. That is a compatibility exercise, not a design exercise, so the shape of everything here is dictated by what Mirth exposes: msg and tmp as E4X trees, six maps with Java&#39;s Map methods, the $ family of lookup functions, logger, and a handful of utility objects whose method names and date-format strings are Java&#39;s.</p>
 <p>Three decisions are ours rather than Mirth&#39;s, and each is a deliberate departure:</p>
@@ -7465,7 +7551,7 @@ rules:
 <p>Java interoperability is refused with an error naming the class, rather than returning undefined. A script reaching into Packages.java.sql cannot be made to work here, and the useful outcome is a message saying exactly that at the line where it happens, not a NullPointerException three lines later.</p>
 <p>File and database access are off unless a channel turns them on. Mirth grants both to every script by default. A transformer that can read any file the process can read is a reasonable thing to want and an unreasonable default.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/script</code></p>
-<h3 id="s26-85-settings"><span class="num">26.85</span> settings</h3>
+<h3 id="s26-86-settings"><span class="num">26.86</span> settings</h3>
 <p>Package settings is the single description of everything about a Perfuse server that an operator may change.</p>
 <h1 id="why-this-exists">Why this exists</h1>
 <p>Before this package, roughly thirty things were command-line flags and nothing else. Changing how long messages are kept meant editing a service definition and restarting, which in a hospital means a change ticket - so in practice nobody changed them, and a default chosen on the first afternoon became the setting forever.</p>
@@ -7479,11 +7565,11 @@ rules:
 <p>The file wins once it exists, and flags supply the initial contents. The alternative - flags always winning - would make the interface a liar, since anything ever passed on a command line could be edited and saved and silently ignored.</p>
 <p>A flag that disagrees with the file is reported at startup, naming both values, because otherwise the flag stays in the service definition for years and the next person to read it believes it.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/settings</code></p>
-<h3 id="s26-86-sftpconn"><span class="num">26.86</span> sftpconn</h3>
+<h3 id="s26-87-sftpconn"><span class="num">26.87</span> sftpconn</h3>
 <p>Package sftpconn opens SFTP connections.</p>
 <p>Split out from the connectors because the interesting part is authentication and host key verification, and both are identical whether a channel is collecting files or writing them. Two copies would drift, and the half that drifted would be the half that stopped verifying.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sftpconn</code></p>
-<h3 id="s26-87-shadow"><span class="num">26.87</span> shadow</h3>
+<h3 id="s26-88-shadow"><span class="num">26.88</span> shadow</h3>
 <p>Package shadow compares a candidate channel against the live one.</p>
 <p>The comparison itself is the easy part. The whole value is in two guarantees, and both are enforced by construction rather than by configuration:</p>
 <ul>
@@ -7491,21 +7577,21 @@ rules:
 </ul>
 <p>Anything less than that and shadow mode becomes a way to break production while trying to avoid breaking production.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/shadow</code></p>
-<h3 id="s26-88-shl"><span class="num">26.88</span> shl</h3>
+<h3 id="s26-89-shl"><span class="num">26.89</span> shl</h3>
 <p>Package shl implements SMART Health Links and SMART Health Cards: the QR codes CMS&#39;s &#34;Kill the Clipboard&#34; asks providers to accept at check-in, and to hand back with the visit record.</p>
 <p>A SMART Health Link (SMART Health Links STU 1) is shlink:/ followed by base64url JSON: a manifest URL, a 256-bit key, and optionally an expiry, a label and flags (P passcode, L long-term, U a single file by GET). The receiver posts to the manifest URL and gets back files, each a JWE encrypted with that key - alg dir, enc A256GCM, optionally DEFLATE-compressed - holding FHIR JSON, SMART Health Cards, or a SMART access token. The server that hosts the files never sees the key: it travels only in the link, which is the patient&#39;s.</p>
 <p>A SMART Health Card (SMART Health Cards Framework 1.4) is a signed FHIR bundle: a compact JWS, ES256, with a DEFLATE-compressed payload naming its issuer, whose public key is at &lt;iss&gt;/.well-known/jwks.json. It travels as a numeric shc:/ QR code or a .smart-health-card file.</p>
 <p>Only the standard library: crypto/aes, crypto/cipher, crypto/ecdsa and compress/flate cover everything, and a JOSE library would bring a much larger surface for two algorithms.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/shl</code></p>
-<h3 id="s26-89-smartauth"><span class="num">26.89</span> smartauth</h3>
+<h3 id="s26-90-smartauth"><span class="num">26.90</span> smartauth</h3>
 <p>Package smartauth is a SMART App Launch authorization server: it issues the access tokens Perfuse&#39;s FHIR endpoint accepts.</p>
 <p>Written against the standard library, like internal/oidc, which verifies what this signs. The tokens are JWTs signed RS256, the one algorithm every SMART client and the specification&#39;s ID token rules can rely on.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/smartauth</code></p>
-<h3 id="s26-90-snmp"><span class="num">26.90</span> snmp</h3>
+<h3 id="s26-91-snmp"><span class="num">26.91</span> snmp</h3>
 <p>Package snmp is a small read-only SNMPv2c agent: GET, GETNEXT and GETBULK over UDP against a table of values the caller fills in, and SNMPv2 traps.</p>
 <p>Messages are BER (X.690) encoded here; nothing in it is cryptography (v2c&#39;s community string is a plain-text password, which is why the agent only answers the networks it is told to).</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/snmp</code></p>
-<h3 id="s26-91-soap"><span class="num">26.91</span> soap</h3>
+<h3 id="s26-92-soap"><span class="num">26.92</span> soap</h3>
 <p>Package soap sends SOAP requests and reads SOAP faults, using only the standard library.</p>
 <p>SOAP is a fair amount of ceremony around an HTTP POST, and it is still how a great deal of hospital middleware accepts data - patient administration systems, document repositories, regional record services, anything specified in the decade when this was the answer. Mirth has a Web Service connector, so this is a Tier 2 migration blocker rather than a nice-to-have.</p>
 <h1 id="why-not-a-generated-client">Why not a generated client</h1>
@@ -7514,21 +7600,21 @@ rules:
 <p>No WSDL parsing, no WS-Security, no MTOM, no WS-Addressing. Those are each a specification in their own right, and pretending to support one while getting a detail wrong is worse than not offering it - a signature that almost verifies is indistinguishable from an attack at the far end. WS-Security in particular is where a half-implementation would do real harm.</p>
 <p>What is here: SOAP 1.1 and 1.2 envelopes, a templated body, the SOAPAction header, and fault detection that reads the fault string rather than reporting &#34;500&#34;.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/soap</code></p>
-<h3 id="s26-92-sof"><span class="num">26.92</span> sof</h3>
+<h3 id="s26-93-sof"><span class="num">26.93</span> sof</h3>
 <p>Package sof runs SQL on FHIR v2 ViewDefinitions: a view turns each FHIR resource of one type into rows of named columns, by FHIRPath, so FHIR data can be read as tables by SQL engines, spreadsheets and quality measures.</p>
 <p>It follows the ViewDefinition&#39;s processing algorithm (column, select, forEach, forEachOrNull, repeat, unionAll, where, constants, %rowIndex, getResourceKey and getReferenceKey) and is checked against the official sql-on-fhir test fixtures.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sof</code></p>
-<h3 id="s26-93-sqldb"><span class="num">26.93</span> sqldb</h3>
+<h3 id="s26-94-sqldb"><span class="num">26.94</span> sqldb</h3>
 <p>Package sqldb opens database connections for the database source and destination.</p>
 <p>The drivers are registered here and nowhere else, so there is exactly one place that decides what Perfuse can connect to.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqldb</code></p>
-<h3 id="s26-94-sqlitedb"><span class="num">26.94</span> sqlitedb</h3>
+<h3 id="s26-95-sqlitedb"><span class="num">26.95</span> sqlitedb</h3>
 <p>Package sqlitedb opens SQLite the way a server needs it: one connection for writes and several for reads.</p>
 <p>The reason is a failure mode that only appears once a deployment has been running for a while. SQLite in WAL mode lets readers run alongside a writer, but Go&#39;s connection pool sits above SQLite, so a pool of one serialises everything regardless of what the database would allow. A message browser search scanning the payload column then holds the only connection, and every arriving message waits behind it.</p>
 <p>Measured on this machine, a write takes 104µs with the store idle and 2.6ms while a search scans four thousand messages: twenty-five times slower. That scales with the table, so at a few hundred thousand stored messages a report turns into seconds of delivery latency, and a write is on the acknowledgement path. The sender sees a timeout, resends, and somebody spends a morning looking for a problem in the network.</p>
 <p>Splitting the pools costs nothing and removes the interaction: reports get their own connections, and the writer keeps one to itself because SQLite permits exactly one writer anyway.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/sqlitedb</code></p>
-<h3 id="s26-95-steps"><span class="num">26.95</span> steps</h3>
+<h3 id="s26-96-steps"><span class="num">26.96</span> steps</h3>
 <p>Declarative transformation steps, for any message format.</p>
 <h1 id="why-this-is-shared">Why this is shared</h1>
 <p>The step vocabulary - set, copy, clear, map, replace, trim, case, each with a description and an optional condition - has nothing to do with any particular format. Only three things differ between formats: how a path is written, how a value is read, and how it is written back.</p>
@@ -7536,18 +7622,18 @@ rules:
 <h1 id="what-a-format-supplies">What a format supplies</h1>
 <p>An Accessor: a path compiler, a condition compiler, and an optional veto on steps it cannot honour. Nothing else.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/steps</code></p>
-<h3 id="s26-96-stomp"><span class="num">26.96</span> stomp</h3>
+<h3 id="s26-97-stomp"><span class="num">26.97</span> stomp</h3>
 <p>Package stomp speaks STOMP 1.2 to a message broker.</p>
 <p>This is what &#34;JMS support&#34; has to mean in a program that is not Java. JMS is an API rather than a protocol, so there is nothing to implement: what a site actually needs is for Perfuse to talk to the broker sitting behind their JMS applications.</p>
 <p>STOMP rather than OpenWire, and the reasoning is worth recording because the obvious answer is wrong. OpenWire is ActiveMQ&#39;s native protocol and a binary serialisation of JMS commands - weeks of work, specific to one broker family, and undocumented except by its implementation. ActiveMQ auto-detects STOMP, AMQP and MQTT on the same port it serves OpenWire on, so a text protocol reaches the same brokers. STOMP covers ActiveMQ Classic, Artemis and RabbitMQ; AMQP 1.0 would add Azure Service Bus and IBM MQ, and is the sensible next one rather than OpenWire.</p>
 <p>Written against the standard library. A broker client is not the place for a dependency whose failure modes are somebody else&#39;s to explain, and the framing here is small enough that owning it costs less than reading their issue tracker.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/stomp</code></p>
-<h3 id="s26-97-store"><span class="num">26.97</span> store</h3>
+<h3 id="s26-98-store"><span class="num">26.98</span> store</h3>
 <p>Package store holds the data that is genuinely stateful: users, sessions and an audit trail.</p>
 <p>Channels are deliberately not in here. They live in files, because that is what gives git, diffs, code review and environment promotion for free. Putting channels in a database is the decision that forces every one of those to be bought separately, and it is the reason a third-party product exists purely to shuttle Mirth channels between its database and a git repository.</p>
 <p>So the split is: configuration in files, identity and history in SQLite.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/store</code></p>
-<h3 id="s26-98-tefca"><span class="num">26.98</span> tefca</h3>
+<h3 id="s26-99-tefca"><span class="num">26.99</span> tefca</h3>
 <p>Package tefca implements the parts of TEFCA participation that do not require a QHIN connection.</p>
 <h1 id="what-is-real">What is real</h1>
 <p>Purpose-of-use validation, configuration validation, and the audit trail - including its persistence, its query interface and its obligation to record failed attempts as well as successful ones. That last part is not a technicality: a run of failed deliveries to one recipient is how a misconfigured partner shows up, and a run of failed queries for different patients is how probing shows up.</p>
@@ -7557,7 +7643,7 @@ rules:
 <h1 id="what-completing-it-requires">What completing it requires</h1>
 <p>Onboarding with a Qualified Health Information Network, mutually authenticated TLS using certificates issued through that process, and either the IHE profiles the Common Agreement started with or Facilitated FHIR as defined by the Sequoia Project&#39;s standard operating procedure, effective 8 March 2026. None of it can be written speculatively: it is tested against a real QHIN or it is not tested, and an untested exchange implementation is the same defect as no implementation wearing a better disguise.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tefca</code></p>
-<h3 id="s26-99-tenant"><span class="num">26.99</span> tenant</h3>
+<h3 id="s26-100-tenant"><span class="num">26.100</span> tenant</h3>
 <p>Package tenant provides the identity and isolation rules for multi-tenant operation.</p>
 <p>An HIE, a clearinghouse or a managed service provider runs one engine on behalf of many organisations. Mirth cannot do this - one instance serves one organisation, and an MSP ends up running fifty JVMs and fifty databases.</p>
 <h1 id="what-a-tenant-owns">What a tenant owns</h1>
@@ -7566,23 +7652,23 @@ rules:
 <p>The dangerous failure here is not a crash. It is tenant A seeing tenant B&#39;s messages, which is a reportable breach rather than a bug. A design where every query takes a tenant_id parameter fails the first time somebody writes a query and forgets one, and that query looks perfectly correct in review.</p>
 <p>So the tenant is not a parameter. Data access goes through a handle that already carries it, and there is no way to reach the tables without one. Forgetting is not available.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tenant</code></p>
-<h3 id="s26-100-terminology"><span class="num">26.100</span> terminology</h3>
+<h3 id="s26-101-terminology"><span class="num">26.101</span> terminology</h3>
 <p>Package terminology keeps published code systems (LOINC, SNOMED CT, RxNorm, ICD-10-CM, CPT and local ones) for looking codes up, and the values mapping tables did not have, for somebody to map.</p>
 <p>The code systems are imported from the files their publishers distribute. Several are licensed (LOINC needs a free account, SNOMED CT an affiliate licence, RxNorm a UMLS licence, CPT an AMA licence), so none ships with Perfuse: an administrator who holds the licence uploads the file, and Perfuse records who imported it and when.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/terminology</code></p>
-<h3 id="s26-101-tlsconf"><span class="num">26.101</span> tlsconf</h3>
+<h3 id="s26-102-tlsconf"><span class="num">26.102</span> tlsconf</h3>
 <p>Package tlsconf builds TLS configuration from files and describes certificates.</p>
 <p>This is the free equivalent of an extension Mirth now charges for. Most of the value is not the encryption, which is a few lines, but the part that stops somebody deploying something they think is secure and is not: refusing to skip verification silently, insisting a client certificate is actually checked when one is requested, and saying plainly when a certificate is about to expire.</p>
 <p>An expired certificate on an interface feed is a genuine hospital outage, and it happens because nobody was told. The describing half of this package exists for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tlsconf</code></p>
-<h3 id="s26-102-tomirth"><span class="num">26.102</span> tomirth</h3>
+<h3 id="s26-103-tomirth"><span class="num">26.103</span> tomirth</h3>
 <p>Package tomirth writes a Perfuse channel back out as Mirth channel XML.</p>
 <p>Why this exists. The objection to adopting a new integration engine is rarely &#34;is it any good&#34;. It is &#34;what if we are wrong and we are stuck&#34;, and the cheapest answer to that is being able to walk back out. Perfuse has read Mirth&#39;s channels since the beginning; until now it could not write one, which made the reassurance one-directional and therefore not much of a reassurance.</p>
 <p>How it avoids the trap that made the first attempt useless. Mirth&#39;s XML is XStream&#39;s output, and XStream reads the class and version attributes as instructions: an element it does not recognise is dropped without a word, and a channel it cannot assemble is stored with its description replaced by &#34;This channel is invalid. Verify all required extensions are loaded correctly&#34; and its destinations discarded. Nothing in that response names the element at fault. An exporter that composes property blocks from a reading of the format therefore fails in the one way that is expensive to diagnose, which is what happened: this repository carried an exporter with nine passing tests whose output Mirth threw away, because every test compared it against our own parser instead of a server.</p>
 <p>So none of the property blocks are composed here. scripts/mirth-dump-connector-templates.sh has Mirth&#39;s own ObjectXMLSerializer serialise the defaults of each connector properties class, and those documents are committed under templates/. This package substitutes values into them, and mirth.SetRawProperty refuses any path the template does not already contain - so a mistake is an error naming the path, at the moment of export, rather than a channel that vanishes on import.</p>
 <p>What it will not do. A transport with no Mirth equivalent is refused by name rather than approximated. An export that quietly turned an S3 destination into a file writer would be worse than no export at all, because the channel would import cleanly and deliver to the wrong place.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/tomirth</code></p>
-<h3 id="s26-103-trace"><span class="num">26.103</span> trace</h3>
+<h3 id="s26-104-trace"><span class="num">26.104</span> trace</h3>
 <p>Package trace produces distributed traces for messages moving through a channel, and exports them over OTLP/HTTP with the JSON encoding.</p>
 <p>Why this exists rather than the OpenTelemetry SDK: the SDK plus an OTLP exporter pulls in roughly sixty modules and adds about as much to the binary as the whole of the rest of this program. What is actually needed here is narrow - W3C trace context propagation, a span model, head sampling, and a batched HTTP POST - and OTLP/JSON is a documented stable encoding that can be produced with the standard library alone. Same trade as choosing lib/pq over pgx: take the small thing when only part of the big thing is wanted.</p>
 <p>The consequence worth stating: there is no auto-instrumentation and no vendor-specific exporter. Spans are the ones this program creates deliberately, and they go to any OTLP endpoint - a collector, Jaeger, Grafana Tempo, Honeycomb, Datadog&#39;s OTLP ingest.</p>
@@ -7591,12 +7677,12 @@ rules:
 <h1 id="tracing-must-never-affect-delivery">Tracing must never affect delivery</h1>
 <p>Every operation here is best-effort. Spans are dropped when the buffer is full, export failures are counted and never retried into the message path, and no call blocks on the network. A dropped span is an inconvenience. A message delayed or lost because the tracing backend was slow is a clinical incident, so the trade is never in question.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/trace</code></p>
-<h3 id="s26-104-transform"><span class="num">26.104</span> transform</h3>
+<h3 id="s26-105-transform"><span class="num">26.105</span> transform</h3>
 <p>Package transform applies declarative changes to a message.</p>
 <p>This is the layer meant to carry the ordinary work, with scripting kept as a marked escape hatch. The distinction is not stylistic. A step declared in YAML can be validated before it runs, shown in a diff, reviewed by somebody who does not read JavaScript, and reported on; a script can only be executed and hoped about. Most of what Mirth transformers actually do is boring - copy a field, pad an identifier, map a code through a table, clear something that should not leave the building - and all of that belongs here.</p>
 <p>Every step names its target explicitly and every step is reversible in the sense that it says what it did, because the most expensive failure in an interface is a transformation nobody knew was happening.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/transform</code></p>
-<h3 id="s26-105-translate"><span class="num">26.105</span> translate</h3>
+<h3 id="s26-106-translate"><span class="num">26.106</span> translate</h3>
 <p>Package translate converts a Mirth channel into a Perfuse channel definition.</p>
 <p><code>perfuse explain</code> reports what blocks a migration. This does most of the migration, which is a different and much larger claim, so it is deliberately conservative about what it will assert.</p>
 <p>Three rules shape the whole thing.</p>
@@ -7604,26 +7690,26 @@ rules:
 <p><strong>Declarative where it is certain, script where it is not.</strong> A Mapper step that copies a field becomes a declarative step, because that is readable and checkable. A JavaScript step becomes a script, because Perfuse runs Mirth&#39;s JavaScript unchanged and rewriting it into something that looks equivalent is exactly where a translator would introduce a difference nobody notices.</p>
 <p><strong>The output is meant to be read.</strong> It carries comments explaining what came from where, and what was left for a person. A migration is reviewed by somebody who has to sign off on it, and an unannotated wall of YAML cannot be reviewed.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/translate</code></p>
-<h3 id="s26-106-udap"><span class="num">26.106</span> udap</h3>
+<h3 id="s26-107-udap"><span class="num">26.107</span> udap</h3>
 <p>Package udap implements the client half of HL7 Security for Scalable Registration, Authentication, and Authorization — the specification TEFCA&#39;s Facilitated FHIR exchange rests on.</p>
 <p>UDAP is a public key infrastructure bolted onto OAuth 2.0. A trust community issues X.509 certificates to its members; a member proves who it is by signing JWTs with the private key and attaching the certificate chain in the JWT header. That replaces the shared client secret of ordinary OAuth, which does not scale to thousands of organisations who have never met.</p>
 <p>Why this package exists at all. TEFCA exchange cannot be fully verified without a real QHIN: joining one needs onboarding and issued certificates, and cannot be faked. But the security profile underneath it is a published HL7 implementation guide with public reference servers, and one of them answers on the open internet. So the part that can be verified is verified here, and the part that cannot is refused at the boundary rather than guessed at.</p>
 <p>The distinction matters because of what happened with SAML in this repository: a thousand lines of tests passed, five of them specifically about signature canonicalisation, while no real identity provider could authenticate anybody. Both halves had been written here and agreed with each other. The lesson taken from it is that a security implementation is worth nothing until something somebody else wrote has accepted or rejected it.</p>
 <p>Specification references: - HL7 UDAP Security STU 1: http://hl7.org/fhir/us/udap-security/STU1/ - TEFCA SOP Facilitated FHIR Implementation v2.0, effective 8 March 2026</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/udap</code></p>
-<h3 id="s26-107-v2fhir"><span class="num">26.107</span> v2fhir</h3>
+<h3 id="s26-108-v2fhir"><span class="num">26.108</span> v2fhir</h3>
 <p>Package v2fhir maps HL7 v2 messages to FHIR resources.</p>
 <p>Mapping is where interoperability projects actually fail, so the rules this package follows are stated rather than implied:</p>
 <ul>
 <li>A value that cannot be mapped is preserved as text, never guessed at. A local code turned into a plausible-looking standard code is worse than an uncoded value, because the receiver believes it. - Every mapping decision that involved judgement is reported as a note, so a human can check the ones that matter instead of reading the whole output. - Timestamps are converted, not copied. HL7 v2 timestamps are not ISO 8601, and a dateTime carrying a local time with no offset is the single most common reason a converted resource is rejected. - Units keep their original text and gain a UCUM code only when the mapping is certain. A wrong unit code is a patient-safety defect, not a formatting problem.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/v2fhir</code></p>
-<h3 id="s26-108-vcs"><span class="num">26.108</span> vcs</h3>
+<h3 id="s26-109-vcs"><span class="num">26.109</span> vcs</h3>
 <p>Package vcs reads the history of channel files from git.</p>
 <p>Channel history is a paid extension elsewhere, and it is a paid extension because those engines keep channels in a database, so tracking changes means building a change-tracking system. Perfuse keeps channels in files, so the history already exists and has since the first commit. This package only has to read it.</p>
 <p>It shells out to git rather than embedding a git library. The library would add a large dependency to a binary whose selling point is having four, and it would buy nothing: a deployment keeping its channels under version control has git installed, and one that does not gets a clear &#34;not a git repository&#34; rather than a subtly different implementation of the same thing.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vcs</code></p>
-<h3 id="s26-109-vfs"><span class="num">26.109</span> vfs</h3>
+<h3 id="s26-110-vfs"><span class="num">26.110</span> vfs</h3>
 <p>Package vfs is the small set of file operations a polling connector needs.</p>
 <h1 id="why-an-interface-rather-than-four-connectors">Why an interface rather than four connectors</h1>
 <p>Perfuse collects files from a local disk, an SFTP server, an FTP server, a Windows share and a WebDAV server. The transfer differs in every case. Everything that actually decides whether messages survive does not:</p>
@@ -7635,17 +7721,17 @@ rules:
 <p>No writing, beyond what disposal needs. Sending files is a different problem with different failure modes - a partially written file at the far end, which the existing senders handle by writing to a temporary name and renaming. Folding both directions into one interface would make each harder to reason about.</p>
 <p>No recursion. A poller that descends into subdirectories collects the archive directory it just moved a file into.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vfs</code></p>
-<h3 id="s26-110-vpn"><span class="num">26.110</span> vpn</h3>
+<h3 id="s26-111-vpn"><span class="num">26.111</span> vpn</h3>
 <p>Package vpn reports the state of the site-to-site VPN tunnels partner traffic runs over - AWS Site-to-Site VPN, Azure VPN Gateway connections and strongSwan - and keeps each partner&#39;s connection sheet: both sides&#39; tunnel settings, and whether they agree.</p>
 <p>A tunnel that is down looks, from an interface engine, exactly like a partner whose engine is stopped: connections time out. Saying &#34;the tunnel is down&#34; instead is the difference between calling the network team and calling the partner.</p>
 <p>Read only. Nothing here changes a tunnel, and no pre-shared key is ever read, kept or shown.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vpn</code></p>
-<h3 id="s26-111-web"><span class="num">26.111</span> web</h3>
+<h3 id="s26-112-web"><span class="num">26.112</span> web</h3>
 <p>Package web serves the built front end from inside the binary.</p>
 <p>The assets are embedded rather than shipped alongside, so deployment stays one file. That is the same reason the engine avoids cgo: an operator should be able to copy a binary onto a server and run it, with no JVM, no installer and no asset directory to get out of step with the executable.</p>
 <p>The built output is committed so that <code>go build</code> works on a checkout without Node installed. Rebuild it with <code>make web</code>.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/web</code></p>
-<h3 id="s26-112-webauthn"><span class="num">26.112</span> webauthn</h3>
+<h3 id="s26-113-webauthn"><span class="num">26.113</span> webauthn</h3>
 <p>Package webauthn verifies passkeys.</p>
 <p>A passkey is a key pair the authenticator holds - Touch ID, Windows Hello, a YubiKey, a phone - where the private half never leaves the device. Signing in means the server sends a random challenge, the authenticator signs it after checking the user is present, and the server verifies the signature against the public key it stored at registration.</p>
 <p>The property that matters is not that it is convenient. It is that there is nothing to phish. A password can be typed into a convincing copy of a login page; a passkey signature is bound to the origin it was created for, so the copy gets a signature its server cannot use. For an integration engine holding a hospital&#39;s interfaces, that is the difference worth having.</p>
@@ -7655,12 +7741,12 @@ rules:
 <li>The signing algorithm is fixed at registration and stored with the key. Nothing at sign-in reads an algorithm from the client, because that is algorithm confusion and there is no function here that could do it. - The origin is compared exactly, never by prefix or suffix. A check that accepts anything ending in the right domain accepts an attacker&#39;s subdomain. - A challenge is single-use and expires. It is deleted when consumed, so a captured assertion cannot be replayed. - Attestation is not trusted for anything. The attestation statement is parsed to extract the credential and then its signature is ignored, because verifying it properly needs a maintained root store and pretending to verify it is worse than not claiming to. - The sign count is checked when the authenticator provides one, and its absence is not treated as suspicious. Many authenticators legitimately leave it at zero.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/webauthn</code></p>
-<h3 id="s26-113-winservice"><span class="num">26.113</span> winservice</h3>
+<h3 id="s26-114-winservice"><span class="num">26.114</span> winservice</h3>
 <p>Package winservice runs Perfuse as a Windows service.</p>
 <p>This file is the everywhere-else half. It exists so that cmd/perfuse can call into this package without wrapping every call site in a build tag: the subcommand is always compiled, and on Linux or macOS it explains that services are a Windows idea rather than failing to exist.</p>
 <p>Refusing with a clear sentence is better than hiding the subcommand. Somebody following Windows instructions on the wrong machine gets told what is actually going on, and the equivalent for their platform.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/winservice</code></p>
-<h3 id="s26-114-x12"><span class="num">26.114</span> x12</h3>
+<h3 id="s26-115-x12"><span class="num">26.115</span> x12</h3>
 <p>Reading and writing values at a path.</p>
 <h1 id="why-this-is-separate-from-path">Why this is separate from Path</h1>
 <p>path.go decides what a path expression means. This file resolves one against an actual interchange. Kept apart because the parsing rules are worth reading without the byte handling, and because the parser is used by the configuration validator, which has no message to resolve against.</p>
@@ -7668,7 +7754,7 @@ rules:
 <p>Segment.elements are subslices of Segment.raw, and Message.segs indexes into Message.raw. Editing a value in place changes the length of everything after it, so every one of those slices would need adjusting, and any that was missed would read correct until the one message where it did not.</p>
 <p>So a write rebuilds the segment, rebuilds the interchange, and parses it again. That costs a parse per changed message and buys the guarantee that a Message returned from here is exactly what parsing its own bytes produces. There is no state where the indexes and the bytes disagree, because that state is unrepresentable.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12</code></p>
-<h3 id="s26-115-x12xml"><span class="num">26.115</span> x12xml</h3>
+<h3 id="s26-116-x12xml"><span class="num">26.116</span> x12xml</h3>
 <p>Package x12xml converts an X12 interchange to and from the node tree the transformation, filter and script layers already work on.</p>
 <p>This is the same trick hl7xml plays, and for the same reason. Everything above the parser - declarative transformation steps, the filter language, JavaScript, the channel test runner - operates on an xtree.Node rather than on a format. Render X12 into that tree and all of it works on claims without a line of new code in any of those packages. Write a second addressing layer instead and every one of them grows an X12 branch that has to be kept in step with the HL7 one for ever.</p>
 <h1 id="element-naming">Element naming</h1>
@@ -7676,11 +7762,11 @@ rules:
 <p>Two independent reasons point the same way. It is what every 837 and 835 implementation guide writes, so a person reading the guide and a person reading the tree see the same token. And it is what Mirth&#39;s own X12 serialiser produces, so a Mirth script that walks msg[&#39;CLM&#39;][&#39;CLM01&#39;] keeps working - which is the whole migration promise.</p>
 <p>The element number is always two digits, matching the guides, so CLM01 rather than CLM1. Composite components add a further dotted number, CLM05.1, because X12 composites are one level deep and there is nothing to collide with.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12xml</code></p>
-<h3 id="s26-116-xds"><span class="num">26.116</span> xds</h3>
+<h3 id="s26-117-xds"><span class="num">26.117</span> xds</h3>
 <p>Package xds is IHE cross-enterprise document sharing: an XDS.b Document Registry and Repository (ITI-41 Provide and Register, ITI-18 Registry Stored Query, ITI-43 Retrieve Document Set), an XCA Responding Gateway over the same store (ITI-38, ITI-39), and the client side of each, so a channel can publish a document to another organisation&#39;s repository and the console can query a registry or a community.</p>
 <p>The metadata is ebXML Registry 3.0 (ebRIM), as XDS.b defines it in IHE ITI TF-3 chapter 4. It is modelled here as Go structs whose XML tags carry the namespaces, so a message is read the same whichever prefixes the sender chose, and written namespace-correct.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xds</code></p>
-<h3 id="s26-117-xmldsig"><span class="num">26.117</span> xmldsig</h3>
+<h3 id="s26-118-xmldsig"><span class="num">26.118</span> xmldsig</h3>
 <p>Package xmldsig implements XML Digital Signatures and the XAdES profile of them.</p>
 <h1 id="why-this-is-written-rather-than-borrowed">Why this is written rather than borrowed</h1>
 <p>A signed clinical document is a legal artefact. It asserts that a named person, at a named time, took responsibility for a specific set of bytes. Getting that wrong in either direction is serious: a signature that cannot be verified makes a valid document look forged, and a verifier that is too generous accepts a document somebody altered.</p>
@@ -7690,12 +7776,12 @@ rules:
 <h1 id="exclusive-rather-than-inclusive-by-default">Exclusive rather than inclusive, by default</h1>
 <p>Inclusive canonicalisation pulls in every namespace declaration that is in scope, including ones the signed element never uses. That makes a signature break when the document is later embedded inside something that declares an unrelated namespace on an ancestor, which is precisely what happens when a CDA is put inside a SOAP envelope or an IHE metadata wrapper. Exclusive canonicalisation includes only the declarations the element actually uses, and is what document exchange profiles specify for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xmldsig</code></p>
-<h3 id="s26-118-xtree"><span class="num">26.118</span> xtree</h3>
+<h3 id="s26-119-xtree"><span class="num">26.119</span> xtree</h3>
 <p>Package xtree is a mutable XML tree.</p>
 <p>Three very different features need to modify XML: HL7 transformations, which Mirth models as XML because that is what its scripts operate on; clinical documents, which are XML natively; and the declarative transformation steps. They share this one tree rather than each growing their own, because the alternative is three models that disagree about what an empty element means.</p>
 <p>The design goal is faithfulness to E4X semantics, since Mirth scripts are E4X and the whole point of running them unchanged is that they behave the same. That drives two decisions that would otherwise look strange: a node keeps a pointer to its parent, because E4X exposes parent(), and children are ordered with duplicates allowed, because an HL7 field repetition is literally a repeated element and scripts index into them by position.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xtree</code></p>
-<h3 id="s26-119-pas"><span class="num">26.119</span> pas</h3>
+<h3 id="s26-120-pas"><span class="num">26.120</span> pas</h3>
 <p>Package pas reads Da Vinci Prior Authorization Support (PAS) request Bundles.</p>
 <p>It is the reader Perfuse&#39;s own PAS server uses, published so that whatever decides a prior authorization - a payer&#39;s rules, a utilization management system, a decision service such as Vaglio - reads a request with the same code, and so the same answers about what a request contains. Two readers of one message format are two opinions about it.</p>
 <p>It has no dependencies outside the standard library. A request is kept as decoded JSON (map[string]any) rather than as typed resources, because a PAS Bundle carries whatever supporting resources the provider chose to send, and a reader that dropped what it did not model would hide evidence from the decision.</p>
@@ -7721,7 +7807,7 @@ rules:
 <tr><td><code>address</code></td><td>AMQP Connection, DICOM Destination, DICOM Query Source, Destination, Direct Address, TCP Dest</td></tr>
 <tr><td><code>ae_title</code></td><td>DICOM Source</td></tr>
 <tr><td><code>after_query</code></td><td>Database Source</td></tr>
-<tr><td><code>after_read</code></td><td>Azure Blob Source, Email Source, File Poll, GCS Source, S3 Source, SFTP Source</td></tr>
+<tr><td><code>after_read</code></td><td>Azure Blob Source, Direct IMAP, Email Source, File Poll, GCS Source, S3 Source, SFTP Source</td></tr>
 <tr><td><code>allow</code></td><td>Scripts</td></tr>
 <tr><td><code>allow_clear_password</code></td><td>FTP Destination</td></tr>
 <tr><td><code>allow_unencrypted</code></td><td>AS2 Partner, PGP Receive</td></tr>
@@ -7765,6 +7851,7 @@ rules:
 <tr><td><code>city</code></td><td>ECR Facility</td></tr>
 <tr><td><code>claim_us_core</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>class</code></td><td>XDS Destination</td></tr>
+<tr><td><code>client_ca_file</code></td><td>Direct XDR</td></tr>
 <tr><td><code>client_id</code></td><td>Email O Auth, FHIR Auth, MQTT Connection</td></tr>
 <tr><td><code>client_secret</code></td><td>Email O Auth, FHIR Auth</td></tr>
 <tr><td><code>code</code></td><td>XDS Code</td></tr>
@@ -7796,6 +7883,8 @@ rules:
 <tr><td><code>dicomweb</code></td><td>Destination, Source</td></tr>
 <tr><td><code>dir</code></td><td>CDA Destination, Destination, Document Destination, FTP Destination, File Poll, SFTP Destination, SFTP Source</td></tr>
 <tr><td><code>direct</code></td><td>Destination, Source</td></tr>
+<tr><td><code>direct_from</code></td><td>XDS Destination</td></tr>
+<tr><td><code>direct_to</code></td><td>XDS Destination</td></tr>
 <tr><td><code>display</code></td><td>XDS Code</td></tr>
 <tr><td><code>dns</code></td><td>Direct Destination</td></tr>
 <tr><td><code>document</code></td><td>Destination</td></tr>
@@ -7814,7 +7903,7 @@ rules:
 <tr><td><code>endpoint</code></td><td>AWS Access, Azure Blob Access, GCP Access, S3 Destination</td></tr>
 <tr><td><code>envelope</code></td><td>EDIFACT Options, X12 Options</td></tr>
 <tr><td><code>error_dir</code></td><td>File Poll, SFTP Source</td></tr>
-<tr><td><code>error_folder</code></td><td>Email Source</td></tr>
+<tr><td><code>error_folder</code></td><td>Direct IMAP, Email Source</td></tr>
 <tr><td><code>error_prefix</code></td><td>Azure Blob Source, GCS Source, S3 Source</td></tr>
 <tr><td><code>expect_reply</code></td><td>TCP Dest</td></tr>
 <tr><td><code>extract</code></td><td>Attachments</td></tr>
@@ -7847,7 +7936,7 @@ rules:
 <tr><td><code>headers</code></td><td>Broker Destination, CDA Destination, DICO Mweb Destination, FHIR Destination, HTTP Destination, Kafka Destination, SOAP Destination, XDS Destination</td></tr>
 <tr><td><code>heartbeat</code></td><td>Broker Source</td></tr>
 <tr><td><code>hl7v3</code></td><td>Channel</td></tr>
-<tr><td><code>host</code></td><td>Broker Destination, Broker Source, Email Source, FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, SMTP Destination</td></tr>
+<tr><td><code>host</code></td><td>Broker Destination, Broker Source, Direct IMAP, Email Source, FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, SMTP Destination</td></tr>
 <tr><td><code>hostname</code></td><td>AMQP Connection</td></tr>
 <tr><td><code>http</code></td><td>Destination, Source</td></tr>
 <tr><td><code>ibm_mq</code></td><td>Destination, Source</td></tr>
@@ -7856,6 +7945,7 @@ rules:
 <tr><td><code>identifier_systems</code></td><td>CDA Destination, FHIR Destination</td></tr>
 <tr><td><code>idle_timeout</code></td><td>DICOM Source, Source, TCP Source</td></tr>
 <tr><td><code>ignore</code></td><td>Shadow</td></tr>
+<tr><td><code>imap</code></td><td>Direct Source</td></tr>
 <tr><td><code>include</code></td><td>Scripts</td></tr>
 <tr><td><code>include_trigger_event</code></td><td>Ack</td></tr>
 <tr><td><code>insecure_skip_host_key_check</code></td><td>SFTP Destination, SFTP Source</td></tr>
@@ -7873,14 +7963,15 @@ rules:
 <tr><td><code>known_hosts_file</code></td><td>SFTP Destination, SFTP Source</td></tr>
 <tr><td><code>landscape</code></td><td>Document Destination</td></tr>
 <tr><td><code>language</code></td><td>Scripts</td></tr>
+<tr><td><code>ldap</code></td><td>Direct Destination</td></tr>
 <tr><td><code>length_bytes</code></td><td>TCP Framing</td></tr>
 <tr><td><code>length_includes_header</code></td><td>TCP Framing</td></tr>
 <tr><td><code>level</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>limit</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>line</code></td><td>ECR Facility</td></tr>
-<tr><td><code>listen</code></td><td>AS2 Source, DICO Mweb Source, DICOM Source, Direct Source, HTTP Source, SOAP Source, Source, TCP Source</td></tr>
+<tr><td><code>listen</code></td><td>AS2 Source, DICO Mweb Source, DICOM Source, Direct Source, Direct XDR, HTTP Source, SOAP Source, Source, TCP Source</td></tr>
 <tr><td><code>login</code></td><td>Broker Destination, Broker Source</td></tr>
-<tr><td><code>mailbox</code></td><td>Email Source</td></tr>
+<tr><td><code>mailbox</code></td><td>Direct IMAP, Email Source</td></tr>
 <tr><td><code>match</code></td><td>DICOM Query Source</td></tr>
 <tr><td><code>max_attempts</code></td><td>Database Source, Queue Config</td></tr>
 <tr><td><code>max_backoff</code></td><td>Queue Config, Retry</td></tr>
@@ -7896,7 +7987,7 @@ rules:
 <tr><td><code>max_open_conns</code></td><td>Database Destination</td></tr>
 <tr><td><code>mechanism</code></td><td>Kafka SASL</td></tr>
 <tr><td><code>method</code></td><td>HTTP Destination</td></tr>
-<tr><td><code>move_to</code></td><td>Azure Blob Source, Email Source, File Poll, GCS Source, S3 Source, SFTP Source</td></tr>
+<tr><td><code>move_to</code></td><td>Azure Blob Source, Direct IMAP, Email Source, File Poll, GCS Source, S3 Source, SFTP Source</td></tr>
 <tr><td><code>mpi</code></td><td>Destination</td></tr>
 <tr><td><code>mqtt</code></td><td>Destination, Source</td></tr>
 <tr><td><code>name</code></td><td>Channel, Channel Destination, Destination, ECR Facility</td></tr>
@@ -7918,7 +8009,7 @@ rules:
 <tr><td><code>pass_plain</code></td><td>PGP Receive</td></tr>
 <tr><td><code>passcode</code></td><td>Broker Destination, Broker Source</td></tr>
 <tr><td><code>passphrase</code></td><td>PGP Receive, PGP Send</td></tr>
-<tr><td><code>password</code></td><td>AMQP Connection, AS2 Destination, DICO Mweb Destination, DICO Mweb Source, Direct Destination, Direct Source, Email Source, FTP Destination, FTP Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, SOAP Source, Web DAV Source, XDS Destination</td></tr>
+<tr><td><code>password</code></td><td>AMQP Connection, AS2 Destination, DICO Mweb Destination, DICO Mweb Source, Direct Destination, Direct IMAP, Direct Source, Email Source, FTP Destination, FTP Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SFTP Destination, SFTP Source, SMB Source, SMTP Destination, SOAP Destination, SOAP Source, Web DAV Source, XDS Destination</td></tr>
 <tr><td><code>path</code></td><td>AS2 Source, DICO Mweb Source, HTTP Source, SOAP Source</td></tr>
 <tr><td><code>path_style</code></td><td>S3 Destination, S3 Source</td></tr>
 <tr><td><code>patient_domain</code></td><td>XDS Destination</td></tr>
@@ -7927,8 +8018,8 @@ rules:
 <tr><td><code>persistent</code></td><td>Broker Destination</td></tr>
 <tr><td><code>pgp</code></td><td>Destination, Source</td></tr>
 <tr><td><code>phone</code></td><td>ECR Facility</td></tr>
-<tr><td><code>poll_interval</code></td><td>Azure Blob Source, Database Source, Email Source, File Poll, GCS Source, IBMMQ Source, Java Script Source, S3 Source, SFTP Source</td></tr>
-<tr><td><code>port</code></td><td>Email Source, Serial Source</td></tr>
+<tr><td><code>poll_interval</code></td><td>Azure Blob Source, Database Source, Direct IMAP, Email Source, File Poll, GCS Source, IBMMQ Source, Java Script Source, S3 Source, SFTP Source</td></tr>
+<tr><td><code>port</code></td><td>Direct IMAP, Email Source, Serial Source</td></tr>
 <tr><td><code>postal_code</code></td><td>ECR Facility</td></tr>
 <tr><td><code>postprocessor</code></td><td>Scripts</td></tr>
 <tr><td><code>practice_setting</code></td><td>XDS Destination</td></tr>
@@ -7984,7 +8075,7 @@ rules:
 <tr><td><code>script</code></td><td>Channel, Java Script Destination, Java Script Source</td></tr>
 <tr><td><code>scripts</code></td><td>Channel</td></tr>
 <tr><td><code>secret_access_key</code></td><td>AWS Access, FHIR Auth, S3 Destination</td></tr>
-<tr><td><code>security</code></td><td>Email Source, FTP Destination, FTP Source</td></tr>
+<tr><td><code>security</code></td><td>Direct IMAP, Email Source, FTP Destination, FTP Source</td></tr>
 <tr><td><code>selector</code></td><td>Broker Source</td></tr>
 <tr><td><code>sender_device</code></td><td>HL7v3 Options</td></tr>
 <tr><td><code>sender_oid</code></td><td>HL7v3 Options</td></tr>
@@ -8034,8 +8125,8 @@ rules:
 <tr><td><code>timezone</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>title</code></td><td>Document Destination</td></tr>
 <tr><td><code>tls</code></td><td>AMQP Connection, AS2 Destination, AS2 Source, Broker Destination, Broker Source, DICO Mweb Destination, DICO Mweb Source, DICOM Destination, DICOM Query Source, DICOM Source, Destination, Email Source, HTTP Destination, HTTP Source, IBMMQ Connection, Kafka Destination, Kafka Source, MQTT Connection, SOAP Destination, SOAP Source, Source, TCP Dest, TCP Source, XDS Destination</td></tr>
-<tr><td><code>tls_cert</code></td><td>Direct Source</td></tr>
-<tr><td><code>tls_key</code></td><td>Direct Source</td></tr>
+<tr><td><code>tls_cert</code></td><td>Direct Source, Direct XDR</td></tr>
+<tr><td><code>tls_key</code></td><td>Direct Source, Direct XDR</td></tr>
 <tr><td><code>to</code></td><td>AS2 Destination, Direct Destination, SMTP Destination</td></tr>
 <tr><td><code>token</code></td><td>DICO Mweb Destination, DICO Mweb Source, HTTP Source, SOAP Source, XDS Destination</td></tr>
 <tr><td><code>token_url</code></td><td>Email O Auth, FHIR Auth</td></tr>
@@ -8054,7 +8145,7 @@ rules:
 <tr><td><code>unsigned_receipt</code></td><td>AS2 Destination</td></tr>
 <tr><td><code>url</code></td><td>AS2 Destination, CDA Destination, DICO Mweb Destination, FHIR Destination, HTTP Destination, IBMMQ Connection, SOAP Destination, Web DAV Source, XDS Destination</td></tr>
 <tr><td><code>user</code></td><td>FTP Destination, FTP Source, SFTP Destination, SFTP Source, SMB Source, Web DAV Source</td></tr>
-<tr><td><code>username</code></td><td>AMQP Connection, AS2 Destination, DICO Mweb Destination, DICO Mweb Source, Direct Destination, Direct Source, Email Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SMTP Destination, SOAP Destination, SOAP Source, XDS Destination</td></tr>
+<tr><td><code>username</code></td><td>AMQP Connection, AS2 Destination, DICO Mweb Destination, DICO Mweb Source, Direct Destination, Direct IMAP, Direct Source, Email Source, HTTP Destination, IBMMQ Connection, Kafka SASL, MQTT Connection, SMTP Destination, SOAP Destination, SOAP Source, XDS Destination</td></tr>
 <tr><td><code>validate_before_send</code></td><td>FHIR Destination</td></tr>
 <tr><td><code>verify_with</code></td><td>PGP Receive</td></tr>
 <tr><td><code>version</code></td><td>CDA Destination, FHIR Destination, SOAP Destination, SOAP Source</td></tr>
@@ -8069,6 +8160,7 @@ rules:
 <tr><td><code>x12</code></td><td>Channel</td></tr>
 <tr><td><code>xdm</code></td><td>Direct Destination</td></tr>
 <tr><td><code>xdm_source_id</code></td><td>Direct Destination</td></tr>
+<tr><td><code>xdr</code></td><td>Direct Source</td></tr>
 <tr><td><code>xds</code></td><td>Destination</td></tr>
 </tbody>
 </table>

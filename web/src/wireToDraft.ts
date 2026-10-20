@@ -210,6 +210,20 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.directSrcSmtpHost = source.direct?.smtpHost ?? ''
       draft.directSrcUsername = source.direct?.username ?? ''
       draft.directSrcPassword = source.direct?.password ?? ''
+      draft.directSrcImapHost = source.direct?.imap?.host ?? ''
+      draft.directSrcImapPort = source.direct?.imap?.port ?? 0
+      draft.directSrcImapSecurity = source.direct?.imap?.security ?? ''
+      draft.directSrcImapUsername = source.direct?.imap?.username ?? ''
+      draft.directSrcImapPassword = source.direct?.imap?.password ?? ''
+      draft.directSrcImapMailbox = source.direct?.imap?.mailbox ?? ''
+      draft.directSrcImapAfterRead = source.direct?.imap?.afterRead ?? ''
+      draft.directSrcImapMoveTo = source.direct?.imap?.moveTo ?? ''
+      draft.directSrcImapErrorFolder = source.direct?.imap?.errorFolder ?? ''
+      draft.directSrcImapPollInterval = source.direct?.imap?.pollInterval ?? ''
+      draft.directSrcXdrListen = source.direct?.xdr?.listen ?? ''
+      draft.directSrcXdrTlsCert = source.direct?.xdr?.tlsCert ?? ''
+      draft.directSrcXdrTlsKey = source.direct?.xdr?.tlsKey ?? ''
+      draft.directSrcXdrClientCaFile = source.direct?.xdr?.clientCaFile ?? ''
       break
     case 'dicomweb':
       draft.dicomwebListen = source.dicomweb?.listen ?? ''
@@ -943,6 +957,7 @@ function readDestination(d: WireDest): Destination {
       dest.directXdmSourceId = d.direct?.xdmSourceId ?? ''
       dest.directRecipientCertsDir = d.direct?.recipientCertsDir ?? ''
       dest.directDns = d.direct?.dns ?? ''
+      dest.directLdap = d.direct?.ldap ?? ''
       dest.directSmtpHost = d.direct?.smtpHost ?? ''
       dest.directUsername = d.direct?.username ?? ''
       dest.directPassword = d.direct?.password ?? ''
@@ -961,6 +976,8 @@ function readDestination(d: WireDest): Destination {
       dest.xdsClassCode = d.xds?.class?.code ?? ''
       dest.xdsClassScheme = d.xds?.class?.scheme ?? ''
       dest.xdsToken = d.xds?.token ?? ''
+      dest.xdsDirectFrom = d.xds?.directFrom ?? ''
+      dest.xdsDirectTo = (d.xds?.directTo ?? []).join(', ')
       break
     case 'dicomweb':
       dest.dicomwebUrl = d.dicomweb?.url ?? ''
@@ -1402,6 +1419,19 @@ interface WireSource {
     smtpHost?: string
     username?: string
     password?: string
+    imap?: {
+      host?: string
+      port?: number
+      security?: string
+      username?: string
+      password?: string
+      mailbox?: string
+      afterRead?: string
+      moveTo?: string
+      errorFolder?: string
+      pollInterval?: string
+    }
+    xdr?: { listen?: string; tlsCert?: string; tlsKey?: string; clientCaFile?: string }
   }
   dicomweb?: {
     listen?: string
@@ -1582,6 +1612,7 @@ interface WireDest {
     xdmSourceId?: string
     recipientCertsDir?: string
     dns?: string
+    ldap?: string
     smtpHost?: string
     username?: string
     password?: string
@@ -1595,6 +1626,8 @@ interface WireDest {
     practiceSetting?: { code?: string; scheme?: string; display?: string }
     class?: { code?: string; scheme?: string }
     token?: string
+    directFrom?: string
+    directTo?: string[]
   }
   dicomweb?: {
     url?: string

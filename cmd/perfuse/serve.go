@@ -217,8 +217,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 
 	serveFHIR := fset.Bool("fhir", true, "serve a FHIR endpoint at /fhir")
 	keepMPI := fset.Bool("mpi", false, "keep a patient index (master patient index) in mpi.db beside the database: patient "+
-		"records from every system linked into one enterprise identifier per person, fed by mpi destinations, answering "+
-		"Patient/$match and PIXm")
+		"records from every system linked into one enterprise identifier per person, fed by mpi destinations and the PIX v3 "+
+		"identity feed, answering Patient/$match, PIXm, PIX v3 (/pixv3) and PDQ v3 (/pdqv3)")
 	// Defaults to what the resource structs are actually shaped to, not to the newest release.
 	//
 	// This served R5 while the US Core resource types are R4 shapes, so a client read fhirVersion 5.0.0 from the

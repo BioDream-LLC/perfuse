@@ -36,6 +36,10 @@ type Envelope struct {
 	Body []byte
 	// Parts are the MTOM attachments by Content-ID (without the angle brackets).
 	Parts map[string][]byte
+	// DirectFrom and DirectTo are the Direct addressing block's sender and recipients (urn:direct:addressing), which XDR
+	// carries when it is Direct's transport: plain addresses, the mailto: removed.
+	DirectFrom string
+	DirectTo   []string
 }
 
 type soapIn struct {
@@ -43,6 +47,10 @@ type soapIn struct {
 	Header  struct {
 		Action    string `xml:"http://www.w3.org/2005/08/addressing Action"`
 		MessageID string `xml:"http://www.w3.org/2005/08/addressing MessageID"`
+		Direct    struct {
+			From string   `xml:"urn:direct:addressing from"`
+			To   []string `xml:"urn:direct:addressing to"`
+		} `xml:"urn:direct:addressing addressBlock"`
 	} `xml:"Header"`
 	Body struct {
 		Inner []byte `xml:",innerxml"`
@@ -113,6 +121,13 @@ func ReadEnvelope(contentType string, body io.Reader) (*Envelope, error) {
 		env.Action = actionParam(contentType)
 	}
 	env.MessageID = strings.TrimSpace(s.Header.MessageID)
+	plain := func(a string) string { return strings.TrimPrefix(strings.TrimSpace(a), "mailto:") }
+	env.DirectFrom = plain(s.Header.Direct.From)
+	for _, to := range s.Header.Direct.To {
+		if to = plain(to); to != "" {
+			env.DirectTo = append(env.DirectTo, to)
+		}
+	}
 	env.Body = bytes.TrimSpace(s.Body.Inner)
 	if len(env.Body) == 0 {
 		return nil, errors.New("the SOAP Body is empty")
@@ -185,6 +200,21 @@ type Outgoing struct {
 	// Attachments are the MTOM parts by Content-ID; with none, the message is plain SOAP 1.2.
 	Attachments []Attachment
 	MTOM        bool
+	// Headers is more header XML, such as a Direct addressing block (DirectAddressBlock).
+	Headers string
+}
+
+// DirectAddressBlock is the SOAP header that makes an ITI-41 message XDR as Direct's transport: who sent it and to whom,
+// as Direct addresses (the Direct Project's XDR and XDM for Direct Messaging specification).
+func DirectAddressBlock(from string, to []string) string {
+	var b strings.Builder
+	b.WriteString(`<direct:addressBlock xmlns:direct="urn:direct:addressing" soapenv:role="urn:direct:addressing:destination" soapenv:relay="true">`)
+	b.WriteString(`<direct:from>mailto:` + xmlEscape(from) + `</direct:from>`)
+	for _, t := range to {
+		b.WriteString(`<direct:to>mailto:` + xmlEscape(t) + `</direct:to>`)
+	}
+	b.WriteString(`</direct:addressBlock>`)
+	return b.String()
 }
 
 // Attachment is one MTOM part.
@@ -213,6 +243,7 @@ func (o Outgoing) Write() ([]byte, string) {
 			env.WriteString(`<wsa:To soapenv:mustUnderstand="1">` + xmlEscape(o.To) + `</wsa:To>`)
 		}
 	}
+	env.WriteString(o.Headers)
 	env.WriteString(`</soapenv:Header><soapenv:Body>`)
 	env.Write(o.Body)
 	env.WriteString(`</soapenv:Body></soapenv:Envelope>`)

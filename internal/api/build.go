@@ -1558,6 +1558,8 @@ type buildXDSDest struct {
 	Headers         map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	TLS             *buildTLS         `json:"tls,omitempty" yaml:"tls,omitempty"`
 	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	DirectFrom      string            `json:"directFrom,omitempty" yaml:"direct_from,omitempty"`
+	DirectTo        []string          `json:"directTo,omitempty" yaml:"direct_to,omitempty"`
 }
 
 // buildDirectSource receives Direct mail for one address.
@@ -1613,17 +1615,41 @@ type buildAS2Dest struct {
 }
 
 type buildDirectSource struct {
-	Address     string `json:"address,omitempty" yaml:"address,omitempty"`
-	CertFile    string `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
-	KeyFile     string `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
-	AnchorsFile string `json:"anchorsFile,omitempty" yaml:"anchors_file,omitempty"`
-	Listen      string `json:"listen,omitempty" yaml:"listen,omitempty"`
-	TLSCert     string `json:"tlsCert,omitempty" yaml:"tls_cert,omitempty"`
-	TLSKey      string `json:"tlsKey,omitempty" yaml:"tls_key,omitempty"`
-	MaxBytes    int64  `json:"maxBytes,omitempty" yaml:"max_bytes,omitempty"`
-	SMTPHost    string `json:"smtpHost,omitempty" yaml:"smtp_host,omitempty"`
-	Username    string `json:"username,omitempty" yaml:"username,omitempty"`
-	Password    string `json:"password,omitempty" yaml:"password,omitempty"`
+	Address     string           `json:"address,omitempty" yaml:"address,omitempty"`
+	CertFile    string           `json:"certFile,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile     string           `json:"keyFile,omitempty" yaml:"key_file,omitempty"`
+	AnchorsFile string           `json:"anchorsFile,omitempty" yaml:"anchors_file,omitempty"`
+	Listen      string           `json:"listen,omitempty" yaml:"listen,omitempty"`
+	TLSCert     string           `json:"tlsCert,omitempty" yaml:"tls_cert,omitempty"`
+	TLSKey      string           `json:"tlsKey,omitempty" yaml:"tls_key,omitempty"`
+	MaxBytes    int64            `json:"maxBytes,omitempty" yaml:"max_bytes,omitempty"`
+	SMTPHost    string           `json:"smtpHost,omitempty" yaml:"smtp_host,omitempty"`
+	Username    string           `json:"username,omitempty" yaml:"username,omitempty"`
+	Password    string           `json:"password,omitempty" yaml:"password,omitempty"`
+	IMAP        *buildDirectIMAP `json:"imap,omitempty" yaml:"imap,omitempty"`
+	XDR         *buildDirectXDR  `json:"xdr,omitempty" yaml:"xdr,omitempty"`
+}
+
+// buildDirectIMAP is config.DirectIMAP on the wire.
+type buildDirectIMAP struct {
+	Host         string `json:"host,omitempty" yaml:"host,omitempty"`
+	Port         int    `json:"port,omitempty" yaml:"port,omitempty"`
+	Security     string `json:"security,omitempty" yaml:"security,omitempty"`
+	Username     string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password     string `json:"password,omitempty" yaml:"password,omitempty"`
+	Mailbox      string `json:"mailbox,omitempty" yaml:"mailbox,omitempty"`
+	AfterRead    string `json:"afterRead,omitempty" yaml:"after_read,omitempty"`
+	MoveTo       string `json:"moveTo,omitempty" yaml:"move_to,omitempty"`
+	ErrorFolder  string `json:"errorFolder,omitempty" yaml:"error_folder,omitempty"`
+	PollInterval string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
+}
+
+// buildDirectXDR is config.DirectXDR on the wire.
+type buildDirectXDR struct {
+	Listen       string `json:"listen,omitempty" yaml:"listen,omitempty"`
+	TLSCert      string `json:"tlsCert,omitempty" yaml:"tls_cert,omitempty"`
+	TLSKey       string `json:"tlsKey,omitempty" yaml:"tls_key,omitempty"`
+	ClientCAFile string `json:"clientCaFile,omitempty" yaml:"client_ca_file,omitempty"`
 }
 
 // buildDirectDest sends as Direct through a HISP.
@@ -1640,6 +1666,7 @@ type buildDirectDest struct {
 	XDMSourceID       string   `json:"xdmSourceId,omitempty" yaml:"xdm_source_id,omitempty"`
 	RecipientCertsDir string   `json:"recipientCertsDir,omitempty" yaml:"recipient_certs_dir,omitempty"`
 	DNS               string   `json:"dns,omitempty" yaml:"dns,omitempty"`
+	LDAP              string   `json:"ldap,omitempty" yaml:"ldap,omitempty"`
 	SMTPHost          string   `json:"smtpHost,omitempty" yaml:"smtp_host,omitempty"`
 	Username          string   `json:"username,omitempty" yaml:"username,omitempty"`
 	Password          string   `json:"password,omitempty" yaml:"password,omitempty"`

@@ -175,8 +175,10 @@ type Channel struct {
 	// dicomServer is the imaging listener, nil unless the source is dicom.
 	dicomServer *dicom.Server
 
-	// directLn is the SMTP listener of a direct source.
-	directLn net.Listener
+	// directLn is the SMTP listener of a direct source, directPoll its IMAP poller and directXDR its XDR endpoint.
+	directLn   net.Listener
+	directPoll *kafkaPoller
+	directXDR  *http.Server
 
 	// poller drives a database source. Nil for every other source type.
 	poller *databasePoller

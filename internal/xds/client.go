@@ -16,10 +16,13 @@ import (
 type Client struct {
 	HTTP    *http.Client
 	Headers map[string]string
+	// SOAPHeaders is more SOAP header XML for every message, such as a Direct addressing block for XDR.
+	SOAPHeaders string
 }
 
 func (c *Client) do(ctx context.Context, url string, out Outgoing) (*Envelope, error) {
 	out.To = url
+	out.Headers = c.SOAPHeaders
 	body, ct := out.Write()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
@@ -160,6 +163,9 @@ type DocumentMeta struct {
 	AuthorInstitution string // XON
 	// Replaces is the entryUUID of a document this one replaces (RPLC), deprecating it.
 	Replaces string
+	// IntendedRecipients go in the SubmissionSet's intendedRecipient slot (XON|XCN|XTN), which XDR uses to say who the
+	// documents are for.
+	IntendedRecipients []string
 }
 
 // UUIDOID makes an OID under 2.25 from a new UUID, the form an OID is given when nobody has assigned one.
@@ -192,9 +198,15 @@ func UUIDOID() string {
 }
 
 func classification(scheme, object string, c Code, extraSlots ...Slot) Classification {
+	// A coded attribute's Name is required (ITI TF-3 4.2.3.1.7): with no display given, the code itself, which a registry
+	// accepts where it refuses a classification with none.
+	display := c.Display
+	if strings.TrimSpace(display) == "" {
+		display = c.Code
+	}
 	return Classification{ID: "urn:uuid:" + newUUID(), ObjectType: TypeClassification, Scheme: scheme, ClassifiedObject: object,
 		NodeRepresentation: c.Code, Slots: append([]Slot{{Name: "codingScheme", Values: []string{c.Scheme}}}, extraSlots...),
-		Name: Intl(c.Display)}
+		Name: Intl(display)}
 }
 
 func extID(scheme, object, value, name string) ExternalIdentifier {
@@ -269,6 +281,9 @@ func Build(m DocumentMeta, now time.Time) (*SubmitObjectsRequest, error) {
 
 	set := Object{ID: ss, ObjectType: TypeRegistryPackage, Name: Intl(m.Title),
 		Slots: []Slot{{Name: "submissionTime", Values: []string{dtm(now)}}}}
+	if len(m.IntendedRecipients) > 0 {
+		set.SetSlot("intendedRecipient", m.IntendedRecipients...)
+	}
 	if m.AuthorPerson != "" || m.AuthorInstitution != "" {
 		a := Classification{ID: "urn:uuid:" + newUUID(), ObjectType: TypeClassification, Scheme: SchemeSSAuthor, ClassifiedObject: ss}
 		if m.AuthorPerson != "" {

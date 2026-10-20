@@ -1064,7 +1064,7 @@ export interface XDSStatus {
   documents?: XDSDoc[]
   repositoryUniqueId?: string
   homeCommunityId?: string
-  endpoints?: { repository: string; registry: string; gateway: string }
+  endpoints?: { repository: string; registry: string; gateway: string; pixv3?: string; pdqv3?: string }
 }
 
 /** DICOMwebStatus is GET /api/dicomweb. */

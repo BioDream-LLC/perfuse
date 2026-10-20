@@ -43,7 +43,13 @@ func (c *Channel) startEmailSource() error {
 			if cfg.Protocol == "pop3" {
 				err = c.pollPOP3(ctx, cfg, dial, auth, leftOnServer)
 			} else {
-				err = c.pollIMAP(ctx, cfg, dial, auth)
+				err = c.pollIMAP(ctx, cfg, dial, auth, func(ctx context.Context, raw []byte) (string, error) {
+					msgs, skip, err := emailMessages(cfg, raw)
+					if err != nil || skip != "" {
+						return skip, err
+					}
+					return "", c.feedEmail(ctx, msgs)
+				})
 			}
 			if err != nil && ctx.Err() == nil {
 				c.log.Error("reading the mailbox failed and will be retried at the next poll", "host", cfg.Host, "err", err)
@@ -135,7 +141,10 @@ func (c *Channel) feedEmail(ctx context.Context, msgs [][]byte) error {
 	return nil
 }
 
-func (c *Channel) pollIMAP(ctx context.Context, cfg *config.EmailSource, d mailbox.Dial, a mailbox.Auth) error {
+// pollIMAP reads a mailbox once. take handles one message: a reason not to take it (it moves to the error folder with a
+// warning), or an error (it moves there with the error), or neither (it is handled, and moved, flagged or deleted).
+func (c *Channel) pollIMAP(ctx context.Context, cfg *config.EmailSource, d mailbox.Dial, a mailbox.Auth,
+	take func(ctx context.Context, raw []byte) (string, error)) error {
 	conn, err := mailbox.DialIMAP(ctx, d)
 	if err != nil {
 		return err
@@ -176,7 +185,7 @@ func (c *Channel) pollIMAP(ctx context.Context, cfg *config.EmailSource, d mailb
 		if err != nil {
 			return err
 		}
-		msgs, skip, err := emailMessages(cfg, raw)
+		skip, err := take(ctx, raw)
 		if err != nil {
 			toError(err)
 			continue
@@ -186,10 +195,6 @@ func (c *Channel) pollIMAP(ctx context.Context, cfg *config.EmailSource, d mailb
 			if err := conn.Move(uid, cfg.ErrorFolder); err != nil {
 				return err
 			}
-			continue
-		}
-		if err := c.feedEmail(ctx, msgs); err != nil {
-			toError(err)
 			continue
 		}
 		switch cfg.AfterRead {

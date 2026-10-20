@@ -59,6 +59,10 @@ type DirectDestination struct {
 	RecipientCertsDir string `yaml:"recipient_certs_dir,omitempty"`
 	// DNS is the resolver for certificate lookup (host:port); empty uses the system's.
 	DNS string `yaml:"dns,omitempty"`
+	// LDAP is the directory a recipient's certificate is looked up in when DNS has none (host:port, port 389): the second
+	// way the Direct certificate discovery guide allows. Empty finds the recipient domain's directory by its DNS SRV
+	// record (_ldap._tcp), as the guide says; "off" never asks a directory.
+	LDAP string `yaml:"ldap,omitempty"`
 	// SMTPHost is the HISP's submission server (host:port, 587 by default); STARTTLS is required.
 	SMTPHost string `yaml:"smtp_host"`
 	// Username is the account at the HISP's submission server, when it asks for one.
@@ -101,8 +105,8 @@ func validateDirectDest(d *Destination) []error {
 // documents, else each attachment, else the text.
 type DirectSource struct {
 	DirectAddress `yaml:",inline"`
-	// Listen is the SMTP address the HISP delivers to, such as 0.0.0.0:2525.
-	Listen string `yaml:"listen"`
+	// Listen is the SMTP address the HISP delivers to, such as 0.0.0.0:2525. One of listen, imap or xdr is needed.
+	Listen string `yaml:"listen,omitempty"`
 	// TLSCert and TLSKey, when set, offer STARTTLS, and it is then required before mail is taken.
 	TLSCert string `yaml:"tls_cert,omitempty"`
 	TLSKey  string `yaml:"tls_key,omitempty"`
@@ -113,18 +117,113 @@ type DirectSource struct {
 	SMTPHost string `yaml:"smtp_host,omitempty"`
 	Username string `yaml:"username,omitempty"`
 	Password string `yaml:"password,omitempty"`
+	// IMAP reads the address's mail from its mailbox at the HISP, for a HISP that keeps mail rather than delivering it.
+	IMAP *DirectIMAP `yaml:"imap,omitempty"`
+	// XDR takes documents sent as XDR (IHE ITI-41 over SOAP with a Direct addressing block), which a HISP converts
+	// Direct mail to, or another system sends point to point.
+	XDR *DirectXDR `yaml:"xdr,omitempty"`
+}
+
+// DirectIMAP is the HISP mailbox a Direct source reads.
+type DirectIMAP struct {
+	// Host is the HISP's IMAP server; Port 993 by default (143 with starttls).
+	Host string `yaml:"host"`
+	Port int    `yaml:"port,omitempty"`
+	// Security is tls (the default) or starttls.
+	Security string `yaml:"security,omitempty"`
+	// Username and Password sign in; use ${ENV} for the password.
+	Username string `yaml:"username"`
+	Password string `yaml:"password,omitempty"`
+	// Mailbox is the folder read; INBOX by default.
+	Mailbox string `yaml:"mailbox,omitempty"`
+	// AfterRead is move (to move_to, the default) or delete.
+	AfterRead string `yaml:"after_read,omitempty"`
+	// MoveTo is the folder taken messages move to; Processed by default. Created when missing.
+	MoveTo string `yaml:"move_to,omitempty"`
+	// ErrorFolder is where a message that could not be opened or taken moves; Error by default.
+	ErrorFolder string `yaml:"error_folder,omitempty"`
+	// PollInterval between checks; 60s by default, at least 10s.
+	PollInterval time.Duration `yaml:"poll_interval,omitempty"`
+}
+
+// EmailSource is the mailbox as the email source reads it, which a Direct source's IMAP reuses.
+func (d *DirectIMAP) EmailSource(maxBytes int64) *EmailSource {
+	e := &EmailSource{Protocol: "imap", Host: d.Host, Port: d.Port, Security: d.Security, Username: d.Username, Password: d.Password,
+		Mailbox: d.Mailbox, Take: EmailTakeRaw, AfterRead: d.AfterRead, MoveTo: d.MoveTo, ErrorFolder: d.ErrorFolder,
+		PollInterval: d.PollInterval, MaxMessageSize: maxBytes}
+	return e
+}
+
+// DirectXDR is the endpoint a Direct source takes XDR at.
+type DirectXDR struct {
+	// Listen is the HTTPS address, such as 0.0.0.0:8445; the endpoint is /xdr on it.
+	Listen string `yaml:"listen"`
+	// TLSCert and TLSKey are its certificate; required unless it listens on this machine only.
+	TLSCert string `yaml:"tls_cert,omitempty"`
+	TLSKey  string `yaml:"tls_key,omitempty"`
+	// ClientCAFile requires a client certificate issued by one of these authorities (PEM): how a HISP or a partner
+	// usually authenticates XDR.
+	ClientCAFile string `yaml:"client_ca_file,omitempty"`
 }
 
 func (s *DirectSource) validate() []error {
 	if s == nil {
 		return []error{errors.New("source type direct needs a direct block")}
 	}
-	errs := s.DirectAddress.validate("source")
-	if strings.TrimSpace(s.Listen) == "" {
-		errs = append(errs, errors.New("source needs direct.listen, the SMTP address the HISP delivers to"))
+	var errs []error
+	smtp, imap, xdr := strings.TrimSpace(s.Listen) != "", s.IMAP != nil, s.XDR != nil
+	if !smtp && !imap && !xdr {
+		errs = append(errs, errors.New("source needs direct.listen (SMTP deliveries), direct.imap (a mailbox at the HISP) or direct.xdr "+
+			"(XDR), or more than one"))
+	}
+	if smtp || imap {
+		// Mail is S/MIME: the address's certificate decrypts it and the anchors decide whose signature counts. XDR alone is
+		// protected by TLS instead, so it needs only the address.
+		errs = append(errs, s.DirectAddress.validate("source")...)
+	} else if _, err := mail.ParseAddress(s.Address); err != nil || !strings.Contains(s.Address, "@") {
+		errs = append(errs, fmt.Errorf("source: direct.address %q is not an address", s.Address))
 	}
 	if (s.TLSCert == "") != (s.TLSKey == "") {
 		errs = append(errs, errors.New("source has half a TLS pair; set both direct.tls_cert and direct.tls_key"))
 	}
+	if m := s.IMAP; m != nil {
+		if strings.TrimSpace(m.Host) == "" || strings.TrimSpace(m.Username) == "" {
+			errs = append(errs, errors.New("direct.imap needs host and username"))
+		}
+		e := m.EmailSource(s.MaxBytes)
+		if m.AfterRead == "flag" {
+			errs = append(errs, errors.New("direct.imap.after_read is move or delete: a Direct message marked read would be read again"))
+		}
+		for _, err := range e.Validate() {
+			errs = append(errs, fmt.Errorf("direct.imap: %w", err))
+		}
+		m.Port, m.Security, m.Mailbox, m.AfterRead, m.MoveTo, m.ErrorFolder, m.PollInterval = e.Port, e.Security, e.Mailbox, e.AfterRead,
+			e.MoveTo, e.ErrorFolder, e.PollInterval
+	}
+	if x := s.XDR; x != nil {
+		if strings.TrimSpace(x.Listen) == "" {
+			errs = append(errs, errors.New("direct.xdr needs listen, the HTTPS address it takes XDR at"))
+		}
+		if (x.TLSCert == "") != (x.TLSKey == "") {
+			errs = append(errs, errors.New("direct.xdr has half a TLS pair; set both tls_cert and tls_key"))
+		}
+		if x.TLSCert == "" && !loopbackListen(x.Listen) {
+			errs = append(errs, errors.New("direct.xdr takes patient documents, so it needs tls_cert and tls_key unless it listens on "+
+				"this machine only (127.0.0.1)"))
+		}
+		if x.ClientCAFile != "" && x.TLSCert == "" {
+			errs = append(errs, errors.New("direct.xdr.client_ca_file needs TLS (tls_cert and tls_key)"))
+		}
+	}
 	return errs
+}
+
+// loopbackListen reports whether a listen address is on this machine only.
+func loopbackListen(addr string) bool {
+	host := addr
+	if i := strings.LastIndexByte(addr, ':'); i >= 0 {
+		host = addr[:i]
+	}
+	host = strings.Trim(host, "[]")
+	return host == "127.0.0.1" || host == "::1" || host == "localhost"
 }

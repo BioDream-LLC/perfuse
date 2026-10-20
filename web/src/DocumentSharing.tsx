@@ -179,6 +179,14 @@ export function DocumentSharing() {
               </dd>
               <dt className="text-slate-400">MHD, PIXm and PDQm (FHIR)</dt>
               <dd className="font-mono text-xs text-cyan-300">{status.endpoints?.repository.replace('/xds/repository', '/mhd')}</dd>
+              <dt className="text-slate-400">PIX manager, HL7 v3 (ITI-44, ITI-45)</dt>
+              <dd className="font-mono text-xs text-cyan-300">
+                {status.endpoints?.pixv3 ?? <span className="text-slate-400">off: no patient index (-mpi)</span>}
+              </dd>
+              <dt className="text-slate-400">PDQ supplier, HL7 v3 (ITI-47)</dt>
+              <dd className="font-mono text-xs text-cyan-300">
+                {status.endpoints?.pdqv3 ?? <span className="text-slate-400">off: no patient index (-mpi)</span>}
+              </dd>
               <dt className="text-slate-400">Repository uniqueId</dt>
               <dd className="font-mono text-xs text-slate-200">{status.repositoryUniqueId}</dd>
               <dt className="text-slate-400">Home community id</dt>

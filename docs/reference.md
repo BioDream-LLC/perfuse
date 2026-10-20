@@ -2081,7 +2081,8 @@ ITI-119 uses it) takes a Patient and returns the people who could be it, best fi
 each a Patient whose id is the EUID, with every identifier, `search.score`, and the
 match-grade extension (`certain`, `probable`, `possible`); `onlyCertainMatches` and
 `count` are honoured. PIXm (`/mhd/Patient/$ihe-pix`, ITI-83) answers from the index:
-every identifier of every record linked to the person, and the EUID.
+every identifier of every record linked to the person, and the EUID. So do PIX and PDQ
+in HL7 v3 (`/pixv3`, `/pdqv3`; see IHE document sharing), which also feed it.
 
 The API is `/api/mpi` (summary and search), `/api/mpi/persons/{euid}`,
 `/api/mpi/find`, `/api/mpi/reviews`, `/api/mpi/records` (register, link, unlink),

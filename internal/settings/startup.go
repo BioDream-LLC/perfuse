@@ -7,7 +7,7 @@ func startupSettings() []Setting {
 	return []Setting{
 		{Key: "data.patientIndex", Group: GroupData, Subgroup: "Patient index", Label: "Keep a patient index",
 			Help: "Keep a master patient index: patient records from every system, linked into one enterprise identifier per person, " +
-				"fed by patient index destinations, answering Patient/$match and PIXm. It holds patient names, birth dates and " +
+				"fed by patient index destinations and the PIX v3 identity feed, answering Patient/$match, PIXm, PIX v3 and PDQ v3. It holds patient names, birth dates and " +
 				"identifiers, so it is off until somebody decides to keep one.",
 			Kind: KindBool, Widget: WidgetToggle, Effect: EffectRestart, Default: false, Flag: "mpi"},
 		{Key: "privacy.residency", Group: GroupData, Subgroup: "Data protection", Label: "Where data may go (cloud regions)",

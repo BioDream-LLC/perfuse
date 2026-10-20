@@ -486,7 +486,7 @@ DICOMweb client searches Perfuse's archive and retrieves a study byte-identical 
 OHIF 3 lists the archive's studies and displays their frames with the settings above. OHIF and several other clients
 send `type=` unquoted in the Accept and Content-Type headers, which RFC 2045 does not allow; Perfuse accepts it.
 
-## IHE document sharing: XDS.b, XCA, MHD, PIXm and PDQm
+## IHE document sharing: XDS.b, XCA, XDR, MHD, PIXm and PDQm
 
 Clinical documents shared between organisations the way health information exchanges, Carequality and eHealth Exchange do:
 a repository holds them, a registry indexes their metadata, and a community answers other communities' queries through a
@@ -501,6 +501,8 @@ operator role to submit; most affinity domains add mutual TLS in front):
 | `/xca/gateway` | XCA Responding Gateway | ITI-38 Cross Gateway Query, ITI-39 Cross Gateway Retrieve, with `-xds-home-community urn:oid:...` |
 | `/mhd` | MHD Document Recipient and Responder | ITI-65 Provide Document Bundle, ITI-66 Find Lists, ITI-67 Find Document References, ITI-68 Retrieve Document |
 | `/mhd/Patient` | PDQm Supplier and PIXm Manager | ITI-78 Patient Demographics Query, ITI-83 `Patient/$ihe-pix`, from the FHIR store's Patients |
+| `/pixv3` | PIX Manager (HL7 v3) | ITI-44 Patient Identity Feed HL7 V3, ITI-45 PIXV3 Query, from the patient index (`-mpi`) |
+| `/pdqv3` | PDQ Supplier (HL7 v3) | ITI-47 PDQV3 Query, with continuation and cancel, from the patient index |
 
 The SOAP transactions are SOAP 1.2 with WS-Addressing, and MTOM/XOP where documents travel (a document inline as base64 is
 accepted too). A failed transaction is answered with a RegistryResponse carrying IHE's error codes, not a SOAP fault:
@@ -539,6 +541,40 @@ destinations:
       tls: { enabled: true, cert_file: /etc/perfuse/hie.crt, key_file: /etc/perfuse/hie.key }
 ```
 
+**XDR.** Add `direct_from` (your Direct address) and `direct_to` (the recipients') and the same destination sends XDR as
+Direct's transport, as the Direct Project's *XDR and XDM for Direct Messaging* describes it: a Direct addressing block
+(`urn:direct:addressing`) in the SOAP header names sender and recipients, and the submission's `intendedRecipient` names each
+recipient (`||^^Internet^address`). Point `url` at the recipient's XDR endpoint or a HISP that takes XDR. XDR travels over TLS,
+usually with a client certificate (`tls`), and is not S/MIME. A `direct` source takes XDR too (see Direct below).
+
+```yaml
+    xds:
+      url: https://xdr.hisp.example/xdr
+      source_id: 1.2.840.114350.1.13.99
+      patient_domain: 1.2.840.114350.1.13.99.2.7.5.737384.14
+      facility_type: { code: "225732001", scheme: 2.16.840.1.113883.6.96, display: Community hospital }
+      practice_setting: { code: "394802001", scheme: 2.16.840.1.113883.6.96, display: General medicine }
+      direct_from: referrals@direct.hospital.example
+      direct_to: ["intake@direct.clinic.example"]
+      tls: { enabled: true, cert_file: /etc/perfuse/xdr.crt, key_file: /etc/perfuse/xdr.key }
+```
+
+**PIX and PDQ in HL7 version 3.** With the patient index on (`-mpi`), `/pixv3` is a PIX Manager and `/pdqv3` a PDQ Supplier
+over SOAP 1.2, for the hospitals and exchanges that still speak IHE's v3 profiles. A source feeds patients with ITI-44 (record
+added `PRPA_IN201301UV02`, revised `PRPA_IN201302UV02`, duplicates resolved `PRPA_IN201304UV02`): the patient's first
+identifier is its record, the others and those in `asOtherIDs` are identifiers it carries, and a merge folds the prior record's
+identifier into the surviving one, as an HL7 v2 A40 does. ITI-45 (`PRPA_IN201309UV02`) answers the other identifiers of the
+person holding one, narrowed by `dataSource`, in `Patient.id`; the queried identifier comes back only in the repeated query. ITI-47
+(`PRPA_IN201305UV02`) matches demographics (name, gender, birth time, identifier, address, telecom) with the index's own matcher,
+`minimumDegreeMatch` as a score out of 100, `otherIDsScopingOrganization` limiting the domains, and `initialQuantity` paging the
+answer: the rest comes with `QUQI_IN000003UV01` for ten minutes, or is dropped by its cancel. The answers follow the
+transactions' cases: an unknown patient or domain is `AE` with error 204 and the location of the parameter, a known patient with
+nothing in the domains asked for is `NF`. v3 names an authority by OID only, so an identifier whose system is a URL with no OID
+behind it (some national numbers) is left out of v3 answers and given over FHIR; set the enterprise identifier's system to an
+OID (`urn:oid:...`, in the index settings) for the EUID and the custodian to appear. The viewer role queries and the operator
+role feeds; every transaction is audited with an identifier, never a name. A bare v3 message posted as `application/xml` is
+answered in kind, which is handy for testing by hand.
+
 **Exchange › Document sharing** shows what the registry holds and where it is reached, finds a patient's documents in this
 registry or another (a registry's ITI-18 or a gateway's ITI-38), downloads one, and publishes a CDA document by hand with the
 metadata a destination would give it.
@@ -547,8 +583,11 @@ metadata a destination would give it.
 its Registry/Repository simulator (accepted with no validation errors, the document retrieved byte-identical), and its Initiating
 Gateway simulator querying and retrieving from Perfuse's Responding Gateway over XCA, with no errors in its log. Every SOAP
 message Perfuse writes validates against the ebXML Registry 3.0 and XDS.b schemas, and the MHD DocumentReference and
-SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. Not yet checked against Gazelle or at a Connectathon, and
-PIX/PDQ V3 (ITI-44, ITI-45, ITI-47 over SOAP) is not built.
+SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. XDR from an `xds` destination with a Direct addressing block
+was accepted by the toolkit's Document Recipient simulator, whose metadata validation found the one defect described in
+docs/verification.md. The PIX and PDQ v3 answers validate against IHE's HL7 V3 schemas (NE2008 multicacheschemas), and IHE's own
+sample messages (the ITI-44 feed, merge, ITI-45 query, ITI-47 query, continuation and cancel) are answered as their published
+responses show. Not yet checked against an independent PIX or PDQ v3 implementation, Gazelle or a Connectathon.
 
 ## Direct secure messaging
 
@@ -556,8 +595,9 @@ Direct is how US providers send each other referrals, summaries and results by s
 sender's certificate and encrypted to the recipient's (S/MIME), and travels between HISPs (Health Information Service
 Providers) that issue the addresses and vouch for them. Perfuse is the **edge system** beside your HISP, not a HISP: the HISP
 issues your address, its certificate and its key, and you keep its trust bundle (such as DirectTrust's). It follows the Direct
-Applicability Statement for Secure Health Transport 1.2, the Implementation Guide for Delivery Notification, and IHE XDM
-(ITI TF-1 Annex 15) for documents with metadata.
+Applicability Statement for Secure Health Transport 1.2, the Implementation Guide for Delivery Notification, IHE XDM
+(ITI TF-1 Annex 15) for documents with metadata, the Certificate Discovery for Direct Project Implementation Guide (DNS and
+LDAP), and XDR and XDM for Direct Messaging.
 
 **Sending.** A `direct` destination signs each message as your address (SHA-256, RSA), encrypts it to every recipient's
 certificate and your own (AES-256-CBC, RSA key transport), and submits it to the HISP by SMTP with STARTTLS required. The message
@@ -565,7 +605,9 @@ travels as an attachment named by its content (`document.xml`, `message.hl7`, `r
 document travels as an IHE XDM package (`IHE_XDM/SUBSET01/METADATA.XML` with the document and its hash and size, plus
 `INDEX.HTM` and `README.TXT`) that receiving EHRs import with its metadata. Recipient certificates come from the **Direct address
 book** (below), then from DNS, where Direct publishes them as CERT records (RFC 4398): under the address with its @ made a dot,
-else under its domain. A certificate is used only when it is for the address or its domain and chains to one of your anchors; a
+else under its domain; then from the recipient domain's LDAP directory, which its `_ldap._tcp` SRV record names (or `ldap:
+host:port`; `ldap: off` never asks one): each naming context is searched anonymously for an entry whose `mail` is the address,
+then the domain, and its `userSMIMECertificate` or `userCertificate` read. A certificate is used only when it is for the address or its domain and chains to one of your anchors; a
 recipient with no such certificate is a failed delivery, never plain e-mail. `to` and `subject` take field references such as
 `{PV1-8.1}`, and `request_mdn` asks the recipient for a delivery notification.
 
@@ -612,18 +654,46 @@ source:
     smtp_host: smtp.hisp.example:587
 ```
 
+**From the HISP's mailbox.** A HISP that keeps mail rather than delivering it gives the address an IMAP mailbox: `imap` reads
+it (TLS or STARTTLS, every poll a fresh session), opens each message as above, moves what was taken to `move_to` (or deletes it)
+and what could not be opened to `error_folder`, so nothing is read twice. `listen` may then be left out.
+
+```yaml
+    imap:
+      host: imap.hisp.example
+      username: intake@direct.clinic.example
+      password: ${DIRECT_MAILBOX_PASSWORD}
+      move_to: Processed
+```
+
+**XDR.** `xdr` takes XDR at `/xdr` on its own HTTPS address, as a HISP sends Direct it converted to SOAP or a partner sends point
+to point: an ITI-41 Provide and Register request whose documents each become a message. A submission whose Direct addressing block
+names another address is refused, and one the channel does not take is answered with a RegistryResponse failure saying why.
+`client_ca_file` requires a client certificate from those authorities. XDR is protected by TLS, not S/MIME, so a source that only
+takes XDR needs the address but not its certificate, key or anchors.
+
+```yaml
+    xdr:
+      listen: 0.0.0.0:8445
+      tls_cert: /etc/perfuse/tls/server.crt
+      tls_key: /etc/perfuse/tls/server.key
+      client_ca_file: /etc/perfuse/direct/hisp-clients.pem
+```
+
 **Exchange › Direct** lists the Direct addresses your channels send and receive as, with their certificates, expiry and anchors;
 keeps the **address book** of correspondents (name, organisation, notes and certificate, pasted from their HISP or found in
-DNS, and refused when it is not for that address or domain); and looks up an address's certificates in DNS without saving
-them. The book is the directory `direct-certs` beside the database, one PEM file per address or domain, which a destination
+DNS or LDAP, and refused when it is not for that address or domain); and looks up an address's certificates in DNS or LDAP without
+saving them. The book is the directory `direct-certs` beside the database, one PEM file per address or domain, which a destination
 reads unless it names its own `recipient_certs_dir`.
 
 **Verified** against OpenSSL 4.0's `cms` and `smime` in both directions: what Perfuse signs and encrypts OpenSSL verifies and
 decrypts (PKCS#1 v1.5 and OAEP key transport), and Perfuse opens what OpenSSL signs and encrypts (AES-128 and AES-256). A
 message made with `openssl smime` and delivered over SMTP is received, opened and stored by a channel, and one Perfuse sends a
-message to another through a HISP stand-in, which answers with an MDN the sender opens. Not yet tested against an accredited
-HISP or the ONC Edge Testing Tool; IMAP collection from a HISP mailbox, XDR (Direct over SOAP), and LDAP certificate discovery
-are not built.
+message to another through a HISP stand-in, which answers with an MDN the sender opens. Certificates are found in OpenLDAP 2.4
+(address-bound and domain-bound, written by OpenLDAP's own `ldapadd`); a Direct message is read from a GreenMail IMAP mailbox and
+opened, and one that is not Direct moved to the error folder; XDR from an `xds` destination is taken by a `direct` source and
+refused when addressed to someone else, and accepted by the NIST XDS Toolkit's Document Recipient. Not yet tested against an
+accredited HISP or the ONC Edge Testing Tool.
 
 ## SQL on FHIR views
 
@@ -834,7 +904,8 @@ ITI-119 uses it) takes a Patient and returns the people who could be it, best fi
 each a Patient whose id is the EUID, with every identifier, `search.score`, and the
 match-grade extension (`certain`, `probable`, `possible`); `onlyCertainMatches` and
 `count` are honoured. PIXm (`/mhd/Patient/$ihe-pix`, ITI-83) answers from the index:
-every identifier of every record linked to the person, and the EUID.
+every identifier of every record linked to the person, and the EUID. So do PIX and PDQ
+in HL7 v3 (`/pixv3`, `/pdqv3`; see IHE document sharing), which also feed it.
 
 The API is `/api/mpi` (summary and search), `/api/mpi/persons/{euid}`,
 `/api/mpi/find`, `/api/mpi/reviews`, `/api/mpi/records` (register, link, unlink),

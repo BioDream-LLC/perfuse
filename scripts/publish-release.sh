@@ -46,12 +46,17 @@ for f in $FILES; do
   OLD="$OLD" NEW="$NEW" python3 - "$f" <<'PY'
 import os, sys
 p = sys.argv[1]
-s = open(p).read()
-s = s.replace(os.environ["OLD"], os.environ["NEW"])
-open(p, "w").write(s)
+lines = open(p).read().split("\n")
+# The "New in vX" and "Since vX" headings name the release they describe, not the current one: v0.1.18 turned the
+# README's "New in v0.1.17" into a second "New in v0.1.18".
+lines = [l if l.startswith(("## New in ", "## Since ")) else l.replace(os.environ["OLD"], os.environ["NEW"]) for l in lines]
+open(p, "w").write("\n".join(lines))
 PY
 done
-left=$(grep -l -F "$OLD" $FILES || true)
+left=""
+for f in $FILES; do
+  if grep -v -E '^## (New in|Since) ' "$f" | grep -q -F "$OLD"; then left="$left $f"; fi
+done
 [ -z "$left" ] || die "$OLD is still mentioned in: $left"
 
 # ---- 3. Build and check what ships ------------------------------------------------------------------------

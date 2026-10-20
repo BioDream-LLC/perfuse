@@ -77,9 +77,25 @@ func (s *Server) refuseDemo(w http.ResponseWriter, r *http.Request, sess *store.
 // handler still redacts credentials for a role that may not read them (settings, channels and sign-on show that a secret
 // is set, never its value). SCIM is left out: it is a provisioning interface, not a screen. Only on a server started with
 // -demo-account, whose data is invented.
+//
+// It may also POST to the few checks that change nothing and reach nothing outside the server (demoChecks): the Scripts
+// screen's Check button, and the channel editor's validate and parse, which a visitor trying the builder presses.
 func (s *Server) demoMayRead(sess *store.Session, r *http.Request) bool {
-	if !s.isDemo(sess) || (r.Method != http.MethodGet && r.Method != http.MethodHead) {
+	if !s.isDemo(sess) {
+		return false
+	}
+	if r.Method == http.MethodPost {
+		return demoChecks[r.URL.Path]
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		return false
 	}
 	return !strings.HasPrefix(r.URL.Path, "/scim/")
+}
+
+// demoChecks are the POST endpoints that only read what they are sent and answer: no store, no channel, no network.
+var demoChecks = map[string]bool{
+	"/api/scripts/check":     true,
+	"/api/channels/validate": true,
+	"/api/channels/parse":    true,
 }

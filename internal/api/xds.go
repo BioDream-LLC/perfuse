@@ -136,8 +136,16 @@ func (s *Server) handleXDSStatus(w http.ResponseWriter, r *http.Request, _ *stor
 	}
 	base := s.selfURL()
 	s.ok(w, map[string]any{"enabled": true, "counts": counts, "documents": out, "repositoryUniqueId": s.XDS.RepositoryID,
-		"homeCommunityId": s.XDS.HomeCommunityID, "endpoints": map[string]string{
-			"repository": base + "/xds/repository", "registry": base + "/xds/registry", "gateway": base + "/xca/gateway"}})
+		"homeCommunityId": s.XDS.HomeCommunityID, "endpoints": s.xdsEndpoints(base)})
+}
+
+// xdsEndpoints are the addresses other systems reach the registry at, and the patient index's v3 ones when it is kept.
+func (s *Server) xdsEndpoints(base string) map[string]string {
+	e := map[string]string{"repository": base + "/xds/repository", "registry": base + "/xds/registry", "gateway": base + "/xca/gateway"}
+	if s.PatientIndex != nil {
+		e["pixv3"], e["pdqv3"] = base+"/pixv3", base+"/pdqv3"
+	}
+	return e
 }
 
 type xdsQueryRequest struct {

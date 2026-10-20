@@ -68,6 +68,20 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
+## Since v0.1.18, on main and not yet released
+
+- **PIX and PDQ in HL7 version 3:** with the patient index on, `/pixv3` is an IHE PIX Manager (ITI-44 identity feed, with
+  merges; ITI-45 query) and `/pdqv3` a PDQ Supplier (ITI-47, with continuation and cancel), over SOAP, from the same index as
+  PIXm and `$match`. The answers validate against IHE's HL7 V3 schemas and answer IHE's own sample messages.
+- **Direct, three more ways:** a Direct source reads the address's **IMAP mailbox** at the HISP and takes **XDR** (ITI-41 over
+  SOAP with a Direct addressing block); an `xds` destination sends XDR with `direct_from` and `direct_to`; and recipient
+  certificates are looked up in the domain's **LDAP** directory when DNS has none. Checked against OpenLDAP, GreenMail and the
+  NIST XDS Toolkit's Document Recipient.
+- **Fixed:** an `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
+  codes without a display had no name, which a strict registry refuses. The shared demo account may press the checks that change
+  nothing (a script's Check, the channel editor's validate and parse). The v0.1.17 notes below were relabelled v0.1.18 by the
+  release script, which now leaves "New in" headings alone.
+
 ## New in v0.1.18
 
 For the UK and Europe, and every screen of the public test server at work.
@@ -100,7 +114,7 @@ For the UK and Europe, and every screen of the public test server at work.
   shared demo account may read the administrators' screens too. [Try it](https://test.perfuse.health).
 - **`perfuse generate`** gives small mixed batches every kind of message, and no longer repeats its identifiers between runs.
 
-## New in v0.1.18
+## New in v0.1.17
 
 <details><summary>Clusters, PostgreSQL, the patient index, AS2, OpenPGP, EDIFACT, mailboxes, terminology, SNMP</summary>
 

@@ -189,7 +189,9 @@ func TestNoPlausibleSocialSecurityNumbers(t *testing.T) {
 
 	eachSourceFile(t, func(path, content string) {
 		for _, found := range ssn.FindAllString(content, -1) {
-			if allowedSSNs[found] {
+			// The Social Security Administration never issues an area number of 000, 666 or 900 to 999 (the last are
+			// ITINs and examples, as in IHE's own PIX and PDQ sample messages), so those cannot be anybody's number.
+			if allowedSSNs[found] || strings.HasPrefix(found, "9") || strings.HasPrefix(found, "666") || strings.HasPrefix(found, "000") {
 				continue
 			}
 

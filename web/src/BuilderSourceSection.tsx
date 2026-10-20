@@ -66,6 +66,8 @@ export function SourceSection({
   const [showHttpAdvanced, setShowHttpAdvanced] = useState(false)
   const [showKafkaSasl, setShowKafkaSasl] = useState(false)
   const [showDirectAdvanced, setShowDirectAdvanced] = useState(false)
+  const [showDirectImap, setShowDirectImap] = useState(false)
+  const [showDirectXdr, setShowDirectXdr] = useState(false)
   const [showDicomAdvanced, setShowDicomAdvanced] = useState(false)
   const [showMllpTls, setShowMllpTls] = useState(false)
   const [showPgp, setShowPgp] = useState(draft.srcPgpEnabled)
@@ -1587,7 +1589,7 @@ export function SourceSection({
               onChange={(v) => set('directSrcListen', v)}
               placeholder="0.0.0.0:2525"
               mono
-              hint="The address the HISP delivers this address's mail to. Ask the HISP which source addresses to allow."
+              hint="The address the HISP delivers this address's mail to. Ask the HISP which source addresses to allow. Leave it empty when mail is read from the HISP's mailbox or taken as XDR below."
             />
           </Pair>
           <Pair>
@@ -1646,9 +1648,80 @@ export function SourceSection({
               <Secret label="HISP password" value={draft.directSrcPassword} onChange={(v) => set('directSrcPassword', v)} />
             </Pair>
           </Advanced>
+          <Advanced
+            title="Read the address's mailbox at the HISP (IMAP)"
+            open={showDirectImap || !!draft.directSrcImapHost}
+            onToggle={() => setShowDirectImap((v) => !v)}
+          >
+            <Pair>
+              <Text
+                label="IMAP server"
+                value={draft.directSrcImapHost}
+                onChange={(v) => set('directSrcImapHost', v)}
+                placeholder="imap.hisp.example"
+                mono
+                hint="For a HISP that keeps the address's mail in a mailbox rather than delivering it by SMTP. Each message is opened as Direct; one that cannot be moves to the error folder."
+              />
+              <Num label="Port" value={draft.directSrcImapPort} onChange={(v) => set('directSrcImapPort', v ?? 0)} hint="993 when empty (143 with STARTTLS)." />
+            </Pair>
+            <Pair>
+              <Choose
+                label="Connection"
+                value={draft.directSrcImapSecurity || 'tls'}
+                onChange={(v) => set('directSrcImapSecurity', v === 'tls' ? '' : v)}
+                options={[
+                  { value: 'tls', label: 'TLS from the start' },
+                  { value: 'starttls', label: 'STARTTLS' },
+                ]}
+              />
+              <Text label="Mailbox folder" value={draft.directSrcImapMailbox} onChange={(v) => set('directSrcImapMailbox', v)} placeholder="INBOX" />
+            </Pair>
+            <Pair>
+              <Text label="Mailbox username" value={draft.directSrcImapUsername} onChange={(v) => set('directSrcImapUsername', v)} />
+              <Secret label="Mailbox password" value={draft.directSrcImapPassword} onChange={(v) => set('directSrcImapPassword', v)} />
+            </Pair>
+            <Pair>
+              <Choose
+                label="After a message is taken"
+                value={draft.directSrcImapAfterRead || 'move'}
+                onChange={(v) => set('directSrcImapAfterRead', v === 'move' ? '' : v)}
+                options={[
+                  { value: 'move', label: 'Move it to another folder' },
+                  { value: 'delete', label: 'Delete it' },
+                ]}
+              />
+              <Text label="Move it to" value={draft.directSrcImapMoveTo} onChange={(v) => set('directSrcImapMoveTo', v)} placeholder="Processed" />
+            </Pair>
+            <Pair>
+              <Text label="Error folder" value={draft.directSrcImapErrorFolder} onChange={(v) => set('directSrcImapErrorFolder', v)} placeholder="Error" />
+              <Text label="Check every" value={draft.directSrcImapPollInterval} onChange={(v) => set('directSrcImapPollInterval', v)} placeholder="60s" mono />
+            </Pair>
+          </Advanced>
+          <Advanced title="Take XDR (IHE ITI-41 over SOAP)" open={showDirectXdr || !!draft.directSrcXdrListen} onToggle={() => setShowDirectXdr((v) => !v)}>
+            <Text
+              label="Listen on (HTTPS)"
+              value={draft.directSrcXdrListen}
+              onChange={(v) => set('directSrcXdrListen', v)}
+              placeholder="0.0.0.0:8445"
+              mono
+              hint="Documents posted to /xdr there, as a HISP sends Direct converted to XDR, or a partner sends point to point. A submission whose Direct addressing block names another address is refused. The address's certificate and key are not needed for XDR alone: TLS protects it."
+            />
+            <Pair>
+              <Text label="TLS certificate (PEM)" value={draft.directSrcXdrTlsCert} onChange={(v) => set('directSrcXdrTlsCert', v)} mono hint="Required unless it listens on 127.0.0.1." />
+              <Text label="TLS key (PEM)" value={draft.directSrcXdrTlsKey} onChange={(v) => set('directSrcXdrTlsKey', v)} mono />
+            </Pair>
+            <Text
+              label="Client certificate authorities (PEM)"
+              value={draft.directSrcXdrClientCaFile}
+              onChange={(v) => set('directSrcXdrClientCaFile', v)}
+              mono
+              hint="Set it and only a sender with a certificate from one of these may post: how a HISP or a partner usually authenticates XDR."
+            />
+          </Advanced>
           <p className="text-xs text-slate-400">
             Each message is decrypted and its signature checked before anything reads it. An XDM package&apos;s documents each become
-            a message; otherwise each attachment does, or the text when there is none.
+            a message; otherwise each attachment does, or the text when there is none. Each document of an XDR submission becomes a
+            message.
           </p>
         </>
       )}
