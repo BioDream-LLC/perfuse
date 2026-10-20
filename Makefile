@@ -163,8 +163,10 @@ publish:
 
 # vulncheck fails when code Perfuse calls has a known vulnerability, in a module or in the Go standard library the build
 # uses. A release depends on it: x/crypto, x/net and x/text had sat twenty-two reachable advisories behind, and nothing said
-# so until it was run by hand. Pinned, and run with go run so it is never a dependency of Perfuse itself.
-GOVULNCHECK ?= golang.org/x/vuln/cmd/govulncheck@v1.1.4
+# so until it was run by hand. Pinned, and run with go run so it is never a dependency of Perfuse itself. v1.1.4's x/tools
+# could not build Go 1.27's Linux standard library ("unexpected expr: *ast.KeyValueExpr") once an advisory made it look;
+# v1.9.0 can.
+GOVULNCHECK ?= golang.org/x/vuln/cmd/govulncheck@v1.9.0
 vulncheck:
 	go run $(GOVULNCHECK) ./...
 
