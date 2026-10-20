@@ -585,7 +585,7 @@ Gateway simulator querying and retrieving from Perfuse's Responding Gateway over
 message Perfuse writes validates against the ebXML Registry 3.0 and XDS.b schemas, and the MHD DocumentReference and
 SubmissionSet against IHE MHD 4.2.2 with the HL7 FHIR validator. XDR from an `xds` destination with a Direct addressing block
 was accepted by the toolkit's Document Recipient simulator, whose metadata validation found the one defect described in
-docs/verification.md. The PIX and PDQ v3 answers validate against IHE's HL7 V3 schemas (NE2008 multicacheschemas), and IHE's own
+docs/verification.md, and by ONC SITE's XDR validator, the Direct XDR checklist the (h)(2) certification test applies. The PIX and PDQ v3 answers validate against IHE's HL7 V3 schemas (NE2008 multicacheschemas), and IHE's own
 sample messages (the ITI-44 feed, merge, ITI-45 query, ITI-47 query, continuation and cancel) are answered as their published
 responses show. Not yet checked against an independent PIX or PDQ v3 implementation, Gazelle or a Connectathon.
 
@@ -670,7 +670,8 @@ and what could not be opened to `error_folder`, so nothing is read twice. `liste
 to point: an ITI-41 Provide and Register request whose documents each become a message. A submission whose Direct addressing block
 names another address is refused, and one the channel does not take is answered with a RegistryResponse failure saying why.
 `client_ca_file` requires a client certificate from those authorities. XDR is protected by TLS, not S/MIME, so a source that only
-takes XDR needs the address but not its certificate, key or anchors.
+takes XDR needs the address but not its certificate, key or anchors. Each document becomes a message of the channel's `dataType`: CDA
+documents need `raw` (passed on as they are) or `hl7v3`, since the default, `hl7`, expects HL7 v2 and refuses them.
 
 ```yaml
     xdr:
@@ -692,8 +693,9 @@ message made with `openssl smime` and delivered over SMTP is received, opened an
 message to another through a HISP stand-in, which answers with an MDN the sender opens. Certificates are found in OpenLDAP 2.4
 (address-bound and domain-bound, written by OpenLDAP's own `ldapadd`); a Direct message is read from a GreenMail IMAP mailbox and
 opened, and one that is not Direct moved to the error folder; XDR from an `xds` destination is taken by a `direct` source and
-refused when addressed to someone else, and accepted by the NIST XDS Toolkit's Document Recipient. Not yet tested against an
-accredited HISP or the ONC Edge Testing Tool.
+refused when addressed to someone else, and accepted by the NIST XDS Toolkit's Document Recipient and ONC SITE's XDR validator; SITE's Direct XDR
+Edge Test Tool sent both its minimal and full metadata messages to a `direct` source, which took them. Not yet tested against an
+accredited HISP, or SITE's SMTP, IMAP and certificate-discovery tools.
 
 ## SQL on FHIR views
 

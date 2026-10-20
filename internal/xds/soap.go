@@ -237,7 +237,8 @@ func (o Outgoing) Write() ([]byte, string) {
 	if o.RelatesTo != "" {
 		env.WriteString(`<wsa:RelatesTo>` + xmlEscape(o.RelatesTo) + `</wsa:RelatesTo>`)
 	} else {
-		env.WriteString(`<wsa:MessageID>urn:uuid:` + newUUID() + `</wsa:MessageID>`)
+		// mustUnderstand on MessageID too: the Direct XDR checklist ONC's validator applies requires it (XDR_MSG_426).
+		env.WriteString(`<wsa:MessageID soapenv:mustUnderstand="1">urn:uuid:` + newUUID() + `</wsa:MessageID>`)
 		env.WriteString(`<wsa:ReplyTo soapenv:mustUnderstand="1"><wsa:Address>` + anonWSA + `</wsa:Address></wsa:ReplyTo>`)
 		if o.To != "" {
 			env.WriteString(`<wsa:To soapenv:mustUnderstand="1">` + xmlEscape(o.To) + `</wsa:To>`)
@@ -245,7 +246,11 @@ func (o Outgoing) Write() ([]byte, string) {
 	}
 	env.WriteString(o.Headers)
 	env.WriteString(`</soapenv:Header><soapenv:Body>`)
-	env.Write(o.Body)
+	if p, err := prefixed(o.Body); err == nil {
+		env.Write(p)
+	} else {
+		env.Write(o.Body)
+	}
 	env.WriteString(`</soapenv:Body></soapenv:Envelope>`)
 	if !o.MTOM && len(o.Attachments) == 0 {
 		return env.Bytes(), `application/soap+xml; charset=UTF-8; action="` + o.Action + `"`

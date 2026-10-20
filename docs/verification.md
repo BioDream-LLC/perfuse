@@ -1255,8 +1255,23 @@ where gpg has no agent (now skipped there).
   sent a CDA document's confidentiality as the CDA reader's meaning (`normal`) rather than its code (`N`), and a coded attribute
   without a display had no Name, which the recipient's metadata validator refuses (`XDSRegistryMetadataError`, "no name
   attribute"). Perfuse's own registry, and the toolkit's Registry/Repository with validation as configured earlier, had stored
-  both. The code is now sent, with its meaning as the display, and a code without a display is named by itself. Not tested with
-  a HISP's XDR endpoint.
+  both. The code is now sent, with its meaning as the display, and a code without a display is named by itself.
+- **XDR against ONC SITE's Direct XDR Edge Test Tool** (site.healthit.gov/direct/xdr-edge, 20 October 2026), the reference the
+  (h)(2) certification test uses, both ways:
+  - *Perfuse sending:* SITE's XDR validator (`PERFUSE_SITE_XDR`) at first answered every message with a SOAP fault, "Local name
+    may not be null or empty". The message was legal XML: encoding/xml writes each metadata element with its namespace
+    redeclared as the default, and SITE's parser (Apache Axiom) cannot read that. Perfuse now writes XDS metadata with each
+    namespace bound once to its usual prefix (`rim:`, `lcm:`, `xdsb:`), as IHE's own samples do. SITE then reported one error
+    from its Direct XDR checklist, `wsa:MessageID` without `mustUnderstand` (XDR_MSG_426), now added. It now answers Success
+    with Info notes only, about optional elements Perfuse leaves out (`wsa:From`, `wsa:FaultTo`, `direct:metadata-level`, the
+    request's id and comment). The NIST Document Recipient and Registry/Repository still accept the new form.
+  - *SITE sending to Perfuse:* both of SITE's message types (minimal and full metadata) with an ONC C-CDA sample were
+    accepted by a `direct` source's XDR endpoint on test.perfuse.health, the document kept byte for byte, and a submission
+    addressed to another Direct address was refused with a RegistryResponse failure naming both addresses. SITE's sender
+    writes plain HTTP to a raw socket (even for an https URL) and reads until the connection closes, so for this test only a
+    socat relay on a temporary public port forwarded to an XDR endpoint on loopback, closing after 5 idle seconds; the
+    channel, relay and port were removed afterwards.
+  - Not tested: a commercial HISP's XDR endpoint, or SITE's SMTP, IMAP, POP3 and certificate-discovery tools.
 
 ## What has not been verified
 

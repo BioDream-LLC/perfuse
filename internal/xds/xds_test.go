@@ -314,3 +314,35 @@ func TestConfidentialityIsSentAsItsCode(t *testing.T) {
 		}
 	}
 }
+
+// ONC's XDR validator faults on an element that redeclares the default namespace ("Local name may not be null or
+// empty"), which is how encoding/xml writes: the metadata goes out with each namespace bound once to its usual prefix.
+func TestTheMetadataIsSentWithPrefixes(t *testing.T) {
+	body := []byte(`<ProvideAndRegisterDocumentSetRequest xmlns="urn:ihe:iti:xds-b:2007"><SubmitObjectsRequest xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0">` +
+		`<RegistryObjectList xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0"><Slot xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" name="a&amp;b"><ValueList><Value>x &lt; y</Value></ValueList></Slot>` +
+		`</RegistryObjectList></SubmitObjectsRequest><Document xmlns="urn:ihe:iti:xds-b:2007" id="d1">` + Include("c1") + `</Document></ProvideAndRegisterDocumentSetRequest>`)
+	b, _ := Outgoing{Action: ActionProvideAndRegister, Body: body}.Write()
+	s := string(b)
+	if strings.Contains(s, ` xmlns="`) {
+		t.Errorf("a default namespace is still declared: %s", s)
+	}
+	for _, want := range []string{`<xdsb:ProvideAndRegisterDocumentSetRequest xmlns:xop=`, `<rim:Slot name="a&amp;b">`, `<rim:Value>x &lt; y</rim:Value>`,
+		`<xop:Include href="cid:c1"></xop:Include>`, `<wsa:MessageID soapenv:mustUnderstand="1">`} {
+		if !strings.Contains(s, want) {
+			t.Errorf("missing %s in %s", want, s)
+		}
+	}
+	env, err := ReadEnvelope("application/soap+xml", bytes.NewReader(b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var req ProvideAndRegisterRequest
+	if err := xml.Unmarshal(env.Body, &req); err != nil || len(req.Documents) != 1 || req.Documents[0].ID != "d1" {
+		t.Fatalf("it does not read back: %v %+v", err, req)
+	}
+	// An HL7 v3 body (PIX and PDQ) is left as it is.
+	v3 := []byte(`<MCCI_IN000002UV01 xmlns="urn:hl7-org:v3" ITSVersion="XML_1.0"><id root="1"/></MCCI_IN000002UV01>`)
+	if b, _ := (Outgoing{Action: "a", Body: v3}).Write(); !bytes.Contains(b, v3) {
+		t.Errorf("the HL7 v3 body changed: %s", b)
+	}
+}

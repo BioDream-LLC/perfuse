@@ -75,8 +75,11 @@ only from YAML or the command line is treated as a bug.
   PIXm and `$match`. The answers validate against IHE's HL7 V3 schemas and answer IHE's own sample messages.
 - **Direct, three more ways:** a Direct source reads the address's **IMAP mailbox** at the HISP and takes **XDR** (ITI-41 over
   SOAP with a Direct addressing block); an `xds` destination sends XDR with `direct_from` and `direct_to`; and recipient
-  certificates are looked up in the domain's **LDAP** directory when DNS has none. Checked against OpenLDAP, GreenMail and the
-  NIST XDS Toolkit's Document Recipient.
+  certificates are looked up in the domain's **LDAP** directory when DNS has none. Checked against OpenLDAP, GreenMail, the
+  NIST XDS Toolkit's Document Recipient and ONC SITE's Direct XDR Edge Test Tool (both ways).
+- **Fixed:** ONC SITE's XDR validator, the (h)(2) certification reference, faulted on every XDR message Perfuse sent
+  (its parser cannot read XML that redeclares the default namespace on each element, as Go writes it). Metadata now goes out
+  prefixed, as in IHE's samples, with `mustUnderstand` on `wsa:MessageID`; SITE answers Success both ways, sending and receiving.
 - **Fixed:** an HTTP source cut the last byte off any body ending in 0x1C (taking it for MLLP framing), which broke one
   OpenPGP message in 256 and any other binary body ending that way. An `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
   codes without a display had no name, which a strict registry refuses. The shared demo account may press the checks that change

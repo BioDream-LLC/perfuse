@@ -197,3 +197,25 @@ func TestXDRToTheNISTDocumentRecipient(t *testing.T) {
 		t.Fatalf("the Document Recipient refused it: %v", err)
 	}
 }
+
+// XDR to ONC SITE's Direct XDR validator, which applies the Direct XDR checklist the (h)(2) certification test uses
+// (PERFUSE_SITE_XDR=https://ccda.healthit.gov/xdrmessagevalidator/Dispatcher/XDRService). It answers Success with only
+// Info notes when the message passes; before Perfuse wrote the metadata with prefixes, it faulted on the first byte.
+func TestXDRToONCSITE(t *testing.T) {
+	url := os.Getenv("PERFUSE_SITE_XDR")
+	if url == "" {
+		t.Skip("set PERFUSE_SITE_XDR to ONC SITE's XDR validator endpoint")
+	}
+	doc := generate.New(generate.Options{Kind: generate.MDM, Count: 1}).All()[0].Raw
+	s, err := NewXDSSender(config.Destination{Name: "xdr", Type: config.DestinationXDS, XDS: &config.XDSDestination{URL: url,
+		SourceID: "2.16.840.1.113883.3.9999.2", PatientDomain: "2.16.840.1.113883.19.5.99999.2",
+		FacilityType:    config.XDSCode{Code: "22232009", Scheme: "2.16.840.1.113883.6.96"},
+		PracticeSetting: config.XDSCode{Code: "394802001", Scheme: "2.16.840.1.113883.6.96"},
+		DirectFrom:      "perfuse-test@direct.hospital.example", DirectTo: []string{"intake@direct.clinic.example"}, Timeout: 60 * time.Second}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Send(context.Background(), doc); err != nil {
+		t.Fatalf("SITE refused it: %v", err)
+	}
+}
