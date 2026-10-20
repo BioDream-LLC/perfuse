@@ -1271,7 +1271,39 @@ where gpg has no agent (now skipped there).
     writes plain HTTP to a raw socket (even for an https URL) and reads until the connection closes, so for this test only a
     socat relay on a temporary public port forwarded to an XDR endpoint on loopback, closing after 5 idle seconds; the
     channel, relay and port were removed afterwards.
-  - Not tested: a commercial HISP's XDR endpoint, or SITE's SMTP, IMAP, POP3 and certificate-discovery tools.
+  - Not tested: a commercial HISP's XDR endpoint.
+- **ONC's Direct Certificate Discovery Tool** (DCDT, site.healthit.gov/direct/dcdt, dcdt31.healthit.gov, 20 October 2026). Its
+  18 discovery cases each name an address whose certificates the tool publishes in DNS CERT records or in LDAP directories
+  named by SRV records: some valid, some expired, revoked, bound to the wrong name, or only verifiable through an
+  intermediate fetched by AIA, with directories that are down or ranked by SRV priority and weight. The tool's own verdict
+  arrives by mail after a message is sent to the address; `TestTheDCDTDiscoveryCases` (`PERFUSE_TEST_DCDT`) asks the same
+  question without sending, running a Direct destination's certificate selection with the tool's root as the only anchor.
+  At first 9 of 18 passed, and the 9 failures were four defects, all fixed:
+  - the SRV lookup for a domain's directory used the system resolver, not the `dns` server the destination names;
+  - a SERVFAIL answer for the address-bound name (which the tool's DNS gives for a name holding nothing) ended the lookup
+    before the domain-bound name was asked;
+  - Perfuse sent LDAP searches with a 10-second server time limit, and the tool's ApacheDS answers any time limit with
+    `timeLimitExceeded` and no entries (OpenLDAP had not minded);
+  - certificates were never checked against their issuer's CRL (D17 has two revoked certificates beside the valid one),
+    and a missing intermediate was never fetched from the AIA caIssuers URL (D18).
+  All 18 now pass. A revocation list that cannot be fetched still lets delivery go ahead (a CRL server that is down must
+  not stop all Direct mail); a list not signed by the certificate's issuer is ignored. Unit tests cover each with local
+  stand-ins.
+- **A test domain under the tool's hosting cases.** On a temporary EC2 instance, `direct.perfuse.health` was delegated to
+  CoreDNS publishing address- and domain-bound CERT records and an SRV record for an OpenLDAP 2.4 directory holding
+  address- and domain-bound certificates. The DCDT's hosting tests H1 to H4 passed for it, and Perfuse's lookup found the
+  same four certificates the tool did. (Perfuse does not publish certificates; this checks the test rig and gives a second,
+  independent discovery to compare with.)
+- **SITE's HISP, Apache James, over IMAP.** A Direct source read a sealed message from a mailbox on james.healthit.gov (the
+  account SITE publishes in its "ETT Endpoints" guide), over STARTTLS with James's self-signed certificate trusted through
+  the new `imap.tls.ca_file` and `server_name`, and moved a message that was not Direct to the error folder
+  (`PERFUSE_TEST_SITE_JAMES`; the test deletes its folders). A Direct source reads IMAP only, and James's POP3 offers no
+  STARTTLS, so POP3 was not tried.
+- **Not tested: SMTP with SITE.** After our trust anchor was uploaded to SITE's Transport Test Tool, its sender reported
+  three messages "sent to the host successfully" to an address on the test domain, and looked up the address's CERT record
+  each time, but no connection ever reached the test domain's MX on port 25. Sending the other way needs outbound port 25,
+  which AWS holds for new accounts until a request to lift it is granted. SITE's HISP Testing Portal (SMTP, IMAP and POP3
+  as sender and receiver) needs a SITE account.
 
 ## What has not been verified
 

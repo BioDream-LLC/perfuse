@@ -1696,6 +1696,23 @@ export function SourceSection({
               <Text label="Error folder" value={draft.directSrcImapErrorFolder} onChange={(v) => set('directSrcImapErrorFolder', v)} placeholder="Error" />
               <Text label="Check every" value={draft.directSrcImapPollInterval} onChange={(v) => set('directSrcImapPollInterval', v)} placeholder="60s" mono />
             </Pair>
+            <Pair>
+              <Text
+                label="Trust this certificate (PEM file)"
+                value={draft.directSrcImapCaFile}
+                onChange={(v) => set('directSrcImapCaFile', v)}
+                placeholder="/etc/perfuse/direct/hisp-mail.pem"
+                hint="For a HISP whose mail server's certificate is not from a public authority. It is always verified."
+                mono
+              />
+              <Text
+                label="Name in its certificate"
+                value={draft.directSrcImapServerName}
+                onChange={(v) => set('directSrcImapServerName', v)}
+                placeholder="mail.hisp.example"
+                mono
+              />
+            </Pair>
           </Advanced>
           <Advanced title="Take XDR (IHE ITI-41 over SOAP)" open={showDirectXdr || !!draft.directSrcXdrListen} onToggle={() => setShowDirectXdr((v) => !v)}>
             <Text

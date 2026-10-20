@@ -80,6 +80,10 @@ only from YAML or the command line is treated as a bug.
 - **Fixed:** ONC SITE's XDR validator, the (h)(2) certification reference, faulted on every XDR message Perfuse sent
   (its parser cannot read XML that redeclares the default namespace on each element, as Go writes it). Metadata now goes out
   prefixed, as in IHE's samples, with `mustUnderstand` on `wsa:MessageID`; SITE answers Success both ways, sending and receiving.
+- **Direct certificate checks, against ONC's Certificate Discovery Tool:** a Direct destination now refuses a recipient
+  certificate revoked on its issuer's CRL and fetches missing intermediates from AIA; the LDAP lookup asks the configured DNS
+  server and works with ApacheDS; a failed address-bound DNS answer falls back to the domain. All 18 DCDT discovery cases pass
+  (9 did before). A Direct source also reads SITE's own HISP over IMAP (`imap.tls` trusts a HISP's private certificate).
 - **Fixed:** an HTTP source cut the last byte off any body ending in 0x1C (taking it for MLLP framing), which broke one
   OpenPGP message in 256 and any other binary body ending that way. An `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
   codes without a display had no name, which a strict registry refuses. The shared demo account may press the checks that change

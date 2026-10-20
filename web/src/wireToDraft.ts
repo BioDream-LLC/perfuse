@@ -220,6 +220,8 @@ function readSource(draft: ChannelDraft, source: WireSource | undefined) {
       draft.directSrcImapMoveTo = source.direct?.imap?.moveTo ?? ''
       draft.directSrcImapErrorFolder = source.direct?.imap?.errorFolder ?? ''
       draft.directSrcImapPollInterval = source.direct?.imap?.pollInterval ?? ''
+      draft.directSrcImapCaFile = source.direct?.imap?.tls?.caFile ?? ''
+      draft.directSrcImapServerName = source.direct?.imap?.tls?.serverName ?? ''
       draft.directSrcXdrListen = source.direct?.xdr?.listen ?? ''
       draft.directSrcXdrTlsCert = source.direct?.xdr?.tlsCert ?? ''
       draft.directSrcXdrTlsKey = source.direct?.xdr?.tlsKey ?? ''
@@ -1430,6 +1432,7 @@ interface WireSource {
       moveTo?: string
       errorFolder?: string
       pollInterval?: string
+      tls?: { caFile?: string; serverName?: string }
     }
     xdr?: { listen?: string; tlsCert?: string; tlsKey?: string; clientCaFile?: string }
   }

@@ -232,6 +232,12 @@ func (c *IMAP) Create(mailbox string) error {
 	return nil
 }
 
+// DeleteMailbox removes a mailbox: the tests' clean-up on a shared server.
+func (c *IMAP) DeleteMailbox(mailbox string) error {
+	_, err := c.cmd("DELETE " + quote(EncodeMailbox(mailbox)))
+	return err
+}
+
 // Unseen lists the UIDs of unread messages, oldest first.
 func (c *IMAP) Unseen() ([]uint32, error) {
 	items, err := c.cmd("UID SEARCH UNSEEN")

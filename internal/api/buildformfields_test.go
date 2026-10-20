@@ -255,14 +255,6 @@ var knownFormGaps = map[string]bool{
 	// It is listed here because this guard walks the builder's model, and the field is on that model. It is reachable from the
 	// interface, which is what the standing rule requires.
 	"contract.checkEvery": true,
-
-	// Deliberate, and not debt. ServerName tells a client which name to expect on the certificate of a server it is dialling. An
-	// HTTP source is a listener: it presents a certificate rather than checking one, so there is no name to expect and a control
-	// for it would do nothing. It is here because buildTLS is one shared struct used in both directions.
-	//
-	// Offering it anyway is the failure this project keeps finding in other people's software: a control that is present, accepted,
-	// saved, and connected to nothing.
-	"source.http.tls.serverName": true,
 }
 
 // excusedFormFields are names too generic to prove anything by searching for.

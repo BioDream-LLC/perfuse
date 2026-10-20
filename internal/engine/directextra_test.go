@@ -1,11 +1,15 @@
 package engine
 
 import (
+	"bufio"
 	"context"
+	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -217,5 +221,129 @@ func TestXDRToONCSITE(t *testing.T) {
 	}
 	if err := s.Send(context.Background(), doc); err != nil {
 		t.Fatalf("SITE refused it: %v", err)
+	}
+}
+
+// The same against ONC SITE's Apache James, the HISP the Direct certification tools run (PERFUSE_TEST_SITE_JAMES=1; the
+// account imaptesting@james.healthit.gov and its password are published in SITE's "ETT Endpoints" guide). James offers
+// IMAP on 143 with STARTTLS and a self-signed certificate for mail.ttpds.sitenv.org, which the source trusts by its
+// tls.ca_file and server_name, as a site would trust a HISP with a private certificate. The test works in folders of its
+// own and deletes them.
+func TestADirectMessageIsReadFromSITEsJames(t *testing.T) {
+	if os.Getenv("PERFUSE_TEST_SITE_JAMES") == "" {
+		t.Skip("set PERFUSE_TEST_SITE_JAMES=1 to read a Direct message from ONC SITE's James over IMAP")
+	}
+	const host, user, pass = "james.healthit.gov", "imaptesting@james.healthit.gov", "smtptesting123"
+	// Capture James's certificate (verification is off for this capture only; the channel verifies against it).
+	conn, err := net.DialTimeout("tcp", host+":143", 15*time.Second)
+	if err != nil {
+		t.Skip("James is not reachable: ", err)
+	}
+	r := bufio.NewReader(conn)
+	_, _ = r.ReadString('\n')
+	_, _ = conn.Write([]byte("a1 STARTTLS\r\n"))
+	if l, _ := r.ReadString('\n'); !strings.HasPrefix(l, "a1 OK") {
+		t.Fatalf("STARTTLS: %q", l)
+	}
+	tc := tls.Client(conn, &tls.Config{InsecureSkipVerify: true}) //nolint:gosec // capture only
+	if err := tc.Handshake(); err != nil {
+		t.Fatal(err)
+	}
+	peer := tc.ConnectionState().PeerCertificates[0]
+	tc.Close()
+	dir := t.TempDir()
+	caFile := filepath.Join(dir, "james.pem")
+	if err := os.WriteFile(caFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: peer.Raw}), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	serverName := peer.Subject.CommonName
+	if len(peer.DNSNames) > 0 {
+		serverName = peer.DNSNames[0]
+	}
+
+	p := newDirectPKI(t)
+	_, _, senderPair := p.issue(t, "referrals@direct.hospital.example", false)
+	recipCert, recipKey, recipPair := p.issue(t, "intake@direct.clinic.example", false)
+	sealed, err := direct.Protect(direct.Message{From: "referrals@direct.hospital.example", To: []string{"intake@direct.clinic.example"},
+		Subject: "Referral", Attachments: []direct.Attachment{{Name: "referral.txt", MimeType: "text/plain", Content: []byte("A referral for DOE, JOHN.")}}},
+		senderPair, nil, []*x509.Certificate{recipPair.Certificate})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pool := x509.NewCertPool()
+	pool.AddCert(peer)
+	dial := mailbox.Dial{Host: host, Port: 143, Security: mailbox.SecurityStartTLS, TLS: &tls.Config{RootCAs: pool, ServerName: serverName, MinVersion: tls.VersionTLS12}}
+	imap, err := mailbox.DialIMAP(t.Context(), dial)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(imap.Logout) // registered first, so it runs after the folders are deleted
+	if err := imap.Login(t.Context(), mailbox.Auth{Username: user, Password: pass}); err != nil {
+		t.Fatal(err)
+	}
+	// No dots: James's hierarchy separator is ".", so a dot would make a folder inside a folder.
+	stamp := strings.ReplaceAll(time.Now().Format("20060102150405.000"), ".", "")
+	inbox, done, errs := "perfuse-in-"+stamp, "perfuse-done-"+stamp, "perfuse-err-"+stamp
+	if err := imap.Create(inbox); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		for _, b := range []string{inbox, done, errs} {
+			_ = imap.DeleteMailbox(b)
+		}
+	})
+	for _, m := range [][]byte{sealed, mailWithAttachment("someone@else.example", "x.txt", []byte("plain mail, not Direct"))} {
+		if err := imap.Append(inbox, m); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg, err := config.Load(strings.NewReader(fmt.Sprintf(`name: direct-james
+dataType: raw
+source:
+  type: direct
+  direct:
+    address: intake@direct.clinic.example
+    cert_file: %s
+    key_file: %s
+    anchors_file: %s
+    imap:
+      host: %s
+      port: 143
+      security: starttls
+      username: %s
+      password: %s
+      mailbox: %s
+      move_to: %s
+      error_folder: %s
+      poll_interval: 10s
+      tls:
+        ca_file: %s
+        server_name: %s
+destinations:
+  - name: out
+    type: file
+    dir: /tmp/unused
+`, recipCert, recipKey, p.anchorFile, host, user, pass, inbox, done, errs, caFile, serverName)), "james.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sink := &recordingSender{}
+	startChannelFor(t, cfg, sink)
+	count := func(box string) int {
+		if err := imap.Select(box); err != nil {
+			return -1
+		}
+		u, _ := imap.Unseen()
+		return len(u)
+	}
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) && !(count(done) == 1 && count(errs) == 1) {
+		time.Sleep(time.Second)
+	}
+	if d, e, i := count(done), count(errs), count(inbox); d != 1 || e != 1 || i != 0 {
+		t.Fatalf("processed %d, error %d, left %d", d, e, i)
+	}
+	if sink.count() != 1 || sink.last() != "A referral for DOE, JOHN." {
+		t.Fatalf("the channel got %d messages: %q", sink.count(), sink.last())
 	}
 }

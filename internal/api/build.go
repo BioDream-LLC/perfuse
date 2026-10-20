@@ -674,7 +674,8 @@ type buildTLS struct {
 
 	// ServerName is needed whenever the certificate names something other than the
 	// address dialled, which is common behind a load balancer and is otherwise a
-	// handshake failure with a misleading message.
+	// handshake failure with a misleading message. Only a client checks it: the form offers it where Perfuse dials (a Direct
+	// source's HISP mailbox), not on an HTTP source, which presents a certificate rather than checking one.
 	ServerName string `json:"serverName,omitempty" yaml:"server_name,omitempty"`
 }
 
@@ -1642,6 +1643,8 @@ type buildDirectIMAP struct {
 	MoveTo       string `json:"moveTo,omitempty" yaml:"move_to,omitempty"`
 	ErrorFolder  string `json:"errorFolder,omitempty" yaml:"error_folder,omitempty"`
 	PollInterval string `json:"pollInterval,omitempty" yaml:"poll_interval,omitempty"`
+	// TLS trusts a HISP's private certificate (caFile) and names the server in it (serverName).
+	TLS *buildTLS `json:"tls,omitempty" yaml:"tls,omitempty"`
 }
 
 // buildDirectXDR is config.DirectXDR on the wire.

@@ -32,7 +32,7 @@ func LDAPCertificates(ctx context.Context, address, server string) ([]*x509.Cert
 	if server != "" {
 		servers = append(servers, server)
 	} else {
-		_, srvs, err := net.DefaultResolver.LookupSRV(ctx, "ldap", "tcp", domain)
+		_, srvs, err := resolverFor(dnsServerFrom(ctx)).LookupSRV(ctx, "ldap", "tcp", domain)
 		if err != nil || len(srvs) == 0 {
 			return nil, fmt.Errorf("direct: %s publishes no LDAP directory (no _ldap._tcp.%s SRV record)", domain, domain)
 		}
@@ -70,7 +70,7 @@ func ldapLookup(ctx context.Context, server, address, domain string) ([]*x509.Ce
 		return nil, err
 	}
 	root, err := conn.Search(ldap.SearchRequest{BaseDN: "", Scope: ldap.ScopeBase, Filter: "(objectClass=*)",
-		Attributes: []string{"namingContexts"}, SizeLimit: 1, TimeLimit: 10})
+		Attributes: []string{"namingContexts"}, SizeLimit: 1})
 	if err != nil {
 		return nil, fmt.Errorf("reading the directory's naming contexts: %w", err)
 	}
@@ -85,7 +85,9 @@ func ldapLookup(ctx context.Context, server, address, domain string) ([]*x509.Ce
 		var found []*x509.Certificate
 		for _, base := range bases {
 			entries, err := conn.Search(ldap.SearchRequest{BaseDN: base, Scope: ldap.ScopeSubtree,
-				Filter: "(mail=" + ldap.EscapeFilter(who) + ")", Attributes: certAttributes, SizeLimit: 20, TimeLimit: 10})
+				// No server time limit: ApacheDS (the ONC certificate discovery tool's directory) answers any time limit
+				// with timeLimitExceeded and no entries at once. The context bounds the search instead.
+				Filter: "(mail=" + ldap.EscapeFilter(who) + ")", Attributes: certAttributes, SizeLimit: 20})
 			if err != nil {
 				continue
 			}
@@ -119,7 +121,7 @@ func FindCertificates(ctx context.Context, address, dnsServer, ldapServer string
 		}
 		return nil, "", err
 	}
-	lc, lerr := LDAPCertificates(ctx, address, strings.TrimSpace(ldapServer))
+	lc, lerr := LDAPCertificates(withDNSServer(ctx, dnsServer), address, strings.TrimSpace(ldapServer))
 	if lerr == nil {
 		return lc, "ldap", nil
 	}
@@ -127,4 +129,31 @@ func FindCertificates(ctx context.Context, address, dnsServer, ldapServer string
 		err = fmt.Errorf("direct: no certificate for %s in DNS", address)
 	}
 	return nil, "", fmt.Errorf("%v; %v", err, lerr)
+}
+
+type dnsServerKey struct{}
+
+// withDNSServer carries the DNS server a lookup was told to use, so the SRV query for the domain's LDAP directory asks
+// the same server the CERT query did rather than the system's resolver.
+func withDNSServer(ctx context.Context, server string) context.Context {
+	if strings.TrimSpace(server) == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, dnsServerKey{}, strings.TrimSpace(server))
+}
+
+func dnsServerFrom(ctx context.Context) string {
+	s, _ := ctx.Value(dnsServerKey{}).(string)
+	return s
+}
+
+// resolverFor is the system resolver, or one that asks server (host:port) when given.
+func resolverFor(server string) *net.Resolver {
+	if server == "" {
+		return net.DefaultResolver
+	}
+	return &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+		var d net.Dialer
+		return d.DialContext(ctx, network, server)
+	}}
 }

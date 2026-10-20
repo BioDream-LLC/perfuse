@@ -32,16 +32,22 @@ func DNSCertificates(ctx context.Context, address, server string) ([]*x509.Certi
 		server = systemResolver()
 	}
 	local, domain := address[:at], address[at+1:]
+	// A failed answer for the address-bound name is not the end: some servers (the ONC certificate discovery tool's
+	// among them) answer SERVFAIL for a name they hold nothing for, and the domain-bound certificate must still be found.
+	var first error
 	for _, name := range []string{local + "." + domain, domain} {
 		certs, err := lookupCERT(ctx, name, server)
 		if err != nil {
-			return nil, err
+			if first == nil {
+				first = err
+			}
+			continue
 		}
 		if len(certs) > 0 {
 			return certs, nil
 		}
 	}
-	return nil, nil
+	return nil, first
 }
 
 func systemResolver() string {

@@ -1081,6 +1081,9 @@ export interface ChannelDraft {
   directSrcImapMoveTo: string
   directSrcImapErrorFolder: string
   directSrcImapPollInterval: string
+  /** directSrcImapCaFile and directSrcImapServerName trust a HISP whose mail server has a private certificate. */
+  directSrcImapCaFile: string
+  directSrcImapServerName: string
   /** directSrcXdr* is the HTTPS endpoint XDR is taken at. */
   directSrcXdrListen: string
   directSrcXdrTlsCert: string
@@ -2009,6 +2012,10 @@ export function draftToWire(draft: ChannelDraft): unknown {
               moveTo: draft.directSrcImapMoveTo || undefined,
               errorFolder: draft.directSrcImapErrorFolder || undefined,
               pollInterval: draft.directSrcImapPollInterval || undefined,
+              tls:
+                draft.directSrcImapCaFile || draft.directSrcImapServerName
+                  ? { caFile: draft.directSrcImapCaFile || undefined, serverName: draft.directSrcImapServerName || undefined }
+                  : undefined,
             }
           : undefined,
         xdr: draft.directSrcXdrListen
@@ -3290,6 +3297,8 @@ export function emptyDraft(): ChannelDraft {
     directSrcImapMoveTo: '',
     directSrcImapErrorFolder: '',
     directSrcImapPollInterval: '',
+    directSrcImapCaFile: '',
+    directSrcImapServerName: '',
     directSrcXdrListen: '',
     directSrcXdrTlsCert: '',
     directSrcXdrTlsKey: '',

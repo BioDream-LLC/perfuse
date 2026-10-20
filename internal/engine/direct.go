@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/biodream-llc/perfuse/internal/cms"
@@ -83,6 +84,9 @@ type DirectSender struct {
 	dial    func(ctx context.Context, network, addr string) (net.Conn, error)
 	lookup  func(ctx context.Context, address, server string) ([]*x509.Certificate, error)
 	now     func() time.Time
+	// checker validates recipient certificates (chain, AIA issuers, revocation); built on first use.
+	checker   *direct.Checker
+	checkerMu sync.Mutex
 }
 
 // NewDirectSender builds the sender; the address's certificate and key are loaded now, so a bad path fails at deploy.
@@ -107,9 +111,9 @@ func NewDirectSender(d config.Destination) (*DirectSender, error) {
 func (s *DirectSender) SetDataType(t config.DataType) { s.fields.dataType = t }
 
 // recipientCert finds a recipient's certificate: the directory first (address.pem, then domain.pem), then DNS, then the
-// recipient domain's LDAP directory. A certificate
-// that does not chain to the anchors, has expired, or is not for the address or its domain is not used: sending to it
-// would encrypt the message for someone the recipient never vouched for.
+// recipient domain's LDAP directory. A certificate that does not chain to the anchors (with the issuers its AIA names
+// fetched), has expired, is revoked on its issuer's CRL, or is not for the address or its domain is not used: sending to
+// it would encrypt the message for someone the recipient never vouched for.
 func (s *DirectSender) recipientCert(ctx context.Context, addr string) ([]*x509.Certificate, error) {
 	addr = strings.ToLower(addr)
 	domain := addr[strings.LastIndexByte(addr, '@')+1:]
@@ -140,7 +144,7 @@ func (s *DirectSender) recipientCert(ctx context.Context, addr string) ([]*x509.
 			why = append(why, c.Subject.CommonName+" is not for "+addr)
 			continue
 		}
-		if _, err := c.Verify(x509.VerifyOptions{Roots: s.anchors, CurrentTime: s.now(), KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny}}); err != nil {
+		if err := s.certChecker().Check(ctx, c); err != nil {
 			why = append(why, c.Subject.CommonName+": "+err.Error())
 			continue
 		}
@@ -153,6 +157,15 @@ func (s *DirectSender) recipientCert(ctx context.Context, addr string) ([]*x509.
 		return nil, fmt.Errorf("direct: no certificate was found for %s, in the directory, in DNS or in LDAP", addr)
 	}
 	return ok, nil
+}
+
+func (s *DirectSender) certChecker() *direct.Checker {
+	s.checkerMu.Lock()
+	defer s.checkerMu.Unlock()
+	if s.checker == nil {
+		s.checker = &direct.Checker{Anchors: s.anchors, Now: s.now}
+	}
+	return s.checker
 }
 
 func forAddress(c *x509.Certificate, addr string) bool {

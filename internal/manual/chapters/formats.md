@@ -607,8 +607,11 @@ document travels as an IHE XDM package (`IHE_XDM/SUBSET01/METADATA.XML` with the
 book** (below), then from DNS, where Direct publishes them as CERT records (RFC 4398): under the address with its @ made a dot,
 else under its domain; then from the recipient domain's LDAP directory, which its `_ldap._tcp` SRV record names (or `ldap:
 host:port`; `ldap: off` never asks one): each naming context is searched anonymously for an entry whose `mail` is the address,
-then the domain, and its `userSMIMECertificate` or `userCertificate` read. A certificate is used only when it is for the address or its domain and chains to one of your anchors; a
-recipient with no such certificate is a failed delivery, never plain e-mail. `to` and `subject` take field references such as
+then the domain, and its `userSMIMECertificate` or `userCertificate` read. A certificate is used only when it is for the address
+or its domain, has not expired, and chains to one of your anchors, fetching any intermediate issuer its Authority Information
+Access extension names; and it is refused when its issuer's revocation list (from its CRL distribution point, signed by that
+issuer) lists it. A list that cannot be fetched does not stop delivery. A recipient with no such certificate is a failed
+delivery, never plain e-mail. `to` and `subject` take field references such as
 `{PV1-8.1}`, and `request_mdn` asks the recipient for a delivery notification.
 
 ```yaml
@@ -656,7 +659,9 @@ source:
 
 **From the HISP's mailbox.** A HISP that keeps mail rather than delivering it gives the address an IMAP mailbox: `imap` reads
 it (TLS or STARTTLS, every poll a fresh session), opens each message as above, moves what was taken to `move_to` (or deletes it)
-and what could not be opened to `error_folder`, so nothing is read twice. `listen` may then be left out.
+and what could not be opened to `error_folder`, so nothing is read twice. `listen` may then be left out. A HISP whose mail
+server has a private certificate is trusted with `tls.ca_file` (its certificate, or its authority's) and `tls.server_name`;
+verification cannot be turned off.
 
 ```yaml
     imap:
@@ -694,8 +699,10 @@ message to another through a HISP stand-in, which answers with an MDN the sender
 (address-bound and domain-bound, written by OpenLDAP's own `ldapadd`); a Direct message is read from a GreenMail IMAP mailbox and
 opened, and one that is not Direct moved to the error folder; XDR from an `xds` destination is taken by a `direct` source and
 refused when addressed to someone else, and accepted by the NIST XDS Toolkit's Document Recipient and ONC SITE's XDR validator; SITE's Direct XDR
-Edge Test Tool sent both its minimal and full metadata messages to a `direct` source, which took them. Not yet tested against an
-accredited HISP, or SITE's SMTP, IMAP and certificate-discovery tools.
+Edge Test Tool sent both its minimal and full metadata messages to a `direct` source, which took them. Against ONC's Direct
+Certificate Discovery Tool, a Direct destination chooses the right certificate, or none, in all 18 of its discovery cases (D1 to D18: expired, revoked and AIA-issued certificates, SRV priority and weight, an unreachable directory). A Direct
+source reads a message from SITE's own HISP (Apache James) over IMAP with STARTTLS. Not yet tested: SMTP exchange with SITE's
+HISP (AWS holds outbound mail on port 25 for new accounts) or with an accredited HISP.
 
 ## SQL on FHIR views
 

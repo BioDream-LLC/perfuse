@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/tlsconf"
 	"net/mail"
 	"strings"
 	"time"
@@ -144,13 +145,16 @@ type DirectIMAP struct {
 	ErrorFolder string `yaml:"error_folder,omitempty"`
 	// PollInterval between checks; 60s by default, at least 10s.
 	PollInterval time.Duration `yaml:"poll_interval,omitempty"`
+	// TLS trusts a CA file (or the HISP's own certificate) and names the server expected in it, for a HISP whose IMAP
+	// certificate is not from a public authority. The certificate is always verified.
+	TLS *tlsconf.Settings `yaml:"tls,omitempty"`
 }
 
 // EmailSource is the mailbox as the email source reads it, which a Direct source's IMAP reuses.
 func (d *DirectIMAP) EmailSource(maxBytes int64) *EmailSource {
 	e := &EmailSource{Protocol: "imap", Host: d.Host, Port: d.Port, Security: d.Security, Username: d.Username, Password: d.Password,
 		Mailbox: d.Mailbox, Take: EmailTakeRaw, AfterRead: d.AfterRead, MoveTo: d.MoveTo, ErrorFolder: d.ErrorFolder,
-		PollInterval: d.PollInterval, MaxMessageSize: maxBytes}
+		PollInterval: d.PollInterval, MaxMessageSize: maxBytes, TLS: d.TLS}
 	return e
 }
 
@@ -190,7 +194,14 @@ func (s *DirectSource) validate() []error {
 		if strings.TrimSpace(m.Host) == "" || strings.TrimSpace(m.Username) == "" {
 			errs = append(errs, errors.New("direct.imap needs host and username"))
 		}
+		if m.TLS != nil {
+			// The mailbox is always read over TLS; a tls block only adds trust and the name, so it needs no enabled: true.
+			m.TLS.Enabled = true
+		}
 		e := m.EmailSource(s.MaxBytes)
+		if m.TLS != nil && m.TLS.InsecureSkipVerify {
+			errs = append(errs, errors.New("direct.imap.tls cannot skip verification: trust the HISP's certificate with ca_file (and server_name) instead"))
+		}
 		if m.AfterRead == "flag" {
 			errs = append(errs, errors.New("direct.imap.after_read is move or delete: a Direct message marked read would be read again"))
 		}
