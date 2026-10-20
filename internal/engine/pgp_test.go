@@ -224,8 +224,9 @@ func TestAnHTTPSenderIsToldWhyPGPRefusedIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	if code, body := post(unsigned); code != http.StatusBadRequest || !strings.Contains(body, "not signed") {
-		// Seen once on Windows arm64 ("decryption with session key failed: parsing error") and never in 30,000 local
-		// tries: the message and its throwaway key, so it can be replayed.
+		// Seen on Windows arm64 and Linux ("decryption with session key failed: parsing error") when the message ended
+		// in 0x1C, which the HTTP source took for an MLLP end byte and cut off; the message and its throwaway key are
+		// printed so a failure can be replayed.
 		key, _ := os.ReadFile(filepath.Join(dir, "ours.asc"))
 		t.Errorf("unsigned: %d %s\nmessage (base64): %s\nkey:\n%s", code, body, base64.StdEncoding.EncodeToString(unsigned), key)
 	}
@@ -234,8 +235,56 @@ func TestAnHTTPSenderIsToldWhyPGPRefusedIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	if code, body := post(signed); code != http.StatusOK {
-		// The same failure, seen a second time on Windows arm64 (19 October 2026) on the signed message: recorded the same way.
+		// The same, on the signed message.
 		key, _ := os.ReadFile(filepath.Join(dir, "ours.asc"))
 		t.Errorf("signed: %d %s\nmessage (base64): %s\nkey:\n%s", code, body, base64.StdEncoding.EncodeToString(signed), key)
+	}
+}
+
+// The message that failed in CI ended in 0x1C: sealed until one does, it must still open over HTTP.
+func TestAnOpenPGPMessageEndingInTheMLLPEndByteOpensOverHTTP(t *testing.T) {
+	dir := t.TempDir()
+	us := pgpKey(t, "perfuse")
+	writeKey(t, filepath.Join(dir, "ours.asc"), us, true, "")
+	var sealed []byte
+	for i := 0; i < 20000 && sealed == nil; i++ {
+		b, err := pgp.Seal([]byte(lsADT), pgp.SealOptions{To: openpgp.EntityList{us}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if b[len(b)-1] == 0x1c {
+			sealed = b
+		}
+	}
+	if sealed == nil {
+		t.Skip("no sealed message ended in 0x1C in 20,000 tries")
+	}
+	addr := freeAddr(t)
+	y := "name: h\nsource:\n  type: http\n  http:\n    listen: \"" + addr + "\"\n    path: /in\n  pgp:\n    decrypt_with: ours.asc\n" +
+		"destinations:\n  - name: out\n    type: file\n    dir: " + filepath.Join(dir, "out") + "\n"
+	path := filepath.Join(dir, "h.yaml")
+	if err := os.WriteFile(path, []byte(y), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ch, err := NewChannel(cfg, DefaultSenderFactory, quiet())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ch.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = ch.Stop(t.Context()) })
+	res, err := http.Post("http://"+addr+"/in", "application/octet-stream", bytes.NewReader(sealed))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("%d %s", res.StatusCode, b)
 	}
 }

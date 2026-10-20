@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"crypto/subtle"
 	"crypto/tls"
@@ -236,12 +237,21 @@ func validBearer(r *http.Request, token string) bool {
 }
 
 // stripFraming removes MLLP framing bytes if present.
+//
+// Only a whole frame is removed: a start byte and an end byte both. Stripping either on its own cut the last byte off any
+// binary body that happened to end in 0x1C, one OpenPGP message in 256, which is the intermittent "decryption with session
+// key failed: parsing error" CI saw on Windows arm64 and then Linux.
 func stripFraming(body []byte) []byte {
-	text := string(body)
-	text = strings.TrimPrefix(text, "\x0b")
-	text = strings.TrimSuffix(text, "\x1c\r")
-	text = strings.TrimSuffix(text, "\x1c")
-	return []byte(text)
+	if len(body) < 2 || body[0] != 0x0b {
+		return body
+	}
+	switch {
+	case bytes.HasSuffix(body, []byte{0x1c, '\r'}) && len(body) >= 3:
+		return body[1 : len(body)-2]
+	case bytes.HasSuffix(body, []byte{0x1c}):
+		return body[1 : len(body)-1]
+	}
+	return body
 }
 
 // stopHTTPSource shuts the listener down, waiting for messages in flight.

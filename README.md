@@ -77,7 +77,8 @@ only from YAML or the command line is treated as a bug.
   SOAP with a Direct addressing block); an `xds` destination sends XDR with `direct_from` and `direct_to`; and recipient
   certificates are looked up in the domain's **LDAP** directory when DNS has none. Checked against OpenLDAP, GreenMail and the
   NIST XDS Toolkit's Document Recipient.
-- **Fixed:** an `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
+- **Fixed:** an HTTP source cut the last byte off any body ending in 0x1C (taking it for MLLP framing), which broke one
+  OpenPGP message in 256 and any other binary body ending that way. An `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
   codes without a display had no name, which a strict registry refuses. The shared demo account may press the checks that change
   nothing (a script's Check, the channel editor's validate and parse). The v0.1.17 notes below were relabelled v0.1.18 by the
   release script, which now leaves "New in" headings alone.

@@ -1267,9 +1267,11 @@ checked.
 - **The Linux arm64 binary has run only in the cluster tests on AWS Graviton** (above). The amd64 binary was verified inside
   Alpine, which has no glibc, confirming the static-linking claim.
 - **OpenPGP against GnuPG has run on Linux and macOS only.** GitHub's Windows runners carry Git's MSYS gpg, which cannot
-  start an agent for native paths; Perfuse's own OpenPGP tests run there. One OpenPGP decryption failed once on Windows
-  arm64 (`decryption with session key failed: parsing error`) and never in 30,000 local tries; it happened a second time on 19 October 2026, on the signed message, and the test now
-  records the message and key in both cases.
+  start an agent for native paths; Perfuse's own OpenPGP tests run there. An OpenPGP test that failed now and then in CI
+  (`decryption with session key failed: parsing error`, twice on Windows arm64, then on Linux) was a real defect: the
+  message and key the test printed decrypted perfectly when replayed, and the message ended in 0x1C, which the HTTP source
+  took for an MLLP end byte and cut off. It now removes MLLP framing only as a whole frame, and a test seals until a message
+  ends in 0x1C and posts it.
 - **Clusters have run only in the tests above**: three servers, one region, one load balancer type (AWS NLB). Not
   across regions, not behind an F5 or HAProxy, not with PostgreSQL failing over to a standby of its own.
 - **No container image has been published**, though the build file and the README both name one.

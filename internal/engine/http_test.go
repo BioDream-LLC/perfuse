@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net"
@@ -590,5 +591,20 @@ func TestABearerTokenReferenceIsReadFromTheEnvironment(t *testing.T) {
 	fcfg := config.FHIRDestination{BearerToken: "${PERFUSE_TEST_HTTP_TOKEN}"}
 	if v := fcfg.ResolvedBearerToken(); v != "from-env" {
 		t.Fatalf("fhir resolved %q", v)
+	}
+}
+
+// MLLP framing is removed only as a whole frame: a binary body that ends in 0x1C, or starts with 0x0B, arrives intact.
+func TestAnHTTPBodyEndingInTheMLLPEndByteArrivesWhole(t *testing.T) {
+	for _, tc := range []struct{ in, want []byte }{
+		{[]byte{0xc1, 0x5e, 0x11, 0x1c}, []byte{0xc1, 0x5e, 0x11, 0x1c}},
+		{[]byte{0x0b, 0x01, 0x02}, []byte{0x0b, 0x01, 0x02}},
+		{[]byte{0x01, 0x1c, '\r'}, []byte{0x01, 0x1c, '\r'}},
+		{[]byte("\x0bMSH|^~\\&\x1c\r"), []byte("MSH|^~\\&")},
+		{[]byte("\x0bMSH|^~\\&\x1c"), []byte("MSH|^~\\&")},
+	} {
+		if got := stripFraming(tc.in); !bytes.Equal(got, tc.want) {
+			t.Errorf("stripFraming(%q) = %q, want %q", tc.in, got, tc.want)
+		}
 	}
 }
