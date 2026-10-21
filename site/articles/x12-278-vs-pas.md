@@ -124,6 +124,7 @@ They are built for different eras. PAS is easier for modern systems and carries 
 
 - **Translate both ways:** Perfuse maps PAS to and from the X12 278, so a modern request reaches a plan that only speaks X12, and the X12 answer comes back as a modern record that passes the official HL7 checking tool.
 - **Be the plan:** Perfuse can receive PAS requests, let a reviewer decide, and push pended decisions back automatically. It passes 82 of 84 checks in the official HL7 PAS test suite.
+- **Reach the plan's own review system:** Perfuse sends the 278 the way plans' utilization management systems take it: CAQH CORE web services (SOAP or MIME), batch files over SFTP, or plain HTTPS. It reads their receipts (the 999 and TA1) as well as their answers. This was tested against a stand-in built from CAQH's published rules, not yet against a real plan or clearinghouse, and Perfuse is not CAQH CORE certified.
 - **Be the doctor's side:** Perfuse can submit requests to plans' modern connections.
 - **The companions too:** Perfuse also handles the CRD and DTR recipes, so the order, its paperwork and the request all have an answer.
 - PAS decisions become PDex prior authorizations for the Patient, Provider and Payer-to-Payer connections the rule requires.

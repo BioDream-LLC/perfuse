@@ -3,8 +3,13 @@
     <p class="eyebrow">For health plans</p>
     <h1>CMS-0057-F, prior authorization and the provider directory, ready to run</h1>
     <p class="lede">US health plans in Medicare Advantage, Medicaid, CHIP and the federal exchanges must run four FHIR APIs from
-      January 2027 and answer prior authorization requests faster from 2026. Perfuse has all four, passes the official tests, and
-      costs nothing to license.</p>
+      January 2027 and answer prior authorization requests faster from 2026. Perfuse has all four, runs the official tests against
+      a public server, and costs nothing to license.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#quick-start">Start a payer server</a>
+      <a class="btn btn-ghost" href="https://test.perfuse.health/">Try the public test server</a>
+      <a class="btn btn-ghost" href="#limits">What is not tested yet</a>
+    </div>
   </div>
 </section>
 
@@ -53,7 +58,8 @@
           <li>A coverage rules file the payer writes in plain YAML, answered over CDS Hooks</li>
           <li>A reviewer's queue in the console: read the request and its documents, then approve, deny or approve fewer units</li>
           <li>Pended decisions sent back by subscription the moment they are made</li>
-          <li>The X12 278 converted to and from PAS, so payers on either side are reachable</li>
+          <li>Requests passed on to your utilization management system as X12 278s, over CAQH CORE SOAP or MIME, SFTP batch
+            files or HTTPS, and its answers (and its 999 and TA1 receipts) brought back; set up and watched in the console</li>
           <li>Inferno: CRD 92 pass and none failed, PAS 82 of 84, DTR 43 pass and 2 fail</li>
           <li>A decision service hook: send each request to your own engine, or to
             <a href="https://github.com/BioDream-LLC/vaglio">Vaglio</a> (source-available), which explains every decision; Perfuse
@@ -130,6 +136,70 @@
       <div class="card"><div class="icon">ICON:check</div><h3>Eligibility</h3><p>270/271 eligibility questions and answers, routed
         and converted like any other message.</p></div>
     </div>
+  </div>
+</section>
+
+<section class="band soft" id="quick-start">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Quick start</p>
+        <h2>A prior authorization server in three steps</h2>
+        <p>1. Write the coverage rules: which codes need approval, and what documentation. 2. Start Perfuse with its FHIR server,
+          CRD and PAS on. 3. Point an EHR, or Inferno, at it, and open Payer, CMS-0057 in the console.</p>
+        <p>To pass requests on to the review system you already run, add its address and its connectivity method: the
+          console's Settings, Payers, Utilization management link has every field.</p>
+        <a href="/manual/#cms-0057">The CMS-0057 chapter of the manual</a>
+      </div>
+      <div class="prose"><pre><code># payer-rules.yaml
+payer: Springfield Health Plan
+rules:
+  - description: Home oxygen equipment
+    codes: [E0424, E0431]
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+
+# start it
+perfuse serve -fhir -pas -crd-rules payer-rules.yaml
+
+# optional: decide in your UM system, over CAQH CORE SOAP
+UM_PASSWORD=... perfuse serve -fhir -pas -crd-rules payer-rules.yaml \
+  -pas-278-transport core-soap -pas-278-url https://um.example/CORE \
+  -pas-278-receiver ACMEUM -pas-278-user perfuse \
+  -pas-278-password-env UM_PASSWORD</code></pre></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="limits">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Honest limits</p>
+      <h2>What has been tested, and what has not</h2>
+      <p>Everything below is written down in the <a href="/verification/">verification record</a>, with how it was tested.</p>
+    </div>
+    <table>
+      <thead><tr><th>Area</th><th>Tested</th><th>Not yet</th></tr></thead>
+      <tbody>
+        <tr><td>CRD, DTR, PAS</td><td>Inferno's hosted test kits against test.perfuse.health: CRD 92 pass, none failed; PAS 82 of
+          84; DTR 43 pass, 2 fail (each failure explained on the <a href="/proof/">proof page</a>)</td><td class="caveat">No EHR vendor
+          or payer partner has exchanged requests with it; that is planned for HL7's January 2027 Connectathon</td></tr>
+        <tr><td>X12 278 to a UM system</td><td>Checked against PAS's own examples, CMS's published esMD 278s and an outside 278
+          checker; every connection method run end to end against a stand-in UM system built from CAQH's published rules and
+          schema</td><td class="caveat">No real UM system or clearinghouse yet; not CAQH CORE certified; CORE's REST and batch SOAP
+          methods not built</td></tr>
+        <tr><td>Documents for a pended request</td><td>Received with Da Vinci CDex <code>$submit-attachment</code> and shown to the
+          reviewer</td><td class="caveat">CDex's other ways of asking a provider for documents are not built</td></tr>
+        <tr><td>Patient, Provider and Payer-to-Payer APIs</td><td>PDex payer-to-payer 19 of 19, PDex coverage 312 pass, Bulk Data 48
+          of 48, SMART 80 of 80</td><td class="caveat">No member app or other plan has connected to a Perfuse server</td></tr>
+        <tr><td>Drug prior authorization</td><td>NCPDP SCRIPT ePA, RTPB and the Drug Formulary API, built from public NCPDP and
+          Surescripts material</td><td class="caveat">Not tested with Surescripts or a PBM; parts of the NCPDP guides are licensed and
+          were not read</td></tr>
+        <tr><td>Production</td><td colspan="2" class="caveat">No health plan runs Perfuse in production yet. Shadow mode lets you run
+          it beside what you have today, on real requests, deciding nothing, and compare.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 

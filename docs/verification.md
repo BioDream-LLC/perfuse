@@ -1404,6 +1404,9 @@ checked.
 - **Clusters have run only in the tests above**: three servers, one region, one load balancer type (AWS NLB). Not
   across regions, not behind an F5 or HAProxy, not with PostgreSQL failing over to a standby of its own.
 - **No container image has been published**, though the build file and the README both name one.
+- **No utilization management system or clearinghouse has received a 278 from here.** The 278s were checked against PAS's
+  examples, CMS's esMD samples and an outside checker, and every transport against a stand-in written from CAQH's rules (above).
+  Perfuse is not CAQH CORE certified.
 - **No payer or clearinghouse has received a 275 built here**, and it was built from published companion guides rather than the X12 technical report. See above.
 - **The Inferno US Core SMART groups have not been run as US Core groups.** The SMART App Launch STU2.2 suite they are built on
   has, against Perfuse's own authorization server (below); the US Core kit was not installed, so its granular-scope groups were not.

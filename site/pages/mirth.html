@@ -6,7 +6,8 @@
       runs your existing JavaScript unchanged, and runs beside Mirth on your real traffic until you can prove the two agree.</p>
     <div class="actions">
       <a class="btn btn-primary" href="/download/">Download Perfuse</a>
-      <a class="btn btn-ghost" href="/migrate-mirth-channels/">The step-by-step guide</a>
+      <a class="btn btn-ghost" href="#quick-start">Check your channels</a>
+      <a class="btn btn-ghost" href="#limits">What is not tested yet</a>
     </div>
   </div>
 </section>
@@ -89,6 +90,60 @@
     </div>
     <p style="margin-top:28px">The same tools work for the Open Integration Engine and BridgeLink, the open-source forks of Mirth,
       and Perfuse can write channels back out as Mirth files, so the door stays open both ways.</p>
+  </div>
+</section>
+
+<section class="band" id="quick-start">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Quick start</p>
+        <h2>Find out in a minute what your channels need</h2>
+        <p>Export your Mirth server backup from the Administrator (or OIE, or BridgeLink), and run these on any machine. Nothing is
+          changed or sent anywhere.</p>
+        <a href="/migrate-mirth-channels/">The full migration guide</a>
+      </div>
+      <div class="prose"><pre><code># what converts, what converts with caveats, what does not
+perfuse explain server-backup.xml
+
+# bring the channels across, code template libraries included
+perfuse translate -o channels/ server-backup.xml
+
+# run each channel on sample messages
+perfuse test channels/
+
+# after running both engines on the same messages,
+# only Mirth delivering: every difference, grouped by cause
+perfuse compare mirth-out/ perfuse-out/</code></pre></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="limits">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Honest limits</p>
+      <h2>What has been tested, and what has not</h2>
+      <p>Details in the <a href="/verification/">verification record</a>.</p>
+    </div>
+    <table>
+      <thead><tr><th>Area</th><th>Tested</th><th>Not yet</th></tr></thead>
+      <tbody>
+        <tr><td>Reading Mirth exports</td><td>Server backups, channel groups and code template libraries written by Mirth 4.5.2, OIE
+          4.5.2 and 4.6.0, and BridgeLink 26.9.0 themselves, translated and run on every build</td><td class="caveat">Channels set up
+          by hand in each Administrator may use settings this corpus does not; third-party plugins are not covered</td></tr>
+        <tr><td>Connectors</td><td>MLLP and TCP, HTTP, file, database, DICOM, Web Service (SOAP), SMTP, JavaScript, Channel
+          Reader/Writer</td><td class="caveat">JMS and the Document Writer do not translate, and are reported as blockers</td></tr>
+        <tr><td>Scripts</td><td>Mirth JavaScript with E4X, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, and the
+          common Java classes (<code>SimpleDateFormat</code>, <code>HashMap</code> and the like)</td><td class="caveat">Calls into
+          Mirth's own server classes, vendor jars and uncommon Java classes fail by name; the explain report lists each one</td></tr>
+        <tr><td>Writing channels back to Mirth</td><td>Ten transport pairs loaded into all four engines without being marked
+          invalid</td><td class="caveat">Filters, transformations and scripts have no place in Mirth's format and are listed, not
+          approximated</td></tr>
+        <tr><td>Production</td><td colspan="2" class="caveat">No hospital has run production traffic through Perfuse yet. That is why
+          step 4 runs it beside Mirth, delivering nothing, until the comparison is clean.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
