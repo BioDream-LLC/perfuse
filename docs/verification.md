@@ -1129,6 +1129,52 @@ Now 46 pass and 2 fail. Both failures are one resource, Inferno's own adaptive D
 That questionnaire turned out to be ours: the DTR run adds the extension to Inferno's fixture, in its Coding form. Written
 as the string its definition also allows, the suite passes 48 of 48.
 
+### The UM link's transports, against a stand-in UM system (21 October 2026)
+
+UM systems take 278s over CAQH CORE's connectivity (SOAP or HTTP MIME), or as batch files. Each transport was written from
+CAQH's Connectivity Rules vC2.2.0 and vC4.0.0, their XML Schema and WSDL (CORERule2.2.0.xsd and .wsdl, downloaded from CAQH;
+the vC4.0.0 schema as the rule prints it), and the CMS esMD 278 companion guide, then tested against a stand-in UM system that
+does not use Perfuse's code:
+
+- written in Node, reading CAQH's WSDL with node-soap 1.14.0 and validating every CORE envelope it receives, and every one it
+  sends back, with libxml2's `xmllint` against CAQH's schema;
+- checking the CORE metadata as the rule's error table has it (payload type, processing mode, a UUID payload ID, a time stamp
+  with its zone, receiver ID, rule version), the WS-Security UsernameToken, a client certificate from its own test CA and OAuth
+  client-credentials tokens, answering faults and envelope errors (`UnAuthorized`, `VersionMismatch`) as the rule says;
+- judging each 278 with the outside checker of the section below, answering one it fails with a 999 rejecting it, and the
+  rest with a 278 response in the shape of the esMD samples (certified with a number, pended with reason 0U);
+- in batch, behind OpenSSH's own `sshd` and `sftp-server`: it answers each 278 file with a 999 and a 278 response, and
+  records the 999 Perfuse sends back.
+
+`TestThePASExamplesAreDecidedByAnOutsideUMSystem` sends the PAS 2.2.1 examples over X12 with a password and with OAuth, CORE
+SOAP vC2.2.0, CORE SOAP vC4.0.0 with MTOM, a client certificate and OAuth, CORE HTTP MIME, and SFTP: every one decided as the
+stand-in decided it, none of its envelopes failing CAQH's schema. A wrong password is refused by the envelope, vC4.0.0 without a
+client certificate at the door, and a broken 278 comes back as a 999 that reads as a rejection. A server configured from the
+settings screen alone (no flags, the password saved there) reached the stand-in after a restart.
+
+Found and fixed on the way:
+
+- **Interchange control numbers repeated.** They were the clock's seconds, so two requests in one second went out with the
+  same ISA13, which a payer discards as a resend. Each is now one more than the last, kept with what became of it.
+- **A TA1 or 999 instead of an answer was "not a 278 response".** It is now read: the items pended with what it said, and the
+  exchange shown on the Reviewer queue screen.
+- **The TA1 Perfuse writes for mismatched ISA and IEA control numbers said 022** ("invalid control structure"); the code for
+  that is 001.
+- **A text flag holding digits stopped the server.** `-pas-278-payer-id 12345` was read as a number and the settings file
+  refused it at start.
+- **Settings that name a flag were not all applied to it.** The table linking them was kept by hand and had fallen behind;
+  `-index-identity` was among the missing, so its console switch was saved and then ignored at start. It is now built from the
+  settings themselves, and a test holds the two together.
+
+Not tested: a real payer or clearinghouse (that needs a trading partner agreement and a test account); CAQH CORE certification,
+which only CAQH's authorised testing vendors do; CORE's batch SOAP operations and the vC4.0.0 REST rule (whose message body
+the rule gives only as an informative example); 275 attachments.
+
+To run it: `npm install` and `node standin.mjs` in the stand-in's folder (with `SFTP_ROOT` for batch, an `sshd` serving that
+folder), then `PERFUSE_TEST_UM_STANDIN=https://127.0.0.1:18278 PERFUSE_TEST_UM_STANDIN_TLS=<its tls folder>` and, for SFTP,
+`PERFUSE_TEST_UM_STANDIN_SFTP*`, and `go test ./internal/fhirserver -run OutsideUMSystem`. The stand-in is kept outside the
+repository, beside the checker.
+
 ### PAS to X12 278, against published 278s (20 October 2026)
 
 `-pas-278-url` sends each PAS request to a payer's utilization management system as a 278 and reads its 278 answer back. Until

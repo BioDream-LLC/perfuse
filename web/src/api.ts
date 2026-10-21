@@ -1864,6 +1864,9 @@ export const api = {
   /** pasCase reads one PAS request whole: both Bundles and the documents received for it. */
   pasCase: (id: string) => request<PASCase>('GET', `/api/pas/cases/${encodeURIComponent(id)}`),
 
+  /** pasUM is the utilization management link's recent history: each X12 interchange sent and what became of it. */
+  pasUM: () => request<PASUMStatus>('GET', '/api/pas/um'),
+
   /** pasDecide records a reviewer's decision, exactly as Claim/$decide does. */
   pasDecide: (id: string, review: PASReview) =>
     request<{ response: unknown }>('POST', `/api/pas/cases/${encodeURIComponent(id)}/decide`, review),
@@ -3229,6 +3232,24 @@ export interface DashboardFigure {
 }
 
 /** A Da Vinci PAS request as its reviewer sees it. */
+/** PASUMExchange is one interchange sent to the payer's utilization management system. */
+export interface PASUMExchange {
+  control: number
+  claimResponse?: string
+  kind: string
+  sent: number
+  status: 'sending' | 'sent' | 'answered' | 'acknowledged' | 'rejected' | 'unreachable' | 'unreadable' | string
+  detail?: string
+  updated: number
+}
+
+/** PASUMStatus is the UM link's last seven days by status, and its latest exchanges. */
+export interface PASUMStatus {
+  enabled: boolean
+  counts: Record<string, number>
+  recent: PASUMExchange[]
+}
+
 export interface PASCase {
   id: string
   trace: string

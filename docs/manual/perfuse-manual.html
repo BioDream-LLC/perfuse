@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.18 · 4dcbeab</p>
+<p class="version">v0.1.18 · c79ead2</p>
 <p class="version">Other languages: <a href="https://perfuse.health/manual/da/" hreflang="da" lang="da">Dansk</a> · <a href="https://perfuse.health/manual/de/" hreflang="de" lang="de">Deutsch</a> · <a href="https://perfuse.health/manual/es/" hreflang="es" lang="es">Español</a> · <a href="https://perfuse.health/manual/fi/" hreflang="fi" lang="fi">Suomi</a> · <a href="https://perfuse.health/manual/fr/" hreflang="fr" lang="fr">Français</a> · <a href="https://perfuse.health/manual/it/" hreflang="it" lang="it">Italiano</a> · <a href="https://perfuse.health/manual/nb/" hreflang="nb" lang="nb">Norsk bokmål</a> · <a href="https://perfuse.health/manual/nl/" hreflang="nl" lang="nl">Nederlands</a> · <a href="https://perfuse.health/manual/pl/" hreflang="pl" lang="pl">Polski</a> · <a href="https://perfuse.health/manual/pt/" hreflang="pt" lang="pt">Português</a> · <a href="https://perfuse.health/manual/sv/" hreflang="sv" lang="sv">Svenska</a></p>
 </header>
 <h2>Table of Contents</h2>
@@ -1290,19 +1290,20 @@ td code { font-size: 0.85em; }
 <div class="toc-d2"><a href="#s26-105-transform"><span class="num">26.105</span> transform</a></div>
 <div class="toc-d2"><a href="#s26-106-translate"><span class="num">26.106</span> translate</a></div>
 <div class="toc-d2"><a href="#s26-107-udap"><span class="num">26.107</span> udap</a></div>
-<div class="toc-d2"><a href="#s26-108-v2fhir"><span class="num">26.108</span> v2fhir</a></div>
-<div class="toc-d2"><a href="#s26-109-vcs"><span class="num">26.109</span> vcs</a></div>
-<div class="toc-d2"><a href="#s26-110-vfs"><span class="num">26.110</span> vfs</a></div>
-<div class="toc-d2"><a href="#s26-111-vpn"><span class="num">26.111</span> vpn</a></div>
-<div class="toc-d2"><a href="#s26-112-web"><span class="num">26.112</span> web</a></div>
-<div class="toc-d2"><a href="#s26-113-webauthn"><span class="num">26.113</span> webauthn</a></div>
-<div class="toc-d2"><a href="#s26-114-winservice"><span class="num">26.114</span> winservice</a></div>
-<div class="toc-d2"><a href="#s26-115-x12"><span class="num">26.115</span> x12</a></div>
-<div class="toc-d2"><a href="#s26-116-x12xml"><span class="num">26.116</span> x12xml</a></div>
-<div class="toc-d2"><a href="#s26-117-xds"><span class="num">26.117</span> xds</a></div>
-<div class="toc-d2"><a href="#s26-118-xmldsig"><span class="num">26.118</span> xmldsig</a></div>
-<div class="toc-d2"><a href="#s26-119-xtree"><span class="num">26.119</span> xtree</a></div>
-<div class="toc-d2"><a href="#s26-120-pas"><span class="num">26.120</span> pas</a></div>
+<div class="toc-d2"><a href="#s26-108-umlink"><span class="num">26.108</span> umlink</a></div>
+<div class="toc-d2"><a href="#s26-109-v2fhir"><span class="num">26.109</span> v2fhir</a></div>
+<div class="toc-d2"><a href="#s26-110-vcs"><span class="num">26.110</span> vcs</a></div>
+<div class="toc-d2"><a href="#s26-111-vfs"><span class="num">26.111</span> vfs</a></div>
+<div class="toc-d2"><a href="#s26-112-vpn"><span class="num">26.112</span> vpn</a></div>
+<div class="toc-d2"><a href="#s26-113-web"><span class="num">26.113</span> web</a></div>
+<div class="toc-d2"><a href="#s26-114-webauthn"><span class="num">26.114</span> webauthn</a></div>
+<div class="toc-d2"><a href="#s26-115-winservice"><span class="num">26.115</span> winservice</a></div>
+<div class="toc-d2"><a href="#s26-116-x12"><span class="num">26.116</span> x12</a></div>
+<div class="toc-d2"><a href="#s26-117-x12xml"><span class="num">26.117</span> x12xml</a></div>
+<div class="toc-d2"><a href="#s26-118-xds"><span class="num">26.118</span> xds</a></div>
+<div class="toc-d2"><a href="#s26-119-xmldsig"><span class="num">26.119</span> xmldsig</a></div>
+<div class="toc-d2"><a href="#s26-120-xtree"><span class="num">26.120</span> xtree</a></div>
+<div class="toc-d2"><a href="#s26-121-pas"><span class="num">26.121</span> pas</a></div>
 <div class="toc-d1"><a href="#s27-index-of-configuration-keys"><span class="num">27</span> Index of Configuration Keys</a></div>
 <div class="toc-d2"><a href="#s27-1-all-keys"><span class="num">27.1</span> All keys</a></div>
 </nav>
@@ -3566,6 +3567,24 @@ rules:
 <pre class="code lang-sh"><code>perfuse serve -fhir -pas -pas-278-url https://um.example/x12/278 -pas-278-receiver ACMEUM \
   -pas-278-token-env UM_TOKEN</code></pre>
 <p>A UM system that pends first and decides later posts its later 278 response to <code>POST /fhir/Claim/$decide-278</code>; each event is matched to its request by the trace number Perfuse sent, and decided as <code>$decide</code> would decide it. If the UM system cannot be reached, or answers with something that is not a 278 response, every item is pended for a reviewer and the provider is told only that; the reason is in the server log.</p>
+<h4 id="how-the-278s-reach-the-um-system">How the 278s reach the UM system</h4>
+<p>The UM system&#39;s connectivity guide says how it takes 278s, and <code>-pas-278-transport</code> (Settings, Payers, Utilization management link) follows it:</p>
+<table>
+<thead><tr><th>Transport</th><th>What is sent</th><th>Authentication</th></tr></thead>
+<tbody>
+<tr><td><code>x12</code> (default)</td><td>The 278 POSTed as <code>application/edi-x12</code>; the answer is the response body</td><td>A bearer token, OAuth, HTTP Basic, a client certificate</td></tr>
+<tr><td><code>core-soap</code></td><td>The CAQH CORE real-time SOAP 1.2 envelope (<code>COREEnvelopeRealTimeRequest</code>, payload type <code>X12_278_Request_005010X217E1_2</code>): Connectivity Rule vC2.2.0 with the payload in the envelope, which most payers and CMS esMD run, or <code>-pas-278-core-version C4.0.0</code> with the payload as an MTOM attachment</td><td>vC2.2.0: a user name and password (WS-Security UsernameToken) or a client certificate. vC4.0.0: a client certificate and an OAuth token</td></tr>
+<tr><td><code>core-mime</code></td><td>The CAQH CORE vC2.2.0 HTTP MIME multipart envelope, the payload as a file part</td><td>The envelope&#39;s UserName and Password, or a client certificate</td></tr>
+<tr><td><code>sftp</code></td><td>Each 278 put in a folder on the UM system&#39;s SFTP server (<code>-pas-278-sftp</code>, <code>-pas-278-sftp-outbound</code>); its answers collected from another (<code>-pas-278-sftp-inbound</code>, every <code>-pas-278-sftp-every</code>)</td><td>An SSH key or password; the server&#39;s key must be in <code>-pas-278-sftp-known-hosts</code></td></tr>
+</tbody>
+</table>
+<p>A client certificate is <code>-pas-278-cert</code> and <code>-pas-278-key</code>; <code>-pas-278-ca</code> trusts a payer&#39;s own certificate authority. OAuth is <code>-pas-278-oauth-token-url</code>, <code>-pas-278-oauth-client-id</code> and the secret, fetched with the client-credentials grant and kept until a minute before it expires. Passwords, tokens and secrets are never flags: each is named by an environment variable (<code>-pas-278-password-env</code>, <code>-pas-278-token-env</code>, <code>-pas-278-oauth-secret-env</code>, <code>-pas-278-sftp-password-env</code>), or typed into the settings screen, where it is kept in the settings file (readable by the server&#39;s account only) and never shown again.</p>
+<pre class="code lang-sh"><code>UM_PASSWORD=... perfuse serve -fhir -pas -pas-278-transport core-soap \
+  -pas-278-url https://um.example/CORE/RealTime -pas-278-receiver ACMEUM \
+  -pas-278-user perfuse -pas-278-password-env UM_PASSWORD</code></pre>
+<p>Over SFTP every request is pended until its answer arrives: the 278 response decides the items, and Perfuse puts a 999 accepting it in the outbound folder. A file it cannot read stays in the inbound folder for a person, and is offered again at the next read.</p>
+<h4 id="when-the-um-system-cannot-read-a-request">When the UM system cannot read a request</h4>
+<p>A UM system that cannot read a 278 answers with a TA1 (the envelope) or a 999 (the transaction) instead of a decision. Perfuse reads which and what it says, pends every item (&#34;utilization management could not read the request&#34;), and records it. Payer, CMS-0057, Reviewer queue shows the link: what was sent in the last seven days, each interchange by its control number, and what became of it (answered; acknowledged, answer to come; rejected, with the 999&#39;s segment, element and code; not reached). Each interchange has its own control number, one more than the last, which is what a TA1 or 999 names when it answers.</p>
 <h4 id="s16-10-4-deciding-on-the-clinical-evidence-with-a-decision-service"><span class="num">16.10.4</span> Deciding on the clinical evidence, with a decision service</h4>
 <p>A rules file decides by service code: a code needs no authorization, is not covered, or goes to a reviewer. Whether this patient meets the criteria for it is a different question, answered from the conditions, questionnaire answers and documents the provider sent with the request. With <code>-pas-decider-url</code>, every item the rules leave to a reviewer is first put to a decision service, such as Vaglio, which reads the same PAS request Bundle through Perfuse&#39;s published <code>pas</code> package. A public Vaglio, on invented requests only, runs beside Perfuse&#39;s test instance at https://vaglio.perfuse.health:8443 (sign in as <code>demo</code>, password <code>try-vaglio-demo</code>; it can look at everything and change nothing): every decision there has its proof, a plain-language letter and a receipt anyone can check.</p>
 <pre class="code lang-sh"><code>perfuse serve -fhir -pas -crd-rules payer-rules.yaml -pas-decider-url https://vaglio.example/api/pas/decide \
@@ -3577,7 +3596,7 @@ rules:
 <p>CRD sends <code>POST &lt;url&gt;</code> with <code>{&#34;service&#34;: {&#34;system&#34;: &#34;...&#34;, &#34;code&#34;: &#34;...&#34;}, &#34;resources&#34;: [ ... ]}</code>, the resources being the hook&#39;s prefetch (the patient first, the coverage left out), and reads <code>{&#34;decides&#34;: true, &#34;answer&#34;: &#34;approve&#34; | &#34;pend&#34; | &#34;deny&#34;, &#34;summary&#34;: &#34;...&#34;, &#34;missing&#34;: [...], &#34;questionnaire&#34;: &#34;...&#34;, &#34;toApprove&#34;: [[...]], &#34;policyTitle&#34;: &#34;...&#34;}</code>. It is advice and changes nothing: the coverage-information, the other cards and the PAS decision are what the rules say. It waits at most three seconds, and no answer, a failure, or <code>&#34;decides&#34;: false</code> leaves the response exactly as it is without it. Perfuse never needs a decision service.</p>
 <p>The request carries <code>X-PAS-Request-Id</code>, the id the response is known by. A service with its own reviewers that pends an item can send their decision later as any reviewer&#39;s is sent: <code>Claim/$decide</code> with that id as <code>claimResponse</code>, the item&#39;s sequence, and the decision and reason. The provider&#39;s subscription delivers it as it would one made in the reviewer queue.</p>
 <p>A subscription with <code>id-only</code> content tells the provider which answer changed without saying what it is: the notification&#39;s focus is <code>Bundle/&lt;id&gt;</code>. <code>GET /fhir/Bundle/&lt;id&gt;</code> returns the latest PAS Response Bundle, <code>GET /fhir/Bundle/&lt;id&gt;/_history/&lt;n&gt;</code> the version a notification sent, and <code>GET /fhir/ClaimResponse/&lt;id&gt;</code> the ClaimResponse alone. A token bound to one patient is told they do not exist, as for any record outside its patient.</p>
-<p><strong>Verified</strong> with the official Inferno PAS Server v2.2.1 suite (see verification). Not sent, though PAS marks them must-support: <code>ClaimResponse.adjudication</code> with a review action, <code>ClaimResponse.extension:authorizedProvider</code> and <code>ClaimResponse.item.extension:communicatedDiagnosis</code>, because the extensions they need are not allowed there by their own context in PAS 2.2.1 and the validator rejects a response carrying them; and <code>request.extension:DataAbsentReason</code>, because Perfuse always knows the request. The 278s sent to a utilization management system (above) are checked against PAS 2.2.1&#39;s own request examples, CMS&#39;s published esMD 278 samples and a 278 checker written from public companion guides (see verification); not yet against a real UM system. Not implemented: attachments sent back with CDex.</p>
+<p><strong>Verified</strong> with the official Inferno PAS Server v2.2.1 suite (see verification). Not sent, though PAS marks them must-support: <code>ClaimResponse.adjudication</code> with a review action, <code>ClaimResponse.extension:authorizedProvider</code> and <code>ClaimResponse.item.extension:communicatedDiagnosis</code>, because the extensions they need are not allowed there by their own context in PAS 2.2.1 and the validator rejects a response carrying them; and <code>request.extension:DataAbsentReason</code>, because Perfuse always knows the request. The 278s sent to a utilization management system (above) are checked against PAS 2.2.1&#39;s own request examples, CMS&#39;s published esMD 278 samples and a 278 checker written from public companion guides, and every transport against a stand-in UM system written from CAQH&#39;s Connectivity Rules (see verification); not yet against a real UM system or clearinghouse, and not CORE certified. Not implemented: attachments sent back with CDex.</p>
 <p>A rules file is checked against CRD&#39;s own invariants when it loads: a questionnaire needs documentation, a service that is not covered cannot need authorisation, <code>satisfied</code> belongs to one case and not a rule, and anything conditional must give a reason.</p>
 <p>Not verified: the exports and member matching against another payer&#39;s implementation, the metrics against a payer&#39;s published figures, and CRD against a real EHR&#39;s CDS Hooks client.</p>
 <h3 id="s16-11-cms-aligned-networks"><span class="num">16.11</span> CMS Aligned Networks</h3>
@@ -4118,12 +4137,34 @@ rules:
 <tr><td><code>-node-name</code></td><td>string</td><td>—</td><td>this server&#39;s name in the cluster (default: an id kept in -data)</td><td>—</td></tr>
 <tr><td><code>-oidc</code></td><td>string</td><td>—</td><td>YAML file configuring OpenID Connect sign-in (default: oidc.yaml beside the database, once saved in the console)</td><td>—</td></tr>
 <tr><td><code>-pas</code></td><td>on/off</td><td>—</td><td>serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request&#39;s result</td><td><strong>Settings › Payers › Prior authorization</strong>: Da Vinci PAS prior authorization server</td></tr>
-<tr><td><code>-pas-278-payer-id</code></td><td>string</td><td>—</td><td>the UMO&#39;s payer ID (NM1*X3) when the request&#39;s insurer carries no identifier</td><td><strong>Settings › Payers › X12 278 bridge</strong>: Payer ID for the 278s</td></tr>
-<tr><td><code>-pas-278-production</code></td><td>on/off</td><td>—</td><td>mark the 278s sent as production (ISA15 P) rather than test</td><td><strong>Settings › Payers › X12 278 bridge</strong>: Mark the 278s as production</td></tr>
-<tr><td><code>-pas-278-receiver</code></td><td>string</td><td>—</td><td>ISA08/GS03 receiver ID on the 278s sent to -pas-278-url</td><td><strong>Settings › Payers › X12 278 bridge</strong>: Receiver ID on the 278s</td></tr>
-<tr><td><code>-pas-278-sender</code></td><td>string</td><td><code>PERFUSE</code></td><td>ISA06/GS02 sender ID on the 278s sent to -pas-278-url</td><td><strong>Settings › Payers › X12 278 bridge</strong>: Sender ID on the 278s</td></tr>
-<tr><td><code>-pas-278-token-env</code></td><td>string</td><td>—</td><td>name of an environment variable holding a bearer token for -pas-278-url (the token itself is never a flag)</td><td><strong>Settings › Payers › X12 278 bridge</strong>: Environment variable holding the 278 endpoint&#39;s token</td></tr>
-<tr><td><code>-pas-278-url</code></td><td>string</td><td>—</td><td>forward every PAS request to the payer&#39;s utilization management system as an X12 278 request POSTed to this URL (application/edi-x12), and answer with its 278 response; later 278 responses go to Claim/$decide-278</td><td><strong>Settings › Payers › X12 278 bridge</strong>: Send PAS requests on as X12 278s to</td></tr>
+<tr><td><code>-pas-278-ca</code></td><td>string</td><td>—</td><td>a PEM file of certificate authorities to trust for the UM system beside the system&#39;s</td><td><strong>Settings › Payers › Utilization management link</strong>: Certificate authorities to trust for the UM system</td></tr>
+<tr><td><code>-pas-278-cert</code></td><td>string</td><td>—</td><td>a PEM client certificate for X.509 mutual TLS with the UM system (CORE&#39;s authentication)</td><td><strong>Settings › Payers › Utilization management link</strong>: Client certificate file</td></tr>
+<tr><td><code>-pas-278-core-receiver</code></td><td>string</td><td>—</td><td>the CORE envelope&#39;s ReceiverID, as the UM system&#39;s connectivity guide gives it (default: -pas-278-receiver)</td><td><strong>Settings › Payers › Utilization management link</strong>: CORE envelope ReceiverID</td></tr>
+<tr><td><code>-pas-278-core-rule-version</code></td><td>string</td><td>—</td><td>what to write in the CORE envelope&#39;s CORERuleVersion when the UM system&#39;s guide asks for something other than the version itself (CMS esMD&#39;s sample says v2.2.0)</td><td><strong>Settings › Payers › Utilization management link</strong>: CORERuleVersion written in the envelope</td></tr>
+<tr><td><code>-pas-278-core-sender</code></td><td>string</td><td>—</td><td>the CORE envelope&#39;s SenderID, as the UM system&#39;s connectivity guide gives it (default: -pas-278-sender)</td><td><strong>Settings › Payers › Utilization management link</strong>: CORE envelope SenderID</td></tr>
+<tr><td><code>-pas-278-core-version</code></td><td>string</td><td><code>2.2.0</code></td><td>the CAQH CORE Connectivity Rule the UM system runs, for core-soap and core-mime: 2.2.0 (payload in the envelope) or C4.0.0 (payload as an MTOM attachment; SOAP only)</td><td><strong>Settings › Payers › Utilization management link</strong>: CAQH CORE Connectivity Rule</td></tr>
+<tr><td><code>-pas-278-key</code></td><td>string</td><td>—</td><td>the private key (PEM) for -pas-278-cert</td><td><strong>Settings › Payers › Utilization management link</strong>: Client certificate key file</td></tr>
+<tr><td><code>-pas-278-oauth-client-id</code></td><td>string</td><td>—</td><td>the OAuth client ID for -pas-278-oauth-token-url</td><td><strong>Settings › Payers › Utilization management link</strong>: OAuth client ID</td></tr>
+<tr><td><code>-pas-278-oauth-scope</code></td><td>string</td><td>—</td><td>the scope asked for with the OAuth token, when the UM system wants one</td><td><strong>Settings › Payers › Utilization management link</strong>: OAuth scope</td></tr>
+<tr><td><code>-pas-278-oauth-secret-env</code></td><td>string</td><td>—</td><td>name of an environment variable holding the OAuth client secret (the secret itself is never a flag)</td><td><strong>Settings › Payers › Utilization management link</strong>: Environment variable holding the OAuth client secret</td></tr>
+<tr><td><code>-pas-278-oauth-token-url</code></td><td>string</td><td>—</td><td>an OAuth 2.0 token endpoint: a token got with the client-credentials grant is sent as a bearer token (CORE vC4.0.0&#39;s authorization)</td><td><strong>Settings › Payers › Utilization management link</strong>: OAuth token endpoint</td></tr>
+<tr><td><code>-pas-278-password-env</code></td><td>string</td><td>—</td><td>name of an environment variable holding the password for -pas-278-user (the password itself is never a flag)</td><td><strong>Settings › Payers › Utilization management link</strong>: Environment variable holding the password</td></tr>
+<tr><td><code>-pas-278-payer-id</code></td><td>string</td><td>—</td><td>the UMO&#39;s payer ID (NM1*X3) when the request&#39;s insurer carries no identifier</td><td><strong>Settings › Payers › Utilization management link</strong>: Payer ID for the 278s</td></tr>
+<tr><td><code>-pas-278-production</code></td><td>on/off</td><td>—</td><td>mark the 278s sent as production (ISA15 P) rather than test</td><td><strong>Settings › Payers › Utilization management link</strong>: Mark the 278s as production</td></tr>
+<tr><td><code>-pas-278-receiver</code></td><td>string</td><td>—</td><td>ISA08/GS03 receiver ID on the 278s sent to the UM system</td><td><strong>Settings › Payers › Utilization management link</strong>: Receiver ID on the 278s</td></tr>
+<tr><td><code>-pas-278-sender</code></td><td>string</td><td><code>PERFUSE</code></td><td>ISA06/GS02 sender ID on the 278s sent to the UM system</td><td><strong>Settings › Payers › Utilization management link</strong>: Sender ID on the 278s</td></tr>
+<tr><td><code>-pas-278-sftp</code></td><td>string</td><td>—</td><td>host:port of the UM system&#39;s SFTP server, for -pas-278-transport sftp</td><td><strong>Settings › Payers › Utilization management link</strong>: SFTP server</td></tr>
+<tr><td><code>-pas-278-sftp-every</code></td><td>duration</td><td><code>1m0s</code></td><td>how often the SFTP inbound folder is read</td><td><strong>Settings › Payers › Utilization management link</strong>: Read the SFTP inbound folder every</td></tr>
+<tr><td><code>-pas-278-sftp-inbound</code></td><td>string</td><td>—</td><td>the SFTP folder the UM system&#39;s 278 responses, 999s and TA1s are collected from</td><td><strong>Settings › Payers › Utilization management link</strong>: SFTP inbound folder</td></tr>
+<tr><td><code>-pas-278-sftp-key</code></td><td>string</td><td>—</td><td>an OpenSSH private key file for the SFTP user, instead of a password</td><td><strong>Settings › Payers › Utilization management link</strong>: SFTP key file</td></tr>
+<tr><td><code>-pas-278-sftp-known-hosts</code></td><td>string</td><td>—</td><td>an OpenSSH known_hosts file holding the SFTP server&#39;s key; required, so requests never go to whoever answers</td><td><strong>Settings › Payers › Utilization management link</strong>: SFTP known_hosts file</td></tr>
+<tr><td><code>-pas-278-sftp-outbound</code></td><td>string</td><td>—</td><td>the SFTP folder the 278 requests (and the 999s for the answers) are put in</td><td><strong>Settings › Payers › Utilization management link</strong>: SFTP outbound folder</td></tr>
+<tr><td><code>-pas-278-sftp-password-env</code></td><td>string</td><td>—</td><td>name of an environment variable holding the SFTP password (the password itself is never a flag)</td><td><strong>Settings › Payers › Utilization management link</strong>: Environment variable holding the SFTP password</td></tr>
+<tr><td><code>-pas-278-sftp-user</code></td><td>string</td><td>—</td><td>the SFTP user name</td><td><strong>Settings › Payers › Utilization management link</strong>: SFTP user</td></tr>
+<tr><td><code>-pas-278-token-env</code></td><td>string</td><td>—</td><td>name of an environment variable holding a bearer token for the UM system (the token itself is never a flag)</td><td><strong>Settings › Payers › Utilization management link</strong>: Environment variable holding the token</td></tr>
+<tr><td><code>-pas-278-transport</code></td><td>string</td><td><code>x12</code></td><td>how the 278s reach the UM system: x12 (POSTed as application/edi-x12), core-soap (a CAQH CORE SOAP envelope), core-mime (CAQH CORE HTTP MIME multipart), or sftp (batch files over -pas-278-sftp, answers collected from its inbound folder)</td><td><strong>Settings › Payers › Utilization management link</strong>: How the 278s travel</td></tr>
+<tr><td><code>-pas-278-url</code></td><td>string</td><td>—</td><td>forward every PAS request to the payer&#39;s utilization management system as an X12 278 request sent to this URL (by -pas-278-transport), and answer with its 278 response; later 278 responses go to Claim/$decide-278</td><td><strong>Settings › Payers › Utilization management link</strong>: Send PAS requests on to the UM system at</td></tr>
+<tr><td><code>-pas-278-user</code></td><td>string</td><td>—</td><td>user name for the UM system: CORE&#39;s UserName (WS-Security UsernameToken in SOAP), or HTTP Basic for x12</td><td><strong>Settings › Payers › Utilization management link</strong>: User name</td></tr>
 <tr><td><code>-pas-decider-ca</code></td><td>string</td><td>—</td><td>a PEM file of certificate authorities to trust for -pas-decider-url beside the system&#39;s, such as the payer&#39;s own authority or the decision service&#39;s (Vaglio&#39;s is its DATA/tls/ca.crt)</td><td><strong>Settings › Payers › Decision service</strong>: Certificate authorities to trust for the decision service</td></tr>
 <tr><td><code>-pas-decider-token-env</code></td><td>string</td><td>—</td><td>name of an environment variable holding a bearer token for -pas-decider-url (the token itself is never a flag)</td><td><strong>Settings › Payers › Decision service</strong>: Environment variable holding the decision service&#39;s token</td></tr>
 <tr><td><code>-pas-decider-url</code></td><td>string</td><td>—</td><td>ask the decision service at this URL (such as Vaglio) to decide each PAS item on the request&#39;s clinical evidence, when -crd-rules leave it to a reviewer; the PAS request Bundle is POSTed to it. Cannot be combined with -pas-278-url</td><td><strong>Settings › Payers › Decision service</strong>: Decision service URL</td></tr>
@@ -7702,19 +7743,24 @@ rules:
 <p>The distinction matters because of what happened with SAML in this repository: a thousand lines of tests passed, five of them specifically about signature canonicalisation, while no real identity provider could authenticate anybody. Both halves had been written here and agreed with each other. The lesson taken from it is that a security implementation is worth nothing until something somebody else wrote has accepted or rejected it.</p>
 <p>Specification references: - HL7 UDAP Security STU 1: http://hl7.org/fhir/us/udap-security/STU1/ - TEFCA SOP Facilitated FHIR Implementation v2.0, effective 8 March 2026</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/udap</code></p>
-<h3 id="s26-108-v2fhir"><span class="num">26.108</span> v2fhir</h3>
+<h3 id="s26-108-umlink"><span class="num">26.108</span> umlink</h3>
+<p>Package umlink carries X12 278s to a payer&#39;s utilization management system, and its answers back, the ways those systems are reached in practice: X12 in the body of an HTTPS POST; CAQH CORE&#39;s SOAP envelope (Connectivity Rule vC2.2.0, the one most payers and CMS&#39;s esMD run, and vC4.0.0); CAQH CORE&#39;s HTTP MIME multipart envelope (vC2.2.0); and batch files over SFTP.</p>
+<p>Written from CAQH&#39;s published Connectivity Rules (vC2.2.0 and vC4.0.0), their XML Schema and WSDL, and CMS&#39;s esMD X12N 278 Companion Guide. It is not CORE certified: certification is done by CAQH&#39;s authorised testing vendors.</p>
+<p>The real-time links return the answer the UM system gave, which may be a 278 response or, when it could not read the request, a 999 or TA1: the caller reads which. The batch link returns ErrAnswerLater once the file is delivered, and Poll collects what comes back.</p>
+<p>Source: <code>github.com/biodream-llc/perfuse/internal/umlink</code></p>
+<h3 id="s26-109-v2fhir"><span class="num">26.109</span> v2fhir</h3>
 <p>Package v2fhir maps HL7 v2 messages to FHIR resources.</p>
 <p>Mapping is where interoperability projects actually fail, so the rules this package follows are stated rather than implied:</p>
 <ul>
 <li>A value that cannot be mapped is preserved as text, never guessed at. A local code turned into a plausible-looking standard code is worse than an uncoded value, because the receiver believes it. - Every mapping decision that involved judgement is reported as a note, so a human can check the ones that matter instead of reading the whole output. - Timestamps are converted, not copied. HL7 v2 timestamps are not ISO 8601, and a dateTime carrying a local time with no offset is the single most common reason a converted resource is rejected. - Units keep their original text and gain a UCUM code only when the mapping is certain. A wrong unit code is a patient-safety defect, not a formatting problem.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/v2fhir</code></p>
-<h3 id="s26-109-vcs"><span class="num">26.109</span> vcs</h3>
+<h3 id="s26-110-vcs"><span class="num">26.110</span> vcs</h3>
 <p>Package vcs reads the history of channel files from git.</p>
 <p>Channel history is a paid extension elsewhere, and it is a paid extension because those engines keep channels in a database, so tracking changes means building a change-tracking system. Perfuse keeps channels in files, so the history already exists and has since the first commit. This package only has to read it.</p>
 <p>It shells out to git rather than embedding a git library. The library would add a large dependency to a binary whose selling point is having four, and it would buy nothing: a deployment keeping its channels under version control has git installed, and one that does not gets a clear &#34;not a git repository&#34; rather than a subtly different implementation of the same thing.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vcs</code></p>
-<h3 id="s26-110-vfs"><span class="num">26.110</span> vfs</h3>
+<h3 id="s26-111-vfs"><span class="num">26.111</span> vfs</h3>
 <p>Package vfs is the small set of file operations a polling connector needs.</p>
 <h1 id="why-an-interface-rather-than-four-connectors">Why an interface rather than four connectors</h1>
 <p>Perfuse collects files from a local disk, an SFTP server, an FTP server, a Windows share and a WebDAV server. The transfer differs in every case. Everything that actually decides whether messages survive does not:</p>
@@ -7726,17 +7772,17 @@ rules:
 <p>No writing, beyond what disposal needs. Sending files is a different problem with different failure modes - a partially written file at the far end, which the existing senders handle by writing to a temporary name and renaming. Folding both directions into one interface would make each harder to reason about.</p>
 <p>No recursion. A poller that descends into subdirectories collects the archive directory it just moved a file into.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vfs</code></p>
-<h3 id="s26-111-vpn"><span class="num">26.111</span> vpn</h3>
+<h3 id="s26-112-vpn"><span class="num">26.112</span> vpn</h3>
 <p>Package vpn reports the state of the site-to-site VPN tunnels partner traffic runs over - AWS Site-to-Site VPN, Azure VPN Gateway connections and strongSwan - and keeps each partner&#39;s connection sheet: both sides&#39; tunnel settings, and whether they agree.</p>
 <p>A tunnel that is down looks, from an interface engine, exactly like a partner whose engine is stopped: connections time out. Saying &#34;the tunnel is down&#34; instead is the difference between calling the network team and calling the partner.</p>
 <p>Read only. Nothing here changes a tunnel, and no pre-shared key is ever read, kept or shown.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/vpn</code></p>
-<h3 id="s26-112-web"><span class="num">26.112</span> web</h3>
+<h3 id="s26-113-web"><span class="num">26.113</span> web</h3>
 <p>Package web serves the built front end from inside the binary.</p>
 <p>The assets are embedded rather than shipped alongside, so deployment stays one file. That is the same reason the engine avoids cgo: an operator should be able to copy a binary onto a server and run it, with no JVM, no installer and no asset directory to get out of step with the executable.</p>
 <p>The built output is committed so that <code>go build</code> works on a checkout without Node installed. Rebuild it with <code>make web</code>.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/web</code></p>
-<h3 id="s26-113-webauthn"><span class="num">26.113</span> webauthn</h3>
+<h3 id="s26-114-webauthn"><span class="num">26.114</span> webauthn</h3>
 <p>Package webauthn verifies passkeys.</p>
 <p>A passkey is a key pair the authenticator holds - Touch ID, Windows Hello, a YubiKey, a phone - where the private half never leaves the device. Signing in means the server sends a random challenge, the authenticator signs it after checking the user is present, and the server verifies the signature against the public key it stored at registration.</p>
 <p>The property that matters is not that it is convenient. It is that there is nothing to phish. A password can be typed into a convincing copy of a login page; a passkey signature is bound to the origin it was created for, so the copy gets a signature its server cannot use. For an integration engine holding a hospital&#39;s interfaces, that is the difference worth having.</p>
@@ -7746,12 +7792,12 @@ rules:
 <li>The signing algorithm is fixed at registration and stored with the key. Nothing at sign-in reads an algorithm from the client, because that is algorithm confusion and there is no function here that could do it. - The origin is compared exactly, never by prefix or suffix. A check that accepts anything ending in the right domain accepts an attacker&#39;s subdomain. - A challenge is single-use and expires. It is deleted when consumed, so a captured assertion cannot be replayed. - Attestation is not trusted for anything. The attestation statement is parsed to extract the credential and then its signature is ignored, because verifying it properly needs a maintained root store and pretending to verify it is worse than not claiming to. - The sign count is checked when the authenticator provides one, and its absence is not treated as suspicious. Many authenticators legitimately leave it at zero.</li>
 </ul>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/webauthn</code></p>
-<h3 id="s26-114-winservice"><span class="num">26.114</span> winservice</h3>
+<h3 id="s26-115-winservice"><span class="num">26.115</span> winservice</h3>
 <p>Package winservice runs Perfuse as a Windows service.</p>
 <p>This file is the everywhere-else half. It exists so that cmd/perfuse can call into this package without wrapping every call site in a build tag: the subcommand is always compiled, and on Linux or macOS it explains that services are a Windows idea rather than failing to exist.</p>
 <p>Refusing with a clear sentence is better than hiding the subcommand. Somebody following Windows instructions on the wrong machine gets told what is actually going on, and the equivalent for their platform.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/winservice</code></p>
-<h3 id="s26-115-x12"><span class="num">26.115</span> x12</h3>
+<h3 id="s26-116-x12"><span class="num">26.116</span> x12</h3>
 <p>Reading and writing values at a path.</p>
 <h1 id="why-this-is-separate-from-path">Why this is separate from Path</h1>
 <p>path.go decides what a path expression means. This file resolves one against an actual interchange. Kept apart because the parsing rules are worth reading without the byte handling, and because the parser is used by the configuration validator, which has no message to resolve against.</p>
@@ -7759,7 +7805,7 @@ rules:
 <p>Segment.elements are subslices of Segment.raw, and Message.segs indexes into Message.raw. Editing a value in place changes the length of everything after it, so every one of those slices would need adjusting, and any that was missed would read correct until the one message where it did not.</p>
 <p>So a write rebuilds the segment, rebuilds the interchange, and parses it again. That costs a parse per changed message and buys the guarantee that a Message returned from here is exactly what parsing its own bytes produces. There is no state where the indexes and the bytes disagree, because that state is unrepresentable.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12</code></p>
-<h3 id="s26-116-x12xml"><span class="num">26.116</span> x12xml</h3>
+<h3 id="s26-117-x12xml"><span class="num">26.117</span> x12xml</h3>
 <p>Package x12xml converts an X12 interchange to and from the node tree the transformation, filter and script layers already work on.</p>
 <p>This is the same trick hl7xml plays, and for the same reason. Everything above the parser - declarative transformation steps, the filter language, JavaScript, the channel test runner - operates on an xtree.Node rather than on a format. Render X12 into that tree and all of it works on claims without a line of new code in any of those packages. Write a second addressing layer instead and every one of them grows an X12 branch that has to be kept in step with the HL7 one for ever.</p>
 <h1 id="element-naming">Element naming</h1>
@@ -7767,11 +7813,11 @@ rules:
 <p>Two independent reasons point the same way. It is what every 837 and 835 implementation guide writes, so a person reading the guide and a person reading the tree see the same token. And it is what Mirth&#39;s own X12 serialiser produces, so a Mirth script that walks msg[&#39;CLM&#39;][&#39;CLM01&#39;] keeps working - which is the whole migration promise.</p>
 <p>The element number is always two digits, matching the guides, so CLM01 rather than CLM1. Composite components add a further dotted number, CLM05.1, because X12 composites are one level deep and there is nothing to collide with.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/x12xml</code></p>
-<h3 id="s26-117-xds"><span class="num">26.117</span> xds</h3>
+<h3 id="s26-118-xds"><span class="num">26.118</span> xds</h3>
 <p>Package xds is IHE cross-enterprise document sharing: an XDS.b Document Registry and Repository (ITI-41 Provide and Register, ITI-18 Registry Stored Query, ITI-43 Retrieve Document Set), an XCA Responding Gateway over the same store (ITI-38, ITI-39), and the client side of each, so a channel can publish a document to another organisation&#39;s repository and the console can query a registry or a community.</p>
 <p>The metadata is ebXML Registry 3.0 (ebRIM), as XDS.b defines it in IHE ITI TF-3 chapter 4. It is modelled here as Go structs whose XML tags carry the namespaces, so a message is read the same whichever prefixes the sender chose, and written namespace-correct.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xds</code></p>
-<h3 id="s26-118-xmldsig"><span class="num">26.118</span> xmldsig</h3>
+<h3 id="s26-119-xmldsig"><span class="num">26.119</span> xmldsig</h3>
 <p>Package xmldsig implements XML Digital Signatures and the XAdES profile of them.</p>
 <h1 id="why-this-is-written-rather-than-borrowed">Why this is written rather than borrowed</h1>
 <p>A signed clinical document is a legal artefact. It asserts that a named person, at a named time, took responsibility for a specific set of bytes. Getting that wrong in either direction is serious: a signature that cannot be verified makes a valid document look forged, and a verifier that is too generous accepts a document somebody altered.</p>
@@ -7781,12 +7827,12 @@ rules:
 <h1 id="exclusive-rather-than-inclusive-by-default">Exclusive rather than inclusive, by default</h1>
 <p>Inclusive canonicalisation pulls in every namespace declaration that is in scope, including ones the signed element never uses. That makes a signature break when the document is later embedded inside something that declares an unrelated namespace on an ancestor, which is precisely what happens when a CDA is put inside a SOAP envelope or an IHE metadata wrapper. Exclusive canonicalisation includes only the declarations the element actually uses, and is what document exchange profiles specify for that reason.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xmldsig</code></p>
-<h3 id="s26-119-xtree"><span class="num">26.119</span> xtree</h3>
+<h3 id="s26-120-xtree"><span class="num">26.120</span> xtree</h3>
 <p>Package xtree is a mutable XML tree.</p>
 <p>Three very different features need to modify XML: HL7 transformations, which Mirth models as XML because that is what its scripts operate on; clinical documents, which are XML natively; and the declarative transformation steps. They share this one tree rather than each growing their own, because the alternative is three models that disagree about what an empty element means.</p>
 <p>The design goal is faithfulness to E4X semantics, since Mirth scripts are E4X and the whole point of running them unchanged is that they behave the same. That drives two decisions that would otherwise look strange: a node keeps a pointer to its parent, because E4X exposes parent(), and children are ordered with duplicates allowed, because an HL7 field repetition is literally a repeated element and scripts index into them by position.</p>
 <p>Source: <code>github.com/biodream-llc/perfuse/internal/xtree</code></p>
-<h3 id="s26-120-pas"><span class="num">26.120</span> pas</h3>
+<h3 id="s26-121-pas"><span class="num">26.121</span> pas</h3>
 <p>Package pas reads Da Vinci Prior Authorization Support (PAS) request Bundles.</p>
 <p>It is the reader Perfuse&#39;s own PAS server uses, published so that whatever decides a prior authorization - a payer&#39;s rules, a utilization management system, a decision service such as Vaglio - reads a request with the same code, and so the same answers about what a request contains. Two readers of one message format are two opinions about it.</p>
 <p>It has no dependencies outside the standard library. A request is kept as decoded JSON (map[string]any) rather than as typed resources, because a PAS Bundle carries whatever supporting resources the provider chose to send, and a reader that dropped what it did not model would hide evidence from the decision.</p>

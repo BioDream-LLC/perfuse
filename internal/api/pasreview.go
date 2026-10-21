@@ -87,3 +87,16 @@ func (s *Server) handlePASDecide(w http.ResponseWriter, r *http.Request, sess *s
 		Detail: fmt.Sprintf("%s %v", rv.Decision, rv.Items), IP: clientIP(r)})
 	s.ok(w, map[string]any{"response": out})
 }
+
+// handlePASUM is the utilization management link's recent history: what was sent, and what became of it.
+func (s *Server) handlePASUM(w http.ResponseWriter, r *http.Request, sess *store.Session) {
+	if !s.pasOn(w, r) {
+		return
+	}
+	st, err := s.PAS.UMStatus(r.Context(), 25)
+	if err != nil {
+		s.failErr(w, r, err)
+		return
+	}
+	s.ok(w, st)
+}

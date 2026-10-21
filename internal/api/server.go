@@ -588,6 +588,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/pas/cases", s.require(store.RoleViewer, s.handlePASCases))
 	mux.Handle("GET /api/pas/cases/{id}", s.require(store.RoleViewer, s.handlePASCase))
 	mux.Handle("POST /api/pas/cases/{id}/decide", s.require(store.RoleEditor, s.handlePASDecide))
+	mux.Handle("GET /api/pas/um", s.require(store.RoleViewer, s.handlePASUM))
 	mux.Handle("GET /api/dictionary", s.require(store.RoleViewer, s.handleDictionary))
 
 	// Metrics. The JSON form is for the dashboard; the Prometheus form is

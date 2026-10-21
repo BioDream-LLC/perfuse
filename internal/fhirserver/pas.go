@@ -159,6 +159,17 @@ func (s *Server) pasReady(ctx context.Context) error {
 				trace TEXT PRIMARY KEY,
 				id TEXT NOT NULL,
 				seq INTEGER NOT NULL)`,
+			// One row per interchange sent to the UM system, keyed by its control number (ISA13 and GS06), which is what a
+			// TA1 or 999 names when it answers. Also what makes control numbers unique: they were once the clock's seconds,
+			// so two requests in one second went out with the same number, and a partner discards the second as a resend.
+			`CREATE TABLE IF NOT EXISTS pas_um_sent (
+				control INTEGER PRIMARY KEY,
+				id TEXT NOT NULL,
+				kind TEXT NOT NULL,
+				sent INTEGER NOT NULL,
+				status TEXT NOT NULL,
+				detail TEXT NOT NULL,
+				updated INTEGER NOT NULL)`,
 			`CREATE TABLE IF NOT EXISTS pas_responses (
 				id TEXT NOT NULL,
 				version INTEGER NOT NULL,

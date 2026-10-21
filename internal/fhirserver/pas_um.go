@@ -28,9 +28,14 @@ import (
 	"github.com/biodream-llc/perfuse/internal/x12"
 )
 
+// ErrUMAnswersLater is what PASUM.Send returns when the request was delivered and the answer comes later: a batch link, whose
+// answers arrive as files for ApplyUMFile.
+var ErrUMAnswersLater = errors.New("delivered to utilization management; the answer comes later")
+
 // PASUM is the payer's utilization management system, reached over X12 278.
 type PASUM struct {
-	// Send delivers a 278 request and returns the UM system's 278 response.
+	// Send delivers a 278 request and returns the UM system's answer: a 278 response, or a TA1 or 999 when it could not read
+	// the request. ErrUMAnswersLater means it was delivered and the answer comes later.
 	Send func(ctx context.Context, request []byte) ([]byte, error)
 	// SenderID and ReceiverID go in the ISA and GS envelope; Production marks it P rather than T.
 	SenderID, ReceiverID string
@@ -333,6 +338,12 @@ func (s *Server) askUM(ctx context.Context, req *pasRequest, id string, now time
 	if len(review.Events) == 0 {
 		return
 	}
+	control, err := s.nextUMControl(ctx, id, "278", now)
+	if err != nil {
+		unreachable("control number", err)
+		return
+	}
+	review.Envelope.ControlNumber = control
 	request, err := x12.BuildServiceReviewRequest(review)
 	if err != nil {
 		// What is missing from the request (an NPI, a member ID) is the provider's to fix, so this one is said.
@@ -346,20 +357,59 @@ func (s *Server) askUM(ctx context.Context, req *pasRequest, id string, now time
 	cctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 	raw, err := um.Send(cctx, request)
+	if errors.Is(err, ErrUMAnswersLater) {
+		s.markUM(ctx, control, "sent", "delivered; waiting for the answer", now)
+		for _, seq := range traces {
+			req.um[seq] = itemDecision{code: pasPended.code, display: pasPended.display,
+				why: "Pended: sent to utilization management, which answers later."}
+		}
+		return
+	}
 	if err != nil {
+		s.markUM(ctx, control, "unreachable", err.Error(), now)
 		unreachable("send", err)
 		return
 	}
 	msg, err := x12.Parse(raw)
 	if err != nil {
+		s.markUM(ctx, control, "unreadable", "the answer is not X12: "+err.Error(), now)
 		unreachable("not X12", err)
+		return
+	}
+	if msg.IsAcknowledgement() {
+		// The UM system answered with a TA1 or 999 instead of a decision: it could not read the request, or took it to
+		// answer later. Either way nothing is decided; what the acknowledgement says goes to the log and the link's status.
+		ack, err := msg.ReadAcknowledgement()
+		if err != nil {
+			s.markUM(ctx, control, "unreadable", err.Error(), now)
+			unreachable("acknowledgement", err)
+			return
+		}
+		why := "Pended: utilization management acknowledged the request and answers later."
+		status := "acknowledged"
+		if ack.Rejected() {
+			why, status = "Pended for a reviewer: utilization management could not read the request ("+ack.Kind+" rejection).", "rejected"
+			if ack.Kind == "" {
+				why = "Pended for a reviewer: utilization management refused the interchange (TA1 rejection)."
+			}
+			if um.Log != nil {
+				um.Log.Warn("PAS: the utilization management system rejected the 278; the request is pended", "claimResponse", id,
+					"acknowledgement", ack.Summary())
+			}
+		}
+		s.markUM(ctx, control, status, ack.Summary(), now)
+		for _, seq := range traces {
+			req.um[seq] = itemDecision{code: pasPended.code, display: pasPended.display, why: why}
+		}
 		return
 	}
 	answer, err := msg.ParseServiceReview()
 	if err != nil || !answer.IsResponse {
+		s.markUM(ctx, control, "unreadable", "the answer is neither a 278 response nor an acknowledgement", now)
 		unreachable("not a 278 response", err)
 		return
 	}
+	s.markUM(ctx, control, "answered", fmt.Sprintf("%d of %d services answered", answeredOf(answer, traces), len(traces)), now)
 	for _, ev := range answer.Events {
 		seq, ok := traces[ev.TraceNumber]
 		if !ok {
@@ -423,6 +473,217 @@ func umDecision(ev x12.ReviewEvent) itemDecision {
 	return d
 }
 
+func answeredOf(answer *x12.ServiceReview, traces map[string]string) int {
+	n := 0
+	for _, ev := range answer.Events {
+		if _, ok := traces[ev.TraceNumber]; ok {
+			n++
+		}
+	}
+	return n
+}
+
+// nextUMControl reserves the next interchange control number for something sent to the UM system, and records it. The first
+// is taken from the clock (in tens of seconds), so a server whose database is new does not start again at 1
+// with a partner that has seen 1 before; after that each is one more than the last.
+func (s *Server) nextUMControl(ctx context.Context, id, kind string, now time.Time) (int, error) {
+	if err := s.pasReady(ctx); err != nil {
+		return 0, err
+	}
+	for range 5 {
+		var last int
+		if err := s.Store.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(control), 0) FROM pas_um_sent`).Scan(&last); err != nil {
+			return 0, err
+		}
+		next := last + 1
+		if last == 0 {
+			next = int(now.Unix()/10)%900000000 + 1
+		}
+		if next > 999999999 {
+			next = 1
+		}
+		_, err := s.Store.db.ExecContext(ctx, `INSERT INTO pas_um_sent (control, id, kind, sent, status, detail, updated)
+			VALUES (?, ?, ?, ?, 'sending', '', ?)`, next, id, kind, now.UnixMilli(), now.UnixMilli())
+		if err == nil {
+			return next, nil
+		}
+	}
+	return 0, errors.New("no interchange control number could be reserved")
+}
+
+// markUM records what became of an interchange sent to the UM system.
+func (s *Server) markUM(ctx context.Context, control int, status, detail string, now time.Time) {
+	if len(detail) > 2000 {
+		detail = detail[:2000]
+	}
+	_, _ = s.Store.db.ExecContext(ctx, `UPDATE pas_um_sent SET status = ?, detail = ?, updated = ? WHERE control = ?`,
+		status, detail, now.UnixMilli(), control)
+}
+
+// UMExchange is one interchange sent to the UM system, as the link's status shows it.
+type UMExchange struct {
+	Control       int    `json:"control"`
+	ClaimResponse string `json:"claimResponse,omitempty"`
+	Kind          string `json:"kind"`
+	Sent          int64  `json:"sent"`
+	Status        string `json:"status"`
+	Detail        string `json:"detail,omitempty"`
+	Updated       int64  `json:"updated"`
+}
+
+// UMStatus is the UM link's recent history: counts by status over the last seven days, and the latest exchanges.
+type UMStatus struct {
+	Enabled bool           `json:"enabled"`
+	Counts  map[string]int `json:"counts"`
+	Recent  []UMExchange   `json:"recent"`
+}
+
+// UMStatus reports the UM link's recent exchanges.
+func (s *Server) UMStatus(ctx context.Context, limit int) (UMStatus, error) {
+	out := UMStatus{Counts: map[string]int{}, Recent: []UMExchange{}}
+	if s.PAS == nil || s.PAS.UM == nil {
+		return out, nil
+	}
+	out.Enabled = true
+	if err := s.pasReady(ctx); err != nil {
+		return out, err
+	}
+	since := s.PAS.now().Add(-7 * 24 * time.Hour).UnixMilli()
+	rows, err := s.Store.db.QueryContext(ctx, `SELECT status, COUNT(*) FROM pas_um_sent WHERE sent >= ? GROUP BY status`, since)
+	if err != nil {
+		return out, err
+	}
+	for rows.Next() {
+		var st string
+		var n int
+		if err := rows.Scan(&st, &n); err != nil {
+			rows.Close()
+			return out, err
+		}
+		out.Counts[st] = n
+	}
+	rows.Close()
+	rows, err = s.Store.db.QueryContext(ctx, `SELECT control, id, kind, sent, status, detail, updated FROM pas_um_sent
+		ORDER BY sent DESC, control DESC LIMIT ?`, limit)
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var e UMExchange
+		if err := rows.Scan(&e.Control, &e.ClaimResponse, &e.Kind, &e.Sent, &e.Status, &e.Detail, &e.Updated); err != nil {
+			return out, err
+		}
+		out.Recent = append(out.Recent, e)
+	}
+	return out, rows.Err()
+}
+
+// ApplyUMFile takes one file a batch link collected from the UM system. A 278 response decides the items its events answer, as
+// $decide-278 does, and the 999 accepting it is returned for the link to send back. A TA1 or 999 is recorded against the
+// interchange it names, and needs no answer. Anything else is an error, and the file is left for a person.
+func (s *Server) ApplyUMFile(ctx context.Context, raw []byte) (reply []byte, summary string, err error) {
+	if s.PAS == nil || s.PAS.UM == nil {
+		return nil, "", errors.New("no utilization management link is configured")
+	}
+	if err := s.pasReady(ctx); err != nil {
+		return nil, "", err
+	}
+	now := s.PAS.now().UTC()
+	msg, err := x12.Parse(raw)
+	if err != nil {
+		return nil, "", fmt.Errorf("not X12: %w", err)
+	}
+	if msg.IsAcknowledgement() {
+		ack, err := msg.ReadAcknowledgement()
+		if err != nil {
+			return nil, "", err
+		}
+		controls := map[string]bool{}
+		if ack.Interchange != nil {
+			controls[strings.TrimLeft(ack.Interchange.ControlNumber, "0")] = ack.Interchange.Code == "R"
+		}
+		for _, g := range ack.Groups {
+			rejected := g.Status == "R" || g.Status == "M" || g.Status == "W" || g.Status == "X"
+			for _, st := range g.Sets {
+				rejected = rejected || st.Status == "R" || st.Status == "M" || st.Status == "W" || st.Status == "X"
+			}
+			controls[strings.TrimLeft(g.ControlNumber, "0")] = controls[strings.TrimLeft(g.ControlNumber, "0")] || rejected
+		}
+		for c, rejected := range controls {
+			var n int
+			if _, err := fmt.Sscan(c, &n); err != nil {
+				continue
+			}
+			status := "acknowledged"
+			if rejected {
+				status = "rejected"
+				if s.PAS.UM.Log != nil {
+					s.PAS.UM.Log.Warn("PAS: the utilization management system rejected a 278 sent in batch; its items stay pended",
+						"control", n, "acknowledgement", ack.Summary())
+				}
+			}
+			s.markUM(ctx, n, status, ack.Summary(), now)
+		}
+		return nil, ack.Summary(), nil
+	}
+	answer, err := msg.ParseServiceReview()
+	if err != nil || !answer.IsResponse {
+		return nil, "", errors.New("neither a 278 response nor an acknowledgement")
+	}
+	results, err := s.applyUM278(ctx, answer)
+	if err != nil {
+		return nil, "", err
+	}
+	var parts []string
+	for _, r := range results {
+		parts = append(parts, r.trace+" "+r.outcome)
+	}
+	// The 999 accepting it, which is what tells a batch partner the answer arrived and need not be sent again.
+	control, err := s.nextUMControl(ctx, "", "999", now)
+	if err != nil {
+		return nil, "", err
+	}
+	s.markUM(ctx, control, "sent", "999 accepting a 278 response: "+strings.Join(parts, ", "), now)
+	usage := "T"
+	if s.PAS.UM.Production {
+		usage = "P"
+	}
+	reply, err = x12.Ack(x12.AckOptions{Original: msg, Level: x12.Ack999, Status: x12.StatusAccepted, SenderID: s.PAS.UM.SenderID,
+		SenderQualifier: "ZZ", ControlNumber: control, TestIndicator: usage, Now: now})
+	return reply, "278 response: " + strings.Join(parts, ", "), err
+}
+
+type umResult struct{ trace, outcome, detail string }
+
+// applyUM278 decides the items a later 278 response answers.
+func (s *Server) applyUM278(ctx context.Context, answer *x12.ServiceReview) ([]umResult, error) {
+	var results []umResult
+	for _, ev := range answer.Events {
+		var id string
+		var seq int
+		err := s.Store.db.QueryRowContext(ctx, `SELECT id, seq FROM pas_um_traces WHERE trace = ?`, ev.TraceNumber).Scan(&id, &seq)
+		if err != nil {
+			results = append(results, umResult{ev.TraceNumber, "unknown", "no prior authorization request was sent with this trace number"})
+			continue
+		}
+		d := umDecision(ev)
+		if d.code == pasPended.code {
+			results = append(results, umResult{ev.TraceNumber, "pending", d.why})
+			continue
+		}
+		if _, err := s.decidePAS(ctx, id, d, map[int]bool{seq: true}, ""); err != nil {
+			if errors.Is(err, ErrNotPended) {
+				results = append(results, umResult{ev.TraceNumber, "already-decided", "the item was not pended"})
+				continue
+			}
+			return nil, err
+		}
+		results = append(results, umResult{ev.TraceNumber, "decided", d.display + " on ClaimResponse/" + id + ", item " + fmt.Sprint(seq)})
+	}
+	return results, nil
+}
+
 // handlePASDecide278 applies a UM system's later 278 response to the requests its events were sent for.
 func (s *Server) handlePASDecide278(w http.ResponseWriter, r *http.Request) {
 	if s.pasOff(w, r) {
@@ -443,36 +704,18 @@ func (s *Server) handlePASDecide278(w http.ResponseWriter, r *http.Request) {
 		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "structure", "the body is not a 278 response (BHT06 11)")
 		return
 	}
+	applied, err := s.applyUM278(r.Context(), answer)
+	if err != nil {
+		s.internalError(w, r, err)
+		return
+	}
 	var results []any
-	result := func(trace, outcome, detail string) {
-		parts := []any{map[string]any{"name": "trace", "valueString": trace}, map[string]any{"name": "result", "valueCode": outcome}}
-		if detail != "" {
-			parts = append(parts, map[string]any{"name": "detail", "valueString": detail})
+	for _, res := range applied {
+		parts := []any{map[string]any{"name": "trace", "valueString": res.trace}, map[string]any{"name": "result", "valueCode": res.outcome}}
+		if res.detail != "" {
+			parts = append(parts, map[string]any{"name": "detail", "valueString": res.detail})
 		}
 		results = append(results, map[string]any{"name": "event", "part": parts})
-	}
-	for _, ev := range answer.Events {
-		var id string
-		var seq int
-		err := s.Store.db.QueryRowContext(r.Context(), `SELECT id, seq FROM pas_um_traces WHERE trace = ?`, ev.TraceNumber).Scan(&id, &seq)
-		if err != nil {
-			result(ev.TraceNumber, "unknown", "no prior authorization request was sent with this trace number")
-			continue
-		}
-		d := umDecision(ev)
-		if d.code == pasPended.code {
-			result(ev.TraceNumber, "pending", d.why)
-			continue
-		}
-		if _, err := s.decidePAS(r.Context(), id, d, map[int]bool{seq: true}, ""); err != nil {
-			if errors.Is(err, ErrNotPended) {
-				result(ev.TraceNumber, "already-decided", "the item was not pended")
-				continue
-			}
-			s.internalError(w, r, err)
-			return
-		}
-		result(ev.TraceNumber, "decided", d.display+" on ClaimResponse/"+id+", item "+fmt.Sprint(seq))
 	}
 	s.writeJSON(w, http.StatusOK, map[string]any{"resourceType": "Parameters", "parameter": results})
 }

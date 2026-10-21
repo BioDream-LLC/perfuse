@@ -88,6 +88,9 @@ only from YAML or the command line is treated as a bug.
   service, place of service, admission dates, service provider and hospital service lines that PAS names; urgent is no longer
   sent as emergency, cancellations are understood, and admission reviews read correctly. Checked with PAS's own examples and
   CMS's esMD samples; not yet with a real UM system.
+- **The UM link reaches payers the ways they take 278s:** CAQH CORE SOAP (vC2.2.0, and vC4.0.0 with MTOM), CORE HTTP MIME, and
+  batch files over SFTP, beside X12 over HTTPS; client certificates, OAuth, passwords. A TA1 or 999 instead of an answer is read
+  and shown. Configured and watched from the console. Tested end to end against a stand-in UM system written from CAQH's rules.
 - **Fixed:** an HTTP source cut the last byte off any body ending in 0x1C (taking it for MLLP framing), which broke one
   OpenPGP message in 256 and any other binary body ending that way. An `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
   codes without a display had no name, which a strict registry refuses. The shared demo account may press the checks that change

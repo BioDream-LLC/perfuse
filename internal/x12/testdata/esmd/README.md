@@ -15,3 +15,4 @@ padded where the PDF's text had lost their spaces. Nothing else was changed, inc
 | response-cancelled.x12 | Response cancelled (HCR C, reason 0P) |
 | response-rejected.x12 | Response rejected (AAA, request not considered) |
 | response-lines.x12 | Response with two service lines, each certified |
+| ack-999-rejected.x12 | 999 rejecting a 278 (IK3 N4, IK4 element 3 code 7) |

@@ -213,7 +213,8 @@ func (s *Store) ErasePAS(ctx context.Context, ids []string) (int, error) {
 	n := 0
 	for _, id := range ids {
 		for _, q := range []string{`DELETE FROM pas_responses WHERE id = ?`, `DELETE FROM pas_attachments WHERE id = ?`,
-			`DELETE FROM pas_tracking WHERE id = ?`, `DELETE FROM pas_um_traces WHERE id = ?`} {
+			`DELETE FROM pas_tracking WHERE id = ?`, `DELETE FROM pas_um_traces WHERE id = ?`,
+			`DELETE FROM pas_um_sent WHERE id = ?`} {
 			if _, err := tx.ExecContext(ctx, q, id); err != nil {
 				return 0, err
 			}

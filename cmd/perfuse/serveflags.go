@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"strconv"
+
+	"github.com/biodream-llc/perfuse/internal/settings"
 )
 
 // settingFlags maps a command-line flag to the setting it seeds.
@@ -108,6 +110,19 @@ var settingFlags = map[string]string{
 	"snmp-location":                     "monitoring.snmpLocation",
 }
 
+// The rest come from the registry: every setting that names a flag is seeded by it and applied to it. The table above was once
+// the only list, kept by hand, and fell behind it: the utilization management link's transport and credentials, and
+// -index-identity, were saved in the console and then ignored at start.
+func init() {
+	for _, st := range settings.Default() {
+		if st.Flag != "" {
+			if _, ok := settingFlags[st.Flag]; !ok {
+				settingFlags[st.Flag] = st.Key
+			}
+		}
+	}
+}
+
 // flagSettings collects the settings implied by flags the operator actually passed.
 //
 // Only flags that were given, which is the important part. Including every flag at its default would mean the first start writes
@@ -124,10 +139,26 @@ func flagSettings(fset *flag.FlagSet) map[string]any {
 			return
 		}
 
-		// The value arrives as text, because that is what a flag is. Converted by shape rather than by consulting the
-		// registry, so this function has no opinion about what any particular setting means.
+		// Converted by the flag's own type, which flag.Getter gives. It was once converted by the value's shape, so a text
+		// flag holding digits - a payer ID like 60054, an interchange receiver ID - became a number, and the settings file
+		// refused it at start: "should be text, got 60054".
 		raw := f.Value.String()
-
+		if g, ok := f.Value.(flag.Getter); ok {
+			switch v := g.Get().(type) {
+			case bool:
+				out[key] = v
+				return
+			case int:
+				out[key] = v
+				return
+			case int64:
+				out[key] = int(v)
+				return
+			case string:
+				out[key] = v
+				return
+			}
+		}
 		switch raw {
 		case "true":
 			out[key] = true

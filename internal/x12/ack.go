@@ -457,8 +457,9 @@ func ta1NoteCode(problems []Problem) string {
 			// 021: number of included groups does not match the actual count.
 			return "021"
 		case CodeControlNumberMismatch:
-			// 022: interchange control number in the header and trailer do not match.
-			return "022"
+			// 001: the interchange control numbers in the header and trailer do not match. This once said 022, which is
+			// "invalid control structure" and sends a partner looking for a missing segment rather than a wrong number.
+			return "001"
 		}
 
 		// 024: invalid interchange content. Honest about knowing there is a fault and not which.

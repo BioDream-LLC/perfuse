@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from './api'
-import type { PASCase, PASReview } from './api'
+import type { PASCase, PASReview, PASUMStatus } from './api'
 import { CodeArea } from './CodeArea'
-import { IconPatient, IconQueue } from './Icons'
+import { IconPatient, IconQueue, IconX12 } from './Icons'
 import { ErrorBox, Field, Section } from './ui'
 import type { UiError } from './store'
 import { uiLocale } from './i18n/locale'
@@ -110,8 +110,9 @@ export function PASReviewQueue() {
           </ul>
         )}
       </Section>
-      <div>
+      <div className="space-y-5">
         {error && <ErrorBox error={error} onDismiss={() => setError(null)} />}
+        <UMLink />
         {open ? (
           <CaseView key={open} id={open} onDecided={load} />
         ) : (
@@ -119,6 +120,78 @@ export function PASReviewQueue() {
         )}
       </div>
     </div>
+  )
+}
+
+const umColour: Record<string, string> = {
+  answered: 'bg-emerald-500/15 text-emerald-200',
+  acknowledged: 'bg-sky-500/15 text-sky-200',
+  sent: 'bg-sky-500/15 text-sky-200',
+  sending: 'bg-slate-500/15 text-slate-300',
+  rejected: 'bg-rose-500/15 text-rose-200',
+  unreachable: 'bg-amber-500/15 text-amber-200',
+  unreadable: 'bg-amber-500/15 text-amber-200',
+}
+
+const umWords: Record<string, string> = {
+  answered: 'answered',
+  acknowledged: 'acknowledged, answer to come',
+  sent: 'sent, answer to come',
+  sending: 'being sent',
+  rejected: 'rejected',
+  unreachable: 'not reached',
+  unreadable: 'answer unreadable',
+}
+
+/**
+ * UMLink shows the payer's utilization management system as this server sees it: what was sent in the last seven days and what
+ * became of it. Shown only when a UM link is configured; its settings are under Settings, Payers, Utilization management link.
+ */
+export function UMLink() {
+  const [st, setSt] = useState<PASUMStatus | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
+  const load = useCallback(() => {
+    api.pasUM().then(setSt, (e) => setError(toError(e)))
+  }, [])
+  useEffect(load, [load])
+  if (error) return <ErrorBox error={error} onDismiss={() => setError(null)} />
+  if (!st?.enabled) return null
+  const order = ['answered', 'acknowledged', 'sent', 'rejected', 'unreachable', 'unreadable', 'sending']
+  const counts = order.filter((k) => st.counts[k])
+  return (
+    <Section
+      title="Utilization management link"
+      icon={IconX12}
+      description="Every request is sent to the payer's UM system as an X12 278. The last seven days, and the latest exchanges with what became of each. Configured under Settings, Payers."
+    >
+      <div className="mb-3 flex flex-wrap gap-2" data-testid="um-counts">
+        {counts.length === 0 ? (
+          <span className="text-sm text-slate-400">Nothing sent in the last seven days.</span>
+        ) : (
+          counts.map((k) => (
+            <span key={k} className={`rounded px-2 py-0.5 text-xs ${umColour[k] ?? 'bg-slate-700 text-slate-200'}`}>
+              {st.counts[k]} {umWords[k] ?? k}
+            </span>
+          ))
+        )}
+        <button className="ml-auto text-xs text-sky-300 hover:underline" onClick={load}>
+          Refresh
+        </button>
+      </div>
+      {st.recent.length > 0 && (
+        <ul className="space-y-1 text-xs" data-testid="um-recent">
+          {st.recent.map((e) => (
+            <li key={e.control} className="flex flex-wrap items-baseline gap-2 border-t border-slate-800 pt-1">
+              <span className="font-mono text-slate-400">#{e.control}</span>
+              <span className="text-slate-300">{e.kind}</span>
+              <span className={`rounded px-1.5 py-0.5 ${umColour[e.status] ?? 'bg-slate-700 text-slate-200'}`}>{umWords[e.status] ?? e.status}</span>
+              <span className="text-slate-500">{new Date(e.sent).toLocaleString(uiLocale())}</span>
+              {e.detail && <span className="basis-full text-slate-400">{e.detail}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   )
 }
 

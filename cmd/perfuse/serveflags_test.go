@@ -61,3 +61,29 @@ func TestAFlagTheFileDoesNotHoldIsRecorded(t *testing.T) {
 		t.Error("a value already in the file was overwritten by a flag")
 	}
 }
+
+// TestATextFlagOfDigitsStaysText: -pas-278-payer-id 12345 stopped the server at start, because the flag's value was read as a
+// number by its shape and the settings file refused a number where text belongs.
+func TestATextFlagOfDigitsStaysText(t *testing.T) {
+	reg, _ := settings.NewRegistry(settings.Default())
+	st, _ := settings.NewStore(reg, filepath.Join(t.TempDir(), "s.yaml"))
+	fset := flag.NewFlagSet("serve", flag.ContinueOnError)
+	fset.String("pas-278-payer-id", "", "")
+	fset.String("pas-278-receiver", "", "")
+	_ = fset.Parse([]string{"-pas-278-payer-id", "12345", "-pas-278-receiver", "030240928"})
+	if err := st.SeedFromFlags(flagSettings(fset)); err != nil {
+		t.Fatal(err)
+	}
+	if st.String("payers.pas278PayerID") != "12345" || st.String("payers.pas278Receiver") != "030240928" {
+		t.Errorf("%q %q", st.String("payers.pas278PayerID"), st.String("payers.pas278Receiver"))
+	}
+}
+
+// TestEverySettingWithAFlagReachesIt: a setting naming a flag the table did not list was saved and then ignored at start.
+func TestEverySettingWithAFlagReachesIt(t *testing.T) {
+	for _, s := range settings.Default() {
+		if s.Flag != "" && settingFlags[s.Flag] != s.Key {
+			t.Errorf("-%s seeds %q, but the setting %s names it", s.Flag, settingFlags[s.Flag], s.Key)
+		}
+	}
+}
