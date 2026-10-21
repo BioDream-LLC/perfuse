@@ -2,7 +2,7 @@ module github.com/biodream-llc/perfuse
 
 go 1.26.9
 
-toolchain go1.27.2
+toolchain go1.27.3
 
 require (
 	github.com/ProtonMail/go-crypto v1.5.2
