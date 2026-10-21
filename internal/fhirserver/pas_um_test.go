@@ -129,3 +129,16 @@ func TestAUMRejectionIsPendedWithItsReason(t *testing.T) {
 		t.Fatalf("%s %v", actionCodes(cr), cr["processNote"])
 	}
 }
+
+// HCR01 C is a cancellation, said as one (C), not pended as an unknown code.
+func TestAUMCancellationIsSaidAsOne(t *testing.T) {
+	um := &fakeUM{answers: map[string]string{"3": "C**0P"}}
+	f := newUMFixture(t, um)
+	code, b := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("U9", "3"))
+	if code != http.StatusOK {
+		t.Fatalf("%d %v", code, b)
+	}
+	if got := actionCodes(claimResponseOf(t, b)); got != "C" {
+		t.Fatalf("decision %s, want C (cancelled)", got)
+	}
+}

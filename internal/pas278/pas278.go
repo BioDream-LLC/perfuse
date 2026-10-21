@@ -58,6 +58,7 @@ const (
 	Denied        Decision = "denied"
 	Pending       Decision = "pending"
 	NotConsidered Decision = "not-considered"
+	Cancelled     Decision = "cancelled"
 	Unknown       Decision = "unknown"
 )
 
@@ -359,6 +360,8 @@ func Narrow(d Decision) (decision string, lost string) {
 		return "denied", "that the request was never considered: the answer is a corrected resubmission, not an appeal"
 	case Pending:
 		return "pended", ""
+	case Cancelled:
+		return "denied", "that the request was cancelled, not denied: nothing was decided on its merits"
 	default:
 		return "pended", fmt.Sprintf("an unrecognised decision %q, reported as pended because there is no state for unknown", d)
 	}
@@ -371,7 +374,7 @@ func Narrow(d Decision) (decision string, lost string) {
 // nobody authorised.
 func decisionFromLines(lines []x12.ReviewLine) (Decision, string) {
 	// Ordered worst to best, which is the whole mechanism: the first one found wins.
-	order := []Decision{NotConsidered, Unknown, Denied, Pending, Modified, PartiallyOK, Certified}
+	order := []Decision{NotConsidered, Unknown, Cancelled, Denied, Pending, Modified, PartiallyOK, Certified}
 	rank := map[Decision]int{}
 	for i, d := range order {
 		rank[d] = i
@@ -416,6 +419,8 @@ func decisionFor(o x12.ReviewOutcome) Decision {
 		return Pending
 	case x12.OutcomeNotConsidered:
 		return NotConsidered
+	case x12.OutcomeCancelled:
+		return Cancelled
 	case x12.OutcomeRequest:
 		// A request has no decision. Reported as pending rather than unknown, because pending is what a request's state is once the
 		// payer has it.
@@ -438,6 +443,8 @@ func actionCodeFor(d Decision) string {
 		return "A4"
 	case Modified:
 		return "A6"
+	case Cancelled:
+		return "C"
 	case NotConsidered:
 		// There is no action code for this, because in X12 it is not an action - it is the absence of one, carried in AAA. Rendering
 		// it as A3 would assert a decision the payer did not make, so the field is left empty and the note carries the truth.

@@ -105,12 +105,65 @@ func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12
 	for _, c := range asSliceAny(asMapAny(req.Claim["priority"])["coding"]) {
 		urgent = urgent || str(asMapAny(c)["code"]) == "stat"
 	}
+	// UM06 as PAS names it (extension-levelOfServiceCode, X12 1338); Claim.priority stat stands in only when it is absent.
+	level := pasExtCode(req.Claim, "extension-levelOfServiceCode", "E", "U", "03")
+	// An admission review's dates, from the PAS supportingInfo categories for them.
+	var admitted, discharged string
+	for _, si := range asSliceAny(req.Claim["supportingInfo"]) {
+		sm := asMapAny(si)
+		for _, c := range asSliceAny(asMapAny(sm["category"])["coding"]) {
+			start, end := str(asMapAny(sm["timingPeriod"])["start"]), str(asMapAny(sm["timingPeriod"])["end"])
+			if start == "" {
+				start = str(sm["timingDate"])
+			}
+			switch str(asMapAny(c)["code"]) {
+			case "admissionDates":
+				admitted = ccyymmdd(start)
+				if discharged == "" {
+					discharged = ccyymmdd(end)
+				}
+			case "dischargeDates":
+				discharged = ccyymmdd(start)
+			}
+		}
+	}
+	claimProvider := req.careTeamProvider(req.Claim, nil)
 
 	traces := map[string]string{}
 	for _, it := range asSliceAny(req.Claim["item"]) {
 		item := asMapAny(it)
 		seq := fmt.Sprint(item["sequence"])
-		e := x12.ReviewRequestEvent{Trace: strings.ToUpper(id[:8]) + "-" + seq, Urgent: urgent}
+		e := x12.ReviewRequestEvent{Trace: strings.ToUpper(id[:8]) + "-" + seq, Urgent: urgent, LevelOfService: level}
+		// UM01 and UM02 as PAS names them (extension-serviceItemRequestType, extension-certificationType). A code the 278
+		// request cannot carry (IN is a notification's) leaves the defaults, HS and I.
+		e.Category = pasExtCode(item, "extension-serviceItemRequestType", "AR", "HS", "SC")
+		e.CertificationType = pasExtCode(item, "extension-certificationType", "1", "2", "3", "4", "I", "R", "S")
+		// UM04: the place of service.
+		for _, c := range asSliceAny(asMapAny(item["locationCodeableConcept"])["coding"]) {
+			if cm := asMapAny(c); strings.Contains(str(cm["system"]), "place-of-service") && e.Location == "" {
+				e.Location = str(cm["code"])
+			}
+		}
+		for _, c := range asSliceAny(asMapAny(req.Claim["type"])["coding"]) {
+			e.Institutional = e.Institutional || str(asMapAny(c)["code"]) == "institutional"
+		}
+		if e.Institutional {
+			for _, ext := range asSliceAny(item["extension"]) {
+				em := asMapAny(ext)
+				if str(em["url"]) == pasBase+"extension-revenueCode" {
+					for _, c := range asSliceAny(asMapAny(em["valueCodeableConcept"])["coding"]) {
+						e.RevenueCode = str(asMapAny(c)["code"])
+					}
+				}
+			}
+		}
+		if e.Category == "AR" {
+			e.AdmissionDate, e.DischargeDate = admitted, discharged
+		}
+		e.Provider = req.careTeamProvider(req.Claim, asSliceAny(item["careTeamSequence"]))
+		if e.Provider.ID == "" {
+			e.Provider = claimProvider
+		}
 		for _, cc := range []map[string]any{asMapAny(item["category"]), asMapAny(item["productOrService"])} {
 			for _, c := range asSliceAny(cc["coding"]) {
 				cm := asMapAny(c)
@@ -132,6 +185,10 @@ func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12
 		}
 		if cancels(req.Claim) || cancels(item) {
 			e.CertificationType = "3"
+		}
+		if e.Provider.ID == out.Provider.ID {
+			// The requester doing the service themselves is said once, in 2010B.
+			e.Provider = x12.Person{}
 		}
 		if q, ok := asMapAny(item["quantity"])["value"].(float64); ok {
 			e.Quantity = q
@@ -156,6 +213,75 @@ func (um *PASUM) toServiceReview(req *pasRequest, id string, now time.Time) (x12
 		traces[e.Trace] = seq
 	}
 	return out, traces
+}
+
+// pasExtCode is the code of a PAS extension (by the last part of its URL) on res, when it is one of allowed.
+func pasExtCode(res map[string]any, name string, allowed ...string) string {
+	for _, e := range asSliceAny(res["extension"]) {
+		em := asMapAny(e)
+		if str(em["url"]) != pasBase+name {
+			continue
+		}
+		for _, c := range asSliceAny(asMapAny(em["valueCodeableConcept"])["coding"]) {
+			code := str(asMapAny(c)["code"])
+			for _, a := range allowed {
+				if code == a {
+					return code
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// ccyymmdd is a FHIR date or dateTime as X12 writes a date; empty when it has no full date.
+func ccyymmdd(d string) string {
+	if len(d) < 10 {
+		return ""
+	}
+	return strings.ReplaceAll(d[:10], "-", "")
+}
+
+// careTeamProvider is who will do the service, from the Claim's care team: the members an item names by careTeamSequence, or,
+// with none named, a member PAS scopes to the whole claim (extension-careTeamClaimScope). Only one with an NPI is returned: a
+// 278 names a provider by NPI, and a name alone would be matched to nobody.
+func (req *pasRequest) careTeamProvider(claim map[string]any, sequences []any) x12.Person {
+	for _, ct := range asSliceAny(claim["careTeam"]) {
+		cm := asMapAny(ct)
+		if len(sequences) > 0 {
+			named := false
+			for _, s := range sequences {
+				named = named || fmt.Sprint(s) == fmt.Sprint(cm["sequence"])
+			}
+			if !named {
+				continue
+			}
+		} else {
+			scoped := false
+			for _, e := range asSliceAny(cm["extension"]) {
+				em := asMapAny(e)
+				scoped = scoped || (str(em["url"]) == pasBase+"extension-careTeamClaimScope" && em["valueBoolean"] == true)
+			}
+			if !scoped {
+				continue
+			}
+		}
+		res := asMapAny(req.Resolve(str(asMapAny(cm["provider"])["reference"]))["resource"])
+		if str(res["resourceType"]) == "PractitionerRole" {
+			if org := asMapAny(req.Resolve(str(asMapAny(res["organization"])["reference"]))["resource"]); len(org) > 0 &&
+				asMapAny(res["practitioner"])["reference"] == nil {
+				res = org
+			} else {
+				res = asMapAny(req.Resolve(str(asMapAny(res["practitioner"])["reference"]))["resource"])
+			}
+		}
+		p := personFrom(res)
+		p.ID = firstIdentifier(res, "http://hl7.org/fhir/sid/us-npi")
+		if p.ID != "" && p.LastName != "" {
+			return p
+		}
+	}
+	return x12.Person{}
 }
 
 func firstIdentifier(res map[string]any, system string) string {
@@ -278,6 +404,8 @@ func umDecision(ev x12.ReviewEvent) itemDecision {
 		d, d.why = pasDenied, "Not certified by utilization management"+because+"."
 	case x12.OutcomePending:
 		d, d.why = pasPended, "Pended by utilization management"+because+"."
+	case x12.OutcomeCancelled:
+		d, d.why = pasCancelled, "Cancelled by utilization management"+because+"."
 	case x12.OutcomeNotConsidered:
 		var codes []string
 		for _, r := range ev.Rejections {

@@ -81,6 +81,9 @@ const (
 	// OutcomeRequest means this is a request, so there is no outcome to report.
 	OutcomeRequest ReviewOutcome = "request"
 
+	// OutcomeCancelled is HCR01 C: the review was cancelled, usually at the requester's asking. Nothing is certified.
+	OutcomeCancelled ReviewOutcome = "cancelled"
+
 	// OutcomeUnknown means a response carried an action code this package does not recognise.
 	//
 	// Reported rather than guessed at. An unrecognised code silently mapped to pending would be read as "wait", and waiting is the
@@ -132,7 +135,8 @@ type ReviewEvent struct {
 	// ServiceType is UM03.
 	ServiceType string
 
-	// Urgent reports whether UM02 or the request category marks this as expedited. Kept as a field rather than left to a caller to
+	// Urgent reports whether UM06 (U urgent, 03 emergency) or the request category marks this as expedited; UM06 E (elective)
+	// says it is not. Kept as a field rather than left to a caller to
 	// derive, because the answer decides whether a queue is worked today or this week.
 	Urgent bool
 
@@ -273,7 +277,9 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 			}
 
 		case "UM":
-			if current == nil {
+			// A service line (2000F) has its own UM, usually HS under any event: it must not overwrite the event's category,
+			// which is how an admission review read as a health services review.
+			if current == nil || currentLine != nil {
 				continue
 			}
 			current.Category = s.Element(1).String()
@@ -303,9 +309,17 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 				}
 			}
 
-		case "SV1", "SV2", "SV3":
+		case "SV1", "SV3":
 			if currentLine != nil {
 				currentLine.ProcedureCode = s.Element(1).String()
+			}
+		case "SV2":
+			// SV201 is the revenue code; the procedure is SV202.
+			if currentLine != nil {
+				currentLine.ProcedureCode = s.Element(2).String()
+				if currentLine.ProcedureCode == "" {
+					currentLine.ProcedureCode = s.Element(1).String()
+				}
 			}
 
 		case "HCR":
@@ -360,6 +374,9 @@ func outcomeForAction(action string) ReviewOutcome {
 		return OutcomePending
 	case "A6":
 		return OutcomeModified
+	case "C":
+		// Cancelled: the request was withdrawn or closed, as the CMS esMD samples answer a cancellation (UM02 3).
+		return OutcomeCancelled
 	case "":
 		// No HCR at all, which is what a request looks like.
 		return OutcomeRequest
@@ -371,11 +388,16 @@ func outcomeForAction(action string) ReviewOutcome {
 // isUrgentReview reports whether a review is expedited.
 //
 // Two places say so and payers use both: the request category can name an expedited review, and UM06 carries a level-of-service code
-// where 03 is urgent. Read from either, because a request marked urgent in the field this implementation ignored would sit in a routine
-// queue - and the whole point of the field is that somebody is waiting on care.
+// (1338) where U is urgent and 03 emergency. Read from either, because a request marked urgent in the field this implementation
+// ignored would sit in a routine queue - and the whole point of the field is that somebody is waiting on care. U went unread here
+// until the CMS esMD companion guide's samples were run through it: they mark expedited requests U, as the code list does.
 func isUrgentReview(category, levelOfService string) bool {
-	if levelOfService == "03" {
+	switch levelOfService {
+	case "U", "03":
 		return true
+	case "E":
+		// Said to be elective, which outranks the guess below: an elective admission is booked, not waiting at the door.
+		return false
 	}
 
 	// AR is admission review, which is urgent by nature: the patient is at the door.

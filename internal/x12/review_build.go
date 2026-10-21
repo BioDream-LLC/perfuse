@@ -37,8 +37,19 @@ type ReviewRequestEvent struct {
 	CertificationType string `json:"certificationType,omitempty"`
 	// ServiceType is UM03, an X12 service type code (1365): 3 consultation, 2 surgical, 73 diagnostic medical.
 	ServiceType string `json:"serviceType,omitempty"`
-	// Urgent puts 03 (urgent) in UM06, the level of service, which is what makes a UM system work it as expedited.
+	// LevelOfService is UM06 (code list 1338): E elective, U urgent, 03 emergency. Empty sends none, unless Urgent.
+	LevelOfService string `json:"levelOfService,omitempty"`
+	// Urgent puts U (urgent) in UM06 when LevelOfService is empty, which is what makes a UM system work it as expedited. 03 is
+	// emergency, not urgent: an urgent request sent as 03 is sent as an emergency.
 	Urgent bool `json:"urgent,omitempty"`
+	// Location is UM04: where the service is done, a place of service code (11 office, 21 inpatient hospital, 22 outpatient),
+	// sent with qualifier B. Payers' companion guides (CMS esMD, UnitedHealthcare) require it.
+	Location string `json:"location,omitempty"`
+	// AdmissionDate and DischargeDate are CCYYMMDD, sent as DTP 435 and 096 on an admission review (UM01 AR).
+	AdmissionDate string `json:"admissionDate,omitempty"`
+	DischargeDate string `json:"dischargeDate,omitempty"`
+	// Provider is who will do the service (2010EA, NM1*SJ), with its NPI. Empty sends none, which payers read as the requester.
+	Provider Person `json:"provider,omitempty"`
 	// Diagnoses are ICD-10-CM codes, the first principal (ABK), the rest ABF. Dots are dropped, as X12 requires.
 	Diagnoses []string `json:"diagnoses,omitempty"`
 	// ServiceDate is CCYYMMDD, the proposed date of service.
@@ -47,6 +58,10 @@ type ReviewRequestEvent struct {
 	Procedure string `json:"procedure,omitempty"`
 	// Quantity is how many units are asked for, with the procedure; 0 means 1.
 	Quantity float64 `json:"quantity,omitempty"`
+	// Institutional sends the service line as SV2 (a hospital's, as on a UB-04) rather than SV1 (a professional's), with
+	// RevenueCode, the UB-04 revenue code, in SV201 when known.
+	Institutional bool   `json:"institutional,omitempty"`
+	RevenueCode   string `json:"revenueCode,omitempty"`
 }
 
 // BuildServiceReviewRequest renders a 278 request, or says what is missing.
@@ -78,11 +93,27 @@ func BuildServiceReviewRequest(req ServiceReviewRequest) ([]byte, error) {
 	if !validNPI(req.Provider.ID) {
 		return nil, fmt.Errorf("provider NPI %q fails the NPI check digit", req.Provider.ID)
 	}
+	for i, e := range req.Events {
+		switch e.LevelOfService {
+		case "", "E", "U", "03":
+		default:
+			return nil, fmt.Errorf("service %d: level of service %q is not E, U or 03", i+1, e.LevelOfService)
+		}
+		if e.Provider.ID != "" && !validNPI(e.Provider.ID) {
+			return nil, fmt.Errorf("service %d: provider NPI %q fails the NPI check digit", i+1, e.Provider.ID)
+		}
+		for _, d := range []string{e.ServiceDate, e.AdmissionDate, e.DischargeDate} {
+			if d != "" && !isCCYYMMDD(d) {
+				return nil, fmt.Errorf("service %d: date %q is not CCYYMMDD", i+1, d)
+			}
+		}
+	}
 	fields := []string{req.SenderID, req.ReceiverID, req.Payer.LastName, req.Payer.ID, req.Provider.LastName, req.Provider.FirstName,
 		req.Provider.ID, req.Subscriber.LastName, req.Subscriber.FirstName, req.Subscriber.ID, req.Subscriber.DOB, req.Subscriber.Gender,
 		req.Reference}
 	for _, e := range req.Events {
-		fields = append(fields, e.Trace, e.Category, e.CertificationType, e.ServiceType, e.ServiceDate, e.Procedure)
+		fields = append(fields, e.Trace, e.Category, e.CertificationType, e.ServiceType, e.ServiceDate, e.Procedure, e.LevelOfService,
+			e.Location, e.RevenueCode, e.AdmissionDate, e.DischargeDate, e.Provider.LastName, e.Provider.FirstName, e.Provider.ID)
 		fields = append(fields, e.Diagnoses...)
 	}
 	if err := checkDelimiters(fields...); err != nil {
@@ -117,11 +148,26 @@ func BuildServiceReviewRequest(req ServiceReviewRequest) ([]byte, error) {
 			// TRN03 is the originator's identifier: 9 and the submitter's ID, as the 270 sends it.
 			b.add("TRN", "1", e.Trace, "9"+padID(req.SenderID))
 			category, cert := orDefault(e.Category, "HS"), orDefault(e.CertificationType, "I")
-			level := ""
-			if e.Urgent {
-				level = "03"
+			level := e.LevelOfService
+			if level == "" && e.Urgent {
+				level = "U"
 			}
-			b.add("UM", category, cert, e.ServiceType, "", "", level)
+			location := ""
+			if e.Location != "" {
+				location = e.Location + ":B"
+			}
+			b.add("UM", category, cert, e.ServiceType, location, "", level)
+			if e.ServiceDate != "" {
+				// AAH: the event date, the proposed date of service for the whole event.
+				b.add("DTP", "AAH", "D8", e.ServiceDate)
+			}
+			if e.AdmissionDate != "" {
+				b.add("DTP", "435", "D8", e.AdmissionDate)
+			}
+			if e.DischargeDate != "" {
+				b.add("DTP", "096", "D8", e.DischargeDate)
+			}
+			// HI follows DTP: the TR3 orders 2000E UM, HCR, REF, DTP, HI, HSD.
 			if len(e.Diagnoses) > 0 {
 				elems := []string{"HI"}
 				for i, d := range e.Diagnoses {
@@ -133,14 +179,15 @@ func BuildServiceReviewRequest(req ServiceReviewRequest) ([]byte, error) {
 				}
 				b.add(elems...)
 			}
-			if e.ServiceDate != "" {
-				// AAH: the event date, the proposed date of service for the whole event.
-				b.add("DTP", "AAH", "D8", e.ServiceDate)
+			if e.Provider.LastName != "" && e.Provider.ID != "" {
+				// 2010EA, the patient event provider: SJ, the service provider. Its name loop closes the 2000E segments.
+				b.add("NM1", "SJ", personOrOrg(e.Provider), e.Provider.LastName, e.Provider.FirstName, "", "", "", "XX", e.Provider.ID)
 			}
 			if e.Procedure != "" {
 				hl++
 				b.add("HL", strconv.Itoa(hl), strconv.Itoa(event), "SS", "0")
-				b.add("UM", category, cert, e.ServiceType)
+				// The service line's UM01 is HS, as in the TR3's own examples (an admission review's surgery is a health service).
+				b.add("UM", "HS", cert, e.ServiceType)
 				if e.ServiceDate != "" {
 					b.add("DTP", "472", "D8", e.ServiceDate)
 				}
@@ -148,10 +195,20 @@ func BuildServiceReviewRequest(req ServiceReviewRequest) ([]byte, error) {
 				if qty <= 0 {
 					qty = 1
 				}
-				b.add("SV1", "HC:"+strings.ToUpper(e.Procedure), "", "UN", strconv.FormatFloat(qty, 'f', -1, 64))
+				units := strconv.FormatFloat(qty, 'f', -1, 64)
+				if e.Institutional {
+					b.add("SV2", e.RevenueCode, "HC:"+strings.ToUpper(e.Procedure), "", "UN", units)
+				} else {
+					b.add("SV1", "HC:"+strings.ToUpper(e.Procedure), "", "UN", units)
+				}
 			}
 		}
 	}), nil
+}
+
+func isCCYYMMDD(d string) bool {
+	_, err := time.Parse("20060102", d)
+	return err == nil
 }
 
 func orDefault(v, d string) string {

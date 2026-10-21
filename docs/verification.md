@@ -1129,6 +1129,42 @@ Now 46 pass and 2 fail. Both failures are one resource, Inferno's own adaptive D
 That questionnaire turned out to be ours: the DTR run adds the extension to Inferno's fixture, in its Coding form. Written
 as the string its definition also allows, the suite passes 48 of 48.
 
+### PAS to X12 278, against published 278s (20 October 2026)
+
+`-pas-278-url` sends each PAS request to a payer's utilization management system as a 278 and reads its 278 answer back. Until
+now only Perfuse's own tests stood behind it: they wrote both the 278s and the stand-in that answered them, so they could only
+agree with themselves. Three outside sources were used instead:
+
+- **The PAS 2.2.1 guide's own request examples** (homecare, homecare update, medical services, referral, surgical admission),
+  sent to `Claim/$submit` with a stand-in UM system recording the 278 it received
+  (`TestThePASExamplesBecome278sThatSayTheSame`).
+- **The CMS esMD X12N 278 Companion Guide's samples**: 31 transactions printed in the guide, of which the eight in
+  `internal/x12/testdata/esmd` are read by the tests (`TestTheCMSPublished278sAreReadAsTheySay`).
+- **A 278 checker written from public sources, not from Perfuse's code**: the esMD guide, UnitedHealthcare's and Utah
+  Medicaid's 278 companion guides, the TR3's example transactions as OopFactory's tests carry them, and OopFactory's 278 loop
+  structure. It checks envelopes and counts, the HL hierarchy, loop and segment order, and the code values those guides
+  publish. Before it judged Perfuse it was run over the published samples, and its findings there were the samples' own
+  faults (count and control-number mismatches the guide's text carries). `PERFUSE_TEST_X278_CHECK` runs it over the 278s
+  the PAS examples become.
+
+What was found, all fixed:
+
+- **Urgent was sent as an emergency.** UM06 (level of service, X12 1338) is E elective, U urgent, 03 emergency. Perfuse wrote
+  03 for an urgent request, and read only 03 as urgent, so CMS's urgent sample read as routine.
+- **A cancellation was "unknown".** HCR01 C, which the esMD samples send for a cancelled review, was not recognised, so the
+  provider was told an unknown code had pended the request. It is now a cancellation (PAS review action C).
+- **An admission review read as a health services review.** A 278 service line carries its own UM01 (HS), and it overwrote
+  the event's AR. An elective admission was also guessed urgent because it was an admission; UM06 E now says otherwise.
+- **The request left out what PAS carries and payers ask for.** Only the certification type was taken from PAS's extensions.
+  Now also: the review type (UM01, so a referral goes as SC and an admission as AR), the level of service (UM06), the place
+  of service (UM04, which esMD and UnitedHealthcare require), an admission's admission and discharge dates (DTP 435 and 096),
+  the care team's provider who will do the service (NM1 SJ), and an institutional claim's service as SV2 rather than SV1.
+  Segment order follows the TR3 (DTP before HI).
+
+All five PAS examples now become 278s the checker passes with no warnings. Not tested: a real UM system or clearinghouse,
+X12's own TR3 (it is sold, and its situational rules are not all public), the transports UM systems use (CAQH CORE SOAP and
+MIME, SFTP batch) and 999/TA1 acknowledgements.
+
 ### A PAS decision service, end to end
 
 `serve -pas -pas-decider-url` was run against a decision service (Vaglio, an optional BioDream decision engine; Perfuse needs

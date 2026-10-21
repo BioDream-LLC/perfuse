@@ -26,3 +26,7 @@ The test fixtures in internal/pixv3/testdata/ihe are IHE International's PIX V3
 and PDQ V3 sample messages (https://github.com/IHE/ITI-Info), unchanged, under
 the Creative Commons Attribution 4.0 International licence. Copyright IHE
 International, Inc. They are used by the tests only and are not in the program.
+
+The test fixtures in internal/fhirserver/testdata/pas are request examples from HL7's Da Vinci Prior Authorization Support
+implementation guide 2.2.1, unchanged, under CC0 1.0. Those in internal/x12/testdata/esmd are sample transactions from the CMS
+esMD X12N 278 Companion Guide, a work of the US government. They are used by the tests only and are not in the program.

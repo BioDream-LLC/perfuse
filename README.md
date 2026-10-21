@@ -84,6 +84,10 @@ only from YAML or the command line is treated as a bug.
   certificate revoked on its issuer's CRL and fetches missing intermediates from AIA; the LDAP lookup asks the configured DNS
   server and works with ApacheDS; a failed address-bound DNS answer falls back to the domain. All 18 DCDT discovery cases pass
   (9 did before). A Direct source also reads SITE's own HISP over IMAP (`imap.tls` trusts a HISP's private certificate).
+- **PAS to X12 278, checked against published 278s:** the 278s sent to a payer's UM system now carry the review type, level of
+  service, place of service, admission dates, service provider and hospital service lines that PAS names; urgent is no longer
+  sent as emergency, cancellations are understood, and admission reviews read correctly. Checked with PAS's own examples and
+  CMS's esMD samples; not yet with a real UM system.
 - **Fixed:** an HTTP source cut the last byte off any body ending in 0x1C (taking it for MLLP framing), which broke one
   OpenPGP message in 256 and any other binary body ending that way. An `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
   codes without a display had no name, which a strict registry refuses. The shared demo account may press the checks that change
