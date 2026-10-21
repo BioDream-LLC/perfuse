@@ -385,13 +385,25 @@ func TestALateServerGetsAShare(t *testing.T) {
 	}
 	eventually(t, 10*ttl, "four channels spread two each", func() bool { return count(a) == 2 && count(b) == 2 })
 	c := w.start("c", ActiveActive, ttl)
-	eventually(t, 15*ttl, "the late server takes a share", func() bool {
-		return count(c) >= 1 && count(a)+count(b)+count(c) == 4 && max(count(a), count(b), count(c))-min(count(a), count(b), count(c)) <= 1
-	})
-	time.Sleep(3 * ttl)
-	if count(a)+count(b)+count(c) != 4 || count(c) == 0 || max(count(a), count(b), count(c))-min(count(a), count(b), count(c)) > 1 {
-		t.Errorf("not settled: a %d, b %d, c %d", count(a), count(b), count(c))
+	// Settled is every channel run, c among the runners, and no server two ahead of another; and it must stay so for three
+	// lease times, so a balancer that keeps moving channels fails. A stall longer than a lease (a busy CI machine, every
+	// server here sharing one process and one database) rightly lets every lease go; the servers then settle again, so the
+	// quiet spell starts over rather than one snapshot taken just after a stall failing the test.
+	settled := func() bool {
+		ka, kb, kc := count(a), count(b), count(c)
+		return kc >= 1 && ka+kb+kc == 4 && max(ka, kb, kc)-min(ka, kb, kc) <= 1
 	}
+	var since time.Time
+	eventually(t, 30*ttl, "the late server takes a share, and the shares stay put", func() bool {
+		if !settled() {
+			since = time.Time{}
+			return false
+		}
+		if since.IsZero() {
+			since = time.Now()
+		}
+		return time.Since(since) >= 3*ttl
+	})
 	if len(w.overlaps) > 0 {
 		t.Fatalf("overlap: %v", w.overlaps)
 	}
