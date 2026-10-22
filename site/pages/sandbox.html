@@ -1,0 +1,144 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Free payer sandbox</p>
+    <h1>A payer to test your prior authorization against, free and open now</h1>
+    <p class="lede">Building the EHR or app side of CMS-0057-F? You need a payer that answers CDS Hooks, hands out
+      questionnaires and decides PAS requests. test.perfuse.health is one: Da Vinci CRD, DTR and PAS on invented data, with
+      published test keys, so you can start in a minute without asking anyone for an account.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#start">Run the first round</a>
+      <a class="btn btn-ghost" href="#endpoints">Endpoints</a>
+      <a class="btn btn-ghost" href="#limits">What it is not</a>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="start">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">In one minute</p>
+        <h2>Order, documentation, request, decision</h2>
+        <div class="wwh">
+          <div><h4>What it is</h4><p>A public Perfuse server playing a health plan, the "Perfuse Test Plan". It runs the same
+            code as a real deployment, with test data only: no real plan, member or person.</p></div>
+          <div><h4>Why it exists</h4><p>No live payer lets unknown code near its production endpoints, and you cannot test an EHR's
+            prior authorization without someone on the other side.</p></div>
+          <div><h4>How you use it</h4><p>Sign with the sandbox's published keys, call the endpoints below, or run the example
+            script, which does the whole round and prints what the plan answered.</p></div>
+        </div>
+        <ul class="ticks">
+          <li>Da Vinci CRD 2.2.1, DTR 2.2.0 and PAS 2.2.1, the same server Inferno's suites pass against
+            (<a href="/proof/">results</a>)</li>
+          <li>SMART Backend Services and SMART App Launch, so your client authorizes as it would with a real payer</li>
+          <li>Approve, pend, deny and "documentation needed" answers, chosen by the order's code</li>
+        </ul>
+      </div>
+      <div class="prose"><pre><code># Node 18 or newer, nothing to install
+curl -O https://perfuse.health/sandbox/try-sandbox.mjs
+node try-sandbox.mjs
+
+1. token: ok, scopes system/*.rs system/Claim.c
+2. CRD cards:
+   - Home oxygen equipment: covered, prior authorization required
+   - system action: update Record the coverage information on the order
+3. DTR package: 200 Questionnaire "Home oxygen documentation (test plan)", QuestionnaireResponse
+4. PAS $submit: 200 outcome complete, review action A1, authorization PA-9B1579A6</code></pre>
+        <p>The script is <a href="/sandbox/try-sandbox.mjs">about 100 lines you can read</a>: a token, the CRD order-sign hook for a
+          portable oxygen system, the DTR questionnaire package for the order CRD returned, and the PAS guide's own referral
+          example submitted. Review actions are X12's: A1 approved, A3 denied, A4 pended, A6 modified.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="endpoints">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Endpoints</p>
+      <h2>Where to point your client</h2>
+    </div>
+    <table>
+      <thead><tr><th>What</th><th>Address</th></tr></thead>
+      <tbody>
+        <tr><td>FHIR base (R4)</td><td><code>https://test.perfuse.health/fhir</code></td></tr>
+        <tr><td>CapabilityStatement</td><td><code>https://test.perfuse.health/fhir/metadata</code></td></tr>
+        <tr><td>SMART configuration</td><td><code>https://test.perfuse.health/fhir/.well-known/smart-configuration</code></td></tr>
+        <tr><td>Token endpoint</td><td><code>https://test.perfuse.health/auth/token</code></td></tr>
+        <tr><td>CRD (CDS Hooks discovery)</td><td><code>https://test.perfuse.health/cds-services</code>: order-sign, order-select,
+          order-dispatch, appointment-book</td></tr>
+        <tr><td>DTR</td><td><code>POST /fhir/Questionnaire/$questionnaire-package</code>, <code>$next-question</code> (adaptive
+          forms), <code>$log-questionnaire-errors</code></td></tr>
+        <tr><td>PAS</td><td><code>POST /fhir/Claim/$submit</code>, <code>Claim/$inquire</code>, subscriptions for pended
+          answers</td></tr>
+        <tr><td>CDex attachments</td><td><code>POST /fhir/Claim/$submit-attachment</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="band" id="keys">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">Signing in</p>
+        <h2>Published test keys, so there is nothing to ask for</h2>
+        <p>The sandbox has a client whose private keys are public on purpose, as Inferno publishes its own. Everything they
+          reach is invented, and the client may read everything but write only what CRD, DTR and PAS send.</p>
+        <ul class="ticks">
+          <li><b>Backend Services token:</b> client id <code>sandbox</code>, a <code>client_credentials</code> request with a
+            JWT assertion signed by one of the keys (ES384 or RS384), audience the token endpoint</li>
+          <li><b>CRD hook calls:</b> a CDS Hooks JWT with issuer <code>https://perfuse.health/sandbox</code> and audience the
+            service's URL, for example <code>https://test.perfuse.health/cds-services/crd-order-sign</code></li>
+          <li>Public keys: <a href="/sandbox/jwks.json">/sandbox/jwks.json</a>. Private keys:
+            <a href="/sandbox/private-jwks.json">/sandbox/private-jwks.json</a></li>
+          <li>Your own client (your JWKS URL, or redirect URIs for an app launch):
+            <a href="https://github.com/biodream-llc/perfuse/issues">open an issue</a> and we add it</li>
+        </ul>
+      </div>
+      <div>
+        <h3>The test plan's member</h3>
+        <p>Amy Shaw, born 1987-02-20, subscriber id <code>123</code>, Coverage <code>cmember</code>, Patient
+          <code>pmember</code>. Send her coverage in the hook's prefetch and the plan recognises her.</p>
+        <h3 id="pas">What the plan answers</h3>
+        <table>
+          <thead><tr><th>Order</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td>Home oxygen, HCPCS E0424, E0431, E1390</td><td>Covered, approval needed, a questionnaire (Amy already holds an approval for E0424)</td></tr>
+            <tr><td>Physical therapy evaluation, CPT 97161-97163</td><td>Covered, no approval, keep notes on file</td></tr>
+            <tr><td>Office visit, CPT 99213, 99214</td><td>Covered, no approval</td></tr>
+            <tr><td>Cosmetic procedure, CPT 15830</td><td>Not covered</td></tr>
+            <tr><td>PAS: consultation (X12 service type 3)</td><td>Approved (A1)</td></tr>
+            <tr><td>PAS: physical therapy (PT)</td><td>Approved (A1), up to six visits</td></tr>
+            <tr><td>PAS: MRI (62)</td><td>Modified (A6): an X-ray (4) approved instead</td></tr>
+            <tr><td>PAS: surgery (2)</td><td>Pended (A4) for a clinician, documents asked for</td></tr>
+            <tr><td>PAS: dialysis (76)</td><td>Denied (A3): not a benefit</td></tr>
+          </tbody>
+        </table>
+        <p>The full rules are <a href="https://github.com/biodream-llc/perfuse/blob/main/deploy/test-instance/rules.yaml">in the
+          repository</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft" id="limits">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Plainly</p>
+      <h2>What the sandbox is not</h2>
+    </div>
+    <ul class="ticks">
+      <li class="caveat">Not a real health plan, and not a place for real patient data: anything sent is visible to other testers.
+        Use invented people only.</li>
+      <li class="caveat">Not a guarantee about any real payer. Each plan has its own rules and its own documentation; passing here
+        means your client speaks the standards, not that a given plan will approve.</li>
+      <li class="caveat">Not certification. Perfuse is tested with Inferno in public; nothing here is an ONC certification or a CAQH
+        CORE certification.</li>
+      <li class="caveat">Shared and limited: writes are capped at 300 a minute from one address, and what testers send may be
+        cleared when the server is upgraded.</li>
+      <li>Want the same thing on your own computer or network? <a href="/download/">Download Perfuse</a>, free under Apache 2.0,
+        and load the same rules with <code>deploy/test-instance</code> from the repository.</li>
+    </ul>
+  </div>
+</section>

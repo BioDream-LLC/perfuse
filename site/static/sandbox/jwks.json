@@ -1,0 +1,21 @@
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "n": "r6VyVo3ZLg2Kw2Bo3WTIgAjk9ZUtWvs_KH-NKAyz42Q1sWFWyWKF3BHyVZ8g6syML_mX3PuyQkrXLZTDlsA7g_o1Dio6roBiQDm82ofCAOlo2WsBDkfhOSRPEUhJ2DckUma1hA5sAt27G9fmahS5MayDSoDuf3yfcMZ9ccwNXsWfT5W5qxOL0rFVEPYcEG-HS51E3olKLcaFdoUwwXWtJONxPEtmyP-8uLXGUlDJmfWwqDxOeTzLi3tWr2SBoeFtDy2Q8yzKLTlV8PvF_fsXEme_0PmzuoFsx4tq5BfoAXIBEFX6WYdBd6Dz6LywLM0AyRfmGHzCnTYRf_jBVggsFw",
+      "e": "AQAB",
+      "alg": "RS384",
+      "use": "sig",
+      "kid": "tQwuQvgMApFD6h6Q"
+    },
+    {
+      "kty": "EC",
+      "x": "1LbttjJ99VKQ1cE9onbgKvT9HM5_znpVF9fAPop8kz9supdJRcST5ZrFuqnlADPV",
+      "y": "EvKMnQXQot8Zni2bzOtXDfr8IN-yCvcvc86f5gNbJZSypYcl5Ugpqu0JDxRgl789",
+      "crv": "P-384",
+      "alg": "ES384",
+      "use": "sig",
+      "kid": "JTK_S6I_pba1ukpN"
+    }
+  ]
+}

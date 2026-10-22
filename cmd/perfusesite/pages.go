@@ -23,6 +23,8 @@ var sitePages = []sitePage{
 		"HL7 v2, FHIR, DICOM, X12, CDA and NCPDP over MLLP, HTTP, files, databases, AWS, Azure, Google Cloud, Kafka, MQTT and IBM MQ: 24 source types and 26 destination types.", "0.9"},
 	{"payers.html", "/payers/", "payers", "For payers: CMS-0057-F, prior authorization and the provider directory",
 		"The four CMS-0057-F FHIR APIs, Da Vinci CRD, DTR, PAS, PDex and Plan-Net, and CARIN Blue Button in one free engine tested with Inferno's suites, and an X12 278 link to your UM system.", "0.9"},
+	{"sandbox.html", "/sandbox/", "payers", "Free payer sandbox: test Da Vinci CRD, DTR and PAS against a real payer server",
+		"A free, public payer for EHR and app developers: Da Vinci CRD, DTR and PAS 2.2 on test data, SMART tokens with published test keys, and a script that runs the whole round.", "0.9"},
 	{"exchange.html", "/exchange/", "exchange", "Exchange: public health reporting, TEFCA, SMART on FHIR and imaging",
 		"eCR and ELR reporting, TEFCA Facilitated FHIR with UDAP, a built-in SMART on FHIR authorization server, and DICOM routing with de-identification.", "0.8"},
 	{"mirth.html", "/mirth-connect-alternative/", "mirth", "A free alternative to Mirth Connect that runs your channels",

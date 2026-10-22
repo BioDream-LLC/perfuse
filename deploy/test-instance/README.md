@@ -15,7 +15,9 @@ Services, with test data only. Nothing on it is about a real person.
 The test payer's rules are `rules.yaml`, the conformance runs' rules in one file. The registered clients are `clients.yaml`:
 Inferno's Backend Services client with Inferno's published test keys (it reads everything and writes only Claims and
 Subscriptions), Inferno as a public and as a confidential app at inferno.healthit.gov, and Inferno's CRD client
-(`cds-clients.yaml`). The test people in `users.yaml` sign in with the password "correct horse". To test with a client of your
+(`cds-clients.yaml`), and the public sandbox client `sandbox`, whose test keys are published on purpose at
+https://perfuse.health/sandbox/ (it may sign Backend Services token requests and CRD hook calls, issuer
+`https://perfuse.health/sandbox`; it reaches what Inferno's backend client reaches). The test people in `users.yaml` sign in with the password "correct horse". To test with a client of your
 own, open an issue on https://github.com/biodream-llc/perfuse with its JWKS URL or redirect URIs.
 
 Eight demonstration channels (`channels/`) carry invented HL7 v2 traffic so the console has something to show: `hospital-feed`

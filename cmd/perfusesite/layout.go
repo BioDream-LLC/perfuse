@@ -77,6 +77,7 @@ var menu = []navSection{
 		{"/payers/#prior-auth", "check", "Prior authorization", "Da Vinci CRD, DTR and PAS, and the X12 278"},
 		{"/payers/#directory", "users", "Provider directory", "Da Vinci Plan-Net"},
 		{"/payers/#claims", "doc", "Claims and attachments", "837, 835, CARIN Blue Button, signed 275s"},
+		{"/sandbox/", "plug", "Free payer sandbox", "Test your EHR's CRD, DTR and PAS against a payer, now"},
 	}},
 	{key: "exchange", title: "Exchange", href: "/exchange/", items: []navItem{
 		{"/exchange/#public-health", "heart", "Public health reporting", "eCR and ELR, sent and answered"},

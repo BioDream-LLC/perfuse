@@ -66,6 +66,10 @@ def main():
                   dtr.fixture("dinner_static/parameters_questionnaire_dinner_order_static.json")["parameter"][0]["resource"]["entry"]]
     resources += [dtr.adaptive(), dtr.VALUESET, dtr.BIG_VALUESET, dtr.QUESTIONNAIRE, dtr.coverage(),
                   {"resourceType": "Practitioner", "id": "d1", "name": [{"family": "Brown", "given": ["Dana"]}]}]
+    # The public sandbox (perfuse.health/sandbox): the home oxygen documentation form rules.yaml names, so an EHR that runs
+    # CRD, then DTR for the same order, gets a questionnaire back. A documentation form only; the test plan decides nothing
+    # from it.
+    resources.append(HOME_OXYGEN)
     # SMART App Launch (smart/run.py): the patient amy signs in as, a second patient her token must not reach, and the
     # encounter of the EHR launch.
     resources += [
@@ -93,6 +97,25 @@ def main():
     if "--no-reference" not in sys.argv:
         for res in reference_patients() + pdex_extras() + plan_net():
             put(token, res)
+
+
+HOME_OXYGEN = {
+    "resourceType": "Questionnaire", "id": "home-oxygen", "status": "active", "date": "2026-10-22",
+    "url": "https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen", "version": "1",
+    "name": "HomeOxygen", "title": "Home oxygen documentation (test plan)",
+    "meta": {"profile": ["http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire"]},
+    "subjectType": ["Patient"],
+    "item": [
+        {"linkId": "spo2", "text": "Oxygen saturation on room air (%)", "type": "decimal", "required": True},
+        {"linkId": "spo2-date", "text": "Date of the measurement", "type": "date", "required": True},
+        {"linkId": "spo2-when", "text": "Measured", "type": "choice", "required": True, "answerOption": [
+            {"valueCoding": {"code": "rest", "display": "At rest"}},
+            {"valueCoding": {"code": "exercise", "display": "During exercise"}},
+            {"valueCoding": {"code": "sleep", "display": "During sleep"}}]},
+        {"linkId": "attest", "text": "The ordering practitioner has seen the patient within the last 30 days",
+         "type": "boolean", "required": True},
+    ],
+}
 
 
 def package(name, version):

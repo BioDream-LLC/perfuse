@@ -1,4 +1,8 @@
-# EHRs trusted to call the CRD service with signed JWTs: Inferno's CRD test client at inferno.healthit.gov.
+# EHRs trusted to call the CRD service with signed JWTs: Inferno's CRD test client at inferno.healthit.gov, and the public
+# sandbox's published test keys.
 clients:
   - issuer: https://inferno.healthit.gov/suites/custom/crd_server_v221
     jwks_url: https://inferno.healthit.gov/suites/custom/crd_server_v221/jwks.json
+# The public sandbox (https://perfuse.health/sandbox/): any developer may sign hook calls with its published test keys.
+  - issuer: https://perfuse.health/sandbox
+    jwks_url: https://perfuse.health/sandbox/jwks.json
