@@ -191,6 +191,10 @@ release: vulncheck cross sbom package
 # The executable inside keeps its unversioned name on purpose. A systemd unit, a launchd plist or a Windows
 # service definition names a path, and renaming the binary every release would break all three on upgrade.
 # Which version it is is a question `perfuse version` answers.
+# Archives record each file's owner. Without these flags they carried the account that built them, which names a person;
+# they are root's. GNU tar spells it --owner/--group, bsdtar (macOS) --uname/--gname. zip -X leaves out uid/gid fields.
+TAR_ROOT := $(shell tar --version 2>/dev/null | grep -q 'GNU tar' && echo '--owner=0 --group=0 --numeric-owner' || echo '--uid 0 --gid 0 --uname root --gname root')
+
 package:
 	@mkdir -p dist
 	@for f in dist/perfuse-*; do \
@@ -204,8 +208,8 @@ package:
 		if [ -f docs/manual/perfuse-manual.pdf ]; then cp docs/manual/perfuse-manual.pdf $$stage/; fi; \
 		vname="perfuse-$(VERSION)-$${name#perfuse-}"; \
 		case "$$base" in \
-			*.exe) (cd dist/stage && zip -qr ../$$vname.zip $$vname) && echo "  dist/$$vname.zip";; \
-			*) tar -czf dist/$$vname.tar.gz -C dist/stage $$vname && echo "  dist/$$vname.tar.gz";; \
+			*.exe) (cd dist/stage && zip -qrX ../$$vname.zip $$vname) && echo "  dist/$$vname.zip";; \
+			*) tar $(TAR_ROOT) -czf dist/$$vname.tar.gz -C dist/stage $$vname && echo "  dist/$$vname.tar.gz";; \
 		esac; \
 	done
 	@rm -rf dist/stage
