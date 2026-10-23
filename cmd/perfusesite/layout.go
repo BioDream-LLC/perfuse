@@ -64,7 +64,7 @@ var menu = []navSection{
 		{"/platform/#monitoring", "chart", "Monitoring and alerts", "Dashboards, flow map, alerts, message search"},
 		{"/platform/#safe-change", "eye", "Changing live interfaces", "Shadow mode, feed contracts, drift detection"},
 		{"/platform/#security", "shield", "Security and sign-on", "SAML, OIDC, LDAP, passkeys, SMART, audit"},
-		{"/platform/#europe", "globe", "The UK and Europe", "Twelve languages, national numbers, GDPR, residency"},
+		{"/europe/", "globe", "The UK and Europe", "Twelve languages, national profiles, GDPR, IHE"},
 		{"/platform/#operations", "server", "Running it", "One file, every platform, multi-tenant"},
 	}},
 	{key: "connectors", title: "Connectors", href: "/connectors/", items: []navItem{
@@ -95,15 +95,30 @@ var menu = []navSection{
 	}},
 }
 
+// alternate is one language version of a page, for hreflang.
+type alternate struct{ lang, path string }
+
 // layout wraps a page body in the site's head, menu and footer.
 func layout(base, path, section, title, description, body, ogType string) string {
+	return layoutLang(base, path, section, title, description, body, ogType, "en", nil)
+}
+
+// layoutLang is layout for a page in another language. alternates lists every language version of the page, this one
+// included, so search engines show each country its own; the first is also x-default.
+func layoutLang(base, path, section, title, description, body, ogType, lang string, alternates []alternate) string {
 	var b strings.Builder
 	canonical := base + path
-	b.WriteString("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	fmt.Fprintf(&b, "<!doctype html>\n<html lang=\"%s\">\n<head>\n<meta charset=\"utf-8\">\n", html.EscapeString(lang))
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<meta name=\"description\" content=\"%s\">\n", html.EscapeString(description))
 	fmt.Fprintf(&b, "<link rel=\"canonical\" href=\"%s\">\n", html.EscapeString(canonical))
+	for i, a := range alternates {
+		fmt.Fprintf(&b, "<link rel=\"alternate\" hreflang=\"%s\" href=\"%s\">\n", html.EscapeString(a.lang), html.EscapeString(base+a.path))
+		if i == 0 {
+			fmt.Fprintf(&b, "<link rel=\"alternate\" hreflang=\"x-default\" href=\"%s\">\n", html.EscapeString(base+a.path))
+		}
+	}
 	b.WriteString("<link rel=\"icon\" type=\"image/svg+xml\" href=\"/assets/perfuse-logo.svg\">\n")
 	// The stylesheet is cached for a day, so its URL carries a hash of its contents: a changed stylesheet is a new URL, and a
 	// visitor never sees new pages drawn with yesterday's styles.
@@ -163,6 +178,7 @@ const footer = `<footer class="site"><div class="wrap">
 <p style="margin-top:12px">A free, open-source healthcare integration engine from BioDream LLC. Apache License 2.0.</p></div>
 <div><b>Product</b><a href="/platform/">Platform</a><a href="/connectors/">Connectors</a><a href="/payers/">Payers</a><a href="/exchange/">Exchange</a></div>
 <div><b>Moving</b><a href="/mirth-connect-alternative/">Leaving Mirth</a><a href="/migrate-mirth-channels/">Migration guide</a><a href="/integration-engines-compared/">Engines compared</a></div>
+<div><b>Europe</b><a href="/europe/">The UK and Europe</a><a href="/de/" hreflang="de" lang="de">Deutsch</a><a href="/fr/" hreflang="fr" lang="fr">Français</a><a href="/nl/" hreflang="nl" lang="nl">Nederlands</a></div>
 <div><b>Evidence</b><a href="/proof/">Test results</a><a href="https://test.perfuse.health/">Public test server</a><a href="https://github.com/biodream-llc/perfuse/blob/main/docs/verification.md">Verification record</a></div>
 <div><b>Help</b><a href="/learn/">Guides</a><a href="/manual/">Manual</a><a href="/download/">Download</a><a href="https://github.com/biodream-llc/perfuse">GitHub</a></div>
 </div>

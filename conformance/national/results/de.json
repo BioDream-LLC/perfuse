@@ -1,0 +1,66 @@
+{
+ "set": "de",
+ "guide": "ISiK Basismodul 4.0.3",
+ "package": "de.gematik.isik-basismodul#4.0.3",
+ "messages": 7,
+ "types": {
+  "Condition": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKDiagnose",
+   "resources": 2,
+   "failing": 2,
+   "errors": {
+    "Condition.recordedDate: minimum required = 1, but only found 0 (from https://gematik.de/fhir/isik/StructureDefinition/ISiKDiagnose|4.0.3)": 2
+   },
+   "warnings": 4
+  },
+  "Encounter": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKKontaktGesundheitseinrichtung",
+   "resources": 7,
+   "failing": 7,
+   "errors": {
+    "Slice 'Encounter.type:Kontaktebene': a matching slice is required, but not found (from https://gematik.de/fhir/isik/StructureDefinition/ISiKKontaktGesundheitseinrichtung|4.0.3). Note that other slices are allowed in addition to this required slice": 7,
+    "Encounter.type: minimum required = 1, but only found 0 (from https://gematik.de/fhir/isik/StructureDefinition/ISiKKontaktGesundheitseinrichtung|4.0.3)": 2
+   },
+   "warnings": 32
+  },
+  "Location": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKStandort",
+   "resources": 7,
+   "failing": 0,
+   "errors": {},
+   "warnings": 7
+  },
+  "Organization": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKOrganisation",
+   "resources": 7,
+   "failing": 7,
+   "errors": {
+    "Organization.identifier: minimum required = 1, but only found 0 (from https://gematik.de/fhir/isik/StructureDefinition/ISiKOrganisation|4.0.3)": 7
+   },
+   "warnings": 7
+  },
+  "Patient": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKPatient",
+   "resources": 7,
+   "failing": 7,
+   "errors": {
+    "Slice 'Patient.identifier:Patientennummer': a matching slice is required, but not found (from https://gematik.de/fhir/isik/StructureDefinition/ISiKPatient|4.0.3). Note that other slices are allowed in addition to this required slice": 7
+   },
+   "warnings": 21
+  },
+  "Practitioner": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKPersonImGesundheitsberuf",
+   "resources": 7,
+   "failing": 2,
+   "errors": {
+    "Slice 'Practitioner.name:Name': a matching slice is required, but not found (from https://gematik.de/fhir/isik/StructureDefinition/ISiKPersonImGesundheitsberuf|4.0.3). Note that other slices are allowed in addition to this required slice": 2
+   },
+   "warnings": 7
+  }
+ },
+ "skipped": {
+  "DiagnosticReport": 2,
+  "Observation": 6,
+  "Specimen": 2
+ }
+}

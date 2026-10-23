@@ -9,6 +9,7 @@ import (
 
 	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
+	"github.com/biodream-llc/perfuse/internal/natid"
 )
 
 // Resource builders. Each one takes the v2 segments it needs and produces one
@@ -206,16 +207,10 @@ func (c *converter) cxIdentifier(prefix, field string) (fhir.Identifier, bool) {
 	}
 
 	if typeCode := c.get(prefix + ".5"); typeCode != "" {
-		if isTable0203(typeCode) {
-			id.Type = fhir.NewCodeableConcept(fhir.SystemIdentifierType, typeCode, identifierTypeDisplay(typeCode))
-		} else {
-			// A site's own type code ("PATNUMBER") was labelled as HL7 table 0203, which the validator rejects as an
-			// unknown code. It is kept as text.
-			id.Type = fhir.TextOnly(typeCode)
-			c.note("warning", prefix+".5", "Identifier.type",
-				"identifier type %q is not in HL7 table 0203, so it was kept as text", typeCode)
-		}
-		if typeCode == "MR" && field == "PID-3" {
+		id.Type = c.identifierType(typeCode, prefix+".5")
+		// The facility's own number for the patient - MR, or PI (patient internal identifier), as French and German
+		// systems send it - is the one used day to day. FR Core requires that use on its PI slice.
+		if (typeCode == "MR" || typeCode == "PI") && field == "PID-3" {
 			id.Use = "usual"
 		}
 		// A social security number is an identifier a system may be obliged not to store. Flagging it lets a deployment
@@ -226,12 +221,52 @@ func (c *converter) cxIdentifier(prefix, field string) (fhir.Identifier, bool) {
 		}
 	}
 
+	c.nationalIdentifier(&id, prefix, c.get(prefix+".5"), authority)
+
 	// CX.7 and CX.8 bound when the identifier is valid. They matter for an MRN retired by a merge, and were dropped.
 	start, end := c.v2Date(c.get(prefix+".7"), prefix+".7"), c.v2Date(c.get(prefix+".8"), prefix+".8")
 	if start != "" || end != "" {
 		id.Period = &fhir.Period{Start: start, End: end}
 	}
 	return id, true
+}
+
+// nationalIdentifier writes a national patient number (the NHS number, the KVNR, the BSN ...) the way its country's FHIR
+// guides do: their system in place of the OID or the site's own name for it, the value without spacing, and the identifier
+// type those guides slice on (fhir.de's KVZ10). It is recognised by its system or OID, or by the v2 type NN<country> (NH for
+// the NHS). A number that fails its check digit is kept as sent, and the note says so: a receiver must not link people by it.
+func (c *converter) nationalIdentifier(id *fhir.Identifier, prefix, typeCode, authority string) {
+	s, ok := natid.ForSystem(id.System)
+	if !ok {
+		hd1, _, _ := strings.Cut(authority, string(c.msg.Separators().Subcomponent))
+		s, ok = natid.ForHL7Type(typeCode, hd1)
+	}
+	if !ok {
+		return
+	}
+	if id.System != s.System {
+		c.note("info", prefix+".4", "Patient.identifier.system", "%s written under %s, the system %s names it by, in place of %q",
+			s.Name, s.System, s.SystemSource, id.System)
+		id.System = s.System
+	}
+	if err := s.Validate(id.Value); err != nil {
+		c.note("warning", prefix+".1", "Patient.identifier.value", "%s %s fails its check (%v): kept as sent, but it may be someone else's number",
+			s.Name, natid.Mask(id.Value), err)
+		return
+	}
+	id.Value = s.Normalise(id.Value)
+	if s.TypeCode != "" {
+		if id.Type == nil {
+			id.Type = &fhir.CodeableConcept{}
+		}
+		have := false
+		for _, cd := range id.Type.Coding {
+			have = have || (cd.System == s.TypeSystem && cd.Code == s.TypeCode)
+		}
+		if !have {
+			id.Type.Coding = append(id.Type.Coding, fhir.Coding{System: s.TypeSystem, Code: s.TypeCode})
+		}
+	}
 }
 
 // authoritySystem turns an HD assigning authority into an identifier system. The second result, when not empty, says how
@@ -624,7 +659,12 @@ func (c *converter) buildPractitioner(path string) *fhir.Practitioner {
 		} else if strings.EqualFold(c.get(path+".13"), "NPI") {
 			system = "http://hl7.org/fhir/sid/us-npi"
 		}
-		p.Identifier = []fhir.Identifier{{System: system, Value: id}}
+		ident := fhir.Identifier{System: system, Value: id}
+		// XCN.13, the identifier type: France's IDNPS (RPPS/ADELI), or a table 0203 code. NPI was only used for the system.
+		if t := c.get(path + ".13"); t != "" && !strings.EqualFold(t, "NPI") {
+			ident.Type = c.identifierType(t, path+".13")
+		}
+		p.Identifier = []fhir.Identifier{ident}
 	}
 
 	if family != "" || given != "" {
@@ -633,6 +673,9 @@ func (c *converter) buildPractitioner(path string) *fhir.Practitioner {
 			Given:  fhir.NonEmpty(given, c.get(path+".4")),
 			Prefix: fhir.NonEmpty(c.get(path + ".6")),
 			Suffix: fhir.NonEmpty(c.get(path + ".5")),
+			// XCN.10, the name type: a practitioner's legal name is as "official" as a patient's (ISiK and UK Core look
+			// for it), and it was dropped.
+			Use: c.nameUse(c.get(path+".10"), path+".10"),
 		}
 		p.Name = []fhir.HumanName{name}
 	}
@@ -1306,27 +1349,32 @@ func (c *converter) humanName(path string) *fhir.HumanName {
 		Suffix: fhir.NonEmpty(suffix),
 	}
 
+	name.Use = c.nameUse(use, path+".7")
+	return name
+}
+
+// nameUse maps an HL7 v2 name type code (table 0200: XPN.7, XCN.10) to FHIR name-use.
+func (c *converter) nameUse(use, source string) string {
 	switch strings.ToUpper(use) {
 	case "L":
-		name.Use = "official"
+		return "official"
 	case "M":
-		name.Use = "maiden"
+		return "maiden"
 	case "N":
-		name.Use = "nickname"
+		return "nickname"
 	case "A":
-		name.Use = "anonymous"
+		return "anonymous"
 	case "D":
-		name.Use = "usual"
+		return "usual"
 	case "":
 	default:
 		// B (birth name), C (adopted), U (unspecified) and site codes have no counterpart in FHIR name-use. Use is left
 		// empty rather than guessed, and the note says so, because an empty use, a dropped name and an invented "maiden"
 		// otherwise look the same in the output.
-		c.note("info", path+".7", "HumanName.use",
+		c.note("info", source, "HumanName.use",
 			"name type %q has no FHIR name-use equivalent, so use was left empty and the name was kept", use)
 	}
-
-	return name
+	return ""
 }
 
 func (c *converter) address(path string) *fhir.Address {

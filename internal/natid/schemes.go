@@ -111,13 +111,19 @@ func init() {
 	}
 	register(&Scheme{ID: "de-kvnr", Country: "DE", ISO3: "DEU", Primary: true,
 		Name: "Health insurance number (statutory)", Local: "Krankenversichertennummer (GKV)", System: "http://fhir.de/sid/gkv/kvid-10",
-		SystemVerified: true, SystemSource: "fhir.de naming system, used by the KBV", Format: "a capital letter and 9 digits",
+		SystemVerified: true, SystemSource: "fhir.de naming system, used by the KBV",
+		// The OID HL7 v2 and CDA senders name it by (gematik's for the KVNR), and the identifier type fhir.de's base
+		// profiles and ISiK slice the patient's identifiers on.
+		Aliases:    []string{"urn:oid:1.2.276.0.76.4.8"},
+		TypeSystem: "http://fhir.de/CodeSystem/identifier-type-de-basis", TypeCode: "KVZ10",
+		Format:     "a capital letter and 9 digits",
 		Check:      "letter as 01 to 26, then weights 1 and 2 alternately, cross sums, total modulus 10",
 		Restricted: "§290 SGB V: the unchanging part is for health insurance and must not be used for other purposes.",
 		Example:    "A123456780", validate: kvnr})
 	register(&Scheme{ID: "de-kvnr-pkv", Country: "DE", ISO3: "DEU",
 		Name: "Health insurance number (private)", Local: "Krankenversichertennummer (PKV)", System: "http://fhir.de/sid/pkv/kvid-10",
 		SystemVerified: true, SystemSource: "fhir.de naming system", Format: "a capital letter and 9 digits",
+		TypeSystem: "http://fhir.de/CodeSystem/identifier-type-de-basis", TypeCode: "PKV",
 		Check: "as the statutory number", Example: "A123456780", validate: kvnr})
 	register(&Scheme{ID: "at-svnr", Country: "AT", ISO3: "AUT", Primary: true,
 		Name: "Social insurance number", Local: "Sozialversicherungsnummer", System: "urn:oid:1.2.40.0.10.1.4.3.1",

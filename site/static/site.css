@@ -211,9 +211,11 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* ---- Footer */
 footer.site { background: #071427; color: #8ea3bf; padding: 64px 0 40px; font-size: .92rem; }
-footer.site .cols { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 32px; }
+footer.site .cols { display: grid; grid-template-columns: 1.4fr repeat(5, 1fr); gap: 28px; }
 footer.site b { color: #fff; display: block; margin-bottom: 10px; }
 footer.site a { color: #b8c8dc; text-decoration: none; display: block; padding: 3px 0; }
 footer.site a:hover { color: #fff; }
 footer.site .legal { border-top: 1px solid #1a2b45; margin-top: 40px; padding-top: 20px; font-size: .85rem; }
 @media (max-width: 860px) { footer.site .cols { grid-template-columns: 1fr 1fr; } }
+.hero .langs a { color: #9fd8e6; }
+.hero .langs a:hover { color: #fff; }

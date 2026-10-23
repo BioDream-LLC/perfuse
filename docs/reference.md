@@ -323,6 +323,17 @@ What follows from that:
   a feed that retries updates rather than accumulating duplicates somebody later
   merges by hand.
 
+- **National identifiers and code systems are written the country's way.** A
+  national patient number (the NHS number, the KVNR, the BSN and the rest the patient
+  index knows) recognised by its OID or by type `NN<country>` goes under the system its
+  country's FHIR guides use, without spacing, with the identifier type they expect
+  (fhir.de's `KVZ10` for the KVNR); one failing its check digit is kept as sent with a
+  warning. France's identifier types (`IDNPS`, the INS types) use FR Core's code
+  system. Table 0396's year-stamped German systems (`I10G2026`, `ICD10GM2016`,
+  `O3012006`, `OPS2016`, `ALPHAID2016`) become ICD-10-GM, OPS and Alpha-ID as fhir.de
+  names them, with the year as the coding's version; CWE-7 gives the version for any
+  system. Checked against UK Core, FR Core and ISiK: `conformance/national`.
+
 Measured against 299 real ADT messages: all 299 converted with zero validation
 errors in either R4 or R5, producing 1,257 resources, with 96 distinct patient
 identifiers each mapping to exactly one resource id.

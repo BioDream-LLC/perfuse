@@ -230,6 +230,11 @@ func run(root, out, base string) error {
 			body = strings.Replace(body, "<!--GUIDES-->", guideCards(root), 1)
 		}
 		page := layout(base, sp.path, sp.section, sp.title, sp.description, body, "website")
+		for _, v := range europeVersions {
+			if v.path == sp.path {
+				page = layoutLang(base, sp.path, sp.section, sp.title, sp.description, body, "website", v.lang, europeVersions)
+			}
+		}
 		if err := writeFile(filepath.Join(out, strings.TrimPrefix(sp.path, "/"), "index.html"), []byte(page)); err != nil {
 			return err
 		}

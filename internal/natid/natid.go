@@ -40,6 +40,10 @@ type Scheme struct {
 	// Aliases are other systems the same number arrives under (an OID, an older URL): they are rewritten to System, so a
 	// record sent each way still matches.
 	Aliases []string `json:"aliases,omitempty"`
+	// TypeSystem and TypeCode are the Identifier.type a country's FHIR guides expect beside the system, when they name one
+	// (fhir.de's KVZ10 for the statutory insurance number).
+	TypeSystem string `json:"typeSystem,omitempty"`
+	TypeCode   string `json:"typeCode,omitempty"`
 	// Primary marks the country's main health identifier, the one an HL7 v2 NN<ISO3> identifier type stands for.
 	Primary bool `json:"primary,omitempty"`
 	// Format describes what is accepted, in words; Check the check-digit rule, in words ("none" when there is none).

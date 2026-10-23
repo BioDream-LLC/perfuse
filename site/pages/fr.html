@@ -1,0 +1,121 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Moteur d'interopérabilité pour les établissements de santé</p>
+    <h1>L'alternative gratuite à Mirth Connect</h1>
+    <p class="lede">Perfuse relie le DPI, le laboratoire, la radiologie, le PACS et les registres de documents en HL7 v2, FHIR,
+      DICOM et IHE. Il est open source sous licence Apache 2.0, s'installe sur vos propres serveurs (les données ne sortent pas
+      de chez vous) et reprend vos canaux Mirth Connect.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/download/">Télécharger Perfuse</a>
+      <a class="btn btn-ghost" href="#frcore">FR Core : les résultats</a>
+      <a class="btn btn-ghost" href="#limites">Ce qui manque encore</a>
+    </div>
+    <p class="langs" style="margin-top:18px">Aussi en <a href="/europe/" hreflang="en" lang="en">English</a> ·
+      <a href="/de/" hreflang="de" lang="de">Deutsch</a> · <a href="/nl/" hreflang="nl" lang="nl">Nederlands</a></p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Pourquoi maintenant</p>
+      <h2>Mirth Connect n'est plus gratuit. Vos interfaces doivent continuer à tourner.</h2>
+      <p>Depuis la version 4.6 (mars 2025), Mirth Connect n'est disponible que sous licence commerciale. Beaucoup
+        d'établissements utilisent encore la dernière version libre, qui ne reçoit plus de correctifs, ou l'un de ses dérivés.
+        Perfuse n'est pas un dérivé : c'est un autre moteur, conçu pour que la migration soit simple et sûre.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:swap</div><h3>Vos canaux vous suivent</h3><p>Perfuse lit les exports de canaux de
+        Mirth 4.5.2, de l'Open Integration Engine et de BridgeLink, exécute leur JavaScript sans modification et sait exporter
+        en retour : chacun de ces serveurs accepte les fichiers de canaux écrits par Perfuse.</p></div>
+      <div class="card"><div class="icon">ICON:eye</div><h3>Vérifié sur vos propres flux</h3><p>En mode miroir, un canal tourne à
+        côté du moteur en place sur les vrais messages, et chaque sortie est comparée avant toute bascule.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>Un seul fichier, sans Java</h3><p>Un programme pour Linux, Windows
+        ou macOS, sur Intel ou Arm. Au repos, il occupe 31 Mo de mémoire, contre 383 Mo pour Mirth sur la même machine.</p></div>
+      <div class="card"><div class="icon">ICON:key</div><h3>Gratuit, durablement</h3><p>Apache 2.0 : l'utiliser, le modifier,
+        l'exploiter pour d'autres. Aucune redevance, aucune édition payante.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Pensé pour la France</p>
+      <h2>Ce dont les établissements français ont besoin, dans le moteur</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:users</div><h3>L'INS</h3><p>Le NIR et le NIA sont contrôlés par leur clé : un numéro
+        mal saisi ne relie jamais deux personnes. Les types d'identifiants français (INS-NIR, IDNPS pour le RPPS ou l'ADELI) sont
+        repris en FHIR dans le système de codes de FR Core.</p></div>
+      <div class="card"><div class="icon">ICON:book</div><h3>CIM-10 FR et SNOMED CT</h3><p>La CIM-10 FR lue depuis le ClaML de
+        l'ATIH, chaque version à partir de sa date d'effet, et SNOMED CT avec les libellés de l'édition chargée, dans sa langue.</p></div>
+      <div class="card"><div class="icon">ICON:shield</div><h3>RGPD</h3><p>Retrouver tout ce qui concerne une personne dans tous les
+        stockages, lui en remettre une copie et l'effacer avec l'accord d'un second administrateur. Les gels juridiques sont
+        respectés, et le registre des traitements (article 30) est produit à partir des canaux.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>Chez vous, ou chez votre hébergeur</h3><p>Perfuse tourne dans votre
+        réseau ou chez votre hébergeur certifié HDS. En cloud, <code>-residency eea</code> refuse tout connecteur hors de la
+        région autorisée.</p></div>
+      <div class="card"><div class="icon">ICON:doc</div><h3>Partage de documents IHE</h3><p>Registre et entrepôt XDS.b, passerelle
+        XCA, MHD, PIXm, PDQm et XDM, testés avec le NIST XDS Toolkit.</p></div>
+      <div class="card"><div class="icon">ICON:globe</div><h3>En français</h3><p>L'interface et le <a href="/manual/fr/">manuel</a>
+        existent en français, comme dans onze autres langues.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="frcore">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">FR Core, vérifié publiquement</p>
+      <h2>Les exemples de l'ANS, convertis et validés</h2>
+      <p>Perfuse a converti en FHIR les 59 messages HL7 v2 d'exemple publiés par l'ANS (PAM-FR et transmission de documents), et
+        le validateur officiel HL7 a contrôlé chaque ressource avec les profils FR Core 2.2.0.</p>
+    </div>
+    <table>
+      <thead><tr><th>Ressource</th><th>Résultat</th><th>Pourquoi</th></tr></thead>
+      <tbody>
+        <tr><td>Patient</td><td>40 sur 40 valides</td><td></td></tr>
+        <tr><td>Professionnel (Practitioner)</td><td>19 sur 19 valides</td><td></td></tr>
+        <tr><td>Lieu, organisation</td><td>43 sur 43 valides</td><td></td></tr>
+        <tr><td>Venue (Encounter)</td><td>22 sur 40 valides</td><td>FR Core exige une période et un identifiant de venue. 14 messages
+          n'ont pas de date d'entrée (PV1-44) et 4 pas de numéro de venue (PV1-19)</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">Ce que le message ne dit pas, Perfuse ne l'invente pas. Les essais ont aussi trouvé de vrais défauts dans
+      Perfuse, désormais corrigés pour la prochaine version : l'IPP envoyé en PI sans <code>use: usual</code> et le type IDNPS
+      des professionnels ignoré. Avec UK Core, 177 ressources sur 179 sont valides.
+      <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Tous les résultats, et comment les
+      reproduire</a>.</p>
+  </div>
+</section>
+
+<section class="band soft" id="limites">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Franchement</p>
+      <h2>Ce qui manque encore</h2>
+    </div>
+    <ul class="ticks">
+      <li class="caveat">Aucun établissement n'utilise encore Perfuse en production. Si vous voulez être le premier, écrivez-nous :
+        le mode miroir permet de l'essayer sans risque sur vos propres flux.</li>
+      <li class="caveat">Aucune certification ni référencement : ni ANS, ni Ségur. Les résultats ci-dessus sont nos propres essais
+        des outils officiels, publiés pour que chacun puisse les refaire.</li>
+      <li class="caveat">Cette page, l'interface et le manuel ont été traduits par une machine et n'ont pas encore été relus par des
+        locuteurs natifs. Signalez-nous les erreurs.</li>
+      <li class="caveat">Le projet d'accord de sous-traitance (article 28) n'a pas encore été relu par un juriste.</li>
+      <li>Le support est assuré par l'équipe BioDream, sur <a href="https://github.com/biodream-llc/perfuse/issues">GitHub</a>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>Essayez-le sur vos propres canaux</h2>
+    <p><code style="color:#fff">perfuse explain</code> lit un export Mirth et indique ce que la migration demande. Il ne modifie rien
+      et prend une minute.</p>
+    <div class="actions"><a class="btn btn-primary" href="/download/">Télécharger</a>
+      <a class="btn btn-ghost" href="https://test.perfuse.health/">Serveur de test public</a>
+      <a class="btn btn-ghost" href="/manual/fr/">Manuel</a></div>
+  </div>
+</section>

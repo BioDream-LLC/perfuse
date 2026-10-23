@@ -1,0 +1,52 @@
+{
+ "set": "fr",
+ "guide": "FR Core 2.2.0",
+ "package": "hl7.fhir.fr.core#2.2.0",
+ "messages": 59,
+ "types": {
+  "Encounter": {
+   "profile": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter",
+   "resources": 40,
+   "failing": 18,
+   "errors": {
+    "Encounter.period: minimum required = 1, but only found 0 (from https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter|2.2.0)": 14,
+    "Encounter.identifier: minimum required = 1, but only found 0 (from https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter|2.2.0)": 4
+   },
+   "warnings": 122
+  },
+  "Location": {
+   "profile": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-location",
+   "resources": 36,
+   "failing": 0,
+   "errors": {},
+   "warnings": 36
+  },
+  "Organization": {
+   "profile": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization",
+   "resources": 7,
+   "failing": 0,
+   "errors": {},
+   "warnings": 7
+  },
+  "Patient": {
+   "profile": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient",
+   "resources": 40,
+   "failing": 0,
+   "errors": {},
+   "warnings": 134
+  },
+  "Practitioner": {
+   "profile": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner",
+   "resources": 19,
+   "failing": 0,
+   "errors": {},
+   "warnings": 33
+  }
+ },
+ "skipped": {
+  "DiagnosticReport": 14,
+  "DocumentReference": 44,
+  "Observation": 178,
+  "Specimen": 14
+ }
+}

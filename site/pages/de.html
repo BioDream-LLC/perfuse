@@ -1,0 +1,125 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Kommunikationsserver für Krankenhäuser</p>
+    <h1>Die kostenlose Alternative zu Mirth Connect</h1>
+    <p class="lede">Perfuse verbindet KIS, Labor, Radiologie, PACS und Dokumentenregister über HL7 v2, FHIR, DICOM und IHE. Es
+      ist Open Source unter der Apache-Lizenz 2.0, läuft auf Ihren eigenen Servern (die Daten verlassen das Haus nicht) und
+      übernimmt Ihre Mirth-Connect-Kanäle.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/download/">Perfuse herunterladen</a>
+      <a class="btn btn-ghost" href="#isik">ISiK: die Ergebnisse</a>
+      <a class="btn btn-ghost" href="#offen">Was noch fehlt</a>
+    </div>
+    <p class="langs" style="margin-top:18px">Auch auf <a href="/europe/" hreflang="en" lang="en">English</a> ·
+      <a href="/fr/" hreflang="fr" lang="fr">Français</a> · <a href="/nl/" hreflang="nl" lang="nl">Nederlands</a></p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Warum jetzt</p>
+      <h2>Mirth Connect ist nicht mehr kostenlos. Ihre Schnittstellen müssen trotzdem laufen.</h2>
+      <p>Seit Version 4.6 (März 2025) gibt es Mirth Connect nur noch mit kostenpflichtiger Lizenz. Viele Häuser betreiben die
+        letzte freie Version, die keine Korrekturen mehr bekommt, oder einen ihrer Ableger. Perfuse ist kein Ableger, sondern
+        ein eigener Kommunikationsserver, gebaut dafür, dass der Umstieg leicht und sicher ist.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:swap</div><h3>Ihre Kanäle kommen mit</h3><p>Perfuse liest Kanal-Exporte aus Mirth
+        4.5.2, der Open Integration Engine und BridgeLink, führt deren JavaScript unverändert aus und kann zurück exportieren:
+        jeder dieser Server nimmt die Kanaldateien an, die Perfuse schreibt.</p></div>
+      <div class="card"><div class="icon">ICON:eye</div><h3>Erst prüfen, dann umstellen</h3><p>Im Schattenbetrieb läuft ein Kanal
+        neben dem bisherigen Server mit echten Nachrichten mit, und jede Ausgabe wird verglichen, bevor irgendetwas umgestellt
+        wird.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>Eine Datei, kein Java</h3><p>Ein Programm für Linux, Windows oder
+        macOS, auf Intel oder Arm. Im Leerlauf braucht es 31 MB Arbeitsspeicher, Mirth auf derselben Maschine 383 MB.</p></div>
+      <div class="card"><div class="icon">ICON:key</div><h3>Kostenlos, auf Dauer</h3><p>Apache 2.0: nutzen, ändern, für andere
+        betreiben. Keine Lizenzgebühr, keine Bezahlversion.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Für Deutschland gebaut</p>
+      <h2>Was deutsche Häuser brauchen, im Server selbst</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:users</div><h3>KVNR, geprüft</h3><p>Die Krankenversichertennummer (GKV und PKV) wird
+        an ihrer Prüfziffer geprüft und in der FHIR-Ausgabe unter <code>http://fhir.de/sid/gkv/kvid-10</code> mit dem Typ KVZ10
+        geschrieben, wie die Basisprofile und ISiK sie erwarten (ab der nächsten Version). Eine falsch getippte Nummer verknüpft nie zwei Menschen.</p></div>
+      <div class="card"><div class="icon">ICON:book</div><h3>ICD-10-GM und OPS</h3><p>Aus dem BfArM-ClaML eingelesen, jede Version
+        ab ihrem Gültigkeitsdatum. Aus HL7 v2 werden <code>I10G2026</code>, <code>ICD10GM2016</code>, <code>OPS2025</code> und
+        Alpha-ID mit ihrem Jahr als Version nach FHIR übernommen (ab der nächsten Version). Dazu kommt SNOMED CT.</p></div>
+      <div class="card"><div class="icon">ICON:shield</div><h3>DSGVO</h3><p>Alles zu einer Person in allen Speichern finden, ihr eine
+        Kopie geben und mit Zustimmung eines zweiten Administrators löschen. Rechtliche Sperren (Legal Hold) werden beachtet, und das
+        Verzeichnis der Verarbeitungstätigkeiten (Art. 30) entsteht aus den Kanälen.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>Daten im Haus</h3><p>Perfuse läuft in Ihrem Netz. In der Cloud lehnt
+        <code>-residency eea</code> jeden Anschluss außerhalb der erlaubten Region ab.</p></div>
+      <div class="card"><div class="icon">ICON:doc</div><h3>IHE-Dokumentenaustausch</h3><p>XDS.b-Registry und -Repository,
+        XCA-Gateway, MHD, PIXm, PDQm und XDM, geprüft mit dem NIST XDS Toolkit.</p></div>
+      <div class="card"><div class="icon">ICON:globe</div><h3>Auf Deutsch</h3><p>Die Oberfläche und das
+        <a href="/manual/de/">Handbuch</a> gibt es auf Deutsch, wie in elf weiteren Sprachen.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="isik">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">ISiK, offen geprüft</p>
+      <h2>Wie weit die FHIR-Ausgabe ISiK schon erfüllt</h2>
+      <p>Wir haben deutsche HL7-v2-Nachrichten (erfunden, keine echten Patienten) mit Perfuse nach FHIR übersetzt und jede
+        Ressource mit dem offiziellen HL7-Validator gegen das ISiK-Basismodul 4.0.3 geprüft. Das Ergebnis ist durchwachsen, und
+        wir veröffentlichen es trotzdem.</p>
+    </div>
+    <table>
+      <thead><tr><th>Ressource</th><th>Ergebnis</th><th>Warum</th></tr></thead>
+      <tbody>
+        <tr><td>Standort, Person im Gesundheitsberuf</td><td>12 von 14 gültig</td><td>Zwei Ärztinnen ohne Namensart in der
+          Nachricht (XCN-10)</td></tr>
+        <tr><td>Kontakt (Encounter)</td><td>0 von 7</td><td>ISiK verlangt die Kontaktebene, die in keinem v2-Feld steht</td></tr>
+        <tr><td>Organisation</td><td>0 von 7</td><td>ISiK verlangt das IKNR, die Nachrichten nennen nur den Namen</td></tr>
+        <tr><td>Patient</td><td>0 von 7</td><td>ISiK verlangt die Patientennummer mit Typ MR, die Nachrichten senden PI</td></tr>
+        <tr><td>Diagnose</td><td>0 von 2</td><td>Ohne Feststellungsdatum (DG1-19) fehlt <code>recordedDate</code></td></tr>
+      </tbody>
+    </table>
+    <p class="caption">Was die Nachricht nicht sagt, erfindet Perfuse nicht. Ein Haus ergänzt es mit einem Transformationsschritt,
+      der sein IKNR und die Kontaktebene kennt. Der Lauf hat auch echte Fehler in Perfuse gefunden: ICD-10-GM- und
+      KVNR-Angaben in Formen, die kein deutsches System liest, und fehlende Namensarten. Sie sind behoben und kommen mit der
+      nächsten Version. Gegen UK Core bestehen 177 von 179 Ressourcen, gegen FR Core 124 von 142.
+      <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Alle Ergebnisse und wie man sie
+      wiederholt</a>.</p>
+  </div>
+</section>
+
+<section class="band soft" id="offen">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Ehrlich gesagt</p>
+      <h2>Was noch fehlt</h2>
+    </div>
+    <ul class="ticks">
+      <li class="caveat">Noch kein Krankenhaus setzt Perfuse produktiv ein. Wenn Sie das erste sein möchten, freuen wir uns. Im
+        Schattenbetrieb können Sie es ohne Risiko mit Ihren eigenen Nachrichten ausprobieren.</li>
+      <li class="caveat">Kein ISiK-Bestätigungsverfahren der gematik und keine andere Zertifizierung. Die Ergebnisse oben sind
+        unsere eigenen Läufe der offiziellen Werkzeuge. Die Such- und Serveranforderungen von ISiK sind dabei nicht geprüft.</li>
+      <li class="caveat">Diese Seite, die Oberfläche und das Handbuch wurden maschinell übersetzt und noch nicht von
+        Muttersprachlern geprüft. Hinweise auf Fehler nehmen wir gern an.</li>
+      <li class="caveat">Der Entwurf eines Auftragsverarbeitungsvertrags hat noch kein Jurist gelesen.</li>
+      <li>Unterstützung gibt das BioDream-Team über <a href="https://github.com/biodream-llc/perfuse/issues">GitHub</a>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>Probieren Sie es mit Ihren eigenen Kanälen</h2>
+    <p><code style="color:#fff">perfuse explain</code> liest einen Mirth-Export und sagt, was beim Umstieg zu tun ist. Es ändert
+      nichts und dauert eine Minute.</p>
+    <div class="actions"><a class="btn btn-primary" href="/download/">Herunterladen</a>
+      <a class="btn btn-ghost" href="https://test.perfuse.health/">Öffentlicher Testserver</a>
+      <a class="btn btn-ghost" href="/manual/de/">Handbuch</a></div>
+  </div>
+</section>

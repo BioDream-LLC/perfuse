@@ -1108,6 +1108,16 @@ occurrence, when it means every one (deliberately, as in filters).
   a lawyer.
 - **Residency and hosting**: the region lists are tested; the OpenTofu stacks pass `tofu validate` and `tofu plan` (eu-west-2:
   55 resources, all in the Region) against a real AWS account but **have never been applied**. The costs are AWS list prices.
+- **National FHIR profiles** (22 October 2026, on main): `conformance/national/run.py` converts NHS Wales' published v2
+  examples, the French agency's PAM-FR and document examples, and invented German messages, and the HL7 validator 6.10.4
+  checks every resource against UK Core STU2 2.0.2 (177 of 179 pass), FR Core 2.2.0 (124 of 142) and ISiK Basismodul 4.0.3
+  (12 of 37). The UK failures are a US race code in a Welsh sample and a terminology server error; the French ones Encounters
+  whose messages carry no admission date or visit number; the German ones what ISiK requires that v2 does not say (contact
+  level, the facility's IKNR, an `MR`-typed patient number, DG1-19). The runs found and fixed: German year-stamped code
+  systems (`I10G2026`, `OPS2016`) written to a placeholder system; KVNR and NHS numbers left under their OIDs in the FHIR
+  output; `PI` patient numbers without `use: usual`; practitioners' XCN-10 name type and XCN-13 identifier type dropped.
+  Per-type results: [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national). Not a test of the FHIR server's ISiK search
+  and capability requirements, and not gematik's conformance process (Bestätigungsverfahren).
 
 ### Bulk Data Access v2.0.0, the first run
 

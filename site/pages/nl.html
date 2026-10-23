@@ -1,0 +1,115 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">Integratie-engine voor ziekenhuizen</p>
+    <h1>Het gratis alternatief voor Mirth Connect</h1>
+    <p class="lede">Perfuse koppelt het EPD, het laboratorium, de radiologie, PACS en documentregisters via HL7 v2, FHIR,
+      DICOM en IHE. Het is open source onder de Apache-licentie 2.0, draait op uw eigen servers (de gegevens blijven in huis) en
+      neemt uw Mirth Connect-kanalen over.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/download/">Perfuse downloaden</a>
+      <a class="btn btn-ghost" href="#getest">Getest tegen nationale profielen</a>
+      <a class="btn btn-ghost" href="#nog-niet">Wat nog ontbreekt</a>
+    </div>
+    <p class="langs" style="margin-top:18px">Ook beschikbaar in <a href="/europe/" hreflang="en" lang="en">English</a> ·
+      <a href="/de/" hreflang="de" lang="de">Deutsch</a> · <a href="/fr/" hreflang="fr" lang="fr">Français</a></p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Waarom nu</p>
+      <h2>Mirth Connect is niet meer gratis. Uw koppelingen moeten blijven draaien.</h2>
+      <p>Sinds versie 4.6 (maart 2025) is Mirth Connect alleen nog met een commerciële licentie verkrijgbaar. Veel ziekenhuizen
+        draaien de laatste vrije versie, die geen correcties meer krijgt, of een afgeleide daarvan. Perfuse is geen afgeleide,
+        maar een eigen engine, gebouwd om overstappen eenvoudig en veilig te maken.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:swap</div><h3>Uw kanalen gaan mee</h3><p>Perfuse leest kanaalexports uit Mirth
+        4.5.2, de Open Integration Engine en BridgeLink, voert hun JavaScript ongewijzigd uit en kan ook terug exporteren: elk
+        van die servers accepteert de kanaalbestanden die Perfuse schrijft.</p></div>
+      <div class="card"><div class="icon">ICON:eye</div><h3>Eerst bewijzen, dan overstappen</h3><p>In schaduwmodus draait een kanaal
+        naast de huidige engine mee op echte berichten, en elke uitvoer wordt vergeleken voordat er iets wordt omgezet.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>Eén bestand, geen Java</h3><p>Eén programma voor Linux, Windows of
+        macOS, op Intel of Arm. In rust gebruikt het 31 MB geheugen, Mirth op dezelfde machine 383 MB.</p></div>
+      <div class="card"><div class="icon">ICON:key</div><h3>Gratis, blijvend</h3><p>Apache 2.0: gebruiken, aanpassen, voor anderen
+        draaien. Geen licentiekosten, geen betaalde editie.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Gebouwd voor Nederland en België</p>
+      <h2>Wat ziekenhuizen hier nodig hebben, in de engine zelf</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:users</div><h3>BSN en rijksregisternummer</h3><p>Het BSN wordt met de elfproef
+        gecontroleerd en onder het systeem van Nictiz opgeslagen, het Belgische rijksregisternummer met zijn eigen controle. Een
+        verkeerd getypt nummer koppelt nooit twee mensen.</p></div>
+      <div class="card"><div class="icon">ICON:book</div><h3>SNOMED CT en ICD-10</h3><p>Nationale SNOMED CT-edities met de termen in
+        de eigen taal, WHO ICD-10 en ICD-11, en eigen tabellen per versie vanaf hun ingangsdatum.</p></div>
+      <div class="card"><div class="icon">ICON:shield</div><h3>AVG</h3><p>Alles over een persoon in alle opslag terugvinden, een
+        kopie geven en wissen met goedkeuring van een tweede beheerder. Bewaarplichten (legal hold) worden gerespecteerd, en het
+        verwerkingsregister (artikel 30) ontstaat uit de kanalen.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>Gegevens in huis</h3><p>Perfuse draait in uw netwerk. In de cloud
+        weigert <code>-residency eea</code> elke koppeling buiten de toegestane regio.</p></div>
+      <div class="card"><div class="icon">ICON:doc</div><h3>IHE-documentuitwisseling</h3><p>XDS.b-registry en -repository,
+        XCA-gateway, MHD, PIXm, PDQm en XDM, getest met de NIST XDS Toolkit.</p></div>
+      <div class="card"><div class="icon">ICON:globe</div><h3>In het Nederlands</h3><p>De interface en de
+        <a href="/manual/nl/">handleiding</a> zijn er in het Nederlands, net als in elf andere talen.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="getest">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Openbaar getest</p>
+      <h2>Nationale FHIR-profielen, met gepubliceerde resultaten</h2>
+      <p>Perfuse zette nationale HL7 v2-voorbeeldberichten om naar FHIR, en de officiële HL7-validator controleerde elke
+        resource tegen de profielen van het land. Voor de Nictiz-profielen (zib) is dit nog niet gedaan; dat staat hieronder.</p>
+    </div>
+    <table>
+      <thead><tr><th>Profielen</th><th>Berichten</th><th>Geldig</th></tr></thead>
+      <tbody>
+        <tr><td>UK Core STU2 2.0.2</td><td>Voorbeelden van NHS Wales</td><td>177 van 179</td></tr>
+        <tr><td>FR Core 2.2.0</td><td>Voorbeelden van het Franse ANS</td><td>124 van 142</td></tr>
+        <tr><td>ISiK Basismodul 4.0.3</td><td>Verzonnen Duitse berichten</td><td>12 van 37</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">Elke afwijking heeft een reden, en die staat erbij: meestal gegevens die het v2-bericht niet bevat, en die
+      Perfuse niet verzint. <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Alle resultaten en
+      hoe u ze herhaalt</a>.</p>
+  </div>
+</section>
+
+<section class="band soft" id="nog-niet">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Eerlijk gezegd</p>
+      <h2>Wat nog ontbreekt</h2>
+    </div>
+    <ul class="ticks">
+      <li class="caveat">Nog geen ziekenhuis gebruikt Perfuse in productie. Wilt u de eerste zijn, dan horen we graag van u. In
+        schaduwmodus kunt u het zonder risico op uw eigen berichten uitproberen.</li>
+      <li class="caveat">Nog niet getest tegen de Nictiz-profielen (zib's) en niet gecertificeerd, ook niet voor NEN 7510.</li>
+      <li class="caveat">Deze pagina, de interface en de handleiding zijn machinaal vertaald en nog niet door moedertaalsprekers
+        nagelezen. Meld fouten gerust.</li>
+      <li class="caveat">Het concept van de verwerkersovereenkomst is nog niet door een jurist gelezen.</li>
+      <li>Ondersteuning komt van het BioDream-team, via <a href="https://github.com/biodream-llc/perfuse/issues">GitHub</a>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>Probeer het op uw eigen kanalen</h2>
+    <p><code style="color:#fff">perfuse explain</code> leest een Mirth-export en zegt wat de overstap vraagt. Het verandert niets en
+      duurt een minuut.</p>
+    <div class="actions"><a class="btn btn-primary" href="/download/">Downloaden</a>
+      <a class="btn btn-ghost" href="https://test.perfuse.health/">Openbare testserver</a>
+      <a class="btn btn-ghost" href="/manual/nl/">Handleiding</a></div>
+  </div>
+</section>

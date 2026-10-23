@@ -150,6 +150,18 @@ var codingSystemMap = map[string]string{
 	"ICD9":    "http://hl7.org/fhir/sid/icd-9-cm",
 	"I9":      "http://hl7.org/fhir/sid/icd-9-cm",
 	"ICD10CM": "http://hl7.org/fhir/sid/icd-10-cm",
+	// Table 0396's own names for the US modifications (I10 alone is WHO ICD-10 in the table; US feeds use it for ICD-10-CM,
+	// which is what it is read as above).
+	"I10C": "http://hl7.org/fhir/sid/icd-10-cm",
+	"I9C":  "http://hl7.org/fhir/sid/icd-9-cm",
+	// Germany: ICD-10-GM, OPS and Alpha-ID as fhir.de names them (the systems ISiK and the KBV's guides use). Table 0396
+	// names them with the year (I10G2006, ICD10GM2016, O3012006, OPS2016, ALPHAID2016): see germanSystem.
+	"I10GM":   germanICD10GM,
+	"ICD10GM": germanICD10GM,
+	"O301":    germanOPS,
+	"OPS":     germanOPS,
+	"OPS301":  germanOPS,
+	"ALPHAID": germanAlphaID,
 	"CVX":     systemCVX,
 	"MVX":     systemMVX,
 	// The NCI Thesaurus, which CDC's immunization guide uses for routes of administration.
@@ -271,6 +283,28 @@ func mapUCUM(unit string) (string, bool) {
 	return "", false
 }
 
+const (
+	germanICD10GM = "http://fhir.de/CodeSystem/bfarm/icd-10-gm"
+	germanOPS     = "http://fhir.de/CodeSystem/bfarm/ops"
+	germanAlphaID = "http://fhir.de/CodeSystem/bfarm/alpha-id"
+)
+
+// germanSystem reads table 0396's year-stamped German code systems - I10G2006 and ICD10GM2016 (ICD-10-GM), O3012006 and
+// OPS2016 (OPS), ALPHAID2016 - and the forms German senders write for years the table has not listed yet (I10G2026). The
+// year is the code system's version, which FHIR keeps in Coding.version and ISiK requires for a diagnosis.
+func germanSystem(id string) (uri, version string, ok bool) {
+	for _, p := range []struct{ prefix, uri string }{
+		{"ICD10GM", germanICD10GM}, {"I10G", germanICD10GM}, {"ALPHAID", germanAlphaID}, {"O301", germanOPS}, {"OPS", germanOPS},
+	} {
+		rest, found := strings.CutPrefix(id, p.prefix)
+		rest = strings.TrimLeft(rest, "-_ ")
+		if found && len(rest) == 4 && strings.Trim(rest, "0123456789") == "" && rest >= "1990" {
+			return p.uri, rest, true
+		}
+	}
+	return "", "", false
+}
+
 // mapCodingSystem returns the FHIR system URI for an HL7 coding system id.
 func mapCodingSystem(id string) (string, bool) {
 	id = strings.ToUpper(strings.TrimSpace(id))
@@ -278,6 +312,9 @@ func mapCodingSystem(id string) (string, bool) {
 		return "", false
 	}
 	if uri, ok := codingSystemMap[id]; ok {
+		return uri, true
+	}
+	if uri, _, ok := germanSystem(id); ok {
 		return uri, true
 	}
 	// HL7-defined tables, named HL7 and four digits (HL70002, HL70163), are code systems on terminology.hl7.org.
@@ -301,6 +338,8 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 	altCode := c.get(path + ".4")
 	altText := c.get(path + ".5")
 	altSystem := c.get(path + ".6")
+	// CWE.7 and CWE.8: the version of each coding system (ICD-10-GM 2026), which a year-stamped table 0396 name also gives.
+	version, altVersion := c.get(path+".7"), c.get(path+".8")
 
 	if code == "" && text == "" && altCode == "" && altText == "" {
 		return nil
@@ -313,11 +352,14 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 		concept.Text = altText
 	}
 
-	add := func(code, display, systemID string) {
+	add := func(code, display, systemID, version string) {
 		if code == "" {
 			return
 		}
 		uri, known := mapCodingSystem(systemID)
+		if _, year, ok := germanSystem(strings.ToUpper(strings.TrimSpace(systemID))); ok && version == "" {
+			version = year
+		}
 		if !known {
 			if systemID == "" {
 				c.note("warning", sourceLabel, "code.coding",
@@ -366,13 +408,15 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 			}
 			display = ""
 		}
-		concept.Coding = append(concept.Coding, fhir.Coding{
-			System: uri, Code: code, Display: display,
-		})
+		coding := fhir.Coding{System: uri, Code: code, Display: display}
+		if uri != "" {
+			coding.Version = version
+		}
+		concept.Coding = append(concept.Coding, coding)
 	}
 
-	add(code, text, system)
-	add(altCode, altText, altSystem)
+	add(code, text, system, version)
+	add(altCode, altText, altSystem, altVersion)
 
 	if len(concept.Coding) == 0 && concept.Text == "" {
 		return nil

@@ -1,0 +1,97 @@
+{
+ "set": "uk",
+ "guide": "UK Core STU2 2.0.2",
+ "package": "fhir.r4.ukcore.stu2#2.0.2",
+ "messages": 22,
+ "types": {
+  "AllergyIntolerance": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-AllergyIntolerance",
+   "resources": 1,
+   "failing": 0,
+   "errors": {},
+   "warnings": 1
+  },
+  "Appointment": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Appointment",
+   "resources": 1,
+   "failing": 0,
+   "errors": {},
+   "warnings": 4
+  },
+  "Condition": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Condition",
+   "resources": 2,
+   "failing": 0,
+   "errors": {},
+   "warnings": 2
+  },
+  "DiagnosticReport": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-DiagnosticReport",
+   "resources": 4,
+   "failing": 0,
+   "errors": {},
+   "warnings": 9
+  },
+  "Encounter": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Encounter",
+   "resources": 6,
+   "failing": 0,
+   "errors": {},
+   "warnings": 9
+  },
+  "Immunization": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Immunization",
+   "resources": 7,
+   "failing": 0,
+   "errors": {},
+   "warnings": 11
+  },
+  "Location": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Location",
+   "resources": 4,
+   "failing": 0,
+   "errors": {},
+   "warnings": 4
+  },
+  "Observation": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Observation",
+   "resources": 118,
+   "failing": 0,
+   "errors": {},
+   "warnings": 448
+  },
+  "Organization": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Organization",
+   "resources": 2,
+   "failing": 0,
+   "errors": {},
+   "warnings": 2
+  },
+  "Patient": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Patient",
+   "resources": 18,
+   "failing": 1,
+   "errors": {
+    "The extension http://hl7.org/fhir/us/core/StructureDefinition/us-core-race could not be found so is not allowed here": 1
+   },
+   "warnings": 49
+  },
+  "Practitioner": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Practitioner",
+   "resources": 13,
+   "failing": 0,
+   "errors": {},
+   "warnings": 13
+  },
+  "Specimen": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Specimen",
+   "resources": 3,
+   "failing": 1,
+   "errors": {
+    "Error from https://tx.fhir.org/r4: Error: Invalid ECL expression: 'descendantOf 49755003 OR descendantOf 105590001 OR descendantOf 123037004 OR descendantOf 123038009 OR descendantOf 260787004': (Parser error at token 1: Unexpected tokens after end of expression. Current token: SCTID(49755003))": 1
+   },
+   "warnings": 3
+  }
+ },
+ "skipped": {}
+}

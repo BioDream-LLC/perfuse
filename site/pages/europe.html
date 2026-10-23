@@ -1,0 +1,121 @@
+<section class="hero small">
+  <div class="wrap">
+    <p class="eyebrow">The UK and Europe</p>
+    <h1>A free HL7 and FHIR integration engine for European hospitals</h1>
+    <p class="lede">Perfuse connects the hospital's systems (patient administration, laboratory, radiology, PACS, document
+      registries) over HL7 v2, FHIR, DICOM and IHE. It is free under Apache 2.0, runs on your own servers so the data never
+      leaves them, and takes over your Mirth Connect channels.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/download/">Download Perfuse</a>
+      <a class="btn btn-ghost" href="#profiles">National profiles, tested</a>
+      <a class="btn btn-ghost" href="#plainly">What is not done yet</a>
+    </div>
+    <p class="langs" style="margin-top:18px">Also in <a href="/de/" hreflang="de" lang="de">Deutsch</a> ·
+      <a href="/fr/" hreflang="fr" lang="fr">Français</a> · <a href="/nl/" hreflang="nl" lang="nl">Nederlands</a></p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Why now</p>
+      <h2>Mirth Connect is no longer free. Your interfaces still have to run.</h2>
+      <p>From version 4.6 (March 2025) Mirth Connect is sold under a commercial licence. Many European hospitals run the last
+        open-source release, which no longer gets fixes, or one of its forks. Perfuse is a different engine, not a fork, and it
+        was built to make leaving easy and safe.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:swap</div><h3>Your channels come with you</h3><p>Perfuse reads channel exports from
+        Mirth 4.5.2, the Open Integration Engine and BridgeLink, runs their JavaScript unchanged, and can export back: each of
+        those servers accepts the channel files Perfuse writes.</p></div>
+      <div class="card"><div class="icon">ICON:eye</div><h3>Proved on your own traffic</h3><p>Shadow mode runs a channel beside the
+        live engine on real messages and compares every output, before anything is switched over.</p></div>
+      <div class="card"><div class="icon">ICON:server</div><h3>One file, no Java</h3><p>One program for Linux, Windows or macOS, on
+        Intel or Arm. It holds 31 MB of memory at rest, against Mirth's 383 MB on the same machine.</p></div>
+      <div class="card"><div class="icon">ICON:key</div><h3>Free, and stays free</h3><p>Apache 2.0: use it, change it, run it for
+        others. No licence fee and no paid edition.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Built for Europe</p>
+      <h2>What European sites need, in the engine itself</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="icon">ICON:server</div><h3>Data that stays put</h3><p>It runs inside your network. If you host
+        it in the cloud, <code>-residency eea</code> (or <code>uk</code>, <code>ch</code>) refuses any connector outside the
+        region you allow.</p></div>
+      <div class="card"><div class="icon">ICON:shield</div><h3>GDPR and UK GDPR</h3><p>Find everything held about a person in every
+        store, give them a copy, and erase it with a second administrator's approval. Legal holds are respected, and the record
+        of processing (Article 30) is produced from the channels.</p></div>
+      <div class="card"><div class="icon">ICON:users</div><h3>37 national patient numbers</h3><p>The NHS number, CHI, KVNR, BSN, the
+        French INS, codice fiscale, the Nordic personal numbers and more. Each is checked by its check digit, so a mistyped
+        number never links two people.</p></div>
+      <div class="card"><div class="icon">ICON:book</div><h3>National code systems</h3><p>SNOMED CT national editions in the
+        country's language, ICD-10-GM and OPS, CIM-10 FR, the UK's ICD-10 and OPCS-4, WHO ICD-10 and ICD-11.</p></div>
+      <div class="card"><div class="icon">ICON:doc</div><h3>IHE document sharing</h3><p>An XDS.b registry and repository, an XCA
+        gateway, MHD, PIXm, PDQm and XDM, tested against the NIST XDS Toolkit. Plus the International Patient
+        Summary.</p></div>
+      <div class="card"><div class="icon">ICON:globe</div><h3>Twelve languages</h3><p>The console and the manual in English,
+        German, French, Dutch, Spanish, Italian, Portuguese, Polish, Swedish, Danish, Norwegian and Finnish.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="profiles">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Tested against national profiles</p>
+      <h2>UK Core, FR Core and ISiK, with the results published</h2>
+      <p>Perfuse turned national sample HL7 v2 messages into FHIR, and the official HL7 validator checked every resource
+        against each country's profiles. Each failure has a reason, and the reasons are listed.</p>
+    </div>
+    <table>
+      <thead><tr><th>Guide</th><th>Messages</th><th>Resources passing</th><th>What is left</th></tr></thead>
+      <tbody>
+        <tr><td>UK Core STU2 2.0.2</td><td>NHS Wales' published v2 examples</td><td>177 of 179</td><td>A US race code in one
+          sample; one terminology-server error</td></tr>
+        <tr><td>FR Core 2.2.0</td><td>ANS's PAM-FR and document examples</td><td>124 of 142</td><td>Encounters from messages
+          with no admission date or visit number</td></tr>
+        <tr><td>ISiK Basismodul 4.0.3</td><td>Invented German messages</td><td>12 of 37</td><td>What ISiK requires and v2 does not
+          carry, such as the contact level and the hospital's IKNR</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">These checks covered the conversion from v2 to FHIR, not a certification. The runs also found and fixed
+      real problems in Perfuse: German code systems, insurance numbers left under their OIDs, practitioners' name types. Those
+      fixes are on the main branch and will be in the next release.
+      <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Every result and how to run it</a>.</p>
+  </div>
+</section>
+
+<section class="band soft" id="plainly">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Plainly</p>
+      <h2>What is not done yet</h2>
+    </div>
+    <ul class="ticks">
+      <li class="caveat">No hospital runs Perfuse in production yet. If you want to be the first, we would like to hear from you, and
+        shadow mode lets you try it on your own traffic without risk.</li>
+      <li class="caveat">The translations were made by machine and have not been reviewed by native speakers.</li>
+      <li class="caveat">Not certified anywhere: no gematik confirmation for ISiK, no national agency approval. The results above
+        are our own runs of the official tools, published so anyone can repeat them.</li>
+      <li class="caveat">The hosting templates for Frankfurt, Ireland and London have been planned against a real AWS account but
+        never applied. The draft data processing agreement has not been read by a lawyer.</li>
+      <li>Support comes from the BioDream team, through <a href="https://github.com/biodream-llc/perfuse/issues">GitHub</a>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="calltoaction">
+  <div class="wrap">
+    <h2>Try it on your own channels</h2>
+    <p>Run <code style="color:#fff">perfuse explain</code> on a Mirth export, or open the public test server with invented data.</p>
+    <div class="actions"><a class="btn btn-primary" href="/download/">Download</a>
+      <a class="btn btn-ghost" href="https://test.perfuse.health/">Public test server</a>
+      <a class="btn btn-ghost" href="/mirth-connect-alternative/">Leaving Mirth</a></div>
+  </div>
+</section>
