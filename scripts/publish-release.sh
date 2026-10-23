@@ -74,6 +74,13 @@ native="dist/perfuse-$(go env GOOS)-$(go env GOARCH)"
 ( cd dist && shasum -a 256 -c SHA256SUMS >/dev/null ) || die "dist/SHA256SUMS does not match the files"
 count=$(ls dist/perfuse-"$NEW"-* | wc -l | tr -d ' ')
 [ "$count" -eq 6 ] || die "expected 6 archives in dist, found $count"
+# Archives record file owners. Every release up to v0.1.19 carried the builder's account name there; refuse any archive
+# that names the account building it, or whose files are not root's.
+me=$(id -un)
+for a in dist/perfuse-"$NEW"-*.tar.gz; do
+  if tar -tvzf "$a" | grep -q -w -F "$me"; then die "$a names the account $me"; fi
+  tar -tvzf "$a" | grep -q -w root || die "$a has files not owned by root"
+done
 
 # ---- 4. Commit, tag, push ---------------------------------------------------------------------------------
 git add $FILES docs/manual/ internal/web/dist

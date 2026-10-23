@@ -68,6 +68,11 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
+## New in v0.1.20
+
+- **Clean downloads.** The same code as v0.1.19. Every Linux and macOS archive before this one recorded the account that built
+  it as the owner of its files; these are root's, and the older archives have been removed from their releases.
+
 ## New in v0.1.19
 
 - **National FHIR profiles, checked:** HL7 v2 converted to FHIR and checked by the HL7 validator against UK Core (NHS Wales'
