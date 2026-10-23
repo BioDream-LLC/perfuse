@@ -72,7 +72,7 @@ only from YAML or the command line is treated as a bug.
 
 - **National FHIR profiles, checked:** HL7 v2 converted to FHIR and checked by the HL7 validator against UK Core (NHS Wales'
   published samples: 177 of 179 resources pass), FR Core (the French agency's samples: 124 of 142) and ISiK (invented German
-  messages: 12 of 37), every remaining error listed with its reason in [conformance/national](conformance/national/README.md).
+  messages: 12 of 37), every remaining error listed with its reason in [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national).
   The runs fixed German year-stamped code systems (`I10G2026`, `OPS2016`: now ICD-10-GM and OPS with their version), national
   numbers left under their OIDs (KVNR, NHS number: now under their national systems, the KVNR typed KVZ10), `PI` patient numbers
   without `use: usual`, and practitioners' name and identifier types (France's IDNPS) being dropped.
