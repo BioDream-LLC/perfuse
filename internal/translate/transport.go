@@ -314,6 +314,17 @@ func (b *builder) buildDestination(d mirth.Connector, where string) (string, boo
 		fmt.Fprintln(&out, "    http:")
 		fmt.Fprintf(&out, "      url: %s\n", yamlString(url))
 
+		// Open Integration Engine 4.7.0's HTTP Sender can send from a chosen local address. Perfuse's sends from whichever
+		// address the system routes by, which matters where a partner's firewall allows one source address only.
+		if d.Properties["overrideLocalBinding"] == "true" {
+			if local := strings.TrimSpace(d.Properties["localAddress"]); local != "" && local != "0.0.0.0" {
+				b.note("warning", where, fmt.Sprintf(
+					"the destination sent from the local address %s, and Perfuse's HTTP destination sends from whichever "+
+						"address the system routes by", local),
+					"Route the partner's address through that interface, or have the partner allow this server's address")
+			}
+		}
+
 		if method := d.Properties["method"]; method != "" &&
 			!strings.EqualFold(method, "post") {
 			fmt.Fprintf(&out, "      method: %s\n", strings.ToUpper(method))

@@ -2,6 +2,7 @@ package translate
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/mirth"
@@ -115,6 +116,12 @@ func (b *builder) buildOtherSource(src mirth.Connector) (string, bool) {
 				p = "/" + p
 			}
 			fmt.Fprintf(&out, "    path: %s\n", yamlString(p))
+		}
+		// Open Integration Engine 4.7.0's HTTP Listener has a request-header limit (requestHeaderSize, 8192 by default). Perfuse
+		// accepts headers up to 1 MB (Go's default), so only a limit above that is worth a word.
+		if n, err := strconv.Atoi(strings.TrimSpace(src.Properties["requestHeaderSize"])); err == nil && n > 1<<20 {
+			b.note("warning", "source", fmt.Sprintf("the HTTP Listener accepted request headers up to %d bytes, and Perfuse's "+
+				"accepts up to 1 MB", n), "Ask the sending system to send smaller headers")
 		}
 		fmt.Fprintln(&out, "    # REVIEW: set a token. Mirth's HTTP Listener accepted anyone who could reach it.")
 		b.note("warning", "source",

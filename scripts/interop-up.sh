@@ -118,7 +118,7 @@ start ibmmq -p 9443:9443 -p 1414:1414 -e LICENSE=accept -e MQ_QMGR_NAME=QM1 -e M
   -e MQ_ADMIN_PASSWORD=passw0rd "${PERFUSE_MQ_IMAGE:-icr.io/ibm-messaging/mq:latest}"
 
 # The Mirth family: where a site leaving Mirth goes. Mirth 4.5.2 is the last open-source release; the Open Integration Engine (the
-# Eclipse fork) and BridgeLink (Innovar's fork) continue it. OIE publishes images only up to 4.5.2, so 4.6.0 is built locally from
+# Eclipse fork) and BridgeLink (Innovar's fork) continue it. OIE publishes images only up to 4.5.2, so 4.6.0 and 4.7.0 are built locally from
 # the project's signed release tarball, with its checksum verified first. OIE's image is amd64 only and runs emulated on Apple silicon.
 echo "== the Mirth family"
 start mirth -p 8443:8443 nextgenhealthcare/connect:4.5.2
@@ -138,6 +138,22 @@ if ! docker image inspect perfuse-local/oie:4.6.0 >/dev/null 2>&1; then
   )
 fi
 start oie460 -p 8446:8443 perfuse-local/oie:4.6.0
+# 4.7.0 the same way.
+if ! docker image inspect perfuse-local/oie:4.7.0 >/dev/null 2>&1; then
+  oie="$HOME/.cache/perfuse-oie470"
+  mkdir -p "$oie"
+  (
+    cd "$oie"
+    curl -sSLO https://github.com/OpenIntegrationEngine/engine/releases/download/v4.7.0/oie_unix_4_7_0.tar.gz
+    curl -sSLO https://github.com/OpenIntegrationEngine/engine/releases/download/v4.7.0/sha256sums
+    grep oie_unix_4_7_0.tar.gz sha256sums | shasum -a 256 -c -
+    rm -rf oie && tar xzf oie_unix_4_7_0.tar.gz
+    # 4.7.0 gives admin a random password on first start (written once to its log); these throwaway containers keep admin/admin.
+    printf 'FROM eclipse-temurin:17-jdk\nCOPY oie /opt/oie\nWORKDIR /opt/oie\nRUN sed -i "s/^server.initialadminpassword *=.*/server.initialadminpassword = admin/" conf/mirth.properties\nENV INSTALL4J_JAVA_HOME_OVERRIDE=/opt/java/openjdk\nEXPOSE 8443\nCMD ["./oieserver"]\n' >Dockerfile
+    docker build -q -t perfuse-local/oie:4.7.0 . >/dev/null
+  )
+fi
+start oie470 -p 8447:8443 perfuse-local/oie:4.7.0
 
 echo
 echo "waiting for HAPI, which is the slow one"
@@ -169,5 +185,5 @@ Ready. What each one unlocks:
 Every one of those tests skips rather than fails when its container is absent, so `make check` passes on a
 machine with no Docker. That is deliberate: a check that needs Docker is a check people stop running.
 
-Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460 localstack rabbitmq azurite mosquitto pubsub fakegcs ibmmq sqledge sbemu
+Stop everything:  docker rm -f hapi activemq orthanc pg sftpd mtls-nginx keycloak mirth oie452 bridgelink oie460 oie470 localstack rabbitmq azurite mosquitto pubsub fakegcs ibmmq sqledge sbemu
 MSG

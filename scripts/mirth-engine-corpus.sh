@@ -22,6 +22,7 @@ ENGINES=(
   "oie452     8444 oie        /opt/engine"
   "bridgelink 8445 bridgelink /opt/bridgelink"
   "oie460     8446 oie        /opt/oie"
+  "oie470     8447 oie        /opt/oie"
 )
 
 want=("$@")

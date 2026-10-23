@@ -40,6 +40,7 @@ var Known = []Engine{
 	{Name: "oie", Base: "https://127.0.0.1:8444"},
 	{Name: "bridgelink", Base: "https://127.0.0.1:8445"},
 	{Name: "oie", Base: "https://127.0.0.1:8446"},
+	{Name: "oie", Base: "https://127.0.0.1:8447"},
 }
 
 // InvalidChannelSentence is what every one of these engines puts in a channel's description when it could not assemble it. They do
