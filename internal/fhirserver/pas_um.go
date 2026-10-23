@@ -44,6 +44,9 @@ type PASUM struct {
 	PayerID string
 	// Log records why a forward failed. Nil discards it.
 	Log *slog.Logger
+	// Inquire sends each $inquire to the UM system too, as a 278 inquiry (005010X215), so that authorizations asked for
+	// some other way (fax, portal, phone, another submitter's 278) are found. Only for a link that answers in real time.
+	Inquire bool
 }
 
 const (

@@ -1007,8 +1007,14 @@ func (s *Server) handlePASInquire(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	params := []any{}
+	now := s.PAS.now().UTC()
 	for _, b := range found {
-		params = append(params, map[string]any{"name": "return", "resource": inquiryResponse(b, s.PAS.now().UTC())})
+		params = append(params, map[string]any{"name": "return", "resource": inquiryResponse(b, now)})
+	}
+	// What the payer's UM system holds beyond this server's own: authorizations asked for by fax, portal, phone or another
+	// submitter's 278 (pas_inquire_um.go).
+	for _, b := range s.inquireUM(r.Context(), req, found, now) {
+		params = append(params, map[string]any{"name": "return", "resource": b})
 	}
 	s.writeJSON(w, http.StatusOK, map[string]any{"resourceType": "Parameters", "parameter": params})
 }

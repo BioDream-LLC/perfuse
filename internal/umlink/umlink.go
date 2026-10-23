@@ -55,6 +55,9 @@ const (
 const (
 	PayloadType278Request  = "X12_278_Request_005010X217E1_2"
 	PayloadType278Response = "X12_278_Response_005010X217E1_2"
+	// The 278 inquiry (005010X215), as the vC3.1.0 payload type table names it for real time; not CORE-required.
+	PayloadType278InquiryRequest  = "X12_278_Request_005010X215"
+	PayloadType278InquiryResponse = "X12_278_Response_005010X215"
 )
 
 // ErrAnswerLater is returned by a batch link once the request is delivered: the answer arrives later, through Poll.
@@ -359,10 +362,19 @@ func (l *Link) namespace() string {
 	return "http://www.caqh.org/SOAP/WSDL/CORERule2.2.0.xsd"
 }
 
+// payloadType is the CORE payload type for a 278: an inquiry (005010X215) or a request for review (005010X217), read from
+// the interchange's own version.
+func payloadType(request []byte) string {
+	if bytes.Contains(request, []byte("005010X215")) {
+		return PayloadType278InquiryRequest
+	}
+	return PayloadType278Request
+}
+
 // metadata are the envelope's fields, in the order the schema's sequence has them.
-func (l *Link) metadata() [][2]string {
+func (l *Link) metadata(request []byte) [][2]string {
 	return [][2]string{
-		{"PayloadType", PayloadType278Request},
+		{"PayloadType", payloadType(request)},
 		{"ProcessingMode", "RealTime"},
 		{"PayloadID", l.cfg.NewID()},
 		// TimeStamp is an xsd:dateTime with its zone, in UTC (vC2.2.0 table 4.4.2).
@@ -455,7 +467,7 @@ func (l *Link) sendSOAP(ctx context.Context, request []byte) ([]byte, error) {
 			`</wsse:UsernameToken></wsse:Security></soapenv:Header>`)
 	}
 	env.WriteString(`<soapenv:Body><cor:COREEnvelopeRealTimeRequest xmlns:cor="` + l.namespace() + `">`)
-	for _, f := range l.metadata() {
+	for _, f := range l.metadata(request) {
 		env.WriteString("<" + f[0] + ">" + xmlText(f[1]) + "</" + f[0] + ">")
 	}
 	payloadID := "payload-" + l.cfg.NewID() + "@perfuse"
@@ -599,7 +611,7 @@ func splitRelated(contentType string, raw []byte) ([]byte, map[string][]byte, er
 func (l *Link) sendMIME(ctx context.Context, request []byte) ([]byte, error) {
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
-	for _, f := range l.metadata() {
+	for _, f := range l.metadata(request) {
 		_ = w.WriteField(f[0], f[1])
 	}
 	if l.cfg.Username != "" {

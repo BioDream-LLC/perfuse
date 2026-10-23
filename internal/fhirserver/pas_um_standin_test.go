@@ -74,7 +74,8 @@ func TestThePASExamplesAreDecidedByAnOutsideUMSystem(t *testing.T) {
 			f := newPASFixture(t)
 			srv := NewServer(f.store, "http://example.test/fhir", nil)
 			srv.Auth = OpenAuth{}
-			srv.PAS = &PAS{Decide: pasRules, Now: newPASFixtureClock, UM: &PASUM{Send: send, SenderID: "PERFUSE", ReceiverID: "STANDINUM", PayerID: "12345"}}
+			srv.PAS = &PAS{Decide: pasRules, Now: newPASFixtureClock, UM: &PASUM{Send: send, SenderID: "PERFUSE", ReceiverID: "STANDINUM", PayerID: "12345",
+				Inquire: !link.Batch()}}
 			h := srv.Handler()
 			ids := map[string]string{}
 			for example, codes := range want {
@@ -99,6 +100,41 @@ func TestThePASExamplesAreDecidedByAnOutsideUMSystem(t *testing.T) {
 				}
 			}
 			if !link.Batch() {
+				// $inquire finds, besides what came through Perfuse, the authorization the stand-in holds from a fax, once,
+				// and nothing Perfuse forwarded a second time.
+				body, _ := os.ReadFile(filepath.Join("testdata", "pas", "Bundle-MedicalServicesAuthorizationBundleExample.json"))
+				code, out := pasPost(t, h, "/Claim/$inquire", string(body))
+				if code != http.StatusOK {
+					t.Fatalf("$inquire: %d %v", code, out)
+				}
+				// The stand-in keeps what every run submitted: an earlier run's requests are, to this server, asked for
+				// elsewhere, and come back; this run's own never do.
+				sent := map[string]bool{}
+				rows, err := srv.Store.db.Query(`SELECT trace FROM pas_um_traces`)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for rows.Next() {
+					var tr string
+					_ = rows.Scan(&tr)
+					sent[tr] = true
+				}
+				rows.Close()
+				fax := 0
+				for _, p := range asSliceAny(out["parameter"]) {
+					cr := claimResponseOf(t, asMapAny(asMapAny(p)["resource"]))
+					if strings.HasPrefix(str(cr["preAuthRef"]), "FAX-") {
+						fax++
+					}
+					for _, id := range asSliceAny(cr["identifier"]) {
+						if im := asMapAny(id); str(im["system"]) == umTraceSystem && sent[str(im["value"])] {
+							t.Errorf("$inquire returned this server's own request %s a second time", im["value"])
+						}
+					}
+				}
+				if fax != 1 || len(sent) == 0 {
+					t.Errorf("$inquire: %d fax authorizations (want 1), %d traces sent: %s", fax, len(sent), toJSON(out))
+				}
 				return
 			}
 			deadline := time.Now().Add(20 * time.Second)
@@ -179,7 +215,7 @@ func TestThePASExamplesAreDecidedByAnOutsideUMSystem(t *testing.T) {
 	var entries []map[string]any
 	_ = json.NewDecoder(resp.Body).Decode(&entries)
 	for _, e := range entries {
-		if e["schema"] != nil || e["envelope"] != nil || e["error"] != nil {
+		if e["schema"] != nil || e["envelope"] != nil || e["error"] != nil || e["inquiryRejected"] != nil {
 			t.Errorf("the stand-in found fault with something sent: %v", e)
 		}
 	}

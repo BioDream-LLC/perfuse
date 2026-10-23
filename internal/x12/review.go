@@ -2,6 +2,7 @@ package x12
 
 import (
 	"fmt"
+	"strings"
 )
 
 // The 278 health care services review: prior authorisation requests and the answers to them.
@@ -100,8 +101,14 @@ type ServiceReview struct {
 	Date string
 	Time string
 
-	// IsResponse reports whether this is an answer rather than a request, from BHT06.
+	// IsResponse reports whether this is an answer rather than a request, from BHT02.
 	IsResponse bool
+
+	// Purpose is BHT02 as sent: 13 request, 11 response; on an inquiry (005010X215) 28 query, and 49 or 52 its response.
+	Purpose string
+
+	// Inquiry reports whether this is a 278 inquiry or its response (005010X215) rather than a request for review (005010X217).
+	Inquiry bool
 
 	// Reviewer is the organisation deciding, and Requester is who asked.
 	Reviewer  Party
@@ -123,8 +130,18 @@ type ServiceReview struct {
 
 // ReviewEvent is one service under review, with its decision when there is one.
 type ReviewEvent struct {
-	// TraceNumber is TRN02: how a response is matched to the request that produced it.
+	// TraceNumber is TRN02: how a response is matched to the request that produced it. The last one sent.
 	TraceNumber string
+
+	// TraceNumbers are every TRN02 in the event, in order: an inquiry's answer carries the payer's own trace beside the one it
+	// repeats from the request.
+	TraceNumbers []string
+
+	// References are the event's REF segments, REF01 to REF02: BB the authorization number, NT the administrative reference.
+	References map[string]string
+
+	// ServiceEndDate is the end of a date range (DTP RD8) whose start is ServiceDate.
+	ServiceEndDate string
 
 	// Category is UM01, what kind of review this is - health services, admission, specialty care.
 	Category string
@@ -173,6 +190,17 @@ type ReviewLine struct {
 	// ProcedureCode is the composite from SV1, SV2 or SV3 depending on the kind of service.
 	ProcedureCode string
 
+	// ProcedureQualifier and Procedure are that composite's first two components: HC and a CPT or HCPCS code, say.
+	ProcedureQualifier string
+	Procedure          string
+
+	// Quantity is the units (SV104, SV205), as sent.
+	Quantity string
+
+	// ServiceDate and ServiceEndDate are the line's dates (DTP 472), CCYYMMDD; the end only for a range.
+	ServiceDate    string
+	ServiceEndDate string
+
 	Outcome             ReviewOutcome
 	ActionCode          string
 	AuthorisationNumber string
@@ -209,9 +237,13 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 	var level string
 	var current *ReviewEvent
 	var currentLine *ReviewLine
+	// eventParty is set once a patient event names a provider (2010EA, NM1): REF segments after it are that provider's.
+	eventParty := false
 
 	for _, s := range segs {
 		switch s.ID {
+		case "ST":
+			review.Inquiry = strings.HasPrefix(s.Element(3).String(), "005010X215")
 		case "BHT":
 			review.ReferenceID = s.Element(3).String()
 			review.Date = s.Element(4).String()
@@ -220,10 +252,17 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 			// is treated as a request, because a request is the safe reading - it has no decision to act on. BHT06 is not used in
 			// the 278 (005010X217); it was once read here instead, which made every conforming response read as a request, and is
 			// still accepted from senders that put the code there too.
-			review.IsResponse = s.Element(2).String() == "11" || s.Element(6).String() == "11"
+			// An inquiry's answer is 49 (Cigna, Blue Cross Blue Shield of Massachusetts) or 52 (UnitedHealthcare).
+			review.Purpose = s.Element(2).String()
+			switch review.Purpose {
+			case "11", "49", "52":
+				review.IsResponse = true
+			}
+			review.IsResponse = review.IsResponse || s.Element(6).String() == "11"
 
 		case "HL":
 			level = s.Element(3).String()
+			eventParty = false
 			switch level {
 			case levelReviewer:
 				review.Reviewer, review.Requester, review.Patient = Party{}, Party{}, Party{}
@@ -263,6 +302,8 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 				review.Requester = party
 			case levelSubscriber, levelDependent:
 				review.Patient = party
+			case levelEvent:
+				eventParty = true
 			}
 
 		case "DMG":
@@ -274,6 +315,15 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 		case "TRN":
 			if current != nil {
 				current.TraceNumber = s.Element(2).String()
+				current.TraceNumbers = append(current.TraceNumbers, current.TraceNumber)
+			}
+
+		case "REF":
+			if current != nil && currentLine == nil && !eventParty && s.Element(1).String() != "" {
+				if current.References == nil {
+					current.References = map[string]string{}
+				}
+				current.References[s.Element(1).String()] = s.Element(2).String()
 			}
 
 		case "UM":
@@ -288,8 +338,17 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 			current.Urgent = isUrgentReview(current.Category, s.Element(6).String())
 
 		case "DTP":
-			if current != nil && current.ServiceDate == "" {
-				current.ServiceDate = s.Element(3).String()
+			start, end, _ := strings.Cut(s.Element(3).String(), "-")
+			if s.Element(2).String() != "RD8" {
+				end = ""
+			}
+			switch {
+			case currentLine != nil:
+				if currentLine.ServiceDate == "" {
+					currentLine.ServiceDate, currentLine.ServiceEndDate = start, end
+				}
+			case current != nil && current.ServiceDate == "":
+				current.ServiceDate, current.ServiceEndDate = start, end
 			}
 
 		case "HI":
@@ -312,11 +371,17 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 		case "SV1", "SV3":
 			if currentLine != nil {
 				currentLine.ProcedureCode = s.Element(1).String()
+				currentLine.ProcedureQualifier, currentLine.Procedure = s.Element(1).Component(1), s.Element(1).Component(2)
+				if s.ID == "SV1" {
+					currentLine.Quantity = s.Element(4).String()
+				}
 			}
 		case "SV2":
 			// SV201 is the revenue code; the procedure is SV202.
 			if currentLine != nil {
 				currentLine.ProcedureCode = s.Element(2).String()
+				currentLine.ProcedureQualifier, currentLine.Procedure = s.Element(2).Component(1), s.Element(2).Component(2)
+				currentLine.Quantity = s.Element(5).String()
 				if currentLine.ProcedureCode == "" {
 					currentLine.ProcedureCode = s.Element(1).String()
 				}
@@ -352,6 +417,12 @@ func (m *Message) ParseServiceReview() (*ServiceReview, error) {
 		}
 	}
 
+	for i := range review.Events {
+		// An inquiry's answer may give the authorization number only as REF BB, beside an HCR with none.
+		if e := &review.Events[i]; e.AuthorisationNumber == "" && e.References["BB"] != "" && e.Outcome != OutcomeRequest {
+			e.AuthorisationNumber = e.References["BB"]
+		}
+	}
 	return review, nil
 }
 

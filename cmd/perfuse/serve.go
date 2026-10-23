@@ -1526,7 +1526,9 @@ oidcDone:
 					return fmt.Errorf("the utilization management link: %w", err)
 				}
 				fhirSrv.PAS.UM = &fhirserver.PASUM{Send: pas278Send(link), SenderID: *um278.sender, ReceiverID: *um278.receiver,
-					PayerID: *um278.payer, Production: *um278.production, Log: log}
+					PayerID: *um278.payer, Production: *um278.production, Log: log,
+					// $inquire asks the UM system too (a 278 inquiry), when it answers in real time.
+					Inquire: !link.Batch()}
 				where := *um278.url
 				if link.Batch() {
 					where = "sftp://" + *um278.sftp

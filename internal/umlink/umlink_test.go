@@ -444,3 +444,34 @@ func (s *sftpServer) knownHosts(t *testing.T) string {
 	_ = os.WriteFile(p, []byte(line), 0o600)
 	return p
 }
+
+// A 278 inquiry (005010X215) goes in a CORE envelope under its own payload type.
+func TestACOREInquiryNamesItsPayloadType(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Fatal(err)
+		}
+		got = strings.Join(r.MultipartForm.Value["PayloadType"], ",")
+		mw := multipart.NewWriter(w)
+		w.Header().Set("Content-Type", mw.FormDataContentType())
+		for _, kv := range [][2]string{{"PayloadType", PayloadType278InquiryResponse}, {"ProcessingMode", "RealTime"},
+			{"ErrorCode", "Success"}, {"ErrorMessage", ""}} {
+			_ = mw.WriteField(kv[0], kv[1])
+		}
+		p, _ := mw.CreateFormFile("Payload", "278.x12")
+		_, _ = io.WriteString(p, response278)
+		_ = mw.Close()
+	}))
+	defer srv.Close()
+	cfg := Config{Transport: TransportCOREMIME, URL: srv.URL, SenderID: "A", ReceiverID: "B", Username: "u", Password: "pw"}
+	fixed(&cfg)
+	l, _ := New(cfg)
+	inquiry := strings.Replace(request278, "ST*278*0001~", "ST*278*0001*005010X215~", 1)
+	if _, err := l.Send(context.Background(), []byte(inquiry)); err != nil {
+		t.Fatal(err)
+	}
+	if got != PayloadType278InquiryRequest {
+		t.Errorf("payload type %q, want %q", got, PayloadType278InquiryRequest)
+	}
+}
