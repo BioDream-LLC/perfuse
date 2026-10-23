@@ -53,6 +53,10 @@ var syntheticSurnames = map[string]bool{
 	// Invented for the patient index tests: one person registered by a hospital and a clinic, written differently.
 	"MOREAU": true,
 
+	// Germany's own placeholder names (Max Mustermann, Erika Musterfrau, as on specimen ID cards), and Turkish "örnek"
+	// (example), for the German messages in conformance/national/testdata/de.
+	"MUSTERMANN": true, "MUSTERFRAU": true, "ÖRNEK": true,
+
 	// The rest come from generate.SyntheticSurnames, merged in by init below rather than
 	// copied here, so this check and the generator cannot disagree about what is synthetic.
 
