@@ -6,7 +6,7 @@ official HL7 validator checks it against the country's profile for that resource
 
   uk  NHS Wales' published v2 examples (GIG-Cymru-NHS-Wales/hl7-v2-examples)  -> UK Core STU2 2.0.2
   fr  the French agency's PAM-FR and document examples (ansforge/hl7V2-exemples) -> FR Core 2.2.0
-  de  invented German messages in messages/de (no real person)                -> ISiK Basismodul 4.0.3 (Stufe 4)
+  de  invented German messages in testdata/de (no real person)                -> ISiK Basismodul 4.0.3 (Stufe 4)
 
 A resource type with no profile in the country's guide is skipped and listed. The result is written to results/<set>.md and
 results/<set>.json: errors and warnings per resource type, and each distinct error message with how often it occurred.
@@ -62,7 +62,7 @@ AUTHORITIES = {
 
 def messages(name, cache):
     if name == "de":
-        d = os.path.join(HERE, "messages", "de")
+        d = os.path.join(HERE, "testdata", "de")
         return sorted(os.path.join(d, f) for f in os.listdir(d) if f.endswith(".hl7"))
     url, commit = SOURCES[name]
     dest = os.path.join(cache, name)

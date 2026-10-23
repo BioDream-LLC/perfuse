@@ -8,7 +8,7 @@ country's guide requires, not a certification, and not a test of Perfuse's FHIR 
 |---|---|---|---|---|
 | `uk` | NHS Wales' published v2 examples ([GIG-Cymru-NHS-Wales/hl7-v2-examples](https://github.com/GIG-Cymru-NHS-Wales/hl7-v2-examples) at 45926af), 22 | UK Core STU2 2.0.2 (`fhir.r4.ukcore.stu2`) | 179 | 177 |
 | `fr` | The French agency's PAM-FR and document examples ([ansforge/hl7V2-exemples](https://github.com/ansforge/hl7V2-exemples) at 6033987), 59 | FR Core 2.2.0 (`hl7.fhir.fr.core`) | 142 | 124 |
-| `de` | Invented German messages in `messages/de` (no real person), 7 | ISiK Basismodul 4.0.3, Stufe 4 (`de.gematik.isik-basismodul`) | 37 | 12 |
+| `de` | Invented German messages in `testdata/de` (no real person), 7 | ISiK Basismodul 4.0.3, Stufe 4 (`de.gematik.isik-basismodul`) | 37 | 12 |
 
 Per resource type and every error message: [results/uk.md](results/uk.md), [results/fr.md](results/fr.md),
 [results/de.md](results/de.md). Run 2026-10-22, validator_cli 6.10.4, FHIR R4, terminology from tx.fhir.org.
