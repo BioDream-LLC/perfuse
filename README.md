@@ -68,6 +68,22 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
+## Since v0.1.20, on main and not yet released
+
+- **`$inquire` finds authorizations asked for any way.** With a UM link that answers in real time, a PAS inquiry is also sent to
+  the UM system as an X12 278 inquiry (005010X215), and every authorization it holds that did not come through Perfuse (a fax, the
+  payer's portal, a phone call, another submitter's 278) comes back as one more inquiry response, its decision, number and period
+  as the UM system gives them; no Claim is made up for it. Checked against a stand-in UM system that judges the inquiry by
+  payers' published 278 inquiry companion guides; not yet with a real one.
+- **HL7 Europe Laboratory Report 2.1.0, checked:** the lab results among the UK, French and German samples, converted and
+  checked against the guide's own profiles: 77 of 391 resources pass, every remaining error with its reason in
+  [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national). The guide's report is a
+  document a sender assembles, and most sample results name no performer or time, which Perfuse does not invent. The run
+  fixed three things in the conversion: results now take their report's time when they send none, name the laboratory that
+  produced them (OBX-15, OBX-23 to OBX-25), and no longer carry a bare date as a SNOMED CT version.
+- **Open Integration Engine 4.7.0** (released 21 October) is in the migration test set: it wrote its own channels, library, group and
+  backup, which import and run, and it accepts every channel Perfuse exports. Its new HTTP Sender local address is reported when set.
+
 ## New in v0.1.20
 
 - **Clean downloads.** The same code as v0.1.20. Every Linux and macOS archive before this one recorded the account that built
@@ -383,7 +399,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Existing Mirth JavaScript runs unchanged</b>: E4X, <code>channelMap</code>, <code>$()</code>, <code>DateUtil</code>, <code>SerializerFactory</code>, and the Java scripts reach for most (<code>HashMap</code>, <code>ArrayList</code>, <code>StringBuilder</code>, <code>SimpleDateFormat</code>, <code>Pattern</code>, Commons <code>StringUtils</code> and <code>Base64</code>: 50 classes) as JavaScript equivalents</li>
 <li><code>perfuse explain</code> says <b>by name</b> what converts, what converts with caveats and what does not</li>
 <li><code>perfuse translate</code> converts channels, groups, code template libraries or a <b>whole server backup</b></li>
-<li><b>Export back</b>: Mirth, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0 all accept the channel files Perfuse writes</li>
+<li><b>Export back</b>: Mirth, OIE 4.5.2, 4.6.0 and 4.7.0, and BridgeLink 26.9.0 all accept the channel files Perfuse writes</li>
 <li>A <b>lock-in audit</b> of the Java your channels depend on</li>
 </ul>
 </td>
@@ -635,7 +651,7 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | Verified against | What it proved |
 |---|---|
 | **Mirth Connect 4.5.2** (real server) | Channels Perfuse exports are accepted and deploy. Found four faults the exporter's own nine passing tests could not see — Mirth stores an invalid channel and *returns success* |
-| **Open Integration Engine 4.5.2 and 4.6.0, BridgeLink 26.9.0** (real servers) | Each wrote its own channels, code template library, group and server backup; every one translates, loads and runs. Found four importer defects, among them a Mapper variable that never reached the script reading it |
+| **Open Integration Engine 4.5.2, 4.6.0 and 4.7.0, BridgeLink 26.9.0** (real servers) | Each wrote its own channels, code template library, group and server backup; every one translates, loads and runs. Found four importer defects, among them a Mapper variable that never reached the script reading it |
 | **Keycloak 26** | SAML sign-in end to end. Found a signature-canonicalisation defect a thousand self-written tests had missed |
 | **Microsoft Entra ID** (real tenant) | SAML sign-in with a real Microsoft account, including an interactive browser sign-in. Found five behaviours no reading of the specification predicts |
 | **HAPI FHIR** | FHIR resources Perfuse produces validate in an independent server |

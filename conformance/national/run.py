@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""National FHIR profiles: Perfuse's HL7 v2 to FHIR conversion checked against UK Core, FR Core and ISiK.
+"""National FHIR profiles: Perfuse's HL7 v2 to FHIR conversion checked against UK Core, FR Core, ISiK and HL7 Europe's
+Laboratory Report.
 
 Each set of real-shaped v2 messages is converted by `perfuse fhir convert`, every resource is pulled out of its bundle, and the
 official HL7 validator checks it against the country's profile for that resource type:
@@ -7,11 +8,12 @@ official HL7 validator checks it against the country's profile for that resource
   uk  NHS Wales' published v2 examples (GIG-Cymru-NHS-Wales/hl7-v2-examples)  -> UK Core STU2 2.0.2
   fr  the French agency's PAM-FR and document examples (ansforge/hl7V2-exemples) -> FR Core 2.2.0
   de  invented German messages in testdata/de (no real person)                -> ISiK Basismodul 4.0.3 (Stufe 4)
+  eu  the lab results (ORU^R01) among all three                                 -> HL7 Europe Laboratory Report 2.1.0
 
 A resource type with no profile in the country's guide is skipped and listed. The result is written to results/<set>.md and
 results/<set>.json: errors and warnings per resource type, and each distinct error message with how often it occurred.
 
-Usage: run.py [-perfuse BIN] [-validator JAR] [-sets uk,fr,de] [-keep DIR]
+Usage: run.py [-perfuse BIN] [-validator JAR] [-sets uk,fr,de,eu] [-keep DIR]
 """
 import argparse
 import collections
@@ -32,6 +34,8 @@ SOURCES = {
 UK = "https://fhir.hl7.org.uk/StructureDefinition/UKCore-"
 FR = "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-"
 ISIK = "https://gematik.de/fhir/isik/StructureDefinition/ISiK"
+EULAB = "http://hl7.eu/fhir/laboratory/StructureDefinition/"
+EUBASE = "http://hl7.eu/fhir/base/StructureDefinition/"
 
 GUIDES = {
     "uk": ("fhir.r4.ukcore.stu2#2.0.2", "UK Core STU2 2.0.2", {
@@ -51,16 +55,39 @@ GUIDES = {
         "Practitioner": ISIK + "PersonImGesundheitsberuf", "Organization": ISIK + "Organisation", "Location": ISIK + "Standort",
         "Procedure": ISIK + "Prozedur", "AllergyIntolerance": ISIK + "AllergieUnvertraeglichkeit",
         "RelatedPerson": ISIK + "Angehoeriger", "Account": ISIK + "Abrechnungsfall"}),
+    # The Laboratory Report guide's own profiles for the report's parts, and HL7 Europe Base's for the people and organisations
+    # it points at (what DiagnosticReport-eu-lab's references name). The report itself is a document (Bundle-eu-lab with a
+    # Composition) a sender assembles; what is checked here is what the v2 conversion produces.
+    "eu": ("hl7.fhir.eu.laboratory#2.1.0", "HL7 Europe Laboratory Report 2.1.0", {
+        "DiagnosticReport": EULAB + "DiagnosticReport-eu-lab", "Observation": EULAB + "Observation-resultslab-eu-lab",
+        "Specimen": EULAB + "Specimen-eu-lab", "ServiceRequest": EULAB + "ServiceRequest-eu-lab",
+        "Patient": EUBASE + "patient-eu-core", "Practitioner": EUBASE + "practitioner-eu-core",
+        "PractitionerRole": EUBASE + "practitionerRole-eu-core", "Organization": EUBASE + "organization-eu-core"}),
 }
 
 # What a site would configure: its assigning authorities as real namespaces. Without them the converter writes a placeholder
 # system and says so, which every national profile rightly rejects.
 AUTHORITIES = {
+    "eu": ["KLINIKUM-MUSTERSTADT=https://fhir.klinikum-musterstadt.example/sid/patientennummer"],
     "de": ["KLINIKUM-MUSTERSTADT=https://fhir.klinikum-musterstadt.example/sid/patientennummer"],
 }
 
 
+def message_type(path):
+    """MSH-9 of the first message in a file, as TYPE^EVENT."""
+    with open(path, "rb") as fh:
+        text = fh.read().decode("utf-8", "replace").lstrip("\ufeff\x0b \r\n")
+    first = text.replace("\n", "\r").split("\r", 1)[0]
+    if not first.startswith("MSH") or len(first) < 4:
+        return ""
+    fields = first.split(first[3])
+    return "^".join(fields[8].split("^")[:2]) if len(fields) > 8 else ""
+
+
 def messages(name, cache):
+    if name == "eu":
+        # Lab results from every set: what a laboratory report is made from.
+        return sorted(m for s in ("uk", "fr", "de") for m in messages(s, cache) if message_type(m).startswith("ORU^R01"))
     if name == "de":
         d = os.path.join(HERE, "testdata", "de")
         return sorted(os.path.join(d, f) for f in os.listdir(d) if f.endswith(".hl7"))

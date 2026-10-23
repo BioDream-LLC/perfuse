@@ -800,6 +800,11 @@ func (c *converter) buildObservation(obxIndex int, patient, encounter, specimen 
 	}
 
 	o.EffectiveDateTime = c.v2DateTime(c.get(prefix+"-14"), prefix+"-14")
+	if o.EffectiveDateTime == "" && c.obrForEffective != "" {
+		// v2 sends OBX-14 only when a result's time differs from its order's: otherwise OBR-7, the observation date of the
+		// report it belongs to, is the time of every result under it.
+		o.EffectiveDateTime = c.v2DateTime(c.get(c.obrForEffective+"-7"), c.obrForEffective+"-7")
+	}
 
 	// OBX-2 says what type OBX-5 holds. Honouring it is what keeps a numeric
 	// result numeric and a textual one textual.
@@ -846,10 +851,44 @@ func (c *converter) buildObservation(obxIndex int, patient, encounter, specimen 
 		c.addEntry(prac, "Practitioner", "")
 		o.Performer = []fhir.Reference{*fhir.Ref("Practitioner", prac.ID)}
 	}
+	// OBX-25 is the performing organisation's medical director, OBX-23 the organisation itself (with OBX-24 its address),
+	// and OBX-15 the producer's id where OBX-23 is not sent: all performers, as HL7's v2-to-FHIR OBX map has them.
+	if prac := c.buildPractitioner(prefix + "-25"); prac != nil {
+		c.addEntry(prac, "Practitioner", "")
+		o.Performer = append(o.Performer, *fhir.Ref("Practitioner", prac.ID))
+	}
+	if org := c.performingOrganization(prefix); org != nil {
+		o.Performer = append(o.Performer, *fhir.Ref("Organization", org.ID))
+	}
 
 	// NTE segments after an OBX are comments on that result. Attaching them to the
 	// right observation needs segment order, so this is approximate and says so.
 	return o
+}
+
+// performingOrganization is the laboratory that produced a result: OBX-23 (XON: name, identifier in .10) with its address
+// in OBX-24, or else OBX-15, the producer's id (CWE: code and text). The same laboratory on many results is one Organization.
+func (c *converter) performingOrganization(prefix string) *fhir.Organization {
+	name, id := c.get(prefix+"-23.1"), c.get(prefix+"-23.10")
+	var addr *fhir.Address
+	if name != "" || id != "" {
+		addr = c.address(prefix + "-24")
+	} else {
+		id, name = c.get(prefix+"-15.1"), c.get(prefix+"-15.2")
+		if id == "" && name == "" {
+			return nil
+		}
+	}
+	org := &fhir.Organization{Name: name}
+	if id != "" {
+		org.Identifier = []fhir.Identifier{{Value: id}}
+	}
+	if addr != nil {
+		org.Address = []fhir.Address{*addr}
+	}
+	org.SetResourceID(c.deterministicID("Organization", "performer|"+id+"|"+name))
+	c.addEntry(org, "Organization", "")
+	return org
 }
 
 func (c *converter) setObservationValue(o *fhir.Observation, prefix, valueType, rawValue, unit string) {

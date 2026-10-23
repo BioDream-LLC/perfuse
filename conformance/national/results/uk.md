@@ -10,9 +10,9 @@
 | Immunization | `UKCore-Immunization` | 7 | 7 | 0 |
 | Location | `UKCore-Location` | 4 | 4 | 0 |
 | Observation | `UKCore-Observation` | 118 | 118 | 0 |
-| Organization | `UKCore-Organization` | 2 | 2 | 0 |
+| Organization | `UKCore-Organization` | 4 | 4 | 0 |
 | Patient | `UKCore-Patient` | 18 | 17 | 1 |
-| Practitioner | `UKCore-Practitioner` | 13 | 13 | 0 |
+| Practitioner | `UKCore-Practitioner` | 14 | 14 | 0 |
 | Specimen | `UKCore-Specimen` | 3 | 2 | 1 |
 
 ## Patient

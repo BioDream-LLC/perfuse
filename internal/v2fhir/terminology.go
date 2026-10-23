@@ -411,6 +411,12 @@ func (c *converter) codedValue(path, sourceLabel string) *fhir.CodeableConcept {
 		coding := fhir.Coding{System: uri, Code: code, Display: display}
 		if uri != "" {
 			coding.Version = version
+			// SNOMED CT names a version as a URI of its edition and date (http://snomed.info/sct/900000000000207008/version/
+			// 20140131). A bare date (CWE-7 "20140131") does not say which edition, and as a version it is an error to a
+			// terminology server, so it is left out rather than guessed at.
+			if uri == "http://snomed.info/sct" && !strings.HasPrefix(version, "http://snomed.info/sct/") {
+				coding.Version = ""
+			}
 		}
 		concept.Coding = append(concept.Coding, coding)
 	}

@@ -58,14 +58,14 @@
    "resources": 118,
    "failing": 0,
    "errors": {},
-   "warnings": 448
+   "warnings": 433
   },
   "Organization": {
    "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Organization",
-   "resources": 2,
+   "resources": 4,
    "failing": 0,
    "errors": {},
-   "warnings": 2
+   "warnings": 4
   },
   "Patient": {
    "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Patient",
@@ -78,10 +78,10 @@
   },
   "Practitioner": {
    "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Practitioner",
-   "resources": 13,
+   "resources": 14,
    "failing": 0,
    "errors": {},
-   "warnings": 13
+   "warnings": 14
   },
   "Specimen": {
    "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Specimen",

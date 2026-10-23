@@ -1,0 +1,68 @@
+{
+ "set": "eu",
+ "guide": "HL7 Europe Laboratory Report 2.1.0",
+ "package": "hl7.fhir.eu.laboratory#2.1.0",
+ "messages": 23,
+ "types": {
+  "DiagnosticReport": {
+   "profile": "http://hl7.eu/fhir/laboratory/StructureDefinition/DiagnosticReport-eu-lab",
+   "resources": 20,
+   "failing": 20,
+   "errors": {
+    "DiagnosticReport.extension: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/DiagnosticReport-eu-lab|2.1.0)": 20,
+    "Slice 'DiagnosticReport.extension:DiagnosticReportCompositionR5' for extension 'http://hl7.org/fhir/5.0/StructureDefinition/extension-DiagnosticReport.composition': a matching slice is required, but not found (from http://hl7.eu/fhir/laboratory/StructureDefinition/DiagnosticReport-eu-lab|2.1.0). Note that other slices are allowed in addition to this required slice": 20
+   },
+   "warnings": 25
+  },
+  "Observation": {
+   "profile": "http://hl7.eu/fhir/laboratory/StructureDefinition/Observation-resultslab-eu-lab",
+   "resources": 302,
+   "failing": 287,
+   "errors": {
+    "Observation.performer: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/Observation-resultslab-eu-lab|2.1.0)": 287,
+    "Observation.effective[x]: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/Observation-resultslab-eu-lab|2.1.0)": 260,
+    "The type 'DocumentReference' is not a valid Target for this element (must be one of [CanonicalType[http://hl7.eu/fhir/base/StructureDefinition/medicalTestResult-eu-core], CanonicalType[http://hl7.org/fhir/StructureDefinition/ImagingStudy]])": 25,
+    "Constraint failed: eu-lab-1: 'If observation status is other then \"registered\" or \"cancelled\", at least one of these Observation elements shall be provided with an actual value:  \"value\", the R5 \"value[x]\" extension, \"dataAbsentReason\", \"hasMember\" or \"component\"' (defined in http://hl7.eu/fhir/laboratory/StructureDefinition/Observation-resultslab-eu-lab)": 16
+   },
+   "warnings": 1253
+  },
+  "Organization": {
+   "profile": "http://hl7.eu/fhir/base/StructureDefinition/organization-eu-core",
+   "resources": 5,
+   "failing": 0,
+   "errors": {},
+   "warnings": 5
+  },
+  "Patient": {
+   "profile": "http://hl7.eu/fhir/base/StructureDefinition/patient-eu-core",
+   "resources": 23,
+   "failing": 5,
+   "errors": {
+    "Patient.birthDate: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/base/StructureDefinition/patient-eu-core|2.0.1)": 4,
+    "The extension http://hl7.org/fhir/us/core/StructureDefinition/us-core-race could not be found so is not allowed here": 1
+   },
+   "warnings": 48
+  },
+  "Practitioner": {
+   "profile": "http://hl7.eu/fhir/base/StructureDefinition/practitioner-eu-core",
+   "resources": 22,
+   "failing": 2,
+   "errors": {
+    "Practitioner.name: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/base/StructureDefinition/practitioner-eu-core|2.0.1)": 2
+   },
+   "warnings": 22
+  },
+  "Specimen": {
+   "profile": "http://hl7.eu/fhir/laboratory/StructureDefinition/Specimen-eu-lab",
+   "resources": 19,
+   "failing": 0,
+   "errors": {},
+   "warnings": 20
+  }
+ },
+ "skipped": {
+  "DocumentReference": 25,
+  "Encounter": 18,
+  "Location": 18
+ }
+}

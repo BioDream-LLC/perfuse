@@ -148,6 +148,9 @@ type converter struct {
 	opts Options
 	res  *Result
 
+	// obrForEffective is the OBR whose results are being built: its OBR-7 times a result that sends no OBX-14.
+	obrForEffective string
+
 	// idSeed makes resource ids deterministic for the same input, so converting
 	// the same message twice produces the same ids and a receiving server sees an
 	// update rather than a duplicate.
@@ -364,6 +367,7 @@ func (c *converter) convertORU() {
 			report.Specimen = []fhir.Reference{*specimenRef}
 		}
 
+		c.obrForEffective = fmt.Sprintf("OBR(%d)", i+1)
 		for _, obxIndex := range obxGroups[i] {
 			obs := c.buildObservation(obxIndex, patientRef, encRef, specimenRef)
 			if obs == nil {
@@ -377,6 +381,7 @@ func (c *converter) convertORU() {
 			c.note("warning", fmt.Sprintf("OBR(%d)", i+1), "DiagnosticReport.result",
 				"this report has no observations attached")
 		}
+		c.obrForEffective = ""
 		c.addEntry(report, "DiagnosticReport", "")
 	}
 }

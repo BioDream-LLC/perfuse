@@ -136,3 +136,68 @@ func TestPractitionerNameTypeAndFrenchNationalType(t *testing.T) {
 		t.Errorf("French national professional identifier = %+v", id)
 	}
 }
+
+// HL7 Europe's Laboratory Report wants every result timed. v2 sends OBX-14 only when a result's time differs from its order's,
+// so a result without one is timed by its OBR-7. And a SNOMED CT version given as a bare date (CWE-7) names no edition, which
+// a terminology server rejects: it is left out.
+func TestResultsTakeTheirOrdersTimeAndSnomedVersionsAreURIsOrNothing(t *testing.T) {
+	raw := message(
+		segment("MSH", mshFields("ORU^R01^ORU_R01", "CTRL-EU", "20261020083000+0200")),
+		segment("PID", map[int]string{1: "1", 3: "4711^^^KH^PI", 5: "Mustermann^Max", 7: "19700101"}),
+		segment("OBR", map[int]string{1: "1", 4: "58410-2^CBC^LN", 7: "20261020071500+0200", 25: "F"}),
+		segment("OBX", map[int]string{1: "1", 2: "NM", 3: "718-7^Hemoglobin^LN", 5: "14.2", 6: "g/dL", 11: "F"}),
+		segment("OBX", map[int]string{1: "2", 2: "NM", 3: "6690-2^WBC^LN", 5: "6.1", 6: "10*3/uL", 11: "F", 14: "20261020080000+0200"}),
+		segment("SPM", map[int]string{1: "1", 4: "119297000^Blood specimen^SCT^^^^20140131"}),
+	)
+	res := convert(t, raw, Options{})
+	times := map[string]string{}
+	for _, o := range findAll[*fhir.Observation](res) {
+		times[o.Code.Coding[0].Code] = o.EffectiveDateTime
+	}
+	if !strings.HasPrefix(times["718-7"], "2026-10-20T07:15") || !strings.HasPrefix(times["6690-2"], "2026-10-20T08:00") {
+		t.Errorf("result times = %v", times)
+	}
+	typed := 0
+	for _, s := range findAll[*fhir.Specimen](res) {
+		if s.Type != nil && len(s.Type.Coding) > 0 {
+			typed++
+			if s.Type.Coding[0].Version != "" {
+				t.Errorf("a bare date as a SNOMED CT version: %+v", s.Type.Coding[0])
+			}
+		}
+	}
+	if typed != 1 {
+		t.Errorf("%d typed specimens, want 1", typed)
+	}
+}
+
+// OBX-23 (with OBX-24) or else OBX-15 names the laboratory that produced a result, and OBX-25 its medical director: each is a
+// performer, as HL7's v2-to-FHIR OBX map has it. One laboratory on several results is one Organization.
+func TestResultsNameTheLaboratoryThatProducedThem(t *testing.T) {
+	raw := message(
+		segment("MSH", mshFields("ORU^R01^ORU_R01", "CTRL-LAB", "20261020083000+0200")),
+		segment("PID", map[int]string{1: "1", 3: "4711^^^KH^PI", 5: "Mustermann^Max"}),
+		segment("OBR", map[int]string{1: "1", 4: "58410-2^CBC^LN", 7: "20261020071500+0200", 25: "F"}),
+		segment("OBX", map[int]string{1: "1", 2: "NM", 3: "718-7^Hemoglobin^LN", 5: "14.2", 11: "F",
+			23: "Zentrallabor Musterstadt^^^^^^^^^LAB-01", 24: "Laborweg 1^^Musterstadt^^12345^DE", 25: "998^Musterfrau^Erika"}),
+		segment("OBX", map[int]string{1: "2", 2: "NM", 3: "6690-2^WBC^LN", 5: "6.1", 11: "F",
+			23: "Zentrallabor Musterstadt^^^^^^^^^LAB-01", 24: "Laborweg 1^^Musterstadt^^12345^DE"}),
+		segment("OBX", map[int]string{1: "3", 2: "NM", 3: "777-3^Platelets^LN", 5: "250", 11: "F", 15: "MYFAC^MyFake Hospital^L"}),
+	)
+	res := convert(t, raw, Options{})
+	orgs := map[string]*fhir.Organization{}
+	for _, o := range findAll[*fhir.Organization](res) {
+		orgs[o.Name] = o
+	}
+	lab, fac := orgs["Zentrallabor Musterstadt"], orgs["MyFake Hospital"]
+	if lab == nil || fac == nil || len(lab.Identifier) != 1 || lab.Identifier[0].Value != "LAB-01" ||
+		len(lab.Address) != 1 || lab.Address[0].City != "Musterstadt" || fac.Identifier[0].Value != "MYFAC" {
+		t.Fatalf("organisations = %+v", orgs)
+	}
+	for _, o := range findAll[*fhir.Observation](res) {
+		want := map[string]int{"718-7": 2, "6690-2": 1, "777-3": 1}[o.Code.Coding[0].Code]
+		if len(o.Performer) != want {
+			t.Errorf("%s: %d performers, want %d", o.Code.Coding[0].Code, len(o.Performer), want)
+		}
+	}
+}

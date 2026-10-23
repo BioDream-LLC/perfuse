@@ -128,7 +128,7 @@ contracts, shadow comparisons, attachment extraction and mapping tables have now
 format, and each is listed before the file is offered. A destination type that cannot be honoured is
 refused by name rather than replaced with something close.
 
-## The Mirth family: Mirth 4.5.2, OIE 4.5.2 and 4.6.0, BridgeLink 26.9.0
+## The Mirth family: Mirth 4.5.2, OIE 4.5.2, 4.6.0 and 4.7.0, BridgeLink 26.9.0
 
 **What was found: four defects in the importer, and three whole document kinds it could not read at all.**
 
@@ -145,6 +145,14 @@ Found:
 - **A Mapper step's variable became a JavaScript global.** Mirth puts it into `channelMap`, where `$('mrn')` reads it; the translated script ran the library on an empty string. Found only by running the translated channel: `TestEveryEnginesADTChannelRunsWithItsLibrary` sends an ADT and an ORU to each engine's translated channel and checks the record number was padded by the library and the ORU filtered.
 
 The other direction: every live test of Perfuse's Mirth export now runs once per engine (`internal/mirth/mirthlive`). Channels Perfuse exports, ten transport pairs among them, load in all four without being marked invalid. BridgeLink stamps its own version (`26.9.0`) on everything it writes; nothing in Perfuse depended on the version being 4.x.
+
+**Open Integration Engine 4.7.0 (23 October 2026).** Built from the project's release tarball (checksum verified) and run the same way:
+it wrote its own corpus and server backup (`internal/mirth/testdata/engines/oie-4.7.0`), which read, translate, load and run like
+the others, and every Perfuse export loads in it without being marked invalid. What changed in its documents: the HTTP Sender writes
+`overrideLocalBinding` and `localAddress`, and the HTTP Listener `requestHeaderSize`. Perfuse's HTTP destination has no local
+binding, so a sender bound to a chosen address is now a warning; its listener accepts headers up to 1 MB, so only a larger limit is.
+4.7.0 also gives `admin` a random password on first start (written once to its log) where earlier engines used `admin`; the test
+container sets `server.initialadminpassword`.
 
 What this does not show: channels authored by hand in each Administrator, which may use settings the corpus does not; and plugins beyond those the images ship.
 
@@ -1110,12 +1118,19 @@ occurrence, when it means every one (deliberately, as in filters).
   55 resources, all in the Region) against a real AWS account but **have never been applied**. The costs are AWS list prices.
 - **National FHIR profiles** (22 October 2026, on main): `conformance/national/run.py` converts NHS Wales' published v2
   examples, the French agency's PAM-FR and document examples, and invented German messages, and the HL7 validator 6.10.4
-  checks every resource against UK Core STU2 2.0.2 (177 of 179 pass), FR Core 2.2.0 (124 of 142) and ISiK Basismodul 4.0.3
+  checks every resource against UK Core STU2 2.0.2 (181 of 183 pass), FR Core 2.2.0 (124 of 142) and ISiK Basismodul 4.0.3
   (12 of 37). The UK failures are a US race code in a Welsh sample and a terminology server error; the French ones Encounters
   whose messages carry no admission date or visit number; the German ones what ISiK requires that v2 does not say (contact
   level, the facility's IKNR, an `MR`-typed patient number, DG1-19). The runs found and fixed: German year-stamped code
   systems (`I10G2026`, `OPS2016`) written to a placeholder system; KVNR and NHS numbers left under their OIDs in the FHIR
   output; `PI` patient numbers without `use: usual`; practitioners' XCN-10 name type and XCN-13 identifier type dropped.
+- **HL7 Europe Laboratory Report 2.1.0** (23 October 2026, on main): the 23 lab result messages (ORU^R01) among those sets,
+  checked against the guide's DiagnosticReport, Observation, Specimen and ServiceRequest profiles and HL7 Europe Base 2.0.1
+  for the people and organisations: 77 of 391 pass. Every report fails on the guide's form (a DiagnosticReport must point at
+  the Composition of an EU lab document, which a v2 result is not); most results on the data (287 name no performer, 260
+  have no time in OBX-14 or OBR-7; 25 French results are an embedded CDA report). Found and fixed: results without OBX-14
+  were not given their OBR-7; OBX-15 and OBX-23 to OBX-25, the producing laboratory and its director, were not read; a
+  SNOMED CT version given as a bare date in CWE-7 was written as the coding's version.
   Per-type results: [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national). Not a test of the FHIR server's ISiK search
   and capability requirements, and not gematik's conformance process (Bestätigungsverfahren).
 
@@ -1175,6 +1190,18 @@ Found and fixed on the way:
 - **Settings that name a flag were not all applied to it.** The table linking them was kept by hand and had fallen behind;
   `-index-identity` was among the missing, so its console switch was saved and then ignored at start. It is now built from the
   settings themselves, and a test holds the two together.
+
+**`$inquire` through the UM system (23 October 2026).** A PAS inquiry is also sent to the UM system as a 278 inquiry
+(005010X215), so authorizations asked for by fax, portal, phone or another submitter's 278 are found; one of PAS's authors
+confirmed on chat.fhir.org that `$inquire` should return them. The stand-in was given a checker for the inquiry written from the
+278 inquiry companion guides UnitedHealthcare, Cigna and Blue Cross Blue Shield of Massachusetts publish (BHT 0007/28, the UMO
+with a payer ID, the requester's NPI, the member's ID with a name or date of birth, one patient event with UM01 and a number or the
+event dates, SE's count), and answers with everything it holds for the member, an authorization it was given by fax among them, in
+the shape of Blue Cross Blue Shield of Massachusetts' sample response (BHT02 49). Over X12, CORE SOAP vC2.2.0 and vC4.0.0 and CORE
+HTTP MIME (payload type `X12_278_Request_005010X215`), the inquiry passed the checker and CAQH's schema, the fax's authorization
+came back once, and none of the requests Perfuse had forwarded came back a second time. The answers validate against PAS 2.2.1's
+inquiry response profiles (the HL7 validator, 6.10.4) except for what the PAS example's own Patient carries. Not tried against a
+real UM system.
 
 Not tested: a real payer or clearinghouse (that needs a trading partner agreement and a test account); CAQH CORE certification,
 which only CAQH's authorised testing vendors do; CORE's batch SOAP operations and the vC4.0.0 REST rule (whose message body
