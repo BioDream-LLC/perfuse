@@ -68,7 +68,17 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
-## Since v0.1.18, on main and not yet released
+## New in v0.1.19
+
+- **National FHIR profiles, checked:** HL7 v2 converted to FHIR and checked by the HL7 validator against UK Core (NHS Wales'
+  published samples: 177 of 179 resources pass), FR Core (the French agency's samples: 124 of 142) and ISiK (invented German
+  messages: 12 of 37), every remaining error listed with its reason in [conformance/national](conformance/national/README.md).
+  The runs fixed German year-stamped code systems (`I10G2026`, `OPS2016`: now ICD-10-GM and OPS with their version), national
+  numbers left under their OIDs (KVNR, NHS number: now under their national systems, the KVNR typed KVZ10), `PI` patient numbers
+  without `use: usual`, and practitioners' name and identifier types (France's IDNPS) being dropped.
+- **A free public payer sandbox** for EHR developers, [perfuse.health/sandbox](https://perfuse.health/sandbox/): Da Vinci CRD, DTR
+  and PAS on test.perfuse.health with published test keys, and a script that runs the whole round.
+- **Go 1.27.3** (GO-2026-6809: crypto/x509 now distrusts compromised intermediates).
 
 - **PIX and PDQ in HL7 version 3:** with the patient index on, `/pixv3` is an IHE PIX Manager (ITI-44 identity feed, with
   merges; ITI-45 query) and `/pdqv3` a PDQ Supplier (ITI-47, with continuation and cancel), over SOAP, from the same index as
