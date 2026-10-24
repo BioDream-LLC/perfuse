@@ -257,7 +257,7 @@ func (a *PersistentAuditLog) reload() error {
 
 	// Sorted, because a file that has been concatenated or restored from parts may not be in order and an audit view
 	// that jumps about in time is one nobody trusts.
-	sort.Slice(loaded, func(i, j int) bool { return loaded[i].Timestamp.Before(loaded[j].Timestamp) })
+	sort.SliceStable(loaded, func(i, j int) bool { return loaded[i].Timestamp.Before(loaded[j].Timestamp) })
 
 	a.AuditLog.mu.Lock()
 	a.AuditLog.entries = loaded

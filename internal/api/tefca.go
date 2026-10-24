@@ -161,8 +161,13 @@ func (s *Server) handleTEFCAAudit(w http.ResponseWriter, r *http.Request, _ *sto
 		return
 	}
 
-	// Newest first, because somebody opening an audit view is nearly always asking what happened recently.
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Timestamp.After(entries[j].Timestamp) })
+	// Newest first, because somebody opening an audit view is nearly always asking what happened recently. Entries come in
+	// the order they were written; reversed and sorted stably, two written within one clock tick (Windows' clock is coarse,
+	// and CI saw it) still show the later one first instead of either order.
+	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
+		entries[i], entries[j] = entries[j], entries[i]
+	}
+	sort.SliceStable(entries, func(i, j int) bool { return entries[i].Timestamp.After(entries[j].Timestamp) })
 
 	// A ceiling on what is returned, with the total reported separately so a truncated answer is visibly truncated.
 	// A page that silently shows the first thousand of fifty thousand exchanges is a page that misleads.
