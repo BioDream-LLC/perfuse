@@ -69,19 +69,24 @@
       <p class="eyebrow">Openbaar getest</p>
       <h2>Nationale FHIR-profielen, met gepubliceerde resultaten</h2>
       <p>Perfuse zette nationale HL7 v2-voorbeeldberichten om naar FHIR, en de officiële HL7-validator controleerde elke
-        resource tegen de profielen van het land. Voor de Nictiz-profielen (zib) is dit nog niet gedaan; dat staat hieronder.</p>
+        resource tegen de profielen van het land, ook tegen de Nictiz-profielen (nl-core, zib 2020).</p>
     </div>
     <table>
       <thead><tr><th>Profielen</th><th>Berichten</th><th>Geldig</th></tr></thead>
       <tbody>
-        <tr><td>UK Core STU2 2.0.2</td><td>Voorbeelden van NHS Wales</td><td>181 van 183</td></tr>
+        <tr><td>UK Core STU2 2.0.2</td><td>Voorbeelden van NHS Wales</td><td>180 van 182</td></tr>
         <tr><td>FR Core 2.2.0</td><td>Voorbeelden van het Franse ANS</td><td>124 van 142</td></tr>
-        <tr><td>ISiK Basismodul 4.0.3</td><td>Verzonnen Duitse berichten</td><td>12 van 37</td></tr>
+        <tr><td>ISiK Basismodul 4.0.3</td><td>Verzonnen Duitse berichten</td><td>18 van 47</td></tr>
+        <tr><td>Nictiz nl-core (zib 2020)</td><td>Verzonnen Nederlandse berichten</td><td>12 van 24; 18 van 24 met het eigen
+          script van het ziekenhuis</td></tr>
+        <tr><td>HL7 Europe Hospital Discharge Report 1.0.0</td><td>De ADT-berichten uit alle sets</td><td>68 van 69</td></tr>
         <tr><td>HL7 Europe Laboratory Report 2.1.0</td><td>De labuitslagen uit alle drie</td><td>77 van 391</td></tr>
       </tbody>
     </table>
     <p class="caption">Elke afwijking heeft een reden, en die staat erbij: meestal gegevens die het v2-bericht niet bevat, en die
-      Perfuse niet verzint. <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Alle resultaten en
+      Perfuse niet verzint. Wat uw eigen systemen wel weten, zoals of een voornaam een voornaam of een voorletter is, voegt een
+      ziekenhuis toe met een eigen script op de FHIR-bestemming. De test vond ook een echte fout: achternamen die in delen worden
+      verzonden (<code>van Voorbeeld&amp;van&amp;Voorbeeld</code>) kwamen in hun geheel in de naam terecht. Dat is opgelost. <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Alle resultaten en
       hoe u ze herhaalt</a>.</p>
   </div>
 </section>
@@ -95,7 +100,9 @@
     <ul class="ticks">
       <li class="caveat">Nog geen ziekenhuis gebruikt Perfuse in productie. Wilt u de eerste zijn, dan horen we graag van u. In
         schaduwmodus kunt u het zonder risico op uw eigen berichten uitproberen.</li>
-      <li class="caveat">Nog niet getest tegen de Nictiz-profielen (zib's) en niet gecertificeerd, ook niet voor NEN 7510.</li>
+      <li class="caveat">Tegen de Nictiz-profielen (nl-core, zib 2020) alleen getest met verzonnen berichten, niet met die van een
+        echt ziekenhuisinformatiesysteem; de Nederlandse SNOMED CT-referentiesets kon de terminologieserver niet controleren.
+        Niet gecertificeerd, ook niet voor NEN 7510.</li>
       <li class="caveat">Deze pagina, de interface en de handleiding zijn machinaal vertaald en nog niet door moedertaalsprekers
         nagelezen. Meld fouten gerust.</li>
       <li class="caveat">Het concept van de verwerkersovereenkomst is nog niet door een jurist gelezen.</li>

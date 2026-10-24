@@ -70,6 +70,12 @@ only from YAML or the command line is treated as a bug.
 
 ## Since v0.1.20, on main and not yet released
 
+- **Da Vinci CRD, DTR and PAS 2.1.0 as well as 2.2.x.** 2.1.0 is the release CMS-0057-F points EHRs at now that 2.0.1's US Core
+  3.1.1 base has expired. Perfuse answers a 2.1.0 caller in 2.1.0: it reads the release from the request, the client's
+  registration (`davinci_version`) or `-davinci-version`, and rewrites the answer where the releases differ. Every 2.1.0 guide's
+  own example requests get answers with no errors from the HL7 validator against 2.1.0; the same calls still pass against
+  2.2.x, and Inferno's 2.2.x suites give the same results as before
+  ([conformance/davinci21](https://github.com/biodream-llc/perfuse/tree/main/conformance/davinci21)). No Inferno kit tests 2.1.0.
 - **`$inquire` finds authorizations asked for any way.** With a UM link that answers in real time, a PAS inquiry is also sent to
   the UM system as an X12 278 inquiry (005010X215), and every authorization it holds that did not come through Perfuse (a fax, the
   payer's portal, a phone call, another submitter's 278) comes back as one more inquiry response, its decision, number and period
@@ -81,6 +87,13 @@ only from YAML or the command line is treated as a bug.
   document a sender assembles, and most sample results name no performer or time, which Perfuse does not invent. The run
   fixed three things in the conversion: results now take their report's time when they send none, name the laboratory that
   produced them (OBX-15, OBX-23 to OBX-25), and no longer carry a bare date as a SNOMED CT version.
+- **HL7 Europe Hospital Discharge Report 1.0.0, ISiK and Nictiz, checked:** the ADT messages among the samples meet the
+  Discharge Report's profiles, 68 of 69. A FHIR destination now takes a `bundle_script`, JavaScript over each converted Bundle,
+  for what a hospital's own systems know and an HL7 v2 message does not say; with the example scripts the invented German
+  messages go from 18 to 42 of 47 valid against ISiK and the Dutch ones from 12 to 18 of 24 against nl-core (zib 2020), the
+  rest listed with its reason in [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national).
+  The runs fixed: `PR1` procedures (not converted before), diagnoses in `Encounter.diagnosis`, family names sent in parts
+  (Dutch `van ...`), OPS categories, and `Procedure.category` written as a list R4 does not allow.
 - **Open Integration Engine 4.7.0** (released 21 October) is in the migration test set: it wrote its own channels, library, group and
   backup, which import and run, and it accepts every channel Perfuse exports. Its new HTTP Sender local address is reported when set.
 
@@ -345,7 +358,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <b>CMS-0057, and drugs for CMS-0062-P</b>
 <ul>
 <li><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b>, with a screen saying which are ready</li>
-<li><b>Da Vinci CRD 2.2.1</b> over CDS Hooks, <b>DTR 2.2.0</b> questionnaire packages, and a <b>PAS 2.2.1 server</b>: <code>$submit</code>, <code>$inquire</code>, <code>$decide</code></li>
+<li><b>Da Vinci CRD 2.2.1</b> over CDS Hooks, <b>DTR 2.2.0</b> questionnaire packages, and a <b>PAS 2.2.1 server</b> (each also answering <b>2.1.0</b> clients): <code>$submit</code>, <code>$inquire</code>, <code>$decide</code></li>
 <li>A <b>reviewer queue</b> for pended requests, with the documents sent for each</li>
 <li>An optional <b>decision service</b> asked about what the rules leave to a reviewer (we recommend <b>Vaglio</b>, source-available; any engine plugs in); any failure pends, never approves</li>
 <li>Claims to <b>CARIN Blue Button 2.2.0</b>, decisions to <b>PDex 2.2.0</b>, <code>$member-match</code>, <code>$davinci-data-export</code>, a <b>Plan-Net</b> directory</li>

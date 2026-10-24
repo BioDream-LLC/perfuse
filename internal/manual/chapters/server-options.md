@@ -23,6 +23,7 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-crd-rules` | string | — | a Da Vinci CRD rules file: serve coverage requirements over CDS Hooks at /cds-services | **Settings › Payers › Prior authorization**: Coverage rules file (Da Vinci CRD) |
 | `-dashboards` | string | — | a file mapping directory groups and roles to the dashboard each opens on | **Settings › Monitoring › Dashboards**: Which dashboard each group opens on (file) |
 | `-data` | string | — | directory for this server's own files (settings, alerts, sign-in configuration, the log): default beside -db when it is a file, the current directory when it is a PostgreSQL URL | — |
+| `-davinci-version` | string | `2.2` | the Da Vinci CRD, DTR and PAS release answered when neither a request nor its client's registration says: 2.2 (CRD 2.2.1, DTR 2.2.0, PAS 2.2.1) or 2.1 (2.1.0) | — |
 | `-db` | string | `./perfuse.db` | database for users, messages and stored resources: a file, or a postgres:// URL for servers that share one store (a cluster) | — |
 | `-demo-account` | string | — | for a public demonstration server: username:password of a shared viewer account shown on the sign-in page | — |
 | `-dicomweb-archive` | string | — | keep imaging objects in this directory and serve them over DICOMweb (QIDO-RS, WADO-RS, WADO-URI, STOW-RS) at /dicomweb | **Settings › Data › Imaging archive**: Keep images in this folder and serve them over DICOMweb |
@@ -66,7 +67,7 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-node-address` | string | — | this server's console URL as the other servers and a load balancer reach it | — |
 | `-node-name` | string | — | this server's name in the cluster (default: an id kept in -data) | — |
 | `-oidc` | string | — | YAML file configuring OpenID Connect sign-in (default: oidc.yaml beside the database, once saved in the console) | — |
-| `-pas` | on/off | — | serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result | **Settings › Payers › Prior authorization**: Da Vinci PAS prior authorization server |
+| `-pas` | on/off | — | serve Da Vinci PAS 2.2.1 and 2.1.0 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result | **Settings › Payers › Prior authorization**: Da Vinci PAS prior authorization server |
 | `-pas-278-ca` | string | — | a PEM file of certificate authorities to trust for the UM system beside the system's | **Settings › Payers › Utilization management link**: Certificate authorities to trust for the UM system |
 | `-pas-278-cert` | string | — | a PEM client certificate for X.509 mutual TLS with the UM system (CORE's authentication) | **Settings › Payers › Utilization management link**: Client certificate file |
 | `-pas-278-core-receiver` | string | — | the CORE envelope's ReceiverID, as the UM system's connectivity guide gives it (default: -pas-278-receiver) | **Settings › Payers › Utilization management link**: CORE envelope ReceiverID |

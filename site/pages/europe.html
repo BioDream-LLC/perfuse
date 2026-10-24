@@ -76,19 +76,26 @@
     <table>
       <thead><tr><th>Guide</th><th>Messages</th><th>Resources passing</th><th>What is left</th></tr></thead>
       <tbody>
-        <tr><td>UK Core STU2 2.0.2</td><td>NHS Wales' published v2 examples</td><td>181 of 183</td><td>A US race code in one
+        <tr><td>UK Core STU2 2.0.2</td><td>NHS Wales' published v2 examples</td><td>180 of 182</td><td>A US race code in one
           sample; one terminology-server error</td></tr>
         <tr><td>FR Core 2.2.0</td><td>ANS's PAM-FR and document examples</td><td>124 of 142</td><td>Encounters from messages
           with no admission date or visit number</td></tr>
-        <tr><td>ISiK Basismodul 4.0.3</td><td>Invented German messages</td><td>12 of 37</td><td>What ISiK requires and v2 does not
-          carry, such as the contact level and the hospital's IKNR</td></tr>
+        <tr><td>ISiK Basismodul 4.0.3</td><td>Invented German messages</td><td>18 of 47; 42 of 47 with the hospital's own
+          script</td><td>What ISiK requires and v2 does not carry, such as the contact level and the hospital's IKNR, which the
+          hospital adds</td></tr>
+        <tr><td>Nictiz nl-core (zib 2020)</td><td>Invented Dutch messages</td><td>12 of 24; 18 of 24 with the hospital's own
+          script</td><td>Codes the terminology server could not check against Dutch SNOMED CT reference sets</td></tr>
+        <tr><td>HL7 Europe Hospital Discharge Report 1.0.0</td><td>The ADT messages among all sets</td><td>68 of 69</td><td>A US
+          race code in one Welsh sample</td></tr>
         <tr><td>HL7 Europe Laboratory Report 2.1.0</td><td>The lab results among all three sets</td><td>77 of 391</td><td>The
           guide's report is a document a sender assembles; most sample results name no performer or time</td></tr>
       </tbody>
     </table>
     <p class="caption">These checks covered the conversion from v2 to FHIR, not a certification. The runs also found and fixed
-      real problems in Perfuse: German code systems, insurance numbers left under their OIDs, practitioners' name types. Those
-      fixes are on the main branch and will be in the next release.
+      real problems in Perfuse: German code systems, insurance numbers left under their OIDs, practitioners' name types, procedures
+      not converted, Dutch family names sent in parts. What a profile needs and a message cannot say, a hospital adds with a
+      script of its own on the FHIR destination; Perfuse does not guess it. Those fixes are on the main branch and will be in
+      the next release.
       <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Every result and how to run it</a>.</p>
   </div>
 </section>

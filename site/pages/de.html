@@ -77,18 +77,24 @@
     <table>
       <thead><tr><th>Ressource</th><th>Ergebnis</th><th>Warum</th></tr></thead>
       <tbody>
-        <tr><td>Standort, Person im Gesundheitsberuf</td><td>12 von 14 gültig</td><td>Zwei Ärztinnen ohne Namensart in der
+        <tr><td>Standort, Person im Gesundheitsberuf</td><td>15 von 17 gültig</td><td>Zwei Ärztinnen ohne Namensart in der
           Nachricht (XCN-10)</td></tr>
-        <tr><td>Kontakt (Encounter)</td><td>0 von 7</td><td>ISiK verlangt die Kontaktebene, die in keinem v2-Feld steht</td></tr>
-        <tr><td>Organisation</td><td>0 von 7</td><td>ISiK verlangt das IKNR, die Nachrichten nennen nur den Namen</td></tr>
-        <tr><td>Patient</td><td>0 von 7</td><td>ISiK verlangt die Patientennummer mit Typ MR, die Nachrichten senden PI</td></tr>
-        <tr><td>Diagnose</td><td>0 von 2</td><td>Ohne Feststellungsdatum (DG1-19) fehlt <code>recordedDate</code></td></tr>
+        <tr><td>Kontakt (Encounter)</td><td>0 von 8; mit dem Skript des Hauses 8 von 8</td><td>ISiK verlangt die Kontaktebene und den
+          Diagnosetyp, die in keinem v2-Feld stehen</td></tr>
+        <tr><td>Organisation</td><td>0 von 8; mit dem Skript 8 von 8</td><td>ISiK verlangt das IKNR, die Nachrichten nennen nur den
+          Namen</td></tr>
+        <tr><td>Patient</td><td>0 von 8; mit dem Skript 8 von 8</td><td>ISiK verlangt die Patientennummer mit Typ MR, die Nachrichten
+          senden PI</td></tr>
+        <tr><td>Diagnose</td><td>2 von 4</td><td>Ohne Feststellungsdatum (DG1-19) fehlt <code>recordedDate</code></td></tr>
+        <tr><td>Allergie, Prozedur</td><td>1 von 2</td><td>Der Validator liest die OPS-Version <code>*</code> der Basisprofile
+          wörtlich und lehnt <code>2026</code> ab</td></tr>
       </tbody>
     </table>
-    <p class="caption">Was die Nachricht nicht sagt, erfindet Perfuse nicht. Ein Haus ergänzt es mit einem Transformationsschritt,
-      der sein IKNR und die Kontaktebene kennt. Der Lauf hat auch echte Fehler in Perfuse gefunden: ICD-10-GM- und
+    <p class="caption">Was die Nachricht nicht sagt, erfindet Perfuse nicht. Ein Haus ergänzt es mit einem eigenen Skript auf
+      dem FHIR-Ziel, das sein IKNR und die Kontaktebene kennt; mit dem Beispielskript sind 42 von 47 Ressourcen gültig, ohne
+      es 18. Die OPS-Kategorie nach SNOMED CT setzt Perfuse selbst, nach der ConceptMap von HL7 Deutschland. Der Lauf hat auch echte Fehler in Perfuse gefunden: ICD-10-GM- und
       KVNR-Angaben in Formen, die kein deutsches System liest, und fehlende Namensarten. Sie sind behoben und kommen mit der
-      nächsten Version. Gegen UK Core bestehen 181 von 183 Ressourcen, gegen FR Core 124 von 142, gegen den
+      nächsten Version. Gegen UK Core bestehen 180 von 182 Ressourcen, gegen FR Core 124 von 142, gegen den
       Laborbefund von HL7 Europe (Laboratory Report 2.1.0) 77 von 391: Dort verlangt der Leitfaden ein ganzes Dokument, und den
       meisten Beispielbefunden fehlen Durchführende und Zeitpunkt.
       <a href="https://github.com/biodream-llc/perfuse/tree/main/conformance/national">Alle Ergebnisse und wie man sie

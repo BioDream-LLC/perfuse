@@ -232,7 +232,7 @@ The message type decides what is produced, and every conversion reports the judg
 
 | v2 | FHIR |
 | --- | --- |
-| `ADT` | Patient, an Encounter when there is a visit, a Condition per `DG1` diagnosis and an AllergyIntolerance per `AL1`. `A28`, `A31`, `A29` and `A24` are about the person, so they produce no Encounter or diagnoses, but do carry allergies. |
+| `ADT` | Patient, an Encounter when there is a visit, a Condition per `DG1` diagnosis (also listed in the Encounter's `diagnosis`, an admitting one as `AD`), a Procedure per `PR1` and an AllergyIntolerance per `AL1`. `A28`, `A31`, `A29` and `A24` are about the person, so they produce no Encounter or diagnoses, but do carry allergies. |
 | `ORU` | DiagnosticReport per `OBR`, with its Observations and Specimen. Results are grouped under the `OBR` before them by position, because `OBX-4` is not reliable. |
 | `ORM`, `OML`, `OMG` | ServiceRequest. |
 | `SIU` | Appointment, with the patient, the practitioners from `AIP` and the locations from `AIL`. |
@@ -282,6 +282,46 @@ This is what CMS Interoperability Framework criterion 14 asks for: chart notes a
 - **Visits.** An `A08` with a discharge date (`PV1-45`) is a finished encounter. A missing or unknown patient class is the null
   flavor `UNK`, because R4 requires a class.
 - **Z segments** are named in a warning, since there is no standard map for them.
+
+- **Names.** When the sender splits a family name (`XPN.1`, `XCN.2`) into its parts - a surname prefix and a surname, the person's
+  own and a partner's, as Dutch and Flemish names are sent - `family` is the whole name and the parts go in HL7's family-name
+  extensions (`humanname-own-prefix`, `-own-name`, `-partner-prefix`, `-partner-name`).
+- **Procedures.** `PR1` becomes a Procedure with status `unknown`, since an ADT does not say whether it was done or planned; the
+  anaesthetist (`PR1-8`) and surgeon (`PR1-11`) are performers with SNOMED CT roles. An OPS code also gets its SNOMED CT category
+  from its chapter, by HL7 Deutschland's `OPS-SNOMED-Category` map, which ISiK requires.
+
+### What a site adds: the bundle script
+
+A national profile often wants what an HL7 v2 message does not carry: a hospital's IK number or ODS code, which contact level a
+visit is (ISiK), whether a given name is a first name or an initial (the Dutch nl-core). Perfuse does not guess those. A `fhir`
+destination's `bundle_script` is where a site writes them: JavaScript run on each converted Bundle, as `bundle`, before it is
+validated and sent. What the script leaves is what goes out, checked like any conversion, and a script that throws fails the
+message as any transformer does. The console has it under the destination's *Add what your systems know*.
+
+```yaml
+destinations:
+  - name: kis
+    type: fhir
+    fhir:
+      url: https://fhir.klinikum.example/fhir
+      version: "4.0.1"
+      identifier_systems: {KLINIKUM-MUSTERSTADT: "https://fhir.klinikum-musterstadt.example/sid/patientennummer"}
+      bundle_script: |
+        bundle.entry.forEach(function (e) {
+          if (e.resource.resourceType === "Organization" && e.resource.name === "KLINIKUM-MUSTERSTADT") {
+            e.resource.identifier = [{system: "http://fhir.de/sid/arge-ik/iknr", value: "260326822"}];
+          }
+        });
+```
+
+`perfuse fhir convert -bundle-script FILE` runs the same script, so a site can try it on its own messages first. Two worked
+examples are in the repository: `examples/isik/bundle-script.js` (IKNR, Kontaktebene, MR-typed patient number, Diagnosetyp)
+and `examples/nictiz/bundle-script.js` (first names and initials). With them the invented German and Dutch messages in
+`conformance/national` go from 18 to 42 of 47 resources valid against ISiK and from 12 to 18 of 24 against nl-core; what is
+left is in the messages or the terminology server, and is listed there.
+
+The Bundle goes through Perfuse's model on its way back, so a script's changes are checked and written in the destination's
+FHIR version. Members the model has no field for are kept as the script wrote them, inside data types too.
 
 ### US Core 9.0.0 and USCDI v6
 

@@ -342,6 +342,35 @@ sets, and an inactive RxNorm code in the test data.
 
 What this does not show: conversions of messages from a real EHR feed, or an ONC certification test (Inferno) run.
 
+## Da Vinci CRD, DTR and PAS 2.1.0, beside 2.2.x (24 October 2026)
+
+**What was found: five places where a 2.1.0 client was answered in 2.2.x's form, and one where DTR 2.1.0 forbids what 2.2.0
+allows.**
+
+CMS-0057-F recommends CRD, DTR and PAS 2.0.1 and 2.1.0; the 2.0.1 releases rest on US Core 3.1.1, which expired on 1 January 2026.
+No Inferno kit tests 2.1.0, so `conformance/davinci21/run.py` sends each 2.1.0 guide's own example requests to Perfuse and has
+the HL7 validator (6.10.4, terminology off) check every answer against the 2.1.0 packages (`hl7.fhir.us.davinci-crd#2.1.0`,
+`-dtr#2.1.0`, `-pas#2.1.0`), then makes the same calls naming no version and checks them against 2.2.1, 2.2.0 and 2.2.1.
+
+Before the change every 2.1.0 answer failed: the profiles claimed 2.2.x, DTR's package was named `packagebundle` (2.1.0 says
+`PackageBundle`), its QuestionnaireResponse used `qr-coverage` (not in 2.1.0), PAS answers carried `claimResponseReviewer` and
+the transmission, admission and discharge extensions 2.1.0 does not define, and `$next-question` refused 2.1.0's parameter name
+(`in`). Perfuse now reads the release a caller speaks from the request, then the client's registration (`davinci_version`), then
+`-davinci-version`, decides and stores in the 2.2.x form, and rewrites for a 2.1.0 caller as it sends (`internal/davinci`,
+`internal/crd/v21.go`, `internal/fhirserver/pas21.go`). The check of the adaptive questionnaire also found that DTR 2.1.0 forbids
+`enableWhen` on the items of the questionnaire a `$next-question` returns (and a `url` on it, while 2.2.0 requires one): both are
+now written as each release wants.
+
+After: no errors in Perfuse's answers for either release: CRD's two order-sign examples (the second turns coverage-info off and
+gets the empty answer CRD asks for), DTR's `$questionnaire-package` (the guide's input, and an adaptive questionnaire),
+`$next-question` and `$log-questionnaire-errors`, and PAS's five request Bundles and its inquiry. What the validator still
+reports is in the guides' own examples, returned as sent: example.org URLs; the guide's `SubscriberExample` patient, which does
+not meet `profile-beneficiary` (the guide's own request Bundle fails the same check); a 2.1.0 Coverage with no identifier,
+which 2.2.1 requires. Inferno's 2.2.x suites were re-run on the change: PAS 82 pass, 2 fail; CRD 92 pass, none failed; DTR 43 pass,
+1 omit, 2 fail, the same as before.
+
+What this does not show: a 2.1.0 client from an EHR vendor talking to Perfuse. These are the guides' examples, sent by a script.
+
 ## Da Vinci CRD 2.2.1 and DTR 2.2.0, against the official HL7 validator
 
 The order CRD updates (a DeviceRequest carrying the coverage-information extension), the whole CDS Hooks response validated against
@@ -438,6 +467,16 @@ request) and `addItem.extension:productOrServiceCodeEnd`.
 
 Run again with Perfuse's own authorization server (`-smart-clients`) in place of Keycloak, the kit's backend client registered with
 its own public keys and its token from `/auth/token`: the same 82 of 84.
+
+**The subscription channel header fix, before its release (24 October 2026).** The PAS kit's notification checks come from the
+Subscriptions test kit, which up to v0.13.0 added its own `Authorization` header to a channel beside the one the kit's sample
+Subscription already carries (subscriptions-test-kit#48, reported from here). The PAS run has had to drop the sample's header.
+The fix is on that kit's main branch (commit 0c71363), not in a release yet; run with it (`SUBSCRIPTIONS_KIT_REF=0c713638
+PAS_KEEP_SAMPLE_HEADER=1 conformance/inferno/run.sh pas`) and the sample's header kept, every subscription and notification test
+passes: creation, handshake, delivery, and the pended request's full-resource notification. Overall 80 pass, 2 fail (the same
+ClaimResponse must-support findings), 2 skip: the kit then needs inferno_core 1.5.0, under which two must-support checks of the
+kit's own request data (a Coverage `relationship` X12 code) no longer find what they found under 1.4.3. Until the fix is
+released, the recorded run stays the released kit with the sample's header dropped.
 
 The request bundles were the kit's own, for its client simulation. They are identical for approval, denial and pending, because
 Inferno's simulated payer is told what to answer; for a payer that decides from what is asked, the denial asked for dialysis and the
@@ -1118,12 +1157,14 @@ occurrence, when it means every one (deliberately, as in filters).
   55 resources, all in the Region) against a real AWS account but **have never been applied**. The costs are AWS list prices.
 - **National FHIR profiles** (22 October 2026, on main): `conformance/national/run.py` converts NHS Wales' published v2
   examples, the French agency's PAM-FR and document examples, and invented German messages, and the HL7 validator 6.10.4
-  checks every resource against UK Core STU2 2.0.2 (181 of 183 pass), FR Core 2.2.0 (124 of 142) and ISiK Basismodul 4.0.3
+  checks every resource against UK Core STU2 2.0.2 (180 of 182 pass), FR Core 2.2.0 (124 of 142) and ISiK Basismodul 4.0.3
   (12 of 37). The UK failures are a US race code in a Welsh sample and a terminology server error; the French ones Encounters
   whose messages carry no admission date or visit number; the German ones what ISiK requires that v2 does not say (contact
   level, the facility's IKNR, an `MR`-typed patient number, DG1-19). The runs found and fixed: German year-stamped code
   systems (`I10G2026`, `OPS2016`) written to a placeholder system; KVNR and NHS numbers left under their OIDs in the FHIR
   output; `PI` patient numbers without `use: usual`; practitioners' XCN-10 name type and XCN-13 identifier type dropped.
+  Per-type results: [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national). Not a test of the FHIR server's ISiK search
+  and capability requirements, and not gematik's conformance process (Bestätigungsverfahren).
 - **HL7 Europe Laboratory Report 2.1.0** (23 October 2026, on main): the 23 lab result messages (ORU^R01) among those sets,
   checked against the guide's DiagnosticReport, Observation, Specimen and ServiceRequest profiles and HL7 Europe Base 2.0.1
   for the people and organisations: 77 of 391 pass. Every report fails on the guide's form (a DiagnosticReport must point at
@@ -1131,8 +1172,24 @@ occurrence, when it means every one (deliberately, as in filters).
   have no time in OBX-14 or OBR-7; 25 French results are an embedded CDA report). Found and fixed: results without OBX-14
   were not given their OBR-7; OBX-15 and OBX-23 to OBX-25, the producing laboratory and its director, were not read; a
   SNOMED CT version given as a bare date in CWE-7 was written as the coding's version.
-  Per-type results: [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national). Not a test of the FHIR server's ISiK search
-  and capability requirements, and not gematik's conformance process (Bestätigungsverfahren).
+- **HL7 Europe Hospital Discharge Report 1.0.0, ISiK with a site's own step, and Nictiz nl-core** (24 October 2026, on
+  main). The 15 patient administration messages (ADT) among the sets, against the Discharge Report's profiles: 68 of 69 pass,
+  the one failure the Welsh US race code. As with the lab report, the discharge report is a document a sender assembles from
+  these. The run found PR1 not converted at all (now a Procedure, by HL7's v2-to-FHIR PR1 map, status `unknown` since an ADT
+  does not say whether it was done) and DG1 missing from `Encounter.diagnosis` (now there, the admitting one as `AD`); a new
+  invented German discharge supplies a stay with a procedure and an allergy. ISiK, with the 8 German messages: 18 of 47 on
+  their own. What ISiK requires and v2 does not carry (IKNR, the contact level, an MR-typed patient number, the diagnosis type)
+  a hospital adds with a FHIR destination's new `bundle_script`, JavaScript over each converted Bundle before it is checked and
+  sent; with the example script (`examples/isik/bundle-script.js`, the hospital's own facts, not derived from the message) 42
+  of 47 pass. Left: two diagnoses without DG1-19, two practitioners without XCN-10, and one OPS coding the validator refuses
+  because it reads Basis DE's value-set version `*` literally. The ISiK run also found that `Procedure.category` was written as
+  a list, which R4 does not allow, and that OPS codes had no SNOMED CT category (now from the code's chapter, by HL7
+  Deutschland's `OPS-SNOMED-Category` map). Nictiz nl-core 0.12.1-beta.1 (zib 2020), with 3 invented Dutch messages: 12 of 24,
+  18 of 24 with the hospital's script saying which given names are first names and which initials
+  (`examples/nictiz/bundle-script.js`). The other six are codes tx.fhir.org could not check against Dutch SNOMED CT reference
+  sets. The Dutch run found family names sent in parts (FN subcomponents: `van Voorbeeld&van&Voorbeeld`) written whole into
+  `family`; they are now the surname with its parts in HL7's family-name extensions, and Dutch v2's BSN issuer `NLMINBIZA` is
+  known. Not a test of Nictiz's own qualification, of any HIS's real messages, or of the Dutch reference sets.
 
 ### Bulk Data Access v2.0.0, the first run
 
