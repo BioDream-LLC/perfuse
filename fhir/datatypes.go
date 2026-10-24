@@ -131,13 +131,20 @@ type HumanName struct {
 	// department. Without this field there was no way to represent it, so a legitimate resource could not be expressed.
 	Extension []Extension `json:"extension,omitempty"`
 
-	Use    string   `json:"use,omitempty"`
-	Text   string   `json:"text,omitempty"`
-	Family string   `json:"family,omitempty"`
-	Given  []string `json:"given,omitempty"`
-	Prefix []string `json:"prefix,omitempty"`
-	Suffix []string `json:"suffix,omitempty"`
-	Period *Period  `json:"period,omitempty"`
+	Use    string `json:"use,omitempty"`
+	Text   string `json:"text,omitempty"`
+	Family string `json:"family,omitempty"`
+	// FamilyElement holds the family name's own extensions: its parts, where a family name is made of a prefix and a surname
+	// and of the person's own name and a partner's (HL7's humanname-own-prefix, -own-name, -partner-prefix, -partner-name),
+	// as Dutch, Flemish and German names are.
+	FamilyElement *Element `json:"_family,omitempty"`
+	Given         []string `json:"given,omitempty"`
+	// GivenElement holds each given name's extensions, by position (nil where one has none): whether it is a full name or an
+	// initial (iso21090-EN-qualifier BR, IN), which the Dutch nl-core profiles ask of every given name.
+	GivenElement []*Element `json:"_given,omitempty"`
+	Prefix       []string   `json:"prefix,omitempty"`
+	Suffix       []string   `json:"suffix,omitempty"`
+	Period       *Period    `json:"period,omitempty"`
 }
 
 // Address is a postal address.

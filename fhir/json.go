@@ -305,6 +305,34 @@ func downgradeToR4(tree map[string]any, resourceType string) {
 			}
 		}
 
+		// R5's diagnosis lists conditions and uses; R4's has one condition reference and one use per entry. An R5 entry
+		// naming several conditions becomes one R4 entry per condition, each with the first use.
+		if diags, ok := tree["diagnosis"].([]any); ok {
+			var out []any
+			for _, d := range diags {
+				dm, _ := d.(map[string]any)
+				conds, _ := dm["condition"].([]any)
+				uses, _ := dm["use"].([]any)
+				for _, c := range conds {
+					cm, _ := c.(map[string]any)
+					ref, ok := cm["reference"]
+					if !ok {
+						continue // R4 has no coded diagnosis without a Condition
+					}
+					entry := map[string]any{"condition": ref}
+					if len(uses) > 0 {
+						entry["use"] = uses[0]
+					}
+					out = append(out, entry)
+				}
+			}
+			if out != nil {
+				tree["diagnosis"] = out
+			} else {
+				delete(tree, "diagnosis")
+			}
+		}
+
 		// R4's class is a single Coding; R5's is a list of CodeableConcept.
 		if classes, ok := tree["class"].([]any); ok && len(classes) > 0 {
 			if first, ok := classes[0].(map[string]any); ok {
@@ -696,6 +724,20 @@ func upgradeShapes(tree map[string]any, resourceType string) bool {
 	case "Encounter":
 		move(tree, "period", "actualPeriod")
 		move(tree, "hospitalization", "admission")
+		// R4's diagnosis: one condition reference (an object with reference, not a list) and one use.
+		if diags, ok := tree["diagnosis"].([]any); ok {
+			for _, d := range diags {
+				dm, _ := d.(map[string]any)
+				if c, ok := dm["condition"].(map[string]any); ok {
+					dm["condition"] = []any{map[string]any{"reference": c}}
+					if u, ok := dm["use"].(map[string]any); ok {
+						dm["use"] = []any{u}
+					}
+					delete(dm, "rank")
+					changed = true
+				}
+			}
+		}
 		if codes, ok := tree["reasonCode"].([]any); ok {
 			var vals []any
 			for _, c := range codes {
@@ -1015,4 +1057,54 @@ func upgradeEncounterStatus(status string) string {
 	// Unrecognised in either set. Returned unchanged so validation reports it by name, rather than silently becoming
 	// "unknown" - which would turn a typo into a stored encounter whose status nobody asked for.
 	return status
+}
+
+// UnmarshalBundle parses a Bundle with every entry's resource read as UnmarshalResource reads one (its own type, R4 shapes
+// accepted, members the struct does not model kept). UnmarshalResource alone cannot fill a Bundle's entries: Resource is an
+// interface, and which struct each entry needs is in the entry.
+func UnmarshalBundle(data []byte) (*Bundle, error) {
+	var outer struct {
+		ResourceType string            `json:"resourceType"`
+		Entry        []json.RawMessage `json:"entry"`
+	}
+	if err := json.Unmarshal(data, &outer); err != nil {
+		return nil, fmt.Errorf("fhir: not valid JSON: %w", err)
+	}
+	if outer.ResourceType != "Bundle" {
+		return nil, fmt.Errorf("fhir: a %q, not a Bundle", outer.ResourceType)
+	}
+	var tree map[string]any
+	if err := json.Unmarshal(data, &tree); err != nil {
+		return nil, err
+	}
+	delete(tree, "entry")
+	shell, err := json.Marshal(tree)
+	if err != nil {
+		return nil, err
+	}
+	b := &Bundle{}
+	if err := json.Unmarshal(shell, b); err != nil {
+		return nil, fmt.Errorf("fhir: reading Bundle: %w", err)
+	}
+	keepUnmodelled(b, shell)
+	for i, raw := range outer.Entry {
+		var e struct {
+			FullURL  string             `json:"fullUrl,omitempty"`
+			Resource json.RawMessage    `json:"resource,omitempty"`
+			Search   *BundleEntrySearch `json:"search,omitempty"`
+			Request  *BundleRequest     `json:"request,omitempty"`
+			Response *BundleResponse    `json:"response,omitempty"`
+		}
+		if err := json.Unmarshal(raw, &e); err != nil {
+			return nil, fmt.Errorf("fhir: reading Bundle entry %d: %w", i, err)
+		}
+		entry := BundleEntry{FullURL: e.FullURL, Search: e.Search, Request: e.Request, Response: e.Response}
+		if len(e.Resource) > 0 && string(e.Resource) != "null" {
+			if entry.Resource, err = UnmarshalResource(e.Resource); err != nil {
+				return nil, fmt.Errorf("fhir: Bundle entry %d: %w", i, err)
+			}
+		}
+		b.Entry = append(b.Entry, entry)
+	}
+	return b, nil
 }

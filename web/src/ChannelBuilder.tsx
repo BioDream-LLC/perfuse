@@ -39,6 +39,14 @@ import { Confirm, ErrorBox, Field, Section, Spinner, Toggle } from './ui'
  * result is hidden. The YAML panel is not a separate editing mode; it is the
  * proof of what the form just built.
  */
+
+/** bundleScriptExample is the FHIR destination's bundle script placeholder: code, the same in every language. */
+const bundleScriptExample = [
+  'bundle.entry.forEach(function (e) {',
+  "  if (e.resource.resourceType === 'Organization') e.resource.identifier = [{ system: 'http://fhir.de/sid/arge-ik/iknr', value: '260326822' }]",
+  '})',
+].join('\n')
+
 export function ChannelBuilder({
   editing,
   onClose,
@@ -3201,6 +3209,20 @@ function DestinationCard({
                 />
                 Refuse a resource that only produces warnings
               </label>
+            </Field>
+
+            <Field
+              label="Add what your systems know"
+              hint="JavaScript run on each converted Bundle before it is checked and sent: edit bundle in place. For what the message does not say and a profile requires - your organisation's IK number or ODS code, a contact level. Throwing fails the message. Not run for case reports."
+            >
+              <textarea
+                className="input font-mono text-xs"
+                rows={4}
+                aria-label="Bundle script"
+                value={dest.fhirBundleScript}
+                onChange={(e) => onChange({ fhirBundleScript: e.target.value })}
+                placeholder={bundleScriptExample}
+              />
             </Field>
 
             <Field

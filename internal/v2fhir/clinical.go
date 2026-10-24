@@ -16,8 +16,14 @@ const (
 	systemAllergyClinical   = "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical"
 )
 
-// buildDiagnoses turns each DG1 into an encounter diagnosis.
-func (c *converter) buildDiagnoses(patient, encounter *fhir.Reference) {
+// diagnosisRole is HL7 table 0052 (DG1-6) to FHIR's diagnosis-role, as the v2-to-FHIR table map has it: only admitting maps.
+// Working and final have no diagnosis-role equivalent there, so they are left without a use rather than guessed at (a final
+// diagnosis on a discharge is not necessarily the discharge diagnosis a receiver means by DD).
+var diagnosisRole = map[string][2]string{"A": {"AD", "Admission diagnosis"}}
+
+// buildDiagnoses turns each DG1 into an encounter diagnosis: a Condition, and an entry in the visit's Encounter.diagnosis
+// naming it, with DG1-6's use (the v2-to-FHIR DG1 to Encounter map).
+func (c *converter) buildDiagnoses(patient, encounter *fhir.Reference, enc *fhir.Encounter) {
 	for i := range c.msg.Segments("DG1") {
 		n := i + 1
 		p := fmt.Sprintf("DG1(%d)", n)
@@ -58,6 +64,111 @@ func (c *converter) buildDiagnoses(patient, encounter *fhir.Reference) {
 			c.addEntry(prac, "Practitioner", "")
 		}
 		c.addEntry(cond, "Condition", "")
+		if enc != nil {
+			d := fhir.EncounterDiagnosis{Condition: []fhir.CodeableReference{{Reference: fhir.Ref("Condition", cond.ID)}}}
+			if role, ok := diagnosisRole[strings.ToUpper(c.get(p+"-6"))]; ok {
+				d.Use = []fhir.CodeableConcept{*fhir.NewCodeableConcept("http://terminology.hl7.org/CodeSystem/diagnosis-role", role[0], role[1])}
+			}
+			enc.Diagnosis = append(enc.Diagnosis, d)
+		}
+	}
+}
+
+// procedureFunction is the role PR1-8 and PR1-11 give a performer, SNOMED CT codes the v2-to-FHIR PR1 map assigns.
+var procedureFunction = map[string][2]string{
+	"8":  {"88189002", "Anesthesiologist"},
+	"11": {"304292004", "Surgeon"},
+}
+
+// opsCategory is HL7 Deutschland's ConceptMap OPS-SNOMED-Category (http://fhir.de/ConceptMap/OPS-SNOMED-Category): an OPS
+// code's chapter, its first character, to a SNOMED CT procedure category. Chapter 1 is written as ISiK's ProzedurenKategorieSCT
+// value set has it (165197003, Diagnostic assessment), which the ISiK profile binds; Basis DE 1.2.0's copy of the map said
+// 103693007. OPS has no chapters 2, 4 or 7.
+var opsCategory = map[string][2]string{
+	"1": {"165197003", "Diagnostic assessment"},
+	"3": {"363679005", "Imaging"},
+	"5": {"387713003", "Surgical procedure"},
+	"6": {"18629005", "Administration of medicine"},
+	"8": {"277132007", "Therapeutic procedure"},
+	"9": {"394841004", "Other category"},
+}
+
+// procedureFunctionalType is HL7 table 0230 (PR1-6).
+var procedureFunctionalType = map[string]string{"A": "Anesthesia", "P": "Procedure for treatment (therapeutic, including operations)",
+	"I": "Invasive procedure not classified elsewhere (I.V., catheter, etc.)", "D": "Diagnostic procedure"}
+
+// buildProcedures turns each PR1 into a Procedure (the v2-to-FHIR PR1 to Procedure map).
+//
+// Its status is unknown: the map leaves it to the message's context, and a PR1 on an ADT says what was done or planned without
+// saying which, so the map's own fallback is used rather than assuming the procedure was completed.
+func (c *converter) buildProcedures(patient, encounter *fhir.Reference) {
+	for i := range c.msg.Segments("PR1") {
+		p := fmt.Sprintf("PR1(%d)", i+1)
+		code := c.codedValue(p+"-3", p+"-3")
+		if code == nil {
+			if text := c.get(p + "-4"); text != "" {
+				code = &fhir.CodeableConcept{Text: text}
+			}
+		}
+		if code == nil {
+			c.note("warning", p+"-3", "Procedure.code", "a procedure with no code or description was not converted")
+			continue
+		}
+		proc := &fhir.Procedure{
+			Status:            "unknown",
+			Code:              code,
+			Subject:           patient,
+			Encounter:         encounter,
+			PerformedDateTime: c.v2DateTime(c.get(p+"-5"), p+"-5"),
+		}
+		if t := strings.ToUpper(c.get(p + "-6")); t != "" {
+			proc.Category = fhir.NewCodeableConcept("http://terminology.hl7.org/CodeSystem/v2-0230", t, procedureFunctionalType[t])
+		}
+		// An OPS code's chapter is its kind of procedure: HL7 Deutschland's ConceptMap OPS-SNOMED-Category maps the first
+		// character to a SNOMED CT category, which ISiK requires on every OPS-coded procedure (proc-ISiK-1).
+		for _, cd := range code.Coding {
+			if cd.System == "http://fhir.de/CodeSystem/bfarm/ops" && cd.Code != "" {
+				if cat, ok := opsCategory[cd.Code[:1]]; ok {
+					// One category in R4, so the SNOMED CT coding joins table 0230's when PR1-6 gave one.
+					sct := fhir.Coding{System: "http://snomed.info/sct", Code: cat[0], Display: cat[1]}
+					if proc.Category == nil {
+						proc.Category = fhir.NewCodeableConcept(sct.System, sct.Code, sct.Display)
+					} else {
+						proc.Category.Coding = append(proc.Category.Coding, sct)
+					}
+					c.note("info", p+"-3", "Procedure.category", "OPS chapter %s is the SNOMED CT category %s (%s), by HL7 Deutschland's OPS-SNOMED-Category map",
+						cd.Code[:1], cat[0], cat[1])
+				}
+				break
+			}
+		}
+		for _, field := range []string{"8", "11", "12"} {
+			for r := 1; r <= c.repeatCount(p+"-"+field); r++ {
+				path := fmt.Sprintf("%s-%s(%d)", p, field, r)
+				prac := c.buildPractitioner(path)
+				if prac == nil {
+					continue
+				}
+				c.addEntry(prac, "Practitioner", "")
+				perf := fhir.ProcedurePerformer{Actor: fhir.Ref("Practitioner", prac.ID)}
+				if fn, ok := procedureFunction[field]; ok {
+					perf.Function = fhir.NewCodeableConcept("http://snomed.info/sct", fn[0], fn[1])
+				}
+				proc.Performer = append(proc.Performer, perf)
+			}
+		}
+		if reason := c.codedValue(p+"-15", p+"-15"); reason != nil {
+			proc.ReasonCode = []fhir.CodeableConcept{*reason}
+		}
+		key := c.get(p+"-19.1") + "|" + c.get(p+"-3.1") + "|" + c.get(p+"-5") + "|" + c.get(p+"-1")
+		if id := c.get(p + "-19.1"); id != "" {
+			proc.Identifier = []fhir.Identifier{{System: c.opts.DefaultIdentifierSystem, Value: id}}
+		}
+		if encounter != nil {
+			key = encounter.Reference + "|" + key
+		}
+		proc.SetResourceID(c.deterministicID("Procedure", key))
+		c.addEntry(proc, "Procedure", "")
 	}
 }
 

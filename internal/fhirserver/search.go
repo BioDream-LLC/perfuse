@@ -459,9 +459,7 @@ func indexEntries(r fhir.Resource) []indexEntry {
 		addRef("encounter", v.Encounter)
 		add("status", v.Status, "")
 		addCodeable("code", v.Code)
-		for i := range v.Category {
-			addCodeable("category", &v.Category[i])
-		}
+		addCodeable("category", v.Category)
 		// The period start when there is no single instant, so a procedure recorded as a range is still findable
 		// by date rather than falling out of every date search.
 		add("date", v.PerformedDateTime, "")

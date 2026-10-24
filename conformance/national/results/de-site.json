@@ -1,0 +1,75 @@
+{
+ "set": "de-site",
+ "guide": "ISiK Basismodul 4.0.3, with the hospital's bundle script",
+ "package": "de.gematik.isik-basismodul#4.0.3",
+ "messages": 8,
+ "types": {
+  "AllergyIntolerance": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKAllergieUnvertraeglichkeit",
+   "resources": 1,
+   "failing": 0,
+   "errors": {},
+   "warnings": 1
+  },
+  "Condition": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKDiagnose",
+   "resources": 4,
+   "failing": 2,
+   "errors": {
+    "Condition.recordedDate: minimum required = 1, but only found 0 (from https://gematik.de/fhir/isik/StructureDefinition/ISiKDiagnose|4.0.3)": 2
+   },
+   "warnings": 8
+  },
+  "Encounter": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKKontaktGesundheitseinrichtung",
+   "resources": 8,
+   "failing": 0,
+   "errors": {},
+   "warnings": 38
+  },
+  "Location": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKStandort",
+   "resources": 8,
+   "failing": 0,
+   "errors": {},
+   "warnings": 8
+  },
+  "Organization": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKOrganisation",
+   "resources": 8,
+   "failing": 0,
+   "errors": {},
+   "warnings": 8
+  },
+  "Patient": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKPatient",
+   "resources": 8,
+   "failing": 0,
+   "errors": {},
+   "warnings": 16
+  },
+  "Practitioner": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKPersonImGesundheitsberuf",
+   "resources": 9,
+   "failing": 2,
+   "errors": {
+    "Slice 'Practitioner.name:Name': a matching slice is required, but not found (from https://gematik.de/fhir/isik/StructureDefinition/ISiKPersonImGesundheitsberuf|4.0.3). Note that other slices are allowed in addition to this required slice": 2
+   },
+   "warnings": 9
+  },
+  "Procedure": {
+   "profile": "https://gematik.de/fhir/isik/StructureDefinition/ISiKProzedur",
+   "resources": 1,
+   "failing": 1,
+   "errors": {
+    "The code system 'http://fhir.de/CodeSystem/bfarm/ops' version '*' in the ValueSet include is different to the one in the value ('2026')": 1
+   },
+   "warnings": 4
+  }
+ },
+ "skipped": {
+  "DiagnosticReport": 2,
+  "Observation": 6,
+  "Specimen": 2
+ }
+}

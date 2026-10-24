@@ -367,6 +367,17 @@ func NewChannel(cfg *config.Channel, factory SenderFactory, log *slog.Logger) (*
 			dest.sender = sender
 		}
 
+		if fs, ok := sender.(*FHIRSender); ok && resolved.FHIR != nil && strings.TrimSpace(resolved.FHIR.BundleScript) != "" {
+			engine := cfg.Scripts.Engine()
+			if engine == nil {
+				return nil, fmt.Errorf("destination %q has a bundle script but the channel has no script engine; the channel was not validated",
+					resolved.Name)
+			}
+			if err := fs.SetBundleScript(engine, cfg.Name+" "+resolved.Name+" bundle", resolved.FHIR.BundleScript); err != nil {
+				return nil, fmt.Errorf("destination %q: %w", resolved.Name, err)
+			}
+		}
+
 		if named, ok := sender.(interface{ SetChannel(string) }); ok {
 			named.SetChannel(cfg.Name)
 		}

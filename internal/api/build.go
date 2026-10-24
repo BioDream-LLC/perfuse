@@ -945,6 +945,9 @@ type buildFHIRDest struct {
 
 	// ECR turns the destination into public health case reporting: eICRs for reportable messages, to url's $process-message.
 	ECR *buildECR `json:"ecr,omitempty" yaml:"ecr,omitempty"`
+
+	// BundleScript is JavaScript run on each converted Bundle before it is validated and sent (config.FHIRDestination).
+	BundleScript string `json:"bundleScript,omitempty" yaml:"bundle_script,omitempty"`
 }
 
 type buildELR struct {

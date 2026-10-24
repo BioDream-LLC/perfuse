@@ -780,6 +780,12 @@ type FHIRDestination struct {
 	// ECR makes this a public health case reporting destination. Each message is checked for trigger codes; one that has any
 	// is sent as an eCR 2.1 eICR, wrapped in an eCR message, to url's $process-message, and one with none is not sent at all.
 	ECR *ECRDestination `yaml:"ecr,omitempty"`
+
+	// BundleScript is JavaScript run on each converted Bundle before it is validated and sent: `bundle` is the Bundle as an
+	// object, edited in place. It is how a site adds what its own systems know and the v2 message does not say - its
+	// organisation's IKNR or ODS code, a national profile's contact level - without the converter guessing it. A script that
+	// throws fails the message, as any other transformer does. Not run for case reports (ecr).
+	BundleScript string `yaml:"bundle_script,omitempty"`
 }
 
 // ELRDestination configures electronic laboratory reporting.

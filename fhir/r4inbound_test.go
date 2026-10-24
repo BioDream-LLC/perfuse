@@ -23,6 +23,7 @@ func TestR4OutputIsAcceptedAsR4Input(t *testing.T) {
 		Location:     []EncounterLocation{{Location: Ref("Location", "l1"), Form: concept}},
 		Admission:    &EncounterAdmission{AdmitSource: concept},
 		Subject:      ref,
+		Diagnosis:    []EncounterDiagnosis{{Condition: []CodeableReference{{Reference: Ref("Condition", "c1")}}, Use: []CodeableConcept{*concept}}},
 	}
 	enc.SetResourceID("e1")
 
@@ -63,5 +64,47 @@ func TestInternalFormIsNotReshaped(t *testing.T) {
 	again, _ := Marshal(back, CanonicalVersion)
 	if !bytes.Equal(raw, again) {
 		t.Errorf("the internal form changed on reading:\n%s\n%s", raw, again)
+	}
+}
+
+// R4's Procedure.category is one CodeableConcept, not a list: it is read and written as one.
+func TestAnR4ProcedureCategoryIsOneCodeableConcept(t *testing.T) {
+	in := `{"resourceType":"Procedure","id":"p","status":"completed","subject":{"reference":"Patient/x"},
+	"category":{"coding":[{"system":"http://snomed.info/sct","code":"387713003"}]}}`
+	r, err := UnmarshalResource([]byte(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := r.(*Procedure)
+	if p.Category == nil || p.Category.Coding[0].Code != "387713003" {
+		t.Fatalf("category = %+v", p.Category)
+	}
+	out, err := Marshal(p, R4)
+	if err != nil || !bytes.Contains(out, []byte(`"category":{"coding"`)) {
+		t.Errorf("%s %v", out, err)
+	}
+}
+
+// A Bundle read back with UnmarshalBundle keeps each entry's resource as its own type, and members the model has no field for,
+// nested ones included: a FHIR destination's bundle script relies on both.
+func TestABundleIsReadBackWithItsEntriesAndUnmodelledMembers(t *testing.T) {
+	in := `{"resourceType":"Bundle","type":"transaction","entry":[
+	 {"fullUrl":"urn:uuid:1","resource":{"resourceType":"Patient","id":"p","identifier":[{"system":"s","value":"v","x-site":"kept"}]},
+	  "request":{"method":"PUT","url":"Patient/p"}},
+	 {"fullUrl":"urn:uuid:2","resource":{"resourceType":"Procedure","id":"q","status":"unknown","subject":{"reference":"Patient/p"},
+	  "category":{"coding":[{"system":"http://snomed.info/sct","code":"387713003"}]}}}]}`
+	b, err := UnmarshalBundle([]byte(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(b.Entry) != 2 || b.Entry[0].Request == nil || b.Entry[1].Resource.(*Procedure).Category == nil {
+		t.Fatalf("%+v", b)
+	}
+	out, err := MarshalBundle(b, R4)
+	if err != nil || !bytes.Contains(out, []byte(`"x-site":"kept"`)) {
+		t.Errorf("%s %v", out, err)
+	}
+	if _, err := UnmarshalBundle([]byte(`{"resourceType":"Patient"}`)); err == nil {
+		t.Error("a Patient is not a Bundle")
 	}
 }

@@ -126,6 +126,13 @@ describe('draftToWire', () => {
     expect(out.destinations[0].fhir.defaultIdentifierSystem).toBe('urn:oid:1.2.3')
   })
 
+  it('sends a FHIR destination bundle script, and only when there is one', () => {
+    const base = { ...newDestination(), name: 'fhir', type: 'fhir' as const, url: 'https://fhir.example.org/fhir', fhirIdentifierSystem: 'urn:oid:1.2.3' }
+    const script = "bundle.entry.forEach(function (e) { e.resource.meta = {} })"
+    expect(wire({ ...emptyDraft(), destinations: [{ ...base, fhirBundleScript: script }] }).destinations[0].fhir.bundleScript).toBe(script)
+    expect(wire({ ...emptyDraft(), destinations: [{ ...base, fhirBundleScript: '  ' }] }).destinations[0].fhir.bundleScript).toBeUndefined()
+  })
+
   it('omits an empty description rather than sending a blank one', () => {
     const out = wire({ ...emptyDraft(), description: '   ' })
     expect(out.description).toBeUndefined()

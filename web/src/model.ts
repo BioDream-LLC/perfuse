@@ -331,6 +331,10 @@ export interface Destination {
   /** fhirRejectOnWarning refuses a resource that only produces warnings. Only meaningful with validation on. */
   fhirRejectOnWarning: boolean
 
+  /** fhirBundleScript is JavaScript run on each converted Bundle (as `bundle`, edited in place) before it is validated and
+   * sent: how a site adds what its own systems know and the v2 message does not say. */
+  fhirBundleScript: string
+
   /** httpSuccessStatus is which status codes count as delivered, entered as a comma-separated list. */
   httpSuccessStatus: string
 
@@ -2525,6 +2529,7 @@ function destinationToWire(d: Destination): unknown {
         rejectOnWarning: d.fhirValidateBeforeSend && d.fhirRejectOnWarning ? true : undefined,
         timezone: d.fhirTimezone || undefined,
         identifierSystems: parsePairs(d.fhirIdentifierSystems),
+        bundleScript: d.fhirBundleScript.trim() ? d.fhirBundleScript : undefined,
         auth:
           d.fhirAuthType === 'aws'
             ? { type: 'aws', ...awsDestAccess(d), endpoint: undefined }
@@ -2933,6 +2938,7 @@ export function newDestination(): Destination {
     fhirClaimUSCore: false,
     fhirValidateBeforeSend: false,
     fhirRejectOnWarning: false,
+    fhirBundleScript: '',
     httpSuccessStatus: '',
     httpFollowRedirects: false,
     dbDriver: 'postgres',

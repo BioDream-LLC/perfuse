@@ -201,3 +201,35 @@ func TestResultsNameTheLaboratoryThatProducedThem(t *testing.T) {
 		}
 	}
 }
+
+// DG1 is also an Encounter.diagnosis naming the Condition, with DG1-6 A as the admission diagnosis (the v2-to-FHIR maps); PR1 is
+// a Procedure with its performers' roles, and status unknown, which is what the map says when the message does not tell.
+func TestADischargeCarriesItsDiagnosesAndProcedures(t *testing.T) {
+	raw := message(
+		segment("MSH", mshFields("ADT^A03^ADT_A03", "CTRL-DIS", "20261024160000+0200")),
+		segment("EVN", map[int]string{1: "A03"}),
+		segment("PID", map[int]string{1: "1", 3: "4711^^^KH^PI", 5: "Musterfrau^Erika"}),
+		segment("PV1", map[int]string{1: "1", 2: "I", 19: "V1^^^KH^VN", 44: "20261019091500+0200", 45: "20261024155500+0200"}),
+		segment("DG1", map[int]string{1: "1", 3: "K35.8^Akute Appendizitis^I10G2026", 6: "A"}),
+		segment("DG1", map[int]string{1: "2", 3: "K35.32^Appendizitis mit Abszess^I10G2026", 6: "F"}),
+		segment("PR1", map[int]string{1: "1", 3: "5-470.11^Appendektomie^OPS2026", 5: "20261019143000+0200", 6: "P",
+			8: "111^Narkose^Nina", 11: "222^Beispiel^Jonas"}),
+	)
+	res := convert(t, raw, Options{})
+	enc := find[*fhir.Encounter](t, res)
+	if len(enc.Diagnosis) != 2 || len(enc.Diagnosis[0].Use) != 1 || enc.Diagnosis[0].Use[0].Coding[0].Code != "AD" || len(enc.Diagnosis[1].Use) != 0 {
+		t.Errorf("Encounter.diagnosis = %+v", enc.Diagnosis)
+	}
+	proc := find[*fhir.Procedure](t, res)
+	if proc.Status != "unknown" || proc.Code.Coding[0].Code != "5-470.11" || proc.Code.Coding[0].System != "http://fhir.de/CodeSystem/bfarm/ops" ||
+		!strings.HasPrefix(proc.PerformedDateTime, "2026-10-19T14:30") || len(proc.Performer) != 2 ||
+		proc.Performer[0].Function.Coding[0].Code != "88189002" || proc.Performer[1].Function.Coding[0].Code != "304292004" ||
+		proc.Category == nil || len(proc.Category.Coding) != 2 || proc.Category.Coding[0].Code != "P" ||
+		proc.Category.Coding[1].Code != "387713003" || proc.Encounter == nil {
+		t.Errorf("Procedure = %+v", proc)
+	}
+	out, err := fhir.MarshalVersioned(enc, fhir.R4)
+	if err != nil || !strings.Contains(string(out), `"diagnosis":[{"condition":{"reference":"Condition/`) {
+		t.Errorf("R4 Encounter.diagnosis: %s %v", out, err)
+	}
+}

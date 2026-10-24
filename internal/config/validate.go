@@ -205,7 +205,8 @@ func (c *Channel) Validate() error {
 		// here produced exactly the same symptom: a channel whose file plainly contains a script refusing to start
 		// because "the channel has no script engine". The comment above was written about the first instance of this
 		// bug; this is the second, and the loop now covers both rather than one.
-		if strings.TrimSpace(d.ResponseTransformer) != "" || d.Type == DestinationJavaScript {
+		if strings.TrimSpace(d.ResponseTransformer) != "" || d.Type == DestinationJavaScript ||
+			(d.FHIR != nil && strings.TrimSpace(d.FHIR.BundleScript) != "") {
 			needsEngine = true
 			break
 		}

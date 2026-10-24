@@ -57,6 +57,10 @@ var syntheticSurnames = map[string]bool{
 	// (example), for the German messages in conformance/national/testdata/de.
 	"MUSTERMANN": true, "MUSTERFRAU": true, "ÖRNEK": true,
 
+	// The Dutch ones (Jan Modaal, the Dutch "Joe Average", and "voorbeeld", example, with a surname prefix as Dutch names
+	// have), for the messages in conformance/national/testdata/nl.
+	"MODAAL": true, "VOORBEELD": true, "VAN VOORBEELD": true,
+
 	// The rest come from generate.SyntheticSurnames, merged in by init below rather than
 	// copied here, so this check and the generator cannot disagree about what is synthetic.
 

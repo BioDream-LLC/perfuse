@@ -864,6 +864,7 @@ function readDestination(d: WireDest): Destination {
       dest.fhirClaimUSCore = d.fhir?.claimUSCore === true
       dest.fhirValidateBeforeSend = d.fhir?.validateBeforeSend === true
       dest.fhirRejectOnWarning = d.fhir?.rejectOnWarning === true
+      dest.fhirBundleScript = d.fhir?.bundleScript ?? ''
       if (d.fhir?.auth) {
         const a = d.fhir.auth
         dest.fhirAuthType = (a.type ?? '') as Destination['fhirAuthType']
@@ -1726,6 +1727,7 @@ interface WireDest {
     claimUSCore?: boolean
     validateBeforeSend?: boolean
     rejectOnWarning?: boolean
+    bundleScript?: string
     auth?: WireAWSAccess & {
       type?: string
       tenantId?: string

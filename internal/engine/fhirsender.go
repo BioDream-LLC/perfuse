@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/script"
 	"io"
 	"log/slog"
 	"net/http"
@@ -42,6 +43,10 @@ type FHIRSender struct {
 
 	// ecr, when set, makes this a case reporting destination: only messages with a trigger code are sent, as eICRs.
 	ecr *ecrSender
+
+	// bundleScript is the site's script over each converted Bundle (config.FHIRDestination.BundleScript), nil when none.
+	bundleScript *script.Script
+	scripts      *script.Engine
 
 	converted    atomic.Int64
 	convertFails atomic.Int64
@@ -172,6 +177,15 @@ func (s *FHIRSender) Send(ctx context.Context, raw []byte) error {
 				"target", note.Target, "detail", note.Message,
 				"control_id", m.ControlID())
 		}
+	}
+
+	if s.bundleScript != nil && len(result.Bundle.Entry) > 0 {
+		edited, err := s.runBundleScript(result.Bundle, m.ControlID())
+		if err != nil {
+			s.convertFails.Add(1)
+			return err
+		}
+		result.Bundle = edited
 	}
 
 	if len(result.Bundle.Entry) == 0 {
@@ -338,4 +352,50 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n] + "…"
+}
+
+// SetBundleScript compiles the destination's bundle script on the channel's engine.
+func (s *FHIRSender) SetBundleScript(engine *script.Engine, name, source string) error {
+	compiled, err := CompileBundleScript(engine, name, source)
+	if err != nil {
+		return err
+	}
+	s.bundleScript, s.scripts = compiled, engine
+	return nil
+}
+
+func (s *FHIRSender) runBundleScript(b *fhir.Bundle, controlID string) (*fhir.Bundle, error) {
+	return RunBundleScript(s.scripts, s.bundleScript, b, s.version, func(level, message string) {
+		s.log.Info("bundle script", "level", level, "detail", message, "control_id", controlID)
+	})
+}
+
+// CompileBundleScript compiles a bundle script (config.FHIRDestination.BundleScript). The site's source is wrapped so that
+// `bundle` is the converted Bundle, parsed, and whatever it holds when the script ends is what is sent; the wrapper sits on the
+// source's first line, so a line number in an error is the author's.
+func CompileBundleScript(engine *script.Engine, name, source string) (*script.Script, error) {
+	wrapped := "var bundle = JSON.parse(message); (function(){" + source + "\n})(); return JSON.stringify(bundle);"
+	return engine.Compile(name, wrapped, script.Preprocessor)
+}
+
+// RunBundleScript runs a bundle script over a converted Bundle and reads back what it left. What comes back goes through the
+// model again (members it does not model are kept), so validation and the version written apply to the site's changes too.
+func RunBundleScript(engine *script.Engine, compiled *script.Script, b *fhir.Bundle, version fhir.Version,
+	log func(level, message string)) (*fhir.Bundle, error) {
+	raw, err := fhir.MarshalBundle(b, version)
+	if err != nil {
+		return nil, fmt.Errorf("the converted bundle could not be given to the bundle script: %w", err)
+	}
+	res, err := engine.Run(compiled, &script.Context{Raw: string(raw), Log: log})
+	if err != nil {
+		return nil, fmt.Errorf("the bundle script failed: %w", err)
+	}
+	if !res.Replaced {
+		return b, nil
+	}
+	edited, err := fhir.UnmarshalBundle([]byte(res.Text))
+	if err != nil {
+		return nil, fmt.Errorf("the bundle script left something that is not a FHIR Bundle: %w", err)
+	}
+	return edited, nil
 }

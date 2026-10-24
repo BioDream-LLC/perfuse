@@ -7,6 +7,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/engine"
+	"github.com/biodream-llc/perfuse/internal/script"
 	"io"
 	"log/slog"
 	"net/http"
@@ -110,11 +112,25 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 	quiet := fset.Bool("quiet", false, "print only the summary")
 	outDir := fset.String("out", "", "write bundles to this directory")
 	reportPath := fset.String("report", "", "write a report of how the feed converted, counts and paths only, to this file")
+	bundleScriptPath := fset.String("bundle-script", "",
+		"a JavaScript file run on each converted Bundle, as a FHIR destination's bundle_script: `bundle` is edited in place")
 	if err := fset.Parse(args); err != nil {
 		return err
 	}
 	if fset.NArg() == 0 {
 		return errors.New("convert needs at least one file, or - for stdin")
+	}
+	var bundleEngine *script.Engine
+	var bundleScript *script.Script
+	if *bundleScriptPath != "" {
+		src, err := os.ReadFile(*bundleScriptPath)
+		if err != nil {
+			return fmt.Errorf("-bundle-script: %w", err)
+		}
+		bundleEngine = script.New(script.Options{Timeout: 5 * time.Second})
+		if bundleScript, err = engine.CompileBundleScript(bundleEngine, filepath.Base(*bundleScriptPath), string(src)); err != nil {
+			return fmt.Errorf("-bundle-script: %w", err)
+		}
 	}
 
 	version, err := fhir.ParseVersion(*versionFlag)
@@ -182,6 +198,17 @@ func cmdFHIRConvert(args []string, stdout, stderr io.Writer) error {
 				report.failedMessage(kind)
 				fmt.Fprintf(stderr, "%s message %d: %v\n", path, i+1, err)
 				continue
+			}
+			if bundleScript != nil {
+				edited, err := engine.RunBundleScript(bundleEngine, bundleScript, result.Bundle, version, func(level, message string) {
+					fmt.Fprintf(stderr, "  script %s: %s\n", level, message)
+				})
+				if err != nil {
+					failed++
+					fmt.Fprintf(stderr, "%s message %d: %v\n", path, i+1, err)
+					continue
+				}
+				result.Bundle = edited
 			}
 			converted++
 

@@ -1,0 +1,62 @@
+{
+ "set": "hdr",
+ "guide": "HL7 Europe Hospital Discharge Report 1.0.0",
+ "package": "hl7.fhir.eu.hdr#1.0.0",
+ "messages": 15,
+ "types": {
+  "AllergyIntolerance": {
+   "profile": "http://hl7.eu/fhir/hdr/StructureDefinition/allergyIntolerance-obl-eu-hdr",
+   "resources": 2,
+   "failing": 0,
+   "errors": {},
+   "warnings": 5
+  },
+  "Condition": {
+   "profile": "http://hl7.eu/fhir/hdr/StructureDefinition/condition-obl-eu-hdr",
+   "resources": 6,
+   "failing": 0,
+   "errors": {},
+   "warnings": 16
+  },
+  "Encounter": {
+   "profile": "http://hl7.eu/fhir/hdr/StructureDefinition/encounter-eu-hdr",
+   "resources": 15,
+   "failing": 0,
+   "errors": {},
+   "warnings": 56
+  },
+  "Organization": {
+   "profile": "http://hl7.eu/fhir/hdr/StructureDefinition/organization-obl-eu-hdr",
+   "resources": 14,
+   "failing": 0,
+   "errors": {},
+   "warnings": 14
+  },
+  "Patient": {
+   "profile": "http://hl7.eu/fhir/hdr/StructureDefinition/patient-obl-eu-hdr",
+   "resources": 15,
+   "failing": 1,
+   "errors": {
+    "The extension http://hl7.org/fhir/us/core/StructureDefinition/us-core-race could not be found so is not allowed here": 1
+   },
+   "warnings": 67
+  },
+  "Practitioner": {
+   "profile": "http://hl7.eu/fhir/hdr/StructureDefinition/practitioner-obl-eu-hdr",
+   "resources": 16,
+   "failing": 0,
+   "errors": {},
+   "warnings": 26
+  },
+  "Procedure": {
+   "profile": "http://hl7.eu/fhir/hdr/StructureDefinition/procedure-obl-eu-hdr",
+   "resources": 1,
+   "failing": 0,
+   "errors": {},
+   "warnings": 2
+  }
+ },
+ "skipped": {
+  "Location": 15
+ }
+}

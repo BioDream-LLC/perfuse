@@ -149,6 +149,15 @@ type Encounter struct {
 
 	// Hospitalization is R4's name; R5 calls it admission.
 	Admission *EncounterAdmission `json:"admission,omitempty"`
+
+	// Diagnosis is in R5's shape (a list of conditions and of uses); R4 has one condition reference and one use per entry.
+	Diagnosis []EncounterDiagnosis `json:"diagnosis,omitempty"`
+}
+
+// EncounterDiagnosis is a diagnosis relevant to the encounter, in R5's form.
+type EncounterDiagnosis struct {
+	Condition []CodeableReference `json:"condition,omitempty"`
+	Use       []CodeableConcept   `json:"use,omitempty"`
 }
 
 // EncounterReason is why an encounter happened, in R5's form.

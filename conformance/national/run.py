@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""National FHIR profiles: Perfuse's HL7 v2 to FHIR conversion checked against UK Core, FR Core, ISiK and HL7 Europe's
-Laboratory Report.
+"""National FHIR profiles: Perfuse's HL7 v2 to FHIR conversion checked against UK Core, FR Core, ISiK, Nictiz nl-core and HL7 Europe's
+Laboratory and Hospital Discharge Reports.
 
 Each set of real-shaped v2 messages is converted by `perfuse fhir convert`, every resource is pulled out of its bundle, and the
 official HL7 validator checks it against the country's profile for that resource type:
@@ -8,12 +8,16 @@ official HL7 validator checks it against the country's profile for that resource
   uk  NHS Wales' published v2 examples (GIG-Cymru-NHS-Wales/hl7-v2-examples)  -> UK Core STU2 2.0.2
   fr  the French agency's PAM-FR and document examples (ansforge/hl7V2-exemples) -> FR Core 2.2.0
   de  invented German messages in testdata/de (no real person)                -> ISiK Basismodul 4.0.3 (Stufe 4)
+  de-site  the same, with examples/isik/bundle-script.js, what a hospital adds  -> ISiK Basismodul 4.0.3 (Stufe 4)
+  nl  invented Dutch messages in testdata/nl (no real person)                -> Nictiz nl-core 0.12.1-beta.1 (zib 2020)
+  nl-site  the same, with examples/nictiz/bundle-script.js                     -> Nictiz nl-core 0.12.1-beta.1 (zib 2020)
   eu  the lab results (ORU^R01) among all three                                 -> HL7 Europe Laboratory Report 2.1.0
+  hdr the patient administration messages (ADT) among all three                 -> HL7 Europe Hospital Discharge Report 1.0.0
 
 A resource type with no profile in the country's guide is skipped and listed. The result is written to results/<set>.md and
 results/<set>.json: errors and warnings per resource type, and each distinct error message with how often it occurred.
 
-Usage: run.py [-perfuse BIN] [-validator JAR] [-sets uk,fr,de,eu] [-keep DIR]
+Usage: run.py [-perfuse BIN] [-validator JAR] [-sets uk,fr,de,de-site,nl,nl-site,eu,hdr] [-keep DIR]
 """
 import argparse
 import collections
@@ -34,8 +38,10 @@ SOURCES = {
 UK = "https://fhir.hl7.org.uk/StructureDefinition/UKCore-"
 FR = "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-"
 ISIK = "https://gematik.de/fhir/isik/StructureDefinition/ISiK"
+NL = "http://nictiz.nl/fhir/StructureDefinition/nl-core-"
 EULAB = "http://hl7.eu/fhir/laboratory/StructureDefinition/"
 EUBASE = "http://hl7.eu/fhir/base/StructureDefinition/"
+HDR = "http://hl7.eu/fhir/hdr/StructureDefinition/"
 
 GUIDES = {
     "uk": ("fhir.r4.ukcore.stu2#2.0.2", "UK Core STU2 2.0.2", {
@@ -63,12 +69,43 @@ GUIDES = {
         "Specimen": EULAB + "Specimen-eu-lab", "ServiceRequest": EULAB + "ServiceRequest-eu-lab",
         "Patient": EUBASE + "patient-eu-core", "Practitioner": EUBASE + "practitioner-eu-core",
         "PractitionerRole": EUBASE + "practitionerRole-eu-core", "Organization": EUBASE + "organization-eu-core"}),
+    # The Hospital Discharge Report's profiles for what a stay's v2 messages carry: the stay itself, its diagnoses, procedures
+    # and allergies, and the people. As with the lab report, the discharge report is a document (bundle-eu-hdr with its
+    # Composition) a sender assembles; what is checked is what the conversion produces.
+    # Nictiz's zib 2020 profiles as nl-core profiles them for exchange. nl-core has no lab report profile (TextResult is a
+    # free-text report), so DiagnosticReport is left out and listed.
+    "nl": ("nictiz.fhir.nl.r4.nl-core#0.12.1-beta.1", "Nictiz nl-core 0.12.1-beta.1 (zib 2020)", {
+        "Patient": NL + "Patient", "Encounter": NL + "Encounter", "Condition": NL + "Problem",
+        "Practitioner": NL + "HealthProfessional-Practitioner", "PractitionerRole": NL + "HealthProfessional-PractitionerRole",
+        "Organization": NL + "HealthcareProvider-Organization", "Location": NL + "HealthcareProvider",
+        "Procedure": NL + "Procedure-event", "AllergyIntolerance": NL + "AllergyIntolerance",
+        "Observation": NL + "LaboratoryTestResult", "Specimen": NL + "LaboratoryTestResult.Specimen",
+        "RelatedPerson": NL + "ContactPerson", "Immunization": NL + "Vaccination-event"}),
+    # The de and nl guides again, run with the hospital's bundle script: filled in below.
+    "de-site": None,
+    "nl-site": None,
+    "hdr": ("hl7.fhir.eu.hdr#1.0.0", "HL7 Europe Hospital Discharge Report 1.0.0", {
+        "Encounter": HDR + "encounter-eu-hdr", "Patient": HDR + "patient-obl-eu-hdr", "Condition": HDR + "condition-obl-eu-hdr",
+        "Procedure": HDR + "procedure-obl-eu-hdr", "AllergyIntolerance": HDR + "allergyIntolerance-obl-eu-hdr",
+        "Practitioner": HDR + "practitioner-obl-eu-hdr", "Organization": HDR + "organization-obl-eu-hdr",
+        "RelatedPerson": HDR + "relatedPerson-obl-eu-hdr", "PractitionerRole": HDR + "practitionerRole-obl-eu-hdr"}),
 }
+
+GUIDES["de-site"] = (GUIDES["de"][0], GUIDES["de"][1] + ", with the hospital's bundle script", GUIDES["de"][2])
+GUIDES["nl-site"] = (GUIDES["nl"][0], GUIDES["nl"][1] + ", with the hospital's bundle script", GUIDES["nl"][2])
+
+# A site's bundle script (a FHIR destination's bundle_script), by set.
+SCRIPTS = {"de-site": os.path.join(HERE, "..", "..", "examples", "isik", "bundle-script.js"),
+           "nl-site": os.path.join(HERE, "..", "..", "examples", "nictiz", "bundle-script.js")}
 
 # What a site would configure: its assigning authorities as real namespaces. Without them the converter writes a placeholder
 # system and says so, which every national profile rightly rejects.
 AUTHORITIES = {
     "eu": ["KLINIKUM-MUSTERSTADT=https://fhir.klinikum-musterstadt.example/sid/patientennummer"],
+    "hdr": ["KLINIKUM-MUSTERSTADT=https://fhir.klinikum-musterstadt.example/sid/patientennummer"],
+    "nl": ["ZIEKENHUIS-VOORBEELDSTAD=https://fhir.ziekenhuis-voorbeeldstad.example/sid/patientnummer"],
+    "nl-site": ["ZIEKENHUIS-VOORBEELDSTAD=https://fhir.ziekenhuis-voorbeeldstad.example/sid/patientnummer"],
+    "de-site": ["KLINIKUM-MUSTERSTADT=https://fhir.klinikum-musterstadt.example/sid/patientennummer"],
     "de": ["KLINIKUM-MUSTERSTADT=https://fhir.klinikum-musterstadt.example/sid/patientennummer"],
 }
 
@@ -85,11 +122,14 @@ def message_type(path):
 
 
 def messages(name, cache):
+    if name == "hdr":
+        # A stay's messages: admissions, transfers, discharges and updates.
+        return sorted(m for s in ("uk", "fr", "de") for m in messages(s, cache) if message_type(m).startswith("ADT^A"))
     if name == "eu":
         # Lab results from every set: what a laboratory report is made from.
         return sorted(m for s in ("uk", "fr", "de") for m in messages(s, cache) if message_type(m).startswith("ORU^R01"))
-    if name == "de":
-        d = os.path.join(HERE, "testdata", "de")
+    if name in ("de", "de-site", "nl", "nl-site"):
+        d = os.path.join(HERE, "testdata", "nl" if name.startswith("nl") else "de")
         return sorted(os.path.join(d, f) for f in os.listdir(d) if f.endswith(".hl7"))
     url, commit = SOURCES[name]
     dest = os.path.join(cache, name)
@@ -113,6 +153,8 @@ def convert(perfuse, name, msgs, work):
         cmd = [perfuse, "fhir", "convert", "-quiet", "-out", out]
         for a in AUTHORITIES.get(name, []):
             cmd += ["-authority", a]
+        if name in SCRIPTS:
+            cmd += ["-bundle-script", SCRIPTS[name]]
         r = subprocess.run(cmd + [m], capture_output=True, text=True)
         if r.returncode != 0:
             print(f"convert failed: {m}: {r.stderr.strip()[:200]}", file=sys.stderr)

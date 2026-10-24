@@ -174,22 +174,30 @@ func (i *Immunization) SetResourceID(id string) { i.ID = id; i.ResourceType = "I
 type Procedure struct {
 	base
 
-	Identifier []Identifier      `json:"identifier,omitempty"`
-	Status     string            `json:"status,omitempty"`
-	Category   []CodeableConcept `json:"category,omitempty"`
-	Code       *CodeableConcept  `json:"code,omitempty"`
-	Subject    *Reference        `json:"subject,omitempty"`
-	Encounter  *Reference        `json:"encounter,omitempty"`
+	Identifier []Identifier `json:"identifier,omitempty"`
+	Status     string       `json:"status,omitempty"`
+	// Category is R4's: one CodeableConcept (R5 made it a list). Several codings of the one category go in it.
+	Category  *CodeableConcept `json:"category,omitempty"`
+	Code      *CodeableConcept `json:"code,omitempty"`
+	Subject   *Reference       `json:"subject,omitempty"`
+	Encounter *Reference       `json:"encounter,omitempty"`
 
 	// performed[x].
 	PerformedDateTime string  `json:"performedDateTime,omitempty"`
 	PerformedPeriod   *Period `json:"performedPeriod,omitempty"`
 	PerformedString   string  `json:"performedString,omitempty"`
 
-	ReasonCode []CodeableConcept `json:"reasonCode,omitempty"`
-	BodySite   []CodeableConcept `json:"bodySite,omitempty"`
-	Outcome    *CodeableConcept  `json:"outcome,omitempty"`
-	Note       []Annotation      `json:"note,omitempty"`
+	Performer  []ProcedurePerformer `json:"performer,omitempty"`
+	ReasonCode []CodeableConcept    `json:"reasonCode,omitempty"`
+	BodySite   []CodeableConcept    `json:"bodySite,omitempty"`
+	Outcome    *CodeableConcept     `json:"outcome,omitempty"`
+	Note       []Annotation         `json:"note,omitempty"`
+}
+
+// ProcedurePerformer is who did a procedure, and in what role.
+type ProcedurePerformer struct {
+	Function *CodeableConcept `json:"function,omitempty"`
+	Actor    *Reference       `json:"actor,omitempty"`
 }
 
 // ResourceTypeName implements Resource.

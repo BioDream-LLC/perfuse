@@ -271,13 +271,15 @@ func (c *converter) convertADT() {
 	}
 
 	var encRef *fhir.Reference
-	if enc := c.buildEncounter(patient); enc != nil {
+	enc := c.buildEncounter(patient)
+	if enc != nil {
 		c.addEntry(enc, "Encounter", encounterConditionalURL(enc))
 		encRef = fhir.Ref("Encounter", enc.ID)
 	} else {
 		c.note("info", "PV1", "Encounter", "no PV1 segment, so no Encounter was created")
 	}
-	c.buildDiagnoses(patRef, encRef)
+	c.buildDiagnoses(patRef, encRef, enc)
+	c.buildProcedures(patRef, encRef)
 }
 
 // mergeEvents are the patient-level merges, which carry the record being retired in MRG.

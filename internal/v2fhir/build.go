@@ -323,6 +323,9 @@ var wellKnownAuthorities = map[string]string{
 	"NPI":                   "http://hl7.org/fhir/sid/us-npi",
 	"2.16.840.1.113883.4.1": "http://hl7.org/fhir/sid/us-ssn",
 	"SSA":                   "http://hl7.org/fhir/sid/us-ssn",
+	// The Dutch BSN: HL7 v2 in the Netherlands names its issuer, the Ministry of the Interior, NLMINBIZA, beside the type NNNLD.
+	"NLMINBIZA":                 "http://fhir.nl/fhir/NamingSystem/bsn",
+	"2.16.840.1.113883.2.4.6.3": "http://fhir.nl/fhir/NamingSystem/bsn",
 }
 
 func isOID(s string) bool {
@@ -636,7 +639,7 @@ func (c *converter) buildLocation() *fhir.Location {
 
 func (c *converter) buildPractitioner(path string) *fhir.Practitioner {
 	id := c.get(path + ".1")
-	family := c.get(path + ".2")
+	family, familyParts := c.familyName(path + ".2")
 	given := c.get(path + ".3")
 
 	if id == "" && family == "" {
@@ -669,10 +672,11 @@ func (c *converter) buildPractitioner(path string) *fhir.Practitioner {
 
 	if family != "" || given != "" {
 		name := fhir.HumanName{
-			Family: family,
-			Given:  fhir.NonEmpty(given, c.get(path+".4")),
-			Prefix: fhir.NonEmpty(c.get(path + ".6")),
-			Suffix: fhir.NonEmpty(c.get(path + ".5")),
+			Family:        family,
+			FamilyElement: familyParts,
+			Given:         fhir.NonEmpty(given, c.get(path+".4")),
+			Prefix:        fhir.NonEmpty(c.get(path + ".6")),
+			Suffix:        fhir.NonEmpty(c.get(path + ".5")),
 			// XCN.10, the name type: a practitioner's legal name is as "official" as a patient's (ISiK and UK Core look
 			// for it), and it was dropped.
 			Use: c.nameUse(c.get(path+".10"), path+".10"),
@@ -1369,8 +1373,36 @@ func (c *converter) buildServiceRequest(obrIndex int, patient, encounter *fhir.R
 
 // Field helpers.
 
-func (c *converter) humanName(path string) *fhir.HumanName {
+// familyName reads an FN (XPN.1, XCN.2): its surname (FN.1), and, when the sender splits it, the parts of a family name made of
+// a prefix and a surname and of the person's own name and a partner's - FN.2 own surname prefix, FN.3 own surname, FN.4 the
+// partner's prefix, FN.5 the partner's surname - as HL7's family-name extensions, which is how HL7's v2-to-FHIR FN map writes
+// them. Before this the whole component, subcomponent separators and all ("van Voorbeeld&van&Voorbeeld"), became the family
+// name; found by converting Dutch messages, where the split is how v2 carries a Dutch name.
+func (c *converter) familyName(path string) (string, *fhir.Element) {
 	family := c.get(path + ".1")
+	if family == "" {
+		return "", nil
+	}
+	parts := []struct{ sub, url string }{
+		{"2", "http://hl7.org/fhir/StructureDefinition/humanname-own-prefix"},
+		{"3", "http://hl7.org/fhir/StructureDefinition/humanname-own-name"},
+		{"4", "http://hl7.org/fhir/StructureDefinition/humanname-partner-prefix"},
+		{"5", "http://hl7.org/fhir/StructureDefinition/humanname-partner-name"},
+	}
+	var ext []fhir.Extension
+	for _, p := range parts {
+		if v := c.get(path + "." + p.sub); v != "" {
+			ext = append(ext, fhir.Extension{URL: p.url, ValueString: &v})
+		}
+	}
+	if ext == nil {
+		return family, nil
+	}
+	return family, &fhir.Element{Extension: ext}
+}
+
+func (c *converter) humanName(path string) *fhir.HumanName {
+	family, familyParts := c.familyName(path + ".1")
 	given := c.get(path + ".2")
 	middle := c.get(path + ".3")
 	suffix := c.get(path + ".4")
@@ -1382,10 +1414,11 @@ func (c *converter) humanName(path string) *fhir.HumanName {
 	}
 
 	name := &fhir.HumanName{
-		Family: family,
-		Given:  fhir.NonEmpty(given, middle),
-		Prefix: fhir.NonEmpty(prefix),
-		Suffix: fhir.NonEmpty(suffix),
+		Family:        family,
+		FamilyElement: familyParts,
+		Given:         fhir.NonEmpty(given, middle),
+		Prefix:        fhir.NonEmpty(prefix),
+		Suffix:        fhir.NonEmpty(suffix),
 	}
 
 	name.Use = c.nameUse(use, path+".7")
