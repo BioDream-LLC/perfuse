@@ -49,13 +49,19 @@ p = sys.argv[1]
 lines = open(p).read().split("\n")
 # The "New in vX" and "Since vX" headings name the release they describe, not the current one: v0.1.18 turned the
 # README's "New in v0.1.17" into a second "New in v0.1.18".
-lines = [l if l.startswith(("## New in ", "## Since ")) else l.replace(os.environ["OLD"], os.environ["NEW"]) for l in lines]
-open(p, "w").write("\n".join(lines))
+# Nor may their notes change: "the same code as v0.1.19" in v0.1.20's notes became "the same code as v0.1.20". Lines from a
+# "New in"/"Since" heading to the next other heading are release notes and are left as written.
+out, notes = [], False
+for l in lines:
+    if l.startswith("## "):
+        notes = l.startswith(("## New in ", "## Since "))
+    out.append(l if notes else l.replace(os.environ["OLD"], os.environ["NEW"]))
+open(p, "w").write("\n".join(out))
 PY
 done
 left=""
 for f in $FILES; do
-  if grep -v -E '^## (New in|Since) ' "$f" | grep -q -F "$OLD"; then left="$left $f"; fi
+  if awk '/^## /{n=($0 ~ /^## (New in|Since) /)} !n' "$f" | grep -q -F "$OLD"; then left="$left $f"; fi
 done
 [ -z "$left" ] || die "$OLD is still mentioned in: $left"
 

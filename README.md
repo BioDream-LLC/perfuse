@@ -68,7 +68,7 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
-## Since v0.1.20, on main and not yet released
+## New in v0.1.21
 
 - **Da Vinci CRD, DTR and PAS 2.1.0 as well as 2.2.x.** 2.1.0 is the release CMS-0057-F points EHRs at now that 2.0.1's US Core
   3.1.1 base has expired. Perfuse answers a 2.1.0 caller in 2.1.0: it reads the release from the request, the client's
@@ -99,7 +99,7 @@ only from YAML or the command line is treated as a bug.
 
 ## New in v0.1.20
 
-- **Clean downloads.** The same code as v0.1.20. Every Linux and macOS archive before this one recorded the account that built
+- **Clean downloads.** The same code as v0.1.19. Every Linux and macOS archive before this one recorded the account that built
   it as the owner of its files; these are root's, and the older archives have been removed from their releases.
 
 ## New in v0.1.19
@@ -138,7 +138,7 @@ only from YAML or the command line is treated as a bug.
 - **Fixed:** an HTTP source cut the last byte off any body ending in 0x1C (taking it for MLLP framing), which broke one
   OpenPGP message in 256 and any other binary body ending that way. An `xds` destination sent a CDA document's confidentiality as its meaning (`normal`) instead of its code (`N`), and
   codes without a display had no name, which a strict registry refuses. The shared demo account may press the checks that change
-  nothing (a script's Check, the channel editor's validate and parse). The v0.1.17 notes below were relabelled v0.1.20 by the
+  nothing (a script's Check, the channel editor's validate and parse). The v0.1.17 notes below were relabelled v0.1.18 by the
   release script, which now leaves "New in" headings alone.
 
 ## New in v0.1.18
