@@ -71,6 +71,7 @@ func (s *Server) pasRead(w http.ResponseWriter, r *http.Request, resourceType, i
 		}
 	}
 	w.Header().Set("ETag", ETag(version))
+	out = pasForVersion(out, s.daVinciVersion(r, nil))
 	s.writeJSON(w, http.StatusOK, out)
 	return true
 }

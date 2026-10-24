@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/davinci"
 	"io"
 	"net"
 	"net/http"
@@ -34,6 +35,9 @@ type CDSClient struct {
 	Issuer string `yaml:"issuer" json:"issuer"`
 	// JWKSURL is where its public keys are published.
 	JWKSURL string `yaml:"jwks_url" json:"jwksUrl"`
+	// DaVinciVersion is the CRD release the EHR speaks, "2.1" or "2.2", when its requests do not say (requestedVersion);
+	// empty leaves it to the server's -davinci-version.
+	DaVinciVersion string `yaml:"davinci_version,omitempty" json:"davinciVersion,omitempty"`
 
 	keys *oidc.KeySet
 }
@@ -55,6 +59,9 @@ func LoadCDSClients(path string) ([]*CDSClient, error) {
 	for i, c := range doc.Clients {
 		if !strings.HasPrefix(c.Issuer, "http") || !(strings.HasPrefix(c.JWKSURL, "https://") || loopbackHTTP(c.JWKSURL)) {
 			return nil, fmt.Errorf("%s: client %d needs an issuer and an https jwks_url", path, i+1)
+		}
+		if c.DaVinciVersion != "" && davinci.Normalize(c.DaVinciVersion) == "" {
+			return nil, fmt.Errorf("%s: client %d: davinci_version is 2.1 or 2.2, not %q", path, i+1, c.DaVinciVersion)
 		}
 	}
 	return doc.Clients, nil
@@ -86,16 +93,22 @@ func (s *Server) handleCDSDiscovery(w http.ResponseWriter, r *http.Request) {
 
 // cdsAuthorised accepts a Perfuse API token or a trusted EHR's JWT whose audience is this service's URL.
 func (s *Server) cdsAuthorised(r *http.Request, serviceID string) (string, error) {
+	who, _, err := s.cdsCaller(r, serviceID)
+	return who, err
+}
+
+// cdsCaller is cdsAuthorised with the trusted EHR whose JWT it was, nil for an API token.
+func (s *Server) cdsCaller(r *http.Request, serviceID string) (string, *CDSClient, error) {
 	auth := r.Header.Get("Authorization")
 	token, ok := strings.CutPrefix(auth, "Bearer ")
 	if !ok || token == "" {
-		return "", errors.New("a CDS Hooks call needs a bearer JWT from a trusted EHR, or a Perfuse API token")
+		return "", nil, errors.New("a CDS Hooks call needs a bearer JWT from a trusted EHR, or a Perfuse API token")
 	}
 	if sess, err := s.Store.LookupAPIToken(r.Context(), token); err == nil {
-		return sess.Username, nil
+		return sess.Username, nil, nil
 	}
 	if strings.Count(token, ".") != 2 {
-		return "", errors.New("the bearer credential is neither an API token nor a JWT")
+		return "", nil, errors.New("the bearer credential is neither an API token nor a JWT")
 	}
 	audience := s.publicBase() + "/cds-services/" + serviceID
 	var last error = errors.New("the JWT is not from a trusted EHR")
@@ -109,13 +122,13 @@ func (s *Server) cdsAuthorised(r *http.Request, serviceID string) (string, error
 			Algorithms: []string{"RS384", "ES384", "RS256", "ES256"}, System: true})
 		if err == nil {
 			if !s.cdsJTIs.first(claims.Issuer+"|"+claims.JTI, claims.ExpiresAt) {
-				return "", errors.New("this JWT has been used before (its jti repeats), so it may be a replay")
+				return "", nil, errors.New("this JWT has been used before (its jti repeats), so it may be a replay")
 			}
-			return "ehr:" + claims.Issuer, nil
+			return "ehr:" + claims.Issuer, c, nil
 		}
 		last = err
 	}
-	return "", last
+	return "", nil, last
 }
 
 func (s *Server) handleCDSService(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +148,7 @@ func (s *Server) handleCDSService(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no such CDS service"})
 		return
 	}
-	who, err := s.cdsAuthorised(r, id)
+	who, client, err := s.cdsCaller(r, id)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
 		return
@@ -144,6 +157,9 @@ func (s *Server) handleCDSService(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<20)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "the request is not a CDS Hooks request: " + err.Error()})
 		return
+	}
+	if client != nil {
+		req.ClientVersion = client.DaVinciVersion
 	}
 	if req.Hook != hook {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("this service answers %s, and the request is %s", hook, req.Hook)})

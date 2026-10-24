@@ -1,0 +1,78 @@
+payer: Da Vinci 2.1.0 Test Plan
+url: https://payer.example.org
+rules:
+  - description: Home oxygen equipment (the DTR and CRD 2.1.0 examples' https form of the HCPCS system)
+    codes: [E0424, E0431, E1390]
+    system: https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+    questionnaire: http://hl7.org/fhir/us/davinci-dtr/Questionnaire/home-o2-std-questionnaire
+    reason: Prior authorization is required for home oxygen.
+  - description: Sleep study (the CRD 2.1.0 order-sign example)
+    codes: ["24338-6", "726551006"]
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+    questionnaire: http://hl7.org/fhir/us/davinci-dtr/Questionnaire/home-o2-std-questionnaire
+    reason: Prior authorization is required for this study.
+    details:
+      - {code: allowed-quantity, value: "1"}
+      - {code: policy-link, value: "https://payer.example.org/policies/sleep-study"}
+    contact: {name: Utilization management, phone: "+1-217-555-0199", url: "https://payer.example.org/contact/um"}
+    expiry_days: 90
+  - description: Medications in the CRD 2.1.0 examples
+    codes: ["0093-0948", "59011-410"]
+    covered: covered
+    pa: no-auth
+  - description: Services in the PAS 2.1.0 example requests, approved
+    codes: ["99212", "B4184", "B4185", "G0154"]
+    covered: covered
+    pa: auth-needed
+    pa_decision: approve
+  - description: Surgery in the PAS 2.1.0 example request, pended for the plan of care and a questionnaire
+    codes: ["33510"]
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+    questionnaire: http://hl7.org/fhir/us/davinci-dtr/Questionnaire/home-o2-std-questionnaire
+    pa_attachments: ["18776-5"]
+    pa_attachment_modifiers: ["18804-5"]
+    reason: Surgery is reviewed by a clinician with the plan of care.
+  - description: Home oxygen equipment
+    codes: [E0424, E0431, E1390]
+    system: http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets
+    covered: covered
+    pa: auth-needed
+    documentation: [clinical]
+    questionnaire: https://www.springfield-health-plan.example/fhir/Questionnaire/home-oxygen
+    reason: Prior authorization is required for home oxygen. Qualifying oxygen saturation within the last 30 days must be documented.
+    links:
+      - label: Home oxygen coverage policy
+        url: https://www.springfield-health-plan.example/policies/home-oxygen
+    # Billed as a monthly rental, approved for 90 days at a time, and dependent on the oximetry that qualifies it: if that
+    # order changes, the EHR should ask again.
+    billing_codes:
+      - {system: "http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets", code: E0424, display: "Stationary compressed gas 02"}
+    details:
+      - {code: allowed-period, value: "Rental for up to 36 months", qualification: "Recertification is required after the first 12 months"}
+    depends_on: ["94760", "94761"]
+    contact: {name: Springfield Health Plan utilization management, phone: "+1-217-555-0199", url: "https://www.springfield-health-plan.example/contact/um"}
+    expiry_days: 90
+  - description: Physical therapy evaluation
+    codes: ["97161", "97162", "97163"]
+    covered: covered
+    pa: no-auth
+    documentation: [clinical]
+    doc_purpose: [retain-doc]
+    reason: No prior authorization is needed. Keep the evaluation and plan of care on file; they are requested on audit.
+    details:
+      - {code: in-network-copay, value: "$30 per visit"}
+  - description: Office visit
+    codes: ["99213", "99214"]
+    covered: covered
+    pa: no-auth
+  - description: Cosmetic procedure
+    codes: ["15830"]
+    covered: not-covered
+    reason: Cosmetic surgery is excluded from the plan.

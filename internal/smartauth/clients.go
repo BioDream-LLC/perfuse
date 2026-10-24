@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/davinci"
 	"net/url"
 	"os"
 	"strings"
@@ -40,6 +41,9 @@ type Client struct {
 	SecretHash   string   `yaml:"secret_hash"`
 	RedirectURIs []string `yaml:"redirect_uris"`
 	LaunchURL    string   `yaml:"launch_url"`
+	// DaVinciVersion is the release of the Da Vinci guides (CRD, DTR, PAS) this client speaks, "2.1" or "2.2", when the
+	// requests it sends do not say; empty leaves it to the server's -davinci-version.
+	DaVinciVersion string `yaml:"davinci_version"`
 
 	keys *oidc.KeySet
 }
@@ -70,6 +74,9 @@ func LoadClients(path string) (Clients, error) {
 		}
 		if out[c.ID] != nil {
 			return nil, fmt.Errorf("%s: the id is used twice", where)
+		}
+		if c.DaVinciVersion != "" && davinci.Normalize(c.DaVinciVersion) == "" {
+			return nil, fmt.Errorf("%s: davinci_version is 2.1 or 2.2, not %q", where, c.DaVinciVersion)
 		}
 		if len(c.Scopes) == 0 {
 			return nil, fmt.Errorf("%s: list the scopes it may be granted", where)

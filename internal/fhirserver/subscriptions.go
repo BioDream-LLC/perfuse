@@ -39,6 +39,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/davinci"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -119,7 +120,10 @@ type SubscriptionOptions struct {
 	BaseURL string
 	// PAS offers the Da Vinci PAS topic, for the results of pended prior authorization requests.
 	PAS bool
-	Log *slog.Logger
+	// PASVersion is the Da Vinci release (davinci.V21 or V22) a PAS notification's full-resource payload is written in: the
+	// server's -davinci-version, since a notification goes to a subscriber, not in answer to a request. Empty is the newest.
+	PASVersion string
+	Log        *slog.Logger
 }
 
 // Subscriptions records and delivers notifications.
@@ -820,6 +824,14 @@ func (m *Subscriptions) notification(ctx context.Context, sub *parsedSubscriptio
 					return nil, err
 				}
 				raw = loaded
+				if sub.topic.URL == pasTopicURL && m.opts.PASVersion == davinci.V21 {
+					var b map[string]any
+					if json.Unmarshal(loaded, &b) == nil {
+						if out, err := json.Marshal(pasForVersion(b, davinci.V21)); err == nil {
+							raw = out
+						}
+					}
+				}
 			} else {
 				r, err := m.store.GetVersion(ctx, o.resourceType, o.resourceID, o.versionID)
 				if err != nil {

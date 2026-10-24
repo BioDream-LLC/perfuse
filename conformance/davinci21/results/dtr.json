@@ -1,0 +1,67 @@
+{
+ "2.1.0": {
+  "checkedAgainst": "2.1.0",
+  "answers": {
+   "questionnaire-package-adaptive.json": {
+    "profile": "dtr-qpackage-output-parameters",
+    "errors": [],
+    "guideData": []
+   },
+   "next-question-adaptive.json": {
+    "profile": "dtr-next-question-output-parameters",
+    "errors": [],
+    "guideData": []
+   },
+   "questionnaire-package.json": {
+    "profile": "dtr-qpackage-output-parameters",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data"
+    ]
+   },
+   "next-question-guide-example.json": {
+    "profile": null,
+    "guideData": [],
+    "errors": []
+   },
+   "log-questionnaire-errors.json": {
+    "profile": null,
+    "guideData": [],
+    "errors": []
+   }
+  }
+ },
+ "default": {
+  "checkedAgainst": "2.2.0",
+  "answers": {
+   "questionnaire-package-adaptive.json": {
+    "profile": "dtr-qpackage-output-parameters",
+    "errors": [],
+    "guideData": []
+   },
+   "next-question-adaptive.json": {
+    "profile": "dtr-next-question-output-parameters",
+    "errors": [],
+    "guideData": []
+   },
+   "questionnaire-package.json": {
+    "profile": "dtr-qpackage-output-parameters",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the guide's questionnaire has a version and no versionAlgorithm (SDC 4.0.0)"
+    ]
+   },
+   "next-question-guide-example.json": {
+    "profile": null,
+    "guideData": [],
+    "errors": []
+   },
+   "log-questionnaire-errors.json": {
+    "profile": null,
+    "guideData": [],
+    "errors": []
+   }
+  }
+ }
+}

@@ -83,3 +83,12 @@ func (s *Server) SetUsers(u Users) {
 	}
 	s.Users = u
 }
+
+// DaVinciVersion is the Da Vinci release a registered client speaks, from its davinci_version, or "" when the client is
+// unknown or its registration says nothing.
+func (s *Server) DaVinciVersion(clientID string) string {
+	if c := s.client(clientID); c != nil {
+		return c.DaVinciVersion
+	}
+	return ""
+}

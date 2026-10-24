@@ -113,7 +113,7 @@ func TestDiscoveryDeclaresTheCRDVersionAndConfigurationOptions(t *testing.T) {
 	h.server.CRD, _ = crd.LoadRules("../../examples/crd/rules.yaml")
 	rec := h.do("", http.MethodGet, "/cds-services", nil)
 	body := rec.Body.String()
-	if !strings.Contains(body, `"davinci-crd.version":["2.2"]`) || !strings.Contains(body, `"code":"coverage-info"`) || !strings.Contains(body, `"type":"boolean"`) {
+	if !strings.Contains(body, `"davinci-crd.version":["2.1","2.2"]`) || !strings.Contains(body, `"code":"coverage-info"`) || !strings.Contains(body, `"type":"boolean"`) {
 		t.Errorf("%s", body)
 	}
 }

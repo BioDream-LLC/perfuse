@@ -35,6 +35,10 @@ type Caller struct {
 	// Name identifies the caller in the audit log.
 	Name string
 
+	// ClientID is the SMART client a token was issued to, empty for other schemes. It finds the client's registration,
+	// such as the Da Vinci release it speaks.
+	ClientID string
+
 	// Scopes are the SMART scopes granted, empty when the scheme does not use them.
 	Scopes []string
 

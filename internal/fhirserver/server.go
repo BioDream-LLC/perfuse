@@ -48,6 +48,14 @@ type Server struct {
 	// Nil when no CRD service runs in this process; $questionnaire-package then needs the order or the questionnaire named.
 	DTRContext func(assertionID string) []string
 
+	// DaVinciVersion is the Da Vinci release (davinci.V21 or V22) DTR and PAS answer in when neither the request nor the
+	// client's registration says; empty is the newest.
+	DaVinciVersion string
+
+	// ClientDaVinci is the release a SMART client's registration names (smartauth davinci_version), or "". Nil when this
+	// server issues no SMART tokens.
+	ClientDaVinci func(clientID string) string
+
 	// PAS turns on Da Vinci PAS: Claim/$submit, Claim/$inquire and Claim/$decide. Nil leaves them off.
 	PAS *PAS
 
@@ -554,6 +562,19 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		"instantiates": []string{"http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server"},
 		"format":       []string{"json", "application/fhir+json"},
 		"rest":         []any{rest},
+	}
+	// The Da Vinci payer guides this server answers, both releases, so a client can see before it asks.
+	var guides []string
+	if s.PAS != nil {
+		guides = append(guides, "http://hl7.org/fhir/us/davinci-pas/ImplementationGuide/hl7.fhir.us.davinci-pas|2.1.0",
+			"http://hl7.org/fhir/us/davinci-pas/ImplementationGuide/hl7.fhir.us.davinci-pas|2.2.1")
+	}
+	if s.DTRContext != nil {
+		guides = append(guides, "http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr|2.1.0",
+			"http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr|2.2.0")
+	}
+	if guides != nil {
+		statement["implementationGuide"] = guides
 	}
 
 	s.writeJSON(w, http.StatusOK, statement)

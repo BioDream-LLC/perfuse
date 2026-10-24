@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/davinci"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -34,6 +35,9 @@ const (
 	dtrVersion      = "2.2.0"
 )
 
+// dtrRelease is the DTR release a client of a Da Vinci version reads: 2.1.0 or 2.2.0.
+func dtrRelease(v string) string { return davinci.Release("dtr", v) }
+
 func (s *Server) registerDTR(mux *http.ServeMux) {
 	mux.HandleFunc("POST /Questionnaire/$questionnaire-package", s.handleQuestionnairePackage)
 	mux.HandleFunc("POST /Questionnaire/$log-questionnaire-errors", s.handleLogQuestionnaireErrors)
@@ -49,19 +53,28 @@ type dtrParam struct {
 }
 
 func (s *Server) readParameters(w http.ResponseWriter, r *http.Request) ([]dtrParam, bool) {
+	params, _, ok := s.readVersionedParameters(w, r)
+	return params, ok
+}
+
+// readVersionedParameters is readParameters with the Da Vinci version the request is answered in (daVinciVersion).
+func (s *Server) readVersionedParameters(w http.ResponseWriter, r *http.Request) ([]dtrParam, string, bool) {
 	body, ok := s.readBody(w, r)
 	if !ok {
-		return nil, false
+		return nil, "", false
 	}
+	var whole any
+	_ = json.Unmarshal(body, &whole)
+	version := s.daVinciVersion(r, whole)
 	var params struct {
 		ResourceType string     `json:"resourceType"`
 		Parameter    []dtrParam `json:"parameter"`
 	}
 	if err := json.Unmarshal(body, &params); err != nil || params.ResourceType != "Parameters" {
 		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "structure", "the body must be a Parameters resource")
-		return nil, false
+		return nil, "", false
 	}
-	return params.Parameter, true
+	return params.Parameter, version, true
 }
 
 // QuestionnairePackage runs $questionnaire-package on a Parameters body without going through the endpoint's authentication, for the
@@ -75,10 +88,11 @@ func (s *Server) QuestionnairePackage(ctx context.Context, params []byte) (int, 
 }
 
 func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Request) {
-	params, ok := s.readParameters(w, r)
+	params, version, ok := s.readVersionedParameters(w, r)
 	if !ok {
 		return
 	}
+	release := dtrRelease(version)
 
 	var (
 		canonicals []string
@@ -163,7 +177,7 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 		adaptive := isAdaptive(q)
 		packaged := q
 		if adaptive {
-			packaged = s.adaptiveShell(q, "dtr-questionnaire-adapt-search")
+			packaged = s.adaptiveShell(q, "dtr-questionnaire-adapt-search", release)
 		}
 		entries := []any{map[string]any{"fullUrl": s.entryURL(q), "resource": packaged}}
 		newest := lastUpdated(q)
@@ -196,7 +210,7 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 		if !since.IsZero() && !newest.IsZero() && !newest.After(since) {
 			continue // changedsince: nothing in this package changed
 		}
-		qr := seedResponse(q, coverage, orders)
+		qr := seedResponse(q, coverage, orders, release)
 		// Pin the questionnaire's library and value set references to the versions packaged with it.
 		versions := map[string]string{}
 		for _, e := range entries[1:] {
@@ -208,7 +222,7 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 		}
 		entries[0].(map[string]any)["resource"] = pinCanonicals(entries[0].(map[string]any)["resource"].(map[string]any), versions)
 		if adaptive {
-			shell := s.adaptiveShell(q, "dtr-questionnaire-adapt")
+			shell := s.adaptiveShell(q, "dtr-questionnaire-adapt", release)
 			id, _ := q["id"].(string)
 			shell["id"] = id
 			// The questionnaire the app fills in is derived from the one in the package; DTR names that by canonical.
@@ -219,13 +233,22 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 			shell["derivedFrom"] = append(append([]any{}, listOf(q["derivedFrom"])...), canonical)
 			qr["contained"] = []any{shell}
 			qr["questionnaire"] = "#" + id
-			qr["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse-adapt|" + dtrVersion}}
+			qr["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse-adapt|" + release}}
 		}
-		entries = append(entries[:1], append([]any{map[string]any{"fullUrl": "urn:uuid:" + fhir.DeterministicUUID("QuestionnaireResponse", fullURLOf(q), refOf(coverage)), "resource": qr}}, entries[1:]...)...)
+		// DTR 2.1.0 makes the package's QuestionnaireResponse optional, and its profile wants what a response only has
+		// once filled in (an item, the order and coverage as two contexts): the app starts one itself. 2.2.0 requires it.
+		if version != davinci.V21 {
+			entries = append(entries[:1], append([]any{map[string]any{"fullUrl": "urn:uuid:" + fhir.DeterministicUUID("QuestionnaireResponse", fullURLOf(q), refOf(coverage)), "resource": qr}}, entries[1:]...)...)
+		}
 		bundle := map[string]any{"resourceType": "Bundle", "type": "collection",
-			"meta":  map[string]any{"profile": []string{dtrBase + "DTR-QPackageBundle|" + dtrVersion}},
+			"meta":  map[string]any{"profile": []string{dtrBase + "DTR-QPackageBundle|" + release}},
 			"entry": entries}
-		out = append(out, map[string]any{"name": "packagebundle", "resource": bundle})
+		// 2.1.0 named the parameter PackageBundle; 2.2.0 packagebundle.
+		name := "packagebundle"
+		if version == davinci.V21 {
+			name = "PackageBundle"
+		}
+		out = append(out, map[string]any{"name": name, "resource": bundle})
 	}
 	if len(issues) > 0 {
 		out = append(out, map[string]any{"name": "outcome", "resource": map[string]any{"resourceType": "OperationOutcome", "issue": issues}})
@@ -255,7 +278,7 @@ func orderQuestionnaires(order map[string]any) []string {
 
 // seedResponse is the QuestionnaireResponse a package carries: in progress, for the patient the coverage is for, naming the coverage
 // and the order, and saying what the answers are for.
-func seedResponse(q, coverage map[string]any, orders []map[string]any) map[string]any {
+func seedResponse(q, coverage map[string]any, orders []map[string]any, release string) map[string]any {
 	canonical := fullURLOf(q)
 	if v, _ := q["version"].(string); v != "" {
 		canonical += "|" + v
@@ -272,7 +295,7 @@ func seedResponse(q, coverage map[string]any, orders []map[string]any) map[strin
 	}
 	qr := map[string]any{
 		"resourceType":  "QuestionnaireResponse",
-		"meta":          map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse|" + dtrVersion}},
+		"meta":          map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse|" + release}},
 		"extension":     ext,
 		"questionnaire": canonical,
 		"status":        "in-progress",

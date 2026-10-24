@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/biodream-llc/perfuse/internal/crd"
 	"github.com/biodream-llc/perfuse/internal/dashboards"
+	"github.com/biodream-llc/perfuse/internal/davinci"
 	"github.com/biodream-llc/perfuse/internal/dicomweb"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"github.com/biodream-llc/perfuse/internal/trace"
@@ -133,6 +134,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	dicomwebCORS := fset.String("dicomweb-cors", "", "comma-separated browser origins, such as an OHIF viewer's, allowed to "+
 		"call /dicomweb")
 	crdRules := fset.String("crd-rules", "", "a Da Vinci CRD rules file: serve coverage requirements over CDS Hooks at /cds-services")
+	daVinciVersion := fset.String("davinci-version", davinci.Latest,
+		"the Da Vinci CRD, DTR and PAS release answered when neither a request nor its client's registration says: 2.2 (CRD 2.2.1, DTR 2.2.0, PAS 2.2.1) or 2.1 (2.1.0)")
 	dashboardsFile := fset.String("dashboards", "", "a file mapping directory groups and roles to the dashboard each opens on")
 	rctc := fset.String("rctc", "", "eCR trigger codes for the case report preview: a FHIR ValueSet or Bundle of them, such as the eRSD")
 	cdsClients := fset.String("cds-clients", "", "the EHRs trusted to call the CDS services with signed JWTs (issuer and jwks_url)")
@@ -248,7 +251,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	fhirAPITokens := fset.Bool("fhir-api-tokens", false,
 		"with SMART configured, accept Perfuse API tokens on the FHIR endpoint as well (unscoped; the console's FHIR settings can switch it)")
 	pasOn := fset.Bool("pas", false,
-		"serve Da Vinci PAS 2.2.1 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what "+
+		"serve Da Vinci PAS 2.2.1 and 2.1.0 (Claim/$submit, $inquire, $decide) on the FHIR endpoint; decisions come from -crd-rules, and what "+
 			"no rule decides is pended for a reviewer. With -fhir-subscriptions, the PAS topic delivers each pended request's result")
 	um278 := addPAS278Flags(fset)
 	pasDeciderURL := fset.String("pas-decider-url", "",
@@ -1283,12 +1286,16 @@ oidcDone:
 		} else if strings.TrimSpace(*dicomwebCORS) != "" {
 			return fmt.Errorf("-dicomweb-cors is set but -dicomweb-archive is not, so there is nothing for it to open")
 		}
+		if davinci.Normalize(*daVinciVersion) == "" {
+			return fmt.Errorf("-davinci-version is 2.1 or 2.2, not %q", *daVinciVersion)
+		}
 		if *crdRules != "" {
 			rules, err := crd.LoadRules(*crdRules)
 			if err != nil {
 				return fmt.Errorf("-crd-rules: %w", err)
 			}
 			srv.CRD = rules
+			srv.CRD.DaVinciVersion = davinci.Normalize(*daVinciVersion)
 			rules.Client = srv.OutboundClient()
 			log.Info("serving Da Vinci CRD over CDS Hooks", "discovery", srv.SelfURL+"/cds-services", "rules", len(rules.Rules))
 			if *crdAdvisorURL != "" {
@@ -1560,6 +1567,7 @@ oidcDone:
 			log.Info("serving eCR $process-message", "url", baseURL+"/$process-message",
 				"reportability_responses", *ecrResponses, "test_agency", *ecrAgency != "")
 		}
+		fhirSrv.DaVinciVersion = davinci.Normalize(*daVinciVersion)
 		if srv.CRD != nil {
 			// CRD and DTR in one process: an assertion CRD made can be answered by DTR from its id alone.
 			fhirSrv.DTRContext = srv.CRD.QuestionnairesFor
@@ -1595,7 +1603,7 @@ oidcDone:
 					"so no notification could ever be sent, and a subscription could not even be created")
 			}
 			subs, err := fhirStore.EnableSubscriptions(context.Background(), fhirserver.SubscriptionOptions{
-				AllowHTTP: *fhirSubscriptionsHTTP, BaseURL: baseURL, Log: log, PAS: *pasOn,
+				AllowHTTP: *fhirSubscriptionsHTTP, BaseURL: baseURL, Log: log, PAS: *pasOn, PASVersion: davinci.Normalize(*daVinciVersion),
 			})
 			if err != nil {
 				return fmt.Errorf("enabling FHIR subscriptions: %w", err)
@@ -1652,6 +1660,7 @@ oidcDone:
 				log.Info("SMART sign-in at an identity provider", "issuer", as.Upstream.Provider.Issuer, "redirect", as.UpstreamRedirect())
 			}
 			srv.SMART, srv.SMARTClientsFile, srv.SMARTUsersFile = as, *smartClients, *smartUsers
+			fhirSrv.ClientDaVinci = as.DaVinciVersion
 			if smartKeys, err = oidc.NewStaticKeySet(as.Key.JWKS()); err != nil {
 				return err
 			}

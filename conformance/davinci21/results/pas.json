@@ -1,0 +1,161 @@
+{
+ "2.1.0": {
+  "checkedAgainst": "2.1.0",
+  "answers": {
+   "submit-HomecareAuthorizationBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-MedicalServicesAuthorizationBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-ReferralAuthorizationBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-SurgicalRequestBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-HomecareAuthorizationUpdateBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "inquire.json": {
+    "profile": "profile-pas-inquiry-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   }
+  }
+ },
+ "default": {
+  "checkedAgainst": "2.2.1",
+  "answers": {
+   "submit-HomecareAuthorizationBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-MedicalServicesAuthorizationBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-ReferralAuthorizationBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-SurgicalRequestBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "follows from the LOINC attachment code the validator could not check",
+     "terminology is off, so the validator cannot check a LOINC attachment code against its value set",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "submit-HomecareAuthorizationUpdateBundleExample.json": {
+    "profile": "profile-pas-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "inquire-1.json": {
+    "profile": "profile-pas-inquiry-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "inquire-2.json": {
+    "profile": "profile-pas-inquiry-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "inquire-3.json": {
+    "profile": "profile-pas-inquiry-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "inquire-4.json": {
+    "profile": "profile-pas-inquiry-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "inquire-5.json": {
+    "profile": "profile-pas-inquiry-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   },
+   "inquire-6.json": {
+    "profile": "profile-pas-inquiry-response-bundle",
+    "errors": [],
+    "guideData": [
+     "an example.org URL in the guide's example data",
+     "the 2.1.0 example Coverage has no identifier, which PAS 2.2.1 requires",
+     "the guide's Patient SubscriberExample does not meet profile-beneficiary (the guide's own request fails this too)"
+    ]
+   }
+  }
+ }
+}

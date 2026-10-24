@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/davinci"
 	"io"
 	"net/http"
 	"net/url"
@@ -145,6 +146,10 @@ type Rules struct {
 	// Members says where the payer's own member records are, to resolve the coverage an EHR sends: "fhir" is this server's
 	// FHIR store, the one $member-match reads. Empty: not checked, and only the Coverage's own status and period are read.
 	Members string `yaml:"members,omitempty" json:"members,omitempty"`
+
+	// DaVinciVersion is the CRD release (davinci.V21 or V22) answered when neither the request nor its client's registration
+	// says; empty is the newest. Set by the server (-davinci-version), not by the rules file.
+	DaVinciVersion string `yaml:"-" json:"-"`
 	// AllowWithPA lets doc_purpose name withpa. CRD 2.2.1's invariant crd-ci-q4 is written so that every coverage-information
 	// carrying withpa fails it, whatever pa-needed says; the guide's authors agree it is broken and a technical correction is
 	// due. Until then the HL7 validator, and Inferno, reject such a response, so this is for a partner who checks against the
@@ -313,14 +318,14 @@ func (r *Rules) Discovery() map[string]any {
 			"hook":        h,
 			"id":          "crd-" + h,
 			"title":       r.Payer + " coverage requirements (" + h + ")",
-			"description": "Da Vinci CRD " + Version + ": coverage, prior authorization and documentation requirements for the orders in context",
+			"description": "Da Vinci CRD " + Version + " and 2.1.0: coverage, prior authorization and documentation requirements for the orders in context",
 			"prefetch": map[string]string{"coverage": "Coverage?patient={{context.patientId}}&status=active",
 				"patient": "Patient/{{context.patientId}}"},
 			// CRD 2.2.1 dev-1 and dev-4/dev-5: the CRD versions each service speaks, as major.minor, and a boolean option for each
 			// kind of response it returns, which a client sets per call. The Inferno CRD test kit found both missing: the
 			// options had been published under the request-side name with nothing in them.
 			"extension": map[string]any{
-				"davinci-crd.version":               []string{versionMajorMinor()},
+				"davinci-crd.version":               davinci.Versions,
 				"davinci-crd.configuration-options": configurationOptions,
 			},
 		})
@@ -357,6 +362,10 @@ type Request struct {
 	Prefetch map[string]json.RawMessage `json:"prefetch,omitempty"`
 	// Extension carries davinci-crd.configuration (the client's choice of options) and davinci-crd.requestedVersion.
 	Extension map[string]json.RawMessage `json:"extension,omitempty"`
+
+	// ClientVersion is the Da Vinci release the calling EHR's registration names, set by the server that authenticated it;
+	// never read from the request body.
+	ClientVersion string `json:"-"`
 }
 
 // wants reports whether the client left a boolean configuration option on, which is its default.
@@ -468,6 +477,7 @@ func (r *Rules) EvaluateContext(ctx context.Context, req *Request, now time.Time
 		source["url"] = r.URL
 	}
 	resp := &Response{Cards: []Card{}}
+	version := r.version(req)
 
 	// The coverage: from prefetch, or, when the EHR did not prefetch it, from its FHIR server. A failure to read it is a
 	// technical problem, answered as indeterminate rather than guessed (CRD's technical reason).
@@ -536,6 +546,7 @@ func (r *Rules) EvaluateContext(ctx context.Context, req *Request, now time.Time
 			card = r.explainedCard(ref, source, reasonDisplay[membership], why)
 		}
 		if ext != nil {
+			ext = forVersion(ext, version)
 			resp.SystemActions = append(resp.SystemActions, Action{Type: "update", Resource: cloneWith(o, ext),
 				Description: "Record the coverage information on the order", raw: withExtension(raw, ext)})
 			resp.Cards = append(resp.Cards, card)
@@ -556,7 +567,7 @@ func (r *Rules) EvaluateContext(ctx context.Context, req *Request, now time.Time
 				rule.PA, rule.satisfiedPAID = "satisfied", id
 			}
 		}
-		ext = r.coverageInformation(rule, matched, coverage, now, dependencies(rule, orders, o)...)
+		ext = forVersion(r.coverageInformation(rule, matched, coverage, now, dependencies(rule, orders, o)...), version)
 		updated := cloneWith(o, ext)
 		resp.SystemActions = append(resp.SystemActions, Action{Type: "update", Resource: updated,
 			Description: "Record the coverage information on the order", raw: withExtension(raw, ext)})

@@ -3,6 +3,8 @@ package fhirserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/davinci"
+	"html"
 	"net/http"
 	"strconv"
 	"strings"
@@ -38,7 +40,7 @@ func isAdaptive(q map[string]any) bool {
 //
 // questionnaireAdaptive says where $next-question is served. A payer that wrote it as true (adaptive, served here) gets it
 // written as this server's base URL, which is the form DTR's adaptive profiles require.
-func (s *Server) adaptiveShell(q map[string]any, profile string) map[string]any {
+func (s *Server) adaptiveShell(q map[string]any, profile, release string) map[string]any {
 	out := map[string]any{}
 	for k, v := range q {
 		if k != "item" && k != "meta" && k != "text" {
@@ -56,7 +58,7 @@ func (s *Server) adaptiveShell(q map[string]any, profile string) map[string]any 
 	if ext != nil {
 		out["extension"] = ext
 	}
-	out["meta"] = map[string]any{"profile": []string{dtrBase + profile + "|" + dtrVersion}}
+	out["meta"] = map[string]any{"profile": []string{dtrBase + profile + "|" + release}}
 	return out
 }
 
@@ -75,13 +77,19 @@ func (s *Server) handleNextQuestion(w http.ResponseWriter, r *http.Request) {
 		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "structure", "the body is not JSON")
 		return
 	}
+	var whole any
+	_ = json.Unmarshal(body, &whole)
+	version := s.daVinciVersion(r, whole)
 	var raw json.RawMessage
 	switch probe.ResourceType {
 	case "QuestionnaireResponse":
 		raw = body
 	case "Parameters":
 		for _, p := range probe.Parameter {
-			if p.Name == "questionnaire-response" {
+			// 2.2.0 names it questionnaire-response. 2.1.0's operation says questionnaire-response-in while its profile and
+			// example say in; both are read.
+			switch p.Name {
+			case "questionnaire-response", "questionnaire-response-in", "in":
 				raw = p.Resource
 			}
 		}
@@ -100,27 +108,40 @@ func (s *Server) handleNextQuestion(w http.ResponseWriter, r *http.Request) {
 		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "structure", "questionnaire-response must be a QuestionnaireResponse")
 		return
 	}
-	next, status, msg := s.nextQuestion(r, qr)
+	next, status, msg := s.nextQuestion(r, qr, dtrRelease(version))
 	if status != http.StatusOK {
 		s.writeOutcome(w, r, status, fhir.SeverityError, "processing", msg)
 		return
 	}
+	// 2.2.0 answers in return. 2.1.0's operation names it questionnaire-response-out and its profile and example out; out
+	// is what the profile checks, and what an app built on the published example reads.
+	name := "return"
+	if version == davinci.V21 {
+		name = "out"
+	}
 	s.writeJSON(w, http.StatusOK, map[string]any{"resourceType": "Parameters",
-		"parameter": []any{map[string]any{"name": "return", "resource": next}}})
+		"parameter": []any{map[string]any{"name": name, "resource": next}}})
 }
 
 // nextQuestion advances a response by one question, or completes it.
-func (s *Server) nextQuestion(r *http.Request, qr map[string]any) (map[string]any, int, string) {
+func (s *Server) nextQuestion(r *http.Request, qr map[string]any, release string) (map[string]any, int, string) {
 	contained := containedQuestionnaire(qr)
 	if contained == nil {
 		return nil, http.StatusBadRequest, "the QuestionnaireResponse carries no contained Questionnaire, which DTR requires for an adaptive questionnaire " +
 			"(start from the shell $questionnaire-package returned)"
 	}
+	// The questionnaire it came from: its url in DTR 2.2.0 (url 1..1), its derivedFrom in 2.1.0, which forbids a url on
+	// the contained adaptive questionnaire.
 	canonical, _ := contained["url"].(string)
+	if canonical == "" {
+		if from := listOf(contained["derivedFrom"]); len(from) > 0 {
+			canonical, _ = from[0].(string)
+		}
+	}
 	if problem := checkAnswers(listOf(qr["item"]), questionIndex(listOf(contained["item"]), map[string]map[string]any{})); problem != "" {
 		return nil, http.StatusBadRequest, "the QuestionnaireResponse does not fit its contained Questionnaire: " + problem
 	}
-	if v, _ := contained["version"].(string); v != "" && canonical != "" {
+	if v, _ := contained["version"].(string); v != "" && canonical != "" && !strings.Contains(canonical, "|") {
 		canonical += "|" + v
 	}
 	source := s.byCanonical(r, "Questionnaire", canonical)
@@ -148,13 +169,37 @@ func (s *Server) nextQuestion(r *http.Request, qr map[string]any) (map[string]an
 	for k, v := range contained {
 		q[k] = v
 	}
-	q["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaire-adapt|" + dtrVersion}}
+	q["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaire-adapt|" + release}}
+	if release == "2.1.0" {
+		// DTR 2.1.0: no url, derivedFrom the source, and a narrative.
+		source := canonical
+		delete(q, "url")
+		q["derivedFrom"] = []any{source}
+		if q["text"] == nil {
+			title, _ := q["title"].(string)
+			if title == "" {
+				title = "Adaptive questionnaire"
+			}
+			q["text"] = map[string]any{"status": "generated",
+				"div": `<div xmlns="http://www.w3.org/1999/xhtml">` + html.EscapeString(title) + `</div>`}
+		}
+	}
 	if q["id"] == nil || q["id"] == "" {
 		q["id"] = "adaptive"
 	}
 	out["questionnaire"] = "#" + q["id"].(string)
-	out["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse-adapt|" + dtrVersion}}
+	// DTR 2.1.0 has no adaptive response profile: an adaptive response is a dtr-questionnaireresponse.
+	if release == "2.1.0" {
+		out["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse|" + release}}
+	} else {
+		out["meta"] = map[string]any{"profile": []string{dtrBase + "dtr-questionnaireresponse-adapt|" + release}}
+	}
 	q["item"] = items
+	if release == "2.1.0" {
+		// DTR 2.1.0 forbids enableWhen and enableBehavior on an adaptive questionnaire's items: which questions apply is the
+		// server's to decide, and projectAdaptive already left out those that do not.
+		q["item"] = withoutEnableWhen(items)
+	}
 	if !grew && !stopped {
 		out["status"] = "completed" // every question that applies has been asked, and none waits on an answer
 	} else {
@@ -475,4 +520,27 @@ func offered(q map[string]any, coding any) bool {
 		}
 	}
 	return false
+}
+
+// withoutEnableWhen is items, and the items inside them, with no enableWhen or enableBehavior.
+func withoutEnableWhen(items []any) []any {
+	out := make([]any, 0, len(items))
+	for _, it := range items {
+		m, ok := it.(map[string]any)
+		if !ok {
+			out = append(out, it)
+			continue
+		}
+		c := map[string]any{}
+		for k, v := range m {
+			if k != "enableWhen" && k != "enableBehavior" {
+				c[k] = v
+			}
+		}
+		if sub := listOf(m["item"]); sub != nil {
+			c["item"] = withoutEnableWhen(sub)
+		}
+		out = append(out, c)
+	}
+	return out
 }

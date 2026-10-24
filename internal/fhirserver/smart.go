@@ -183,9 +183,10 @@ func (a *SMARTAuth) Authenticate(r *http.Request) (*Caller, error) {
 	}
 
 	return &Caller{
-		Name:   name,
-		Scopes: scopes,
-		Write:  write,
+		Name:     name,
+		ClientID: claims.ClientID,
+		Scopes:   scopes,
+		Write:    write,
 		// The launch context, taken from the verified claims rather than from a header or a query parameter.
 		// Anywhere else and the app would be choosing which patient it is limited to.
 		Patient:   strings.TrimSpace(claims.Patient),

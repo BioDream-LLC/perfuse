@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/biodream-llc/perfuse/internal/davinci"
 	"net/http"
 	"net/url"
 	"strings"
@@ -263,7 +264,7 @@ func (s *Server) handlePASSubmit(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
 	default:
-		s.writeJSON(w, http.StatusOK, response)
+		s.writeJSON(w, http.StatusOK, pasForVersion(response, s.daVinciVersion(r, body)))
 	}
 }
 
@@ -1006,14 +1007,27 @@ func (s *Server) handlePASInquire(w http.ResponseWriter, r *http.Request) {
 		s.writeOutcome(w, r, http.StatusInternalServerError, fhir.SeverityError, "exception", err.Error())
 		return
 	}
-	params := []any{}
 	now := s.PAS.now().UTC()
+	var answers []map[string]any
 	for _, b := range found {
-		params = append(params, map[string]any{"name": "return", "resource": inquiryResponse(b, now)})
+		answers = append(answers, inquiryResponse(b, now))
 	}
 	// What the payer's UM system holds beyond this server's own: authorizations asked for by fax, portal, phone or another
 	// submitter's 278 (pas_inquire_um.go).
-	for _, b := range s.inquireUM(r.Context(), req, found, now) {
+	answers = append(answers, s.inquireUM(r.Context(), req, found, now)...)
+	if version := s.daVinciVersion(r, body); version == davinci.V21 {
+		// PAS 2.1.0's $inquire returns one Bundle (return 1..1), which FHIR sends as the body itself; its inquiry response
+		// Bundle holds any number of ClaimResponses, so every match goes in the one Bundle.
+		if len(answers) == 0 {
+			s.writeOutcome(w, r, http.StatusNotFound, fhir.SeverityInformation, "not-found",
+				"no prior authorization matches this inquiry for this provider and member")
+			return
+		}
+		s.writeJSON(w, http.StatusOK, pasForVersion(mergeInquiryAnswers(answers), version))
+		return
+	}
+	params := []any{}
+	for _, b := range answers {
 		params = append(params, map[string]any{"name": "return", "resource": b})
 	}
 	s.writeJSON(w, http.StatusOK, map[string]any{"resourceType": "Parameters", "parameter": params})
