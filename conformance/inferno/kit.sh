@@ -25,6 +25,21 @@ if [ ! -d "$kit/.git" ]; then
 fi
 [ "$(git -C "$kit" describe --tags --exact-match 2>/dev/null)" = "$tag" ] || { echo "kit.sh: $kit is not at $tag" >&2; exit 1; }
 
+# SUBSCRIPTIONS_KIT_REF runs the PAS kit with the Subscriptions test kit (which supplies its notification checks) at a commit of
+# its own repository, to try an upstream fix before it is released. The kit's Gemfile.lock is kept, so bundler moves only what
+# that gem needs; the checkout is put back first, so a run without it is the kit as released.
+git -C "$kit" checkout -q -- Gemfile Gemfile.lock 2>/dev/null || true
+if [ -n "${SUBSCRIPTIONS_KIT_REF:-}" ] && [ "$name" = pas ]; then
+  printf '\ngem "subscriptions_test_kit", git: "https://github.com/inferno-framework/subscriptions-test-kit.git", ref: "%s"\n' \
+    "$SUBSCRIPTIONS_KIT_REF" >> "$kit/Gemfile"
+  # Re-lock that gem alone, in the kit's own Ruby image, so every other gem stays at the version the kit was released with.
+  ruby_image=$(sed -n 's/^FROM //p' "$kit/Dockerfile" | head -1)
+  docker run --rm -v "$kit:/w" -w /w "$ruby_image" sh -c \
+    'gem install bundler -q >/dev/null 2>&1; bundle lock --update subscriptions_test_kit >/dev/null' ||
+    { echo "kit.sh: could not lock the Subscriptions test kit at $SUBSCRIPTIONS_KIT_REF" >&2; exit 1; }
+  echo "kit.sh: the Subscriptions test kit at $SUBSCRIPTIONS_KIT_REF (not a release)"
+fi
+
 # The validator needs more memory than the kits give it for Perfuse's larger bundles, and keeps its package cache between runs.
 # CRD's simulated EHR hands out its own address to Perfuse, which reaches it from this machine's side of Docker.
 {

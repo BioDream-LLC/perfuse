@@ -21,6 +21,10 @@ instance, test.perfuse.health (`deploy/test-instance`); no Docker needed.
 
 verification.md explains every failure.
 
+`SUBSCRIPTIONS_KIT_REF=<commit>` runs the PAS kit with the Subscriptions test kit, which supplies its notification checks, at a
+commit of its own repository (an upstream fix not yet released), and `PAS_KEEP_SAMPLE_HEADER=1` keeps the kit's sample
+Subscription's own `Authorization` header, which the released kit's bug (subscriptions-test-kit#48) makes the run drop.
+
 ## What each step does
 
 - `kit.sh` clones the kit at its tag into `.work/kits`, starts it with Docker Compose on http://localhost, and adds the test CA to

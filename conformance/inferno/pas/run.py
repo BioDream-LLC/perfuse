@@ -68,9 +68,11 @@ def extra_must_support(base):
 def inputs():
     p = preset()
     sub = copy.deepcopy(p["subscription_resource"])
-    # Without the sample's own Authorization header: Inferno adds the one it checks, and a receiver reading the first of two
-    # reads the sample's.
-    sub["channel"].pop("header", None)
+    # Without the sample's own Authorization header: the Subscriptions test kit up to v0.13.0 adds the one it checks beside it
+    # (subscriptions-test-kit#48), and a receiver reading the first of two reads the sample's. PAS_KEEP_SAMPLE_HEADER=1 keeps
+    # it, to check a kit with the fix (kit.sh SUBSCRIPTIONS_KIT_REF).
+    if os.environ.get("PAS_KEEP_SAMPLE_HEADER") != "1":
+        sub["channel"].pop("header", None)
     sub.pop("end", None)
     v = {
         "approval_pa_submit_request_payload": p["approval_pa_submit_request_payload"],
