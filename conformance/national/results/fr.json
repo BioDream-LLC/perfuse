@@ -37,16 +37,17 @@
   },
   "Practitioner": {
    "profile": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner",
-   "resources": 19,
+   "resources": 33,
    "failing": 0,
    "errors": {},
-   "warnings": 33
+   "warnings": 47
   }
  },
  "skipped": {
   "DiagnosticReport": 14,
   "DocumentReference": 44,
   "Observation": 178,
+  "ServiceRequest": 14,
   "Specimen": 14
  }
 }

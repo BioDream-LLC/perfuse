@@ -748,12 +748,80 @@ func (c *converter) buildDiagnosticReport(obrIndex int, patient, encounter *fhir
 	d.EffectiveDateTime = c.v2DateTime(c.get(prefix+"-7"), prefix+"-7")
 	d.Issued = c.v2Instant(c.get(prefix+"-22"), prefix+"-22")
 
-	if prac := c.buildPractitioner(prefix + "-16"); prac != nil {
+	// OBR-32 is the principal result interpreter, the clinician who signed the report off; OBR-34 the technicians and OBR-35
+	// the transcriptionists, performers with their function, as HL7's v2-to-FHIR OBR[DiagnosticReport] map has them. OBR-16,
+	// the ordering provider, is not a performer of the report: it was written here as one, which said the person who asked
+	// for the test produced its result. It is the order's requester (buildServiceRequest).
+	if prac := c.ndlPractitioner(prefix + "-32"); prac != nil {
 		c.addEntry(prac, "Practitioner", "")
-		d.Performer = []fhir.Reference{*fhir.Ref("Practitioner", prac.ID)}
+		d.ResultsInterpreter = []fhir.Reference{*fhir.Ref("Practitioner", prac.ID)}
+	}
+	for _, role := range []struct{ field, code, display string }{{"-34", "SPRF", "secondary performer"}, {"-35", "TRANS", "Transcriber"}} {
+		for i := 1; i <= c.repeatCount(prefix+role.field); i++ {
+			prac := c.ndlPractitioner(fmt.Sprintf("%s%s(%d)", prefix, role.field, i))
+			if prac == nil {
+				continue
+			}
+			c.addEntry(prac, "Practitioner", "")
+			ref := *fhir.Ref("Practitioner", prac.ID)
+			ref.Extension = []fhir.Extension{{URL: "http://hl7.org/fhir/StructureDefinition/event-performerFunction",
+				ValueCodeable: fhir.NewCodeableConcept("http://terminology.hl7.org/CodeSystem/v3-ParticipationType", role.code, role.display)}}
+			d.Performer = append(d.Performer, ref)
+		}
 	}
 
 	return d
+}
+
+// ndlPractitioner reads an NDL (OBR-32 to OBR-35: a name with dates and a location), whose person is a CNN in its first
+// component, its parts subcomponents: id, family, given, second given, suffix, prefix, degree, source table, assigning
+// authority. Many senders write it as an XCN instead (id^family^given^...), which, read as an NDL, puts the family name
+// where the start date goes; that form is read as the XCN it is and noted, since a surname is never a date.
+func (c *converter) ndlPractitioner(path string) *fhir.Practitioner {
+	if c.get(path+".1.2") == "" && c.get(path+".1.1") == "" {
+		return nil
+	}
+	if c.get(path+".1.2") == "" && c.get(path+".2") != "" && !looksLikeV2Date(c.get(path+".2")) {
+		c.note("info", path, "Practitioner", "the name was sent as an XCN (id^family^given), not as an NDL's CNN; read as an XCN")
+		return c.buildPractitioner(path)
+	}
+	id, family, given := c.get(path+".1.1"), c.get(path+".1.2"), c.get(path+".1.3")
+	p := &fhir.Practitioner{}
+	p.SetResourceID(c.deterministicID("Practitioner", id+"|"+family+"|"+given))
+	if id != "" {
+		system := c.opts.DefaultIdentifierSystem
+		if authority := c.get(path + ".1.9"); authority != "" {
+			if sys, how := c.authoritySystem(path+".1.9", authority); sys != "" {
+				system = sys
+				if how != "" {
+					c.note("info", path+".1.9", "Practitioner.identifier.system", "%s", how)
+				}
+			}
+		}
+		p.Identifier = []fhir.Identifier{{System: system, Value: id}}
+	}
+	if family != "" || given != "" {
+		p.Name = []fhir.HumanName{{
+			Family: family,
+			Given:  fhir.NonEmpty(given, c.get(path+".1.4")),
+			Prefix: fhir.NonEmpty(c.get(path + ".1.6")),
+			Suffix: fhir.NonEmpty(c.get(path + ".1.5")),
+		}}
+	}
+	return p
+}
+
+// looksLikeV2Date reports whether a value is a v2 date or time stamp: digits, perhaps with a fraction and a zone offset.
+func looksLikeV2Date(v string) bool {
+	if len(v) < 4 {
+		return false
+	}
+	for _, r := range v {
+		if (r < '0' || r > '9') && r != '.' && r != '+' && r != '-' {
+			return false
+		}
+	}
+	return true
 }
 
 func (c *converter) buildObservation(obxIndex int, patient, encounter, specimen *fhir.Reference) *fhir.Observation {
@@ -1293,6 +1361,21 @@ func (c *converter) spmFor(obrIndex int) string {
 }
 
 func (c *converter) buildServiceRequest(obrIndex int, patient, encounter *fhir.Reference) *fhir.ServiceRequest {
+	return c.serviceRequest(obrIndex, patient, encounter, false)
+}
+
+// resultOrder is the order a lab result answers (HL7's v2-to-FHIR ORU_R01 map: each OBR is also a ServiceRequest, which the
+// DiagnosticReport is basedOn). It is where the ordering provider goes. Its status comes from ORC-5, the order status, or
+// is unknown: a result's ORC-1 is RE ("observations to follow"), which says nothing about the order.
+func (c *converter) resultOrder(obrIndex int, patient, encounter *fhir.Reference) *fhir.ServiceRequest {
+	return c.serviceRequest(obrIndex, patient, encounter, true)
+}
+
+// orderStatus0038 maps HL7 table 0038, the order status in ORC-5, to ServiceRequest.status.
+var orderStatus0038 = map[string]string{"A": "active", "CA": "revoked", "CM": "completed", "DC": "revoked", "ER": "entered-in-error",
+	"HD": "on-hold", "IP": "active", "SC": "active"}
+
+func (c *converter) serviceRequest(obrIndex int, patient, encounter *fhir.Reference, forResult bool) *fhir.ServiceRequest {
 	prefix := fmt.Sprintf("OBR(%d)", obrIndex)
 
 	code := c.codedValue(prefix+"-4", prefix+"-4")
@@ -1322,9 +1405,13 @@ func (c *converter) buildServiceRequest(obrIndex int, patient, encounter *fhir.R
 		})
 	}
 
-	// ORC-1 is the order control code, which is what says whether this is a new
-	// order or a cancellation.
-	if orc := strings.ToUpper(c.get("ORC-1")); orc != "" {
+	if forResult {
+		sr.Status = "unknown"
+		if st, ok := orderStatus0038[strings.ToUpper(c.get("ORC-5"))]; ok {
+			sr.Status = st
+		}
+	} else if orc := strings.ToUpper(c.get("ORC-1")); orc != "" {
+		// ORC-1 is the order control code, which is what says whether this is a new order or a cancellation.
 		switch orc {
 		case "NW":
 			sr.Status = "active"
@@ -1363,9 +1450,15 @@ func (c *converter) buildServiceRequest(obrIndex int, patient, encounter *fhir.R
 		sr.AuthoredOn = c.v2DateTime(c.get(prefix+"-6"), prefix+"-6")
 	}
 
-	if prac := c.buildPractitioner("ORC-12"); prac != nil {
-		c.addEntry(prac, "Practitioner", "")
-		sr.Requester = fhir.Ref("Practitioner", prac.ID)
+	// ORC-12 is the ordering provider, and OBR-16 the same for this request; the v2-to-FHIR map takes either. OBR-16 was
+	// read only for the report, as its performer.
+	requester := c.buildPractitioner("ORC-12")
+	if requester == nil {
+		requester = c.buildPractitioner(prefix + "-16")
+	}
+	if requester != nil {
+		c.addEntry(requester, "Practitioner", "")
+		sr.Requester = fhir.Ref("Practitioner", requester.ID)
 	}
 
 	return sr

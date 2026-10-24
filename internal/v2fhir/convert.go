@@ -361,6 +361,10 @@ func (c *converter) convertORU() {
 		if report == nil {
 			continue
 		}
+		if sr := c.resultOrder(i+1, patientRef, encRef); sr != nil {
+			c.addEntry(sr, "ServiceRequest", "")
+			report.BasedOn = []fhir.Reference{*fhir.Ref("ServiceRequest", sr.ID)}
+		}
 
 		var specimenRef *fhir.Reference
 		if spec := c.buildSpecimen(i+1, patientRef); spec != nil {

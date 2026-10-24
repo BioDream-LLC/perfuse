@@ -13,7 +13,7 @@
 | Procedure | `nl-core-Procedure-event` | 1 | 0 | 1 |
 | Specimen | `nl-core-LaboratoryTestResult.Specimen` | 1 | 0 | 1 |
 
-No profile in the guide for: DiagnosticReport (1)
+No profile in the guide for: DiagnosticReport (1), ServiceRequest (1)
 
 ## AllergyIntolerance
 

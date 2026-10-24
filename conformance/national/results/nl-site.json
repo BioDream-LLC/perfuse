@@ -84,6 +84,7 @@
   }
  },
  "skipped": {
-  "DiagnosticReport": 1
+  "DiagnosticReport": 1,
+  "ServiceRequest": 1
  }
 }

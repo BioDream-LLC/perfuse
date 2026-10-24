@@ -618,11 +618,27 @@ func resources(source []byte) ([]map[string]any, error) {
 	if b["resourceType"] != "Bundle" {
 		return nil, fmt.Errorf("the source is a %v, not a Bundle", b["resourceType"])
 	}
-	var out []map[string]any
+	var all []map[string]any
+	answered := map[string]bool{}
 	for _, e := range arr(b, "entry") {
 		if r, ok := e.(map[string]any)["resource"].(map[string]any); ok && str(r, "id") != "" {
-			out = append(out, r)
+			all = append(all, r)
+			if r["resourceType"] == "DiagnosticReport" {
+				for _, ref := range arr(r, "basedOn") {
+					m, _ := ref.(map[string]any)
+					answered[str(m, "reference")] = true
+				}
+			}
 		}
+	}
+	// An order a result in the same bundle answers (a lab result's OBR, which is also its ServiceRequest) is neither a
+	// trigger of its own nor a plan: the result says what was found, and the order is done.
+	var out []map[string]any
+	for _, r := range all {
+		if r["resourceType"] == "ServiceRequest" && answered["ServiceRequest/"+str(r, "id")] {
+			continue
+		}
+		out = append(out, r)
 	}
 	return out, nil
 }

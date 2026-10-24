@@ -78,10 +78,17 @@
   },
   "Practitioner": {
    "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Practitioner",
-   "resources": 14,
+   "resources": 15,
    "failing": 0,
    "errors": {},
-   "warnings": 14
+   "warnings": 15
+  },
+  "ServiceRequest": {
+   "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-ServiceRequest",
+   "resources": 4,
+   "failing": 0,
+   "errors": {},
+   "warnings": 9
   },
   "Specimen": {
    "profile": "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Specimen",

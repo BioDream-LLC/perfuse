@@ -68,6 +68,13 @@ only from YAML or the command line is treated as a bug.
 
 <img src="docs/assets/architecture.svg" alt="Perfuse sits between clinical systems: a lab system over MLLP, radiology over DICOM and a payer over X12 arrive on one side; Perfuse parses, filters, transforms, queues and delivers; an EHR over FHIR, a downstream system over MLLP and an archive over SFTP receive on the other." width="100%">
 
+## Since v0.1.21, on main and not yet released
+
+- **Who ordered a lab result, and who signed it off.** OBR-16, the ordering provider, was written as the report's performer;
+  it is now the requester of the order the report is based on (each result's OBR is also a ServiceRequest, as HL7's
+  v2-to-FHIR map has it). OBR-32, the principal result interpreter, is now read, and OBR-34 and OBR-35 are performers with
+  their function. Against UK Core 185 of 187 resources pass, FR Core 138 of 156, the EU lab report 105 of 426.
+
 ## New in v0.1.21
 
 - **Da Vinci CRD, DTR and PAS 2.1.0 as well as 2.2.x.** 2.1.0 is the release CMS-0057-F points EHRs at now that 2.0.1's US Core

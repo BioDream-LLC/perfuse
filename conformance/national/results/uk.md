@@ -12,7 +12,8 @@
 | Observation | `UKCore-Observation` | 118 | 118 | 0 |
 | Organization | `UKCore-Organization` | 4 | 4 | 0 |
 | Patient | `UKCore-Patient` | 18 | 17 | 1 |
-| Practitioner | `UKCore-Practitioner` | 14 | 14 | 0 |
+| Practitioner | `UKCore-Practitioner` | 15 | 15 | 0 |
+| ServiceRequest | `UKCore-ServiceRequest` | 4 | 4 | 0 |
 | Specimen | `UKCore-Specimen` | 3 | 2 | 1 |
 
 ## Patient

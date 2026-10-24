@@ -233,3 +233,70 @@ func TestADischargeCarriesItsDiagnosesAndProcedures(t *testing.T) {
 		t.Errorf("R4 Encounter.diagnosis: %s %v", out, err)
 	}
 }
+
+// A result's people, as HL7's v2-to-FHIR maps place them: OBR-16 (the ordering provider) is the requester of the order the
+// report is basedOn, never one of the report's performers; OBR-32 is the results interpreter, whether sent as an NDL
+// (id&family&given in the first component) or, as many senders do, as an XCN; OBR-34 technicians are performers with
+// their function.
+func TestAResultsOrdererIsTheRequesterAndItsInterpreterIsNamed(t *testing.T) {
+	raw := message(
+		segment("MSH", mshFields("ORU^R01^ORU_R01", "CTRL-INT", "20261024083000+0100")),
+		segment("PID", map[int]string{1: "1", 3: "4711^^^KH^PI", 5: "Mustermann^Max"}),
+		segment("ORC", map[int]string{1: "RE", 5: "CM"}),
+		segment("OBR", map[int]string{1: "1", 2: "PL-1", 3: "FI-1", 4: "58410-2^CBC^LN", 7: "20261024071500+0100", 16: "O77^Orderly^Olive",
+			25: "F", 32: "C3456789&Darwin&Samuel&&&Dr&&&GMC", 34: "T1&Tech&Tara~T2&Tech&Tom"}),
+		segment("OBX", map[int]string{1: "1", 2: "NM", 3: "718-7^Hemoglobin^LN", 5: "14.2", 11: "F"}),
+		segment("OBR", map[int]string{1: "2", 2: "PL-2", 3: "FI-2", 4: "24323-8^CMP^LN", 7: "20261024071500+0100", 25: "F",
+			32: "C3456789^Darwin^Samuel^^^Dr^^^GMC"}),
+		segment("OBX", map[int]string{1: "1", 2: "NM", 3: "2345-7^Glucose^LN", 5: "5.4", 11: "F"}),
+	)
+	res := convert(t, raw, Options{})
+	pracs := map[string]*fhir.Practitioner{}
+	for _, p := range findAll[*fhir.Practitioner](res) {
+		pracs[p.ID] = p
+	}
+	name := func(r fhir.Reference) string {
+		p := pracs[strings.TrimPrefix(r.Reference, "Practitioner/")]
+		if p == nil || len(p.Name) == 0 {
+			return "?"
+		}
+		return p.Name[0].Family
+	}
+	reports := findAll[*fhir.DiagnosticReport](res)
+	orders := findAll[*fhir.ServiceRequest](res)
+	if len(reports) != 2 || len(orders) != 2 {
+		t.Fatalf("%d reports, %d orders", len(reports), len(orders))
+	}
+	for _, d := range reports {
+		if len(d.ResultsInterpreter) != 1 || name(d.ResultsInterpreter[0]) != "Darwin" {
+			t.Errorf("%s: interpreter %+v", d.Code.Coding[0].Code, d.ResultsInterpreter)
+		}
+		if len(d.BasedOn) != 1 || !strings.HasPrefix(d.BasedOn[0].Reference, "ServiceRequest/") {
+			t.Errorf("%s: basedOn %+v", d.Code.Coding[0].Code, d.BasedOn)
+		}
+		for _, p := range d.Performer {
+			if name(p) == "Orderly" {
+				t.Errorf("%s: the ordering provider is a performer", d.Code.Coding[0].Code)
+			}
+		}
+		if d.Code.Coding[0].Code == "58410-2" {
+			if len(d.Performer) != 2 || name(d.Performer[1]) != "Tech" || len(d.Performer[0].Extension) != 1 ||
+				d.Performer[0].Extension[0].ValueCodeable.Coding[0].Code != "SPRF" {
+				t.Errorf("technicians: %+v", d.Performer)
+			}
+		}
+	}
+	for _, sr := range orders {
+		if sr.Status != "completed" {
+			t.Errorf("order status %q, want completed (ORC-5 CM)", sr.Status)
+		}
+		if sr.Identifier[0].Value == "PL-1" && (sr.Requester == nil || name(*sr.Requester) != "Orderly") {
+			t.Errorf("requester %+v", sr.Requester)
+		}
+	}
+	for _, p := range pracs {
+		if len(p.Name) > 0 && p.Name[0].Family == "Darwin" && (len(p.Identifier) != 1 || p.Identifier[0].Value != "C3456789") {
+			t.Errorf("interpreter identifier %+v", p.Identifier)
+		}
+	}
+}

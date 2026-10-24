@@ -11,7 +11,7 @@
 | Practitioner | `ISiKPersonImGesundheitsberuf` | 9 | 7 | 2 |
 | Procedure | `ISiKProzedur` | 1 | 0 | 1 |
 
-No profile in the guide for: DiagnosticReport (2), Observation (6), Specimen (2)
+No profile in the guide for: DiagnosticReport (2), Observation (6), ServiceRequest (2), Specimen (2)
 
 ## Condition
 

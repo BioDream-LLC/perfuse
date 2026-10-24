@@ -70,6 +70,7 @@
  "skipped": {
   "DiagnosticReport": 2,
   "Observation": 6,
+  "ServiceRequest": 2,
   "Specimen": 2
  }
 }

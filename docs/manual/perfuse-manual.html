@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.20 · e1719c7</p>
+<p class="version">v0.1.21 · 3ef36e6</p>
 <p class="version">Other languages: <a href="https://perfuse.health/manual/da/" hreflang="da" lang="da">Dansk</a> · <a href="https://perfuse.health/manual/de/" hreflang="de" lang="de">Deutsch</a> · <a href="https://perfuse.health/manual/es/" hreflang="es" lang="es">Español</a> · <a href="https://perfuse.health/manual/fi/" hreflang="fi" lang="fi">Suomi</a> · <a href="https://perfuse.health/manual/fr/" hreflang="fr" lang="fr">Français</a> · <a href="https://perfuse.health/manual/it/" hreflang="it" lang="it">Italiano</a> · <a href="https://perfuse.health/manual/nb/" hreflang="nb" lang="nb">Norsk bokmål</a> · <a href="https://perfuse.health/manual/nl/" hreflang="nl" lang="nl">Nederlands</a> · <a href="https://perfuse.health/manual/pl/" hreflang="pl" lang="pl">Polski</a> · <a href="https://perfuse.health/manual/pt/" hreflang="pt" lang="pt">Português</a> · <a href="https://perfuse.health/manual/sv/" hreflang="sv" lang="sv">Svenska</a></p>
 </header>
 <h2>Table of Contents</h2>
@@ -2167,7 +2167,7 @@ transformations:
 <thead><tr><th>v2</th><th>FHIR</th></tr></thead>
 <tbody>
 <tr><td><code>ADT</code></td><td>Patient, an Encounter when there is a visit, a Condition per <code>DG1</code> diagnosis (also listed in the Encounter&#39;s <code>diagnosis</code>, an admitting one as <code>AD</code>), a Procedure per <code>PR1</code> and an AllergyIntolerance per <code>AL1</code>. <code>A28</code>, <code>A31</code>, <code>A29</code> and <code>A24</code> are about the person, so they produce no Encounter or diagnoses, but do carry allergies.</td></tr>
-<tr><td><code>ORU</code></td><td>DiagnosticReport per <code>OBR</code>, with its Observations and Specimen. Results are grouped under the <code>OBR</code> before them by position, because <code>OBX-4</code> is not reliable.</td></tr>
+<tr><td><code>ORU</code></td><td>DiagnosticReport per <code>OBR</code>, with its Observations and Specimen, and the order it answers as a ServiceRequest (its requester <code>OBR-16</code> or <code>ORC-12</code>, its status <code>ORC-5</code>); <code>OBR-32</code> is the results interpreter, <code>OBR-34</code> and <code>OBR-35</code> performers. Results are grouped under the <code>OBR</code> before them by position, because <code>OBX-4</code> is not reliable.</td></tr>
 <tr><td><code>ORM</code>, <code>OML</code>, <code>OMG</code></td><td>ServiceRequest.</td></tr>
 <tr><td><code>SIU</code></td><td>Appointment, with the patient, the practitioners from <code>AIP</code> and the locations from <code>AIL</code>.</td></tr>
 <tr><td><code>MDM</code></td><td>DocumentReference carrying the document.</td></tr>
@@ -2258,7 +2258,7 @@ transformations:
 <tr><td>Facility Information</td><td><code>PV1-3</code></td><td>Location, with the facility as its managing Organization</td></tr>
 <tr><td>Problems, Date of Onset</td><td><code>DG1</code></td><td>Condition (encounter diagnosis). <code>DG1-5</code> is the onset, as the HL7 v2-to-FHIR map has it</td></tr>
 <tr><td>Allergies and Intolerances, Reaction</td><td><code>AL1</code></td><td>AllergyIntolerance with category, criticality and reaction</td></tr>
-<tr><td>Laboratory</td><td><code>ORU</code></td><td>DiagnosticReport, Observations, Specimen (from <code>SPM</code>)</td></tr>
+<tr><td>Laboratory</td><td><code>ORU</code></td><td>DiagnosticReport, Observations, Specimen (from <code>SPM</code>), ServiceRequest</td></tr>
 <tr><td>Orders</td><td><code>ORM</code>, <code>OML</code></td><td>ServiceRequest</td></tr>
 <tr><td>Immunizations</td><td><code>VXU</code></td><td>Immunization</td></tr>
 <tr><td>Clinical Notes</td><td><code>MDM</code></td><td>DocumentReference</td></tr>

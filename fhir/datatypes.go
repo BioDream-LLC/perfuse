@@ -104,6 +104,8 @@ type Identifier struct {
 
 // Reference points at another resource.
 type Reference struct {
+	// Extension on a reference: a DiagnosticReport performer's event-performerFunction, say.
+	Extension  []Extension `json:"extension,omitempty"`
 	Reference  string      `json:"reference,omitempty"`
 	Type       string      `json:"type,omitempty"`
 	Identifier *Identifier `json:"identifier,omitempty"`

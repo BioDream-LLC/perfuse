@@ -45,12 +45,21 @@
   },
   "Practitioner": {
    "profile": "http://hl7.eu/fhir/base/StructureDefinition/practitioner-eu-core",
-   "resources": 22,
+   "resources": 37,
+   "failing": 7,
+   "errors": {
+    "Practitioner.name: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/base/StructureDefinition/practitioner-eu-core|2.0.1)": 7
+   },
+   "warnings": 37
+  },
+  "ServiceRequest": {
+   "profile": "http://hl7.eu/fhir/laboratory/StructureDefinition/ServiceRequest-eu-lab",
+   "resources": 20,
    "failing": 2,
    "errors": {
-    "Practitioner.name: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/base/StructureDefinition/practitioner-eu-core|2.0.1)": 2
+    "ServiceRequest.identifier: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/ServiceRequest-eu-lab|2.1.0)": 2
    },
-   "warnings": 22
+   "warnings": 25
   },
   "Specimen": {
    "profile": "http://hl7.eu/fhir/laboratory/StructureDefinition/Specimen-eu-lab",

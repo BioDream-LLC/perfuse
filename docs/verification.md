@@ -1157,7 +1157,7 @@ occurrence, when it means every one (deliberately, as in filters).
   55 resources, all in the Region) against a real AWS account but **have never been applied**. The costs are AWS list prices.
 - **National FHIR profiles** (22 October 2026, on main): `conformance/national/run.py` converts NHS Wales' published v2
   examples, the French agency's PAM-FR and document examples, and invented German messages, and the HL7 validator 6.10.4
-  checks every resource against UK Core STU2 2.0.2 (180 of 182 pass), FR Core 2.2.0 (124 of 142) and ISiK Basismodul 4.0.3
+  checks every resource against UK Core STU2 2.0.2 (185 of 187 pass, re-run 24 October), FR Core 2.2.0 (138 of 156) and ISiK Basismodul 4.0.3
   (12 of 37). The UK failures are a US race code in a Welsh sample and a terminology server error; the French ones Encounters
   whose messages carry no admission date or visit number; the German ones what ISiK requires that v2 does not say (contact
   level, the facility's IKNR, an `MR`-typed patient number, DG1-19). The runs found and fixed: German year-stamped code
@@ -1167,7 +1167,7 @@ occurrence, when it means every one (deliberately, as in filters).
   and capability requirements, and not gematik's conformance process (Bestätigungsverfahren).
 - **HL7 Europe Laboratory Report 2.1.0** (23 October 2026, on main): the 23 lab result messages (ORU^R01) among those sets,
   checked against the guide's DiagnosticReport, Observation, Specimen and ServiceRequest profiles and HL7 Europe Base 2.0.1
-  for the people and organisations: 77 of 391 pass. Every report fails on the guide's form (a DiagnosticReport must point at
+  for the people and organisations: 77 of 391 pass (105 of 426 since the orders and interpreters were added, below). Every report fails on the guide's form (a DiagnosticReport must point at
   the Composition of an EU lab document, which a v2 result is not); most results on the data (287 name no performer, 260
   have no time in OBX-14 or OBR-7; 25 French results are an embedded CDA report). Found and fixed: results without OBX-14
   were not given their OBR-7; OBX-15 and OBX-23 to OBX-25, the producing laboratory and its director, were not read; a
@@ -1190,6 +1190,15 @@ occurrence, when it means every one (deliberately, as in filters).
   sets. The Dutch run found family names sent in parts (FN subcomponents: `van Voorbeeld&van&Voorbeeld`) written whole into
   `family`; they are now the surname with its parts in HL7's family-name extensions, and Dutch v2's BSN issuer `NLMINBIZA` is
   known. Not a test of Nictiz's own qualification, of any HIS's real messages, or of the Dutch reference sets.
+- **Who ordered a result and who signed it off** (24 October 2026, on main; found answering a question on chat.fhir.org about
+  building the EU lab report from v2). OBR-16, the ordering provider, had been written as the DiagnosticReport's performer
+  since the first conversion, which said the person who asked for a test produced its result; OBR-32, the principal result
+  interpreter, was not read. Now each OBR of a result is also the ServiceRequest it answers (HL7's v2-to-FHIR ORU_R01 map),
+  the report is `basedOn` it, OBR-16 is its requester and its status comes from ORC-5 or is `unknown`; OBR-32 is
+  `resultsInterpreter` (as an NDL, or as the XCN many senders write there); OBR-34 and OBR-35 are performers with their
+  function. Re-run: UK Core 185 of 187, FR Core 138 of 156 (the new practitioners and orders all pass), the EU lab report 105
+  of 426 (20 orders, 18 passing: two results carry no order number; 5 interpreters named by number only, which HL7 Europe Base
+  refuses).
 
 ### Bulk Data Access v2.0.0, the first run
 

@@ -233,7 +233,7 @@ The message type decides what is produced, and every conversion reports the judg
 | v2 | FHIR |
 | --- | --- |
 | `ADT` | Patient, an Encounter when there is a visit, a Condition per `DG1` diagnosis (also listed in the Encounter's `diagnosis`, an admitting one as `AD`), a Procedure per `PR1` and an AllergyIntolerance per `AL1`. `A28`, `A31`, `A29` and `A24` are about the person, so they produce no Encounter or diagnoses, but do carry allergies. |
-| `ORU` | DiagnosticReport per `OBR`, with its Observations and Specimen. Results are grouped under the `OBR` before them by position, because `OBX-4` is not reliable. |
+| `ORU` | DiagnosticReport per `OBR`, with its Observations and Specimen, and the order it answers as a ServiceRequest (its requester `OBR-16` or `ORC-12`, its status `ORC-5`); `OBR-32` is the results interpreter, `OBR-34` and `OBR-35` performers. Results are grouped under the `OBR` before them by position, because `OBX-4` is not reliable. |
 | `ORM`, `OML`, `OMG` | ServiceRequest. |
 | `SIU` | Appointment, with the patient, the practitioners from `AIP` and the locations from `AIL`. |
 | `MDM` | DocumentReference carrying the document. |
@@ -341,7 +341,7 @@ What the converter carries, by USCDI v6 data class:
 | Facility Information | `PV1-3` | Location, with the facility as its managing Organization |
 | Problems, Date of Onset | `DG1` | Condition (encounter diagnosis). `DG1-5` is the onset, as the HL7 v2-to-FHIR map has it |
 | Allergies and Intolerances, Reaction | `AL1` | AllergyIntolerance with category, criticality and reaction |
-| Laboratory | `ORU` | DiagnosticReport, Observations, Specimen (from `SPM`) |
+| Laboratory | `ORU` | DiagnosticReport, Observations, Specimen (from `SPM`), ServiceRequest |
 | Orders | `ORM`, `OML` | ServiceRequest |
 | Immunizations | `VXU` | Immunization |
 | Clinical Notes | `MDM` | DocumentReference |

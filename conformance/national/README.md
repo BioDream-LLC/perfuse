@@ -6,14 +6,14 @@ country's guide requires, not a certification, and not a test of Perfuse's FHIR 
 
 | Set | Messages | Guide | Resources checked | Pass |
 |---|---|---|---|---|
-| `uk` | NHS Wales' published v2 examples ([GIG-Cymru-NHS-Wales/hl7-v2-examples](https://github.com/GIG-Cymru-NHS-Wales/hl7-v2-examples) at 45926af), 22 | UK Core STU2 2.0.2 (`fhir.r4.ukcore.stu2`) | 182 | 180 |
-| `fr` | The French agency's PAM-FR and document examples ([ansforge/hl7V2-exemples](https://github.com/ansforge/hl7V2-exemples) at 6033987), 59 | FR Core 2.2.0 (`hl7.fhir.fr.core`) | 142 | 124 |
+| `uk` | NHS Wales' published v2 examples ([GIG-Cymru-NHS-Wales/hl7-v2-examples](https://github.com/GIG-Cymru-NHS-Wales/hl7-v2-examples) at 45926af), 22 | UK Core STU2 2.0.2 (`fhir.r4.ukcore.stu2`) | 187 | 185 |
+| `fr` | The French agency's PAM-FR and document examples ([ansforge/hl7V2-exemples](https://github.com/ansforge/hl7V2-exemples) at 6033987), 59 | FR Core 2.2.0 (`hl7.fhir.fr.core`) | 156 | 138 |
 | `de` | Invented German messages in `testdata/de` (no real person), 8 | ISiK Basismodul 4.0.3, Stufe 4 (`de.gematik.isik-basismodul`) | 47 | 18 |
 | `de-site` | The same, with the hospital's own bundle script ([examples/isik/bundle-script.js](../../examples/isik/bundle-script.js)) | ISiK Basismodul 4.0.3, Stufe 4 | 47 | 42 |
 | `nl` | Invented Dutch messages in `testdata/nl` (no real person), 3 | Nictiz nl-core 0.12.1-beta.1, zib 2020 (`nictiz.fhir.nl.r4.nl-core`) | 24 | 12 |
 | `nl-site` | The same, with the hospital's own bundle script ([examples/nictiz/bundle-script.js](../../examples/nictiz/bundle-script.js)) | Nictiz nl-core 0.12.1-beta.1 | 24 | 18 |
 | `hdr` | The patient administration messages (ADT) among all three sets, 15 | HL7 Europe Hospital Discharge Report 1.0.0 (`hl7.fhir.eu.hdr`) | 69 | 68 |
-| `eu` | The lab results (ORU^R01) among all three sets, 23 | HL7 Europe Laboratory Report 2.1.0 (`hl7.fhir.eu.laboratory`), with HL7 Europe Base 2.0.1 for patients, practitioners and organisations | 391 | 77 |
+| `eu` | The lab results (ORU^R01) among all three sets, 23 | HL7 Europe Laboratory Report 2.1.0 (`hl7.fhir.eu.laboratory`), with HL7 Europe Base 2.0.1 for patients, practitioners and organisations | 426 | 105 |
 
 Per resource type and every error message: [results/uk.md](results/uk.md), [results/fr.md](results/fr.md),
 [results/de.md](results/de.md), [results/de-site.md](results/de-site.md), [results/nl.md](results/nl.md),
@@ -22,7 +22,7 @@ Per resource type and every error message: [results/uk.md](results/uk.md), [resu
 
 ## What is left, and why
 
-- **UK Core, 2 of 182.** One Welsh sample sends a US race code (CDC 2028-9), which Perfuse carries in US Core's race
+- **UK Core, 2 of 187.** One Welsh sample sends a US race code (CDC 2028-9), which Perfuse carries in US Core's race
   extension; the UK run does not load US Core, so the validator refuses an extension it cannot find. One Specimen error is
   the terminology server failing to parse a SNOMED CT expression in the profile's own binding (tx.fhir.org), not the data.
 - **FR Core, 18 Encounters.** FR Core requires a period and an identifier. 14 of the French document messages carry a PV1
@@ -93,6 +93,14 @@ insurance numbers written in forms no German receiver reads.
 - **The laboratory that produced a result** (from the `eu` run). OBX-23 (with OBX-24, its address), or else OBX-15, the
   producer's id, and OBX-25, its medical director, were not read at all. They are now the result's performers, as HL7's
   v2-to-FHIR OBX map has them: 15 results passed that had failed, and the UK run checks 3 more resources (2 laboratories, 1 director), all passing.
+- **Who ordered a result, who signed it off** (found answering a question on chat.fhir.org). OBR-16, the ordering provider,
+  was written as the DiagnosticReport's performer, which said the person who asked for a test produced its result. It is now
+  the requester of the order the report is `basedOn`: each OBR of a result is also a ServiceRequest, as HL7's v2-to-FHIR
+  ORU_R01 map has it, its status from ORC-5 or `unknown`. OBR-32, the principal result interpreter, was not read; it is now
+  `resultsInterpreter`, and OBR-34 and OBR-35 (technicians, transcriptionists) are performers with their function. OBR-32 is
+  read as an NDL, or as an XCN when the sender writes it so. The UK run now checks 4 orders and 1 more practitioner (all
+  pass), the French 14 more practitioners (all pass), and the EU run 20 orders (18 pass; 2 have no order number) and 15 more
+  practitioners (5 named by number only, which HL7 Europe Base refuses).
 - **Practitioners' names and national numbers.** XCN-10 `L` is now `use: official` (it was dropped). XCN-13 is now the
   identifier type, including France's `IDNPS` (RPPS/ADELI) in FR Core's code system.
 

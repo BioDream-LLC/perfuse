@@ -6,9 +6,9 @@
 | Location | `fr-core-location` | 36 | 36 | 0 |
 | Organization | `fr-core-organization` | 7 | 7 | 0 |
 | Patient | `fr-core-patient` | 40 | 40 | 0 |
-| Practitioner | `fr-core-practitioner` | 19 | 19 | 0 |
+| Practitioner | `fr-core-practitioner` | 33 | 33 | 0 |
 
-No profile in the guide for: DiagnosticReport (14), DocumentReference (44), Observation (178), Specimen (14)
+No profile in the guide for: DiagnosticReport (14), DocumentReference (44), Observation (178), ServiceRequest (14), Specimen (14)
 
 ## Encounter
 
