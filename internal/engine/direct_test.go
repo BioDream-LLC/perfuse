@@ -87,6 +87,14 @@ func TestADirectMessageTravelsFromOnePerfuseToAnotherThroughAHISP(t *testing.T) 
 	directSMTPRoots = roots
 	t.Cleanup(func() { directSMTPRoots = nil })
 
+	// The HISP's listener first: the channel's port is picked and released, and a listener opened on port 0 after that could be
+	// given the same number back (CI, postgres job, once), so the channel then found its address taken.
+	hln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer hln.Close()
+
 	// The recipient's channel.
 	listen := freePort(t)
 	cfg, err := config.Load(strings.NewReader(`name: direct-in
@@ -124,11 +132,6 @@ destinations:
 			mu.Unlock()
 			return nil
 		}}
-	hln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer hln.Close()
 	go func() { _ = hisp.Serve(hln) }()
 	_, hport, _ := net.SplitHostPort(hln.Addr().String())
 	cfg.Source.Direct.SMTPHost = "localhost:" + hport
