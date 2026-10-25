@@ -137,7 +137,7 @@ var SearchParams = map[string][]string{
 	"StructureMap":          {"_id", "_lastUpdated", "url", "name", "status"},
 	"MessageDefinition":     {"_id", "_lastUpdated", "url", "name", "status", "category"},
 	"MessageHeader":         {"_id", "_lastUpdated"},
-	"Subscription":          {"_id", "_lastUpdated", "status", "criteria"},
+	"Subscription":          {"_id", "_lastUpdated", "status", "criteria", "url", "type", "payload"},
 	"Binary":                {"_id", "_lastUpdated", "contenttype"},
 
 	// Security
@@ -723,6 +723,13 @@ func indexEntries(r fhir.Resource) []indexEntry {
 	case *fhir.Subscription:
 		add("status", v.Status, "")
 		add("criteria", v.Criteria, "")
+		// R4's url, type and payload: where it notifies, how, and in what form. An EHR finds its own subscription by url before
+		// making another (the Da Vinci provider reference implementation does, and was refused when url was not searchable).
+		if v.Channel != nil {
+			add("url", v.Channel.Endpoint, "")
+			add("type", v.Channel.Type, "")
+			add("payload", v.Channel.Payload, "")
+		}
 
 	case *fhir.Binary:
 		add("contenttype", v.ContentType, "")

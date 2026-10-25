@@ -307,8 +307,20 @@ func (r *Rules) Validate() error {
 	return nil
 }
 
-// Hooks are the CDS Hooks this service answers.
-var Hooks = []string{"order-sign", "order-select", "order-dispatch", "appointment-book"}
+// Hooks are the CDS Hooks this service answers: the six CRD 2.2.1 names (Supported Hooks, hook-4 asks a CRD server for a
+// service for each). encounter-start and encounter-discharge were missing until the Da Vinci Burden Reduction provider
+// reference implementation, pointed at this server, fired encounter-start and found no service for it.
+var Hooks = []string{"order-sign", "order-select", "order-dispatch", "appointment-book", "encounter-start", "encounter-discharge"}
+
+// prefetchFor is the prefetch each service asks for: the coverage and the patient, and for the encounter hooks the
+// encounter the hook names, which their context carries only as an id.
+func prefetchFor(hook string) map[string]string {
+	p := map[string]string{"coverage": "Coverage?patient={{context.patientId}}&status=active", "patient": "Patient/{{context.patientId}}"}
+	if hook == "encounter-start" || hook == "encounter-discharge" {
+		p["encounter"] = "Encounter/{{context.encounterId}}"
+	}
+	return p
+}
 
 // Discovery is the CDS Hooks discovery document.
 func (r *Rules) Discovery() map[string]any {
@@ -319,8 +331,7 @@ func (r *Rules) Discovery() map[string]any {
 			"id":          "crd-" + h,
 			"title":       r.Payer + " coverage requirements (" + h + ")",
 			"description": "Da Vinci CRD " + Version + " and 2.1.0: coverage, prior authorization and documentation requirements for the orders in context",
-			"prefetch": map[string]string{"coverage": "Coverage?patient={{context.patientId}}&status=active",
-				"patient": "Patient/{{context.patientId}}"},
+			"prefetch":    prefetchFor(h),
 			// CRD 2.2.1 dev-1 and dev-4/dev-5: the CRD versions each service speaks, as major.minor, and a boolean option for each
 			// kind of response it returns, which a client sets per call. The Inferno CRD test kit found both missing: the
 			// options had been published under the request-side name with nothing in them.
@@ -435,10 +446,10 @@ func newUUID() string {
 
 // orderTypes are the resources CRD answers about.
 var orderTypes = map[string]string{"ServiceRequest": "code", "DeviceRequest": "codeCodeableConcept", "MedicationRequest": "medicationCodeableConcept",
-	"NutritionOrder": "", "VisionPrescription": "", "CommunicationRequest": "", "Appointment": "serviceType"}
+	"NutritionOrder": "", "VisionPrescription": "", "CommunicationRequest": "", "Appointment": "serviceType", "Encounter": "serviceType"}
 
 // ErrNoOrders means the request named nothing to answer about.
-var ErrNoOrders = errors.New("the hook context carries no orders or appointments to answer about")
+var ErrNoOrders = errors.New("the hook context carries no orders, appointments or encounter to answer about")
 
 // Evaluate answers a hook from what the request carries.
 func (r *Rules) Evaluate(req *Request, now time.Time) (*Response, error) {
@@ -453,6 +464,11 @@ func (r *Rules) EvaluateContext(ctx context.Context, req *Request, now time.Time
 		bundleRaw = req.Context["draftOrders"]
 	case "appointment-book":
 		bundleRaw = req.Context["appointments"]
+	case "encounter-start", "encounter-discharge":
+		// The encounter hooks name the encounter (context.encounterId) rather than carrying it: it is found in prefetch, or
+		// read from the EHR's FHIR server. The answer is about the encounter itself, from its service type and type (CRD
+		// profile-encounter carries the coverage-information extension), as appointment-book answers about an appointment.
+		bundleRaw = r.encounter(ctx, req)
 	case "order-dispatch":
 		// order-dispatch names the orders (context.dispatchedOrders) rather than carrying them. Each is found in whatever
 		// prefetch holds it, or read from the EHR's FHIR server. Only a prefetch key called "order" was read before, so the
@@ -750,9 +766,19 @@ func codingsOf(o map[string]any) []coding {
 	for _, field := range []string{"code", "codeCodeableConcept", "medicationCodeableConcept"} {
 		collect(o[field])
 	}
-	if types, ok := o["serviceType"].([]any); ok {
+	switch types := o["serviceType"].(type) {
+	case []any: // Appointment.serviceType, 0..*
 		for _, t := range types {
 			collect(t)
+		}
+	case map[string]any: // Encounter.serviceType, 0..1
+		collect(types)
+	}
+	if o["resourceType"] == "Encounter" {
+		if types, ok := o["type"].([]any); ok {
+			for _, t := range types {
+				collect(t)
+			}
 		}
 	}
 	return out
@@ -1011,6 +1037,33 @@ func (r *Rules) dispatched(ctx context.Context, req *Request) json.RawMessage {
 		}
 	}
 	out, _ := json.Marshal(map[string]any{"resourceType": "Bundle", "type": "collection", "entry": entries})
+	return out
+}
+
+// encounter is the encounter an encounter hook names, as a one-entry Bundle: the prefetched Encounter with that id (under
+// any prefetch key), or the one read from the EHR's FHIR server. A context without an encounterId names none.
+func (r *Rules) encounter(ctx context.Context, req *Request) json.RawMessage {
+	id := strings.TrimPrefix(contextString(req, "encounterId"), "Encounter/")
+	if id == "" {
+		return nil
+	}
+	var raw json.RawMessage
+	for _, v := range req.Prefetch {
+		raws := rawResourcesIn(v)
+		for i, res := range resourcesIn(v) {
+			if i < len(raws) && str(res["resourceType"]) == "Encounter" && str(res["id"]) == id {
+				raw = raws[i]
+			}
+		}
+	}
+	if raw == nil {
+		raw, _ = r.fetch(ctx, req, "Encounter/"+url.PathEscape(id))
+	}
+	if firstResource(raw, "Encounter") == nil {
+		return nil
+	}
+	out, _ := json.Marshal(map[string]any{"resourceType": "Bundle", "type": "collection",
+		"entry": []map[string]json.RawMessage{{"resource": raw}}})
 	return out
 }
 

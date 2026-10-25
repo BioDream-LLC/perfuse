@@ -38,19 +38,36 @@ type PASAttachment struct {
 	Content      map[string]any `json:"content,omitempty"`
 }
 
-// pasTrackingIDs are the identifiers a response asks documents under: each CommunicationRequest's and the Task's.
+// pasTrackingIDs are the identifiers a response asks documents under: each CommunicationRequest's and the Task's, and, when
+// it asks for any, the ClaimResponse's own. PAS maps Task.identifier to ClaimResponse.identifier[0], and a provider sends that
+// as $submit-attachment's TrackingId (the Da Vinci Burden Reduction provider reference implementation does), which was
+// refused as unknown when only the Task's and CommunicationRequests' own identifiers were kept.
 func pasTrackingIDs(response map[string]any) []string {
-	var out []string
+	var out, claimResponse []string
+	asks := false
 	for _, e := range asSliceAny(response["entry"]) {
 		res := asMapAny(asMapAny(e)["resource"])
+		var into *[]string
 		switch res["resourceType"] {
 		case "CommunicationRequest", "Task":
-			for _, id := range asSliceAny(res["identifier"]) {
-				if v := str(asMapAny(id)["value"]); v != "" {
-					out = append(out, v)
-				}
+			asks, into = true, &out
+		case "ClaimResponse":
+			// And urn:uuid: with the ClaimResponse's id, which the Task carried as its identifier before.
+			if id := str(res["id"]); id != "" {
+				claimResponse = append(claimResponse, "urn:uuid:"+id)
+			}
+			into = &claimResponse
+		default:
+			continue
+		}
+		for _, id := range asSliceAny(res["identifier"]) {
+			if v := str(asMapAny(id)["value"]); v != "" {
+				*into = append(*into, v)
 			}
 		}
+	}
+	if asks {
+		out = append(out, claimResponse...)
 	}
 	return out
 }

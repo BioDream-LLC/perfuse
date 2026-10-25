@@ -78,6 +78,9 @@ func pasRules(_ context.Context, _ *pas.Request, svc pas.Service) PASAnswer {
 			case "62":
 				return PASAnswer{Decision: "approve", Why: "An X-ray comes before an MRI.",
 					Alternative: map[string]any{"system": "https://codesystem.x12.org/005010/1365", "code": "4"}}
+			case "33":
+				return PASAnswer{Decision: "pend", Why: "Home oxygen needs the oxygen questionnaire.",
+					Questionnaire: "https://payer.example/Questionnaire/oxygen"}
 			case "2":
 				return PASAnswer{Decision: "pend", Why: "Surgery needs the plan of care.", Attachments: []string{"18776-5"},
 					Questionnaire: "https://payer.example/Questionnaire/surgery"}
@@ -341,11 +344,16 @@ func TestAPendedRequestSaysWhatItNeeds(t *testing.T) {
 	_, b := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("T7", "2"))
 	cr := claimResponseOf(t, b)
 	tasks, comms := entriesOfType(b, "Task"), entriesOfType(b, "CommunicationRequest")
-	if len(tasks) != 1 || len(comms) != 1 || len(asSliceAny(cr["communicationRequest"])) != 1 {
+	// One request for the document (18776-5) and one for the questionnaire (102089-0, PAS ainfo-3).
+	if len(tasks) != 1 || len(comms) != 2 || len(asSliceAny(cr["communicationRequest"])) != 2 {
 		t.Fatalf("a pended request needing documents should ask for them: %d tasks, %d requests", len(tasks), len(comms))
 	}
+	if all := toJSON(comms[0]) + toJSON(comms[1]); !strings.Contains(all, `"contentString":"18776-5"`) || !strings.Contains(all, `"contentString":"102089-0"`) {
+		t.Errorf("the requests should be 18776-5 and 102089-0: %s", all)
+	}
 	task := toJSON(tasks[0])
-	for _, want := range []string{"payer-url", "attachments-needed", "18776-5", "questionnaire-context", "https://payer.example/Questionnaire/surgery", "priorAuthorization"} {
+	// The questionnaire's context is the line's trace number (ainfo-3), which DTR answers with the questionnaire.
+	for _, want := range []string{"payer-url", "attachments-needed", "18776-5", "questionnaire-context", `"valueString":"T7-1"`, "priorAuthorization"} {
 		if !strings.Contains(task, want) {
 			t.Errorf("the Task should carry %s: %s", want, task)
 		}
@@ -420,5 +428,54 @@ func TestDecideSeesTheWholeRequest(t *testing.T) {
 	}
 	if got := actionCodes(claimResponseOf(t, out)); got != "A4" {
 		t.Fatalf("without the Condition: review actions %q, want A4", got)
+	}
+}
+
+// TestAPendedRequestForAQuestionnaireAloneWritesNoNull: a request for a questionnaire and no documents is a Task with no
+// CommunicationRequest. ClaimResponse.communicationRequest was written as null then, which is not FHIR JSON (found by the
+// Da Vinci Burden Reduction provider reference implementation's PAS submit).
+func TestAPendedRequestForAQuestionnaireAloneWritesNoNull(t *testing.T) {
+	f := newPASFixture(t)
+	_, b := pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("T8", "33"))
+	if raw := toJSON(b); strings.Contains(raw, "null") {
+		t.Errorf("the answer carries a null: %s", raw)
+	}
+	// PAS ainfo-3: the questionnaire is asked for as 102089-0, under the line's trace number.
+	comms := entriesOfType(b, "CommunicationRequest")
+	if len(entriesOfType(b, "Task")) != 1 || len(comms) != 1 || !strings.Contains(toJSON(comms[0]), `"contentString":"102089-0"`) {
+		t.Fatalf("a questionnaire alone is one Task and one 102089-0 request: %s", toJSON(b))
+	}
+}
+
+// TestDTRAnswersTheQuestionnaireAPendedRequestAskedFor: the provider asks DTR for the questionnaire with the trace number
+// alone, as ainfo-3 says, and gets the one the answer named. A line sent without a trace number is given one, in the answer.
+func TestDTRAnswersTheQuestionnaireAPendedRequestAskedFor(t *testing.T) {
+	f := newPASFixture(t)
+	q := `{"resourceType":"Questionnaire","id":"oxygen","url":"https://payer.example/Questionnaire/oxygen","status":"active",
+"item":[{"linkId":"spo2","text":"Oxygen saturation","type":"decimal"}]}`
+	if rec := do(t, f.h, "PUT", "/Questionnaire/oxygen", q); rec.Code >= 300 {
+		t.Fatalf("loading the questionnaire: %d %s", rec.Code, rec.Body)
+	}
+	pasPost(t, f.h, "/Claim/$submit", pasRequestJSON("T9", "33"))
+	cov := `{"name":"coverage","resource":{"resourceType":"Coverage","id":"cov","status":"active","beneficiary":{"reference":"Patient/member"},"payor":[{"display":"Plan"}]}}`
+	rec := do(t, f.h, "POST", "/Questionnaire/$questionnaire-package",
+		`{"resourceType":"Parameters","parameter":[`+cov+`,{"name":"context","valueString":"T9-1"}]}`)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "https://payer.example/Questionnaire/oxygen") {
+		t.Errorf("$questionnaire-package by the trace number: %d %s", rec.Code, rec.Body)
+	}
+
+	// No trace number on the line: the answer gives it one, and DTR knows it.
+	noTrace := strings.Replace(pasRequestJSON("T10", "33"), `/extension-itemTraceNumber"`, `/extension-notATrace"`, 1)
+	_, b := pasPost(t, f.h, "/Claim/$submit", noTrace)
+	task := toJSON(entriesOfType(b, "Task")[0])
+	i := strings.Index(task, `"valueString":"Q-`)
+	if i < 0 || !strings.Contains(toJSON(claimResponseOf(t, b)["item"]), payerTraceSystem) {
+		t.Fatalf("a line without a trace number should be given one: %s", toJSON(b))
+	}
+	context := strings.SplitN(task[i+len(`"valueString":"`):], `"`, 2)[0]
+	rec = do(t, f.h, "POST", "/Questionnaire/$questionnaire-package",
+		`{"resourceType":"Parameters","parameter":[`+cov+`,{"name":"context","valueString":"`+context+`"}]}`)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Questionnaire/oxygen") {
+		t.Errorf("$questionnaire-package by the trace number given: %d %s", rec.Code, rec.Body)
 	}
 }

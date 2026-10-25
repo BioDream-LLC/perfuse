@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -448,5 +449,37 @@ func TestSubscriptionsNeedR4(t *testing.T) {
 	}
 	if _, err := store.EnableSubscriptions(context.Background(), SubscriptionOptions{}); err == nil {
 		t.Error("subscriptions were enabled on an R5 server, where the backport IG does not apply")
+	}
+}
+
+// An EHR looks for its own subscription by where it is notified (R4's url) before making another; the Da Vinci Burden
+// Reduction provider reference implementation does, with an endpoint carrying its own query string, and was refused when
+// url was not a search parameter.
+func TestASubscriptionIsFoundByItsEndpoint(t *testing.T) {
+	f := newSubFixture(t, true)
+	endpoint := "http://ehr.example/api/pas/notification?ehr=http%3A%2F%2Fehr.example%2Ffhir"
+	f.put(t, "/Subscription/s1", subscriptionJSON(endpoint, "", "id-only"))
+	f.put(t, "/Subscription/s2", subscriptionJSON("http://other.example/hook", "", "id-only"))
+
+	found := func(query string) []string {
+		t.Helper()
+		rec := do(t, f.h, "GET", "/Subscription?"+query, nil)
+		if rec.Code != 200 {
+			t.Fatalf("GET /Subscription?%s = %d: %s", query, rec.Code, rec.Body.String())
+		}
+		var ids []string
+		for _, e := range asSliceAny(tree(t, rec)["entry"]) {
+			ids = append(ids, str(asMapAny(asMapAny(e)["resource"])["id"]))
+		}
+		return ids
+	}
+	if got := found("url=" + url.QueryEscape(endpoint) + "&status=requested,active"); len(got) != 1 || got[0] != "s1" {
+		t.Errorf("by url and status: %v", got)
+	}
+	if got := found("type=rest-hook"); len(got) != 2 {
+		t.Errorf("by type: %v", got)
+	}
+	if got := found("url=" + url.QueryEscape("http://nowhere.example/")); len(got) != 0 {
+		t.Errorf("an endpoint no subscription has: %v", got)
 	}
 }

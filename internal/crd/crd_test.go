@@ -316,3 +316,63 @@ func TestAdviceIsOneMoreCardAndNeverRequired(t *testing.T) {
 		}
 	}
 }
+
+// encounter-start and encounter-discharge are two of CRD 2.2.1's six hooks. Their context names the encounter by id; the
+// answer is about the encounter, found in prefetch or read from the EHR, matched by its type.
+func TestTheEncounterHooksAnswerAboutTheEncounter(t *testing.T) {
+	rules, err := LoadRules("../../examples/crd/rules.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	enc := `{"resourceType":"Encounter","id":"e1","status":"in-progress","class":{"code":"AMB"},
+"type":[{"coding":[{"system":"http://www.ama-assn.org/go/cpt","code":"99213"}]}],"subject":{"reference":"Patient/p1"}}`
+	var fetched []string
+	ehr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fetched = append(fetched, r.URL.Path)
+		if r.URL.Path == "/Encounter/e1" {
+			_, _ = w.Write([]byte(enc))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ehr.Close()
+
+	for _, hook := range []string{"encounter-start", "encounter-discharge"} {
+		var d map[string]any
+		b, _ := json.Marshal(rules.Discovery())
+		_ = json.Unmarshal(b, &d)
+		if !strings.Contains(string(b), `"hook":"`+hook+`"`) || !strings.Contains(string(b), `"encounter":"Encounter/{{context.encounterId}}"`) {
+			t.Fatalf("discovery lacks %s or its encounter prefetch: %s", hook, b)
+		}
+		for _, prefetched := range []bool{true, false} {
+			fetched = nil
+			req := &Request{Hook: hook, HookInstance: "h1", FHIRServer: ehr.URL, Context: map[string]json.RawMessage{
+				"userId": json.RawMessage(`"Practitioner/d1"`), "patientId": json.RawMessage(`"p1"`), "encounterId": json.RawMessage(`"e1"`)},
+				Prefetch: map[string]json.RawMessage{"coverage": json.RawMessage(coverage)}}
+			if prefetched {
+				req.Prefetch["encounter"] = json.RawMessage(enc)
+			}
+			resp, err := rules.EvaluateContext(context.Background(), req, time.Now())
+			if err != nil {
+				t.Fatalf("%s (prefetched %v): %v", hook, prefetched, err)
+			}
+			if len(resp.SystemActions) != 1 || resp.SystemActions[0].Resource["resourceType"] != "Encounter" {
+				t.Fatalf("%s: %+v", hook, resp)
+			}
+			ext, _ := json.Marshal(resp.SystemActions[0].Resource["extension"])
+			if !strings.Contains(string(ext), ExtCoverageInformation) || !strings.Contains(string(ext), `"valueCode":"covered"`) {
+				t.Errorf("%s: the encounter's coverage information: %s", hook, ext)
+			}
+			if prefetched == (len(fetched) > 0) {
+				t.Errorf("%s (prefetched %v): fetched %v", hook, prefetched, fetched)
+			}
+		}
+	}
+
+	// No encounterId, or one the EHR does not have: nothing to answer about, as for an order hook with no orders.
+	req := &Request{Hook: "encounter-start", FHIRServer: ehr.URL, Context: map[string]json.RawMessage{"patientId": json.RawMessage(`"p1"`),
+		"encounterId": json.RawMessage(`"missing"`)}, Prefetch: map[string]json.RawMessage{"coverage": json.RawMessage(coverage)}}
+	if _, err := rules.EvaluateContext(context.Background(), req, time.Now()); err != ErrNoOrders {
+		t.Errorf("an unknown encounter: %v", err)
+	}
+}

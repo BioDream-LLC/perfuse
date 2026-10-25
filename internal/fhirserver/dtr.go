@@ -140,12 +140,17 @@ func (s *Server) handleQuestionnairePackage(w http.ResponseWriter, r *http.Reque
 		if s.DTRContext != nil {
 			found = s.DTRContext(contextID)
 		}
+		// Or the trace number a prior authorization answer asked a questionnaire under (PAS ainfo-3).
+		if len(found) == 0 && s.PAS != nil {
+			found = s.PASQuestionnairesFor(r.Context(), contextID)
+		}
 		for _, q := range found {
 			add(q)
 		}
 		if len(found) == 0 {
 			issues = append(issues, map[string]any{"severity": "warning", "code": "not-found", "diagnostics": "context " + contextID +
-				" is not a coverage assertion this server made, or was made before it last restarted; send the order, which carries " +
+				" is not a coverage assertion this server made (or was made before it last restarted), nor the trace number of a " +
+				"prior authorization line it asked a questionnaire for; send the order, which carries " +
 				"its coverage-information, or name the questionnaire"})
 		}
 	}

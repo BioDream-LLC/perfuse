@@ -156,6 +156,10 @@ func (s *Server) pasReady(ctx context.Context) error {
 				received INTEGER NOT NULL,
 				content TEXT NOT NULL)`,
 			`CREATE INDEX IF NOT EXISTS pas_attachments_id ON pas_attachments (id)`,
+			`CREATE TABLE IF NOT EXISTS pas_questionnaire_contexts (
+				context TEXT PRIMARY KEY,
+				id TEXT NOT NULL,
+				questionnaire TEXT NOT NULL)`,
 			`CREATE TABLE IF NOT EXISTS pas_um_traces (
 				trace TEXT PRIMARY KEY,
 				id TEXT NOT NULL,
@@ -229,6 +233,9 @@ type pasRequest struct {
 	um       map[string]itemDecision
 	umAuth   string
 	umTraces map[string]string
+	// questionnaires are the DTR contexts this answer asks a questionnaire under (PAS ainfo-3: the item's trace number),
+	// each with the questionnaire's canonical, kept so DTR can answer $questionnaire-package from the context alone.
+	questionnaires map[string]string
 }
 
 // readPASRequest reads a request with the published reader, so that a decision service reading the same Bundle through
@@ -694,12 +701,17 @@ func (s *Server) pasRespond(ctx context.Context, req *pasRequest, id string, now
 	}
 	if len(docRequests) > 0 {
 		var crs []any
-		task, comms := s.documentationRequests(c, docRequests)
+		task, comms := s.documentationRequests(c, docRequests, items)
 		for _, comm := range comms {
 			extra = append(extra, comm)
 			crs = append(crs, map[string]any{"reference": "urn:uuid:" + str(comm["id"])})
 		}
-		cr["communicationRequest"] = crs
+		// Only when there is one: a request for a questionnaire alone is a Task with no CommunicationRequest, and a nil list
+		// was written as "communicationRequest": null, which is not FHIR JSON (found by the Da Vinci provider reference
+		// implementation's PAS submit).
+		if len(crs) > 0 {
+			cr["communicationRequest"] = crs
+		}
 		extra = append(extra, task)
 	}
 	if len(c.notes) > 0 {
@@ -743,7 +755,7 @@ func transmissionReply(claim map[string]any) map[string]any {
 
 // documentationRequests asks for what pended items need: one PAS Task for the request (the payer's FHIR base, the
 // attachments, the DTR questionnaires) and a CommunicationRequest per document.
-func (s *Server) documentationRequests(c *pasContext, pending []any) (map[string]any, []map[string]any) {
+func (s *Server) documentationRequests(c *pasContext, pending []any, items []any) (map[string]any, []map[string]any) {
 	identifierRef := func(field string) map[string]any {
 		e := c.req.Resolve(str(asMapAny(c.req.Claim[field])["reference"]))
 		ids := asSliceAny(asMapAny(e["resource"])["identifier"])
@@ -802,16 +814,40 @@ func (s *Server) documentationRequests(c *pasContext, pending []any) (map[string
 			comms = append(comms, comm)
 		}
 		if a.Questionnaire != "" {
+			// PAS ainfo-3: a questionnaire is asked for with the single LOINC code 102089-0, and the trace number of the line it is
+			// for is the DTR context the provider retrieves it with. The questionnaire's URL went in the Task instead, and no
+			// CommunicationRequest was sent, so a provider reading the request as ainfo-3 describes (the Da Vinci Burden
+			// Reduction provider reference implementation) never saw it.
 			code = "attachment-request-questionnaire"
+			context := s.questionnaireContext(c, items, item)
+			if c.req.questionnaires == nil {
+				c.req.questionnaires = map[string]string{}
+			}
+			c.req.questionnaires[context] = a.Questionnaire
 			inputs = append(inputs, map[string]any{"extension": []any{line},
 				"type":        map[string]any{"coding": []any{map[string]any{"system": pasTempCodes, "code": "questionnaire-context"}}},
-				"valueString": a.Questionnaire})
+				"valueString": context})
+			comms = append(comms, map[string]any{
+				"resourceType": "CommunicationRequest", "id": newUUID(),
+				"meta":       map[string]any{"profile": []any{pasBase + "profile-communicationrequest|" + pasVersion}},
+				"extension":  []any{line},
+				"identifier": []any{map[string]any{"system": "urn:ietf:rfc:3986", "value": "urn:uuid:" + newUUID()}},
+				"status":     "active",
+				"category":   []any{map[string]any{"coding": []any{map[string]any{"system": "https://codesystem.x12.org/005010/755", "code": "OZ"}}}},
+				"medium":     []any{map[string]any{"coding": []any{map[string]any{"system": "https://codesystem.x12.org/005010/756", "code": "EL"}}}},
+				"payload":    []any{map[string]any{"contentString": questionnaireRequestLOINC}},
+				"requester":  map[string]any{"reference": c.req.Claim["insurer"].(map[string]any)["reference"]},
+				"recipient":  []any{map[string]any{"reference": c.req.Claim["insurer"].(map[string]any)["reference"]}},
+				"sender":     map[string]any{"reference": c.req.Claim["provider"].(map[string]any)["reference"]},
+				"subject":    map[string]any{"reference": c.req.Claim["patient"].(map[string]any)["reference"]},
+			})
 		}
 	}
 	task := map[string]any{
 		"resourceType": "Task", "id": newUUID(),
-		"meta":            map[string]any{"profile": []any{pasBase + "profile-task|" + pasVersion}},
-		"identifier":      []any{map[string]any{"system": "urn:ietf:rfc:3986", "value": "urn:uuid:" + c.id}},
+		"meta": map[string]any{"profile": []any{pasBase + "profile-task|" + pasVersion}},
+		// PAS: Task.identifier is ClaimResponse.identifier[0], the request's own trace number, which the provider answers with.
+		"identifier":      taskIdentifier(c),
 		"status":          "requested",
 		"statusReason":    map[string]any{"text": "The prior authorization request is pended until these are received."},
 		"intent":          "order",
@@ -825,6 +861,63 @@ func (s *Server) documentationRequests(c *pasContext, pending []any) (map[string
 		"input":           inputs,
 	}
 	return task, comms
+}
+
+// taskIdentifier is the documentation Task's identifier: the request's first identifier, as the ClaimResponse echoes it, or
+// this answer's own id when the request had none.
+func taskIdentifier(c *pasContext) []any {
+	if ids := asSliceAny(c.req.Claim["identifier"]); len(ids) > 0 {
+		id := asMapAny(ids[0])
+		if str(id["value"]) != "" {
+			return []any{map[string]any{"system": id["system"], "value": id["value"]}}
+		}
+	}
+	return []any{map[string]any{"system": "urn:ietf:rfc:3986", "value": "urn:uuid:" + c.id}}
+}
+
+// questionnaireRequestLOINC is the LOINC code PAS ainfo-3 asks a payer's questionnaire with.
+const questionnaireRequestLOINC = "102089-0"
+
+// payerTraceSystem names the trace numbers this server gives a line that came without one.
+const payerTraceSystem = "urn:perfuse:pas:trace"
+
+// questionnaireContext is the DTR context a questionnaire for one line is asked under: the line's own trace number, as the
+// ClaimResponse echoes it, or, for a line sent without one, a trace number this server gives it and adds to the line's
+// answer, so the provider finds the context where ainfo-3 says it is.
+func (s *Server) questionnaireContext(c *pasContext, items []any, item map[string]any) string {
+	seq := fmt.Sprint(item["sequence"])
+	for _, it := range items {
+		im := asMapAny(it)
+		if fmt.Sprint(im["itemSequence"]) != seq {
+			continue
+		}
+		for _, e := range asSliceAny(im["extension"]) {
+			em := asMapAny(e)
+			if str(em["url"]) == pasBase+"extension-itemTraceNumber" {
+				if v := str(asMapAny(em["valueIdentifier"])["value"]); v != "" {
+					return v
+				}
+			}
+		}
+		trace := "Q-" + strings.ToUpper(c.id[:8]) + "-" + seq
+		im["extension"] = append(asSliceAny(im["extension"]), map[string]any{"url": pasBase + "extension-itemTraceNumber",
+			"valueIdentifier": map[string]any{"system": payerTraceSystem, "value": trace}})
+		return trace
+	}
+	return "Q-" + strings.ToUpper(c.id[:8]) + "-" + seq
+}
+
+// PASQuestionnairesFor is the questionnaire a prior authorization answer asked for under a DTR context (the trace number
+// of the line it is for), for $questionnaire-package called with that context alone.
+func (s *Server) PASQuestionnairesFor(ctx context.Context, context string) []string {
+	if s.pasReady(ctx) != nil {
+		return nil
+	}
+	var q string
+	if err := s.Store.db.QueryRowContext(ctx, `SELECT questionnaire FROM pas_questionnaire_contexts WHERE context = ?`, context).Scan(&q); err != nil {
+		return nil
+	}
+	return []string{q}
 }
 
 // pasBundle wraps a ClaimResponse with every request resource it reaches, references rewritten to their fullUrls.
@@ -968,7 +1061,16 @@ func (s *Server) savePAS(ctx context.Context, req *pasRequest, id string, respon
 		return err
 	}
 	for _, tracking := range pasTrackingIDs(response) {
-		if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO pas_tracking (tracking, id) VALUES (?, ?)`, tracking, id); err != nil {
+		// The latest request asking under a tracking number is the one its documents answer: a provider's trace number comes
+		// back when it sends a request again.
+		if _, err := tx.ExecContext(ctx, `INSERT INTO pas_tracking (tracking, id) VALUES (?, ?)
+			ON CONFLICT(tracking) DO UPDATE SET id = excluded.id`, tracking, id); err != nil {
+			return err
+		}
+	}
+	for context, q := range req.questionnaires {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO pas_questionnaire_contexts (context, id, questionnaire) VALUES (?, ?, ?)
+			ON CONFLICT(context) DO UPDATE SET id = excluded.id, questionnaire = excluded.questionnaire`, context, id, q); err != nil {
 			return err
 		}
 	}

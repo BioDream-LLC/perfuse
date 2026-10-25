@@ -168,8 +168,9 @@ func (s *Store) migrate(ctx context.Context) error {
 //
 // A new search parameter only covers resources written after it exists unless the stored ones are indexed again, and a search
 // that silently misses every older record reads as "there are none". 2: the CARIN and PDex parameters on ExplanationOfBenefit,
-// Coverage and Group. 3: dates as ranges, in UTC, with Periods whole (value_hi). 4: MedicationDispense medication.
-const indexVersion = "4"
+// Coverage and Group. 3: dates as ranges, in UTC, with Periods whole (value_hi). 4: MedicationDispense medication. 5: Subscription
+// url, type and payload.
+const indexVersion = "5"
 
 // ensureIndexVersion re-indexes the store once when the index definition has changed since it was last built.
 func (s *Store) ensureIndexVersion(ctx context.Context) error {

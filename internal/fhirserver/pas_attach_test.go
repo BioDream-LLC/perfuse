@@ -45,10 +45,20 @@ func TestTheDocumentsAPendedRequestAsksForAreKeptWithIt(t *testing.T) {
 		"preauthorization", `{"resourceType":"QuestionnaireResponse","status":"completed"}`)); code != http.StatusOK {
 		t.Fatalf("by Task identifier: %d %v", code, out)
 	}
+	// And the ClaimResponse's own identifier, which PAS makes the Task's (Task.identifier = ClaimResponse.identifier[0]) and a
+	// provider sends as the TrackingId (the Da Vinci Burden Reduction provider reference implementation does).
+	trace := str(asMapAny(asSliceAny(cr["identifier"])[0])["value"])
+	if task := entriesOfType(b, "Task")[0]; str(asMapAny(asSliceAny(task["identifier"])[0])["value"]) != trace {
+		t.Errorf("the Task's identifier should be the ClaimResponse's: %s", toJSON(task["identifier"]))
+	}
+	if code, out := pasPost(t, f.h, "/$submit-attachment", submitAttachmentJSON(trace, "12345678901",
+		"preauthorization", `{"resourceType":"QuestionnaireResponse","status":"completed"}`)); code != http.StatusOK {
+		t.Fatalf("by the ClaimResponse's identifier: %d %v", code, out)
+	}
 	srv := NewServer(f.store, "http://example.test/fhir", nil)
 	srv.PAS = &PAS{}
 	got, err := srv.Attachments(context.Background(), str(cr["id"]), true)
-	if err != nil || len(got) != 2 || got[0].Code != "18776-5" || got[0].LineItems[0] != "1" || !got[0].Final ||
+	if err != nil || len(got) != 3 || got[0].Code != "18776-5" || got[0].LineItems[0] != "1" || !got[0].Final ||
 		got[0].Content["resourceType"] != "DocumentReference" || got[1].ResourceType != "QuestionnaireResponse" {
 		t.Fatalf("%v %+v", err, got)
 	}
