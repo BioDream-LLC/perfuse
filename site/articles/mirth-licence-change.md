@@ -8,7 +8,7 @@
 - You have four realistic choices: pay for 4.6, freeze on 4.5.2, move to a free community copy of the old code (OIE or BridgeLink), or move to a newer free engine that can read your existing Mirth work.
 - This guide explains each choice in plain words, with a worked example, and then describes Perfuse, a free engine that reads your Mirth channels and runs your Mirth scripts unchanged.
 - You do not have to rewrite anything, and you do not have to switch everything at once. You can move one connection at a time and prove each one on your own data first.
-- Honest caveat up front: Perfuse is new (version 0.1.9) and has no long production track record yet. The other options are older and more battle-tested. We say where that matters below.
+- Honest caveat up front: Perfuse is new (still at version 0.1) and has no long production track record yet. The other options are older and more battle-tested. We say where that matters below.
 
 ## What actually happened, and why it matters
 
@@ -130,7 +130,7 @@ Let us not oversell. Each option has a genuine case:
 - **Staying on 4.5.2** is fine for the short term, but it will never be patched again, which eventually becomes a security problem.
 - **OIE and BridgeLink** are the natural home for teams who love the Mirth way and want to keep it, free and open. They are closest to what you already run.
 
-And Perfuse's real weakness, stated plainly: **it is new, and it has no long production track record yet.** The current version is 0.1.9. The engine, the message queue, the connections and the web screen are complete and tested, and the parts that talk to other software are checked against that software — but that is not the same as years of running a busy hospital's Monday morning. This is exactly why shadow mode exists: so you never have to take anyone's word for it. You run Perfuse beside what you have, on real messages, delivering nothing, and read the differences yourself.
+And Perfuse's real weakness, stated plainly: **it is new, and it has no long production track record yet.** It is still at version 0.1. The engine, the message queue, the connections and the web screen are complete and tested, and the parts that talk to other software are checked against that software — but that is not the same as years of running a busy hospital's Monday morning. This is exactly why shadow mode exists: so you never have to take anyone's word for it. You run Perfuse beside what you have, on real messages, delivering nothing, and read the differences yourself.
 
 ## Common questions
 

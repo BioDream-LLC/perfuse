@@ -86,7 +86,11 @@ var menu = []navSection{
 		{"/exchange/#imaging", "image", "Imaging", "DICOM routing and de-identification"},
 	}},
 	{key: "mirth", title: "Leaving Mirth", href: "/mirth-connect-alternative/"},
-	{key: "proof", title: "Proof", href: "/proof/"},
+	{key: "proof", title: "Proof", href: "/proof/", items: []navItem{
+		{"/proof/", "check", "Test results", "Inferno and the HL7 validator, failures included"},
+		{"/standards/", "layers", "Standards and versions", "Every standard and release, and what checked it"},
+		{"/verification/", "doc", "Verification record", "What each test did, found, and never ran"},
+	}},
 	{key: "learn", title: "Learn", href: "/learn/", items: []navItem{
 		{"/learn/", "book", "Guides", "Plain-language guides to the standards and the work"},
 		{"/manual/", "doc", "Manual", "Every feature, every setting, in one document"},
@@ -179,9 +183,11 @@ const footer = `<footer class="site"><div class="wrap">
 <div><b>Product</b><a href="/platform/">Platform</a><a href="/connectors/">Connectors</a><a href="/payers/">Payers</a><a href="/exchange/">Exchange</a></div>
 <div><b>Moving</b><a href="/mirth-connect-alternative/">Leaving Mirth</a><a href="/migrate-mirth-channels/">Migration guide</a><a href="/integration-engines-compared/">Engines compared</a></div>
 <div><b>Europe</b><a href="/europe/">The UK and Europe</a><a href="/de/" hreflang="de" lang="de">Deutsch</a><a href="/fr/" hreflang="fr" lang="fr">Français</a><a href="/nl/" hreflang="nl" lang="nl">Nederlands</a></div>
-<div><b>Evidence</b><a href="/proof/">Test results</a><a href="https://test.perfuse.health/">Public test server</a><a href="https://github.com/biodream-llc/perfuse/blob/main/docs/verification.md">Verification record</a></div>
-<div><b>Help</b><a href="/learn/">Guides</a><a href="/manual/">Manual</a><a href="/download/">Download</a><a href="https://github.com/biodream-llc/perfuse">GitHub</a></div>
+<div><b>Evidence</b><a href="/proof/">Test results</a><a href="/standards/">Standards and versions</a><a href="https://test.perfuse.health/">Public test server</a><a href="/verification/">Verification record</a></div>
+<div><b>Help</b><a href="/learn/">Guides</a><a href="/manual/">Manual</a><a href="/download/">Download</a><a href="https://github.com/biodream-llc/perfuse">GitHub</a><a href="https://github.com/biodream-llc/perfuse/issues/new">Ask a question</a></div>
 </div>
+<div class="maker"><a href="https://biodream.io" aria-label="BioDream LLC"><img src="/assets/biodream-wordmark.png" alt="BioDream" width="88" height="60"></a>
+<p>Perfuse is a product of <a href="https://biodream.io">BioDream LLC</a>, which builds free and source-available software for healthcare, telecom and 911, and the support to run it. <a href="https://biodream.io/support/">Support from BioDream</a></p></div>
 <div class="legal">© BioDream LLC. Perfuse is free software. HL7, FHIR and the FHIR flame are trademarks of Health Level Seven International. Mirth is a trademark of NextGen Healthcare. Other names belong to their owners; Perfuse is not affiliated with them.</div>
 </div></footer>
 `

@@ -219,3 +219,15 @@ footer.site .legal { border-top: 1px solid #1a2b45; margin-top: 40px; padding-to
 @media (max-width: 860px) { footer.site .cols { grid-template-columns: 1fr 1fr; } }
 .hero .langs a { color: #9fd8e6; }
 .hero .langs a:hover { color: #fff; }
+
+/* The maker: BioDream LLC, on every BioDream site. The wordmark is drawn on white, so it sits on a white card. */
+footer.site .maker { display: flex; align-items: center; gap: 18px; margin-top: 40px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,.08); }
+footer.site .maker img { background: #fff; border-radius: 10px; padding: 6px 8px; width: 88px; height: auto; display: block; }
+footer.site .maker p { margin: 0; max-width: 640px; }
+footer.site .maker a { color: #fff; }
+.maker-band { display: flex; align-items: center; gap: 36px; }
+.maker-band > a { flex: none; }
+.maker-band > div { flex: 1; min-width: 0; }
+.maker-band img { width: 140px; height: auto; display: block; }
+@media (max-width: 640px) { .maker-band { flex-direction: column; align-items: flex-start; gap: 18px; } }
+footer.site .maker p a { display: inline; padding: 0; text-decoration: underline; }

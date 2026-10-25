@@ -60,7 +60,12 @@
           <li>Pended decisions sent back by subscription the moment they are made</li>
           <li>Requests passed on to your utilization management system as X12 278s, over CAQH CORE SOAP or MIME, SFTP batch
             files or HTTPS, and its answers (and its 999 and TA1 receipts) brought back; set up and watched in the console</li>
-          <li>Inferno: CRD 92 pass and none failed, PAS 82 of 84, DTR 43 pass and 2 fail</li>
+          <li>Both releases EHRs use: CRD 2.2.1, DTR 2.2.0 and PAS 2.2.1, and the 2.1.0 of each that CMS-0057 points EHRs at,
+            answered in the release the request names (or the one the client is registered for). <a href="/standards/">Every
+            version</a></li>
+          <li>A provider's <code>$inquire</code> also asks your UM system, so it finds authorizations requested by fax, portal or phone</li>
+          <li>Inferno: CRD 92 pass and none failed, PAS 82 of 84, DTR 43 pass and 2 fail; 2.1.0 by each guide's own examples, with no
+            validator errors</li>
           <li>A decision service hook: send each request to your own engine, or to
             <a href="https://github.com/BioDream-LLC/vaglio">Vaglio</a> (source-available), which explains every decision; Perfuse
             never requires one</li>
@@ -149,7 +154,7 @@
           CRD and PAS on. 3. Point an EHR, or Inferno, at it, and open Payer, CMS-0057 in the console.</p>
         <p>To pass requests on to the review system you already run, add its address and its connectivity method: the
           console's Settings, Payers, Utilization management link has every field.</p>
-        <a href="/manual/#cms-0057">The CMS-0057 chapter of the manual</a>
+        <a href="/manual/#s16-cms-0057-for-payers">The CMS-0057 chapter of the manual</a>
       </div>
       <div class="prose"><pre><code># payer-rules.yaml
 payer: Springfield Health Plan

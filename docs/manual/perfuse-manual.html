@@ -360,16 +360,20 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.21 · 3ef36e6</p>
+<p class="version">v0.1.21 · f753b2d</p>
 <p class="version">Other languages: <a href="https://perfuse.health/manual/da/" hreflang="da" lang="da">Dansk</a> · <a href="https://perfuse.health/manual/de/" hreflang="de" lang="de">Deutsch</a> · <a href="https://perfuse.health/manual/es/" hreflang="es" lang="es">Español</a> · <a href="https://perfuse.health/manual/fi/" hreflang="fi" lang="fi">Suomi</a> · <a href="https://perfuse.health/manual/fr/" hreflang="fr" lang="fr">Français</a> · <a href="https://perfuse.health/manual/it/" hreflang="it" lang="it">Italiano</a> · <a href="https://perfuse.health/manual/nb/" hreflang="nb" lang="nb">Norsk bokmål</a> · <a href="https://perfuse.health/manual/nl/" hreflang="nl" lang="nl">Nederlands</a> · <a href="https://perfuse.health/manual/pl/" hreflang="pl" lang="pl">Polski</a> · <a href="https://perfuse.health/manual/pt/" hreflang="pt" lang="pt">Português</a> · <a href="https://perfuse.health/manual/sv/" hreflang="sv" lang="sv">Svenska</a></p>
 </header>
 <h2>Table of Contents</h2>
 <div class="toc-d1"><a href="#s1-introduction"><span class="num">1</span> Introduction</a></div>
 <div class="toc-d2"><a href="#s1-1-what-perfuse-is-for"><span class="num">1.1</span> What Perfuse is for</a></div>
 <div class="toc-d2"><a href="#s1-2-what-is-in-it"><span class="num">1.2</span> What is in it</a></div>
-<div class="toc-d2"><a href="#s1-3-what-it-replaces"><span class="num">1.3</span> What it replaces</a></div>
-<div class="toc-d2"><a href="#s1-4-how-to-read-this-manual"><span class="num">1.4</span> How to read this manual</a></div>
-<div class="toc-d2"><a href="#s1-5-conventions"><span class="num">1.5</span> Conventions</a></div>
+<div class="toc-d2"><a href="#s1-3-standards-and-versions"><span class="num">1.3</span> Standards and versions</a></div>
+<div class="toc-d3"><a href="#s1-3-1-messaging-and-documents"><span class="num">1.3.1</span> Messaging and documents</a></div>
+<div class="toc-d3"><a href="#s1-3-2-fhir-implementation-guides"><span class="num">1.3.2</span> FHIR implementation guides</a></div>
+<div class="toc-d3"><a href="#s1-3-3-national-and-european-profiles"><span class="num">1.3.3</span> National and European profiles</a></div>
+<div class="toc-d2"><a href="#s1-4-what-it-replaces"><span class="num">1.4</span> What it replaces</a></div>
+<div class="toc-d2"><a href="#s1-5-how-to-read-this-manual"><span class="num">1.5</span> How to read this manual</a></div>
+<div class="toc-d2"><a href="#s1-6-conventions"><span class="num">1.6</span> Conventions</a></div>
 <div class="toc-d1"><a href="#s2-getting-started"><span class="num">2</span> Getting Started</a></div>
 <div class="toc-d2"><a href="#s2-1-running-it"><span class="num">2.1</span> Running it</a></div>
 <div class="toc-d2"><a href="#s2-2-the-first-channel"><span class="num">2.2</span> The first channel</a></div>
@@ -1334,7 +1338,7 @@ td code { font-size: 0.85em; }
 </ul>
 <p>  NCPDP Telecommunication and SCRIPT, SMART Health Links and Cards, delimited and raw. See <a href="#s8-message-formats">message formats</a>.</p>
 <ul>
-<li><strong>Connectors.</strong> 24 source types and 26 destination types, among them MLLP, files, SFTP, databases, DICOM, Kafka, AMQP 1.0,</li>
+<li><strong>Connectors.</strong> 28 source types and 31 destination types, among them MLLP, files, SFTP, databases, DICOM, Kafka, AMQP 1.0,</li>
 </ul>
 <p>  MQTT, IBM MQ, and AWS, Azure and Google Cloud storage and messaging. See the <a href="#s22-source-reference">source reference</a> and the   <a href="#s23-destination-reference">destination reference</a>.</p>
 <ul>
@@ -1357,7 +1361,7 @@ td code { font-size: 0.85em; }
 <ul>
 <li><strong>Payers and public health.</strong> The four CMS-0057 APIs, Da Vinci CRD, DTR, PAS, PDex and Plan-Net, CARIN Blue Button, an optional</li>
 </ul>
-<p>  decision service, eCR and ELR. See <a href="#s16-cms-0057-for-payers">CMS-0057</a>.</p>
+<p>  decision service, eCR and ELR. Da Vinci CRD, DTR and PAS answer both their 2.2.x and their 2.1.0 releases. See   <a href="#s16-cms-0057-for-payers">CMS-0057</a>.</p>
 <ul>
 <li><strong>Who may do what.</strong> SAML, OpenID Connect, LDAP, passkeys, SCIM, mutual TLS, six roles, channel groups with a role in each,</li>
 </ul>
@@ -1366,13 +1370,77 @@ td code { font-size: 0.85em; }
 <li><strong>Running it.</strong> One static binary for Linux, macOS and Windows, as a service, with a fleet view of several servers. See</li>
 </ul>
 <p>  <a href="#s18-operations">operations</a>, the <a href="#s3-the-web-interface">web interface</a>, the <a href="#s19-the-command-line">command line</a> and   <a href="#s20-server-options">server options</a>.</p>
-<h3 id="s1-3-what-it-replaces"><span class="num">1.3</span> What it replaces</h3>
+<h3 id="s1-3-standards-and-versions"><span class="num">1.3</span> Standards and versions</h3>
+<p>Which release of each standard Perfuse implements, and how that was checked. &#34;Checked&#34; names the outside tool or reference that judged the result; where nothing outside has judged it, it says so. Results are from test data, not from a production site.</p>
+<h4 id="s1-3-1-messaging-and-documents"><span class="num">1.3.1</span> Messaging and documents</h4>
+<table>
+<thead><tr><th>Standard</th><th>Release</th><th>Checked</th></tr></thead>
+<tbody>
+<tr><td>HL7 v2</td><td>any version: messages are read by their own separators, not a version&#39;s schema; acknowledgements default to 2.5.1</td><td>NIST HL7 v2 validator; real Mirth and OIE traffic</td></tr>
+<tr><td>HL7 v2 to FHIR</td><td>HL7&#39;s V2-to-FHIR mapping (ADT, ORU, SIU, MDM, VXU and the segments in them)</td><td>the HL7 FHIR validator against US Core, UK Core, FR Core, ISiK, nl-core and HL7 Europe</td></tr>
+<tr><td>FHIR</td><td>R4 (4.0.1), with R4B and R5 read and written</td><td>the HL7 FHIR validator; Inferno</td></tr>
+<tr><td>C-CDA and CDA</td><td>C-CDA 2.1</td><td>ONC SITE (C-CDA samples sent and received over XDR); not by a CDA schematron</td></tr>
+<tr><td>HL7 v3</td><td>PIX and PDQ (IHE ITI-44, 45, 47)</td><td>IHE&#39;s NE2008 schemas and sample messages</td></tr>
+<tr><td>DICOM and DICOMweb</td><td>DIMSE C-STORE, C-FIND, C-MOVE, C-GET, C-ECHO; QIDO-RS, WADO-RS, WADO-URI, STOW-RS</td><td>Orthanc</td></tr>
+<tr><td>X12 (HIPAA)</td><td>005010: 837, 835, 270/271 (X279A1), 276/277 (X212), 834, 278 request (X217) and inquiry (X215); 275 in 006020 (X314)</td><td>payers&#39; published companion guides; CMS esMD samples</td></tr>
+<tr><td>CAQH CORE connectivity</td><td>vC2.2.0 SOAP and MIME, vC4.0.0 with MTOM</td><td>a stand-in UM system written from CAQH&#39;s rules</td></tr>
+<tr><td>NCPDP</td><td>Telecommunication D.0; SCRIPT 2023011 (and 2017071) with ePA; Real-Time Prescription Benefit v13</td><td>written from the public Surescripts companion guides and their examples; not against NCPDP&#39;s licensed schemas</td></tr>
+<tr><td>UN/EDIFACT</td><td>syntax 3 and 4, CONTRL</td><td>pydifact 0.1.8</td></tr>
+<tr><td>IHE document sharing</td><td>XDS.b, XCA, XDR, MHD 4.2.2, PIXm, PDQm, XDM</td><td>the NIST XDS Toolkit; ONC SITE</td></tr>
+<tr><td>Direct secure messaging</td><td>Applicability Statement 1.2, XDR and XDM for Direct, DNS and LDAP certificate discovery</td><td>ONC SITE; ONC&#39;s Certificate Discovery Tool (18 of 18)</td></tr>
+<tr><td>AS2</td><td>RFC 4130, compression RFC 5402</td><td>pyas2lib</td></tr>
+<tr><td>Signed attachments</td><td>HL7 DSDR, XAdES-X-L</td><td>xmlsec1, OpenSSL</td></tr>
+</tbody>
+</table>
+<h4 id="s1-3-2-fhir-implementation-guides"><span class="num">1.3.2</span> FHIR implementation guides</h4>
+<table>
+<thead><tr><th>Guide</th><th>Release</th><th>Checked</th></tr></thead>
+<tbody>
+<tr><td>US Core</td><td>conversions to 9.0.0 (USCDI v6); FHIR server against 6.1.0 and 7.0.0</td><td>the HL7 validator; Inferno US Core</td></tr>
+<tr><td>SMART App Launch</td><td>2.2</td><td>Inferno: 80 of 80 (public app)</td></tr>
+<tr><td>Bulk Data Access</td><td>2.0.0</td><td>Inferno: 48 of 48</td></tr>
+<tr><td>Subscriptions R5 Backport</td><td>for R4</td><td>a real HTTP receiver; the PAS kit&#39;s notification tests</td></tr>
+<tr><td>Da Vinci CRD</td><td>2.2.1, and 2.1.0</td><td>Inferno 2.2.1: 92 pass, none fail; 2.1.0 by the guide&#39;s own examples</td></tr>
+<tr><td>Da Vinci DTR</td><td>2.2.0, and 2.1.0</td><td>Inferno 2.2.0: 43 pass, 2 fail (a kit defect); 2.1.0 by the guide&#39;s own examples</td></tr>
+<tr><td>Da Vinci PAS</td><td>2.2.1, and 2.1.0</td><td>Inferno 2.2.1: 82 of 84; 2.1.0 by the guide&#39;s own examples</td></tr>
+<tr><td>Da Vinci PDex</td><td>2.2.0</td><td>Inferno PDex 2.0: payer-to-payer 19 of 19</td></tr>
+<tr><td>Da Vinci HRex <code>$member-match</code></td><td>1.2.0</td><td>Inferno PDex payer-to-payer</td></tr>
+<tr><td>Da Vinci ATR</td><td>2.1.0</td><td>not checked by an outside tool</td></tr>
+<tr><td>Da Vinci CDex <code>$submit-attachment</code></td><td>2.1</td><td>not checked by an outside tool</td></tr>
+<tr><td>Da Vinci Plan-Net</td><td>1.1.0</td><td>Inferno: 199 pass, 10 fail (a kit defect)</td></tr>
+<tr><td>Da Vinci US Drug Formulary</td><td>2.1.0</td><td>the HL7 validator</td></tr>
+<tr><td>CARIN Blue Button</td><td>2.2.0</td><td>the HL7 validator</td></tr>
+<tr><td>eCR</td><td>2.1.2</td><td>the HL7 validator</td></tr>
+<tr><td>ELR</td><td>HL7 2.5.1 ELR Release 1 with its errata</td><td>ONC&#39;s ELR tool: 28 of 28</td></tr>
+<tr><td>International Patient Summary</td><td>2.0.0</td><td>the HL7 validator</td></tr>
+<tr><td>DEQM</td><td>5.0.0</td><td>the HL7 validator</td></tr>
+<tr><td>SQL on FHIR</td><td>v2</td><td>the official test suite: 144 of 144</td></tr>
+<tr><td>SMART Health Cards and Links</td><td>Cards 1.4, Links STU 1</td><td>the specifications&#39; own example card; a published SMART Health Links viewer library</td></tr>
+<tr><td>UDAP Security</td><td>STU 1</td><td>a real authorization server and trust community</td></tr>
+<tr><td>TEFCA Facilitated FHIR</td><td>SOP v2.0</td><td>not checked against a real QHIN</td></tr>
+</tbody>
+</table>
+<h4 id="s1-3-3-national-and-european-profiles"><span class="num">1.3.3</span> National and European profiles</h4>
+<p>Checked by converting published or invented HL7 v2 messages and validating every resource; the full results and the reasons for each failure are in the repository&#39;s <code>conformance/national</code> folder.</p>
+<table>
+<thead><tr><th>Profile</th><th>Release</th><th>Resources valid</th></tr></thead>
+<tbody>
+<tr><td>UK Core</td><td>STU2 2.0.2</td><td>185 of 187</td></tr>
+<tr><td>FR Core</td><td>2.2.0</td><td>138 of 156</td></tr>
+<tr><td>ISiK Basismodul</td><td>4.0.3 (Stufe 4)</td><td>18 of 47; 42 of 47 with the hospital&#39;s own bundle script</td></tr>
+<tr><td>Nictiz nl-core</td><td>0.12.1-beta.1 (zib 2020)</td><td>12 of 24; 18 of 24 with the hospital&#39;s own bundle script</td></tr>
+<tr><td>HL7 Europe Laboratory Report</td><td>2.1.0</td><td>105 of 426 (the guide expects a document a v2 result is not)</td></tr>
+<tr><td>HL7 Europe Hospital Discharge Report</td><td>1.0.0</td><td>68 of 69</td></tr>
+</tbody>
+</table>
+<p>None of this is a certification. Perfuse has not been certified by ONC, CMS, gematik, Nictiz, NHS England or anyone else.</p>
+<h3 id="s1-4-what-it-replaces"><span class="num">1.4</span> What it replaces</h3>
 <p>Perfuse covers the ground held by Mirth Connect, and can import Mirth channel exports directly. The chapter on <a href="#s15-migration-from-mirth">migration</a> describes what translates cleanly, what needs a decision, and how to prove the result matches before cutting over.</p>
 <p>The differences that matter in daily use are debugging and silence. In Mirth, seeing what a transformer did to a message generally means redeploying the channel with logging added. In Perfuse, any recorded message can be replayed through the current configuration and inspected step by step, without touching the running channel. And where a Mirth alert on &#34;no traffic&#34; is a fixed threshold that is useless on any feed that is quiet at night, Perfuse learns what each feed&#39;s normal week looks like and alerts against that.</p>
-<h3 id="s1-4-how-to-read-this-manual"><span class="num">1.4</span> How to read this manual</h3>
+<h3 id="s1-5-how-to-read-this-manual"><span class="num">1.5</span> How to read this manual</h3>
 <p>The first chapters are conceptual and are worth reading in order: <a href="#s3-3-1-channels">channels</a>, <a href="#s5-message-flow">message flow</a>, then <a href="#s6-transformation">transformation</a>. Everything after that can be read as needed.</p>
 <p>The reference chapters near the end list every configuration key, its type, whether it is required and its default. Those chapters are generated from the source, so they cannot describe an option that does not exist or omit one that does. If a key appears in a configuration file and not in the <a href="#s27-index-of-configuration-keys">index</a>, it is not a Perfuse key.</p>
-<h3 id="s1-5-conventions"><span class="num">1.5</span> Conventions</h3>
+<h3 id="s1-6-conventions"><span class="num">1.6</span> Conventions</h3>
 <p>Configuration is YAML. Most keys are <code>snake_case</code> on the wire — <code>max_message_size</code>, <code>idle_timeout</code> — and this manual always gives the wire form, because that is what you type. There is one long-standing exception, <code>dataType</code> on a channel, which is camelCase; it is documented that way in the <a href="#s21-channel-reference">channel reference</a> and accepted only in that spelling.</p>
 <p>Field references in HL7 use the usual notation: <code>PID-5</code> is the fifth field of the PID segment, <code>PID-5.1</code> its first component, and <code>PID-3(2)</code> the second repetition of the third field. A path written without a repetition addresses every repetition (see <a href="#s6-4-paths">paths</a>).</p>
 <p>Durations are written as a number and a unit — <code>30s</code>, <code>5m</code>, <code>2h</code>. A bare number is not a duration and will be refused rather than guessed at.</p>

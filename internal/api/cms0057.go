@@ -77,8 +77,8 @@ func (s *Server) handleCMS0057Status(w http.ResponseWriter, r *http.Request, ses
 	pa := cms0057API{Name: "Prior Authorization API", Rule: "42 CFR 422.122, 431.80, 457.732, 45 CFR 156.223",
 		Deadline:  "1 January 2027; decision timeframes and public metrics from 1 January 2026",
 		Endpoints: []string{base + "/ClaimResponse", base + "/Claim"},
-		Guides: []string{"Da Vinci PAS " + cms0057.PASVersion + " with X12 278 translation", "Da Vinci CRD " + crd.Version +
-			" over CDS Hooks", "Da Vinci DTR 2.2.0 $questionnaire-package"}}
+		Guides: []string{"Da Vinci PAS " + cms0057.PASVersion + " and 2.1.0 with X12 278 translation", "Da Vinci CRD " + crd.Version +
+			" and 2.1.0 over CDS Hooks", "Da Vinci DTR 2.2.0 and 2.1.0 $questionnaire-package"}}
 	pa.Endpoints = append(pa.Endpoints, strings.TrimSuffix(base, "/fhir")+"/cds-services", base+"/Questionnaire/$questionnaire-package")
 	need(st.FHIR, "the FHIR endpoint (-fhir)", &pa.Missing)
 	need(s.CRD != nil, "coverage requirements rules for CRD (-crd-rules)", &pa.Missing)

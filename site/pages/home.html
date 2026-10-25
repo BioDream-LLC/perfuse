@@ -11,7 +11,7 @@
         <p>Mirth needs a paid licence from 4.6. Perfuse reads your Mirth, OIE or BridgeLink exports, runs their JavaScript (E4X
           included) unchanged, and runs beside Mirth on real traffic until you can prove the two agree.</p>
         <ul class="ticks">
-          <li>HL7 v2, FHIR, DICOM, X12 and CDA in one program, 50 ways in and out</li>
+          <li>HL7 v2, FHIR, DICOM, X12 and CDA in one program, 59 ways in and out</li>
           <li>Tested on channels written by Mirth 4.5.2, OIE 4.5.2, 4.6.0 and 4.7.0, and BridgeLink 26.9.0 themselves</li>
           <li>31 MB of memory at rest, against Mirth's 383 MB; no Java to install</li>
         </ul>
@@ -24,8 +24,9 @@
       <div class="door">
         <p class="eyebrow">For health plans</p>
         <h2>CMS-0057-F prior authorization, before January 2027</h2>
-        <p>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization APIs, with Da Vinci CRD, DTR and PAS, a
-          reviewer's queue, and the X12 278 link to the utilization management system you already run.</p>
+        <p>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization APIs, with Da Vinci CRD, DTR and PAS (2.2.x
+          and 2.1.0, answered in whichever release the caller speaks), a reviewer's queue, and the X12 278 link to the
+          utilization management system you already run.</p>
         <ul class="ticks">
           <li>Inferno's hosted kits: CRD 92 pass, none failed; PAS 82 of 84; PDex payer-to-payer 19 of 19</li>
           <li>278s over CAQH CORE SOAP or MIME, SFTP batch or HTTPS, tested against a stand-in UM system</li>
@@ -47,7 +48,7 @@
 <div class="strip"><div class="wrap">
   <div><b>$0</b><span>No licence, no per-channel fee, ever</span></div>
   <div><b>31 MB</b><span>Memory at rest, against Mirth's 383 MB</span></div>
-  <div><b>50</b><span>Ways in and out: 24 sources, 26 destinations</span></div>
+  <div><b>59</b><span>Ways in and out: 28 sources, 31 destinations</span></div>
   <div><b>Inferno</b><span>Official FHIR test suites, run in public</span></div>
 </div></div>
 
@@ -136,6 +137,7 @@
         <tr><td>Da Vinci PAS 2.2.1</td><td>Requesting and deciding prior authorizations</td><td class="num">82 of 84</td></tr>
         <tr><td>Da Vinci DTR 2.2.0</td><td>Gathering the documentation an approval needs</td><td class="num">43 pass, 2 fail</td></tr>
         <tr><td>Da Vinci Plan-Net 1.1.0</td><td>The provider directory</td><td class="num">199 pass, 10 fail</td></tr>
+        <tr><td>Da Vinci CRD, DTR and PAS 2.1.0</td><td>The release CMS-0057 points EHRs at; no Inferno kit tests it</td><td class="num pass">Every guide example answered, no validator errors</td></tr>
       </tbody>
     </table>
     <p class="caption">Every failure left is explained on the <a href="/proof/">proof page</a>, with the upstream issue where the
@@ -186,6 +188,47 @@
         <p>Run a new version beside the live one on real traffic, delivering nothing, and read every difference.</p></a>
       <a class="card" href="/mirth-connect-alternative/"><div class="icon">ICON:swap</div><h3>Bring your Mirth channels</h3>
         <p>Your Mirth Connect exports convert, your JavaScript runs unchanged, and you can prove both engines agree.</p></a>
+      <a class="card" href="/europe/"><div class="icon">ICON:globe</div><h3>The UK and Europe</h3>
+        <p>Checked against UK Core, FR Core, ISiK, Nictiz and HL7 Europe's lab and discharge reports; 37 national patient numbers; GDPR tools.</p></a>
+      <a class="card" href="/standards/"><div class="icon">ICON:layers</div><h3>Standards and versions</h3>
+        <p>Every standard and the release of each Perfuse implements, with the outside tool that checked it.</p></a>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow">Which releases</p>
+      <h2>The standards, and the version of each</h2>
+      <p>The release of every standard matters to whoever connects to you, so here they are. The full list, with what checked each
+        one, is on the <a href="/standards/">standards page</a>.</p>
+    </div>
+    <table>
+      <thead><tr><th>Area</th><th>Standards and releases</th></tr></thead>
+      <tbody>
+        <tr><td>Prior authorization</td><td>Da Vinci PAS 2.2.1 and 2.1.0, CRD 2.2.1 and 2.1.0, DTR 2.2.0 and 2.1.0, CDex 2.1; X12 278 005010 (X217, X215); CAQH CORE vC2.2.0 and vC4.0.0</td></tr>
+        <tr><td>CMS-0057-F payer APIs</td><td>CARIN Blue Button 2.2.0, PDex 2.2.0, HRex 1.2.0, ATR 2.1.0, Plan-Net 1.1.0, Bulk Data 2.0.0, SMART App Launch 2.2</td></tr>
+        <tr><td>Drugs (CMS-0062-P)</td><td>NCPDP SCRIPT 2023011 ePA, Real-Time Prescription Benefit v13, Da Vinci US Drug Formulary 2.1.0, Telecommunication D.0</td></tr>
+        <tr><td>FHIR</td><td>R4 4.0.1 (R4B and R5 read and written), US Core 9.0.0 for conversions, Subscriptions R5 Backport, IPS 2.0.0, SQL on FHIR v2, DEQM 5.0.0</td></tr>
+        <tr><td>Messaging and claims</td><td>HL7 v2 (any version), C-CDA 2.1, HL7 v3, X12 005010 837, 835, 270/271, 276/277, 834 and 275 006020, DICOM and DICOMweb, UN/EDIFACT</td></tr>
+        <tr><td>Exchange</td><td>IHE XDS.b, XCA, XDR, MHD 4.2.2, PIXm, PDQm; Direct (Applicability Statement 1.2); TEFCA Facilitated FHIR SOP v2.0 with UDAP STU 1; eCR 2.1.2, ELR 2.5.1</td></tr>
+        <tr><td>Europe</td><td>UK Core 2.0.2, FR Core 2.2.0, ISiK 4.0.3, Nictiz nl-core 0.12.1-beta.1, HL7 Europe Laboratory Report 2.1.0 and Hospital Discharge Report 1.0.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="band soft">
+  <div class="wrap maker-band">
+    <a href="https://biodream.io"><img src="/assets/biodream-wordmark.png" alt="BioDream" width="132" height="90" loading="lazy"></a>
+    <div>
+      <p class="eyebrow">Who makes it</p>
+      <h2>A product of BioDream LLC</h2>
+      <p>BioDream builds free and source-available software for healthcare, telecom and 911, and publishes the source. Use Perfuse
+        free; when it runs something that matters, <a href="https://biodream.io/support/">BioDream can keep it running with you</a>.
+        For prior authorization decisions, BioDream's <a href="https://github.com/BioDream-LLC/vaglio">Vaglio</a> pairs with
+        Perfuse, which never requires it.</p>
     </div>
   </div>
 </section>

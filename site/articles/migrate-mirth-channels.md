@@ -8,7 +8,7 @@
 - With Perfuse, a free integration engine, your channels convert automatically, your scripts run unchanged, and you prove the result on your own message traffic before you switch anything.
 - The job has six plain steps: export from Mirth, see what you have, translate, check and test, prove it on real traffic, and switch over one channel at a time.
 - If you ever change your mind, Perfuse can export a channel back to a Mirth file, so you are never locked in.
-- The same steps work for Mirth Connect, the Open Integration Engine (OIE) and BridgeLink. Honest caveat: Perfuse is new (version 0.1.9) with no long production track record, which is exactly why the "prove it" step matters.
+- The same steps work for Mirth Connect, the Open Integration Engine (OIE) and BridgeLink. Honest caveat: Perfuse is new (still at version 0.1) with no long production track record, which is exactly why the "prove it" step matters.
 
 ## Who this is for, and what you need to know first
 
@@ -132,7 +132,7 @@ One honest note: Mirth's file format has nowhere to store some of Perfuse's newe
 
 ## Being fair about the trade-offs
 
-Mirth, OIE and BridgeLink are older and more proven in production than Perfuse. Perfuse is new — version 0.1.9 — and has not yet run a busy hospital for years. The engine, queue, connections and web screen are complete and tested, and the parts that talk to other software are verified against the real thing (real Mirth, OIE and BridgeLink; a real FHIR server; a real imaging server; real databases). But that is not the same as a long track record. The "prove it" step in Step 5, and shadow mode later, exist precisely so you can rely on evidence from your own traffic rather than anyone's promises.
+Mirth, OIE and BridgeLink are older and more proven in production than Perfuse. Perfuse is new — still at version 0.1 — and has not yet run a busy hospital for years. The engine, queue, connections and web screen are complete and tested, and the parts that talk to other software are verified against the real thing (real Mirth, OIE and BridgeLink; a real FHIR server; a real imaging server; real databases). But that is not the same as a long track record. The "prove it" step in Step 5, and shadow mode later, exist precisely so you can rely on evidence from your own traffic rather than anyone's promises.
 
 ## Common questions
 

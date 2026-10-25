@@ -26,9 +26,13 @@ instead of a 254 MB install and a Java runtime, and it starts immediately rather
 
 [**Quick start**](#quick-start) · [**Why Perfuse**](#why-perfuse-exists) ·
 [**Mirth migration**](#migrating-from-mirth-connect) · [**Everything it does**](#everything-it-does) ·
+[**Standards and versions**](#standards-and-versions-supported) ·
 [**Manual**](https://perfuse.health/manual/) · [**Reference**](docs/reference.md) · [**FAQ**](#faq)
 
 [**perfuse.health**](https://perfuse.health) — the manual, the reference and this page, on the web
+
+<a href="https://biodream.io"><img src="docs/assets/biodream-wordmark.png" alt="BioDream" width="66"></a><br>
+<sub>A product of <a href="https://biodream.io"><b>BioDream LLC</b></a></sub>
 
 </div>
 
@@ -219,7 +223,7 @@ For the UK and Europe, and every screen of the public test server at work.
 
 ## Everything it does
 
-Sixteen areas. Nothing here is aspirational: where something is partial it says so, and the [verification record](docs/verification.md)
+Eighteen areas. Nothing here is aspirational: where something is partial it says so, and the [verification record](docs/verification.md)
 says what each claim was checked against. The [manual](https://perfuse.health/manual/) covers every one in full.
 
 <table width="100%">
@@ -244,6 +248,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>US Core 9.0.0 (USCDI v6)</b> claimed only after the resource is checked against the profile; no errors from the HL7 validator</li>
 <li><b>A FHIR REST server</b>: search, chains, <code>_include</code>, <code>_has</code>, transactions, history, <b>Bulk Data <code>$export</code></b></li>
 <li><b>Subscriptions</b> (R5 Backport for R4), recorded in the same transaction as the change</li>
+<li><b>A site's own facts added</b> with a FHIR destination's <code>bundle_script</code>: JavaScript over each converted Bundle, for what the hospital's systems know and a v2 message does not say (an IK number, a contact level)</li>
 <li>Write limits for a public server: writes a minute per client, and a resource cap</li>
 <li><code>fhir</code> as a destination; a <b>browser FHIR lab</b>; <code>perfuse fhir</code> to convert, validate and serve</li>
 <li><b>SMART Health Links and Cards</b> (<i>Kill the Clipboard</i>): read a patient's QR code, verify the cards, share the visit back</li>
@@ -367,6 +372,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Patient Access, Provider Access, Payer-to-Payer and Prior Authorization</b>, with a screen saying which are ready</li>
 <li><b>Da Vinci CRD 2.2.1</b> over CDS Hooks, <b>DTR 2.2.0</b> questionnaire packages, and a <b>PAS 2.2.1 server</b> (each also answering <b>2.1.0</b> clients): <code>$submit</code>, <code>$inquire</code>, <code>$decide</code></li>
 <li>A <b>reviewer queue</b> for pended requests, with the documents sent for each</li>
+<li>A <b>UM link</b>: PAS requests to the payer's utilization management system as <b>X12 278</b> (HTTPS, CAQH CORE SOAP and MIME, SFTP batch), and <code>$inquire</code> also finds authorizations requested by fax, portal or phone</li>
 <li>An optional <b>decision service</b> asked about what the rules leave to a reviewer (we recommend <b>Vaglio</b>, source-available; any engine plugs in); any failure pends, never approves</li>
 <li>Claims to <b>CARIN Blue Button 2.2.0</b>, decisions to <b>PDex 2.2.0</b>, <code>$member-match</code>, <code>$davinci-data-export</code>, a <b>Plan-Net</b> directory</li>
 <li>The yearly <b>prior authorization metrics page</b> in CMS's layout</li>
@@ -406,7 +412,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>Prometheus</b> metrics, <b>OTLP</b> tracing, and VPN tunnel state from AWS, Azure or strongSwan</li>
 <li><b>Find a patient's messages</b> by MRN, name, birth date, accession or claim number across HL7 v2, FHIR, DICOM and X12, every search audited</li>
 <li>A <b>fleet view</b> of several servers, and <b>multi-tenancy</b> with limits per tenant</li>
-<li>Everything in the browser: <b>28 screens</b>, three themes, a <b>⌘K</b> palette, settings applied with a restart button</li>
+<li>Everything in the browser: <b>over 35 screens</b>, three themes, a <b>⌘K</b> palette, settings applied with a restart button</li>
 <li>One static binary as a <b>systemd</b>, <b>launchd</b> or <b>Windows</b> service; <code>perfuse init</code> writes it</li>
 </ul>
 </td>
@@ -454,10 +460,81 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li><b>SNOMED CT national editions</b>, ClaML (ICD-10-GM, OPS, CIM-10), <b>ICD-11</b></li>
 <li><b>GDPR and UK GDPR</b>: find, export, erase with a second approval, legal holds, an erasure ledger that survives a restore</li>
 <li><b>Data residency</b> checks, and OpenTofu for hosting in Frankfurt, Ireland or London</li>
+<li>Checked against <b>UK Core, FR Core, ISiK, Nictiz nl-core</b> and HL7 Europe's <b>Laboratory</b> and <b>Hospital Discharge</b> reports, every failure explained (<a href="#national-and-european-profiles">results</a>)</li>
 </ul>
 </td>
 </tr>
 </table>
+
+## Standards and versions supported
+
+Which release of each standard Perfuse implements, and how that was checked. "Checked" names the outside tool or
+reference that judged the result; where nothing outside has judged it, it says so. Results are from test data, not from a
+production site.
+
+#### Messaging and documents
+
+| Standard | Release | Checked |
+|---|---|---|
+| HL7 v2 | any version: messages are read by their own separators, not a version's schema; acknowledgements default to 2.5.1 | NIST HL7 v2 validator; real Mirth and OIE traffic |
+| HL7 v2 to FHIR | HL7's V2-to-FHIR mapping (ADT, ORU, SIU, MDM, VXU and the segments in them) | the HL7 FHIR validator against US Core, UK Core, FR Core, ISiK, nl-core and HL7 Europe |
+| FHIR | R4 (4.0.1), with R4B and R5 read and written | the HL7 FHIR validator; Inferno |
+| C-CDA and CDA | C-CDA 2.1 | ONC SITE (C-CDA samples sent and received over XDR); not by a CDA schematron |
+| HL7 v3 | PIX and PDQ (IHE ITI-44, 45, 47) | IHE's NE2008 schemas and sample messages |
+| DICOM and DICOMweb | DIMSE C-STORE, C-FIND, C-MOVE, C-GET, C-ECHO; QIDO-RS, WADO-RS, WADO-URI, STOW-RS | Orthanc |
+| X12 (HIPAA) | 005010: 837, 835, 270/271 (X279A1), 276/277 (X212), 834, 278 request (X217) and inquiry (X215); 275 in 006020 (X314) | payers' published companion guides; CMS esMD samples |
+| CAQH CORE connectivity | vC2.2.0 SOAP and MIME, vC4.0.0 with MTOM | a stand-in UM system written from CAQH's rules |
+| NCPDP | Telecommunication D.0; SCRIPT 2023011 (and 2017071) with ePA; Real-Time Prescription Benefit v13 | written from the public Surescripts companion guides and their examples; not against NCPDP's licensed schemas |
+| UN/EDIFACT | syntax 3 and 4, CONTRL | pydifact 0.1.8 |
+| IHE document sharing | XDS.b, XCA, XDR, MHD 4.2.2, PIXm, PDQm, XDM | the NIST XDS Toolkit; ONC SITE |
+| Direct secure messaging | Applicability Statement 1.2, XDR and XDM for Direct, DNS and LDAP certificate discovery | ONC SITE; ONC's Certificate Discovery Tool (18 of 18) |
+| AS2 | RFC 4130, compression RFC 5402 | pyas2lib |
+| Signed attachments | HL7 DSDR, XAdES-X-L | xmlsec1, OpenSSL |
+
+#### FHIR implementation guides
+
+| Guide | Release | Checked |
+|---|---|---|
+| US Core | conversions to 9.0.0 (USCDI v6); FHIR server against 6.1.0 and 7.0.0 | the HL7 validator; Inferno US Core |
+| SMART App Launch | 2.2 | Inferno: 80 of 80 (public app) |
+| Bulk Data Access | 2.0.0 | Inferno: 48 of 48 |
+| Subscriptions R5 Backport | for R4 | a real HTTP receiver; the PAS kit's notification tests |
+| Da Vinci CRD | 2.2.1, and 2.1.0 | Inferno 2.2.1: 92 pass, none fail; 2.1.0 by the guide's own examples |
+| Da Vinci DTR | 2.2.0, and 2.1.0 | Inferno 2.2.0: 43 pass, 2 fail (a kit defect); 2.1.0 by the guide's own examples |
+| Da Vinci PAS | 2.2.1, and 2.1.0 | Inferno 2.2.1: 82 of 84; 2.1.0 by the guide's own examples |
+| Da Vinci PDex | 2.2.0 | Inferno PDex 2.0: payer-to-payer 19 of 19 |
+| Da Vinci HRex `$member-match` | 1.2.0 | Inferno PDex payer-to-payer |
+| Da Vinci ATR | 2.1.0 | not checked by an outside tool |
+| Da Vinci CDex `$submit-attachment` | 2.1 | not checked by an outside tool |
+| Da Vinci Plan-Net | 1.1.0 | Inferno: 199 pass, 10 fail (a kit defect) |
+| Da Vinci US Drug Formulary | 2.1.0 | the HL7 validator |
+| CARIN Blue Button | 2.2.0 | the HL7 validator |
+| eCR | 2.1.2 | the HL7 validator |
+| ELR | HL7 2.5.1 ELR Release 1 with its errata | ONC's ELR tool: 28 of 28 |
+| International Patient Summary | 2.0.0 | the HL7 validator |
+| DEQM | 5.0.0 | the HL7 validator |
+| SQL on FHIR | v2 | the official test suite: 144 of 144 |
+| SMART Health Cards and Links | Cards 1.4, Links STU 1 | the specifications' own example card; a published SMART Health Links viewer library |
+| UDAP Security | STU 1 | a real authorization server and trust community |
+| TEFCA Facilitated FHIR | SOP v2.0 | not checked against a real QHIN |
+
+#### National and European profiles
+
+Checked by converting published or invented HL7 v2 messages and validating every resource; the full results and the
+reasons for each failure are in [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national).
+
+| Profile | Release | Resources valid |
+|---|---|---|
+| UK Core | STU2 2.0.2 | 185 of 187 |
+| FR Core | 2.2.0 | 138 of 156 |
+| ISiK Basismodul | 4.0.3 (Stufe 4) | 18 of 47; 42 of 47 with the hospital's own bundle script |
+| Nictiz nl-core | 0.12.1-beta.1 (zib 2020) | 12 of 24; 18 of 24 with the hospital's own bundle script |
+| HL7 Europe Laboratory Report | 2.1.0 | 105 of 426 (the guide expects a document a v2 result is not) |
+| HL7 Europe Hospital Discharge Report | 1.0.0 | 68 of 69 |
+
+None of this is a certification. Perfuse has not been certified by ONC, CMS, gematik, Nictiz, NHS England or anyone else.
+
+The [manual](https://perfuse.health/manual/) has the same tables, and the [verification record](docs/verification.md) says what each check did.
 
 ## How small it is
 
@@ -499,7 +576,7 @@ SMART endpoints are the ones Inferno's hosted test kits run against; see [deploy
 
 ## Download
 
-**Version 0.1.0** — single binary, nothing to install. Each archive contains the executable, the licence,
+**Version 0.1.21** — single binary, nothing to install. Each archive contains the executable, the licence,
 the notice and the full PDF manual.
 
 | Platform | Architecture | Download |
@@ -684,11 +761,11 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | **SIGKILL, mid-batch** | 255 messages acknowledged across five hard kills, 255 present downstream, none lost and none duplicated. The numbers for the weaker acknowledgement mode are published too |
 | **Inferno, ONC's test kits** (hosted, against [test.perfuse.health](https://test.perfuse.health)) | SMART App Launch STU2.2 80/80 · Bulk Data 2.0 48/48 · PDex 2.0 payer-to-payer 19/19, coverage 312 + 1 skip · Da Vinci CRD Server 2.2.1 passes · PAS Server 2.2.1 82/84 · DTR Payer Server 2.2.0 43/45 · Plan-Net 1.1.0 199 pass, 10 fail · US Core 6.1.0 FHIR API 323 passing (locally). Every failure left is explained in the record |
 | **The HL7 validator, on other people's v2** | Microsoft FHIR-Converter's 139 samples, 81 French national and NHS Wales samples, the NHS nw-gmsa set and messages posted on chat.fhir.org, converted and validated as whole bundles. What is left are codes the senders sent |
+| **The HL7 validator, against national and European profiles** | UK Core 185/187, FR Core 138/156, ISiK 42/47 with a site's script, Nictiz nl-core 18/24 with a site's script, HL7 Europe Hospital Discharge Report 68/69, Laboratory Report 105/426; each failure explained in [conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national) |
+| **Da Vinci 2.1.0 guides' own examples** | Every 2.1.0 CRD, DTR and PAS example request answered with no errors from the HL7 validator, against 2.1.0 and 2.2.x ([conformance/davinci21](https://github.com/biodream-llc/perfuse/tree/main/conformance/davinci21)) |
 
 Interoperability tests run against containers, not stubs. Where a real product's behaviour contradicted
 the specification, the real behaviour won and a fixture recording it was committed.
-
----
 
 ---
 
@@ -995,6 +1072,13 @@ the current one could not verify.
 
 [Apache License 2.0](LICENSE). Copyright 2026 BioDream LLC. See
 [NOTICE](NOTICE).
+
+<p><a href="https://biodream.io"><img src="docs/assets/biodream-wordmark.png" alt="BioDream" width="88" align="left"></a>
+Perfuse is a product of <a href="https://biodream.io"><b>BioDream LLC</b></a>, which builds free and source-available software
+for healthcare, telecom and 911, and the support to run it. Other BioDream products include
+<a href="https://github.com/BioDream-LLC/vaglio">Vaglio</a>, a prior authorization decision engine that pairs with Perfuse
+(never required by it), and <a href="https://bitvoice.org">BitVoice</a>.</p>
+<br clear="left">
 
 Perfuse is not affiliated with, endorsed by, or derived from Mirth Connect or NextGen Healthcare. HL7 and
 FHIR are registered trademarks of Health Level Seven International; DICOM is a registered trademark of

@@ -25,7 +25,7 @@ var sitePages = []sitePage{
 	{"platform.html", "/platform/", "platform", "The Perfuse platform: channels, builder, monitoring and security",
 		"How Perfuse receives, checks, changes and delivers healthcare messages, and the tools around it: a browser builder, dashboards and alerts, shadow mode, and single sign-on.", "0.9"},
 	{"connectors.html", "/connectors/", "connectors", "Connectors: every format and transport Perfuse speaks",
-		"HL7 v2, FHIR, DICOM, X12, CDA and NCPDP over MLLP, HTTP, files, databases, AWS, Azure, Google Cloud, Kafka, MQTT and IBM MQ: 24 source types and 26 destination types.", "0.9"},
+		"HL7 v2, FHIR, DICOM, X12, CDA and NCPDP over MLLP, HTTP, files, databases, AWS, Azure, Google Cloud, Kafka, MQTT and IBM MQ: 28 source types and 31 destination types.", "0.9"},
 	{"payers.html", "/payers/", "payers", "For payers: CMS-0057-F, prior authorization and the provider directory",
 		"The four CMS-0057-F FHIR APIs, Da Vinci CRD, DTR, PAS, PDex and Plan-Net, and CARIN Blue Button in one free engine tested with Inferno's suites, and an X12 278 link to your UM system.", "0.9"},
 	{"sandbox.html", "/sandbox/", "payers", "Free payer sandbox: test Da Vinci CRD, DTR and PAS against a real payer server",

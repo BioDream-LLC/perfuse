@@ -38,11 +38,56 @@ type page struct {
 	title       string
 	description string
 	priority    string // sitemap priority
+	// section, when set, publishes only that "## " section of src (to the next one), its subsections as the page's
+	// sections: the manual's standards tables are one text, in the manual, the README and here.
+	section string
 }
 
 // The documents published as pages. Anything referenced from the README has to be here, because a
 // link that resolves on GitHub and 404s on the website is worse than no link.
 var pages = []page{
+	{
+		src:         "site/articles/cms-0057-readiness-checklist.md",
+		dir:         "cms-0057-readiness-checklist",
+		title:       "CMS-0057-F before January 2027: a payer's readiness checklist",
+		description: "The four CMS-0057-F APIs, the decision timeframes and the metrics, in the order to work on them and what to test first, and how Perfuse covers each.",
+		priority:    "0.9",
+	},
+	{
+		src:         "site/articles/davinci-2-1-and-2-2.md",
+		dir:         "davinci-2-1-and-2-2",
+		title:       "Da Vinci 2.1.0 or 2.2: which release a payer must answer in 2027",
+		description: "Why EHRs will send Da Vinci CRD, DTR and PAS in both 2.1.0 and 2.2.x, what differs, and how one Perfuse server answers each caller in its own release.",
+		priority:    "0.9",
+	},
+	{
+		src:         "site/articles/hl7-v2-and-european-reports.md",
+		dir:         "hl7-v2-and-european-reports",
+		title:       "HL7 v2 and the European lab and discharge reports: what a feed can give, and what it cannot",
+		description: "Converting HL7 v2 to the HL7 Europe Laboratory and Hospital Discharge Reports: what conversion can do, what needs a clinician's sign-off, and Perfuse's results.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/lab-result-people.md",
+		dir:         "lab-result-people",
+		title:       "Who ordered, who performed, who signed it off: the people on a lab result, from HL7 v2 to FHIR",
+		description: "Where OBR-16, OBR-32, OBX-15 and OBX-23 to OBX-25 belong in FHIR, the mistakes that are easy to make, and how Perfuse maps them.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/silent-interface-failures.md",
+		dir:         "silent-interface-failures",
+		title:       "The quiet feed: why hospital interfaces fail silently, and how to notice",
+		description: "A stopped feed produces no errors. Why fixed timers fail on clinical feeds, how rhythm-aware alerts work, and Perfuse's below-rhythm alert.",
+		priority:    "0.8",
+	},
+	{
+		src:         "site/articles/patient-matching.md",
+		dir:         "patient-matching",
+		title:       "Patient matching: one person, many records, and why automatic linking should start switched off",
+		description: "Deterministic and probabilistic patient matching, blocking keys, why overlays are worse than duplicates, and Perfuse's optional patient index.",
+		priority:    "0.8",
+	},
 	{
 		src:         "site/articles/dicom-routing.md",
 		dir:         "dicom-routing",
@@ -163,6 +208,14 @@ var pages = []page{
 		priority:    "0.8",
 	},
 	{
+		src:         "internal/manual/chapters/introduction.md",
+		section:     "Standards and versions",
+		dir:         "standards",
+		title:       "Standards and versions Perfuse supports: HL7, FHIR, Da Vinci, X12, NCPDP, IHE",
+		description: "Every standard Perfuse implements, the release of each (Da Vinci PAS 2.2.1 and 2.1.0, CRD, DTR, US Core, SMART, X12 005010, NCPDP SCRIPT), and the outside tool that checked it.",
+		priority:    "0.9",
+	},
+	{
 		src:         "docs/verification.md",
 		dir:         "verification",
 		title:       "What was tested, what it found, and what was never run",
@@ -246,6 +299,9 @@ func run(root, out, base string) error {
 		raw, err := os.ReadFile(filepath.Join(root, p.src))
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", p.src, err)
+		}
+		if p.section != "" {
+			raw = []byte(sectionOf(string(raw), p.section))
 		}
 		md := stripShieldsBadges(rewriteLinks(rewriteHost(string(raw), base)))
 		// The byline is in the page header; the guide's own line would say it twice.
@@ -649,4 +705,20 @@ func writeFile(path string, b []byte) error {
 	}
 
 	return os.WriteFile(path, b, 0o644)
+}
+
+// sectionOf returns the "## name" section of a markdown text, without its heading, with its "### " subsections raised to
+// "## " so they are the page's sections. A section that is not there is an empty page, which the site test refuses.
+func sectionOf(md, name string) string {
+	start := strings.Index(md, "\n## "+name+"\n")
+	if start < 0 {
+		return ""
+	}
+	rest := md[start+len("\n## "+name+"\n"):]
+	if end := strings.Index(rest, "\n## "); end >= 0 {
+		rest = rest[:end]
+	}
+	rest = strings.ReplaceAll(rest, "\n### ", "\n## ")
+	return strings.ReplaceAll(rest, "the repository's `conformance/national` folder",
+		"[conformance/national](https://github.com/biodream-llc/perfuse/tree/main/conformance/national)")
 }

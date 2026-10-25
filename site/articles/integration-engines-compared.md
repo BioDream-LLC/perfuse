@@ -8,7 +8,7 @@
 - There are four serious options: the last free Mirth (4.5.2), two free community continuations of it (OIE and BridgeLink), and a newer, separate engine (Perfuse).
 - The first three are close relatives on the same software platform (Java) and share the same channel format, so moving between them is easy.
 - Perfuse is a fresh start on a different platform, is a single file to install, and can read and write the others' channels — so it works alongside any of them.
-- This guide lays out what each one is, in plain words, so you can choose with the facts in front of you. We are fair to all four, and we state Perfuse's real weakness: it is new, version 0.1.9, with no long production track record yet.
+- This guide lays out what each one is, in plain words, so you can choose with the facts in front of you. We are fair to all four, and we state Perfuse's real weakness: it is new, still at version 0.1, with no long production track record yet.
 
 ## First, what an integration engine is
 
@@ -87,7 +87,7 @@ Each option deserves a fair hearing:
 
 - **Mirth 4.5.2** is the exact software most teams know, but it is frozen: no more fixes, including security fixes.
 - **OIE and BridgeLink** keep the free, open line alive and are the natural home for Mirth veterans. They are the most battle-tested of the free choices.
-- **Perfuse** brings a lighter footprint and a lot of modern capability, but — stated plainly — **it is new, version 0.1.9, and has no long production track record yet.** The engine, queue, connections and web screen are complete and tested, and the parts that talk to other software are checked against the real thing (real Mirth, OIE and BridgeLink; a real FHIR server; a real imaging server; real databases; and the regulator's own test kits). That is strong evidence, but it is not years of running a busy hospital. Perfuse's shadow mode exists so you can rely on evidence from your own traffic rather than any promise.
+- **Perfuse** brings a lighter footprint and a lot of modern capability, but — stated plainly — **it is new, still at version 0.1, and has no long production track record yet.** The engine, queue, connections and web screen are complete and tested, and the parts that talk to other software are checked against the real thing (real Mirth, OIE and BridgeLink; a real FHIR server; a real imaging server; real databases; and the regulator's own test kits). That is strong evidence, but it is not years of running a busy hospital. Perfuse's shadow mode exists so you can rely on evidence from your own traffic rather than any promise.
 
 ## Common questions
 

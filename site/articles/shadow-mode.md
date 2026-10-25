@@ -8,7 +8,7 @@
 - Shadow mode runs the new version of a connection beside the live one, on the real message traffic, delivering nothing, and shows you exactly where the two would differ.
 - It is safe to point at a live, busy feed because the shadow has no way to deliver and cannot affect the live channel.
 - You read the result field by field — a short list of real changes, each one click from the message that caused it — rather than a single pass-or-fail.
-- Perfuse has shadow mode built into every channel. Honest caveat: Perfuse is new (version 0.1.9), and shadow mode is itself part of how you check it against what you already run.
+- Perfuse has shadow mode built into every channel. Honest caveat: Perfuse is new (still at version 0.1), and shadow mode is itself part of how you check it against what you already run.
 
 ## Who this is for
 
@@ -101,7 +101,7 @@ Shadow mode is part of a complete engine: it handles HL7 v2, FHIR, X12, DICOM an
 
 Shadow mode is strong evidence, but it is evidence about **the traffic it has seen**. If a rare message type has not arrived during the shadow period — a month-end batch, an unusual trigger event, a sender that behaves differently at midnight — then the shadow has not tested it yet. That is why the honest advice is to run a shadow over a period that includes the quiet and the busy times, including a weekend and a month end, rather than an afternoon.
 
-And the broader caveat applies here too: Perfuse itself is new (version 0.1.9) with no long production track record. Shadow mode is part of how you make that acceptable — you never have to take anyone's word for a change, because you can watch it against your own real traffic first.
+And the broader caveat applies here too: Perfuse itself is new (still at version 0.1) with no long production track record. Shadow mode is part of how you make that acceptable — you never have to take anyone's word for a change, because you can watch it against your own real traffic first.
 
 ## Common questions
 
