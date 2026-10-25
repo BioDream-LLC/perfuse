@@ -78,6 +78,11 @@ only from YAML or the command line is treated as a bug.
   it is now the requester of the order the report is based on (each result's OBR is also a ServiceRequest, as HL7's
   v2-to-FHIR map has it). OBR-32, the principal result interpreter, is now read, and OBR-34 and OBR-35 are performers with
   their function. Against UK Core 185 of 187 resources pass, FR Core 138 of 156, the EU lab report 105 of 426.
+- **The whole prior authorization round trip with HL7's own provider reference implementation.** Pointed at Perfuse, the Da Vinci
+  Burden Reduction provider RI ran CRD, PAS, DTR, CDex attachments and the decision notification end to end, to "Approved". It
+  found five faults, all fixed: the `encounter-start` and `encounter-discharge` hooks were missing; a questionnaire was asked for
+  in a shape PAS does not describe (now LOINC `102089-0` under the line's trace number, which DTR resolves); a `null` in one
+  ClaimResponse; Subscriptions not searchable by `url`; and documents sent under the request's trace number refused.
 
 ## New in v0.1.21
 
@@ -751,6 +756,7 @@ it found is recorded in [docs/verification.md](docs/verification.md):
 | **Open Integration Engine 4.5.2, 4.6.0 and 4.7.0, BridgeLink 26.9.0** (real servers) | Each wrote its own channels, code template library, group and server backup; every one translates, loads and runs. Found four importer defects, among them a Mapper variable that never reached the script reading it |
 | **Keycloak 26** | SAML sign-in end to end. Found a signature-canonicalisation defect a thousand self-written tests had missed |
 | **Microsoft Entra ID** (real tenant) | SAML sign-in with a real Microsoft account, including an interactive browser sign-in. Found five behaviours no reading of the specification predicts |
+| **HL7 Da Vinci Burden Reduction provider reference implementation** | The EHR side of prior authorization, written by others, ran CRD, PAS, DTR, CDex attachments and the decision notification against Perfuse end to end. Found five faults, all fixed |
 | **HAPI FHIR** | FHIR resources Perfuse produces validate in an independent server |
 | **Orthanc** | DICOM C-STORE and C-FIND, and DICOMweb both ways (STOW-RS into Orthanc; Orthanc's DICOMweb client searching and retrieving from Perfuse) |
 | **OHIF** | Viewer listing and displaying studies from Perfuse's DICOMweb archive |

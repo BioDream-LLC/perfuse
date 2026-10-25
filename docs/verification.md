@@ -342,6 +342,45 @@ sets, and an inactive RxNorm code in the test data.
 
 What this does not show: conversions of messages from a real EHR feed, or an ONC certification test (Inferno) run.
 
+## CRD, DTR and PAS with HL7's Burden Reduction provider reference implementation (24 October 2026)
+
+**What was checked: the whole prior authorization round trip, with the EHR side played by software Perfuse's authors did not
+write.** HL7's Da Vinci Burden Reduction provider reference implementation (`hlseven/davinci-br-provider`, the `main` image of
+5 October 2026, run from its published Docker image) was pointed at Perfuse as its payer, with SMART Backend Services (its own
+key, registered as a client) and CDS Hooks JWTs it signed itself. Its own workflow was driven in a browser, as its end-to-end tests
+drive it: start an encounter for its patient `pat013`, order home oxygen (E0424), sign, submit the prior authorization, complete
+the documentation it was asked for, and wait for the decision.
+
+What happened, step by step: `encounter-start` and `order-sign` were answered with coverage cards and the coverage-information
+system action; the PAS `$submit` was pended asking for the plan's home-oxygen questionnaire; the EHR fetched it with DTR
+`$questionnaire-package`, rendered it, and returned the answers with CDex `$submit-attachment`; a reviewer approved it in
+Perfuse's queue; the PAS subscription notification reached the EHR, which closed its task and showed "Approved" with the
+authorization number and period.
+
+It found five faults in Perfuse, each fixed and held by a test:
+
+- **Two of CRD's six hooks had no service.** `encounter-start` and `encounter-discharge` were not offered, and CRD asks a server to
+  answer every hook (hook-4). They are now, with the encounter prefetched or read from the EHR and answered about by its type.
+- **A questionnaire was asked for in a shape PAS does not describe.** PAS (ainfo-3) asks for a payer's questionnaire with one
+  CommunicationRequest carrying LOINC `102089-0`, under the line's trace number, which is the DTR context. Perfuse sent no
+  CommunicationRequest and put the questionnaire's URL in the Task, so the EHR, reading the response as PAS says, never saw that
+  anything was asked. Now it sends the `102089-0` request, the trace number as the Task's questionnaire context (a line without one
+  is given one), and DTR answers `$questionnaire-package` from that context alone. The HL7 validator, with its terminology server,
+  accepts the CommunicationRequest.
+- **`"communicationRequest": null`.** A pended answer asking for a questionnaire alone wrote a null, which is not FHIR JSON.
+- **A Subscription could not be found by its endpoint.** R4's `url` search parameter (and `type`, `payload`) were not supported, so
+  the EHR's check for its existing subscription was refused before it made one.
+- **Documents sent under the request's trace number were refused.** PAS maps the Task's identifier to the ClaimResponse's first
+  identifier, and the EHR sent that as the `TrackingId`; only the Task's and CommunicationRequests' own identifiers were accepted.
+  Both are now, and the Task carries the ClaimResponse's identifier.
+
+Two things in the reference implementation itself, not Perfuse, needed working round for the run: its UDAP sign-in server
+(`hlseven/fast-udap-security`, published for x86 only) crashed under emulation on an Arm Mac, so the EHR ran with its own
+sign-in off; and its FHIR server serves a search's cached results for 60 seconds, so a new order or questionnaire answer appears
+on its screens up to a minute late.
+
+What this does not show: a production EHR, or the reference implementation's UDAP security path.
+
 ## Da Vinci CRD, DTR and PAS 2.1.0, beside 2.2.x (24 October 2026)
 
 **What was found: five places where a 2.1.0 client was answered in 2.2.x's form, and one where DTR 2.1.0 forbids what 2.2.0
@@ -535,7 +574,7 @@ found, coverage not found and no active coverage responses. It took these fixes:
 
 The run also turned up two problems in the kit. Its own sample order-select request fails its context check, because CommunicationRequest
 is listed in `selections`. Its sample appointment has neither `start` nor `requestedPeriod`, which crd-apt1 requires. Both were
-adjusted for the run. encounter-start and encounter-discharge are not served.
+adjusted for the run. encounter-start and encounter-discharge were not served then; they are now (see below).
 
 **Rechecked in October 2026, after reading implementers' questions in chat.fhir.org's Da Vinci channels.**
 
