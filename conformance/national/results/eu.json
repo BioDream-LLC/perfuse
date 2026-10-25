@@ -55,9 +55,9 @@
   "ServiceRequest": {
    "profile": "http://hl7.eu/fhir/laboratory/StructureDefinition/ServiceRequest-eu-lab",
    "resources": 20,
-   "failing": 2,
+   "failing": 1,
    "errors": {
-    "ServiceRequest.identifier: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/ServiceRequest-eu-lab|2.1.0)": 2
+    "ServiceRequest.identifier: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/ServiceRequest-eu-lab|2.1.0)": 1
    },
    "warnings": 25
   },

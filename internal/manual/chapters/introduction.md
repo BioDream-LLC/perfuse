@@ -109,7 +109,7 @@ reasons for each failure are in the repository's `conformance/national` folder.
 | FR Core | 2.2.0 | 138 of 156 |
 | ISiK Basismodul | 4.0.3 (Stufe 4) | 18 of 47; 42 of 47 with the hospital's own bundle script |
 | Nictiz nl-core | 0.12.1-beta.1 (zib 2020) | 12 of 24; 18 of 24 with the hospital's own bundle script |
-| HL7 Europe Laboratory Report | 2.1.0 | 105 of 426 (the guide expects a document a v2 result is not) |
+| HL7 Europe Laboratory Report | 2.1.0 | 106 of 426 (the guide expects a document a v2 result is not) |
 | HL7 Europe Hospital Discharge Report | 1.0.0 | 68 of 69 |
 
 None of this is a certification. Perfuse has not been certified by ONC, CMS, gematik, Nictiz, NHS England or anyone else.

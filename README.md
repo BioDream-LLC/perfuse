@@ -77,7 +77,10 @@ only from YAML or the command line is treated as a bug.
 - **Who ordered a lab result, and who signed it off.** OBR-16, the ordering provider, was written as the report's performer;
   it is now the requester of the order the report is based on (each result's OBR is also a ServiceRequest, as HL7's
   v2-to-FHIR map has it). OBR-32, the principal result interpreter, is now read, and OBR-34 and OBR-35 are performers with
-  their function. Against UK Core 185 of 187 resources pass, FR Core 138 of 156, the EU lab report 105 of 426.
+  their function. Against UK Core 185 of 187 resources pass, FR Core 138 of 156, the EU lab report 106 of 426.
+- **Order numbers keep who issued them.** A placer or filler order number (OBR-2, OBR-3) now keeps its namespace and
+  universal ID as the identifier's system and assigner, so the same number from two organisations stays two identifiers, and
+  the order (ServiceRequest) carries the lab's number as well as the requester's.
 - **The whole prior authorization round trip with HL7's own provider reference implementation.** Pointed at Perfuse, the Da Vinci
   Burden Reduction provider RI ran CRD, PAS, DTR, CDex attachments and the decision notification end to end, to "Approved". It
   found five faults, all fixed: the `encounter-start` and `encounter-discharge` hooks were missing; a questionnaire was asked for
@@ -534,7 +537,7 @@ reasons for each failure are in [conformance/national](https://github.com/biodre
 | FR Core | 2.2.0 | 138 of 156 |
 | ISiK Basismodul | 4.0.3 (Stufe 4) | 18 of 47; 42 of 47 with the hospital's own bundle script |
 | Nictiz nl-core | 0.12.1-beta.1 (zib 2020) | 12 of 24; 18 of 24 with the hospital's own bundle script |
-| HL7 Europe Laboratory Report | 2.1.0 | 105 of 426 (the guide expects a document a v2 result is not) |
+| HL7 Europe Laboratory Report | 2.1.0 | 106 of 426 (the guide expects a document a v2 result is not) |
 | HL7 Europe Hospital Discharge Report | 1.0.0 | 68 of 69 |
 
 None of this is a certification. Perfuse has not been certified by ONC, CMS, gematik, Nictiz, NHS England or anyone else.

@@ -7,7 +7,7 @@
 | Organization | `organization-eu-core` | 5 | 5 | 0 |
 | Patient | `patient-eu-core` | 23 | 18 | 5 |
 | Practitioner | `practitioner-eu-core` | 37 | 30 | 7 |
-| ServiceRequest | `ServiceRequest-eu-lab` | 20 | 18 | 2 |
+| ServiceRequest | `ServiceRequest-eu-lab` | 20 | 19 | 1 |
 | Specimen | `Specimen-eu-lab` | 19 | 19 | 0 |
 
 No profile in the guide for: DocumentReference (25), Encounter (18), Location (18)
@@ -35,4 +35,4 @@ No profile in the guide for: DocumentReference (25), Encounter (18), Location (1
 
 ## ServiceRequest
 
-- 2 x ServiceRequest.identifier: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/ServiceRequest-eu-lab|2.1.0)
+- 1 x ServiceRequest.identifier: minimum required = 1, but only found 0 (from http://hl7.eu/fhir/laboratory/StructureDefinition/ServiceRequest-eu-lab|2.1.0)

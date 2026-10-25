@@ -854,3 +854,48 @@ func TestVitalSignsAndRepeatedNumbers(t *testing.T) {
 		t.Errorf("repeated numeric value = %v", obs[1].ValueString)
 	}
 }
+
+// Placer and filler order numbers cross organisations: the requester's system and the lab's both need to find the order
+// and the report again by them. Their issuing organisation (EI.2 to EI.4) must stay with the number, or the same number
+// from two labs is one identifier.
+func TestOrderNumbersKeepWhoIssuedThem(t *testing.T) {
+	raw := strings.Replace(strings.Replace(oruR01, "|ORD987|", "|ORD987^GPSURGERY^2.16.840.1.113883.19.4.6^ISO|", 1),
+		"|FILL654|", "|FILL654^CITYLAB|", 1)
+	res := convert(t, raw, Options{DefaultIdentifierSystem: "urn:oid:1.2.3.4",
+		AssigningAuthoritySystems: map[string]string{"CITYLAB": "https://citylab.example/orders"}})
+
+	want := map[string][2]string{
+		"PLAC": {"ORD987", "urn:oid:2.16.840.1.113883.19.4.6"},
+		"FILL": {"FILL654", "https://citylab.example/orders"},
+	}
+	check := func(what string, ids []fhir.Identifier) {
+		t.Helper()
+		got := map[string][2]string{}
+		for _, id := range ids {
+			if id.Type != nil && len(id.Type.Coding) > 0 {
+				got[id.Type.Coding[0].Code] = [2]string{id.Value, id.System}
+			}
+		}
+		for typ, w := range want {
+			if got[typ] != w {
+				t.Errorf("%s %s identifier = %v, want %v", what, typ, got[typ], w)
+			}
+		}
+	}
+	check("DiagnosticReport", find[*fhir.DiagnosticReport](t, res).Identifier)
+	sr := find[*fhir.ServiceRequest](t, res)
+	check("ServiceRequest", sr.Identifier)
+	for _, id := range sr.Identifier {
+		if id.Value == "ORD987" && (id.Assigner == nil || id.Assigner.Display != "GPSURGERY") {
+			t.Errorf("the placer number's issuer was lost: %+v", id.Assigner)
+		}
+	}
+
+	// Bare numbers keep the default system, as before.
+	plain := convert(t, oruR01, Options{DefaultIdentifierSystem: "urn:oid:1.2.3.4"})
+	for _, id := range find[*fhir.DiagnosticReport](t, plain).Identifier {
+		if id.System != "urn:oid:1.2.3.4" || id.Assigner != nil {
+			t.Errorf("a bare order number changed: %+v", id)
+		}
+	}
+}

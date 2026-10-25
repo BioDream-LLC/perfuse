@@ -1206,7 +1206,7 @@ occurrence, when it means every one (deliberately, as in filters).
   and capability requirements, and not gematik's conformance process (Bestätigungsverfahren).
 - **HL7 Europe Laboratory Report 2.1.0** (23 October 2026, on main): the 23 lab result messages (ORU^R01) among those sets,
   checked against the guide's DiagnosticReport, Observation, Specimen and ServiceRequest profiles and HL7 Europe Base 2.0.1
-  for the people and organisations: 77 of 391 pass (105 of 426 since the orders and interpreters were added, below). Every report fails on the guide's form (a DiagnosticReport must point at
+  for the people and organisations: 77 of 391 pass (106 of 426 since the orders and interpreters were added, below, and order numbers keep the organisation that issued them). Every report fails on the guide's form (a DiagnosticReport must point at
   the Composition of an EU lab document, which a v2 result is not); most results on the data (287 name no performer, 260
   have no time in OBX-14 or OBR-7; 25 French results are an embedded CDA report). Found and fixed: results without OBX-14
   were not given their OBR-7; OBX-15 and OBX-23 to OBX-25, the producing laboratory and its director, were not read; a

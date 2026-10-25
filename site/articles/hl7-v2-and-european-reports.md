@@ -50,7 +50,7 @@ The checks, all with the official HL7 FHIR validator, every failure listed with 
 | Guide | Resources valid |
 |---|---|
 | HL7 Europe Hospital Discharge Report 1.0.0 | 68 of 69 |
-| HL7 Europe Laboratory Report 2.1.0 | 105 of 426, mostly results that name no performer or time, and reports that are not yet a document |
+| HL7 Europe Laboratory Report 2.1.0 | 106 of 426, mostly results that name no performer or time, and reports that are not yet a document |
 | UK Core 2.0.2 (NHS Wales' published samples) | 185 of 187 |
 | FR Core 2.2.0 (the French agency's samples) | 138 of 156 |
 | ISiK 4.0.3 (invented German messages) | 18 of 47; 42 of 47 with the hospital's script |

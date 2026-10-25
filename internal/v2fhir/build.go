@@ -317,6 +317,33 @@ func (c *converter) authoritySystem(source, authority string) (string, string) {
 	return system, ""
 }
 
+// orderIdentifier reads a placer or filler order number (EI: .1 the number, .2 the namespace, .3 the universal ID, .4 its
+// type) as an Identifier of the given type. EI.2 to EI.4 are the issuing organisation, read as an HD (as the V2-to-FHIR EI
+// map does), so the same number from two labs stays two identifiers; without them the default system is used.
+func (c *converter) orderIdentifier(field, typeCode, target string) (fhir.Identifier, bool) {
+	value := c.get(field + ".1")
+	if value == "" {
+		return fhir.Identifier{}, false
+	}
+	display := map[string]string{"PLAC": "Placer identifier", "FILL": "Filler identifier"}[typeCode]
+	id := fhir.Identifier{Value: value, Type: fhir.NewCodeableConcept(fhir.SystemIdentifierType, typeCode, display)}
+	ns, uid, uidType := c.get(field+".2"), c.get(field+".3"), c.get(field+".4")
+	if ns == "" && uid == "" {
+		id.System = c.opts.DefaultIdentifierSystem
+		return id, true
+	}
+	sub := string(c.msg.Separators().Subcomponent)
+	system, how := c.authoritySystem(field+".2", strings.TrimRight(ns+sub+uid+sub+uidType, sub))
+	id.System = system
+	if how != "" {
+		c.note("info", field+".2", target+".system", "%s", how)
+	}
+	if ns != "" {
+		id.Assigner = &fhir.Reference{Display: ns}
+	}
+	return id, true
+}
+
 // wellKnownAuthorities are the US national identifier namespaces, by OID and by the HD.1 name senders commonly use for them.
 var wellKnownAuthorities = map[string]string{
 	"2.16.840.1.113883.4.6": "http://hl7.org/fhir/sid/us-npi",
@@ -707,21 +734,11 @@ func (c *converter) buildDiagnosticReport(obrIndex int, patient, encounter *fhir
 	placerOrder := c.get(prefix + "-2.1")
 	d.SetResourceID(c.deterministicID("DiagnosticReport", fillerOrder+"|"+placerOrder))
 
-	if fillerOrder != "" {
-		d.Identifier = append(d.Identifier, fhir.Identifier{
-			Value: fillerOrder,
-			Type: fhir.NewCodeableConcept(fhir.SystemIdentifierType, "FILL",
-				"Filler identifier"),
-			System: c.opts.DefaultIdentifierSystem,
-		})
+	if id, ok := c.orderIdentifier(prefix+"-3", "FILL", "DiagnosticReport.identifier"); ok {
+		d.Identifier = append(d.Identifier, id)
 	}
-	if placerOrder != "" {
-		d.Identifier = append(d.Identifier, fhir.Identifier{
-			Value: placerOrder,
-			Type: fhir.NewCodeableConcept(fhir.SystemIdentifierType, "PLAC",
-				"Placer identifier"),
-			System: c.opts.DefaultIdentifierSystem,
-		})
+	if id, ok := c.orderIdentifier(prefix+"-2", "PLAC", "DiagnosticReport.identifier"); ok {
+		d.Identifier = append(d.Identifier, id)
 	}
 
 	// OBR-25 is the result status.
@@ -1396,13 +1413,13 @@ func (c *converter) serviceRequest(obrIndex int, patient, encounter *fhir.Refere
 	}
 	sr.SetResourceID(c.deterministicID("ServiceRequest", placer+"|"+filler))
 
-	if placer != "" {
-		sr.Identifier = append(sr.Identifier, fhir.Identifier{
-			Value:  placer,
-			System: c.opts.DefaultIdentifierSystem,
-			Type: fhir.NewCodeableConcept(fhir.SystemIdentifierType, "PLAC",
-				"Placer identifier"),
-		})
+	// Both numbers belong on the order: the placer's (OBR-2) is the requester's, the filler's (OBR-3) the lab's, and a
+	// receiver in another organisation needs whichever is its own to find the order again.
+	if id, ok := c.orderIdentifier(prefix+"-2", "PLAC", "ServiceRequest.identifier"); ok {
+		sr.Identifier = append(sr.Identifier, id)
+	}
+	if id, ok := c.orderIdentifier(prefix+"-3", "FILL", "ServiceRequest.identifier"); ok {
+		sr.Identifier = append(sr.Identifier, id)
 	}
 
 	if forResult {
