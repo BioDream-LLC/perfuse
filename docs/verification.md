@@ -1561,6 +1561,50 @@ where gpg has no agent (now skipped there).
   which AWS holds for new accounts until a request to lift it is granted. SITE's HISP Testing Portal (SMTP, IMAP and POP3
   as sender and receiver) needs a SITE account.
 
+## Post-acute care (PACIO), against PACIO's own test kits (October 2026)
+
+PACIO publishes Inferno kits for its guides (github.com/paciowg). Perfuse's ordinary FHIR server was loaded with PACIO's own
+data, the two public servers its Connectathon track uses and the examples in each guide, and run against all four
+(`conformance/inferno`, suite `pacio`):
+
+| Guide | Kit | Result |
+|---|---|---|
+| Transitions of Care 1.0.0 | pacio-toc-test-kit 6141da0 | 24 pass, 4 fail, 8 skip |
+| Standardized Medication Profile 1.0.0 | pacio-smp-test-kit 03892d5 | 34 pass, 3 fail, 14 skip |
+| Advance Directive Interoperability 2.0.0-ballot | pacio-test-kit 8bac2a7 | 74 pass, 23 fail, 4 error, 3 skip |
+| Personal Functioning and Engagement 2.0.0 | pacio-test-kit 8bac2a7 | 40 pass, 16 fail, 1 error, 1 skip |
+
+What it found in Perfuse, all fixed:
+
+- **A stored document was refused.** The FHIR store would not keep any Bundle, so a transfer summary, a patient summary or
+  a lab report document could not be PUT; and reading a Bundle as a resource failed on its first entry. Documents,
+  collections, messages and transactions kept as records are now stored, read back whole and found by `type`,
+  `identifier`, `timestamp` and `composition`. A transaction PUT is kept, never applied; search sets and histories are refused.
+- **A stored document read back as R4 held R5 resources.** The Bundle was converted, the resources inside it were not
+  (an Encounter's `class` as a list, `participant.actor`). Every entry is now converted, and what the Bundle struct does not
+  model (`signature`, `language`) is kept.
+- **Searches that answered 400:** Patient by `active`, `telecom`, `address`, `address-city`, `-state`, `-postalcode`; List by
+  `code` and `patient`; DocumentReference by `custodian`.
+- **No way to say which guides the server serves.** `-fhir-declares` (Settings, FHIR, Capability statement) adds guides to
+  `instantiates` and profiles to each type's `supportedProfile`. A statement, not a check.
+
+What is left is not Perfuse's:
+
+- **PACIO's sample data.** Most failures are its examples: identifiers on `example.org` (which the validator refuses outside
+  examples), codes the validator's terminology does not know, a TOC document whose Composition carries no `category` the kit
+  looks for, a CarePlan without its required category slice. One sandbox Patient (`patient-1`) claims US Core and has no
+  identifier, which US Core requires; Perfuse refuses it, as it should, so the read of it fails.
+- **Must-support elements the data never fills** (`note`, `abatementDateTime`, `target.dueDate`, `orderDetail` ...): those tests
+  ask for a resource holding each element, and none of PACIO's does. Perfuse returned every element it was given: all 1,192
+  loaded resources were read back and compared.
+- **The kits themselves.** The general kit reads with the same credentials for its "unauthorised request" check, so a server
+  that grants them answers 200; its validator has no copy of the ADI ballot package (the `error` results); it names four ADI
+  profiles the published 2.0.0-ballot does not contain; its `.env.production` points FHIRPath at `localhost` inside its own
+  containers (worked round in `kit.sh`).
+
+What this does not show: a transfer between two real systems, and the conversion of a hospital's C-CDA discharge summary into
+a TOC document, which Perfuse does not do.
+
 ## What has not been verified
 
 Stated plainly, because an unverified claim that nobody writes down becomes a claim everybody assumes was

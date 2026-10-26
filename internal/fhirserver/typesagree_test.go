@@ -18,9 +18,10 @@ import (
 // Neither direction is acceptable, so both are checked. A type served with no search parameters cannot be found by anything except its id,
 // and a type with parameters that is not served is a promise the router will not keep.
 func TestEveryServedTypeHasSearchParametersAndViceVersa(t *testing.T) {
-	// Bundle and OperationOutcome are parseable but never stored, so they are not served and have no parameters. They
-	// are named here rather than filtered by a rule, because a rule would quietly excuse a third one added later.
-	notServed := map[string]bool{"Bundle": true, "OperationOutcome": true}
+	// OperationOutcome is parseable but never stored, so it is not served and has no parameters. It is named here rather
+	// than filtered by a rule, because a rule would quietly excuse a second one added later. (Bundle was here too until
+	// documents could be stored.)
+	notServed := map[string]bool{"OperationOutcome": true}
 
 	served := map[string]bool{}
 	for _, t := range fhir.SupportedResourceTypes() {

@@ -37,6 +37,7 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-fhir` | on/off | `true` | serve a FHIR endpoint at /fhir | **Settings › FHIR › The FHIR server**: Serve a FHIR endpoint at /fhir |
 | `-fhir-api-tokens` | on/off | — | with SMART configured, accept Perfuse API tokens on the FHIR endpoint as well (unscoped; the console's FHIR settings can switch it) | **Settings › FHIR › Access**: Accept Perfuse API tokens beside SMART tokens |
 | `-fhir-bulk-export` | on/off | — | enable $export, which produces a file holding every record the FHIR endpoint serves | **Settings › FHIR › Bulk data**: Bulk Data export ($export) |
+| `-fhir-declares` | string | — | guides this FHIR server declares in its capability statement, comma-separated: a CapabilityStatement address, or Type=profile address | **Settings › FHIR › Capability statement**: Guides this server declares |
 | `-fhir-max-resources` | int | — | for a public server: refuse new FHIR resources once this many are held (0: no limit) | **Settings › FHIR › Access**: Most resources held |
 | `-fhir-member-match-without-consent` | on/off | — | let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing | **Settings › Payers › CMS-0057-F**: Answer $member-match without the member's consent |
 | `-fhir-open` | on/off | — | serve the FHIR endpoint with no authentication at all, exposing every stored record | **Settings › FHIR › Access**: Let anyone read the FHIR endpoint without signing in |

@@ -607,6 +607,24 @@ func baseSettings() []Setting {
 			Flag:    "fhir-patient-directory-search",
 		},
 		{
+			Key:      "fhir.declares",
+			Group:    GroupFHIR,
+			Subgroup: "Capability statement",
+			Label:    "Guides this server declares",
+			Help: "What the data this server holds is meant to conform to, for clients and test kits reading its " +
+				"capability statement. Each line is a guide's CapabilityStatement address (it goes into instantiates), " +
+				"or Type=profile address (it goes into that type's supported profiles), for example " +
+				"Composition=http://hl7.org/fhir/us/pacio-toc/StructureDefinition/TOC-Composition. US Core is always declared. " +
+				"A declaration is a statement, not a check: Perfuse stores any valid resource whatever it claims, so " +
+				"declare only what you hold.",
+			Kind:     KindList,
+			Widget:   WidgetList,
+			Effect:   EffectRestart,
+			Default:  []string{},
+			Flag:     "fhir-declares",
+			Validate: validateDeclares,
+		},
+		{
 			Key:      "fhir.apiTokensWithSMART",
 			Group:    GroupFHIR,
 			Subgroup: "Access",
@@ -1127,5 +1145,30 @@ func validateDuration(v any, min, max time.Duration) error {
 		return fmt.Errorf("that is longer than %s", max)
 	}
 
+	return nil
+}
+
+// validateDeclares checks each declared guide is an http(s) address, or Type=address with a resource type's name.
+func validateDeclares(v any) error {
+	list, ok := v.([]string)
+	if !ok {
+		return nil
+	}
+	for _, d := range list {
+		d = strings.TrimSpace(d)
+		if d == "" {
+			continue
+		}
+		addr := d
+		if typ, rest, cut := strings.Cut(d, "="); cut {
+			if typ = strings.TrimSpace(typ); typ == "" || typ[0] < 'A' || typ[0] > 'Z' || strings.ContainsAny(typ, " /:") {
+				return fmt.Errorf("%q: before the = goes a resource type, such as Composition", d)
+			}
+			addr = strings.TrimSpace(rest)
+		}
+		if u, err := url.Parse(addr); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("%q: a guide is named by its http(s) address", d)
+		}
+	}
 	return nil
 }

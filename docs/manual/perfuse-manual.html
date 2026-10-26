@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.21 · 29002ae</p>
+<p class="version">v0.1.21 · 4bef457</p>
 <p class="version">Other languages: <a href="https://perfuse.health/manual/da/" hreflang="da" lang="da">Dansk</a> · <a href="https://perfuse.health/manual/de/" hreflang="de" lang="de">Deutsch</a> · <a href="https://perfuse.health/manual/es/" hreflang="es" lang="es">Español</a> · <a href="https://perfuse.health/manual/fi/" hreflang="fi" lang="fi">Suomi</a> · <a href="https://perfuse.health/manual/fr/" hreflang="fr" lang="fr">Français</a> · <a href="https://perfuse.health/manual/it/" hreflang="it" lang="it">Italiano</a> · <a href="https://perfuse.health/manual/nb/" hreflang="nb" lang="nb">Norsk bokmål</a> · <a href="https://perfuse.health/manual/nl/" hreflang="nl" lang="nl">Nederlands</a> · <a href="https://perfuse.health/manual/pl/" hreflang="pl" lang="pl">Polski</a> · <a href="https://perfuse.health/manual/pt/" hreflang="pt" lang="pt">Português</a> · <a href="https://perfuse.health/manual/sv/" hreflang="sv" lang="sv">Svenska</a></p>
 </header>
 <h2>Table of Contents</h2>
@@ -1409,6 +1409,7 @@ td code { font-size: 0.85em; }
 <tr><td>Da Vinci CDex <code>$submit-attachment</code></td><td>2.1</td><td>not checked by an outside tool</td></tr>
 <tr><td>Da Vinci Plan-Net</td><td>1.1.0</td><td>Inferno: 199 pass, 10 fail (a kit defect)</td></tr>
 <tr><td>Da Vinci US Drug Formulary</td><td>2.1.0</td><td>the HL7 validator</td></tr>
+<tr><td>PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning</td><td>1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0</td><td>PACIO&#39;s Inferno kits with PACIO&#39;s own data: every failure in its data or the kit</td></tr>
 <tr><td>CARIN Blue Button</td><td>2.2.0</td><td>the HL7 validator</td></tr>
 <tr><td>eCR</td><td>2.1.2</td><td>the HL7 validator</td></tr>
 <tr><td>ELR</td><td>HL7 2.5.1 ELR Release 1 with its errata</td><td>ONC&#39;s ELR tool: 28 of 28</td></tr>
@@ -4162,8 +4163,11 @@ rules:
 <tr><td><code>-fhir-bulk-export</code></td><td>Enable <code>$export</code>. Off by default.</td></tr>
 <tr><td><code>-fhir-subscriptions</code></td><td>Enable topic subscriptions: encounter and appointment notifications to endpoints FHIR clients choose. Off by default; needs R4 and a writable endpoint.</td></tr>
 <tr><td><code>-fhir-subscriptions-allow-http</code></td><td>Let subscriptions deliver to plain <code>http</code>. For a test receiver, never for patient data on a network.</td></tr>
+<tr><td><code>-fhir-patient-directory-search</code></td><td>Let a token limited to one patient search the directory (practitioners, organisations, locations), within its scopes. Off by default.</td></tr>
+<tr><td><code>-fhir-declares</code></td><td>Guides this server declares in its capability statement, comma-separated: a guide&#39;s CapabilityStatement address, or <code>Type=profile</code> address. A statement for clients and test kits; it changes nothing the store accepts.</td></tr>
 </tbody>
 </table>
+<p>The store keeps documents as well as resources: a document, collection or message Bundle PUT to <code>/fhir/Bundle/{id}</code> is kept whole, read back with every entry in the release served, and found by <code>type</code>, <code>identifier</code>, <code>timestamp</code> and <code>composition</code>. A transaction PUT there is kept as a record and not applied; a POST to <code>/fhir</code> applies one.</p>
 <h3 id="s19-7-setting-up-and-operating"><span class="num">19.7</span> Setting up and operating</h3>
 <h4 id="s19-7-1-perfuse-init"><span class="num">19.7.1</span> perfuse init</h4>
 <p>Creates the directory layout, an example channel, and a service definition for the operating system it is run on. Nothing existing is replaced unless you pass <code>-force</code>.</p>
@@ -4222,6 +4226,7 @@ rules:
 <tr><td><code>-fhir</code></td><td>on/off</td><td><code>true</code></td><td>serve a FHIR endpoint at /fhir</td><td><strong>Settings › FHIR › The FHIR server</strong>: Serve a FHIR endpoint at /fhir</td></tr>
 <tr><td><code>-fhir-api-tokens</code></td><td>on/off</td><td>—</td><td>with SMART configured, accept Perfuse API tokens on the FHIR endpoint as well (unscoped; the console&#39;s FHIR settings can switch it)</td><td><strong>Settings › FHIR › Access</strong>: Accept Perfuse API tokens beside SMART tokens</td></tr>
 <tr><td><code>-fhir-bulk-export</code></td><td>on/off</td><td>—</td><td>enable $export, which produces a file holding every record the FHIR endpoint serves</td><td><strong>Settings › FHIR › Bulk data</strong>: Bulk Data export ($export)</td></tr>
+<tr><td><code>-fhir-declares</code></td><td>string</td><td>—</td><td>guides this FHIR server declares in its capability statement, comma-separated: a CapabilityStatement address, or Type=profile address</td><td><strong>Settings › FHIR › Capability statement</strong>: Guides this server declares</td></tr>
 <tr><td><code>-fhir-max-resources</code></td><td>int</td><td>—</td><td>for a public server: refuse new FHIR resources once this many are held (0: no limit)</td><td><strong>Settings › FHIR › Access</strong>: Most resources held</td></tr>
 <tr><td><code>-fhir-member-match-without-consent</code></td><td>on/off</td><td>—</td><td>let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing</td><td><strong>Settings › Payers › CMS-0057-F</strong>: Answer $member-match without the member&#39;s consent</td></tr>
 <tr><td><code>-fhir-open</code></td><td>on/off</td><td>—</td><td>serve the FHIR endpoint with no authentication at all, exposing every stored record</td><td><strong>Settings › FHIR › Access</strong>: Let anyone read the FHIR endpoint without signing in</td></tr>

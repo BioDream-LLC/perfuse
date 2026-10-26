@@ -110,6 +110,12 @@ type Server struct {
 	// and the drug catalogue) its scopes allow. Off, it may only read them by id.
 	PatientDirectorySearch bool
 
+	// Declares names the guides this server is run to serve, beyond the US Core it always declares: each a guide's
+	// CapabilityStatement canonical (added to instantiates) or "Type=profile" (added to that type's supportedProfile).
+	// The operator's statement of what the data held conforms to, read by clients and test kits. It changes no behaviour:
+	// the store keeps any valid resource whatever it claims.
+	Declares []string
+
 	// ReadOnlyFn supersedes ReadOnly when set, so the setting can change without a restart.
 	//
 	// A function rather than a value for the reason the message store uses one: reading a plain field while
@@ -494,6 +500,12 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 			}
 			entry["supportedProfile"] = sp
 		}
+		for _, d := range s.Declares {
+			if typ, profile, ok := strings.Cut(d, "="); ok && strings.TrimSpace(typ) == t {
+				sp, _ := entry["supportedProfile"].([]any)
+				entry["supportedProfile"] = append(sp, strings.TrimSpace(profile))
+			}
+		}
 
 		resources = append(resources, entry)
 	}
@@ -563,7 +575,7 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 			"url":         s.BaseURL,
 		},
 		"fhirVersion":  string(version),
-		"instantiates": []string{"http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server"},
+		"instantiates": s.instantiates(),
 		"format":       []string{"json", "application/fhir+json"},
 		"rest":         []any{rest},
 	}
@@ -1425,4 +1437,15 @@ func canonicalURL(body []byte) string {
 	}
 	_ = json.Unmarshal(body, &probe)
 	return probe.URL
+}
+
+// instantiates is US Core's server statement and every guide the operator declared.
+func (s *Server) instantiates() []string {
+	out := []string{"http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server"}
+	for _, d := range s.Declares {
+		if d = strings.TrimSpace(d); d != "" && !strings.Contains(d, "=") {
+			out = append(out, d)
+		}
+	}
+	return out
 }

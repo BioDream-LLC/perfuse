@@ -24,6 +24,12 @@ func Marshal(r Resource, version Version) ([]byte, error) {
 	if !version.Valid() {
 		return nil, fmt.Errorf("fhir: cannot serialise for unsupported version %q", version)
 	}
+	// A Bundle's entries are converted one by one. Through the generic path only the Bundle itself was, so a stored
+	// document (a transfer summary read back from the FHIR server) carried R5-shaped resources inside an R4 Bundle: an
+	// Encounter.class as a list, participant.actor for individual. Found by PACIO's Transitions of Care kit.
+	if b, ok := r.(*Bundle); ok {
+		return MarshalBundle(b, version)
+	}
 
 	// Round-trip through a generic tree so version differences can be applied as
 	// field renames and type changes without a second set of structs.
@@ -154,6 +160,9 @@ func MarshalBundle(b *Bundle, version Version) ([]byte, error) {
 			if e.Response.Etag != "" {
 				resp["etag"] = e.Response.Etag
 			}
+			if e.Response.LastModified != "" {
+				resp["lastModified"] = e.Response.LastModified
+			}
 			entry["response"] = resp
 		}
 		if e.Search != nil {
@@ -170,6 +179,10 @@ func MarshalBundle(b *Bundle, version Version) ([]byte, error) {
 	}
 	if len(entries) > 0 {
 		out["entry"] = entries
+	}
+	// What the Bundle struct does not model (a document's signature, language) goes back as it came.
+	if kept := b.unmodelledMembers(); len(kept) > 0 {
+		mergeMissing(out, kept)
 	}
 
 	return json.Marshal(out)
@@ -526,6 +539,13 @@ func UnmarshalResource(data []byte) (Resource, error) {
 	}
 	if probe.ResourceType == "" {
 		return nil, fmt.Errorf("fhir: no resourceType, so this is not a FHIR resource")
+	}
+
+	// A Bundle's entries are an interface, which encoding/json cannot fill, so a Bundle read here failed on its first entry.
+	// That refused every stored document Bundle: a FHIR server PUT or POST of a transfer summary, a patient summary or a lab
+	// report document. Found loading PACIO's Transitions of Care sample documents.
+	if probe.ResourceType == "Bundle" {
+		return UnmarshalBundle(data)
 	}
 
 	build, ok := resourceConstructors[probe.ResourceType]

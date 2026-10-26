@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/settings"
 )
@@ -115,6 +116,17 @@ var settingFlags = map[string]string{
 // The rest come from the registry: every setting that names a flag is seeded by it and applied to it. The table above was once
 // the only list, kept by hand, and fell behind it: the utilization management link's transport and credentials, and
 // -index-identity, were saved in the console and then ignored at start.
+// listSettings are the settings whose flag is a comma-separated list.
+var listSettings = func() map[string]bool {
+	out := map[string]bool{}
+	for _, st := range settings.Default() {
+		if st.Kind == settings.KindList {
+			out[st.Key] = true
+		}
+	}
+	return out
+}()
+
 func init() {
 	for _, st := range settings.Default() {
 		if st.Flag != "" {
@@ -145,6 +157,17 @@ func flagSettings(fset *flag.FlagSet) map[string]any {
 		// flag holding digits - a payer ID like 60054, an interchange receiver ID - became a number, and the settings file
 		// refused it at start: "should be text, got 60054".
 		raw := f.Value.String()
+		// A list setting's flag is comma-separated, one entry per item.
+		if listSettings[key] {
+			var list []string
+			for _, item := range strings.Split(raw, ",") {
+				if item = strings.TrimSpace(item); item != "" {
+					list = append(list, item)
+				}
+			}
+			out[key] = list
+			return
+		}
 		if g, ok := f.Value.(flag.Getter); ok {
 			switch v := g.Get().(type) {
 			case bool:
@@ -194,7 +217,11 @@ func applyFileSettings(fset *flag.FlagSet, store interface {
 		if f == nil {
 			continue
 		}
-		if err := f.Value.Set(fmt.Sprint(store.Get(key))); err != nil {
+		value := fmt.Sprint(store.Get(key))
+		if list, ok := store.Get(key).([]string); ok {
+			value = strings.Join(list, ",")
+		}
+		if err := f.Value.Set(value); err != nil {
 			return fmt.Errorf("the settings file's %s cannot be used as -%s: %w", key, name, err)
 		}
 	}

@@ -245,6 +245,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	fhirMatchWithoutConsent := fset.Bool("fhir-member-match-without-consent", false,
 		"let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing")
 	fhirReadOnly := fset.Bool("fhir-read-only", false, "refuse writes to the FHIR endpoint")
+	fhirDeclares := fset.String("fhir-declares", "",
+		"guides this FHIR server declares in its capability statement, comma-separated: a CapabilityStatement address, or Type=profile address")
 	fhirPatientDirectory := fset.Bool("fhir-patient-directory-search", false,
 		"let a token limited to one patient search the directory (practitioners, organisations, locations) within its scopes")
 	demoAccount := fset.String("demo-account", "",
@@ -1473,6 +1475,11 @@ oidcDone:
 		drugsFHIR = fhirSrv
 		fhirSrv.ReadOnly = *fhirReadOnly
 		fhirSrv.PatientDirectorySearch = *fhirPatientDirectory
+		for _, d := range strings.Split(*fhirDeclares, ",") {
+			if d = strings.TrimSpace(d); d != "" {
+				fhirSrv.Declares = append(fhirSrv.Declares, d)
+			}
+		}
 
 		// The channels' mapping tables, published as ConceptMaps and answerable by $translate.
 		//

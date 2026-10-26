@@ -280,6 +280,9 @@ func (s *Store) Put(ctx context.Context, r fhir.Resource) (*Outcome, error) {
 	if r.ResourceID() == "" {
 		return nil, fmt.Errorf("fhirserver: cannot store a resource with no id")
 	}
+	if err := storableBundle(r); err != nil {
+		return nil, err
+	}
 	if s.subs != nil {
 		if err := s.subs.admit(ctx, r); err != nil {
 			return nil, err
@@ -539,9 +542,31 @@ func stampMeta(r fhir.Resource, versionID int, now time.Time) {
 	r.SetResourceMeta(meta)
 }
 
+// storableBundle refuses the Bundles a server builds as its own answers.
+//
+// Any other Bundle is a resource a client may keep: a document (a transfer summary, a patient summary, a lab report), a
+// collection, a message, or a transaction kept as a record of what was sent (PACIO's medication profile reads one back by
+// id). A PUT stores a transaction; only a POST to the base URL applies one. The FHIR store refused every Bundle until
+// PACIO's Transitions of Care documents were loaded. Search results and histories are answers, not records, so they are
+// refused with what to do instead.
+func storableBundle(r fhir.Resource) error {
+	b, ok := r.(*fhir.Bundle)
+	if !ok {
+		return nil
+	}
+	switch b.Type {
+	case "searchset", "history":
+		return fmt.Errorf("%w: a %s Bundle is the server's answer to a search or a history, not a record to store",
+			ErrUnsupportedType, b.Type)
+	case "":
+		return fmt.Errorf("%w: a Bundle with no type", ErrUnsupportedType)
+	}
+	return nil
+}
+
 func supportedType(resourceType string) bool {
 	for _, t := range fhir.SupportedResourceTypes() {
-		if t == resourceType && t != "Bundle" && t != "OperationOutcome" {
+		if t == resourceType && t != "OperationOutcome" {
 			return true
 		}
 	}

@@ -242,6 +242,9 @@ func coerce(setting Setting, raw any) (any, error) {
 		case string:
 			// A single value written without a dash. Common enough to accept.
 			return []string{v}, nil
+		case []string:
+			// From a flag, already split.
+			return v, nil
 		}
 
 		return nil, fmt.Errorf("should be a list, got %v", raw)

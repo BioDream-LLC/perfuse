@@ -49,7 +49,7 @@ var SearchParams = map[string][]string{
 	"Patient": {
 		"_id", "_lastUpdated", "identifier", "family", "given", "name",
 		"birthdate", "gender",
-		"death-date",
+		"death-date", "active", "telecom", "address", "address-city", "address-state", "address-postalcode",
 	},
 	"Encounter": {
 		"_id", "_lastUpdated", "identifier", "patient", "subject", "status", "class", "date",
@@ -96,7 +96,7 @@ var SearchParams = map[string][]string{
 	"DocumentReference": {
 		"_id", "_lastUpdated", "identifier", "patient", "subject",
 		"status", "type", "category", "date",
-		"period",
+		"period", "custodian",
 	},
 
 	// Additional resource types.
@@ -116,6 +116,7 @@ var SearchParams = map[string][]string{
 	"PractitionerRole":      {"_id", "_lastUpdated", "identifier", "practitioner", "organization", "specialty", "location", "service", "network", "endpoint", "role", "period"},
 	"Appointment":           {"_id", "_lastUpdated", "patient", "status", "date"},
 	"Consent":               {"_id", "_lastUpdated", "patient", "status", "category"},
+	"Bundle":                {"_id", "_lastUpdated", "identifier", "type", "timestamp", "composition"},
 	"Composition":           {"_id", "_lastUpdated", "patient", "subject", "encounter", "type", "status", "date"},
 	"FamilyMemberHistory":   {"_id", "_lastUpdated", "patient", "status"},
 	"Communication":         {"_id", "_lastUpdated", "patient", "subject", "encounter", "status"},
@@ -150,7 +151,7 @@ var SearchParams = map[string][]string{
 	"RiskAssessment":     {"_id", "_lastUpdated", "identifier", "subject", "encounter", "status"},
 	"BodyStructure":      {"_id", "_lastUpdated", "identifier", "patient"},
 	"Flag":               {"_id", "_lastUpdated", "identifier", "subject", "status"},
-	"List":               {"_id", "_lastUpdated", "identifier", "subject", "encounter", "source", "status", "mode", "date"},
+	"List":               {"_id", "_lastUpdated", "identifier", "code", "patient", "subject", "encounter", "source", "status", "mode", "date"},
 	"EpisodeOfCare":      {"_id", "_lastUpdated", "identifier", "patient", "status"},
 	"NutritionOrder":     {"_id", "_lastUpdated", "identifier", "patient", "encounter", "status", "datetime"},
 	"VisionPrescription": {"_id", "_lastUpdated", "identifier", "patient", "encounter", "status", "datewritten"},
@@ -607,6 +608,17 @@ func indexEntries(r fhir.Resource) []indexEntry {
 			addCodeable("category", &v.Category[i])
 		}
 
+	case *fhir.Bundle:
+		if v.Identifier != nil {
+			add("identifier", v.Identifier.Value, v.Identifier.System)
+		}
+		add("type", v.Type, "")
+		add("timestamp", v.Timestamp, "")
+		// A document's Composition is its first entry; composition= finds the document by it.
+		if len(v.Entry) > 0 && v.Entry[0].Resource != nil && v.Entry[0].Resource.ResourceTypeName() == "Composition" {
+			out = append(out, indexEntry{param: "composition", value: v.Entry[0].Resource.ResourceID(), refType: "Composition"})
+		}
+
 	case *fhir.Composition:
 		addRef("patient", v.Subject)
 		addRef("subject", v.Subject)
@@ -778,6 +790,8 @@ func indexEntries(r fhir.Resource) []indexEntry {
 
 	case *fhir.List:
 		addIdentifiers(v.Identifier)
+		addCodeable("code", v.Code)
+		addRef("patient", v.Subject)
 		addRef("subject", v.Subject)
 		addRef("encounter", v.Encounter)
 		addRef("source", v.Source)
@@ -1738,7 +1752,7 @@ func isDateParam(param string) bool {
 	case "date", "birthdate", "_lastUpdated", "asserted-date", "abatement-date", "period", "target-date", "death-date",
 		"onset-date", "recorded-date", "authoredon", "authored-on",
 		"datetime", "datewritten", "created", "authored",
-		"started", "recorded", "service-date", "billable-period-start":
+		"started", "recorded", "service-date", "billable-period-start", "timestamp":
 		return true
 	}
 	return false
@@ -1764,7 +1778,7 @@ func isStringParam(param string) bool {
 // and the collision needs two resources of different types sharing a logical id.
 func isReferenceParam(param string) bool {
 	switch param {
-	case "patient", "subject", "encounter",
+	case "patient", "subject", "encounter", "composition",
 		"practitioner", "organization", "beneficiary",
 		"individual", "study", "target",
 		"source", "device", "insurer", "request", "provider",
@@ -1774,7 +1788,9 @@ func isReferenceParam(param string) bool {
 		"participating-organization", "network", "service", "endpoint", "coverage-area", "administered-by", "owned-by",
 		"partof",
 		// The Drug Formulary's.
-		"formulary", "formulary-coverage":
+		"formulary", "formulary-coverage",
+		// PACIO's documents.
+		"custodian":
 		return true
 	}
 
@@ -1891,14 +1907,21 @@ var pathParams = map[string][]pathParam{
 	"CarePlan":           {{"date", "date", []string{"period"}}},
 	"CareTeam":           {{"role", "token", []string{"participant.role"}}},
 	"Condition":          {{"asserted-date", "date", []string{"extension[http://hl7.org/fhir/StructureDefinition/condition-assertedDate].valueDateTime"}}, {"abatement-date", "date", []string{"abatementDateTime", "abatementPeriod"}}},
-	"DocumentReference":  {{"period", "date", []string{"context.period"}}},
+	"DocumentReference":  {{"period", "date", []string{"context.period"}}, {"custodian", "reference", []string{"custodian"}}},
 	"Encounter":          {{"location", "reference", []string{"location.location"}}, {"type", "token", []string{"type"}}, {"discharge-disposition", "token", []string{"hospitalization.dischargeDisposition"}}},
 	"Goal":               {{"target-date", "date", []string{"target.dueDate"}}, {"description", "token", []string{"description"}}},
 	"Location":           {{"address", "string", []string{"address.line", "address.city", "address.state", "address.postalCode", "address.country", "address.text"}}, {"address-city", "string", []string{"address.city"}}, {"address-state", "string", []string{"address.state"}}, {"address-postalcode", "string", []string{"address.postalCode"}}},
 	"MedicationDispense": {{"type", "token", []string{"type"}}},
 	"Organization":       {{"address", "string", []string{"address.line", "address.city", "address.state", "address.postalCode", "address.country", "address.text"}}},
-	"Patient":            {{"death-date", "date", []string{"deceasedDateTime"}}},
-	"ServiceRequest":     {{"category", "token", []string{"category"}}, {"authored", "date", []string{"authoredOn"}}},
+	"Patient": {
+		{"death-date", "date", []string{"deceasedDateTime"}},
+		// PACIO's Transitions of Care kit searches these (its Patient is US Core's), and they answered 400.
+		{"active", "token", []string{"active"}}, {"telecom", "token", []string{"telecom"}},
+		{"address", "string", []string{"address.line", "address.city", "address.state", "address.postalCode", "address.country", "address.text"}},
+		{"address-city", "string", []string{"address.city"}}, {"address-state", "string", []string{"address.state"}},
+		{"address-postalcode", "string", []string{"address.postalCode"}},
+	},
+	"ServiceRequest": {{"category", "token", []string{"category"}}, {"authored", "date", []string{"authoredOn"}}},
 
 	// Da Vinci Plan-Net 1.1.0's provider directory: its SearchParameter definitions, each a plain path. The parameters the
 	// typed indexer already covers (identifier, name, practitioner, organization, specialty, primary-organization) are not
@@ -1973,6 +1996,23 @@ func pathEntries(r fhir.Resource) []indexEntry {
 			for _, v := range walkPath(tree, splitPath(path)) {
 				switch d.kind {
 				case "token":
+					// A boolean (Patient.active): searched as true or false.
+					if flag, ok := v.(bool); ok {
+						code := strconv.FormatBool(flag)
+						out = append(out, indexEntry{param: d.param, value: code, valueRaw: code})
+						continue
+					}
+					// A ContactPoint (telecom): its value, with its kind (phone, email ...) as the token's system, so
+					// telecom=555-0100 and telecom=phone|555-0100 both find it.
+					if cp, ok := v.(map[string]any); ok {
+						if val, _ := cp["value"].(string); val != "" {
+							if _, coded := cp["coding"]; !coded {
+								sys, _ := cp["system"].(string)
+								out = append(out, indexEntry{param: d.param, value: val, system: sys, valueRaw: val})
+								continue
+							}
+						}
+					}
 					if code, ok := v.(string); ok {
 						// A code, rather than a CodeableConcept: an extension's valueCode, say.
 						if code = strings.TrimSpace(code); code != "" {

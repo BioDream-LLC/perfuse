@@ -5,25 +5,41 @@
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 work="$here/.work"
-name=${1:?usage: kit.sh crd|dtr|pas|smart|uscore}
+name=${1:?usage: kit.sh crd|dtr|pas|smart|uscore|pacio-toc|pacio-smp|pacio}
 
+owner=inferno-framework
 case "$name" in
   crd)    repo=davinci-crd-test-kit tag=v0.14.2 ;;
   dtr)    repo=davinci-dtr-test-kit tag=v0.18.0 ;;
   pas)    repo=davinci-pas-test-kit tag=v0.15.2 ;;
   smart)  repo=smart-app-launch-test-kit tag=v1.0.3 ;;
   uscore) repo=us-core-test-kit    tag=v1.1.6 ;;
+  # PACIO's kits have no release tags: pinned by commit.
+  pacio-toc) owner=paciowg repo=pacio-toc-test-kit commit=6141da0acaca09c9e320a2b9957c7686f891a125 ;;
+  pacio-smp) owner=paciowg repo=pacio-smp-test-kit commit=03892d5a74c5655c31ed79429ac1eb9f5207c3ea ;;
+  pacio)     owner=paciowg repo=pacio-test-kit     commit=8bac2a758f7642563124cf9d8790a9810767f85f ;;
   *) echo "kit.sh: no kit called $name" >&2; exit 2 ;;
 esac
 
 "$here/certs.sh"
 
 kit="$work/kits/$name"
-if [ ! -d "$kit/.git" ]; then
-  mkdir -p "$work/kits"
-  git -c advice.detachedHead=false clone -q --depth 1 --branch "$tag" "https://github.com/inferno-framework/$repo.git" "$kit"
+if [ -n "${commit:-}" ]; then
+  if [ ! -d "$kit/.git" ]; then
+    mkdir -p "$kit"
+    git -C "$kit" init -q
+    git -C "$kit" fetch -q --depth 1 "https://github.com/$owner/$repo.git" "$commit"
+    git -C "$kit" -c advice.detachedHead=false checkout -q FETCH_HEAD
+  fi
+  [ "$(git -C "$kit" rev-parse HEAD)" = "$commit" ] || { echo "kit.sh: $kit is not at $commit" >&2; exit 1; }
+  tag=$commit
+else
+  if [ ! -d "$kit/.git" ]; then
+    mkdir -p "$work/kits"
+    git -c advice.detachedHead=false clone -q --depth 1 --branch "$tag" "https://github.com/$owner/$repo.git" "$kit"
+  fi
+  [ "$(git -C "$kit" describe --tags --exact-match 2>/dev/null)" = "$tag" ] || { echo "kit.sh: $kit is not at $tag" >&2; exit 1; }
 fi
-[ "$(git -C "$kit" describe --tags --exact-match 2>/dev/null)" = "$tag" ] || { echo "kit.sh: $kit is not at $tag" >&2; exit 1; }
 
 # SUBSCRIPTIONS_KIT_REF runs the PAS kit with the Subscriptions test kit (which supplies its notification checks) at a commit of
 # its own repository, to try an upstream fix before it is released. The kit's Gemfile.lock is kept, so bundler moves only what
@@ -48,6 +64,15 @@ fi
   echo "    environment:"
   echo "      SESSION_CACHE_DURATION: 30"
   echo "      JAVA_TOOL_OPTIONS: \"-Xmx4g -XX:+UseG1GC\""
+  # The general PACIO kit's .env.production points FHIRPath at localhost, which inside its containers is nothing; the
+  # evaluator is its own service.
+  if [ "$name" = pacio ]; then
+    for s in inferno worker; do
+      echo "  $s:"
+      echo "    environment:"
+      echo "      FHIRPATH_URL: \"http://fhirpath:6789\""
+    done
+  fi
   if [ "$name" = crd ]; then
     for s in inferno worker; do
       echo "  $s:"
@@ -77,6 +102,11 @@ until curl -sf http://localhost/api/test_suites >/dev/null 2>&1; do
   printf "."; sleep 5
 done
 echo
+
+# nginx resolves the inferno container's address once, so a kit whose inferno container was recreated (new settings) answers
+# 502 until nginx starts again.
+docker compose restart nginx >/dev/null 2>&1 || true
+sleep 2
 
 # Trust the test CA inside the containers that call Perfuse, then restart them: Ruby reads the CA bundle once, when it starts.
 # Appended once; a restart keeps it, a recreated container starts afresh and gets it again here.

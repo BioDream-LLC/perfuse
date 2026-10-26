@@ -156,6 +156,12 @@ See [digital quality measures](#message-formats).
 | `-fhir-bulk-export` | Enable `$export`. Off by default. |
 | `-fhir-subscriptions` | Enable topic subscriptions: encounter and appointment notifications to endpoints FHIR clients choose. Off by default; needs R4 and a writable endpoint. |
 | `-fhir-subscriptions-allow-http` | Let subscriptions deliver to plain `http`. For a test receiver, never for patient data on a network. |
+| `-fhir-patient-directory-search` | Let a token limited to one patient search the directory (practitioners, organisations, locations), within its scopes. Off by default. |
+| `-fhir-declares` | Guides this server declares in its capability statement, comma-separated: a guide's CapabilityStatement address, or `Type=profile` address. A statement for clients and test kits; it changes nothing the store accepts. |
+
+The store keeps documents as well as resources: a document, collection or message Bundle PUT to `/fhir/Bundle/{id}` is kept
+whole, read back with every entry in the release served, and found by `type`, `identifier`, `timestamp` and `composition`. A
+transaction PUT there is kept as a record and not applied; a POST to `/fhir` applies one.
 
 ## Setting up and operating
 
