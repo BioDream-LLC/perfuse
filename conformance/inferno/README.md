@@ -17,7 +17,7 @@ instance, test.perfuse.health (`deploy/test-instance`); no Docker needed.
 | `dtr` | davinci-dtr-test-kit v0.18.0, DTR Payer Server v2.2.0 | `-fhir -crd-rules -smart-clients -smart-users` | 43 pass, 1 omit, 2 fail |
 | `pas` | davinci-pas-test-kit v0.15.2, PAS Server v2.2.1 | `-fhir -pas -crd-rules -fhir-subscriptions -smart-clients` | 82 pass, 2 fail |
 | `smart` | smart-app-launch-test-kit v1.0.3, SMART App Launch STU2.2 | `-fhir -smart-clients -smart-users` | public app 80 of 80; confidential app 67 pass, 3 omit |
-| `uscore` | us-core-test-kit v1.1.6, US Core Server v7.0.0 | `-fhir -smart-clients -smart-users` | launch and both granular-scope groups pass; API 272 pass, 14 fail (patient token), 501 pass, 4 fail (system token) |
+| `uscore` | us-core-test-kit v1.1.6, US Core Server v7.0.0 | `-fhir -smart-clients -smart-users -fhir-patient-directory-search` | launch and both granular-scope groups pass; API 285 pass, 2 fail (patient token, `-fhir-patient-directory-search`), 503 pass, 4 fail (system token) |
 
 verification.md explains every failure.
 

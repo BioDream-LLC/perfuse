@@ -63,8 +63,35 @@ is kept**. Support: `aws ssm start-session --region eu-west-2 --target <server o
 - `tofu validate` passes for all three stacks (OpenTofu 1.13.1, AWS provider 6.69.1, pinned in `.terraform.lock.hcl`).
 - `tofu plan` for eu-west-2 against a real AWS account: 55 resources to add, and every Region named in the plan is
   eu-west-2.
-- **Not yet applied.** Nothing has been built from this, so the first boot script, the TLS hop to the server and the Session
-  Manager preferences have not run on a real server.
+- **Applied and torn down in eu-west-2 (London), 26 October 2026,** with Perfuse v0.1.21, an MLLP port (6661) and
+  `allowed_cidrs` set to one address. The certificate was a self-signed one imported into ACM, so no DNS was needed. Checked:
+  - The first boot installed v0.1.21 from GitHub with its checksum checked, and started it under systemd on RDS PostgreSQL over
+    `sslmode=verify-full`, with `-residency uk`. The password was read from Secrets Manager.
+  - The console and FHIR `/metadata` answered through the load balancer on 443 over TLS 1.3, with TLS again to the server.
+  - An HL7 v2 message sent to the load balancer on 6661 over TLS reached a channel listening with TLS on the server and was
+    acknowledged (`AA`).
+  - Session Manager reached the private server, with no SSH or bastion. The nightly backup job wrote its archive to the
+    Region's bucket, and the server's log arrived in CloudWatch Logs.
+- **What the apply found, and fixed:**
+  - Two security group rule descriptions held an apostrophe, which AWS refuses. `validate` and `plan` cannot see that, so the
+    first apply stopped half way.
+  - The load balancer's health check was a bare TCP connection. That never asked whether the database was reachable, and the
+    server logged each probe as a failed TLS handshake, about three lines a second. It is now an HTTPS check of `/readyz`.
+    Perfuse also logs a connection closed before its handshake at debug level only, so other load balancers, probes and
+    scanners no longer fill the log.
+
+## Taking a stack down
+
+The database and the backups are protected against a mistaken `destroy`, so taking a stack down is deliberate:
+
+```sh
+aws rds modify-db-instance --region REGION --db-instance-identifier perfuse-CUSTOMER --no-deletion-protection --apply-immediately
+# Empty the backup bucket: every version and delete marker (it is versioned), then
+tofu destroy ...
+```
+
+RDS keeps a final snapshot (`perfuse-CUSTOMER-final`) and the key waits seven days before it is deleted. Delete the snapshot
+by hand once the data is no longer needed.
 
 ## What it costs
 

@@ -379,7 +379,8 @@ Two things in the reference implementation itself, not Perfuse, needed working r
 sign-in off; and its FHIR server serves a search's cached results for 60 seconds, so a new order or questionnaire answer appears
 on its screens up to a minute late.
 
-What this does not show: a production EHR, or the reference implementation's UDAP security path.
+What this does not show: a production EHR, or the reference implementation's UDAP security path. Perfuse's UDAP client was
+tested on its own against the UDAP reference implementation instead (see "UDAP and TEFCA" below).
 
 ## Da Vinci CRD, DTR and PAS 2.1.0, beside 2.2.x (24 October 2026)
 
@@ -789,8 +790,9 @@ consent pages.
 - **Granular scopes 2** (Condition `problem-list-item`, Observation `vital-signs`, `survey` and `sdoh`): the same, 17 passes and 2 skips.
 - The skips are searches the data cannot exercise: no `asserted-date` search, and no `health-concern` or `problem-list-item`
   Condition for the patient.
-- US Core FHIR API under a patient token (patient 85): 272 pass, 14 fail.
-- The same group as a backend-services client (`system/*.rs`, both patients): 501 pass, 4 fail. All four are one Observation in
+- US Core FHIR API under a patient token (patient 85): 285 pass, 2 fail with `-fhir-patient-directory-search` (26 October 2026;
+  272 pass, 14 fail without it, below).
+- The same group as a backend-services client (`system/*.rs`, both patients): 503 pass, 4 fail (501 before the 26 October rerun). All four are one Observation in
   Inferno's data whose `effectivePeriod` has `stop` where FHIR has `end`; Perfuse returns what it was given.
 
 The suite found:
@@ -815,10 +817,15 @@ The suite found:
 What is left under the patient token:
 
 - **Searches of the directory itself** (12: Practitioner, PractitionerRole, Organization, Location by name, address or
-  specialty), which Perfuse refuses on purpose under a token limited to one patient, so that a patient's app cannot list every
-  clinician. The backend-services run shows the same searches pass when the token may see the directory.
+  specialty). By default Perfuse refuses them under a token limited to one patient, so that a patient's app cannot list every
+  clinician. **Let a patient's app search the directory** (`-fhir-patient-directory-search`, Settings → FHIR → Access) allows
+  them, only for the directory and drug types and only within the token's scopes. With it on, all 12 pass (rerun 26 October
+  2026: 285 pass, 2 fail).
 - **What patient 85's data does not hold** (2): its one data-absent-reason is on a Condition category no US Core search reaches,
-  and its documents name no custodian. Both pass with patient 355 in the backend-services run.
+  and its documents name no custodian. Both pass with patient 355 in the backend-services run. Inferno's test data, not a
+  Perfuse fault: nothing to fix on our side.
+- **The four backend-services failures** are one Observation in Inferno's data whose `effectivePeriod` has `stop` where FHIR
+  has `end`. Perfuse returns what it was given, and the validator rightly refuses it.
 
 ## Public health case reports, against the HL7 validator and HAPI FHIR
 
@@ -943,6 +950,23 @@ than on the form of the request, which is the distinction that matters: a server
 requests would say nothing about whether the signed metadata was correct.
 
 Discovery and signed-metadata verification are checked against a real server and a real trust community.
+
+**The whole flow, October 2026.** The UDAP .NET reference implementation's tutorial (udap-dotnet, Duende IdentityServer with
+Udap.Server, and a FHIR server publishing UDAP metadata) was built from source and run in Docker on an Arm Mac. Its published
+images are x86 only, as the Da Vinci reference implementation's are. Perfuse was given a client certificate issued from that
+community's sub-CA, as a member's would be, and ran the business-to-business flow end to end
+(`PERFUSE_TEST_UDAP_DEVDAYS`, `internal/udap/devdays_test.go`):
+
+- the server's signed metadata verified against the community root;
+- dynamic registration accepted the software statement and returned a client ID;
+- a token request with the `hl7-b2b` extension (organisation, purpose of use) returned a token;
+- the FHIR server's authorization check let that token through, and turned away a forged token and a request with none.
+
+The tutorial's demo FHIR server then fails on every read in its own search indexer (a library version mismatch inside it),
+so the resource itself could not be shown. Two things in the tutorial had to be worked around: its authorization server could
+not create its database as the image's user, and its SDK pin was older than the current .NET 10 image. What this does not
+cover: the authorization-code (consumer-facing) flow and Tiered OAuth, which Perfuse's client does not do; and TEFCA's own
+communities, whose certificates come only from QHIN onboarding.
 
 ---
 
@@ -1187,13 +1211,21 @@ occurrence, when it means every one (deliberately, as in filters).
   errors. The FHIR system URIs marked verified are taken from the national guides named beside them; about seventeen
   are defaults (marked unverified in the scheme list) for a site to confirm.
 - **National code systems**: SNOMED CT RF2, ClaML and the ICD-11 tabulation are read from fixtures written for the tests in the
-  published formats, not from a real national release (most need a licence); the WHO ICD API client was tested against a stand-in written from WHO's API documentation, not against WHO.
+  published formats, not from a real national release (most need a licence); the WHO ICD API client was tested against the WHO's own ICD-API container (whoicd/icd-api 2.6.0, release 2025-01, English and
+  French; `PERFUSE_TEST_ICD11_URL`): titles in both languages, residual codes (BA00.Z), unknown codes, and postcoordinated
+  clusters, which the API checks whole (`1A00&XS25` refused). That found that a cluster's display was its stem's title alone
+  ("Fracture of neck of femur" for a right-sided one); it now names every part. The container answers as id.who.int does but
+  takes no token, so the sign-in to the WHO's hosted API is still tested against a stand-in only.
   The module identifiers given for six editions (Belgium, Ireland, Norway, Switzerland, Estonia, Spain) are unverified.
 - **GDPR tooling**: find, export, erase with a second administrator's approval, holds, the erasure ledger and its reapplication
   after a restore are tested on SQLite and PostgreSQL. The draft data processing agreement (`docs/legal`) has not been read by
   a lawyer.
 - **Residency and hosting**: the region lists are tested; the OpenTofu stacks pass `tofu validate` and `tofu plan` (eu-west-2:
-  55 resources, all in the Region) against a real AWS account but **have never been applied**. The costs are AWS list prices.
+  55 resources, all in the Region). The London stack was applied in a real AWS account on 26 October 2026 and torn down. Perfuse
+  v0.1.21 installed itself and ran on RDS over verified TLS with `-residency uk`. The console and FHIR answered through the load
+  balancer, an HL7 v2 message over TLS on an MLLP port was acknowledged, and Session Manager, the backup job and the CloudWatch log
+  all worked. The apply found two faults that `plan` cannot see: rule descriptions AWS refuses, and a health check that ignored
+  the database and filled the log with failed handshakes. Both are fixed (`deploy/hosted/README.md`). The costs are AWS list prices.
 - **National FHIR profiles** (22 October 2026, on main): `conformance/national/run.py` converts NHS Wales' published v2
   examples, the French agency's PAM-FR and document examples, and invented German messages, and the HL7 validator 6.10.4
   checks every resource against UK Core STU2 2.0.2 (185 of 187 pass, re-run 24 October), FR Core 2.2.0 (138 of 156) and ISiK Basismodul 4.0.3

@@ -891,7 +891,15 @@ is answered by the version already in force, and the screen shows the date.
 (**Settings → Data → Code systems**, `serve -icd11-client-id` and
 `-icd11-client-secret`; `-icd11-release`, 2025-01 by default), ICD-11 codes that are
 not imported are looked up in the WHO ICD API (`codeinfo`, then the entity's title)
-and kept for a day. Tested against a stand-in of the API, not yet against the WHO's.
+and kept for a day. A postcoordinated code (`NC72.2&XK9K`) is checked whole, so a
+combination ICD-11 does not allow is refused, and its display names every part
+("Fracture of neck of femur (Right)").
+
+**ICD-11 without sending codes out.** The WHO publishes the same API as a container
+(`whoicd/icd-api`, free, Intel and Arm). Run it on your own network and give its address
+(`serve -icd11-url http://icd-api.local`, or **ICD API address** in the same settings);
+no client is needed and no code leaves your network. Tested against that container
+(version 2.6.0, release 2025-01 in English and French).
 
 ## Metrics
 

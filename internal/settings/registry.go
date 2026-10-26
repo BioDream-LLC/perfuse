@@ -592,6 +592,21 @@ func baseSettings() []Setting {
 			Sensitive: true,
 		},
 		{
+			Key:      "fhir.patientDirectorySearch",
+			Group:    GroupFHIR,
+			Subgroup: "Access",
+			Label:    "Let a patient's app search the directory",
+			Help: "A token limited to one patient may always read the practitioners, organisations and locations its " +
+				"records point at. With this on, it may also search them (by name, specialty, address), as US Core and " +
+				"ONC's tests expect and as patient apps need to find a clinician. Off: the whole directory cannot be " +
+				"listed through a patient's token. Only the directory and the drug catalogue, and only within the token's scopes.",
+			Kind:    KindBool,
+			Widget:  WidgetToggle,
+			Effect:  EffectRestart,
+			Default: false,
+			Flag:    "fhir-patient-directory-search",
+		},
+		{
 			Key:      "fhir.apiTokensWithSMART",
 			Group:    GroupFHIR,
 			Subgroup: "Access",

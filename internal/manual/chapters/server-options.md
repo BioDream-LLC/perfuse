@@ -40,6 +40,7 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-fhir-max-resources` | int | — | for a public server: refuse new FHIR resources once this many are held (0: no limit) | **Settings › FHIR › Access**: Most resources held |
 | `-fhir-member-match-without-consent` | on/off | — | let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing | **Settings › Payers › CMS-0057-F**: Answer $member-match without the member's consent |
 | `-fhir-open` | on/off | — | serve the FHIR endpoint with no authentication at all, exposing every stored record | **Settings › FHIR › Access**: Let anyone read the FHIR endpoint without signing in |
+| `-fhir-patient-directory-search` | on/off | — | let a token limited to one patient search the directory (practitioners, organisations, locations) within its scopes | **Settings › FHIR › Access**: Let a patient's app search the directory |
 | `-fhir-payer-apis` | on/off | — | enable the CMS-0057 payer operations: $member-match (Payer-to-Payer) and Group $davinci-data-export (Provider Access); the Group exports also need -fhir-bulk-export | **Settings › Payers › CMS-0057-F**: The CMS-0057-F payer APIs |
 | `-fhir-read-only` | on/off | — | refuse writes to the FHIR endpoint | **Settings › FHIR › Access**: Refuse writes to the FHIR endpoint |
 | `-fhir-subscriptions` | on/off | — | enable topic-based subscriptions, which send encounter and appointment notifications to URLs FHIR clients choose | **Settings › FHIR › Notifications**: FHIR subscriptions (encounter and appointment notifications) |
@@ -51,6 +52,7 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-icd11-client-id` | string | — | a WHO ICD API client: ICD-11 codes not imported are looked up there | **Settings › Data › Code systems**: WHO ICD API client ID |
 | `-icd11-client-secret` | string | — | the WHO ICD API client's secret | **Settings › Data › Code systems**: WHO ICD API client secret |
 | `-icd11-release` | string | `2025-01` | the ICD-11 MMS release the WHO ICD API is asked about | **Settings › Data › Code systems**: ICD-11 release to ask for |
+| `-icd11-url` | string | — | the ICD API's address when it is not the WHO's: the WHO's ICD-API container on your network needs no client | **Settings › Data › Code systems**: ICD API address |
 | `-index-identity` | on/off | `true` | index patient identifiers from message contents so a message can be found by MRN, name or accession in any format; has no effect when -store-payloads is off | **Settings › Data › What is kept**: Index patient identifiers |
 | `-insecure` | on/off | — | serve over plain HTTP on a non-loopback address (not recommended) | — |
 | `-inventory` | string | — | write a Markdown inventory of every interface to this file, and keep it current | **Settings › Monitoring › Inventory**: Write an interface inventory to |

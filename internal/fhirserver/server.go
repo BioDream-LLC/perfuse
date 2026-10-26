@@ -106,6 +106,10 @@ type Server struct {
 	// query only.
 	ReadOnly bool
 
+	// PatientDirectorySearch lets a token limited to one patient search the shared types (sharedTypes: the directory
+	// and the drug catalogue) its scopes allow. Off, it may only read them by id.
+	PatientDirectorySearch bool
+
 	// ReadOnlyFn supersedes ReadOnly when set, so the setting can change without a restart.
 	//
 	// A function rather than a value for the reason the message store uses one: reading a plain field while

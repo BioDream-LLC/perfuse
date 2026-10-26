@@ -3,6 +3,7 @@ package fhirserver
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -339,4 +340,44 @@ func TestAReferenceSearchMatchesEitherForm(t *testing.T) {
 				"empty result reads as the patient having no observations", query, len(entries))
 		}
 	}
+}
+
+// With PatientDirectorySearch on, a patient's token may search the directory (as US Core's patient-app tests expect), but
+// only the shared types and only within its scopes; a type with patient data stays narrowed, and other types stay refused.
+func TestAPatientTokenSearchesTheDirectoryWhenAllowed(t *testing.T) {
+	srv, h := contextServer(t, "alice")
+	srv.Auth = OpenAuth{}
+	for _, id := range []string{"dr-a", "dr-b"} {
+		rec := do(t, h, http.MethodPut, "/Practitioner/"+id,
+			json.RawMessage(`{"resourceType":"Practitioner","id":"`+id+`","name":[{"family":"Smith"}]}`))
+		if rec.Code != http.StatusOK && rec.Code != http.StatusCreated {
+			t.Fatalf("seeding %s: %d %s", id, rec.Code, rec.Body.String())
+		}
+	}
+	srv.Auth = contextAuth{scopes: []string{"patient/*.read"}, patient: "alice"}
+
+	if rec := do(t, h, http.MethodGet, "/Practitioner?name=Smith", nil); rec.Code != http.StatusForbidden {
+		t.Fatalf("with the setting off, a directory search got %d, want 403", rec.Code)
+	}
+
+	srv.PatientDirectorySearch = true
+	rec := do(t, h, http.MethodGet, "/Practitioner?name=Smith", nil)
+	if rec.Code != http.StatusOK || len(bundleEntries(t, rec)) != 2 {
+		t.Fatalf("with the setting on, a directory search got %d: %s", rec.Code, rec.Body.String())
+	}
+	// Still only the context patient's observations.
+	if got := bundleEntries(t, do(t, h, http.MethodGet, "/Observation", nil)); len(got) != 1 {
+		t.Errorf("the setting widened an Observation search to %d entries", len(got))
+	}
+	// Still within the scopes: a token without Practitioner in its scopes finds none.
+	srv.Auth = contextAuth{scopes: []string{"patient/Observation.read"}, patient: "alice"}
+	if rec := do(t, h, http.MethodGet, "/Practitioner?name=Smith", nil); rec.Code == http.StatusOK && len(bundleEntries(t, rec)) != 0 {
+		t.Errorf("a token without Practitioner scope listed %d practitioners", len(bundleEntries(t, rec)))
+	}
+}
+
+func bundleEntries(t *testing.T, rec *httptest.ResponseRecorder) []any {
+	t.Helper()
+	got, _ := tree(t, rec)["entry"].([]any)
+	return got
 }

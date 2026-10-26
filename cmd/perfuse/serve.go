@@ -217,6 +217,7 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	icd11ID := fset.String("icd11-client-id", "", "a WHO ICD API client: ICD-11 codes not imported are looked up there")
 	icd11Secret := fset.String("icd11-client-secret", "", "the WHO ICD API client's secret")
 	icd11Release := fset.String("icd11-release", "2025-01", "the ICD-11 MMS release the WHO ICD API is asked about")
+	icd11URL := fset.String("icd11-url", "", "the ICD API's address when it is not the WHO's: the WHO's ICD-API container on your network needs no client")
 
 	serveFHIR := fset.Bool("fhir", true, "serve a FHIR endpoint at /fhir")
 	keepMPI := fset.Bool("mpi", false, "keep a patient index (master patient index) in mpi.db beside the database: patient "+
@@ -244,6 +245,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 	fhirMatchWithoutConsent := fset.Bool("fhir-member-match-without-consent", false,
 		"let $member-match answer without an active Consent; the Payer-to-Payer API is opt-in, so only for testing")
 	fhirReadOnly := fset.Bool("fhir-read-only", false, "refuse writes to the FHIR endpoint")
+	fhirPatientDirectory := fset.Bool("fhir-patient-directory-search", false,
+		"let a token limited to one patient search the directory (practitioners, organisations, locations) within its scopes")
 	demoAccount := fset.String("demo-account", "",
 		"for a public demonstration server: username:password of a shared viewer account shown on the sign-in page")
 	fset.Int("fhir-writes-per-minute", 0, "for a public server: writes one client address may make to the FHIR endpoint a minute (0: no limit)")
@@ -693,11 +696,16 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		if termStore, err = terminology.Open(context.Background(), termPool.Write); err != nil {
 			return err
 		}
-		if id := strings.TrimSpace(*icd11ID); id != "" {
-			if *icd11Secret == "" {
+		if id, base := strings.TrimSpace(*icd11ID), strings.TrimRight(strings.TrimSpace(*icd11URL), "/"); id != "" || base != "" {
+			if id != "" && *icd11Secret == "" {
 				return errors.New("-icd11-client-id needs -icd11-client-secret")
 			}
-			termStore.ICD11 = &terminology.ICD11API{ClientID: id, ClientSecret: *icd11Secret, Release: strings.TrimSpace(*icd11Release)}
+			if base != "" {
+				if u, err := url.Parse(base); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+					return fmt.Errorf("-icd11-url %q is not an http(s) address", base)
+				}
+			}
+			termStore.ICD11 = &terminology.ICD11API{ClientID: id, ClientSecret: *icd11Secret, Release: strings.TrimSpace(*icd11Release), BaseURL: base}
 		}
 		termCtx, stopTerm := context.WithCancel(context.Background())
 		defer stopTerm()
@@ -1464,6 +1472,7 @@ oidcDone:
 		fhirSrv := fhirserver.NewServer(fhirStore, baseURL, log)
 		drugsFHIR = fhirSrv
 		fhirSrv.ReadOnly = *fhirReadOnly
+		fhirSrv.PatientDirectorySearch = *fhirPatientDirectory
 
 		// The channels' mapping tables, published as ConceptMaps and answerable by $translate.
 		//
@@ -1798,6 +1807,7 @@ oidcDone:
 		// Long, because the dashboard holds a server-sent events stream open.
 		WriteTimeout: 0,
 		IdleTimeout:  2 * time.Minute,
+		ErrorLog:     httpErrorLog(log),
 	}
 	if useTLS {
 		httpSrv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}

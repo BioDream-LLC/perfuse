@@ -151,6 +151,11 @@ func (s *Server) enforceSearchContext(caller *Caller, q *SearchQuery) error {
 		// sort of type where that reads as harmless until somebody notices it lists every referring physician.
 		//
 		// The exception is Patient, handled below: a patient app legitimately reads its own demographics.
+		if s.PatientDirectorySearch && sharedTypes[q.ResourceType] {
+			// Allowed by the setting, and only within the scopes (narrowSearchToScopes above, and the scope check
+			// on every result): a directory search answers who and where, never a patient's records.
+			return nil
+		}
 		if q.ResourceType != "Patient" {
 			return fmt.Errorf("this token is limited to one patient, and %s cannot be narrowed to a "+
 				"patient, so it cannot be searched with this token", q.ResourceType)

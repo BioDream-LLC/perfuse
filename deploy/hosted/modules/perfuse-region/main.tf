@@ -189,7 +189,7 @@ resource "aws_security_group" "server" {
 resource "aws_vpc_security_group_ingress_rule" "server" {
   for_each          = { for pair in setproduct([for p in concat([8443], var.mllp_ports) : tostring(p)], local.ingress_cidrs) : "${pair[0]}/${pair[1]}" => pair }
   security_group_id = aws_security_group.server.id
-  description       = "From the load balancer, which passes clients' addresses through"
+  description       = "From the load balancer, which passes client addresses through"
   cidr_ipv4         = each.value[1]
   ip_protocol       = "tcp"
   from_port         = tonumber(each.value[0])
@@ -199,7 +199,7 @@ resource "aws_vpc_security_group_ingress_rule" "server" {
 resource "aws_vpc_security_group_ingress_rule" "health" {
   for_each          = toset([for p in concat([8443], var.mllp_ports) : tostring(p)])
   security_group_id = aws_security_group.server.id
-  description       = "Health checks from the load balancer's subnets"
+  description       = "Health checks from the load balancer subnets"
   cidr_ipv4         = var.vpc_cidr
   ip_protocol       = "tcp"
   from_port         = tonumber(each.key)
@@ -490,9 +490,13 @@ resource "aws_lb_target_group" "main" {
   target_type          = "instance"
   preserve_client_ip   = "true"
   deregistration_delay = 30
+  # HTTPS to /readyz, not a bare TCP or TLS connection: readiness covers the database, and a connection opened and closed
+  # without a request is logged by the server as a failed TLS handshake every few seconds.
   health_check {
-    protocol = "TCP"
+    protocol = "HTTPS"
     port     = "8443"
+    path     = "/readyz"
+    matcher  = "200"
   }
 }
 

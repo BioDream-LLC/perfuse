@@ -6,6 +6,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -241,5 +242,39 @@ func TestICD11CodesFromTheWHOAPI(t *testing.T) {
 	}
 	if _, err := s.Lookup(ctx, SystemICD11, "", "ZZ99"); err != ErrNotFound {
 		t.Fatalf("an unknown code: %v", err)
+	}
+}
+
+// TestRealICD11API asks the WHO's own ICD-API container (whoicd/icd-api, run with include=2025-01_en-fr), the same API
+// id.who.int serves, without a client: PERFUSE_TEST_ICD11_URL=http://127.0.0.1:6382.
+func TestRealICD11API(t *testing.T) {
+	base := os.Getenv("PERFUSE_TEST_ICD11_URL")
+	if base == "" {
+		t.Skip("PERFUSE_TEST_ICD11_URL is not set (the WHO's ICD-API container)")
+	}
+	ctx := context.Background()
+	api := &ICD11API{Release: "2025-01", BaseURL: base}
+	for _, c := range []struct{ code, lang, want string }{
+		{"1A00", "en", "Cholera"},
+		{"1A00", "fr", "Choléra"},
+		{"BA00", "en", "Essential hypertension"},
+		{"BA00.Z", "en", "Essential hypertension, unspecified"},
+		{"1A03.0", "en", "Enteropathogenic Escherichia coli infection"},
+		{"2C25.0&XK9K", "en", "Adenocarcinoma of bronchus or lung (Right)"},
+	} {
+		got, found, err := api.Lookup(ctx, c.code, c.lang)
+		if err != nil || !found || got != c.want {
+			t.Errorf("%s (%s) = %q, %v, %v; want %q", c.code, c.lang, got, found, err, c.want)
+		}
+	}
+	for _, code := range []string{"ZZ99", "1A00&XS25"} { // no such code; a combination ICD-11 does not allow
+		if got, found, err := api.Lookup(ctx, code, "en"); err != nil || found {
+			t.Errorf("%s = %q, %v, %v; want not found", code, got, found, err)
+		}
+	}
+	s := open(t)
+	s.ICD11 = api
+	if c, err := s.Lookup(ctx, SystemICD11, "", "BA00"); err != nil || c.Display != "Essential hypertension" {
+		t.Errorf("the store's lookup through the API = %+v, %v", c, err)
 	}
 }

@@ -535,6 +535,7 @@ func cmdFHIRServe(args []string, stdout, stderr io.Writer) error {
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       60 * time.Second,
 		WriteTimeout:      60 * time.Second,
+		ErrorLog:          httpErrorLog(log),
 	}
 
 	counts, _ := store.Counts(context.Background())

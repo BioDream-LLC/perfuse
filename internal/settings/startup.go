@@ -23,6 +23,11 @@ func startupSettings() []Setting {
 		{Key: "data.icd11ClientSecret", Group: GroupData, Subgroup: "Code systems", Label: "WHO ICD API client secret",
 			Help: "The secret of the WHO ICD API client above, from icd.who.int/icdapi. Kept with the other secrets; never shown again once saved.",
 			Kind: KindSecret, Widget: WidgetSecret, Effect: EffectRestart, Default: "", Flag: "icd11-client-secret", Sensitive: true},
+		{Key: "data.icd11Url", Group: GroupData, Subgroup: "Code systems", Label: "ICD API address",
+			Help: "Where the ICD API is. Empty is the WHO's own (id.who.int, which needs the client above). The address of " +
+				"the WHO's ICD-API container run on your own network (http://icd-api.local, say) needs no client: codes are " +
+				"looked up there and never leave your network.",
+			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "", Flag: "icd11-url"},
 		{Key: "data.icd11Release", Group: GroupData, Subgroup: "Code systems", Label: "ICD-11 release to ask for",
 			Help: "The MMS release the WHO ICD API is asked about, such as 2025-01.",
 			Kind: KindString, Widget: WidgetText, Effect: EffectRestart, Default: "2025-01", Flag: "icd11-release", Advanced: true},

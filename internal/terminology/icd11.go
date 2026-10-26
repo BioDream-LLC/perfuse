@@ -72,7 +72,8 @@ func readICD11Tabulation(r io.Reader, blocks bool, add func(code, display string
 }
 
 // ICD11API looks codes up in the WHO ICD API when they are not imported: a client registered at icd.who.int, a release
-// (2025-01), and the language asked for. Answers are kept for a day.
+// (2025-01), and the language asked for. Answers are kept for a day. With a BaseURL and no client, it asks a local copy of
+// the API (the WHO's ICD-API container), which takes no token.
 type ICD11API struct {
 	ClientID, ClientSecret string
 	Release                string
@@ -138,12 +139,14 @@ func (a *ICD11API) bearer(ctx context.Context) (string, error) {
 }
 
 func (a *ICD11API) get(ctx context.Context, u, lang string, out any) (int, error) {
-	tok, err := a.bearer(ctx)
-	if err != nil {
-		return 0, err
-	}
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-	req.Header.Set("Authorization", "Bearer "+tok)
+	if a.ClientID != "" {
+		tok, err := a.bearer(ctx)
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("API-Version", "v2")
 	req.Header.Set("Accept-Language", lang)
@@ -206,8 +209,27 @@ func (a *ICD11API) Lookup(ctx context.Context, code, lang string) (title string,
 		}
 		return "", false, err
 	}
-	a.remember(key, ent.Title.Value, true)
-	return ent.Title.Value, true, nil
+	title = ent.Title.Value
+	// A postcoordinated cluster (2C25.0&XK9K, or stems joined by /) was checked whole by the API, which refuses a
+	// combination the classification does not allow. Its stem's title alone would read as a different diagnosis, so the
+	// other codes' titles are added: "Adenocarcinoma of bronchus or lung (Right)".
+	if parts := strings.FieldsFunc(code, func(r rune) bool { return r == '&' || r == '/' }); len(parts) > 1 {
+		var extra []string
+		for _, p := range parts[1:] {
+			t, ok, err := a.Lookup(ctx, p, lang)
+			if err != nil {
+				return "", false, err
+			}
+			if ok {
+				extra = append(extra, t)
+			}
+		}
+		if len(extra) > 0 {
+			title += " (" + strings.Join(extra, "; ") + ")"
+		}
+	}
+	a.remember(key, title, true)
+	return title, true, nil
 }
 
 func (a *ICD11API) remember(key, title string, found bool) {
