@@ -3,6 +3,7 @@ package generate
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/cda"
@@ -51,8 +52,10 @@ func TestSegmentsEndWithCarriageReturns(t *testing.T) {
 func TestSameSeedProducesTheSameMessages(t *testing.T) {
 	// Without this a channel test using the generator would be flaky, which is
 	// worse than having no test.
-	first := New(Options{Kind: ORU, Count: 20, Seed: 7}).All()
-	second := New(Options{Kind: ORU, Count: 20, Seed: 7}).All()
+	// Since is pinned: by default the timestamps start from now, and two runs either side of a second boundary differ.
+	since := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	first := New(Options{Kind: ORU, Count: 20, Seed: 7, Since: since}).All()
+	second := New(Options{Kind: ORU, Count: 20, Seed: 7, Since: since}).All()
 
 	if len(first) != len(second) {
 		t.Fatalf("%d vs %d messages", len(first), len(second))
