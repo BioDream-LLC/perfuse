@@ -18,10 +18,10 @@ import (
 // (<gender value="male"/>), an element's id and an extension's url are attributes, a resource is an element named
 // after its type, the narrative is XHTML in place, and - the one rule that needs the specification - every element
 // must come in the order its definition lists, where JSON may hold members in any order. That order comes from the
-// core package's StructureDefinitions (xmlorder_gen.go), kept compressed beside this file.
+// core package's StructureDefinitions (xmlordergen), kept compressed beside this file.
 
-//go:generate sh -c "go run xmlorder_gen.go $PKG_R4 | gzip -9 -n > xmlorder_r4.txt.gz"
-//go:generate sh -c "go run xmlorder_gen.go $PKG_R5 | gzip -9 -n > xmlorder_r5.txt.gz"
+//go:generate sh -c "go run ./xmlordergen $PKG_R4 | gzip -9 -n > xmlorder_r4.txt.gz"
+//go:generate sh -c "go run ./xmlordergen $PKG_R5 | gzip -9 -n > xmlorder_r5.txt.gz"
 
 //go:embed xmlorder_r4.txt.gz
 var xmlOrderR4 []byte

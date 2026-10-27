@@ -1,8 +1,6 @@
-//go:build ignore
-
-// xmlorder_gen writes the element order FHIR XML needs, from a core package's StructureDefinitions.
+// Command xmlordergen writes the element order FHIR XML needs, from a core package's StructureDefinitions.
 //
-//	go run fhir/xmlorder_gen.go hl7.fhir.r4.core-4.0.1.tgz | gzip -9 -n > fhir/xmlorder_r4.txt.gz
+//	go run ./fhir/xmlordergen hl7.fhir.r4.core-4.0.1.tgz | gzip -9 -n > fhir/xmlorder_r4.txt.gz
 //
 // JSON objects may hold their members in any order; XML may not: every element must come in the order its
 // definition lists. Each output line is a path and its children in that order, each child with how to find its own
