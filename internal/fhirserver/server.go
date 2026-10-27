@@ -153,7 +153,7 @@ func NewServer(store *Store, baseURL string, log *slog.Logger) *Server {
 
 // contentType is the FHIR JSON media type. Returning application/json instead is
 // accepted by most clients and technically wrong.
-const contentType = "application/fhir+json"
+const contentType = "application/fhir+json; charset=utf-8"
 
 // isReadOnly reports whether this server refuses writes.
 //
@@ -263,7 +263,7 @@ func (s *Server) Handler() http.Handler {
 	outer.HandleFunc("GET /metadata", s.handleCapability)
 	outer.Handle("/", protected)
 
-	return fhirCORS(outer)
+	return fhirCORS(s.xmlAnswers(outer))
 }
 
 // fhirCORS lets SMART apps running in a browser on another origin use this endpoint, as SMART App Launch requires. Safe
@@ -576,7 +576,7 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 		},
 		"fhirVersion":  string(version),
 		"instantiates": s.instantiates(),
-		"format":       []string{"json", "application/fhir+json"},
+		"format":       []string{"json", "application/fhir+json", "xml", "application/fhir+xml"},
 		"rest":         []any{rest},
 	}
 	// The Da Vinci payer guides this server answers, both releases, so a client can see before it asks.
