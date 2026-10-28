@@ -61,8 +61,9 @@ systemctl enable --now perfuse-backup.timer
 systemctl enable --now perfuse-traffic.timer
 systemctl enable --now perfuse-test
 systemctl restart perfuse-test
-sleep 3
-curl -fsS "https://$host/livez" >/dev/null
+# Waited for, not slept on: a release that rebuilds the search index takes longer than a few seconds to start.
+up() { i=0; until curl -fsS -m 5 "https://$host/livez" >/dev/null 2>&1; do i=$((i + 1)); [ $i -lt 120 ] || return 1; sleep 2; done; }
+up
 
 token() { sudo -u perfuse /opt/perfuse/perfuse token create -db /opt/perfuse/data/perfuse.db -label "$1" -role "$2" 2>&1 |
   awk 'f && NF {print; exit} /token created/ {f=1}'; }
@@ -71,7 +72,7 @@ token() { sudo -u perfuse /opt/perfuse/perfuse token create -db /opt/perfuse/dat
 if ! grep -qs '^PERFUSE_DEMO_TOKEN=.' /opt/perfuse/conf/demo.env; then
   printf 'PERFUSE_DEMO_TOKEN=%s\n' "$(token document-publisher editor)" > /opt/perfuse/conf/demo.env
   chown root:perfuse /opt/perfuse/conf/demo.env; chmod 0640 /opt/perfuse/conf/demo.env
-  systemctl restart perfuse-test; sleep 3
+  systemctl restart perfuse-test; up
 fi
 
 # Data for every screen (invented), through the API with two administrators' tokens revoked straight after.
@@ -85,5 +86,4 @@ for label in $(sudo -u perfuse /opt/perfuse/perfuse token list -db /opt/perfuse/
 done
 # TEFCA and the patient index settings take effect at a restart.
 systemctl restart perfuse-test
-sleep 3
-curl -fsS "https://$host/livez" && echo " - Perfuse $version is up on https://$host"
+up && echo " - Perfuse $version is up on https://$host"
