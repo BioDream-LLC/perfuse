@@ -138,7 +138,8 @@ func TestCapabilityStatement(t *testing.T) {
 				t.Errorf("%s implements %q but does not advertise it", resourceType, actual)
 			}
 		}
-		if len(advertised) != len(SearchParams[resourceType]) {
+		// _count and _has are listed on every type and handled by the query parser, not the index.
+		if len(advertised) != len(SearchParams[resourceType])+2 || !advertised["_count"] || !advertised["_has"] {
 			t.Errorf("%s advertises %d parameters but implements %d",
 				resourceType, len(advertised), len(SearchParams[resourceType]))
 		}

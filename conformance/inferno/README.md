@@ -19,8 +19,12 @@ instance, test.perfuse.health (`deploy/test-instance`); no Docker needed.
 | `smart` | smart-app-launch-test-kit v1.0.3, SMART App Launch STU2.2 | `-fhir -smart-clients -smart-users` | public app 80 of 80; confidential app 67 pass, 3 omit |
 | `uscore` | us-core-test-kit v1.1.6, US Core Server v7.0.0 | `-fhir -smart-clients -smart-users -fhir-patient-directory-search` | launch and both granular-scope groups pass; API 285 pass, 2 fail (patient token, `-fhir-patient-directory-search`), 503 pass, 4 fail (system token) |
 | `pacio` | paciowg PACIO kits at pinned commits: TOC v1.0.0, SMP v1.0.0, ADI 2.0.0-ballot, PFE 2.0.0 | `-fhir -smart-clients -fhir-declares` | TOC 24 pass, 4 fail; SMP 34 pass, 3 fail; ADI 74 pass, 23 fail; PFE 40 pass, 16 fail (every failure in PACIO's own sample data or the kit) |
+| `isik` | gematik isik-testsuite 3.0.9, ISiK Stufe 5 | `-fhir` | Basis 421 of 421 (other modules not run) |
 
 verification.md explains every failure.
+
+`isik` runs gematik's own container, not Inferno: `serve.sh isik`, then `PERFUSE_TOKEN=$(cat .work/isik/token) python3
+isik/run.py "@Stufe5 and @Basis"` (about 25 minutes).
 
 `pacio` takes the kit as a second word: `kit.sh pacio-toc`, `kit.sh pacio-smp` or `kit.sh pacio` (Advance Directives and
 Personal Functioning), then `serve.sh pacio` and `pacio/run.py`. The data is PACIO's own: the two public servers its

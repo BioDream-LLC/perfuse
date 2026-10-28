@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.21 · 9da4b57</p>
+<p class="version">v0.1.21 · afdb072</p>
 <p class="version">Other languages: <a href="https://perfuse.health/manual/da/" hreflang="da" lang="da">Dansk</a> · <a href="https://perfuse.health/manual/de/" hreflang="de" lang="de">Deutsch</a> · <a href="https://perfuse.health/manual/es/" hreflang="es" lang="es">Español</a> · <a href="https://perfuse.health/manual/fi/" hreflang="fi" lang="fi">Suomi</a> · <a href="https://perfuse.health/manual/fr/" hreflang="fr" lang="fr">Français</a> · <a href="https://perfuse.health/manual/it/" hreflang="it" lang="it">Italiano</a> · <a href="https://perfuse.health/manual/nb/" hreflang="nb" lang="nb">Norsk bokmål</a> · <a href="https://perfuse.health/manual/nl/" hreflang="nl" lang="nl">Nederlands</a> · <a href="https://perfuse.health/manual/pl/" hreflang="pl" lang="pl">Polski</a> · <a href="https://perfuse.health/manual/pt/" hreflang="pt" lang="pt">Português</a> · <a href="https://perfuse.health/manual/sv/" hreflang="sv" lang="sv">Svenska</a></p>
 </header>
 <h2>Table of Contents</h2>
@@ -1410,6 +1410,7 @@ td code { font-size: 0.85em; }
 <tr><td>Da Vinci CDex <code>$submit-attachment</code></td><td>2.1</td><td>not checked by an outside tool</td></tr>
 <tr><td>Da Vinci Plan-Net</td><td>1.1.0</td><td>Inferno: 199 pass, 10 fail (a kit defect)</td></tr>
 <tr><td>Da Vinci US Drug Formulary</td><td>2.1.0</td><td>the HL7 validator</td></tr>
+<tr><td>ISiK (German hospitals), FHIR server</td><td>Stufe 5, Basis module</td><td>gematik&#39;s ISiK test suite 3.0.9: 421 of 421</td></tr>
 <tr><td>PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning</td><td>1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0</td><td>PACIO&#39;s Inferno kits with PACIO&#39;s own data: every failure in its data or the kit</td></tr>
 <tr><td>CARIN Blue Button</td><td>2.2.0</td><td>the HL7 validator</td></tr>
 <tr><td>eCR</td><td>2.1.2</td><td>the HL7 validator</td></tr>
@@ -4169,6 +4170,7 @@ rules:
 </tbody>
 </table>
 <p>The store keeps documents as well as resources: a document, collection or message Bundle PUT to <code>/fhir/Bundle/{id}</code> is kept whole, read back with every entry in the release served, and found by <code>type</code>, <code>identifier</code>, <code>timestamp</code> and <code>composition</code>. A transaction PUT there is kept as a record and not applied; a POST to <code>/fhir</code> applies one.</p>
+<p>Answers are JSON unless the client asks for XML (<code>Accept: application/fhir+xml</code>, or <code>_format=xml</code>). Perfuse reads JSON only: a body sent as XML gets 415. A document Bundle POSTed to <code>/fhir</code> is kept when this server holds, by identifier, the patient and encounter its Composition names, and refused with 422 otherwise. A Binary read with <code>Accept</code> set to its own content type answers with the content itself.</p>
 <h3 id="s19-7-setting-up-and-operating"><span class="num">19.7</span> Setting up and operating</h3>
 <h4 id="s19-7-1-perfuse-init"><span class="num">19.7.1</span> perfuse init</h4>
 <p>Creates the directory layout, an example channel, and a service definition for the operating system it is run on. Nothing existing is replaced unless you pass <code>-force</code>.</p>

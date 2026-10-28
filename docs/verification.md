@@ -1561,6 +1561,38 @@ where gpg has no agent (now skipped there).
   which AWS holds for new accounts until a request to lift it is granted. SITE's HISP Testing Portal (SMTP, IMAP and POP3
   as sender and receiver) needs a SITE account.
 
+## The German hospital standard (ISiK), against gematik's own test suite (October 2026)
+
+gematik publishes the ISiK test suite (github.com/gematik/isik-testsuite, release 3.0.9, Stufe 5) and runs it in its own
+container. `conformance/inferno/isik` points it at Perfuse's ordinary FHIR server, with the records each test expects in
+`conformance/inferno/isik/data` (invented, no real person: drafted from the suite's own preconditions and checks, then
+corrected where a check said the record was wrong).
+
+| Module | First run | Now |
+|---|---|---|
+| Basis (patients, encounters, diagnoses, coverage, accounts, allergies, observations, procedures, locations, practitioners, value sets, documents) | 179 of 421 | 421 of 421 |
+
+What it found in Perfuse, all fixed:
+
+- **No XML.** Most of the suite's requests ask for FHIR XML, which Perfuse did not write. It now answers in XML when asked
+  (`Accept: application/fhir+xml` or `_format=xml`), with the element order taken from the R4 and R5 core definitions;
+  checked on 295 of the R4 core examples with the HL7 validator, which found no structural error from the conversion.
+  Bodies sent in XML are refused with 415: Perfuse reads JSON only.
+- **No charset** on `application/fhir+json` answers, which ISiK requires.
+- **About forty search parameters ISiK requires**, among them `_tag` on every type, an Encounter's `date-start`, `end-date`,
+  `account` and `service-provider`, an Observation's `combo-code-value-quantity`, a ValueSet's `context-type-value`, a
+  Location's `near` (by distance), and Coverage, Account and RelatedPerson parameters. The capability statement now also
+  lists `_count` and `_has`, and gives `url` as uri.
+- **Modifiers and forms clients use:** `:not` on token parameters and `_id`, `param:identifier=` (resolved as a chain),
+  chains through Coverage and Encounter references, `?_count` with no value, `/Patient/?...` with a trailing slash, and
+  `status=system|code` on code elements, which carry no system in the data.
+- **A Binary read as itself:** with `Accept: text/plain` (any type but a FHIR one) a Binary answers with its content.
+- **A document posted to the base URL** is kept, and refused (422) when its Composition has no narrative or names a patient
+  or encounter this server does not hold by identifier.
+
+Not run yet: the suite's other modules (documents, medication, appointments, vital signs, lab, intensive care, Connect),
+which need their own records. Not shown: a hospital's real systems feeding Perfuse.
+
 ## Post-acute care (PACIO), against PACIO's own test kits (October 2026)
 
 PACIO publishes Inferno kits for its guides (github.com/paciowg). Perfuse's ordinary FHIR server was loaded with PACIO's own

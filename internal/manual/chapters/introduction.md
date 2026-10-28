@@ -88,6 +88,7 @@ production site.
 | Da Vinci CDex `$submit-attachment` | 2.1 | not checked by an outside tool |
 | Da Vinci Plan-Net | 1.1.0 | Inferno: 199 pass, 10 fail (a kit defect) |
 | Da Vinci US Drug Formulary | 2.1.0 | the HL7 validator |
+| ISiK (German hospitals), FHIR server | Stufe 5, Basis module | gematik's ISiK test suite 3.0.9: 421 of 421 |
 | PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning | 1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0 | PACIO's Inferno kits with PACIO's own data: every failure in its data or the kit |
 | CARIN Blue Button | 2.2.0 | the HL7 validator |
 | eCR | 2.1.2 | the HL7 validator |

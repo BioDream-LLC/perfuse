@@ -537,6 +537,7 @@ reasons for each failure are in [conformance/national](https://github.com/biodre
 | UK Core | STU2 2.0.2 | 185 of 187 |
 | FR Core | 2.2.0 | 138 of 156 |
 | ISiK Basismodul | 4.0.3 (Stufe 4) | 18 of 47; 42 of 47 with the hospital's own bundle script |
+| ISiK FHIR server, Basis module | Stufe 5 | gematik's ISiK test suite 3.0.9: 421 of 421 |
 | Nictiz nl-core | 0.12.1-beta.1 (zib 2020) | 12 of 24; 18 of 24 with the hospital's own bundle script |
 | HL7 Europe Laboratory Report | 2.1.0 | 106 of 426 (the guide expects a document a v2 result is not) |
 | HL7 Europe Hospital Discharge Report | 1.0.0 | 68 of 69 |

@@ -263,7 +263,7 @@ func (s *Server) Handler() http.Handler {
 	outer.HandleFunc("GET /metadata", s.handleCapability)
 	outer.Handle("/", protected)
 
-	return fhirCORS(s.xmlAnswers(outer))
+	return fhirCORS(s.xmlAnswers(trimTrailingSlash(outer)))
 }
 
 // fhirCORS lets SMART apps running in a browser on another origin use this endpoint, as SMART App Launch requires. Safe
@@ -369,8 +369,9 @@ func (s *Server) handleCapability(w http.ResponseWriter, r *http.Request) {
 	sortStrings(types)
 
 	for _, t := range types {
-		params := make([]any, 0, len(SearchParams[t]))
-		for _, p := range SearchParams[t] {
+		params := make([]any, 0, len(SearchParams[t])+2)
+		// _count and _has are on every type and are not index parameters, so they are listed here.
+		for _, p := range append(append([]string(nil), SearchParams[t]...), "_count", "_has") {
 			params = append(params, map[string]any{
 				"name": p,
 				"type": searchParamType(p),
@@ -656,6 +657,9 @@ func (s *Server) handleRead(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", ETag(versionID))
 	}
 
+	if s.binaryNative(w, r, resource) {
+		return
+	}
 	s.writeResource(w, r, http.StatusOK, resource)
 }
 
@@ -999,6 +1003,10 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 	if incoming.ResourceType != "Bundle" {
 		s.writeOutcome(w, r, http.StatusBadRequest, fhir.SeverityError, "structure",
 			"a POST to the base URL must carry a Bundle")
+		return
+	}
+	if incoming.Type == "document" {
+		s.postDocument(w, r, body)
 		return
 	}
 	if incoming.Type != fhir.BundleTransaction && incoming.Type != fhir.BundleBatch {
@@ -1383,6 +1391,16 @@ func searchParamType(param string) string {
 	switch {
 	case param == "_id":
 		return "token"
+	case param == "_count":
+		return "number"
+	case param == "_has":
+		return "string" // as ISiK declares it
+	case param == "url":
+		return "uri"
+	case param == "combo-code-value-quantity", param == "context-type-value":
+		return "composite"
+	case param == "near":
+		return "special"
 	case isDateParam(param):
 		return "date"
 	case isStringParam(param):
@@ -1448,4 +1466,20 @@ func (s *Server) instantiates() []string {
 		}
 	}
 	return out
+}
+
+// trimTrailingSlash serves /Patient/?name=x as /Patient?name=x. Clients write it that way (gematik's ISiK suite does
+// throughout), HAPI accepts it, and the mux matched it to nothing.
+func trimTrailingSlash(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if p := r.URL.Path; len(p) > 1 && strings.HasSuffix(p, "/") {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = strings.TrimRight(p, "/")
+			if r2.URL.RawPath != "" {
+				r2.URL.RawPath = strings.TrimRight(r2.URL.RawPath, "/")
+			}
+			r = r2
+		}
+		next.ServeHTTP(w, r)
+	})
 }

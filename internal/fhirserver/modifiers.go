@@ -38,6 +38,9 @@ const (
 	// :missing=true means the resource has no value for this parameter at all. Useful and impossible to express otherwise: a
 	// client looking for patients with no recorded birth date cannot write that as a value comparison.
 	ModMissing Modifier = "missing"
+
+	// ModNot finds the resources that do not match: none of the values, or none at all.
+	ModNot Modifier = "not"
 )
 
 // supportedModifiers is the set this store implements.
@@ -49,6 +52,7 @@ var supportedModifiers = map[Modifier]bool{
 	ModExact:    true,
 	ModContains: true,
 	ModMissing:  true,
+	ModNot:      true,
 }
 
 // ModifiedCriterion is one parameter with a modifier applied.
@@ -108,6 +112,9 @@ func parseModifier(resourceType, key string) (crit ModifiedCriterion, modified b
 
 	// :exact and :contains are string operations. Applying them to a reference or a date would either silently do something
 	// else or return nothing, and both are worse than saying so.
+	if mod == ModNot && (isReferenceParam(param) || isDateParam(param) || isStringParam(param)) {
+		return ModifiedCriterion{}, true, fmt.Errorf(":not is for token parameters, and %q is a %s parameter", param, kindOf(param))
+	}
 	if mod == ModExact || mod == ModContains {
 		if isReferenceParam(param) || isDateParam(param) {
 			return ModifiedCriterion{}, true, fmt.Errorf(
@@ -158,6 +165,29 @@ func modifiedClause(crit ModifiedCriterion) (string, []any, error) {
 	)
 
 	switch crit.Modifier {
+	case ModNot:
+		if crit.Param == "_id" {
+			var ids []string
+			for _, v := range crit.Values {
+				ids = append(ids, splitOr(v)...)
+			}
+			b.WriteString(" AND resource_id NOT IN (" + placeholders(len(ids)) + ")")
+			for _, id := range ids {
+				args = append(args, id)
+			}
+			return b.String(), args, nil
+		}
+		// The same clause as the plain search, negated: a resource with none of the values, or with none at all.
+		for _, v := range crit.Values {
+			clause, extra, err := indexClause(crit.Param, []string{v})
+			if err != nil {
+				return "", nil, err
+			}
+			b.WriteString(strings.Replace(clause, " AND EXISTS (", " AND NOT EXISTS (", 1))
+			args = append(args, extra...)
+		}
+		return b.String(), args, nil
+
 	case ModMissing:
 		// Only the first value is used, and more than one is refused rather than reconciled.
 		//

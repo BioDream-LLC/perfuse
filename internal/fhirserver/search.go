@@ -1263,7 +1263,8 @@ func ParseSearch(resourceType string, values map[string][]string) (*SearchQuery,
 	for key, vals := range values {
 		switch key {
 		case "_count":
-			if len(vals) == 0 {
+			// _count with no value (ISiK sends ?_count alone) means the default page.
+			if len(vals) == 0 || strings.TrimSpace(vals[0]) == "" {
 				continue
 			}
 			n, err := strconv.Atoi(vals[0])
@@ -1338,6 +1339,12 @@ func ParseSearch(resourceType string, values map[string][]string) (*SearchQuery,
 				q.Has = append(q.Has, h)
 			}
 			continue
+		}
+		// param:identifier=system|value finds resources whose reference points at a resource with that identifier: here
+		// a chain, param.identifier, which this server can resolve where a Reference.identifier would need the sender
+		// to have written one.
+		if p, ok := strings.CutSuffix(key, ":identifier"); ok && isReferenceParam(p) {
+			key = p + ".identifier"
 		}
 		if crit, chained, err := parseChain(resourceType, key); chained {
 			if err != nil {
@@ -1416,7 +1423,11 @@ func ParseSearch(resourceType string, values map[string][]string) (*SearchQuery,
 					}
 					v = strings.Join(parts, ",")
 				}
-				q.Criteria[key] = append(q.Criteria[key], v)
+				nv, err := normaliseComposite(key, v)
+				if err != nil {
+					return nil, err
+				}
+				q.Criteria[key] = append(q.Criteria[key], nv)
 			}
 		}
 	}
@@ -1444,6 +1455,12 @@ func (s *Store) Search(ctx context.Context, q *SearchQuery) (*SearchResult, erro
 	// Chains resolved first, into ordinary reference criteria, so nothing below needs to know about chaining.
 	if len(q.Chains) > 0 {
 		if err := s.resolveChains(ctx, q); err != nil {
+			return nil, err
+		}
+	}
+	// near, by distance, into _id criteria.
+	if len(q.Criteria["near"]) > 0 {
+		if err := s.resolveNear(ctx, q); err != nil {
 			return nil, err
 		}
 	}
@@ -1639,6 +1656,11 @@ func indexClause(param string, values []string) (string, []any, error) {
 					// system| means "any code in this system". Match the system alone.
 					clause.WriteString("x.system = ?")
 					args = append(args, system)
+				} else if codeParams[param] {
+					// A code element (Observation.status) carries no system in the data, its system being implied by the
+					// element; status=http://hl7.org/fhir/observation-status|final must still find it.
+					clause.WriteString("((x.system = ? OR x.system = '') AND x.value = ?)")
+					args = append(args, system, value)
 				} else {
 					clause.WriteString("(x.system = ? AND x.value = ?)")
 					args = append(args, system, value)
@@ -1752,15 +1774,20 @@ func isDateParam(param string) bool {
 	case "date", "birthdate", "_lastUpdated", "asserted-date", "abatement-date", "period", "target-date", "death-date",
 		"onset-date", "recorded-date", "authoredon", "authored-on",
 		"datetime", "datewritten", "created", "authored",
-		"started", "recorded", "service-date", "billable-period-start", "timestamp":
+		"started", "recorded", "service-date", "billable-period-start", "timestamp",
+		// ISiK's.
+		"date-start", "end-date", "creation", "effective-time", "effective", "start":
 		return true
 	}
 	return false
 }
 
+// codeParams are the token parameters on code elements, which have no system of their own in the data.
+var codeParams = map[string]bool{"status": true, "gender": true, "intent": true, "priority": true, "use": true}
+
 func isStringParam(param string) bool {
 	switch param {
-	case "name", "family", "given", "address", "address-city", "address-state", "address-postalcode":
+	case "name", "family", "given", "address", "address-city", "address-state", "address-postalcode", "address-country":
 		return true
 	}
 	return false
@@ -1789,6 +1816,8 @@ func isReferenceParam(param string) bool {
 		"partof",
 		// The Drug Formulary's.
 		"formulary", "formulary-coverage",
+		// ISiK's.
+		"context", "performer", "requester", "slot", "item", "ingredient", "account", "service-provider", "subscriber", "related",
 		// PACIO's documents.
 		"custodian":
 		return true
@@ -2021,6 +2050,12 @@ func pathEntries(r fhir.Resource) []indexEntry {
 						continue
 					}
 					cc, _ := v.(map[string]any)
+					// A Coding rather than a CodeableConcept: meta.tag, an operationalStatus.
+					if code, ok := cc["code"].(string); ok && code != "" && cc["coding"] == nil {
+						sys, _ := cc["system"].(string)
+						out = append(out, indexEntry{param: d.param, value: code, system: sys, valueRaw: code})
+						continue
+					}
 					codings, _ := cc["coding"].([]any)
 					for _, c := range codings {
 						cm, _ := c.(map[string]any)
@@ -2066,6 +2101,9 @@ func pathEntries(r fhir.Resource) []indexEntry {
 				}
 			}
 		}
+	}
+	if m, ok := tree.(map[string]any); ok {
+		out = append(out, specialEntries(r.ResourceTypeName(), m)...)
 	}
 	return out
 }

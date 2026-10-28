@@ -163,6 +163,11 @@ The store keeps documents as well as resources: a document, collection or messag
 whole, read back with every entry in the release served, and found by `type`, `identifier`, `timestamp` and `composition`. A
 transaction PUT there is kept as a record and not applied; a POST to `/fhir` applies one.
 
+Answers are JSON unless the client asks for XML (`Accept: application/fhir+xml`, or `_format=xml`). Perfuse reads JSON
+only: a body sent as XML gets 415. A document Bundle POSTed to `/fhir` is kept when this server holds, by identifier, the
+patient and encounter its Composition names, and refused with 422 otherwise. A Binary read with `Accept` set to its own
+content type answers with the content itself.
+
 ## Setting up and operating
 
 ### perfuse init
