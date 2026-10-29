@@ -209,7 +209,17 @@ type Entry struct {
 	// ValueCode and ValueName are set when the result is itself coded.
 	ValueCode string `json:"valueCode,omitempty"`
 	ValueName string `json:"valueName,omitempty"`
-	Unit      string `json:"unit,omitempty"`
+	// ValueSystem is the value's own code system. It is often not the code's: an allergy observation's code is an
+	// HL7 act code (ASSERTION) and its value a SNOMED CT concept, and reading the value with the code's system
+	// named SNOMED concepts as HL7 act codes.
+	ValueSystem string `json:"valueSystem,omitempty"`
+
+	// The participant's code: what an allergy is to (participant/participantRole/playingEntity/code). An allergy
+	// observation's value says what kind of reaction it is ("allergy to substance"); the substance is here.
+	ParticipantCode   string `json:"participantCode,omitempty"`
+	ParticipantSystem string `json:"participantSystem,omitempty"`
+	ParticipantName   string `json:"participantName,omitempty"`
+	Unit              string `json:"unit,omitempty"`
 
 	// StatusCode is the entry's status, which decides whether it is current.
 	StatusCode string `json:"statusCode,omitempty"`
@@ -671,6 +681,9 @@ func parseEntry(node *xtree.Node, section *xtree.Node) Entry {
 		e.NilFlavor = value.AttrValue("nullFlavor")
 		e.ValueCode = value.AttrValue("code")
 		e.ValueName = value.AttrValue("displayName")
+		if sys := value.AttrValue("codeSystem"); sys != "" {
+			e.ValueSystem = oidName(sys)
+		}
 		if v := value.AttrValue("value"); v != "" {
 			e.Value = v
 			e.Unit = value.AttrValue("unit")
@@ -678,6 +691,26 @@ func parseEntry(node *xtree.Node, section *xtree.Node) Entry {
 		if e.Value == "" && e.ValueCode == "" {
 			if text := strings.TrimSpace(value.Value()); text != "" {
 				e.Value = text
+			}
+		}
+	}
+
+	for _, p := range node.All("participant") {
+		if entity := p.Find("playingEntity"); entity != nil {
+			if code := entity.First("code"); code != nil && e.ParticipantCode == "" {
+				e.ParticipantCode = code.AttrValue("code")
+				e.ParticipantSystem = oidName(code.AttrValue("codeSystem"))
+				e.ParticipantName = code.AttrValue("displayName")
+				if e.ParticipantName == "" {
+					if orig := code.First("originalText"); orig != nil {
+						e.ParticipantName = strings.TrimSpace(resolveReference(orig, section))
+					}
+				}
+				if e.ParticipantName == "" {
+					if name := entity.First("name"); name != nil {
+						e.ParticipantName = strings.TrimSpace(name.Value())
+					}
+				}
 			}
 		}
 	}

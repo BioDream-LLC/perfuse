@@ -2015,6 +2015,8 @@ export const api = {
     version?: string
     identifierSystems?: Record<string, string>
     convert?: boolean
+    /** transfer asks for a PACIO Transitions of Care transfer summary as well. */
+    transfer?: boolean
   }): Promise<DocumentInspection> {
     return request<DocumentInspection>('POST', '/api/inspect/document', req)
   },
@@ -2609,6 +2611,13 @@ export interface DocumentInspection {
     notes: CdaNote[]
   }
   conversionError?: string
+  /** transfer is the PACIO Transitions of Care transfer summary: an R4 FHIR document Bundle. */
+  transfer?: {
+    bundle: unknown
+    counts: Record<string, number>
+    notes: CdaNote[]
+  }
+  transferError?: string
 }
 
 // ---------------------------------------------------------------------------

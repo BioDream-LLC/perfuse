@@ -3282,8 +3282,17 @@ function DestinationCard({
                 <option value="fhir">The converted FHIR bundle</option>
                 <option value="document">The original document, unchanged</option>
                 <option value="both">Both</option>
+                <option value="transfer">A PACIO transfer summary, for a nursing home or home health</option>
               </select>
             </Field>
+
+            {dest.cdaWrite === 'transfer' && (
+              <p className="text-xs text-slate-400 sm:col-span-2">
+                Each document becomes a PACIO Transitions of Care transfer summary (FHIR R4 document, US Core 8.0.1),
+                posted to the server&apos;s Bundle endpoint or written as a .transfer.json file. Sections the document
+                did not have go out empty with the reason; a document with no author person or custodian is refused.
+              </p>
+            )}
 
             {dest.cdaWrite !== 'document' && (
               <Field

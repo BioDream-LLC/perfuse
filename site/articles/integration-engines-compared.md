@@ -60,7 +60,7 @@ Perfuse keeps the parts of Mirth that teams rely on, and builds a new foundation
 
 - **Your Mirth work comes with you.** Your Mirth scripts run unchanged. One command converts a channel, a group, a shared library or a whole server backup. This is tested against real copies of Mirth 4.5.2, OIE 4.5.2 and 4.6.0, and BridgeLink 26.9.0.
 - **And it goes back.** Channels built in Perfuse export as Mirth channel files that Mirth, OIE and BridgeLink all accept, so Perfuse can sit side by side with any of them while you decide.
-- **One file, far lighter.** 31 MB of memory at rest against Mirth 4.5.2's 383 MB, measured on the same machine — about twelve times less. There is no Java platform to install, patch or tune.
+- **One file, far lighter.** 45 MB of memory at rest against Mirth 4.5.2's 383 MB, measured on the same machine — about eight times less. There is no Java platform to install, patch or tune.
 - **Modern standards built in.** FHIR (the modern web-friendly health data standard) with its own server, the health-insurer connections required by the CMS-0057 rule, national record exchange (TEFCA), public-health reporting, and more — included, not bought as add-ons.
 - **Every format.** HL7 v2 (hospital messaging), FHIR, DICOM (imaging), X12 (insurance and billing), and clinical documents, all in one engine.
 - **Safer change.** Shadow mode tests a change on real traffic while delivering nothing; feed contracts warn you when a sender quietly changes something; and a compare tool proves two engines agree.

@@ -128,6 +128,7 @@ func (d *Document) ToFHIR(opts FHIROptions) (*FHIRResult, error) {
 			continue
 		}
 		for i, entry := range section.Entries {
+			entry = medicationEntry(entry)
 			if entry.Kind != "SubstanceAdministration" {
 				continue
 			}
@@ -142,16 +143,25 @@ func (d *Document) ToFHIR(opts FHIROptions) (*FHIRResult, error) {
 		}
 	}
 
-	// Results and vital signs both become Observations.
-	for _, kind := range []string{"Results", "Vital signs"} {
+	// Vital signs: a systolic and diastolic pair becomes one blood pressure panel, and the codes FHIR's vital-signs
+	// profiles fix are added beside more specific ones, as FHIR requires of every vital sign.
+	if section := d.SectionByKind("Vital signs"); section != nil {
+		obs, notes := vitalSigns(section.Entries, patientRef, patientID, false)
+		result.Notes = append(result.Notes, notes...)
+		for _, resource := range obs {
+			id, _ := resource["id"].(string)
+			entries = append(entries, upsert("Observation", id, resource, "identifier=urn:perfuse:cda|"+id))
+			result.Counts["Observation"]++
+		}
+	}
+
+	// Results become Observations.
+	for _, kind := range []string{"Results"} {
 		section := d.SectionByKind(kind)
 		if section == nil {
 			continue
 		}
 		category := "laboratory"
-		if kind == "Vital signs" {
-			category = "vital-signs"
-		}
 		// Results are the one place flattening is right: an organiser is a panel
 		// and the observations inside it are the individual results, each of which
 		// becomes its own resource.
@@ -195,6 +205,21 @@ func (d *Document) ToFHIR(opts FHIROptions) (*FHIRResult, error) {
 	result.Notes = append(result.Notes, docNotes...)
 	entries = append(entries, upsert("DocumentReference", docID, docRef, "identifier=urn:perfuse:cda|"+docID))
 	result.Counts["DocumentReference"]++
+
+	// The builders write R5 shapes. For R4 and R4B each resource goes through the fhir package's own conversion, so
+	// a MedicationStatement carries medicationCodeableConcept and a Procedure performedDateTime. Before, an R4
+	// bundle carried R5 members (medication.concept, occurrenceDateTime) that an R4 server refuses.
+	if version == "R4" || version == "R4B" {
+		for _, entry := range entries {
+			if resource, ok := entry["resource"].(map[string]any); ok {
+				r4, err := asR4(resource)
+				if err != nil {
+					return nil, err
+				}
+				entry["resource"] = r4
+			}
+		}
+	}
 
 	result.Bundle = map[string]any{
 		"resourceType": "Bundle",
@@ -382,12 +407,15 @@ func allergyResource(entry Entry, patient map[string]any, version, patientID str
 		substance = entry.Children[0]
 	}
 
-	code := substance.ValueCode
-	name := substance.ValueName
-	system := substance.CodeSystem
-	if code == "" {
-		code = substance.Code
-		name = substance.CodeName
+	// What the allergy is to is the participant (the substance); the observation's value is the kind of reaction
+	// ("allergy to substance"). An earlier version took the value, so every allergy read as "allergy to substance"
+	// with no substance at all, under the wrong code system.
+	code, name, system := substance.ParticipantCode, substance.ParticipantName, substance.ParticipantSystem
+	if code == "" && name == "" {
+		code, name, system = substance.ValueCode, substance.ValueName, firstNonEmpty(substance.ValueSystem, substance.CodeSystem)
+	}
+	if code == "" && name == "" {
+		code, name, system = substance.Code, substance.CodeName, substance.CodeSystem
 	}
 
 	if code == "" && name == "" {
@@ -412,6 +440,22 @@ func allergyResource(entry Entry, patient map[string]any, version, patientID str
 	}
 
 	if substance.NegationInd {
+		if nka, display, ok := noKnownAllergy(code); ok {
+			// C-CDA says "no known allergies" by negating an allergy to a whole class (any substance, any drug).
+			// FHIR has a code for exactly that statement, so it is sent, not refused.
+			id := deterministicID(patientID, "allergy", "none", nka, fmt.Sprint(index))
+			return map[string]any{
+				"resourceType": "AllergyIntolerance",
+				"id":           id,
+				"identifier":   []map[string]any{{"system": "urn:perfuse:cda", "value": id}},
+				"clinicalStatus": codeableConcept(
+					"http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", "active", "Active"),
+				"verificationStatus": codeableConcept(
+					"http://terminology.hl7.org/CodeSystem/allergyintolerance-verification", "confirmed", "Confirmed"),
+				"code":    codeableConcept("http://snomed.info/sct", nka, display),
+				"patient": patient,
+			}, notes, true
+		}
 		// FHIR has no general way to say "not allergic to X" on an
 		// AllergyIntolerance. Emitting it positively would invert the meaning, so
 		// it is refused and reported.
@@ -456,7 +500,7 @@ func allergyResource(entry Entry, patient map[string]any, version, patientID str
 		if child.ValueCode == "" && child.ValueName == "" {
 			continue
 		}
-		manifestation, note := concept(child.ValueCode, child.CodeSystem, child.ValueName, "AllergyIntolerance.reaction.manifestation")
+		manifestation, note := concept(child.ValueCode, firstNonEmpty(child.ValueSystem, child.CodeSystem), child.ValueName, "AllergyIntolerance.reaction.manifestation")
 		if note != nil {
 			notes = append(notes, *note)
 		}
@@ -472,6 +516,19 @@ func allergyResource(entry Entry, patient map[string]any, version, patientID str
 	return resource, notes, true
 }
 
+// noKnownAllergy maps a negated allergy to a whole class (C-CDA's way of saying "none known") to FHIR's code for it.
+func noKnownAllergy(code string) (string, string, bool) {
+	switch code {
+	case "105590001", "413477004", "": // substance; allergen or pseudoallergen; none named
+		return "716186003", "No known allergy", true
+	case "410942007", "373873005": // drug or medicament; pharmaceutical product
+		return "409137002", "No known drug allergy", true
+	case "255620007", "762766007": // food; edible substance
+		return "429625007", "No known food allergy", true
+	}
+	return "", "", false
+}
+
 func conditionResource(entry Entry, patient map[string]any, patientID string, index int) (map[string]any, []Note, bool) {
 	var notes []Note
 
@@ -480,9 +537,9 @@ func conditionResource(entry Entry, patient map[string]any, patientID string, in
 		problem = entry.Children[0]
 	}
 
-	code, name, system := problem.ValueCode, problem.ValueName, problem.CodeSystem
+	code, name, system := problem.ValueCode, problem.ValueName, firstNonEmpty(problem.ValueSystem, problem.CodeSystem)
 	if code == "" {
-		code, name = problem.Code, problem.CodeName
+		code, name, system = problem.Code, problem.CodeName, problem.CodeSystem
 	}
 	if code == "" && name == "" {
 		return nil, nil, false
@@ -513,9 +570,14 @@ func conditionResource(entry Entry, patient map[string]any, patientID string, in
 		notes = append(notes, *note)
 	}
 
+	// "refuted" is a verification status, not a clinical one: an earlier version put it in clinicalStatus, which no
+	// FHIR release allows and a receiver validating the Condition refuses. A refuted problem is recorded as refuted,
+	// and its clinical status as inactive (FHIR wants one on a problem that was not entered in error).
 	status := "active"
 	if problem.NegationInd {
-		status = "refuted"
+		status = "inactive"
+		resource["verificationStatus"] = codeableConcept(
+			"http://terminology.hl7.org/CodeSystem/condition-ver-status", "refuted", "Refuted")
 	} else if strings.EqualFold(problem.StatusCode, "completed") && problem.High != "" {
 		status = "resolved"
 	}
@@ -531,6 +593,20 @@ func conditionResource(entry Entry, patient map[string]any, patientID string, in
 	}
 
 	return resource, notes, true
+}
+
+// medicationEntry unwraps a discharge medication: C-CDA wraps each in an act (10183-2) holding the
+// substance administration, which a reader looking only at the top level missed, so a discharge summary's
+// medications never converted.
+func medicationEntry(entry Entry) Entry {
+	if entry.Kind == "Act" {
+		for _, child := range entry.Children {
+			if child.Kind == "SubstanceAdministration" {
+				return child
+			}
+		}
+	}
+	return entry
 }
 
 func medicationResource(entry Entry, patient map[string]any, patientID, section string, index int) (map[string]any, []Note, bool) {
@@ -610,7 +686,7 @@ func observationResource(entry Entry, patient map[string]any, category, patientI
 		"subject":      patient,
 		"status":       observationStatus(entry.StatusCode),
 		"category": []map[string]any{codeableConcept(
-			"http://terminology.hl7.org/CodeSystem/observation-category", category, category)},
+			"http://terminology.hl7.org/CodeSystem/observation-category", category, categoryDisplay[category])},
 	}
 
 	coded, note := concept(entry.Code, entry.CodeSystem, entry.CodeName, "Observation.code")
@@ -621,7 +697,7 @@ func observationResource(entry Entry, patient map[string]any, category, patientI
 
 	switch {
 	case entry.ValueCode != "":
-		valueConcept, n := concept(entry.ValueCode, entry.CodeSystem, entry.ValueName, "Observation.valueCodeableConcept")
+		valueConcept, n := concept(entry.ValueCode, firstNonEmpty(entry.ValueSystem, entry.CodeSystem), entry.ValueName, "Observation.valueCodeableConcept")
 		resource["valueCodeableConcept"] = valueConcept
 		if n != nil {
 			notes = append(notes, *n)
@@ -652,9 +728,9 @@ func observationResource(entry Entry, patient map[string]any, category, patientI
 		resource["valueString"] = entry.Value
 
 	case entry.NilFlavor != "":
+		reason := dataAbsentReason(entry.NilFlavor)
 		resource["dataAbsentReason"] = codeableConcept(
-			"http://terminology.hl7.org/CodeSystem/data-absent-reason",
-			dataAbsentReason(entry.NilFlavor), nilFlavorMeaning(entry.NilFlavor))
+			"http://terminology.hl7.org/CodeSystem/data-absent-reason", reason, absentDisplay[reason])
 
 	default:
 		if len(entry.Children) == 0 {
@@ -673,6 +749,10 @@ func observationResource(entry Entry, patient map[string]any, category, patientI
 	return resource, notes, true
 }
 
+// categoryDisplay is each observation category's display as its code system gives it; a validator refuses any other.
+var categoryDisplay = map[string]string{"laboratory": "Laboratory", "vital-signs": "Vital Signs",
+	"social-history": "Social History", "survey": "Survey", "exam": "Exam", "imaging": "Imaging"}
+
 func observationStatus(code string) string {
 	switch strings.ToLower(strings.TrimSpace(code)) {
 	case "completed":
@@ -687,6 +767,10 @@ func observationStatus(code string) string {
 		return "final"
 	}
 }
+
+// absentDisplay is each data-absent-reason code's display as the code system gives it.
+var absentDisplay = map[string]string{"unknown": "Unknown", "asked-unknown": "Asked But Unknown",
+	"not-asked": "Not Asked", "temp-unknown": "Temporarily Unknown", "not-applicable": "Not Applicable", "masked": "Masked"}
 
 func dataAbsentReason(flavor string) string {
 	switch strings.ToUpper(strings.TrimSpace(flavor)) {
@@ -818,7 +902,12 @@ func (d *Document) documentReference(opts FHIROptions, patient map[string]any, i
 	attachment := map[string]any{"contentType": "application/hl7-cda+xml"}
 	if len(opts.Original) > 0 {
 		attachment["data"] = base64Of(opts.Original)
-		attachment["size"] = len(opts.Original)
+		// R5 made size an integer64, which JSON carries as a string; R4's is an unsignedInt, a number.
+		if version == "R5" {
+			attachment["size"] = fmt.Sprint(len(opts.Original))
+		} else {
+			attachment["size"] = len(opts.Original)
+		}
 	} else {
 		notes = append(notes, Note{
 			Severity: "warning",
@@ -932,7 +1021,7 @@ var ucumUnits = map[string]bool{
 	"mg/dL": true, "g/dL": true, "g/L": true, "mg/L": true, "ug/L": true,
 	"mmol/L": true, "umol/L": true, "mEq/L": true, "meq/L": true,
 	"U/L": true, "IU/L": true, "10*3/uL": true, "10*6/uL": true, "10*9/L": true,
-	"%": true, "mm[Hg]": true, "cm": true, "m": true, "mm": true,
+	"%": true, "mm[Hg]": true, "cm": true, "m": true, "mm": true, "kg/m2": true, "[lb_av]": true, "[in_i]": true,
 	"/min": true, "1/min": true, "Cel": true, "[degF]": true, "s": true, "min": true,
 	"h": true, "d": true, "wk": true, "mo": true, "a": true,
 }

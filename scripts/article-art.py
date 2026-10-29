@@ -167,13 +167,13 @@ def motif_v2fhir(s):
 # ---- diagrams -----------------------------------------------------------------------------------------------------
 
 def memory_chart():
-    s = SVG(1200, 420, "Memory at rest: Perfuse 31 MB, Mirth Connect 383 MB",
-            "Bar chart: Perfuse uses 31 MB of memory at rest against Mirth Connect 4.5.2's 383 MB, measured on the "
+    s = SVG(1200, 420, "Memory at rest: Perfuse 45 MB, Mirth Connect 383 MB",
+            "Bar chart: Perfuse uses 45 MB of memory at rest against Mirth Connect 4.5.2's 383 MB, measured on the "
             "same machine with both idle. Perfuse is one file; Mirth is a 254 MB application plus a Java runtime.")
     s.text(64, 70, "Memory at rest, same machine, both idle", size=24, weight=700)
     s.text(64, 102, "Lower is better", size=16, fill=MUTED)
     full = 900
-    rows = [("Perfuse", 31, "url(#flow)", "one file, no Java"), ("Mirth Connect 4.5.2", 383, "#475569", "254 MB app + JVM")]
+    rows = [("Perfuse", 45, "url(#flow)", "one file, no Java"), ("Mirth Connect 4.5.2", 383, "#475569", "254 MB app + JVM")]
     for i, (n, v, c, note) in enumerate(rows):
         y = 150 + i * 120
         s.text(64, y + 8, n, size=18, weight=700)
@@ -598,7 +598,7 @@ def engines_chart():
         s.text(118, 202 + i * 50, t, size=16.5, fill=MUTED)
     s.card(616, 110, 520, 320, fill="url(#hero)", stroke="none", extra='filter="url(#lift)"')
     s.text(644, 152, "Perfuse", size=20, weight=800, fill="#fff")
-    for i, t in enumerate(["a new engine, written in Go", "one native file, 31 MB at rest", "imports and exports Mirth channels", "FHIR, Da Vinci, CMS-0057 built in", "shadow mode and feed contracts"]):
+    for i, t in enumerate(["a new engine, written in Go", "one native file, 45 MB at rest", "imports and exports Mirth channels", "FHIR, Da Vinci, CMS-0057 built in", "shadow mode and feed contracts"]):
         s.circle(652, 196 + i * 46, 6, "#fff")
         s.text(670, 202 + i * 46, t, size=16.5, fill="#fff")
     s.write("engines-compared.svg")

@@ -139,6 +139,10 @@ type documentRequest struct {
 	// Convert asks for the FHIR conversion as well as the reading. It is separate
 	// because converting is the slower half and a viewer often does not need it.
 	Convert bool `json:"convert"`
+
+	// Transfer asks for the document as a PACIO Transitions of Care transfer summary (an R4 FHIR document Bundle),
+	// what a nursing home, rehabilitation unit or home health agency receives from the hospital.
+	Transfer bool `json:"transfer"`
 }
 
 // handleInspectDocument reads a clinical document and reports what it contains.
@@ -248,6 +252,14 @@ func (s *Server) handleInspectDocument(w http.ResponseWriter, r *http.Request, _
 			response["conversionError"] = err.Error()
 		} else {
 			response["fhir"] = result
+		}
+	}
+	if req.Transfer {
+		result, err := doc.ToTOC(cda.TOCOptions{IdentifierSystems: req.IdentifierSystems})
+		if err != nil {
+			response["transferError"] = err.Error()
+		} else {
+			response["transfer"] = result
 		}
 	}
 

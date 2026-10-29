@@ -510,3 +510,51 @@ func readAllLimited(r *http.Request) []byte {
 	}
 	return buf[:total]
 }
+
+// write: transfer sends HL7's own transfer summary on as a PACIO Transitions of Care document: posted to the FHIR
+// server's Bundle endpoint (a document is stored, not applied), or written as a .transfer.json file.
+func TestCDADestinationSendsATransferSummary(t *testing.T) {
+	doc, err := os.ReadFile(filepath.Join("..", "cda", "testdata", "hl7", "transfer-summary.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	var gotPath string
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		gotPath = r.URL.Path
+		_ = json.Unmarshal(readAllLimited(r), &got)
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer srv.Close()
+
+	s := newCDASenderForTest(t, config.CDADestination{URL: srv.URL + "/fhir/", Write: "transfer"})
+	msg := mdmWith(encodedCDA(string(doc)), "Base64", "application/hl7-cda+xml", defaultTXA())
+	if err := s.Send(context.Background(), msg); err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	mu.Lock()
+	if gotPath != "/fhir/Bundle" || got["type"] != "document" {
+		t.Errorf("posted to %q a %v Bundle, want a document to /fhir/Bundle", gotPath, got["type"])
+	}
+	mu.Unlock()
+
+	dir := t.TempDir()
+	s = newCDASenderForTest(t, config.CDADestination{Dir: dir, Write: "transfer"})
+	if err := s.Send(context.Background(), msg); err != nil {
+		t.Fatalf("Send to a folder: %v", err)
+	}
+	files := readDirNames(t, dir)
+	if len(files) != 1 || !strings.HasSuffix(files[0], ".transfer.json") {
+		t.Errorf("files %v, want one .transfer.json", files)
+	}
+
+	// A document without an author person cannot become a transfer summary: the delivery fails and says why.
+	s = newCDASenderForTest(t, config.CDADestination{Dir: t.TempDir(), Write: "transfer"})
+	msg = mdmWith(encodedCDA(testCDA), "Base64", "application/hl7-cda+xml", defaultTXA())
+	if err := s.Send(context.Background(), msg); err == nil || !strings.Contains(err.Error(), "custodian") {
+		t.Errorf("a document with no custodian: %v", err)
+	}
+}

@@ -89,7 +89,7 @@ production site.
 | Da Vinci Plan-Net | 1.1.0 | Inferno: 199 pass, 10 fail (a kit defect) |
 | Da Vinci US Drug Formulary | 2.1.0 | the HL7 validator |
 | ISiK (German hospitals), FHIR server | Stufe 5, Basis module | gematik's ISiK test suite 3.0.9: 421 of 421 |
-| PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning | 1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0 | PACIO's Inferno kits with PACIO's own data: every failure in its data or the kit |
+| PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning | 1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0 | PACIO's Inferno kits with PACIO's own data: every failure in its data or the kit. C-CDA to TOC document: the HL7 validator on HL7's examples, one error left, the guide's own |
 | CARIN Blue Button | 2.2.0 | the HL7 validator |
 | eCR | 2.1.2 | the HL7 validator |
 | ELR | HL7 2.5.1 ELR Release 1 with its errata | ONC's ELR tool: 28 of 28 |

@@ -443,6 +443,14 @@ func downgradeToR4(tree map[string]any, resourceType string) {
 		// MedicationRequest is absent from this list on purpose: its struct already holds the
 		// two R4 fields separately, and upgradeToR5 combines them in the other direction.
 		flattenMedicationToR4(tree)
+
+	case "Procedure":
+		// R5's occurrence[x] is R4's performed[x]. The struct carries the R4 names, so an R5-shaped tree arriving
+		// through a generic path (a C-CDA conversion) kept occurrenceDateTime as an unknown member, which an R4
+		// receiver rejects. Found by validating a PACIO transfer summary.
+		rename(tree, "occurrenceDateTime", "performedDateTime")
+		rename(tree, "occurrencePeriod", "performedPeriod")
+		rename(tree, "occurrenceString", "performedString")
 	}
 
 	// The profile claimed in meta is version-specific, so an R5 profile URL must

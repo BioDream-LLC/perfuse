@@ -110,6 +110,7 @@ export function DocumentLab() {
       .catch(() => {})
   }, [])
   const [convert, setConvert] = useState(true)
+  const [transfer, setTransfer] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<DocumentInspection | null>(null)
@@ -123,6 +124,7 @@ export function DocumentLab() {
     | 'print'
     | 'signature'
     | 'fhir'
+    | 'transfer'
     | 'notes'
   >('sections')
 
@@ -135,6 +137,7 @@ export function DocumentLab() {
         message: mode === 'message' ? text : '',
         version,
         convert,
+        transfer,
       })
       setResult(res)
       if (res.found && (res.agreement?.errors ?? 0) > 0) {
@@ -249,6 +252,17 @@ export function DocumentLab() {
               </Field>
               <div className="flex items-end">
                 <Toggle checked={convert} onChange={setConvert} label="Also convert to FHIR" />
+              </div>
+              <div className="sm:col-span-2">
+                <Toggle
+                  checked={transfer}
+                  onChange={setTransfer}
+                  label="Also make a PACIO transfer summary"
+                />
+                <p className="mt-1 text-xs text-slate-400">
+                  What a nursing home, rehabilitation unit or home health agency receives: one FHIR R4 document with
+                  the Transitions of Care guide&apos;s fifteen sections.
+                </p>
               </div>
             </div>
 
@@ -391,6 +405,7 @@ export function DocumentLab() {
                     ['print', 'Print'],
                     ['signature', 'Signature'],
                     ['fhir', 'FHIR'],
+                    ['transfer', 'Transfer summary'],
                     ['notes', `Notes${result.notes?.length ? ` (${result.notes.length})` : ''}`],
                   ] as const
                 ).map(([id, label]) => (
@@ -488,6 +503,64 @@ export function DocumentLab() {
                     <p className="text-sm text-slate-500">
                       Turn on “Also convert to FHIR” and read the document again.
                     </p>
+                  )}
+                </div>
+              )}
+
+              {view === 'transfer' && (
+                <div className="space-y-4">
+                  {result.transferError && (
+                    <div className="rounded-lg border border-rose-900/60 bg-rose-950/30 p-3 text-sm text-rose-200">
+                      {result.transferError}
+                    </div>
+                  )}
+                  {result.transfer ? (
+                    <>
+                      <div className="card p-4">
+                        <p className="label mb-3">In the transfer summary</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(result.transfer.counts).map(([type, count]) => (
+                            <span
+                              key={type}
+                              className="badge border border-teal-800 bg-teal-950/40 text-teal-200"
+                            >
+                              {type}
+                              <span className="font-mono text-teal-400/80">{count}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {result.transfer.notes?.length > 0 && (
+                        <Section
+                          title="What the transfer summary says it left out or changed"
+                          description="Sections sent as text only, codes added beside the original, anything refused."
+                        >
+                          <NoteList notes={result.transfer.notes} />
+                        </Section>
+                      )}
+                      <div className="card overflow-hidden">
+                        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
+                          <span className="text-xs tracking-wide text-slate-500 uppercase">
+                            PACIO Transitions of Care document (FHIR R4)
+                          </span>
+                          <button
+                            className="text-xs text-slate-500 hover:text-slate-300"
+                            onClick={() =>
+                              void copyBundle(JSON.stringify(result.transfer!.bundle, null, 2))
+                            }
+                          >
+                            {copyLabel ?? 'Copy'}
+                          </button>
+                        </div>
+                        <SyntaxBlock code={JSON.stringify(result.transfer.bundle, null, 2)} language="json" />
+                      </div>
+                    </>
+                  ) : (
+                    !result.transferError && (
+                      <p className="text-sm text-slate-500">
+                        Turn on “Also make a PACIO transfer summary” and read the document again.
+                      </p>
+                    )
                   )}
                 </div>
               )}

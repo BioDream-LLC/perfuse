@@ -47,7 +47,7 @@
   <circle cx="652" cy="196" r="6" fill="#fff" stroke="none" stroke-width="0" />
   <text x="670" y="202" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16.5" font-weight="400" fill="#fff" text-anchor="start" opacity="1">a new engine, written in Go</text>
   <circle cx="652" cy="242" r="6" fill="#fff" stroke="none" stroke-width="0" />
-  <text x="670" y="248" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16.5" font-weight="400" fill="#fff" text-anchor="start" opacity="1">one native file, 31 MB at rest</text>
+  <text x="670" y="248" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16.5" font-weight="400" fill="#fff" text-anchor="start" opacity="1">one native file, 45 MB at rest</text>
   <circle cx="652" cy="288" r="6" fill="#fff" stroke="none" stroke-width="0" />
   <text x="670" y="294" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16.5" font-weight="400" fill="#fff" text-anchor="start" opacity="1">imports and exports Mirth channels</text>
   <circle cx="652" cy="334" r="6" fill="#fff" stroke="none" stroke-width="0" />

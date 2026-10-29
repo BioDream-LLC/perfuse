@@ -59,9 +59,9 @@ func NewCDASender(d config.Destination, log *slog.Logger) (*CDASender, error) {
 		return nil, fmt.Errorf("destination %q: a cda destination needs either url or dir", d.Name)
 	}
 	switch cfg.WriteMode() {
-	case "fhir", "document", "both":
+	case "fhir", "document", "both", "transfer":
 	default:
-		return nil, fmt.Errorf("destination %q: write must be fhir, document or both, not %q",
+		return nil, fmt.Errorf("destination %q: write must be fhir, document, both or transfer, not %q",
 			d.Name, cfg.Write)
 	}
 	switch cfg.OnNoDocument {
@@ -246,6 +246,37 @@ func (s *CDASender) Send(ctx context.Context, raw []byte) error {
 			"resources", result.Counts, "control_id", m.ControlID())
 	}
 
+	if s.cfg.WritesTransfer() {
+		result, err := doc.ToTOC(cda.TOCOptions{IdentifierSystems: s.cfg.IdentifierSystems})
+		if err != nil {
+			s.convertFails.Add(1)
+			return fmt.Errorf("making the transfer summary: %w", err)
+		}
+		s.converted.Add(1)
+		for _, note := range result.Notes {
+			if note.Severity == "info" {
+				continue
+			}
+			s.log.Warn("transfer summary note",
+				"severity", note.Severity, "path", note.Path, "detail", note.Message, "control_id", m.ControlID())
+		}
+		body, err := json.Marshal(result.Bundle)
+		if err != nil {
+			s.convertFails.Add(1)
+			return fmt.Errorf("serialising the transfer summary: %w", err)
+		}
+		if s.url != "" {
+			// A document Bundle is stored as a Bundle, not applied as a transaction.
+			if err := s.postTo(ctx, strings.TrimRight(s.url, "/")+"/Bundle", body); err != nil {
+				return err
+			}
+		} else if err := s.writeFile(base+".transfer.json", body); err != nil {
+			return err
+		}
+		s.log.Info("sent a transfer summary",
+			"document", doc.DocumentType, "resources", result.Counts, "control_id", m.ControlID())
+	}
+
 	s.sent.Add(1)
 	return nil
 }
@@ -301,7 +332,11 @@ func (s *CDASender) writeFile(name string, data []byte) error {
 }
 
 func (s *CDASender) post(ctx context.Context, body []byte) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
+	return s.postTo(ctx, s.url, body)
+}
+
+func (s *CDASender) postTo(ctx context.Context, url string, body []byte) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -316,7 +351,7 @@ func (s *CDASender) post(ctx context.Context, body []byte) error {
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("posting to %s: %w", s.url, err)
+		return fmt.Errorf("posting to %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
@@ -327,7 +362,7 @@ func (s *CDASender) post(ctx context.Context, body []byte) error {
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("%s rejected the bundle: %s: %s",
-			s.url, resp.Status, strings.TrimSpace(string(detail)))
+			url, resp.Status, strings.TrimSpace(string(detail)))
 	}
 	return nil
 }

@@ -1887,6 +1887,7 @@ export const sectionIcons: Record<string, (props: IconProps) => JSX.Element> = {
   Input: IconUpload,
   Options: IconSettings,
   'Conversion decisions': IconInfo,
+  'What the transfer summary says it left out or changed': IconInfo,
   'What the reader noticed': IconEye,
   'HL7 v2 message': IconHl7,
   'How to convert it': IconRefresh,

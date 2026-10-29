@@ -384,6 +384,51 @@ summary passes the data on as it was received.
 **Exchange → Health links → Share** fills the content with a patient's summary: type the patient's FHIR id and choose **Use their
 patient summary**, then read it and create the link. Building it is audited as `fhir.summary`.
 
+### Transfer summaries for post-acute care (PACIO)
+
+When a patient leaves hospital for a nursing home, a rehabilitation unit or home health, the hospital's EHR sends a C-CDA: a
+transfer summary, a discharge summary or a CCD. Perfuse turns that document into the transfer summary PACIO's Transitions of Care
+guide describes (`hl7.fhir.us.pacio-toc` 1.0.0): one FHIR R4 `document` Bundle, US Core 8.0.1 inside, that the receiving
+facility's system can file without anyone reading XML.
+
+- **Every one of the guide's fifteen sections is present,** each with its own text, in the guide's order: advance directives,
+  allergies, behavioral health, functional status, immunizations, discharge instructions, medical devices, medications, plan of
+  care, problems, procedures, reason for referral, results, social history and vital signs.
+- **A section the document did not have is said to be missing, never filled in.** It goes out empty, with the coded reason
+  `unavailable` and the sentence "The sending document had no ... section". An empty allergy section must not read as "no known
+  allergies".
+- **A section carried as text alone keeps its text and gets no entries.** Prose is not turned into coded data. Functional
+  status, behavioral health (the C-CDA's mental status section), advance directives, medical devices, plan of care, discharge
+  instructions, reason for referral and social history are sent this way today; the notes say so for each.
+- **Coded entries become resources** by the same rules as the ordinary conversion: allergies (US Core AllergyIntolerance),
+  problems and discharge diagnoses (US Core Condition, problem list or encounter diagnosis), procedures, immunizations, results,
+  vital signs, and medications as a PACIO medication list of MedicationStatements (`104204-3`, discharged medication list, from
+  a discharge medications section; `104202-7`, active medication list, otherwise).
+- **Vital signs in FHIR's form.** A systolic and a diastolic pressure taken together become one blood pressure panel
+  (`85354-9`) with two components, and a more specific code (body weight measured, `3141-9`) also carries the code FHIR's
+  vital-signs profiles fix (`29463-7`), beside the original.
+- **Who and from where.** The document's author becomes the Composition's author (a Practitioner, with the NPI when its check
+  digit is valid), its custodian the custodian Organization, its encompassing encounter the stay the summary closes. A document
+  with no person as author, or no custodian, is refused: the guide requires both, and Perfuse will not put a name on a clinical
+  record that nobody gave.
+- **Negation keeps its meaning.** "No known allergies" (a negated allergy to any substance) is sent as SNOMED CT `716186003`; a
+  negated allergy to one drug is refused, because FHIR cannot say it and the resource would say the opposite; a negated problem
+  is `refuted`.
+
+Three ways to make one:
+
+- **A channel:** a `cda` destination with `write: transfer` posts each document's transfer summary to the FHIR server's
+  `Bundle` endpoint (`url`), or writes `<document>.transfer.json` to `dir`. In the channel builder: **Emit › A PACIO transfer
+  summary**.
+- **The command line:** `perfuse fhir transfer [-authority OID=URI] [-out dir] <document.xml>...`.
+- **The console:** **Documents**, turn on **Also make a PACIO transfer summary**, and read the document.
+
+Checked with the official FHIR validator against the TOC 1.0.0 Bundle profile, on HL7's own C-CDA examples (a transfer summary,
+a discharge summary and a CCD). The one error it reports is in the guide: every vital sign matches both its `simple-observation`
+and its `vital-signs` Bundle entry slices, so it cannot be avoided by any sender. Not yet done: turning the text-only sections'
+entries (functional status, mental status, plan of care, devices) into coded resources, and the guide's TOC DocumentReference
+that indexes a stored transfer summary.
+
 ### Subscriptions
 
 With `-fhir-subscriptions`, the FHIR endpoint sends notifications when an Encounter or an Appointment is created or changed. It follows the FHIR Subscriptions R5 Backport IG for R4, which is what CMS Interoperability Framework criterion 15 and TEFCA's FHIR roadmap use for appointment and encounter notifications.

@@ -59,17 +59,17 @@
 
   <!-- The measurement, which is the whole argument. -->
   <g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
-    <rect x="96" y="512" width="286" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
+    <rect x="96" y="512" width="326" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
     <text x="118" y="542" font-size="21" fill="#64748b">memory at rest</text>
-    <text x="118" y="572" font-size="25" font-weight="700" fill="#4ade80">31 MB <tspan font-weight="400" fill="#64748b">vs Mirth's 383 MB</tspan></text>
+    <text x="118" y="572" font-size="25" font-weight="700" fill="#4ade80">45 MB <tspan font-weight="400" fill="#64748b">vs Mirth's 383 MB</tspan></text>
 
-    <rect x="404" y="512" width="232" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
-    <text x="426" y="542" font-size="21" fill="#64748b">to install</text>
-    <text x="426" y="572" font-size="25" font-weight="700" fill="#4ade80">one file <tspan font-weight="400" fill="#64748b">no JVM</tspan></text>
+    <rect x="444" y="512" width="232" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
+    <text x="466" y="542" font-size="21" fill="#64748b">to install</text>
+    <text x="466" y="572" font-size="25" font-weight="700" fill="#4ade80">one file <tspan font-weight="400" fill="#64748b">no JVM</tspan></text>
 
-    <rect x="658" y="512" width="252" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
-    <text x="680" y="542" font-size="21" fill="#64748b">licence</text>
-    <text x="680" y="572" font-size="25" font-weight="700" fill="#4ade80">Apache 2.0 <tspan font-weight="400" fill="#64748b">free</tspan></text>
+    <rect x="698" y="512" width="252" height="74" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
+    <text x="720" y="542" font-size="21" fill="#64748b">licence</text>
+    <text x="720" y="572" font-size="25" font-weight="700" fill="#4ade80">Apache 2.0 <tspan font-weight="400" fill="#64748b">free</tspan></text>
   </g>
 
   <text x="1184" y="86" font-size="24" fill="#64748b" text-anchor="end"

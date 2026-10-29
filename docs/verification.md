@@ -1000,8 +1000,14 @@ passing test, and that has caught this project more than once.
 
 Measured, not estimated, on one machine with both products idle.
 
-Perfuse: **31 MB** resident at rest, **32 MB** after thirty seconds idle, **46 MB** after five thousand messages had
-been parsed, stored and delivered. CPU at idle was 0.0%. Four channels configured, message storage on.
+The published figure is **45 MB**, rounded up from the latest measurement so that ordinary growth between releases does
+not make it untrue. Measured 2026-10-28 on an Apple M4: **40 MB** resident at start, **42 MB** after thirty seconds idle,
+one MLLP channel, message storage and the FHIR server on, CPU at idle 0.0% (macOS's own `phys_footprint` was 21 MB;
+resident memory also counts the program file's shared pages, and the program has grown to about 106 MB as features were
+added).
+
+The first measurement, in October 2026, was **31 MB** resident at rest, **32 MB** after thirty seconds idle and **46 MB**
+after five thousand messages had been parsed, stored and delivered, with four channels configured.
 
 Mirth Connect 4.5.2, in a container on the same machine: **383 MB**, of which the Java process itself accounted for
 358 MB. CPU at idle 0.13% to 0.27%. Its application directory is 254 MB and it requires OpenJDK 17 underneath.
@@ -1009,7 +1015,7 @@ Mirth Connect 4.5.2, in a container on the same machine: **383 MB**, of which th
 What that comparison is and is not. It is an honest measure of what each costs you to have running, taken the same
 way on the same hardware. It is not a throughput benchmark, and neither product was tuned: Mirth's memory is
 largely JVM heap and can be configured down, and Perfuse's will rise with traffic and retention. The durable claim
-is not the ratio, it is that one of them needs a Java runtime installed and the other is a file.
+is not the ratio (about eight to one today), it is that one of them needs a Java runtime installed and the other is a file.
 
 For completeness, the throughput observed while measuring was 245 messages per second over a single MLLP
 connection with an acknowledgement awaited for each one. That figure is bounded by the sequential sender, not by
@@ -1634,8 +1640,36 @@ What is left is not Perfuse's:
   profiles the published 2.0.0-ballot does not contain; its `.env.production` points FHIRPath at `localhost` inside its own
   containers (worked round in `kit.sh`).
 
-What this does not show: a transfer between two real systems, and the conversion of a hospital's C-CDA discharge summary into
-a TOC document, which Perfuse does not do.
+What this does not show: a transfer between two real systems.
+
+### A hospital's C-CDA as a TOC document (October 2026)
+
+`write: transfer` (and `perfuse fhir transfer`) turns a C-CDA into a TOC document Bundle. Checked with the official FHIR
+validator (validator_cli, `-ig hl7.fhir.us.pacio-toc#1.0.0 -profile .../TOC-Bundle`) on three of HL7's own C-CDA examples
+(C-CDA-Examples, CC0): the Transfer Summary, the Discharge Summary and CCD 2 (`internal/cda/testdata/hl7`;
+`PERFUSE_TEST_FHIR_VALIDATOR=validator_cli.jar go test ./internal/cda -run Validator`). No errors but one, the guide's: each
+vital sign matches both its `simple-observation` and `vital-signs` Bundle entry slices (16 of them across the three), which no
+sender can avoid. The guide's own example Bundle fails the same validator on 33 counts of its own.
+
+Found on the way, in the conversion every C-CDA already went through, all fixed:
+
+- **Every allergy was coded as its type, not its substance.** The allergen is the observation's participant; the conversion
+  read the value ("allergy to substance", 419199007), so every AllergyIntolerance named no substance.
+- **A value's code system was the observation code's.** An allergy reaction or a problem coded in SNOMED CT went out as an HL7
+  act code (the system of `ASSERTION`); results with coded values likewise.
+- **R4 output carried R5 members.** `medication.concept`, a Procedure's `occurrenceDateTime` and status `recorded` went into R4
+  bundles, which an R4 server refuses. A Procedure read through the generic path kept `occurrenceDateTime` as well.
+- **A refuted problem was given clinicalStatus `refuted`,** which is a verification status.
+- **Vital signs failed FHIR's own profiles:** systolic and diastolic sent apart instead of one panel, no magic code beside a
+  specific one, `kg/m2` without UCUM, the category display `vital-signs` instead of `Vital Signs`.
+- **Discharge medications never converted:** each sits inside a discharge-medication act.
+- **"No known allergies" was refused** as a negated allergy, though FHIR has a code for it.
+- **Document types were shifted by one:** a Transfer Summary (22.1.13) read as a Procedure Note, a History and Physical as
+  Unstructured. The table is now checked against HL7's examples.
+- **R5's `attachment.size` was a number;** R5 makes it an integer64, a JSON string.
+
+Not done: the text-only sections' entries (functional status, mental status, plan of care, devices, advance directives) are not
+turned into coded resources, and the guide's TOC DocumentReference index is not built. Not tried: a real receiving system.
 
 ## What has not been verified
 

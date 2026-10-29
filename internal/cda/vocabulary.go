@@ -53,6 +53,16 @@ var sectionTemplates = map[string]string{
 	"2.16.840.1.113883.10.20.22.2.13":   "Chief complaint and reason for visit",
 	"2.16.840.1.113883.10.20.22.2.12":   "Reason for referral",
 	"2.16.840.1.113883.10.20.22.2.65":   "Notes",
+	"2.16.840.1.113883.10.20.22.2.56":   "Mental status",
+	"2.16.840.1.113883.10.20.22.2.41":   "Hospital discharge instructions",
+	"2.16.840.1.113883.10.20.22.2.24":   "Hospital discharge diagnosis",
+	"2.16.840.1.113883.10.20.22.2.43":   "Admission diagnosis",
+	"2.16.840.1.113883.10.20.22.2.57":   "Nutrition",
+	"2.16.840.1.113883.10.20.22.2.64":   "Hospital course",
+	"2.16.840.1.113883.10.20.22.2.16":   "Hospital discharge studies summary",
+	"2.16.840.1.113883.10.20.22.2.42":   "Hospital consultations",
+	"2.16.840.1.113883.10.20.22.2.60":   "Goals",
+	"2.16.840.1.113883.10.20.22.2.58":   "Health concerns",
 	"1.3.6.1.4.1.19376.1.5.3.1.3.1":     "Reason for referral",
 	"1.3.6.1.4.1.19376.1.5.3.1.1.9.15":  "Discharge summary narrative",
 }
@@ -84,24 +94,35 @@ var sectionCodes = map[string]string{
 	"8648-8":  "Hospital course",
 	"11493-4": "Hospital discharge studies summary",
 	"10164-2": "History of present illness",
+	"10190-7": "Mental status",
+	"8653-8":  "Hospital discharge instructions",
+	"11535-2": "Hospital discharge diagnosis",
+	"42347-5": "Admission diagnosis",
+	"61144-2": "Nutrition",
+	"75311-1": "Discharge medications",
+	"46239-0": "Chief complaint and reason for visit",
+	"61146-7": "Goals",
+	"75310-3": "Health concerns",
 }
 
 // documentTemplates names the document types.
 var documentTemplates = map[string]string{
-	"2.16.840.1.113883.10.20.22.1.2":  "Continuity of Care Document",
+	// C-CDA R2.1's document templates, checked against HL7's own C-CDA-Examples documents. An earlier table here
+	// shifted several by one (a Transfer Summary read as a Procedure Note, a History and Physical as Unstructured).
 	"2.16.840.1.113883.10.20.22.1.1":  "US Realm Header",
-	"2.16.840.1.113883.10.20.22.1.8":  "Discharge Summary",
-	"2.16.840.1.113883.10.20.22.1.9":  "Consultation Note",
-	"2.16.840.1.113883.10.20.22.1.4":  "History and Physical",
-	"2.16.840.1.113883.10.20.22.1.14": "Progress Note",
-	"2.16.840.1.113883.10.20.22.1.6":  "Diagnostic Imaging Report",
+	"2.16.840.1.113883.10.20.22.1.2":  "Continuity of Care Document",
+	"2.16.840.1.113883.10.20.22.1.3":  "History and Physical",
+	"2.16.840.1.113883.10.20.22.1.4":  "Consultation Note",
+	"2.16.840.1.113883.10.20.22.1.5":  "Diagnostic Imaging Report",
+	"2.16.840.1.113883.10.20.22.1.6":  "Procedure Note",
 	"2.16.840.1.113883.10.20.22.1.7":  "Operative Note",
-	"2.16.840.1.113883.10.20.22.1.13": "Procedure Note",
-	"2.16.840.1.113883.10.20.22.1.15": "Referral Note",
-	"2.16.840.1.113883.10.20.22.1.10": "Transfer Summary",
-	"2.16.840.1.113883.10.20.22.1.3":  "Unstructured Document",
+	"2.16.840.1.113883.10.20.22.1.8":  "Discharge Summary",
+	"2.16.840.1.113883.10.20.22.1.9":  "Progress Note",
+	"2.16.840.1.113883.10.20.22.1.10": "Unstructured Document",
+	"2.16.840.1.113883.10.20.22.1.13": "Transfer Summary",
+	"2.16.840.1.113883.10.20.22.1.14": "Referral Note",
+	"2.16.840.1.113883.10.20.22.1.15": "Care Plan",
 	"2.16.840.1.113883.10.20.24.1.2":  "Quality Reporting Document",
-	"2.16.840.1.113883.10.20.22.1.16": "Care Plan",
 }
 
 // documentCodes names document types by their LOINC code, for documents that do

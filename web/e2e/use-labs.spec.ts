@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { openTab } from "./nav";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 // Using the four analysis tools, rather than confirming they render.
 //
@@ -124,6 +129,33 @@ test("the document lab reads a CDA and reports where narrative and codes disagre
       if (await b.count()) await b.first().click();
     }
   }
+
+  expect(problems, problems.join("\n")).toEqual([]);
+});
+
+test("the document lab turns HL7's transfer summary into a PACIO transfer summary", async ({ page }) => {
+  const problems = watch(page);
+  const doc = readFileSync(
+    join(here, "..", "..", "internal", "cda", "testdata", "hl7", "transfer-summary.xml"),
+    "utf8",
+  );
+
+  await page.goto("/");
+  await openTab(page, "Documents");
+
+  await page.locator("main textarea").first().fill(doc);
+  await page.getByRole("switch", { name: "Also make a PACIO transfer summary" }).click();
+  await page.getByRole("button", { name: "Read the document" }).click();
+  await expect(page.locator("main")).toContainText("Transfer Summary", { timeout: 20_000 });
+
+  await page.locator("main").getByRole("button", { name: "Transfer summary", exact: true }).click();
+  const main = page.locator("main");
+  await expect(main).toContainText("PACIO Transitions of Care document (FHIR R4)", { timeout: 15_000 });
+  await expect(main).toContainText("Composition");
+  await expect(main).toContainText("Immunization");
+  // The guide's profile and a section the hospital did not send, said to be missing.
+  await expect(main).toContainText("pacio-toc/StructureDefinition/TOC-Bundle");
+  await expect(main).toContainText("had no discharge instructions section");
 
   expect(problems, problems.join("\n")).toEqual([]);
 });

@@ -582,7 +582,7 @@ destinations:
     type: cda
     cda:
       dir: ./documents          # or url: https://fhir.internal/fhir
-      write: both               # fhir | document | both
+      write: both               # fhir | document | both | transfer
       version: R5
       identifier_systems:
         2.16.840.1.113883.19.5.99999.2: http://stjoes.example.org/mrn
@@ -645,6 +645,19 @@ to retain.
 **A negated entry is never emitted positively.** FHIR cannot express "not
 allergic to penicillin" on an AllergyIntolerance, so the conversion refuses with
 an explanation rather than emitting the resource that says the opposite.
+
+### Transfer summaries (PACIO Transitions of Care)
+
+`write: transfer` sends each document on as a PACIO Transitions of Care transfer summary (`hl7.fhir.us.pacio-toc`
+1.0.0): one FHIR R4 `document` Bundle with the guide's fifteen sections and US Core 8.0.1 resources, posted to
+`url` + `/Bundle` or written as `<document>.transfer.json` in `dir`. The same from files:
+`perfuse fhir transfer [-authority OID=URI] [-language TAG] [-notes] [-out dir] <document.xml>...`; in the
+console, **Documents › Also make a PACIO transfer summary**; over the API, `"transfer": true` on
+`POST /api/inspect/document` (the answer carries `transfer` or `transferError`).
+
+A section the document did not have goes out empty with the reason `unavailable`; a section carried as text only
+keeps its text and no entries; blood pressure becomes one `85354-9` panel; a document with no author person or no
+custodian is refused. The full account is in the manual, *Message formats › FHIR › Transfer summaries*.
 
 ## Feed contracts
 

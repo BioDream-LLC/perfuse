@@ -22,6 +22,7 @@ import (
 
 	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
+	"github.com/biodream-llc/perfuse/internal/cda"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/publichealth"
 	"github.com/biodream-llc/perfuse/internal/store"
@@ -34,6 +35,7 @@ Usage:
   perfuse fhir convert  [flags] <path>...   convert v2 messages to FHIR
   perfuse fhir validate [flags] <path>...   validate FHIR resources
   perfuse fhir eicr     [flags] <path>...   build eCR case reports (eICR) from v2 messages
+  perfuse fhir transfer [flags] <path>...   turn C-CDA documents into PACIO transfer summaries
   perfuse fhir serve    [flags]             run a FHIR REST server
   perfuse fhir versions                     list supported FHIR releases
 
@@ -67,6 +69,8 @@ func cmdFHIR(args []string, stdout, stderr io.Writer) error {
 		return cmdFHIRValidate(args[1:], stdout, stderr)
 	case "eicr":
 		return cmdFHIREICR(args[1:], stdout, stderr)
+	case "transfer":
+		return cmdFHIRTransfer(args[1:], stdout, stderr)
 	case "serve":
 		return cmdFHIRServe(args[1:], stdout, stderr)
 	case "versions":
@@ -868,4 +872,99 @@ func mountFHIR(mux *http.ServeMux, h http.Handler) {
 		r2.URL.Path, r2.URL.RawPath = "/fhir/", ""
 		inner.ServeHTTP(w, r2)
 	}))
+}
+
+const fhirTransferUsage = `perfuse fhir transfer - turn C-CDA documents into PACIO transfer summaries
+
+Usage:
+  perfuse fhir transfer [flags] <document.xml>...
+
+Each C-CDA document (a hospital's transfer or discharge summary, or a CCD) becomes a PACIO Transitions of
+Care document (hl7.fhir.us.pacio-toc 1.0.0): one FHIR R4 document Bundle with the guide's fifteen sections,
+for the nursing home, rehabilitation unit or home health agency the patient goes to next. A section the
+document did not have is sent empty with a reason; nothing is filled in. A document with no author person or
+no custodian organisation is refused, since the guide requires both.
+
+flags:
+  -authority OID=URI  map an OID root in the document to an identifier system URI (repeatable)
+  -language TAG       the document's language when it does not give a usable one (default en-US)
+  -notes              print every conversion note
+  -out DIR            write each Bundle to DIR/<name>.transfer.json instead of stdout
+`
+
+func cmdFHIRTransfer(args []string, stdout, stderr io.Writer) error {
+	fset := flag.NewFlagSet("fhir transfer", flag.ContinueOnError)
+	fset.SetOutput(stderr)
+	fset.Usage = func() { fmt.Fprint(stderr, fhirTransferUsage) }
+	authorities := &authorityMap{}
+	fset.Var(authorities, "authority", "map an OID root to an identifier system URI, as OID=URI (repeatable)")
+	language := fset.String("language", "", "the document's language when it gives no usable one")
+	showNotes := fset.Bool("notes", false, "print every conversion note")
+	outDir := fset.String("out", "", "write Bundles to this directory")
+	if err := fset.Parse(args); err != nil {
+		return err
+	}
+	if fset.NArg() == 0 {
+		fmt.Fprint(stderr, fhirTransferUsage)
+		return errors.New("transfer needs at least one C-CDA file, or - for stdin")
+	}
+	if *outDir != "" {
+		if err := os.MkdirAll(*outDir, 0o750); err != nil {
+			return err
+		}
+		fmt.Fprintf(stderr, "warning: transfer summaries contain PHI and are being written to %s\n", *outDir)
+	}
+	failed := 0
+	for _, path := range fset.Args() {
+		raw, err := readInput(path)
+		if err != nil {
+			return err
+		}
+		doc, err := cda.Parse(raw)
+		if err == nil {
+			var result *cda.FHIRResult
+			if result, err = doc.ToTOC(cda.TOCOptions{IdentifierSystems: authorities.values, Language: *language}); err == nil {
+				err = writeTransfer(path, result, *outDir, *showNotes, stdout, stderr)
+			}
+		}
+		if err != nil {
+			failed++
+			fmt.Fprintf(stderr, "%s: %v\n", path, err)
+		}
+	}
+	if failed > 0 {
+		return fmt.Errorf("%d of %d documents could not be converted", failed, fset.NArg())
+	}
+	return nil
+}
+
+func writeTransfer(path string, result *cda.FHIRResult, outDir string, showNotes bool, stdout, stderr io.Writer) error {
+	body, err := json.MarshalIndent(result.Bundle, "", "  ")
+	if err != nil {
+		return err
+	}
+	warnings := 0
+	for _, n := range result.Notes {
+		if n.Severity != "info" {
+			warnings++
+		}
+		if showNotes || n.Severity == "error" {
+			fmt.Fprintf(stderr, "%s: %s %s: %s\n", path, n.Severity, n.Path, n.Message)
+		}
+	}
+	types := make([]string, 0, len(result.Counts))
+	for t, n := range result.Counts {
+		types = append(types, fmt.Sprintf("%s %d", t, n))
+	}
+	sort.Strings(types)
+	fmt.Fprintf(stderr, "%s: transfer summary with %s; %d notes to read\n", path, strings.Join(types, ", "), warnings)
+	if outDir == "" {
+		_, err = stdout.Write(append(body, '\n'))
+		return err
+	}
+	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	if path == "-" {
+		name = "stdin"
+	}
+	return os.WriteFile(filepath.Join(outDir, name+".transfer.json"), body, 0o600)
 }

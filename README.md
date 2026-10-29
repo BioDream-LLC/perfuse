@@ -9,7 +9,7 @@
 **A modern, Apache-2.0 licensed alternative to Mirth Connect.** No JVM. No installer. No paid licence.
 Your existing Mirth JavaScript runs unchanged.
 
-**31 MB of memory at rest, against Mirth's 383 MB** — measured on the same machine, both idle. One file to copy
+**45 MB of memory at rest, against Mirth's 383 MB** — measured on the same machine, both idle. One file to copy
 instead of a 254 MB install and a Java runtime, and it starts immediately rather than warming up.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8.svg?logo=go&logoColor=white)](https://go.dev) [![Release](https://img.shields.io/badge/release-v0.1.22-success.svg)](#download) [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#download) [![Tests](https://img.shields.io/badge/tests-verified%20against%20real%20Mirth%2C%20Keycloak%20%26%20Entra-brightgreen.svg)](#verified-against-real-software-not-mocks)
@@ -300,6 +300,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <ul>
 <li>Read, validate and convert <b>C-CDA and CDA</b>, including documents <b>base64-encoded inside an MDM^T02</b></li>
 <li><b>The narrative is compared with the coded entries</b>, and a document whose two halves disagree is flagged</li>
+<li><b>Transfer summaries for post-acute care:</b> a hospital's C-CDA becomes a <b>PACIO Transitions of Care</b> document (FHIR R4, US Core 8.0.1) for the nursing home, rehabilitation unit or home health agency the patient goes to next</li>
 <li>Templates reported by name; repair of malformed documents; <b>PDF rendering</b>; merging several into one</li>
 <li><b>HL7 v3</b>, delimited and raw formats, read by element and attribute</li>
 <li><b>Signed claims attachments</b> (HL7 DSDR): XAdES-X-L with OCSP and RFC 3161 time-stamps, signed and verified; checked with xmlsec1 and OpenSSL</li>
@@ -516,7 +517,7 @@ production site.
 | Da Vinci CDex `$submit-attachment` | 2.1 | not checked by an outside tool |
 | Da Vinci Plan-Net | 1.1.0 | Inferno: 199 pass, 10 fail (a kit defect) |
 | Da Vinci US Drug Formulary | 2.1.0 | the HL7 validator |
-| PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning | 1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0 | PACIO's Inferno kits with PACIO's own data: every failure in its data or the kit |
+| PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning | 1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0 | PACIO's Inferno kits with PACIO's own data: every failure in its data or the kit. C-CDA to TOC document: the HL7 validator on HL7's examples, one error left, the guide's own |
 | CARIN Blue Button | 2.2.0 | the HL7 validator |
 | eCR | 2.1.2 | the HL7 validator |
 | ELR | HL7 2.5.1 ELR Release 1 with its errata | ONC's ELR tool: 28 of 28 |
@@ -553,14 +554,14 @@ just what each one costs you to have running.
 
 | | Perfuse | Mirth Connect 4.5.2 |
 |---|---|---|
-| **Memory at rest** | **31 MB** | **383 MB** |
+| **Memory at rest** | **45 MB** | **383 MB** |
 | Memory after 5,000 messages | 46 MB | — |
 | CPU when idle | 0.0% | 0.1–0.3% |
 | What you install | **one file** | a 254 MB application **plus a JVM** |
 | Runtime to install first | none | OpenJDK 17 |
 | Processes | 1 | JVM + application server |
 
-About **twelve times less memory** at rest, and nothing to install underneath it. Mirth's figure is the JVM's
+About **eight times less memory** at rest, and nothing to install underneath it. Mirth's figure is the JVM's
 resident size and is configurable; the point is not that the number is fixed but that there is a JVM there at all.
 
 **Download size:** ~20 MB per platform. **Binary:** 61 MB, of which 26 MB is the in-browser playground — so the
@@ -852,7 +853,7 @@ Full detail: [Migrating from Mirth](docs/reference.md#migrating-from-mirth) ·
 | **Source available** | Yes | No (closed since 4.6) |
 | **Runtime** | Single static binary | JVM + application server |
 | **Install** | Copy one file | Installer, Java, database setup |
-| **Memory at rest** | **31 MB** (measured) | **383 MB** (measured) |
+| **Memory at rest** | **45 MB** (measured) | **383 MB** (measured) |
 | **Existing Mirth JavaScript** | Runs unchanged, E4X included | Native |
 | **FHIR** | R4/R4B/R5, mapper + REST server built in | Add-on / manual |
 | **DICOM** | Built in, both directions | Limited |

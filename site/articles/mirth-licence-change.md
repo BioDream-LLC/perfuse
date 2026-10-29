@@ -59,18 +59,18 @@ And it is **one file**. You download it, you run it, and you open your web brows
 
 ### One file, far lighter
 
-![Perfuse uses 31 MB of memory at rest against Mirth Connect 4.5.2's 383 MB](docs/assets/articles/memory-at-rest.svg)
+![Perfuse uses 45 MB of memory at rest against Mirth Connect 4.5.2's 383 MB](docs/assets/articles/memory-at-rest.svg)
 
 Here is a simple, measured comparison. "Memory at rest" means how much of the computer's working memory the software holds while sitting idle, doing nothing. Lower is better.
 
 | | Perfuse | Mirth Connect 4.5.2 |
 |---|---|---|
-| Memory at rest | 31 MB | 383 MB |
+| Memory at rest | 45 MB | 383 MB |
 | What you install | one file (about 20 MB to download) | a 254 MB application plus a Java platform |
 | Platform to install first | none | OpenJDK 17 (a Java runtime) |
 | Startup | immediate | the Java platform has to boot and warm up |
 
-Both figures were measured on the same machine, both idle. Perfuse uses about **twelve times less** memory at rest. There is no Java platform to install, patch or tune, no separate server to run, and no database to set up first. It runs on Windows, macOS and Linux. On Windows you simply double-click it.
+Both figures were measured on the same machine, both idle. Perfuse uses about **eight times less** memory at rest. There is no Java platform to install, patch or tune, no separate server to run, and no database to set up first. It runs on Windows, macOS and Linux. On Windows you simply double-click it.
 
 ## Your Mirth channels, running without a rewrite
 

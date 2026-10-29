@@ -113,7 +113,7 @@
   <g class="inner" text-anchor="middle">
     <text x="595" y="232">durable on-disk queue · shadow mode · feed contracts</text>
     <text x="595" y="258">alerts · audit log · metrics · message store</text>
-    <text x="595" y="296" fill="#64748b">31 MB at rest · one static binary · no JVM</text>
+    <text x="595" y="296" fill="#64748b">45 MB at rest · one static binary · no JVM</text>
   </g>
 
   <!-- Outbound -->

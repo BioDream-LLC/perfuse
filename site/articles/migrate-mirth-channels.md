@@ -122,9 +122,9 @@ One honest note: Mirth's file format has nowhere to store some of Perfuse's newe
 
 ## Why teams make the move
 
-![Perfuse uses 31 MB of memory at rest against Mirth Connect 4.5.2's 383 MB](docs/assets/articles/memory-at-rest.svg)
+![Perfuse uses 45 MB of memory at rest against Mirth Connect 4.5.2's 383 MB](docs/assets/articles/memory-at-rest.svg)
 
-- **One file, no Java platform.** 31 MB of memory at rest against Mirth's 383 MB on the same machine, and nothing to install underneath it.
+- **One file, no Java platform.** 45 MB of memory at rest against Mirth's 383 MB on the same machine, and nothing to install underneath it.
 - **Everything in the browser**, and every channel is also a plain file you can keep in version control (a system that records every change).
 - **More than Mirth had**: shadow mode, feed contracts that catch upstream changes, a dashboard, alerts, and the ability to find a patient's messages across every format at once.
 - **Modern standards built in**: FHIR, US Core, Da Vinci, the CMS-0057 payer connections, public-health reporting, and more.

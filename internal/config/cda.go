@@ -29,6 +29,8 @@ type CDADestination struct {
 	//	fhir     the converted transaction bundle (default)
 	//	document the original document bytes, unchanged
 	//	both     both, with the document alongside the bundle
+	//	transfer a PACIO Transitions of Care transfer summary: one FHIR R4 document Bundle for the place the patient
+	//	         goes next (a nursing home, a rehabilitation unit, home health), posted to url/Bundle or written to dir
 	//
 	// "document" is worth having on its own: a site that wants its CDAs on disk
 	// for a records team does not need the FHIR conversion at all.
@@ -87,6 +89,9 @@ func (c *CDADestination) WritesFHIR() bool {
 	return m == "fhir" || m == "both"
 }
 
+// WritesTransfer reports whether a PACIO transfer summary is emitted.
+func (c *CDADestination) WritesTransfer() bool { return c.WriteMode() == "transfer" }
+
 // WritesDocument reports whether the original document is emitted.
 func (c *CDADestination) WritesDocument() bool {
 	m := c.WriteMode()
@@ -123,9 +128,9 @@ func (c *CDADestination) validate() []error {
 	}
 
 	switch c.WriteMode() {
-	case "fhir", "document", "both":
+	case "fhir", "document", "both", "transfer":
 	default:
-		errs = append(errs, fmt.Errorf("cda.write must be fhir, document or both, not %q", c.Write))
+		errs = append(errs, fmt.Errorf("cda.write must be fhir, document, both or transfer, not %q", c.Write))
 	}
 
 	// Posting the original document to a FHIR endpoint is not a thing, so catch it

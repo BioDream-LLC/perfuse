@@ -277,7 +277,7 @@ export interface Destination {
    */
   fhirIdentifierSystem: string
   /** cdaWrite selects what a cda destination emits. */
-  cdaWrite: 'fhir' | 'document' | 'both'
+  cdaWrite: 'fhir' | 'document' | 'both' | 'transfer'
   /** cdaOnNoDocument decides what happens to a message carrying no document. */
   cdaOnNoDocument: 'skip' | 'fail'
   /** cdaRequireAgreement stops a document whose two halves contradict each other. */

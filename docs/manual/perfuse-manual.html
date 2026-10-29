@@ -360,7 +360,7 @@ td code { font-size: 0.85em; }
 <header class="titlepage">
 <h1>Perfuse Reference Manual</h1>
 <p class="subtitle">A healthcare integration engine: channels, formats, delivery and operation</p>
-<p class="version">v0.1.21 · 6d67e5d</p>
+<p class="version">v0.1.22 · e930344</p>
 <p class="version">Other languages: <a href="https://perfuse.health/manual/da/" hreflang="da" lang="da">Dansk</a> · <a href="https://perfuse.health/manual/de/" hreflang="de" lang="de">Deutsch</a> · <a href="https://perfuse.health/manual/es/" hreflang="es" lang="es">Español</a> · <a href="https://perfuse.health/manual/fi/" hreflang="fi" lang="fi">Suomi</a> · <a href="https://perfuse.health/manual/fr/" hreflang="fr" lang="fr">Français</a> · <a href="https://perfuse.health/manual/it/" hreflang="it" lang="it">Italiano</a> · <a href="https://perfuse.health/manual/nb/" hreflang="nb" lang="nb">Norsk bokmål</a> · <a href="https://perfuse.health/manual/nl/" hreflang="nl" lang="nl">Nederlands</a> · <a href="https://perfuse.health/manual/pl/" hreflang="pl" lang="pl">Polski</a> · <a href="https://perfuse.health/manual/pt/" hreflang="pt" lang="pt">Português</a> · <a href="https://perfuse.health/manual/sv/" hreflang="sv" lang="sv">Svenska</a></p>
 </header>
 <h2>Table of Contents</h2>
@@ -488,7 +488,8 @@ td code { font-size: 0.85em; }
 <div class="toc-d3"><a href="#s8-4-3-us-core-900-and-uscdi-v6"><span class="num">8.4.3</span> US Core 9.0.0 and USCDI v6</a></div>
 <div class="toc-d3"><a href="#s8-4-4-r4-in-both-directions"><span class="num">8.4.4</span> R4 in both directions</a></div>
 <div class="toc-d3"><a href="#s8-4-5-international-patient-summary"><span class="num">8.4.5</span> International Patient Summary</a></div>
-<div class="toc-d3"><a href="#s8-4-6-subscriptions"><span class="num">8.4.6</span> Subscriptions</a></div>
+<div class="toc-d3"><a href="#s8-4-6-transfer-summaries-for-post-acute-care-pacio"><span class="num">8.4.6</span> Transfer summaries for post-acute care (PACIO)</a></div>
+<div class="toc-d3"><a href="#s8-4-7-subscriptions"><span class="num">8.4.7</span> Subscriptions</a></div>
 <div class="toc-d2"><a href="#s8-5-ncpdp-telecommunication-standard"><span class="num">8.5</span> NCPDP Telecommunication Standard</a></div>
 <div class="toc-d2"><a href="#s8-6-ncpdp-script"><span class="num">8.6</span> NCPDP SCRIPT</a></div>
 <div class="toc-d2"><a href="#s8-7-dicom"><span class="num">8.7</span> DICOM</a></div>
@@ -1411,7 +1412,7 @@ td code { font-size: 0.85em; }
 <tr><td>Da Vinci Plan-Net</td><td>1.1.0</td><td>Inferno: 199 pass, 10 fail (a kit defect)</td></tr>
 <tr><td>Da Vinci US Drug Formulary</td><td>2.1.0</td><td>the HL7 validator</td></tr>
 <tr><td>ISiK (German hospitals), FHIR server</td><td>Stufe 5, Basis module</td><td>gematik&#39;s ISiK test suite 3.0.9: 421 of 421</td></tr>
-<tr><td>PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning</td><td>1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0</td><td>PACIO&#39;s Inferno kits with PACIO&#39;s own data: every failure in its data or the kit</td></tr>
+<tr><td>PACIO Transitions of Care, Medication Profile, Advance Directives, Functioning</td><td>1.0.0, 1.0.0, 2.0.0-ballot, 2.0.0</td><td>PACIO&#39;s Inferno kits with PACIO&#39;s own data: every failure in its data or the kit. C-CDA to TOC document: the HL7 validator on HL7&#39;s examples, one error left, the guide&#39;s own</td></tr>
 <tr><td>CARIN Blue Button</td><td>2.2.0</td><td>the HL7 validator</td></tr>
 <tr><td>eCR</td><td>2.1.2</td><td>the HL7 validator</td></tr>
 <tr><td>ELR</td><td>HL7 2.5.1 ELR Release 1 with its errata</td><td>ONC&#39;s ELR tool: 28 of 28</td></tr>
@@ -2356,7 +2357,47 @@ transformations:
 </ul>
 <p>Access follows <code>$everything</code>: a token limited to one patient gets a 403 for another, and an identifier that matches two patients is refused rather than guessed. Only the IPS profile is built; asking for another <code>profile</code> is refused. The document Perfuse produces from its test records validates against the IPS 2.0.0 Bundle profile with the HL7 validator, with no errors. A record built from real feeds can still fail where the feed&#39;s own codes do (a display name the code system does not use, for example), because the summary passes the data on as it was received.</p>
 <p><strong>Exchange → Health links → Share</strong> fills the content with a patient&#39;s summary: type the patient&#39;s FHIR id and choose <strong>Use their patient summary</strong>, then read it and create the link. Building it is audited as <code>fhir.summary</code>.</p>
-<h4 id="s8-4-6-subscriptions"><span class="num">8.4.6</span> Subscriptions</h4>
+<h4 id="s8-4-6-transfer-summaries-for-post-acute-care-pacio"><span class="num">8.4.6</span> Transfer summaries for post-acute care (PACIO)</h4>
+<p>When a patient leaves hospital for a nursing home, a rehabilitation unit or home health, the hospital&#39;s EHR sends a C-CDA: a transfer summary, a discharge summary or a CCD. Perfuse turns that document into the transfer summary PACIO&#39;s Transitions of Care guide describes (<code>hl7.fhir.us.pacio-toc</code> 1.0.0): one FHIR R4 <code>document</code> Bundle, US Core 8.0.1 inside, that the receiving facility&#39;s system can file without anyone reading XML.</p>
+<ul>
+<li><strong>Every one of the guide&#39;s fifteen sections is present,</strong> each with its own text, in the guide&#39;s order: advance directives,</li>
+</ul>
+<p>  allergies, behavioral health, functional status, immunizations, discharge instructions, medical devices, medications, plan of   care, problems, procedures, reason for referral, results, social history and vital signs.</p>
+<ul>
+<li><strong>A section the document did not have is said to be missing, never filled in.</strong> It goes out empty, with the coded reason</li>
+</ul>
+<p>  <code>unavailable</code> and the sentence &#34;The sending document had no ... section&#34;. An empty allergy section must not read as &#34;no known   allergies&#34;.</p>
+<ul>
+<li><strong>A section carried as text alone keeps its text and gets no entries.</strong> Prose is not turned into coded data. Functional</li>
+</ul>
+<p>  status, behavioral health (the C-CDA&#39;s mental status section), advance directives, medical devices, plan of care, discharge   instructions, reason for referral and social history are sent this way today; the notes say so for each.</p>
+<ul>
+<li><strong>Coded entries become resources</strong> by the same rules as the ordinary conversion: allergies (US Core AllergyIntolerance),</li>
+</ul>
+<p>  problems and discharge diagnoses (US Core Condition, problem list or encounter diagnosis), procedures, immunizations, results,   vital signs, and medications as a PACIO medication list of MedicationStatements (<code>104204-3</code>, discharged medication list, from   a discharge medications section; <code>104202-7</code>, active medication list, otherwise).</p>
+<ul>
+<li><strong>Vital signs in FHIR&#39;s form.</strong> A systolic and a diastolic pressure taken together become one blood pressure panel</li>
+</ul>
+<p>  (<code>85354-9</code>) with two components, and a more specific code (body weight measured, <code>3141-9</code>) also carries the code FHIR&#39;s   vital-signs profiles fix (<code>29463-7</code>), beside the original.</p>
+<ul>
+<li><strong>Who and from where.</strong> The document&#39;s author becomes the Composition&#39;s author (a Practitioner, with the NPI when its check</li>
+</ul>
+<p>  digit is valid), its custodian the custodian Organization, its encompassing encounter the stay the summary closes. A document   with no person as author, or no custodian, is refused: the guide requires both, and Perfuse will not put a name on a clinical   record that nobody gave.</p>
+<ul>
+<li><strong>Negation keeps its meaning.</strong> &#34;No known allergies&#34; (a negated allergy to any substance) is sent as SNOMED CT <code>716186003</code>; a</li>
+</ul>
+<p>  negated allergy to one drug is refused, because FHIR cannot say it and the resource would say the opposite; a negated problem   is <code>refuted</code>.</p>
+<p>Three ways to make one:</p>
+<ul>
+<li><strong>A channel:</strong> a <code>cda</code> destination with <code>write: transfer</code> posts each document&#39;s transfer summary to the FHIR server&#39;s</li>
+</ul>
+<p>  <code>Bundle</code> endpoint (<code>url</code>), or writes <code>&lt;document&gt;.transfer.json</code> to <code>dir</code>. In the channel builder: <strong>Emit › A PACIO transfer   summary</strong>.</p>
+<ul>
+<li><strong>The command line:</strong> <code>perfuse fhir transfer [-authority OID=URI] [-out dir] &lt;document.xml&gt;...</code>.</li>
+<li><strong>The console:</strong> <strong>Documents</strong>, turn on <strong>Also make a PACIO transfer summary</strong>, and read the document.</li>
+</ul>
+<p>Checked with the official FHIR validator against the TOC 1.0.0 Bundle profile, on HL7&#39;s own C-CDA examples (a transfer summary, a discharge summary and a CCD). The one error it reports is in the guide: every vital sign matches both its <code>simple-observation</code> and its <code>vital-signs</code> Bundle entry slices, so it cannot be avoided by any sender. Not yet done: turning the text-only sections&#39; entries (functional status, mental status, plan of care, devices) into coded resources, and the guide&#39;s TOC DocumentReference that indexes a stored transfer summary.</p>
+<h4 id="s8-4-7-subscriptions"><span class="num">8.4.7</span> Subscriptions</h4>
 <p>With <code>-fhir-subscriptions</code>, the FHIR endpoint sends notifications when an Encounter or an Appointment is created or changed. It follows the FHIR Subscriptions R5 Backport IG for R4, which is what CMS Interoperability Framework criterion 15 and TEFCA&#39;s FHIR roadmap use for appointment and encounter notifications.</p>
 <p>A client creates a <code>Subscription</code> naming a topic, and optionally a filter such as <code>Encounter?patient=Patient/123</code>. The topics are listed in the capability statement:</p>
 <table>
@@ -5538,7 +5579,7 @@ rules:
 <p>Useful for a landing zone another process picks up, and for seeing what conversion produces before pointing it at a live server.</p>
 <h4 id="s23-5-3-write"><span class="num">23.5.3</span> write</h4>
 <p>Write selects what is written or posted:</p>
-<p>fhir     the converted transaction bundle (default) document the original document bytes, unchanged both     both, with the document alongside the bundle</p>
+<p>fhir     the converted transaction bundle (default) document the original document bytes, unchanged both     both, with the document alongside the bundle transfer a PACIO Transitions of Care transfer summary: one FHIR R4 document Bundle for the place the patient goes next (a nursing home, a rehabilitation unit, home health), posted to url/Bundle or written to dir</p>
 <p>&#34;document&#34; is worth having on its own: a site that wants its CDAs on disk for a records team does not need the FHIR conversion at all.</p>
 <h4 id="s23-5-4-identifier-systems"><span class="num">23.5.4</span> identifier_systems</h4>
 <p>IdentifierSystems maps an OID root from the document to a URI, so an MRN becomes namespaced.</p>
