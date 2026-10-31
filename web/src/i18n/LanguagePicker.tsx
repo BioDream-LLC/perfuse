@@ -33,7 +33,7 @@ export function LanguagePicker() {
     <label className="hidden items-center gap-2 sm:inline-flex" title="Translated by machine and not yet reviewed by a native speaker. English is the reference.">
       <span className="sr-only">Language</span>
       <select
-        aria-label="Language"
+        aria-label="Console language"
         translate="no"
         className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-300"
         value={locale}

@@ -396,6 +396,10 @@ func (e *Engine) CompileIn(name, source string, kind Kind, language Language) (*
 
 // Context is everything a script can see for one message.
 type Context struct {
+	// Timeout, when positive, bounds this one execution instead of the engine's own timeout. A JavaScript destination
+	// has its own timeout setting and shares the channel's engine; without this the setting was read and then ignored.
+	Timeout time.Duration
+
 	// Message is bound to msg: the inbound message as a tree. Nil for a preprocessor, which runs
 	// before parsing and may be looking at something that does not parse at all.
 	Message *xtree.Node
@@ -468,6 +472,14 @@ type Result struct {
 type LogLine struct {
 	Level   string
 	Message string
+}
+
+// timeoutFor is how long one execution may run: the context's own timeout when it has one, else the engine's.
+func (e *Engine) timeoutFor(ctx *Context) time.Duration {
+	if ctx != nil && ctx.Timeout > 0 {
+		return ctx.Timeout
+	}
+	return e.opts.Timeout
 }
 
 // Run executes a script.
@@ -544,7 +556,8 @@ func (e *Engine) runJavaScriptWith(s *Script, ctx *Context, extra func(*goja.Run
 
 	// The deadline is enforced by interrupting the VM. A script that ignores it
 	// cannot, because the interrupt is checked by the interpreter itself.
-	timer := time.AfterFunc(e.opts.Timeout, func() {
+	limit := e.timeoutFor(ctx)
+	timer := time.AfterFunc(limit, func() {
 		inst.vm.Interrupt(errTimeout)
 	})
 
@@ -562,7 +575,7 @@ func (e *Engine) runJavaScriptWith(s *Script, ctx *Context, extra func(*goja.Run
 		var interrupted *goja.InterruptedError
 		if errors.As(err, &interrupted) {
 			if interrupted.Value() == errTimeout {
-				return result, fmt.Errorf("%s: still running after %s, stopped", s.Name, e.opts.Timeout)
+				return result, fmt.Errorf("%s: still running after %s, stopped", s.Name, limit)
 			}
 		}
 		return result, fmt.Errorf("%s: %w", s.Name, cleanupError(err))

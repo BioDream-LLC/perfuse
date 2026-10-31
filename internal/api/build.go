@@ -93,6 +93,8 @@ type buildX12 struct {
 	Acknowledge        string `json:"acknowledge,omitempty" yaml:"acknowledge,omitempty"`
 	AckSenderID        string `json:"ackSenderId,omitempty" yaml:"ack_sender_id,omitempty"`
 	AckSenderQualifier string `json:"ackSenderQualifier,omitempty" yaml:"ack_sender_qualifier,omitempty"`
+	// ArrivesAs is xml when the source delivers Mirth's X12 XML rather than X12.
+	ArrivesAs string `json:"arrivesAs,omitempty" yaml:"arrives_as,omitempty"`
 }
 
 // buildEDIFACT is config.EDIFACTOptions on the wire.
@@ -832,6 +834,8 @@ type buildDest struct {
 	ELR *buildELR `json:"elr,omitempty" yaml:"elr,omitempty"`
 	// PGP encrypts and signs what the destination delivers.
 	PGP *buildPGPSend `json:"pgp,omitempty" yaml:"pgp,omitempty"`
+	// X12As is xml for a destination on an X12 channel that receives Mirth's X12 XML.
+	X12As string `json:"x12As,omitempty" yaml:"x12_as,omitempty"`
 
 	// ResponseTransformer inspects what the receiver said back and may mark the delivery failed.
 	ResponseTransformer string `json:"responseTransformer,omitempty" yaml:"response_transformer,omitempty"`
@@ -863,6 +867,11 @@ type buildDest struct {
 	AS2 *buildAS2Dest `json:"as2,omitempty" yaml:"as2,omitempty"`
 	// MPI registers patients in the patient index.
 	MPI *buildMPIDest `json:"mpi,omitempty" yaml:"mpi,omitempty"`
+	// TEFCA asks the TEFCA Facilitated FHIR partner for each message's patient.
+	TEFCA *buildTEFCADest `json:"tefca,omitempty" yaml:"tefca,omitempty"`
+
+	// PAS submits each message, a Da Vinci PAS request Bundle, to a payer.
+	PAS *buildPASDest `json:"pas,omitempty" yaml:"pas,omitempty"`
 
 	// JavaScript applies to a javascript destination.
 	JavaScript *buildJSDest `json:"javascript,omitempty" yaml:"javascript,omitempty"`
@@ -1567,6 +1576,20 @@ type buildXDSDest struct {
 }
 
 // buildDirectSource receives Direct mail for one address.
+// buildTEFCADest is config.TEFCADestination on the wire.
+type buildTEFCADest struct {
+	Purpose   string `json:"purpose,omitempty" yaml:"purpose,omitempty"`
+	ResultsTo string `json:"resultsTo,omitempty" yaml:"results_to,omitempty"`
+}
+
+// buildPASDest is config.PASDestination on the wire.
+type buildPASDest struct {
+	Payer       string         `json:"payer,omitempty" yaml:"payer,omitempty"`
+	BearerToken string         `json:"bearerToken,omitempty" yaml:"bearer_token,omitempty"`
+	Auth        *buildFHIRAuth `json:"auth,omitempty" yaml:"auth,omitempty"`
+	ResultsTo   string         `json:"resultsTo,omitempty" yaml:"results_to,omitempty"`
+}
+
 // buildMPIDest is config.MPIDestination on the wire.
 type buildMPIDest struct {
 	Authorities map[string]string `json:"authorities,omitempty" yaml:"authorities,omitempty"`
@@ -1830,7 +1853,7 @@ func (m *buildModel) pruneEmpty() {
 		m.NCPDP = nil
 	}
 	if m.X12 != nil && m.X12.Envelope == "" && !m.X12.Split && len(m.X12.Steps) == 0 &&
-		m.X12.Acknowledge == "" && m.X12.AckSenderID == "" && m.X12.AckSenderQualifier == "" {
+		m.X12.Acknowledge == "" && m.X12.AckSenderID == "" && m.X12.AckSenderQualifier == "" && m.X12.ArrivesAs == "" {
 		m.X12 = nil
 	}
 	// Every script slot counts, and settings that only make sense alongside one do not.

@@ -404,6 +404,12 @@ func NewChannel(cfg *config.Channel, factory SenderFactory, log *slog.Logger) (*
 			dest.sender = sender
 		}
 
+		// Before the PGP seal, so what is encrypted is the XML the receiver reads.
+		if resolved.X12As == "xml" {
+			sender = wrapX12XML(sender)
+			dest.sender = sender
+		}
+
 		// Last, so what is encrypted is exactly what the destination would otherwise have delivered.
 		if resolved.PGP != nil && !sealedInside {
 			sender = wrapPGP(resolved.PGP, sender)
@@ -461,6 +467,7 @@ func (c *Channel) Stats() Stats {
 	out.Failed = c.stats.Failed
 	out.Unparseable = c.stats.Unparseable
 	out.DatabaseQuarantined = c.stats.DatabaseQuarantined
+	out.Queued = c.stats.Queued
 	for k, v := range c.stats.DestDelivered {
 		out.DestDelivered[k] = v
 	}
@@ -469,6 +476,11 @@ func (c *Channel) Stats() Stats {
 	}
 	for k, v := range c.stats.DestFiltered {
 		out.DestFiltered[k] = v
+	}
+	// Queued was counted but never copied, so every reader of the snapshot - the dashboard among them - saw a
+	// backlog of zero while a destination's queue was filling.
+	for k, v := range c.stats.DestQueued {
+		out.DestQueued[k] = v
 	}
 	return out
 }

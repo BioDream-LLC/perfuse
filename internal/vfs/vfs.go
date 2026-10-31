@@ -29,7 +29,6 @@ package vfs
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"time"
 )
@@ -88,14 +87,3 @@ type FS interface {
 // Distinct from a failure, because the caller's response differs: a failure is worth retrying and worth an alert, while
 // an unsupported operation will never succeed and the configuration has to change instead.
 var ErrNotSupported = errors.New("this file transport does not support that operation")
-
-// Unsupported wraps ErrNotSupported with what was attempted and what to do instead.
-//
-// The message matters more than usual here. "Operation not supported" sends somebody to read the source; naming the
-// transport and the alternative lets them fix it.
-func Unsupported(transport, op, instead string) error {
-	if instead == "" {
-		return fmt.Errorf("%s cannot %s: %w", transport, op, ErrNotSupported)
-	}
-	return fmt.Errorf("%s cannot %s, so %s: %w", transport, op, instead, ErrNotSupported)
-}

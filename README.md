@@ -284,9 +284,10 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <b>Claims, payers and pharmacy, parsed as structures</b>
 <ul>
 <li><b>837</b> claims, <b>835</b> remittance, <b>270/271</b> eligibility, <b>276/277</b> claim status, <b>834</b> enrolment, <b>278</b> prior authorization</li>
-<li>Interchange, group, transaction, loops and qualifiers understood; X12 to XML and back</li>
+<li>Interchange, group, transaction, loops and qualifiers understood; to and from Mirth's X12 XML, byte for byte as Open Integration Engine writes it</li>
 <li><b>275 claims attachments</b> in the 006020 form CMS-0053-F adopts, built and read</li>
 <li><b>Da Vinci PAS to and from the X12 278</b>, and 278 decisions to PAS ClaimResponses that pass the HL7 validator</li>
+<li>For providers: a <b>PAS destination</b> sends the EHR's prior authorization requests to a payer's <code>Claim/$submit</code> and lists every decision</li>
 <li>997 and 999 are separate, and Perfuse says so rather than pretending acknowledgement is synchronous</li>
 <li>Pharmacy too: <b>NCPDP Telecommunication</b> claims and <b>NCPDP SCRIPT</b> prescriptions, with a missing substitution flag refused</li>
 <li><b>UN/EDIFACT</b> interchanges: envelope counts checked, filtered by element, split per message, <b>CONTRL</b> acknowledgements; checked with pydifact</li>
@@ -312,7 +313,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 </td>
 <td width="50%" valign="top">
 <img src="docs/assets/chips/connectors.svg" width="168" height="40" alt="Connectors"><br>
-<b>28 source types, 31 destination types</b>
+<b>28 source types, 33 destination types</b>
 <ul>
 <li><b>Sources:</b> MLLP · TCP · HTTP · SOAP · file · FTP · SFTP · SMB · WebDAV · database · DICOM · DICOM query (C-FIND) · DICOMweb (STOW-RS) · <b>Kafka</b> · message broker (STOMP) · <b>Amazon SQS</b> · <b>Amazon S3</b> · <b>AMQP 1.0</b> (Azure Service Bus, RabbitMQ 4, ActiveMQ) · <b>Azure Blob</b> · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · <b>Direct</b> (from a HISP) · <b>AS2</b> (trading partners, signed receipts) · <b>email</b> (IMAP, POP3; Microsoft 365 and Gmail OAuth) · JavaScript Reader · serial</li>
 <li><b>Destinations:</b> MLLP · TCP · HTTP · SOAP · SMTP · file · FTP · SFTP · S3 (any storage class, Glacier included) · <b>Amazon SQS</b> · <b>Amazon SNS</b> · <b>AMQP 1.0</b> · <b>Azure Blob</b> (Hot, Cool, Cold, Archive) · <b>MQTT</b> · <b>IBM MQ</b> · <b>Google Cloud Pub/Sub</b> · <b>Google Cloud Storage</b> · database · DICOM · DICOMweb · FHIR · CDA · <b>IHE XDS.b</b> · <b>Direct</b> secure messaging · <b>AS2</b> · the <b>patient index</b> (mpi) · document · JavaScript · <b>Kafka</b> · message broker (STOMP) · another channel</li>
@@ -359,7 +360,7 @@ says what each claim was checked against. The [manual](https://perfuse.health/ma
 <li>Directory groups map to <b>any of the six roles and to channel groups</b> at every sign-in</li>
 <li><b>A SMART on FHIR authorization server</b>: Inferno's SMART App Launch STU2.2 suite <b>80 of 80</b></li>
 <li>An <b>MCP server</b> for AI agents: status, messages, queue, alerts and FHIR under a token's own role and groups, read-only unless granted, every call audited</li>
-<li>No patient data over plain HTTP off loopback; cloud metadata addresses refused at connect time; PHI access watched for volume, after-hours and bulk reads</li>
+<li>No patient data over plain HTTP off loopback; cloud metadata addresses refused at connect time; access to patient data watched for bursts, night traffic, new destinations and bulk reads, raised as alerts</li>
 </ul>
 </td>
 <td width="50%" valign="top">
@@ -511,6 +512,7 @@ production site.
 | Da Vinci CRD | 2.2.1, and 2.1.0 | Inferno 2.2.1: 92 pass, none fail; 2.1.0 by the guide's own examples |
 | Da Vinci DTR | 2.2.0, and 2.1.0 | Inferno 2.2.0: 43 pass, 2 fail (a kit defect); 2.1.0 by the guide's own examples |
 | Da Vinci PAS | 2.2.1, and 2.1.0 | Inferno 2.2.1: 82 of 84; 2.1.0 by the guide's own examples |
+| Da Vinci PAS, sending (provider side) | 2.2.1 | the HL7 Da Vinci PAS payer reference implementation; not a production payer |
 | Da Vinci PDex | 2.2.0 | Inferno PDex 2.0: payer-to-payer 19 of 19 |
 | Da Vinci HRex `$member-match` | 1.2.0 | Inferno PDex payer-to-payer |
 | Da Vinci ATR | 2.1.0 | not checked by an outside tool |

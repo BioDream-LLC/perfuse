@@ -1,376 +1,391 @@
-// Package x12xml converts an X12 interchange to and from the node tree the
-// transformation, filter and script layers already work on.
+// Package x12xml converts X12 (and other delimited EDI) to and from the XML that Mirth Connect and Open Integration
+// Engine write for it, and back.
 //
-// This is the same trick hl7xml plays, and for the same reason. Everything above the
-// parser - declarative transformation steps, the filter language, JavaScript,
-// the channel test runner - operates on an xtree.Node rather than on a format. Render
-// X12 into that tree and all of it works on claims without a line of new code in any of
-// those packages. Write a second addressing layer instead and every one of them grows an
-// X12 branch that has to be kept in step with the HL7 one for ever.
+// # Why that XML and not one of our own
 //
-// # Element naming
+// The point of an XML form of X12 is the systems that already use one. A site moving from Mirth has receivers built
+// against what Mirth's EDI/X12 data type emits, scripts that walk msg['CLM']['CLM.05']['CLM.05.1'], and upstream engines
+// that send X12 as that XML. A tidier shape of our own would serve none of them. So this writes exactly what Open
+// Integration Engine 4.6 writes, and reads exactly what it reads, and the tests compare the two byte for byte against
+// OIE's own serializer.
 //
-// Elements are named in implementation-guide form: ISA13, CLM01, NM103.
+// An earlier version of this package invented its own shape (an X12Interchange root, elements named CLM05) and said it
+// matched Mirth's. It did not; it had never been compared with Mirth, and nothing in Perfuse used it.
 //
-// Two independent reasons point the same way. It is what every 837 and 835
-// implementation guide writes, so a person reading the guide and a person reading the
-// tree see the same token. And it is what Mirth's own X12 serialiser produces, so a
-// Mirth script that walks msg['CLM']['CLM01'] keeps working - which is the whole
-// migration promise.
+// # The format
 //
-// The element number is always two digits, matching the guides, so CLM01 rather than
-// CLM1. Composite components add a further dotted number, CLM05.1, because X12
-// composites are one level deep and there is nothing to collide with.
+// The root is X12Transaction when the message starts with an ISA segment and EDIMessage otherwise, carrying the three
+// delimiters as attributes (segmentDelimiter, elementDelimiter, subelementDelimiter). Each segment is an element named by
+// its identifier. Each data element is SEG.NN, numbered from 01 (ISA.01, CLM.05), and holds its components as
+// SEG.NN.1, SEG.NN.2 and so on: always at least SEG.NN.1 for an element with a value, none for an empty one.
+//
+// The delimiters are read from the ISA when there is one: the element separator from position 3, the component
+// separator from position 104 and the segment terminator from position 105, with a line feed after it counted as part
+// of it. Otherwise they are ~ * and :. The repetition separator (ISA11) is not interpreted, which is also OIE's
+// behaviour: a repeated element keeps its ^ inside one value.
+//
+// This is a reimplementation of the behaviour, written from observing OIE's output and from its documented format; no
+// code of Mirth's is in it.
 package x12xml
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/xml"
+	"errors"
 	"fmt"
+	"io"
+	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/biodream-llc/perfuse/internal/x12"
-	"github.com/biodream-llc/perfuse/internal/xtree"
 )
 
-// Root is the element name given to a serialised interchange.
-//
-// Matches Mirth's X12 serialiser so a migrated script that reaches for the root by name
-// finds it.
-const Root = "X12Interchange"
+// Root names, as OIE writes them.
+const (
+	RootX12 = "X12Transaction"
+	RootEDI = "EDIMessage"
+)
 
-// FromMessage renders a parsed interchange as a node tree.
-func FromMessage(msg *x12.Message) (*xtree.Node, error) {
-	if msg == nil {
-		return nil, fmt.Errorf("x12xml: no message")
+// Delimiters are the three characters (or, for a segment terminator followed by a line feed, two) that structure EDI.
+type Delimiters struct {
+	Segment, Element, Component string
+}
+
+// Default is what is used when the message does not say: no ISA, or one too short to read.
+var Default = Delimiters{Segment: "~", Element: "*", Component: ":"}
+
+// delimitersOf reads the delimiters from an ISA, as OIE does.
+func delimitersOf(raw string) Delimiters {
+	d := Default
+	if strings.HasPrefix(raw, "ISA") && len(raw) > 105 {
+		d.Element, d.Component, d.Segment = raw[3:4], raw[104:105], raw[105:106]
+		if len(raw) > 106 && raw[106] == '\n' {
+			d.Segment += "\n"
+		}
+	}
+	return d
+}
+
+// segmentID is what an XML element named after a segment may be.
+var segmentID = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`)
+
+// ToXML renders an X12 or EDI message as OIE's XML.
+func ToXML(raw []byte) ([]byte, error) {
+	text := string(raw)
+	d := delimitersOf(text)
+
+	// Lines are re-joined with a line feed whatever ended them, and the result trimmed, as OIE reads its input; a
+	// carriage return is therefore never part of a value.
+	var norm strings.Builder
+	sc := bufio.NewScanner(strings.NewReader(text))
+	sc.Buffer(make([]byte, 64*1024), len(text)+1)
+	sc.Split(scanLines)
+	for sc.Scan() {
+		norm.WriteString(sc.Text())
+		norm.WriteByte('\n')
+	}
+	message := strings.TrimFunc(norm.String(), func(r rune) bool { return r <= ' ' })
+	if len(message) < 3 {
+		return nil, errors.New("x12xml: the message is empty or too short to be EDI")
 	}
 
-	root := xtree.New(Root)
-	delim := msg.Delimiters()
+	var out bytes.Buffer
+	out.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	first := true
+	root := RootEDI
+	for _, segment := range splitOn(message, d.Segment) {
+		tokens := tokensOf(segment, d.Element)
+		id := strings.TrimFunc(tokens[0], func(r rune) bool { return r <= ' ' })
+		if !segmentID.MatchString(id) {
+			return nil, fmt.Errorf("x12xml: %q does not begin with a segment identifier", truncate(segment))
+		}
+		if first {
+			if id == "ISA" {
+				root = RootX12
+			}
+			fmt.Fprintf(&out, `<%s segmentDelimiter="%s" elementDelimiter="%s" subelementDelimiter="%s">`,
+				root, escapeAttr(d.Segment), escapeAttr(d.Element), escapeAttr(d.Component))
+			first = false
+		}
+		out.WriteString("<" + id + ">")
+		writeElements(&out, id, tokens[1:], d)
+		out.WriteString("</" + id + ">")
+	}
+	out.WriteString("</" + root + ">")
+	return out.Bytes(), nil
+}
 
-	// The delimiters are recorded on the root, because two of them cannot be recovered
-	// from the tree any other way.
-	//
-	// HL7 gets this for free: MSH-1 and MSH-2 hold the delimiters as content, so a
-	// serialised message still describes its own encoding. X12 only does it halfway.
-	// ISA16 holds the component separator and ISA11 the repetition separator, but the
-	// element separator and segment terminator are purely structural - they exist
-	// between elements and between segments and appear nowhere as a value. Parsing
-	// consumes them and nothing is left.
-	//
-	// Without this, an interchange from a partner using | and + would come back out
-	// with * and ~, which is a different dialect and a rejected file.
-	setDelimiterAttrs(root, delim)
-
-	for i := 0; i < msg.SegmentCount(); i++ {
-		seg, ok := msg.SegmentAt(i)
-		if !ok {
+// writeElements writes a segment's data elements: each delimiter starts the next element, and an element that is only
+// followed by another delimiter, or ends the segment, is written empty.
+func writeElements(out *bytes.Buffer, id string, tokens []string, d Delimiters) {
+	number := 0
+	pendingEmpty := false
+	name := func() string { return id + "." + twoDigits(number) }
+	for _, tok := range tokens {
+		if tok == d.Element {
+			if pendingEmpty {
+				out.WriteString("<" + name() + "></" + name() + ">")
+			}
+			number++
+			pendingEmpty = true
 			continue
 		}
-		if seg.ID == "" {
-			continue
+		pendingEmpty = false
+		el := name()
+		out.WriteString("<" + el + ">")
+		if strings.Contains(tok, d.Component) {
+			component := 1
+			pendingComponent := true
+			for _, part := range tokensOf(tok, d.Component) {
+				if part == d.Component {
+					if pendingComponent {
+						writeComponent(out, el, component, "")
+					}
+					component++
+					pendingComponent = true
+					continue
+				}
+				pendingComponent = false
+				writeComponent(out, el, component, part)
+			}
+			if pendingComponent {
+				writeComponent(out, el, component, "")
+			}
+		} else {
+			writeComponent(out, el, 1, tok)
 		}
+		out.WriteString("</" + el + ">")
+	}
+	if pendingEmpty {
+		out.WriteString("<" + name() + "></" + name() + ">")
+	}
+}
 
-		node := xtree.New(seg.ID)
+func writeComponent(out *bytes.Buffer, element string, n int, value string) {
+	name := element + "." + strconv.Itoa(n)
+	out.WriteString("<" + name + ">" + escapeText(value) + "</" + name + ">")
+}
 
-		for e := 1; e <= seg.ElementCount(); e++ {
-			el := seg.Element(e)
-			name := ElementName(seg.ID, e)
+func twoDigits(n int) string {
+	if n < 10 {
+		return "0" + strconv.Itoa(n)
+	}
+	return strconv.Itoa(n)
+}
 
-			// The ISA segment is fixed width, so its elements carry padding that is
-			// part of the format rather than part of the value. It is preserved
-			// exactly, because an ISA rebuilt with the padding stripped is no longer
-			// 106 bytes and the next parser along cannot read its delimiters.
-			//
-			// Every other segment is variable width and its values are ordinary.
-			if seg.ID == "ISA" {
-				node.Append(xtree.Leaf(name, el.String()))
+// splitOn splits on any character of set, dropping empty pieces, which is how OIE separates segments: a terminator
+// written as "~\n" splits on either character, and a blank line between segments is no segment.
+func splitOn(s, set string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool { return strings.ContainsRune(set, r) })
+}
+
+// tokensOf splits on any character of set and keeps each delimiter as a token of its own.
+func tokensOf(s, set string) []string {
+	var out []string
+	start := 0
+	for i, r := range s {
+		if strings.ContainsRune(set, r) {
+			if i > start {
+				out = append(out, s[start:i])
+			}
+			out = append(out, string(r))
+			start = i + len(string(r))
+		}
+	}
+	if start < len(s) {
+		out = append(out, s[start:])
+	}
+	if len(out) == 0 {
+		out = []string{""}
+	}
+	return out
+}
+
+// scanLines splits as Java's readLine does: on a line feed, a carriage return, or the pair.
+func scanLines(data []byte, atEOF bool) (int, []byte, error) {
+	for i, b := range data {
+		switch b {
+		case '\n':
+			return i + 1, data[:i], nil
+		case '\r':
+			if i+1 < len(data) {
+				if data[i+1] == '\n' {
+					return i + 2, data[:i], nil
+				}
+				return i + 1, data[:i], nil
+			}
+			if atEOF {
+				return i + 1, data[:i], nil
+			}
+			return 0, nil, nil
+		}
+	}
+	if atEOF && len(data) > 0 {
+		return len(data), data, nil
+	}
+	return 0, nil, nil
+}
+
+func escapeText(s string) string {
+	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&apos;")
+	return r.Replace(s)
+}
+
+func escapeAttr(s string) string {
+	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&apos;", "\n", "&#10;", "\r", "&#13;")
+	return r.Replace(s)
+}
+
+func truncate(s string) string {
+	if len(s) > 40 {
+		return s[:40] + "..."
+	}
+	return s
+}
+
+// isaWidths are the fixed widths of ISA01 to ISA15. A value that lost its padding on the way through XML (spaces
+// trimmed by an editor, a short value set by a script) is padded back so the ISA stays valid: the control number with
+// leading zeros, everything else with trailing spaces.
+var isaWidths = []int{2, 10, 2, 10, 2, 15, 2, 15, 6, 4, 1, 5, 9, 1, 1}
+
+const isaControlNumber = 13
+
+// Whitespace a pretty-printer puts between tags is removed before reading, as OIE does, so indented XML reads the same
+// as XML on one line. Whitespace inside a value is kept.
+var (
+	beforeStartTag = regexp.MustCompile(`\s*<([^/][^>]*)>`)
+	afterEndTag    = regexp.MustCompile(`<([^>]*/|/[^>]*)>\s*`)
+)
+
+// FromXML writes OIE's XML back as X12 or EDI.
+//
+// Elements are placed by their number, so a gap (CLM.01 then CLM.03) is written as an empty element between them, and
+// components likewise. The delimiters come from the root's attributes, defaulting to ~ * and :.
+func FromXML(doc []byte) ([]byte, error) {
+	doc = afterEndTag.ReplaceAll(beforeStartTag.ReplaceAll(doc, []byte("<$1>")), []byte("<$1>"))
+	dec := xml.NewDecoder(bytes.NewReader(doc))
+	// A DOCTYPE is refused, as OIE refuses one: a document type is the door to entity expansion.
+	var (
+		out           bytes.Buffer
+		d             = Default
+		sawRoot       bool
+		depth         int // 0 document, 1 segment, 2 element, 3 component
+		inISA         bool
+		lastElement   int
+		lastComponent int
+		component     bool // a component has already been written in this element
+		elementID     int
+		elementStart  int
+	)
+	pad := func(id, start int) {
+		if !inISA || id < 1 || id > len(isaWidths) {
+			return
+		}
+		missing := isaWidths[id-1] - (out.Len() - start)
+		if missing <= 0 {
+			return
+		}
+		if id == isaControlNumber {
+			b := out.Bytes()
+			tail := append([]byte(nil), b[start:]...)
+			out.Truncate(start)
+			out.WriteString(strings.Repeat("0", missing))
+			out.Write(tail)
+			return
+		}
+		out.WriteString(strings.Repeat(" ", missing))
+	}
+	numberAt := func(name string, part int) (int, bool) {
+		parts := strings.FieldsFunc(name, func(r rune) bool { return r == '.' })
+		if len(parts) != part+1 {
+			return 0, false
+		}
+		n, err := strconv.Atoi(parts[part])
+		if err != nil {
+			return 0, true
+		}
+		return n, true
+	}
+	for {
+		tok, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("x12xml: the XML cannot be read: %w", err)
+		}
+		switch t := tok.(type) {
+		case xml.Directive:
+			if bytes.HasPrefix(bytes.TrimSpace(t), []byte("DOCTYPE")) {
+				return nil, errors.New("x12xml: a DOCTYPE is not accepted")
+			}
+		case xml.StartElement:
+			name := t.Name.Local
+			if !sawRoot {
+				sawRoot = true
+				for _, a := range t.Attr {
+					switch a.Name.Local {
+					case "segmentDelimiter":
+						d.Segment = a.Value
+					case "elementDelimiter":
+						d.Element = a.Value
+					case "subelementDelimiter":
+						d.Component = a.Value
+					}
+				}
 				continue
 			}
-
-			// Repetitions become repeated elements with the same name, which is what
-			// makes indexing work the same way it does for HL7 fields.
-			reps := el.Repetitions()
-			for _, rep := range reps {
-				elNode := xtree.New(name)
-				addComponents(elNode, name, rep, delim)
-				node.Append(elNode)
+			switch depth {
+			case 0:
+				out.WriteString(name)
+				inISA = name == "ISA"
+				lastElement = 0
+				depth = 1
+			case 1:
+				elementID = 0
+				if n, ok := numberAt(name, 1); ok {
+					for i := 1; i < n-lastElement; i++ {
+						out.WriteString(d.Element)
+						pad(lastElement+i, out.Len())
+					}
+					lastElement, elementID = n, n
+				}
+				out.WriteString(d.Element)
+				elementStart = out.Len()
+				lastComponent, component = 0, false
+				depth = 2
+			case 2:
+				if n, ok := numberAt(name, 2); ok {
+					for i := 1; i < n-lastComponent; i++ {
+						out.WriteString(d.Component)
+					}
+					lastComponent = n
+				}
+				if component {
+					out.WriteString(d.Component)
+				}
+				component = true
+				depth = 3
 			}
-		}
-
-		root.Append(node)
-	}
-
-	root.SetParent(nil)
-	return root, nil
-}
-
-// FromRaw parses and renders in one step.
-func FromRaw(raw []byte) (*xtree.Node, error) {
-	msg, err := x12.Parse(raw)
-	if err != nil {
-		return nil, err
-	}
-	return FromMessage(msg)
-}
-
-// ElementName renders the guide-form name of an element, for example "CLM01".
-//
-// Two digits below ten because that is how the guides write it. A single digit would
-// read as a different element to anybody checking against an implementation guide, and
-// the whole point of this naming is that the two agree.
-func ElementName(segment string, element int) string {
-	if element < 10 {
-		return fmt.Sprintf("%s0%d", segment, element)
-	}
-	return fmt.Sprintf("%s%d", segment, element)
-}
-
-// addComponents fills in an element node, splitting a composite.
-func addComponents(elNode *xtree.Node, elName string, raw string, delim x12.Delimiters) {
-	if delim.Component == 0 || !strings.ContainsRune(raw, rune(delim.Component)) {
-		elNode.SetText(raw)
-		return
-	}
-
-	for i, comp := range strings.Split(raw, string(delim.Component)) {
-		elNode.Append(xtree.Leaf(fmt.Sprintf("%s.%d", elName, i+1), comp))
-	}
-}
-
-// ToX12 renders a node tree back to an interchange.
-//
-// The delimiters are read from the tree's own ISA segment rather than taken as an
-// argument, because a tree that came from a real interchange already carries the ones
-// its trading partner uses. Re-encoding a partner's file with different delimiters is
-// how a round trip through a transformation quietly changes the file's dialect.
-func ToX12(root *xtree.Node) ([]byte, error) {
-	if root == nil {
-		return nil, fmt.Errorf("x12xml: no tree")
-	}
-	if root.Name != Root && root.Name != "" && len(root.Children) > 0 {
-		// Being strict here catches a transformation that replaced the root by
-		// accident, which otherwise produces a file with one segment in it.
-		return nil, fmt.Errorf("x12xml: the tree root is %q, expected %q", root.Name, Root)
-	}
-
-	delim, err := delimitersFrom(root)
-	if err != nil {
-		return nil, err
-	}
-
-	var out strings.Builder
-	for _, seg := range root.Children {
-		if !looksLikeSegmentID(seg.Name) {
-			// Anything that is not a segment is skipped rather than guessed at. A
-			// transformation can leave scratch nodes behind, and writing them into a
-			// claims file would corrupt it.
-			continue
-		}
-		if err := writeSegment(&out, seg, delim); err != nil {
-			return nil, err
-		}
-	}
-	return []byte(out.String()), nil
-}
-
-// Attribute names under which the delimiters travel on the root node.
-const (
-	attrElement   = "elementSeparator"
-	attrComponent = "componentSeparator"
-	attrSegment   = "segmentTerminator"
-	attrRepeat    = "repetitionSeparator"
-)
-
-func setDelimiterAttrs(root *xtree.Node, d x12.Delimiters) {
-	root.SetAttr(attrElement, string(d.Element))
-	root.SetAttr(attrComponent, string(d.Component))
-	root.SetAttr(attrSegment, string(d.Segment))
-	if d.Repeat != 0 {
-		root.SetAttr(attrRepeat, string(d.Repeat))
-	}
-}
-
-// delimitersFrom recovers the delimiters for re-encoding.
-//
-// Attributes first, because they are the only place the element separator and segment
-// terminator survive. ISA content second, so a tree assembled by hand with a proper ISA
-// still encodes in the right dialect. The near-universal defaults last, for a
-// transformation building an interchange from nothing.
-func delimitersFrom(root *xtree.Node) (x12.Delimiters, error) {
-	d := x12.Delimiters{Element: '*', Component: ':', Segment: '~'}
-
-	if v := root.AttrValue(attrElement); v != "" {
-		d.Element = v[0]
-	}
-	if v := root.AttrValue(attrComponent); v != "" {
-		d.Component = v[0]
-	}
-	if v := root.AttrValue(attrSegment); v != "" {
-		d.Segment = v[0]
-	}
-	if v := root.AttrValue(attrRepeat); v != "" {
-		d.Repeat = v[0]
-	}
-
-	isa := root.First("ISA")
-	if isa == nil {
-		return d, nil
-	}
-
-	// ISA16 is the component separator, and ISA11 is the repetition separator from
-	// version 00501. Only consulted where an attribute did not already say.
-	if root.AttrValue(attrComponent) == "" {
-		if v := valueOf(isa, "ISA16"); v != "" {
-			d.Component = v[0]
-		}
-	}
-	if root.AttrValue(attrRepeat) == "" {
-		version := strings.TrimSpace(valueOf(isa, "ISA12"))
-		if version >= "00501" {
-			if v := valueOf(isa, "ISA11"); v != "" {
-				d.Repeat = v[0]
+		case xml.EndElement:
+			switch depth {
+			case 1:
+				out.WriteString(d.Segment)
+				depth = 0
+			case 2:
+				pad(elementID, elementStart)
+				depth = 1
+			case 3:
+				depth = 2
+			}
+		case xml.CharData:
+			if sawRoot {
+				out.Write(t)
 			}
 		}
 	}
-	return d, nil
+	if !sawRoot {
+		return nil, errors.New("x12xml: the document is empty")
+	}
+	return out.Bytes(), nil
 }
-
-func valueOf(seg *xtree.Node, name string) string {
-	n := seg.First(name)
-	if n == nil {
-		return ""
-	}
-	return n.Value()
-}
-
-// writeSegment encodes one segment and its terminator.
-func writeSegment(out *strings.Builder, seg *xtree.Node, delim x12.Delimiters) error {
-	out.WriteString(seg.Name)
-
-	// Elements are written by number rather than in tree order, so a transformation
-	// that appended an element out of order still produces a valid segment. X12 is
-	// positional: an element written in the wrong slot is not a formatting problem, it
-	// is a different value.
-	byNumber := map[int][]*xtree.Node{}
-	highest := 0
-	for _, child := range seg.Children {
-		n, ok := elementNumber(seg.Name, child.Name)
-		if !ok {
-			continue
-		}
-		byNumber[n] = append(byNumber[n], child)
-		if n > highest {
-			highest = n
-		}
-	}
-
-	for i := 1; i <= highest; i++ {
-		out.WriteByte(delim.Element)
-
-		nodes := byNumber[i]
-		if len(nodes) == 0 {
-			continue
-		}
-
-		sep := ""
-		if len(nodes) > 1 {
-			if delim.Repeat == 0 {
-				// Refused rather than joined on some substitute character. An
-				// interchange before version 00501 has no way to express a repeated
-				// element, and inventing one produces a file the receiver reads as a
-				// single value with punctuation in it.
-				return fmt.Errorf("x12xml: %s%02d has %d repetitions but the interchange has no repetition separator (ISA12 is before 00501)", seg.Name, i, len(nodes))
-			}
-			sep = string(delim.Repeat)
-		}
-
-		for j, node := range nodes {
-			if j > 0 {
-				out.WriteString(sep)
-			}
-			out.WriteString(encodeElement(node, delim))
-		}
-	}
-
-	out.WriteByte(delim.Segment)
-	return nil
-}
-
-// encodeElement writes one element, joining components if it has them.
-func encodeElement(node *xtree.Node, delim x12.Delimiters) string {
-	if node.Simple() {
-		return node.Text
-	}
-
-	// Components are positional too, so they are written by number. A trailing empty
-	// component is written rather than truncated: a partner who sends "11:" gets "11:"
-	// back, and truncating to "11" would mean an unrelated transformation changed the
-	// bytes of a claims file. The two are equivalent to a receiver, but only one of
-	// them round-trips.
-	byNumber := map[int]string{}
-	highest := 0
-	for _, comp := range node.Children {
-		n, ok := trailingNumber(node.Name, comp.Name)
-		if !ok {
-			continue
-		}
-		byNumber[n] = comp.Value()
-		if n > highest {
-			highest = n
-		}
-	}
-
-	var parts []string
-	for i := 1; i <= highest; i++ {
-		parts = append(parts, byNumber[i])
-	}
-	return strings.Join(parts, string(delim.Component))
-}
-
-// elementNumber reads the element number out of a node name such as "CLM01".
-func elementNumber(segment, element string) (int, bool) {
-	if !strings.HasPrefix(element, segment) {
-		return 0, false
-	}
-	rest := element[len(segment):]
-	if rest == "" {
-		return 0, false
-	}
-	n, err := strconv.Atoi(rest)
-	if err != nil || n < 1 {
-		return 0, false
-	}
-	return n, true
-}
-
-// trailingNumber reads the component number out of a name such as "CLM05.1".
-func trailingNumber(parent, child string) (int, bool) {
-	if !strings.HasPrefix(child, parent+".") {
-		return 0, false
-	}
-	rest := child[len(parent)+1:]
-	n, err := strconv.Atoi(rest)
-	if err != nil || n < 1 {
-		return 0, false
-	}
-	return n, true
-}
-
-// looksLikeSegmentID reports whether a node name could be an X12 segment.
-func looksLikeSegmentID(name string) bool {
-	if len(name) < 2 || len(name) > 3 {
-		return false
-	}
-	if !isLetter(name[0]) {
-		return false
-	}
-	for i := 0; i < len(name); i++ {
-		if !isLetter(name[i]) && !isDigit(name[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func isLetter(c byte) bool { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') }
-func isDigit(c byte) bool  { return c >= '0' && c <= '9' }

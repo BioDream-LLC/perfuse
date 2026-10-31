@@ -2088,6 +2088,11 @@ export const api = {
     return request<{ status: string }>('POST', '/api/alerts/acknowledge', { key })
   },
 
+  /** accessWatch is what the patient-data access monitor has learned and is holding. Administrators only. */
+  accessWatch: () => request<AccessWatch>('GET', '/api/access-watch'),
+  /** priorAuths lists the prior authorization requests this tenant's PAS destinations submitted, newest first. */
+  priorAuths: () => request<PriorAuths>('GET', '/api/prior-auth'),
+
   // -- Channel history ------------------------------------------------------
 
   /** channelHistory lists the commits that touched a channel. */
@@ -2524,6 +2529,7 @@ export interface TEFCAStatus {
    *  and one flag covering both would be wrong in whichever direction it was rounded. */
   facilitatedFHIRImplemented?: boolean
   facilitatedFHIRExplanation?: string
+  facilitatedFHIRPartner?: string
   exchangeExplanation?: string
 }
 
@@ -2696,7 +2702,7 @@ export interface AlertRule {
 }
 
 /** What a threshold counts. The reason this comes from the server is that the same field is a share for two kinds and a count for the rest. */
-export type AlertUnit = 'share' | 'messages' | 'seconds' | 'attempts' | 'none'
+export type AlertUnit = 'share' | 'messages' | 'seconds' | 'attempts' | 'none' | 'times' | 'records'
 
 /** Which way a measurement has to move for a rule to fire. Two rules are about silence and fire below their threshold. */
 export type AlertDirection = 'above' | 'below'
@@ -3864,4 +3870,53 @@ export interface ClusterStatus {
   error?: string
   /** Channel leases covering more than one channel (channels that route to one another), with those channels. */
   members?: Record<string, string[]>
+}
+
+/** PriorAuths is GET /api/prior-auth: what PAS destinations submitted to payers and what each payer answered. */
+export interface PriorAuths {
+  on: boolean
+  pending: number
+  approved: number
+  denied: number
+  requests: {
+    request: {
+      id?: string
+      patientId?: string
+      providerId?: string
+      payerId?: string
+      serviceCode?: string
+      serviceDescription?: string
+      urgency?: string
+      destination?: string
+      submittedAt?: string
+    }
+    response?: {
+      decision?: 'approved' | 'partial' | 'modified' | 'denied' | 'pended' | 'canceled' | 'unknown'
+      reason?: string
+      preAuthRef?: string
+      validTo?: string
+      items?: { sequence?: number; code?: string; decision?: string; authNumber?: string }[]
+    }
+  }[]
+}
+
+/** AccessWatch is the patient-data access monitor's state, from GET /api/access-watch. */
+export interface AccessWatch {
+  on: boolean
+  dayStart: number
+  dayEnd: number
+  zone: string
+  minHistory: number
+  holdMinutes: number
+  channels: { channel: string; messages: number; learned: boolean; daytimeOnly: boolean; destinations: number }[]
+  signals: {
+    kind: 'volume' | 'after-hours' | 'new-destination' | 'bulk-reads'
+    channel?: string
+    subject?: string
+    value: number
+    summary: string
+    detail: string
+    first: string
+    last: string
+  }[]
 }

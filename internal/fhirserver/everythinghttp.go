@@ -56,7 +56,14 @@ func (s *Server) handleEverything(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Over the ceiling is the caller's problem to narrow, not a server fault, so it is a 4xx and says how.
-		s.writeOutcome(w, r, http.StatusRequestEntityTooLarge, "error", "too-costly", err.Error())
+		if errors.Is(err, ErrEverythingTooLarge) {
+			s.writeOutcome(w, r, http.StatusRequestEntityTooLarge, "error", "too-costly", err.Error())
+
+			return
+		}
+		s.writeOutcome(w, r, http.StatusInternalServerError, "error", "exception",
+			"the patient's record could not be read; the server's log has the cause")
+		s.Log.Error("$everything failed", "patient", id, "err", err)
 
 		return
 	}

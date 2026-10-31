@@ -30,6 +30,41 @@ var ruleFuncs = map[Kind]func(*Evaluator, Rule, Reading) []Alert{
 	KindQuarantined: (*Evaluator).quarantined,
 	KindSlowness:    (*Evaluator).slowness,
 	KindContract:    (*Evaluator).contractViolations,
+
+	KindPHIVolume:         (*Evaluator).privacy,
+	KindPHIAfterHours:     (*Evaluator).privacy,
+	KindPHINewDestination: (*Evaluator).privacy,
+	KindPHIBulkReads:      (*Evaluator).privacy,
+}
+
+// privacy turns what the access monitor holds into alerts for one patient-data rule.
+//
+// The monitor decides what is unusual; the rule decides what is worth telling somebody about, by its threshold, its
+// channel and its severity, as every other rule does.
+func (e *Evaluator) privacy(rule Rule, r Reading) []Alert {
+	var out []Alert
+	for _, s := range r.Privacy {
+		if s.Kind != rule.Kind || !rule.matches(s.Channel, "") {
+			continue
+		}
+		// Two of the four have nothing to threshold: a new address, or night traffic on a daytime channel, is either
+		// seen or not.
+		if rule.Kind != KindPHINewDestination && rule.Kind != KindPHIAfterHours && s.Value <= rule.Threshold {
+			continue
+		}
+		out = append(out, Alert{
+			Key:         alertKey(rule, s.Channel, s.Subject),
+			Kind:        rule.Kind,
+			Severity:    rule.severity(),
+			Channel:     s.Channel,
+			Destination: s.Subject,
+			Summary:     s.Summary,
+			Detail:      s.Detail,
+			Value:       s.Value,
+			Threshold:   rule.Threshold,
+		})
+	}
+	return out
 }
 
 // AllKinds lists every kind that can actually be evaluated, in a stable order.

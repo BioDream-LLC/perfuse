@@ -24,7 +24,7 @@ Everything below is in the one binary. Each line names the chapter that covers i
 
 - **Formats.** HL7 v2, FHIR R4, R4B and R5, DICOM, X12 (837, 835, 270/271, 276/277, 834, 278, 275), C-CDA and CDA, HL7 v3,
   NCPDP Telecommunication and SCRIPT, SMART Health Links and Cards, delimited and raw. See [message formats](#message-formats).
-- **Connectors.** 28 source types and 31 destination types, among them MLLP, files, SFTP, databases, DICOM, Kafka, AMQP 1.0,
+- **Connectors.** 28 source types and 32 destination types, among them MLLP, files, SFTP, databases, DICOM, Kafka, AMQP 1.0,
   MQTT, IBM MQ, and AWS, Azure and Google Cloud storage and messaging. See the [source reference](#source-reference) and the
   [destination reference](#destination-reference).
 - **Changing messages.** Filters, eleven declarative transformation steps, JavaScript (Mirth's dialect included) and Lua, shared
@@ -82,6 +82,7 @@ production site.
 | Da Vinci CRD | 2.2.1, and 2.1.0 | Inferno 2.2.1: 92 pass, none fail; 2.1.0 by the guide's own examples |
 | Da Vinci DTR | 2.2.0, and 2.1.0 | Inferno 2.2.0: 43 pass, 2 fail (a kit defect); 2.1.0 by the guide's own examples |
 | Da Vinci PAS | 2.2.1, and 2.1.0 | Inferno 2.2.1: 82 of 84; 2.1.0 by the guide's own examples |
+| Da Vinci PAS, sending (provider side) | 2.2.1 | the HL7 Da Vinci PAS payer reference implementation; not a production payer |
 | Da Vinci PDex | 2.2.0 | Inferno PDex 2.0: payer-to-payer 19 of 19 |
 | Da Vinci HRex `$member-match` | 1.2.0 | Inferno PDex payer-to-payer |
 | Da Vinci ATR | 2.1.0 | not checked by an outside tool |

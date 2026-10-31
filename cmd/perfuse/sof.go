@@ -53,16 +53,8 @@ func cmdSOF(args []string, stdout, stderr io.Writer) error {
 	}
 	rows, resources := 0, 0
 	for _, path := range fset.Args() {
-		var r io.Reader = os.Stdin
-		if path != "-" {
-			f, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			r = f
-			defer f.Close()
-		}
-		err := sof.ReadResources(r, func(res map[string]any) error {
+		// Closed after each file rather than deferred, which held every input open until the command returned.
+		err := readResourceFile(path, func(res map[string]any) error {
 			resources++
 			out, err := view.Run(res)
 			if err != nil {
@@ -85,4 +77,17 @@ func cmdSOF(args []string, stdout, stderr io.Writer) error {
 	}
 	fmt.Fprintf(stderr, "%d rows from %d resources\n", rows, resources)
 	return nil
+}
+
+// readResourceFile reads the FHIR resources in one input, "-" being standard input, and closes the file before it returns.
+func readResourceFile(path string, each func(map[string]any) error) error {
+	if path == "-" {
+		return sof.ReadResources(os.Stdin, each)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return sof.ReadResources(f, each)
 }

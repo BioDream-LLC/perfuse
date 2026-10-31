@@ -260,6 +260,10 @@ type AuditEntry struct {
 type Store struct {
 	db *sql.DB
 
+	// OnAudit, when set, is told of every audit row once it is written: the patient-data access monitor reads who is
+	// reading what from it. Set before the server starts serving; it must not block.
+	OnAudit func(tenant.ID, AuditEntry)
+
 	// SessionLifetimeFn supersedes DefaultSessionLifetime when set, so the sign-in duration can be changed
 	// through settings without a restart. Assigned in serve.go.
 	//

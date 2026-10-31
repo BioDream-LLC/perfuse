@@ -69,10 +69,18 @@ func ValidateRouting(channels []*Channel) []error {
 	routes := map[string][]string{}
 	for _, c := range sorted {
 		for _, d := range c.Destinations {
-			if d.Type != DestinationChannel || d.Channel == nil {
+			var target string
+			switch {
+			case d.Type == DestinationChannel && d.Channel != nil:
+				target = d.Channel.Name
+			case d.Type == DestinationTEFCA && d.TEFCA != nil && d.TEFCA.ResultsTo != "":
+				// Where a TEFCA query's results go is routing too, and is checked the same way.
+				target = d.TEFCA.ResultsTo
+			case d.Type == DestinationPAS && d.PAS != nil && d.PAS.ResultsTo != "":
+				target = d.PAS.ResultsTo
+			default:
 				continue
 			}
-			target := d.Channel.Name
 
 			if target == c.Name {
 				// Named separately from a longer cycle because it is almost always a typo, and

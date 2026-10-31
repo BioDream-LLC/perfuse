@@ -37,6 +37,10 @@ const (
 	UnitAttempts Unit = "attempts"
 	// UnitNone is for kinds that have nothing to threshold. channel-down is either true or it is not.
 	UnitNone Unit = "none"
+	// UnitTimes is a multiple of what is usual.
+	UnitTimes Unit = "times"
+	// UnitRecords is a count of different patients' records.
+	UnitRecords Unit = "records"
 )
 
 // Direction says which way a measurement has to move for the rule to fire.
@@ -207,6 +211,49 @@ func KindCatalogue() []KindInfo {
 			Direction: Above,
 			Default:   1,
 			Channel:   true,
+		},
+		{
+			Kind:    KindPHIVolume,
+			Label:   "A channel carries far more than usual",
+			Summary: "Fires when a channel carries several times its usual rate for the hour.",
+			Detail: "Compared with the channel's own history at this hour of the day, so a busy morning is not news. A burst " +
+				"is usually a backlog released after an outage; it is also what records being extracted through a feed " +
+				"looks like. Judged only once the channel has carried a few hundred messages.",
+			Unit:      UnitTimes,
+			Direction: Above,
+			Default:   3,
+			Channel:   true,
+		},
+		{
+			Kind:    KindPHIAfterHours,
+			Label:   "Patient data moves at night on a daytime channel",
+			Summary: "Fires when a channel that only carries daytime traffic carries some at night.",
+			Detail: "A channel counts as daytime-only when under 2 per cent of what it has carried fell outside 07:00 to " +
+				"19:00, server time. Night traffic on it is a job somebody added or access that should not be happening.",
+			Unit:      UnitNone,
+			Direction: Above,
+			Channel:   true,
+		},
+		{
+			Kind:    KindPHINewDestination,
+			Label:   "Patient data is sent somewhere new",
+			Summary: "Fires when a channel delivers to an address it has not sent to before.",
+			Detail: "The address is what the channel's destination names: a host and port, a URL, a folder. A changed " +
+				"destination is often deliberate; when nobody meant it, it is a feed re-pointed at a stranger.",
+			Unit:      UnitNone,
+			Direction: Above,
+			Channel:   true,
+		},
+		{
+			Kind:    KindPHIBulkReads,
+			Label:   "Somebody reads many patients' records quickly",
+			Summary: "Fires when one person reads more than this many different records within a minute.",
+			Detail: "Counted from the audit trail: messages opened, patients searched for or looked up, documents and images " +
+				"read, views run. Reading the same record again does not count twice. Browsing out of curiosity and an " +
+				"account in the wrong hands both look like this; so does a legitimate audit.",
+			Unit:      UnitRecords,
+			Direction: Above,
+			Default:   10,
 		},
 	}
 }

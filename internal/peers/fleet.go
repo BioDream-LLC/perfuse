@@ -185,19 +185,6 @@ func (f *Fleet) Statuses() []Status {
 	return out
 }
 
-// Peer returns one peer's configuration by name.
-func (f *Fleet) Peer(name string) (Peer, bool) {
-	for _, p := range f.cfg.Peers {
-		if strings.EqualFold(p.Name, name) {
-			return p, true
-		}
-	}
-	return Peer{}, false
-}
-
-// Label is how this instance names itself in a fleet view.
-func (f *Fleet) Label() string { return f.cfg.Label }
-
 // PollEverySeconds is the polling interval, so the interface can say how fresh these numbers can possibly be rather
 // than implying they are live.
 func (f *Fleet) PollEverySeconds() float64 { return f.cfg.PollEvery.Seconds() }

@@ -142,17 +142,11 @@ func DialIMAP(ctx context.Context, d Dial) (*IMAP, error) {
 	return c, nil
 }
 
-// Close drops the connection without logging out.
-func (c *IMAP) Close() error { return c.conn.Close() }
-
 // Logout ends the session politely.
 func (c *IMAP) Logout() {
 	_, _ = c.cmd("LOGOUT")
 	_ = c.conn.Close()
 }
-
-// Has reports a capability, such as MOVE or UIDPLUS.
-func (c *IMAP) Has(capability string) bool { return c.caps[strings.ToUpper(capability)] }
 
 func (c *IMAP) capability() error {
 	items, err := c.cmd("CAPABILITY")

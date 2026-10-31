@@ -968,6 +968,41 @@ not create its database as the image's user, and its SDK pin was older than the 
 cover: the authorization-code (consumer-facing) flow and Tiered OAuth, which Perfuse's client does not do; and TEFCA's own
 communities, whose certificates come only from QHIN onboarding.
 
+**A channel's TEFCA query, October 2026.** The same servers, through the Facilitated FHIR exchange a channel's `tefca`
+destination uses (`internal/tefca/devdays_test.go`, same variable). The authorization server's metadata options were set to
+support and require `hl7-b2b`, so a token without a purpose of use is refused. The query went with a TEFCA Exchange Purpose
+code and its token was accepted; the tutorial FHIR server then answered 500 from its own data layer (a MissingMethodException
+inside the tutorial), as above. Two defects were found and fixed on the way: every query result came back empty (the Bundle
+was decoded into a struct with an untagged field), and purposes were sent in a code system TEFCA does not use.
+
+## Prior authorization requests sent, against the Da Vinci PAS reference payer
+
+The HL7 Da Vinci PAS payer reference implementation (`hlseven/davinci-prior-auth`, arm64 image, port 9015), with its own
+request example `bundle-prior-auth.json` (Apache-2.0, kept as `internal/priorauth/testdata/pas-ri-request.json`). Set
+`PERFUSE_TEST_PAS_RI=http://localhost:9015/fhir` and `PERFUSE_TEST_PAS_RI_TOKEN` to the test token in its source
+(`AuthUtils.ADMIN_TOKEN`). `internal/priorauth` and `internal/engine` submit the Bundle and read a pended decision with the
+payer's `preAuthRef`; `web/e2e/use-pas.spec.ts` sends it through a running channel and finds the answer on the CMS-0057 screen.
+The reference payer pends every request until it is released by hand, so approval and denial are checked against stand-ins built
+from PAS's review action extension. Found: the earlier client rebuilt a bare Claim referencing resources the payer never
+received; it now sends the Bundle as built.
+
+## Mirth's X12 XML, against Open Integration Engine 4.6
+
+OIE 4.6's own X12 serializer (its `datatype-edi` extension, run by a small Java harness outside the repository,
+`PERFUSE_TEST_OIE_X12=path/to/oracle.sh`) converted 25 generated interchanges (varied delimiters, segment terminators with and
+without newlines, non-ISA input) and 4 kept examples. `TestAgainstOIE` requires Perfuse's XML to be the same bytes as OIE's, and
+the X12 OIE writes back from it to match too. The earlier converter wrote an XML of its own invention, readable by nothing built
+for Mirth.
+
+## The patient-data access monitor
+
+Checked in tests against the server's real audit records: every read the monitor counts is an action the server audits
+(`TestEveryWatchedReadIsAnActionTheServerAudits`), and reads through the API reach the screen (`web/e2e/access-watch.spec.ts`).
+The baselines (usual rate per hour, daytime-only channels) are statistical and were tuned on generated traffic, not a
+hospital's; expect to adjust thresholds in the first weeks. Found on the way: saved alert rules were never applied to the
+running evaluator, although the screen said they were; and on a multi-tenant server the monitor was not given to tenants'
+channels.
+
 ---
 
 ## The general lessons, which cost more than the specific fixes

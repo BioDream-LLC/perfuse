@@ -17,6 +17,12 @@ Nothing outside Perfuse will tell you a feed has stopped. The sender is being ac
 | `rows-quarantined` | A database source is setting rows aside. |
 | `slow-delivery` | Deliveries are succeeding but taking too long. |
 | `contract` | A message violates the channel's declared contract. |
+| `phi-volume` | A channel carries several times its usual rate for the hour. |
+| `phi-after-hours` | A channel that only carries daytime traffic carries some at night. |
+| `phi-new-destination` | A channel delivers to an address it has not sent to before. |
+| `phi-bulk-reads` | One person reads more than N different patients' records within a minute. |
+
+The last four watch access to patient data, and are described below.
 
 ## Silence is the hardest thing to detect
 
@@ -54,7 +60,7 @@ Where the history is too thin or too erratic to support a judgement, the rule de
 
 ## Setting alerts up
 
-From the interface, under Alerts, per channel or across all of them. Each rule has a kind, a threshold and where to send the alert. The rules are saved to `alerts.yaml` beside the database (or the file `-alerts` names) and take effect without a restart; until the first save the built-in rules apply.
+From the interface, under Alerts, per channel or across all of them. Each rule has a kind, a threshold and where to send the alert. The rules are saved to `alerts.yaml` beside the database (or the file `-alerts` names) and take effect at once; until the first save the built-in rules apply. The file can also be edited by hand: the change is picked up within thirty seconds, and a file that no longer loads is reported in the log and the rules in force are kept.
 
 Worth doing before a feed goes live rather than after the first incident. The specific set worth having on any clinical feed:
 
@@ -64,6 +70,21 @@ Worth doing before a feed goes live rather than after the first incident. The sp
 4. `channel-down` — the channel is not running at all.
 
 The first is the one that catches the failure nobody else will report.
+
+## Watching access to patient data
+
+A breach rarely announces itself. It looks like a feed carrying more than usual, traffic at three in the morning on a channel that only works office hours, a destination nobody set up, or one person opening patient after patient. Perfuse watches for those four, on by default (`serve -watch-access=false` turns it off), and reports what it sees through the alert rules above, so it is configured, acknowledged and delivered like any other alert.
+
+- **Bursts** (`phi-volume`). Each channel's rate is compared with its own history at the same hour of the day, so a busy morning is not news. The threshold is a multiple of the usual rate, three by default. A burst is usually a backlog being released after an outage, and it is also what records being extracted through a feed look like.
+- **Night traffic on a daytime channel** (`phi-after-hours`). A channel counts as daytime-only when under 2 per cent of what it has carried fell outside 07:00 to 19:00, in the server's time zone.
+- **A new destination** (`phi-new-destination`). The address is what the destination names: a host and port, a URL, a folder. Renaming a destination is not news; pointing one at a new host is. The addresses each channel has sent to are kept in `access-watch.json` beside the database, so a destination changed while the server was down is still reported.
+- **Bulk reads** (`phi-bulk-reads`). Counted from the audit trail: messages opened, patients searched for or looked up (PDQm, PIXm, identity search), documents and images read (XDS, MHD, DICOMweb), prior authorizations read, summaries and views run. Reading the same record again does not count twice. The threshold is how many different records in a minute, ten by default, by one account from one address.
+
+Nothing is judged for a channel until it has carried 200 messages, because "unusual" means nothing without a pattern. The pattern is learned from the last fortnight of the message store when the server starts, so a restart does not make every channel new again. Anything seen is held for fifteen minutes, then the alert clears itself.
+
+It only watches and reports. It never holds up a message or refuses a read: these are heuristics, and a feed stopped because a guess was wrong is a clinical problem. Each alert says what was seen and what it could innocently be, because most of them will be innocent.
+
+Administrators see what the monitor has learned on the Alerts screen, under **Watching access to patient data**: each channel's pattern (still learning, daytime only, or day and night), how many destinations it knows, and everything seen in the last fifteen minutes, including what is under a rule's threshold.
 
 ## Where alerts go
 

@@ -60,6 +60,9 @@ type Watcher struct {
 	// the same schedule rather than on a timer of its own. Two timers producing a number and its explanation
 	// independently is how a report comes to disagree with itself.
 	BeforeRead func()
+
+	// Privacy returns what the patient-data access monitor is holding now. Nil when it is off.
+	Privacy func() []PrivacySignal
 }
 
 // ContractDrift is one channel's contract result, as the alert path needs it.
@@ -143,6 +146,9 @@ func (w *Watcher) read() Reading {
 
 	if w.Rhythms != nil {
 		r.Rhythms = w.Rhythms()
+	}
+	if w.Privacy != nil {
+		r.Privacy = w.Privacy()
 	}
 
 	if w.Contracts != nil {

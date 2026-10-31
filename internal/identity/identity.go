@@ -101,16 +101,6 @@ type Identity struct {
 	Values []Value
 }
 
-// Get returns the first value of a kind, or the empty string.
-func (id Identity) Get(k Kind) string {
-	for _, v := range id.Values {
-		if v.Kind == k {
-			return v.Text
-		}
-	}
-	return ""
-}
-
 // All returns every value of a kind.
 func (id Identity) All(k Kind) []string {
 	var out []string

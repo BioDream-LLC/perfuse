@@ -669,3 +669,26 @@ func TestThePayloadWindowIsConfigurableAndCannotOutliveTheRecord(t *testing.T) {
 		}
 	})
 }
+
+// TestStatsKeepOtherTenantsTimesToThemselves is the regression test for the one unscoped query in Stats.
+//
+// Every count was scoped by tenant, but the oldest and newest message times were read from the whole table, so a
+// tenant's dashboard showed when other tenants' traffic arrived.
+func TestStatsKeepOtherTenantsTimesToThemselves(t *testing.T) {
+	s := open(t)
+	now := time.Now().UTC().Truncate(time.Second)
+	mine := sample("adt", Delivered, now.Add(-time.Hour))
+	mine.TenantID = "hospital-a"
+	record(t, s, mine)
+	theirs := sample("adt", Delivered, now.Add(-30*24*time.Hour))
+	theirs.TenantID = "hospital-b"
+	record(t, s, theirs)
+
+	stats, err := s.Stats(context.Background(), "hospital-a", time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.OldestKept == nil || stats.OldestKept.Before(now.Add(-2*time.Hour)) {
+		t.Errorf("hospital-a's oldest kept message is %v, which is hospital-b's", stats.OldestKept)
+	}
+}

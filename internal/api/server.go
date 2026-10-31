@@ -13,12 +13,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/biodream-llc/perfuse/internal/compliance"
 	"github.com/biodream-llc/perfuse/internal/crd"
 	"github.com/biodream-llc/perfuse/internal/dashboards"
 	"github.com/biodream-llc/perfuse/internal/dicomweb"
@@ -49,6 +51,8 @@ type Server struct {
 	Channels *ChannelRepo
 	// Alerts is the alert evaluator, nil when alerting is off.
 	Alerts *alerts.Evaluator
+	// PHIWatch is the patient-data access monitor, nil when it is off (serve -watch-access=false).
+	PHIWatch *compliance.Monitor
 	// Terminology holds imported code systems and the values mapping tables did not have; nil without a database.
 	Terminology *terminology.Store
 
@@ -630,6 +634,7 @@ func (s *Server) Handler() http.Handler {
 	// named patient discloses data on somebody's behalf, and the authority being exercised has to be established
 	// first; Perfuse exchanges through channels, where the purpose and the requesting party come from configuration
 	// rather than from whoever happens to be signed in.
+	mux.Handle("GET /api/prior-auth", s.require(store.RoleViewer, s.handlePriorAuths))
 	mux.Handle("GET /api/tefca/status", s.require(store.RoleViewer, s.handleTEFCAStatus))
 	mux.Handle("GET /api/tefca/audit", s.require(store.RoleViewer, s.handleTEFCAAudit))
 	mux.Handle("POST /api/tefca/purpose-check", s.require(store.RoleViewer, s.handleTEFCAPurposeCheck))
@@ -658,6 +663,7 @@ func (s *Server) Handler() http.Handler {
 	// Alerts. Reading is a viewer action; acknowledging one is a decision that
 	// something can wait, so it needs editor rights and is audited by name.
 	mux.Handle("GET /api/alerts", s.require(store.RoleMonitor, s.handleAlerts))
+	mux.Handle("GET /api/access-watch", s.require(store.RoleAdmin, s.handleAccessWatch))
 	mux.Handle("POST /api/alerts/acknowledge", s.require(store.RoleEditor, s.handleAcknowledgeAlert))
 	// Viewer may read the rules, because knowing what is being watched is part of reading the state of the system. Only an
 	// administrator may change them: a rule is the difference between being told about an outage and not.
@@ -953,8 +959,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// protection into a way to deny an administrator access at the moment they most need it.
 	limiter := s.limiter()
 	ip := clientIP(r)
+	peer := throttleKey(r)
 
-	if wait, blocked := limiter.Blocked(ip); blocked {
+	if wait, blocked := limiter.Blocked(peer); blocked {
 		s.log().Warn("a sign-in was refused for repeated failures",
 			"username", req.Username, "ip", ip, "wait", wait.Round(time.Second))
 		w.Header().Set("Retry-After", itoaSeconds(wait))
@@ -988,7 +995,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		if srcErr == nil && (source == store.AuthLDAP || source == store.AuthUnknown) {
 			token, user, ldapErr := s.signInWithDirectory(r, store.DefaultTenant, req.Username, req.Password)
 			if ldapErr != nil {
-				limiter.Failed(ip)
+				limiter.Failed(peer)
 				s.log().Warn("failed directory login",
 					"username", req.Username, "ip", clientIP(r), "err", ldapErr)
 				_ = s.Store.Audit(r.Context(), store.AuditEntry{
@@ -1009,7 +1016,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Counted as well as logged. Logging alone was the state of this handler until a measurement showed twenty
 		// guesses a second going through it, all of them recorded and none of them slowed down.
-		delay := limiter.Failed(ip)
+		delay := limiter.Failed(peer)
 
 		s.log().Warn("failed login",
 			"username", req.Username, "ip", clientIP(r), "err", err, "delay", delay)
@@ -1028,7 +1035,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limiter.Succeeded(ip)
+	limiter.Succeeded(peer)
 	s.finishLogin(w, r, token, user)
 }
 
@@ -1304,6 +1311,33 @@ func (s *Server) failErr(w http.ResponseWriter, r *http.Request, err error) {
 // clientIP prefers the immediate peer. A forwarded header is only trusted when
 // the deployment puts a proxy in front, which is not something this server can
 // verify, so it is recorded separately rather than believed.
+// throttleKey is the address the sign-in limiter counts failures against.
+//
+// The connection's own peer, never a header the sender writes. Failures used to be counted under the first
+// X-Forwarded-For value, which the client chooses even through a proxy (proxies append to the header, they do not
+// replace it): a guesser put a different value on every attempt and was never throttled at all.
+//
+// One exception, for the usual deployment behind a reverse proxy on the same machine. When the peer is loopback the
+// last X-Forwarded-For entry is used: that one was written by the proxy, from the address it saw, and the client cannot
+// set it. Without this every sign-in through the proxy would share one count, and five wrong passwords from anybody
+// would lock out everybody. A proxy on another machine shares one count for all its clients; it should rate-limit
+// sign-ins itself, which is the usual arrangement anyway (internal/fhirserver/auth.go makes the same choice).
+func throttleKey(r *http.Request) string {
+	host := r.RemoteAddr
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		if fwd := r.Header.Values("X-Forwarded-For"); len(fwd) > 0 {
+			hops := strings.Split(fwd[len(fwd)-1], ",")
+			if last := strings.TrimSpace(hops[len(hops)-1]); net.ParseIP(last) != nil {
+				return last
+			}
+		}
+	}
+	return host
+}
+
 func clientIP(r *http.Request) string {
 	host := r.RemoteAddr
 	if i := strings.LastIndex(host, ":"); i > 0 {

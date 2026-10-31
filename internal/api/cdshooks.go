@@ -39,7 +39,16 @@ type CDSClient struct {
 	// empty leaves it to the server's -davinci-version.
 	DaVinciVersion string `yaml:"davinci_version,omitempty" json:"davinciVersion,omitempty"`
 
-	keys *oidc.KeySet
+	// keys is made on first use, once: calls arrive concurrently, and the lazy assignment it replaced was a data race
+	// between two calls from the same EHR.
+	keysOnce sync.Once
+	keys     *oidc.KeySet
+}
+
+// keySet returns the EHR's key set, making it on first use.
+func (c *CDSClient) keySet(client *http.Client) *oidc.KeySet {
+	c.keysOnce.Do(func() { c.keys = oidc.NewKeySet(c.JWKSURL, client) })
+	return c.keys
 }
 
 // LoadCDSClients reads the trusted EHR list.
@@ -91,13 +100,8 @@ func (s *Server) handleCDSDiscovery(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.CRD.Discovery())
 }
 
-// cdsAuthorised accepts a Perfuse API token or a trusted EHR's JWT whose audience is this service's URL.
-func (s *Server) cdsAuthorised(r *http.Request, serviceID string) (string, error) {
-	who, _, err := s.cdsCaller(r, serviceID)
-	return who, err
-}
-
-// cdsCaller is cdsAuthorised with the trusted EHR whose JWT it was, nil for an API token.
+// cdsCaller accepts a Perfuse API token or a trusted EHR's JWT whose audience is this service's URL, and returns who
+// called and, for a JWT, the trusted EHR it came from (nil for an API token).
 func (s *Server) cdsCaller(r *http.Request, serviceID string) (string, *CDSClient, error) {
 	auth := r.Header.Get("Authorization")
 	token, ok := strings.CutPrefix(auth, "Bearer ")
@@ -113,12 +117,10 @@ func (s *Server) cdsCaller(r *http.Request, serviceID string) (string, *CDSClien
 	audience := s.publicBase() + "/cds-services/" + serviceID
 	var last error = errors.New("the JWT is not from a trusted EHR")
 	for _, c := range s.CDSClients {
-		if c.keys == nil {
-			c.keys = oidc.NewKeySet(c.JWKSURL, s.shlClient())
-		}
+		keys := c.keySet(s.shlClient())
 		// A CDS Hooks JWT authenticates the EHR, not a person: iss, aud, exp, iat and jti, and no sub. Requiring a subject, as
 		// sign-in rightly does, refused every call from the Inferno CRD test kit.
-		claims, err := oidc.Verify(r.Context(), c.keys, token, oidc.VerifyOptions{Issuer: c.Issuer, ClientID: audience,
+		claims, err := oidc.Verify(r.Context(), keys, token, oidc.VerifyOptions{Issuer: c.Issuer, ClientID: audience,
 			Algorithms: []string{"RS384", "ES384", "RS256", "ES256"}, System: true})
 		if err == nil {
 			if !s.cdsJTIs.first(claims.Issuer+"|"+claims.JTI, claims.ExpiresAt) {

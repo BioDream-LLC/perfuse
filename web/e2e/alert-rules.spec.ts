@@ -68,9 +68,9 @@ test("every kind the engine can evaluate is offered by name", async ({ page }) =
     .locator("option")
     .evaluateAll((os) => os.map((o) => ({ value: (o as HTMLOptionElement).value, label: (o as HTMLOptionElement).textContent ?? "" })));
 
-  // Eleven kinds are evaluated. The number is asserted rather than the list so that adding a kind fails here and gets a label, instead
+  // Fifteen kinds are evaluated: eleven about the engine, four about access to patient data. The number is asserted rather than the list so that adding a kind fails here and gets a label, instead
   // of appearing as a bare identifier or not at all - which is how below-rhythm stayed unreachable for so long.
-  expect(options.length, `the editor offers ${options.length} kinds:\n${options.map((o) => o.value).join("\n")}`).toBe(11);
+  expect(options.length, `the editor offers ${options.length} kinds:\n${options.map((o) => o.value).join("\n")}`).toBe(15);
 
   // below-rhythm in particular, because it had an evaluator and tests and could not be configured at all until now. It is the only rule
   // that can report a feed going quiet when that feed is legitimately silent most of the week.
@@ -237,11 +237,11 @@ test("a rule that cannot be evaluated cannot be described", async ({ page }) => 
     const text = await page.locator("main").innerText();
     expect(text, `${kind} is offered with no explanation of what it watches`).toMatch(/Fires when/);
 
-    // channel-down has nothing to threshold, so it must not show a threshold box. Offering one would invite a number that does
-    // nothing, which is indistinguishable from a number that does something.
+    // channel-down, night traffic on a daytime channel and a new destination have nothing to threshold, so they must not show a
+    // threshold box. Offering one would invite a number that does nothing, which is indistinguishable from one that does something.
     const hasThreshold = await page.locator("#alert-rule-0-threshold").count();
-    if (kind === "channel-down") {
-      expect(hasThreshold, "channel-down offers a threshold box and has nothing to threshold").toBe(0);
+    if (["channel-down", "phi-after-hours", "phi-new-destination"].includes(kind)) {
+      expect(hasThreshold, `${kind} offers a threshold box and has nothing to threshold`).toBe(0);
     } else {
       expect(hasThreshold, `${kind} offers no threshold box`).toBe(1);
     }

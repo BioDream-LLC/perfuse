@@ -2,6 +2,7 @@ package fhirserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -26,6 +27,10 @@ import (
 // not is worse off than one who got an error, because the error can be acted on and the silence cannot. Somebody deciding on a
 // medication from a list that stopped early is the case that matters.
 const maxEverythingResources = 5000
+
+// ErrEverythingTooLarge is a record over the ceiling: the caller's to narrow, so the operation answers it with a 4xx.
+// Kept apart from every other failure, which used to be answered 413 "too costly" as well, database errors included.
+var ErrEverythingTooLarge = errors.New("the record is larger than one $everything response carries")
 
 // everythingParams are the parameters this operation accepts.
 //
@@ -216,10 +221,10 @@ func (s *Store) Everything(ctx context.Context, req *EverythingRequest, caller *
 		}
 
 		if len(result.Resources) >= ceiling {
-			return fmt.Errorf("this patient's record holds more than %d resources, which is more than one response "+
+			return fmt.Errorf("%w: this patient's record holds more than %d resources, which is more than one response "+
 				"should carry. Narrow it with _type or _since, or use $export for the whole record: returning the "+
 				"first %d would look exactly like a complete record and cannot be told apart from one",
-				ceiling, ceiling)
+				ErrEverythingTooLarge, ceiling, ceiling)
 		}
 
 		seen[key] = true

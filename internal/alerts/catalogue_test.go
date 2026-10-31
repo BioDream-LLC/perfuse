@@ -33,7 +33,8 @@ func TestCatalogueCoversEveryEvaluatedKind(t *testing.T) {
 // they get woken up. The unit check is the important one: a share and a count are different questions, and the whole reason this
 // catalogue exists is that the threshold field does not say which it is.
 func TestCatalogueEntriesAreUsable(t *testing.T) {
-	units := map[Unit]bool{UnitShare: true, UnitMessages: true, UnitSeconds: true, UnitAttempts: true, UnitNone: true}
+	units := map[Unit]bool{UnitShare: true, UnitMessages: true, UnitSeconds: true, UnitAttempts: true, UnitNone: true,
+		UnitTimes: true, UnitRecords: true}
 
 	for _, info := range KindCatalogue() {
 		t.Run(string(info.Kind), func(t *testing.T) {

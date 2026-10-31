@@ -152,7 +152,12 @@ func FromMHD(bundle map[string]any, resolvePatient func(ref string) string) (*Su
 
 	for i, dr := range docs {
 		id := fmt.Sprintf("Document%02d", i+1)
-		att := m(m(l(dr["content"])[0])["attachment"])
+		// Checked: the Bundle comes from the caller, and a DocumentReference without content used to panic here.
+		parts := l(dr["content"])
+		if len(parts) == 0 {
+			return nil, nil, fmt.Errorf("DocumentReference %d has no content, so there is no document to register", i+1)
+		}
+		att := m(m(parts[0])["attachment"])
 		mt := s(att["contentType"])
 		var data []byte
 		switch {

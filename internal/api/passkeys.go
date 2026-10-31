@@ -249,7 +249,7 @@ func (s *Server) handleFinishPasskeySignIn(w http.ResponseWriter, r *http.Reques
 	// A passkey cannot be guessed, so this is not about brute force. It is about the work each attempt costs: every one
 	// performs a signature verification and a database lookup, and an unthrottled endpoint that does public-key
 	// cryptography on demand is a way to spend a server's time cheaply.
-	if delay, blocked := s.limiter().Blocked(clientIP(r)); blocked {
+	if delay, blocked := s.limiter().Blocked(throttleKey(r)); blocked {
 		s.fail(w, r, http.StatusTooManyRequests,
 			"too many attempts; wait "+delay.Round(time.Second).String())
 
@@ -329,7 +329,7 @@ func (s *Server) handleFinishPasskeySignIn(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.limiter().Succeeded(clientIP(r))
+	s.limiter().Succeeded(throttleKey(r))
 
 	s.log().Info("a passkey sign-in succeeded",
 		"user", user.Username, "label", credential.Label, "verified", result.UserVerified)
@@ -351,7 +351,7 @@ func (s *Server) handleFinishPasskeySignIn(w http.ResponseWriter, r *http.Reques
 // for working out which credential identifiers exist, and there is nothing a legitimate person does differently in either
 // case. The reason goes to the log, where an operator can see it and an attacker cannot.
 func (s *Server) failPasskeySignIn(w http.ResponseWriter, r *http.Request, reason string, err error) {
-	s.limiter().Failed(clientIP(r))
+	s.limiter().Failed(throttleKey(r))
 
 	s.log().Warn("a passkey sign-in failed", "reason", reason, "err", err, "ip", clientIP(r))
 	s.fail(w, r, http.StatusUnauthorized, "that passkey did not work")

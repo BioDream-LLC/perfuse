@@ -71,12 +71,6 @@ func New(cfgs []*config.Channel, factory SenderFactory, log *slog.Logger) (*Engi
 	return e, nil
 }
 
-// Admit is the delivery limiter this engine shares with its channels.
-//
-// Exported so a server that starts and stops channels outside the engine - which is what the interface
-// does - can give them the same one, rather than each newly started channel getting its own allowance.
-func (e *Engine) Admit() *admit.Controller { return e.admit }
-
 // Channels returns the prepared channels.
 func (e *Engine) Channels() []*Channel { return e.channels }
 

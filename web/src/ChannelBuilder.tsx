@@ -672,6 +672,7 @@ export function ChannelBuilder({
                     index={i}
                     canRemove={draft.destinations.length > 1}
                     hl7Channel={draft.dataType === 'hl7'}
+                    x12Channel={draft.dataType === 'x12'}
                     onChange={(patch) => updateDestination(dest.id, patch)}
                     onRemove={() =>
                       set(
@@ -764,6 +765,7 @@ function DestinationCard({
   index,
   canRemove,
   hl7Channel,
+  x12Channel,
   onChange,
   onRemove,
 }: {
@@ -771,6 +773,7 @@ function DestinationCard({
   index: number
   canRemove: boolean
   hl7Channel: boolean
+  x12Channel?: boolean
   onChange: (patch: Partial<Destination>) => void
   onRemove: () => void
 }) {
@@ -1465,6 +1468,141 @@ function DestinationCard({
                 placeholder="4"
               />
             </Field>
+          </>
+        )}
+
+        {dest.type === 'tefca' && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Purpose of use"
+                hint="Why this feed asks, stated in every query and recorded in the TEFCA audit trail. It must be one the participant declares in Settings, TEFCA; a query under any other is refused before it is sent."
+              >
+                <select className="input" value={dest.tefcaPurpose} onChange={(e) => onChange({ tefcaPurpose: e.target.value })}>
+                  <option value="treatment">Treatment</option>
+                  <option value="payment">Payment</option>
+                  <option value="operations">Health care operations</option>
+                  <option value="public_health">Public health</option>
+                  <option value="individual_access">Individual access</option>
+                </select>
+              </Field>
+              <Field
+                label="Hand the records found to channel"
+                hint="Optional. Each Bundle the partner returns becomes a message on this channel, which decides where it goes: the FHIR server, an EHR, a file."
+              >
+                <input
+                  className="input font-mono text-xs"
+                  value={dest.tefcaResultsTo}
+                  onChange={(e) => onChange({ tefcaResultsTo: e.target.value })}
+                  placeholder="outside-records"
+                />
+              </Field>
+            </div>
+            <p className="rounded-lg border border-teal-800/60 bg-teal-950/20 p-3 text-xs leading-relaxed text-teal-200">
+              The patient is read from the message as the patient index reads it: PID-3, PID-5 and PID-7, or a FHIR Patient. A query
+              by name needs a date of birth, because a wrong match on a name returns somebody else's record without any error.
+            </p>
+          </>
+        )}
+
+        {dest.type === 'pas' && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Payer's FHIR address"
+                hint="The payer's FHIR base URL. Each request goes to its Claim/$submit, over https unless the payer is on this machine."
+              >
+                <input
+                  className="input font-mono text-xs"
+                  value={dest.pasPayer}
+                  onChange={(e) => onChange({ pasPayer: e.target.value })}
+                  placeholder="https://pas.payer.example/fhir"
+                />
+              </Field>
+              <Field
+                label="Hand the payer's answers to channel"
+                hint="Optional. Each answer, the PAS response Bundle, becomes a message on this channel: back to the EHR, a file, the FHIR server."
+              >
+                <input
+                  className="input font-mono text-xs"
+                  value={dest.pasResultsTo}
+                  onChange={(e) => onChange({ pasResultsTo: e.target.value })}
+                  placeholder="pas-answers"
+                />
+              </Field>
+              <Field label="How it signs in to the payer" hint="What the payer's FHIR API asks for. Secrets may be written as ${ENV_NAME}.">
+                <select
+                  className="input"
+                  value={dest.fhirAuthType === 'aws' ? '' : dest.fhirAuthType}
+                  onChange={(e) => onChange({ fhirAuthType: e.target.value as Destination['fhirAuthType'] })}
+                >
+                  <option value="">A token the payer issued</option>
+                  <option value="client_credentials">OAuth client credentials</option>
+                  <option value="azure">Microsoft Entra ID</option>
+                </select>
+              </Field>
+              {!dest.fhirAuthType || dest.fhirAuthType === 'aws' ? (
+                <Field label="Payer's token" hint="Sent as a bearer token on every request.">
+                  <input
+                    className="input font-mono text-xs"
+                    type="password"
+                    autoComplete="off"
+                    value={dest.httpBearerToken}
+                    onChange={(e) => onChange({ httpBearerToken: e.target.value })}
+                    placeholder="${PAYER_TOKEN}"
+                  />
+                </Field>
+              ) : (
+                <>
+                  {dest.fhirAuthType === 'client_credentials' ? (
+                    <Field label="Token URL" hint="Where the client secret is exchanged for a token; https.">
+                      <input
+                        className="input font-mono text-xs"
+                        value={dest.fhirAuthTokenUrl}
+                        onChange={(e) => onChange({ fhirAuthTokenUrl: e.target.value })}
+                      />
+                    </Field>
+                  ) : (
+                    <Field label="Tenant ID" hint="The Entra tenant the payer's API is registered in.">
+                      <input
+                        className="input font-mono text-xs"
+                        value={dest.fhirAuthTenantId}
+                        onChange={(e) => onChange({ fhirAuthTenantId: e.target.value })}
+                      />
+                    </Field>
+                  )}
+                  <Field label="Client ID">
+                    <input
+                      className="input font-mono text-xs"
+                      value={dest.fhirAuthClientId}
+                      onChange={(e) => onChange({ fhirAuthClientId: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Client secret">
+                    <input
+                      className="input font-mono text-xs"
+                      type="password"
+                      autoComplete="off"
+                      value={dest.fhirAuthClientSecret}
+                      onChange={(e) => onChange({ fhirAuthClientSecret: e.target.value })}
+                      placeholder="${PAYER_CLIENT_SECRET}"
+                    />
+                  </Field>
+                  <Field label="Scope" hint="Optional.">
+                    <input
+                      className="input font-mono text-xs"
+                      value={dest.fhirAuthScope}
+                      onChange={(e) => onChange({ fhirAuthScope: e.target.value })}
+                    />
+                  </Field>
+                </>
+              )}
+            </div>
+            <p className="rounded-lg border border-teal-800/60 bg-teal-950/20 p-3 text-xs leading-relaxed text-teal-200">
+              Each message must be a whole PAS request Bundle, on a raw channel, as an EHR or DTR builds it: the Claim with the
+              patient, coverage and supporting resources the payer decides on. Perfuse sends it as it is and does not rebuild it.
+              Every decision is listed on the Prior authorization screen.
+            </p>
           </>
         )}
 
@@ -3370,7 +3508,7 @@ function DestinationCard({
           
           Refused at load on a destination that receives no reply, so it is offered only where it can run - a control that saves a
           script which is then refused is worse than no control. */}
-      {(dest.type === 'mllp' || dest.type === 'soap' || dest.type === 'as2') && (
+      {(dest.type === 'mllp' || dest.type === 'soap' || dest.type === 'as2' || dest.type === 'tefca' || dest.type === 'pas') && (
         <div className="mt-4">
           <Field
             label="Inspect the reply"
@@ -3404,6 +3542,20 @@ function DestinationCard({
             </Field>
           </div>
         </div>
+      )}
+
+      {/* Mirth's X12 XML, for a receiver built against what a Mirth or OIE server sent it. */}
+      {x12Channel && dest.type !== 'javascript' && dest.type !== 'channel' && (
+        <label className="mt-4 flex items-start gap-2 text-sm text-slate-300">
+          <input type="checkbox" checked={dest.x12AsXml} onChange={(e) => onChange({ x12AsXml: e.target.checked })} />
+          <span>
+            <span className="text-sky-300">Send it as Mirth's X12 XML</span>
+            <span className="block text-xs text-slate-400">
+              The XML Mirth Connect and Open Integration Engine write for X12 (an X12Transaction root, elements named CLM.05.1),
+              byte for byte, for a receiver built against what a Mirth server sent it.
+            </span>
+          </span>
+        </label>
       )}
 
       {/* OpenPGP, for receivers that take files only encrypted. Offered where there is a payload to protect: not a script

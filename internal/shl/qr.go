@@ -1,10 +1,7 @@
 package shl
 
 import (
-	"errors"
 	"fmt"
-	"image"
-	"image/color"
 	"strings"
 )
 
@@ -428,23 +425,4 @@ func (q *QR) SVG() string {
 	}
 	b.WriteString(`"/></svg>`)
 	return b.String()
-}
-
-// Image renders the code at scale pixels per module, with the quiet zone.
-func (q *QR) Image(scale int) (image.Image, error) {
-	if scale < 1 {
-		return nil, errors.New("scale must be at least 1")
-	}
-	n := (q.Size + 8) * scale
-	img := image.NewGray(image.Rect(0, 0, n, n))
-	for py := 0; py < n; py++ {
-		for px := 0; px < n; px++ {
-			c := color.Gray{Y: 255}
-			if q.Dark(px/scale-4, py/scale-4) {
-				c = color.Gray{Y: 0}
-			}
-			img.SetGray(px, py, c)
-		}
-	}
-	return img, nil
 }

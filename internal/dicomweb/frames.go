@@ -99,6 +99,11 @@ func (o *Object) fragmentGroups(px Attr, number int) ([][]byte, error) {
 
 	// The basic offset table: the first item's value, offsets of each frame's first fragment, measured from the first
 	// byte of the first fragment's item tag.
+	// Checked before slicing: the object comes from whoever stored it, and encapsulated pixel data with several frames
+	// but no fragment at all, or a first fragment that does not lie after the offset table, used to panic here.
+	if len(px.Fragments) == 0 || px.Offset+8 > px.Fragments[0].Offset-8 || px.Fragments[0].Offset-8 > len(o.Raw) {
+		return nil, fmt.Errorf("%w: %d frames but the pixel data holds no usable fragments", ErrFramesUnavailable, number)
+	}
 	bot := o.Raw[px.Offset+8 : px.Fragments[0].Offset-8]
 	if len(bot) != 4*number {
 		return nil, fmt.Errorf("%w: %d frames in %d fragments with no basic offset table to say which is which",

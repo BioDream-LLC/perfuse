@@ -62,6 +62,11 @@ func DefaultSenderFactory(d config.Destination) (Sender, error) {
 		return NewAS2Sender(d)
 	case config.DestinationMPI:
 		return NewMPISender(d)
+	case config.DestinationTEFCA:
+		// Without a router: results_to is refused here, and works through RoutingSenderFactory as the server builds it.
+		return NewTEFCASender(d, nil)
+	case config.DestinationPAS:
+		return NewPASSender(d, nil)
 	case config.DestinationBroker:
 		return NewBrokerSender(d)
 	case config.DestinationKafka:
@@ -539,8 +544,13 @@ func sanitise(s string) string {
 // exists, with nothing to remember.
 func RoutingSenderFactory(router ChannelRouter) SenderFactory {
 	return func(d config.Destination) (Sender, error) {
-		if d.Type == config.DestinationChannel {
+		switch d.Type {
+		case config.DestinationChannel:
 			return NewChannelSender(d, router)
+		case config.DestinationTEFCA:
+			return NewTEFCASender(d, router)
+		case config.DestinationPAS:
+			return NewPASSender(d, router)
 		}
 		return DefaultSenderFactory(d)
 	}

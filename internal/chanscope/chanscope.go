@@ -27,20 +27,6 @@ func From(ctx context.Context) ([]string, bool) {
 	return c, ok
 }
 
-// Allows reports whether ctx may touch this channel. True when there is no scope.
-func Allows(ctx context.Context, channel string) bool {
-	c, ok := From(ctx)
-	if !ok {
-		return true
-	}
-	for _, v := range c {
-		if v == channel {
-			return true
-		}
-	}
-	return false
-}
-
 // SQL is the clause to append to a WHERE, " AND <column> IN (?, ...)", and its arguments. Empty without a scope. A scope
 // with no channels matches nothing rather than everything, which is the safe reading of "none".
 func SQL(ctx context.Context, column string) (string, []any) {

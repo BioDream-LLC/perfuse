@@ -86,21 +86,6 @@ func (c *Connector) SetRawProperty(path, value string) error {
 	return nil
 }
 
-// HasRawProperty reports whether the attached document has a leaf at the path, so a caller can adapt to a connector that differs between
-// Mirth versions rather than failing.
-func (c *Connector) HasRawProperty(path string) bool {
-	if c.rawProperties == nil {
-		return false
-	}
-	n := c.rawProperties
-	for _, seg := range strings.Split(path, ".") {
-		if n = n.child(seg); n == nil {
-			return false
-		}
-	}
-	return len(n.Kids) == 0
-}
-
 // shortClass trims a Java class name to its final segment, for error messages that have to be read in a hurry.
 func shortClass(class string) string {
 	if i := strings.LastIndexByte(class, '.'); i >= 0 {

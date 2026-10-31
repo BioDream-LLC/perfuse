@@ -637,6 +637,11 @@ func TestEveryKnownKindIsActuallyEvaluated(t *testing.T) {
 			"c/d": {Channel: "c", Destination: "d", Pending: 500, Failed: 5, OldestSeconds: 3600, MaxAttempts: 50},
 		},
 		NotRunning: []string{"c"},
+		Privacy: []PrivacySignal{
+			{Kind: KindPHIVolume, Channel: "c", Value: 12}, {Kind: KindPHIAfterHours, Channel: "c", Value: 3},
+			{Kind: KindPHINewDestination, Channel: "c", Subject: "POST to https://x/", Value: 1},
+			{Kind: KindPHIBulkReads, Subject: "jdoe", Value: 40},
+		},
 	}
 
 	// no-traffic inverts: it fires on the absence of messages, so the busy reading
@@ -790,4 +795,33 @@ func TestAnUnrecognisedThresholdDoesNotMeanSilence(t *testing.T) {
 
 	t.Error("a typo in the threshold silenced a warning - an unrecognised value must mean more alerts than " +
 		"wanted rather than none")
+}
+
+// TestPatientDataRulesFireAtOnceAndPerSubject covers the four kinds fed by the access monitor.
+func TestPatientDataRulesFireAtOnceAndPerSubject(t *testing.T) {
+	var sent []Alert
+	e := NewEvaluator(DefaultRules(), func(a Alert) { sent = append(sent, a) })
+	at := time.Date(2026, 10, 30, 10, 0, 0, 0, time.UTC)
+	reading := Reading{At: at, Privacy: []PrivacySignal{
+		{Kind: KindPHIBulkReads, Subject: "jdoe", Value: 25, Summary: "jdoe read 25"},
+		{Kind: KindPHIBulkReads, Subject: "amy", Value: 4}, // under the default of 10
+		{Kind: KindPHIBulkReads, Subject: "sam", Value: 11},
+		{Kind: KindPHINewDestination, Channel: "adt", Subject: "POST to https://x/"},
+	}}
+	firing := e.Evaluate(reading)
+	if len(firing) != 3 {
+		t.Fatalf("firing %+v, want jdoe, sam and the new destination", firing)
+	}
+	for _, a := range firing {
+		if a.Destination == "amy" {
+			t.Errorf("four records fired a rule whose threshold is ten: %+v", a)
+		}
+	}
+	// Cleared once the monitor stops holding them.
+	if left := e.Evaluate(Reading{At: at.Add(time.Minute)}); len(left) != 0 {
+		t.Errorf("still firing after the monitor let go: %+v", left)
+	}
+	if len(sent) != 6 {
+		t.Errorf("%d notifications, want three fired and three resolved", len(sent))
+	}
 }

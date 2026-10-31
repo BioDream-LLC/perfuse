@@ -129,11 +129,17 @@ func NewConsumer(ctx context.Context, cfg *config.KafkaSource, tlsConf *tls.Conf
 func (c *Consumer) Poll(ctx context.Context) ([]Record, error) {
 	fetches := c.client.PollFetches(ctx)
 	if errs := fetches.Errors(); len(errs) > 0 {
-		// Context cancellation arrives as a fetch error. Separated here so a shutdown is
-		// silent and a real broker problem is not.
+		// Context cancellation arrives as a fetch error. Separated here so a shutdown is silent and a real broker
+		// problem is not - and only when this poll's context really has ended. A context error on its own, with records
+		// from other partitions beside it, used to drop those records and carry on; the next commit then moved past
+		// them, and they were never delivered. An error ends the session, and the next one starts from what was
+		// committed.
+		if ctx.Err() != nil {
+			return nil, nil
+		}
 		for _, e := range errs {
-			if errors.Is(e.Err, context.Canceled) || errors.Is(e.Err, context.DeadlineExceeded) {
-				return nil, nil
+			if !errors.Is(e.Err, context.Canceled) && !errors.Is(e.Err, context.DeadlineExceeded) {
+				return nil, fmt.Errorf("kafka: fetching from %s: %w", e.Topic, e.Err)
 			}
 		}
 		return nil, fmt.Errorf("kafka: fetching from %s: %w", errs[0].Topic, errs[0].Err)

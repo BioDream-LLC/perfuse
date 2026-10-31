@@ -79,7 +79,29 @@ const (
 	// deliveries succeed - which is precisely why it needs an alert of its own. It is the only condition on
 	// this list that a healthy-looking system can be in for weeks.
 	KindContract Kind = "contract"
+
+	// The four patient-data kinds come from the access monitor (internal/compliance) rather than from counters: each is
+	// something a breach or a misconfiguration looks like before anybody reports it. They fire at once by default,
+	// because what they describe has already happened, and clear once the monitor has not seen it for fifteen minutes.
+
+	// KindPHIVolume fires when a channel carries several times its usual rate for the hour.
+	KindPHIVolume Kind = "phi-volume"
+	// KindPHIAfterHours fires when a channel that only carries daytime traffic carries some at night.
+	KindPHIAfterHours Kind = "phi-after-hours"
+	// KindPHINewDestination fires when a channel delivers to an address it has not sent to before.
+	KindPHINewDestination Kind = "phi-new-destination"
+	// KindPHIBulkReads fires when one person reads many different patients' records within a minute.
+	KindPHIBulkReads Kind = "phi-bulk-reads"
 )
+
+// privacyKind reports whether a kind comes from the access monitor.
+func (k Kind) privacyKind() bool {
+	switch k {
+	case KindPHIVolume, KindPHIAfterHours, KindPHINewDestination, KindPHIBulkReads:
+		return true
+	}
+	return false
+}
 
 // KnownKinds lists every kind a rules file may use.
 //
@@ -99,6 +121,10 @@ var KnownKinds = []Kind{
 	KindQuarantined,
 	KindSlowness,
 	KindContract,
+	KindPHIVolume,
+	KindPHIAfterHours,
+	KindPHINewDestination,
+	KindPHIBulkReads,
 }
 
 // Validate checks one rule.
@@ -213,6 +239,11 @@ func (r Rule) threshold() float64 {
 }
 
 func (r Rule) debounce() time.Duration {
+	// Immediately unless told otherwise: the monitor already holds what it saw, and a grace period would only delay
+	// telling somebody about something that has happened.
+	if r.Kind.privacyKind() {
+		return max(0, r.For)
+	}
 	if r.For <= 0 {
 		return DefaultFor
 	}
@@ -279,6 +310,12 @@ func DefaultRules() []Rule {
 			Kind: KindContract, Threshold: 0, For: 30 * time.Minute,
 			Severity: Warning,
 		},
+		// Watching access to patient data. On by default for the same reason as contracts: watching and telling
+		// nobody would be a check that looks configured and is not.
+		{Kind: KindPHIVolume, Threshold: 3, Severity: Warning},
+		{Kind: KindPHIAfterHours, Threshold: 0, Severity: Warning},
+		{Kind: KindPHINewDestination, Threshold: 0, Severity: Critical},
+		{Kind: KindPHIBulkReads, Threshold: 10, Severity: Critical},
 	}
 }
 
@@ -310,6 +347,23 @@ type Reading struct {
 	//
 	// Absent for a channel with too little history, which is the honest state rather than a defaulted one.
 	Rhythms map[string]RhythmSource
+
+	// Privacy is what the access monitor is holding now: unusual traffic or reads of patient data. Absent when the
+	// monitor is off.
+	Privacy []PrivacySignal
+}
+
+// PrivacySignal is one thing the access monitor saw, as the patient-data rules need it.
+type PrivacySignal struct {
+	Kind    Kind
+	Channel string
+	// Subject is the destination address or the person; it is part of the alert's identity, so two people reading
+	// in bulk are two alerts.
+	Subject string
+	Value   float64
+	Summary string
+	Detail  string
+	First   time.Time
 }
 
 // RhythmSource is what a channel normally does, as the alert rules need it.

@@ -1961,16 +1961,6 @@ export function SourceSection({
           />
 
           <Check
-            label="Send messages for studies that already exist on the first poll"
-            value={draft.dicomQueryEmitFirst}
-            onChange={(v) => set('dicomQueryEmitFirst', v)}
-            hint="Leave this off against a real archive. Switched on, the first poll emits a message for
-            everything it holds — which for a hospital PACS is years of studies, and the mistake is noticed
-            downstream rather than here. Off, the first poll records what exists and reports only what is new
-            afterwards."
-          />
-
-          <Check
             label="Encrypt the connection to the archive"
             value={draft.dicomQueryTls}
             onChange={(v) => set('dicomQueryTls', v)}
@@ -2421,6 +2411,16 @@ export function FormatSection({
               { value: 'ignore', label: 'do not check' },
             ]}
             hint="X12 states its own segment and transaction counts, which is what makes a truncated transfer detectable rather than silent. Rejecting is the right default; the other two exist because some partners have shipped wrong counts for years."
+          />
+          <Choose
+            label="It arrives as"
+            value={draft.x12ArrivesAs}
+            onChange={(v: string) => set('x12ArrivesAs', v as ChannelDraft['x12ArrivesAs'])}
+            options={[
+              { value: 'x12', label: 'X12' },
+              { value: 'xml', label: "Mirth's X12 XML, as a Mirth or OIE server sends it" },
+            ]}
+            hint="The XML Mirth Connect and Open Integration Engine write for X12 is turned back into X12 as it arrives, so everything below works on X12 as usual. For an engine being migrated from, or a system built against one."
           />
           <Check
             label="Split each interchange into one message per transaction set"

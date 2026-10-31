@@ -68,16 +68,6 @@ func ChannelLease(tenant, channel string) string {
 	return "channel:" + tenant + "/" + channel
 }
 
-// ParseChannelLease reads a channel lease name back.
-func ParseChannelLease(lease string) (tenant, channel string, ok bool) {
-	rest, ok := strings.CutPrefix(lease, "channel:")
-	if !ok {
-		return "", "", false
-	}
-	tenant, channel, ok = strings.Cut(rest, "/")
-	return tenant, channel, ok
-}
-
 // Config describes this server in the cluster.
 type Config struct {
 	Mode Mode

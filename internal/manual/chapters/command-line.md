@@ -125,6 +125,13 @@ Converts HL7 v2 to FHIR, validates FHIR, or serves it, depending on the subcomma
 
 The validating subcommand is useful on its own: it will tell you whether a resource somebody sent you satisfies US Core, which is the profile American regulation is written against. Being able to answer that without adopting an engine is the point.
 
+### perfuse x12
+
+Converts X12 (or other delimited EDI) to the XML Mirth Connect and Open Integration Engine write for it, and back:
+`perfuse x12 xml FILE` and `perfuse x12 from-xml FILE`, standard input when no file is given. The output is what OIE 4.6
+writes, byte for byte, so it can be compared with what a Mirth server produced or fed to a system built against it. A
+channel does the same with `x12.arrives_as: xml` and a destination's `x12_as: xml`; see [X12](#message-formats).
+
 ### perfuse sof
 
 Runs a SQL on FHIR ViewDefinition over FHIR files (the NDJSON of a bulk export, Bundles or JSON arrays; `-` for stdin) and

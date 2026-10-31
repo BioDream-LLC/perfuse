@@ -225,6 +225,30 @@ test("an X12 channel keeps its format when saved", async ({ page }) => {
   expect(problems, problems.join("\n")).toEqual([]);
 });
 
+// X12 to Mirth's X12 XML and back, as a channel does it: chosen in the form, saved, and run. The XML is the format Mirth
+// Connect and OIE write for X12, so a receiver or sender built against Mirth keeps working.
+test("an X12 channel takes Mirth's X12 XML and sends it on as X12 and as that XML", async ({ page }) => {
+  const problems = watch(page);
+  const name = uniqueName("e2e-x12xml");
+  const listen = `127.0.0.1:${port()}`;
+
+  await openNewChannelForm(page);
+  await page.getByRole("button", { name: "Take in X12 claims" }).click();
+  await setField(page, "Channel name", name);
+  await setField(page, "Listen on", listen);
+  await page.getByLabel("It arrives as").selectOption("xml");
+  await page.getByRole("checkbox", { name: /Send it as Mirth's X12 XML/ }).first().check();
+  await waitForYaml(page, name);
+  for (const want of ["arrives_as: xml", "x12_as: xml"]) {
+    await expect.poll(async () => (await page.locator("pre").first().textContent()) ?? "", { timeout: 20_000 }).toContain(want);
+  }
+  await page.getByRole("button", { name: "Create channel" }).click();
+  await expectSaved(page, name);
+
+  await deleteChannel(page, name);
+  expect(problems, problems.join("\n")).toEqual([]);
+});
+
 test("a channel with transformation steps keeps them", async ({ page }) => {
   const problems = watch(page);
   const name = uniqueName("e2e-normalise");

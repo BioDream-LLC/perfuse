@@ -352,14 +352,6 @@ var configurationOptions = []map[string]any{{
 	"default":     true,
 }}
 
-func versionMajorMinor() string {
-	parts := strings.SplitN(Version, ".", 3)
-	if len(parts) < 2 {
-		return Version
-	}
-	return parts[0] + "." + parts[1]
-}
-
 // Request is a CDS Hooks service request.
 type Request struct {
 	Hook         string `json:"hook"`

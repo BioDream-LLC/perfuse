@@ -9,6 +9,7 @@ import (
 	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/trace"
 	"github.com/biodream-llc/perfuse/internal/x12"
+	"github.com/biodream-llc/perfuse/internal/x12xml"
 )
 
 // Handling an X12 channel.
@@ -63,6 +64,17 @@ func (c *Channel) handleX12(ctx context.Context, raw []byte) ([]byte, error) {
 		return nil, err
 	}
 	raw = repaired
+
+	// An interchange that arrives as Mirth's X12 XML is turned back into X12 here, after the preprocessor (which sees
+	// what arrived) and before everything else, which then works on X12 as it always does.
+	if c.cfg.X12.ArrivesAsXML() {
+		converted, err := x12xml.FromXML(raw)
+		if err != nil {
+			return c.rejectX12(ctx, span, raw, started, Unparseable,
+				fmt.Errorf("the message was to arrive as X12 XML and could not be read as it: %w", err), nil, nil)
+		}
+		raw = converted
+	}
 
 	msg, err := x12.Parse(raw)
 	if err != nil {

@@ -661,20 +661,6 @@ func writeFileAtomic(path string, data []byte) error {
 	return os.Rename(tmpName, path)
 }
 
-// MarshalChannel renders a channel definition as YAML for the front end to save.
-func MarshalChannel(v any) ([]byte, error) {
-	var sb strings.Builder
-	enc := yaml.NewEncoder(&sb)
-	enc.SetIndent(2)
-	if err := enc.Encode(v); err != nil {
-		return nil, err
-	}
-	if err := enc.Close(); err != nil {
-		return nil, err
-	}
-	return []byte(sb.String()), nil
-}
-
 // splitProblems turns a multi-line validation error into one entry per problem.
 func splitProblems(err error) []string {
 	var out []string

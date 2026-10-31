@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -130,17 +131,23 @@ func (s *S3Sender) objectKey(raw []byte) (string, error) {
 
 // renderObjectKey fills an object or blob name template from a message. Shared by S3 and Azure Blob.
 func renderObjectKey(template, name string, raw []byte) (string, error) {
-	msg, err := hl7.Parse(raw)
-	if err != nil {
-		return "", fmt.Errorf("naming the object needs the message parsed, and a transformation "+
-			"produced something invalid: %w", err)
-	}
-
 	controlID := ""
 	msgType := ""
-	if msh, ok := msg.Segment("MSH", 1); ok {
-		controlID = msh.Field(10).String()
-		msgType = strings.ReplaceAll(msh.Field(9).String(), "^", "_")
+	// Parsed as HL7 v2 only when it is HL7 v2. The object-store destinations serve every channel type, and parsing
+	// unconditionally made every delivery of an X12, EDIFACT, NCPDP, DICOM or raw channel fail at naming the object.
+	// Other formats take their interchange control number where they have one, as an AS2 destination does.
+	if bytes.HasPrefix(bytes.TrimLeft(raw, " \r\n\t\ufeff"), []byte("MSH")) {
+		msg, err := hl7.Parse(raw)
+		if err != nil {
+			return "", fmt.Errorf("naming the object needs the message parsed, and a transformation "+
+				"produced something invalid: %w", err)
+		}
+		if msh, ok := msg.Segment("MSH", 1); ok {
+			controlID = msh.Field(10).String()
+			msgType = strings.ReplaceAll(msh.Field(9).String(), "^", "_")
+		}
+	} else {
+		controlID = interchangeID(raw)
 	}
 	if controlID == "" {
 		controlID = "noid-" + uniqueStamp()

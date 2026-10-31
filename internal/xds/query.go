@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/xml"
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -607,7 +606,6 @@ func QueryResponse(res *Result, problems []Problem, returnType, home string) Adh
 	add(res.Documents, &out.Objects.Extrinsic)
 	add(res.Packages, &out.Objects.Packages)
 	add(res.Associations, &out.Objects.Associations)
-	sort.SliceStable(out.Objects.Associations, func(i, j int) bool { return false })
 	return out
 }
 

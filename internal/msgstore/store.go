@@ -815,9 +815,13 @@ func (s *Store) Stats(ctx context.Context, tenantID string, since time.Time) (*S
 		return nil, err
 	}
 
+	// Scoped by tenant and by the channels the caller may see, as everything above is, but not by the window: this is
+	// what is kept, not what arrived since. It used to read the whole table, which told one tenant when another's oldest
+	// and newest messages arrived.
+	keptWhere, keptArgs := "tenant_id = ?"+scope, append([]any{tenantOrDefault(tenantID)}, scopeArgs...)
 	var oldest, newest sql.NullString
 	if err := s.querier().QueryRowContext(ctx,
-		`SELECT MIN(received_at), MAX(received_at) FROM messages`).Scan(&oldest, &newest); err != nil {
+		`SELECT MIN(received_at), MAX(received_at) FROM messages WHERE `+keptWhere, keptArgs...).Scan(&oldest, &newest); err != nil {
 		return nil, err
 	}
 	if oldest.Valid {

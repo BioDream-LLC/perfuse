@@ -39,6 +39,8 @@ export type DestinationType =
   | 'direct'
   | 'as2'
   | 'mpi'
+  | 'tefca'
+  | 'pas'
   | 'javascript'
 
 export const destinationLabels: Record<DestinationType, string> = {
@@ -62,6 +64,8 @@ export const destinationLabels: Record<DestinationType, string> = {
   direct: 'A Direct address, through a HISP (Direct secure messaging)',
   as2: 'A trading partner over AS2 (EDI, signed and encrypted, with a receipt)',
   mpi: 'The patient index (register each patient, follow merges)',
+  tefca: "TEFCA: ask the network for each patient's records (Facilitated FHIR)",
+  pas: 'A payer: submit prior authorization requests (Da Vinci PAS)',
   javascript: 'A script you write',
   broker: 'A message broker (STOMP)',
   kafka: 'A Kafka topic',
@@ -103,6 +107,10 @@ export const destinationHints: Record<DestinationType, string> = {
     'Sends imaging objects to a PACS or workstation as a C-STORE user, the same operation a scanner uses. Verified against DCMTK, the toolkit most hospital imaging equipment is built on. Encryption is included — Mirth needs a paid extension for it, and DICOM metadata carries patient names.',
   xds:
     "Publishes each clinical document to an IHE XDS.b repository with ITI-41 Provide and Register: a CDA document, or one carried in an HL7 v2 message (MDM, ORU). The metadata is read from the document - patient, title, type, time, author, confidentiality - and completed from what you set here. The repository's answer decides: an XDS error is a failed delivery with its error code.",
+  tefca:
+    "Asks this server's TEFCA Facilitated FHIR partner for each message's patient, by identifier, or by name with date of birth, and never by a name alone. The purpose of use is the channel's, set here, and every query is in the TEFCA audit trail, refused ones included. Who this server is on the network, its certificate and the partner are set once in Settings, TEFCA. The Bundle found is this destination's reply, for a response transformer, and can be handed to another channel to store or forward.",
+  pas:
+    "Submits each message, a Da Vinci PAS request Bundle built by an EHR or DTR, to a payer's Claim/$submit, and records the decision with the payer's reference on the Prior authorization screen. A denial or a pend is a delivered request, not a failure: what fails, and is retried, is a payer that did not decide (an error, or an OperationOutcome). The payer's answer is this destination's reply, for a response transformer, and can be handed to another channel, back to the EHR say.",
   mpi:
     "Registers each message's patient in this server's patient index: the PID of an HL7 v2 message, or a FHIR Patient on a raw channel. The index links records from different systems that are the same person, queues the ones it is not sure about for review, and follows A40 merges. It needs the server started with the patient index on.",
   as2:
@@ -464,6 +472,15 @@ export interface Destination {
   mpiSsnSystem: string
   mpiNoMerge: boolean
 
+  /** A TEFCA destination: the purpose of use, and the channel the Bundles found are handed to. */
+  tefcaPurpose: string
+  tefcaResultsTo: string
+
+  /** A PAS destination: the payer's FHIR base, and the channel its answers are handed to. Credentials are the FHIR
+   * destination's fields: httpBearerToken, or fhirAuthType client_credentials or azure. */
+  pasPayer: string
+  pasResultsTo: string
+
   /** An AS2 destination: a trading partner's endpoint, our identity and theirs. */
   as2Url: string
   as2From: string
@@ -544,6 +561,8 @@ export interface Destination {
   pgpEnabled: boolean
   /** pgpEncryptTo is the receivers' public key files, comma or space separated. */
   pgpEncryptTo: string
+  /** On an X12 channel: send the interchange as the XML Mirth and OIE write for X12. */
+  x12AsXml: boolean
   pgpSignWith: string
   pgpPassphrase: string
   pgpArmor: boolean
@@ -970,6 +989,8 @@ export interface ChannelDraft {
 
   x12Envelope: 'require' | 'warn' | 'ignore'
   x12Split: boolean
+  /** xml when the source sends the XML Mirth and OIE write for X12. */
+  x12ArrivesAs: 'x12' | 'xml'
 
   /** An EDIFACT channel: envelope checking, one interchange per message, and a CONTRL back. */
   edifactEnvelope: 'require' | 'warn' | 'ignore'
@@ -2196,6 +2217,7 @@ export function draftToWire(draft: ChannelDraft): unknown {
         ? {
             envelope: draft.x12Envelope,
             split: draft.x12Split,
+            arrivesAs: draft.x12ArrivesAs === 'xml' ? 'xml' : undefined,
             acknowledge: draft.x12Acknowledge === 'none' ? undefined : draft.x12Acknowledge,
             ackSenderId: draft.x12Acknowledge === 'none' ? undefined : draft.x12AckSenderId || undefined,
             ackSenderQualifier:
@@ -2591,6 +2613,27 @@ function destinationToWire(d: Destination): unknown {
     case 'channel':
       out.channel = { name: d.routeTo }
       break
+    case 'tefca':
+      out.tefca = { purpose: d.tefcaPurpose || undefined, resultsTo: d.tefcaResultsTo.trim() || undefined }
+      break
+    case 'pas':
+      out.pas = {
+        payer: d.pasPayer.trim() || undefined,
+        bearerToken: !d.fhirAuthType || d.fhirAuthType === 'aws' ? d.httpBearerToken || undefined : undefined,
+        auth:
+          d.fhirAuthType === 'azure' || d.fhirAuthType === 'client_credentials'
+            ? {
+                type: d.fhirAuthType,
+                tenantId: d.fhirAuthType === 'azure' ? d.fhirAuthTenantId || undefined : undefined,
+                tokenUrl: d.fhirAuthType === 'client_credentials' ? d.fhirAuthTokenUrl || undefined : undefined,
+                clientId: d.fhirAuthClientId || undefined,
+                clientSecret: d.fhirAuthClientSecret || undefined,
+                scope: d.fhirAuthScope || undefined,
+              }
+            : undefined,
+        resultsTo: d.pasResultsTo.trim() || undefined,
+      }
+      break
     case 'mpi': {
       const authorities: Record<string, string> = {}
       for (const line of d.mpiAuthorities.split('\n')) {
@@ -2858,6 +2901,7 @@ function destinationToWire(d: Destination): unknown {
   }
 
   if (d.responseTransformer.trim()) out.responseTransformer = d.responseTransformer
+  if (d.x12AsXml) out.x12As = 'xml'
   if (d.elrConfig.trim()) out.elr = { config: d.elrConfig.trim(), rctc: d.elrRctc.trim() || undefined }
   if (d.pgpEnabled) {
     const to = pgpKeyList(d.pgpEncryptTo)
@@ -3012,6 +3056,10 @@ export function newDestination(): Destination {
     mpiIdType: '',
     mpiSsnSystem: '',
     mpiNoMerge: false,
+    tefcaPurpose: 'treatment',
+    tefcaResultsTo: '',
+    pasPayer: '',
+    pasResultsTo: '',
     as2Url: '',
     as2From: '',
     as2To: '',
@@ -3071,6 +3119,7 @@ export function newDestination(): Destination {
     elrRctc: '',
     pgpEnabled: false,
     pgpEncryptTo: '',
+    x12AsXml: false,
     pgpSignWith: '',
     pgpPassphrase: '',
     pgpArmor: false,
@@ -3238,6 +3287,7 @@ export function emptyDraft(): ChannelDraft {
     v3SenderOid: '',
     x12Envelope: 'require',
     x12Split: true,
+    x12ArrivesAs: 'x12',
     edifactEnvelope: 'require',
     edifactSplit: false,
     edifactAcknowledge: 'none',

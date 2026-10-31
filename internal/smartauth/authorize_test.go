@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/biodream-llc/perfuse/internal/oidc"
@@ -248,5 +249,37 @@ func TestAnEHRLaunchCarriesThePatientAndEncounterChosen(t *testing.T) {
 	// A launch id works once.
 	if q := codeFrom(t, b.do(http.MethodGet, query, nil)); q.Get("error") != "invalid_request" {
 		t.Errorf("a launch id was used twice: %v", q)
+	}
+}
+
+// TestAConsentPostedTwiceAtOnceGivesOneCode is the regression test for the authorization's shared state.
+//
+// The consent handler found the authorization and removed it in two steps, so two consent forms posted at once could
+// both find it and each be given a code. The window is narrow and this test did not hit it reliably on the old code; it
+// pins the property (one authorization, one code) now that finding and removing are one step.
+func TestAConsentPostedTwiceAtOnceGivesOneCode(t *testing.T) {
+	f := userFixture(t)
+	b, req := signIn(t, f, "amy", "launch/patient patient/*.rs")
+	var wg sync.WaitGroup
+	codes := make([]string, 8)
+	for i := range codes {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rec := b.do(http.MethodPost, "/consent", url.Values{"req": {req}, "action": {"allow"}, "scope": {"patient/*.rs"}})
+			if loc, err := url.Parse(rec.Header().Get("Location")); err == nil {
+				codes[i] = loc.Query().Get("code")
+			}
+		}()
+	}
+	wg.Wait()
+	given := 0
+	for _, c := range codes {
+		if c != "" {
+			given++
+		}
+	}
+	if given != 1 {
+		t.Errorf("%d codes were given for one authorization, want 1", given)
 	}
 }

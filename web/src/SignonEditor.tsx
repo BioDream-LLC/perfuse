@@ -476,7 +476,7 @@ export function SignonEditor() {
     }
 
     if (field.kind === 'list') {
-      const value = ((oidc as unknown as Record<string, unknown>)[field.field] as string[]) ?? []
+      const value = ((perTab.config as unknown as Record<string, unknown> | undefined)?.[field.field] as string[]) ?? []
 
       return (
         <Field key={field.key} label={field.label} htmlFor={id} hint={help}>

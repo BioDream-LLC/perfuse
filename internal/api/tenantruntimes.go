@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sort"
 	"sync"
 
+	"github.com/biodream-llc/perfuse/internal/compliance"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
 	"github.com/biodream-llc/perfuse/internal/metrics"
 	"github.com/biodream-llc/perfuse/internal/msgstore"
@@ -37,6 +37,10 @@ type TenantRuntimes struct {
 
 	// LimitsFor reads a tenant's limits. Nil: no limits are enforced.
 	LimitsFor func(context.Context, tenant.ID) (tenant.Limits, error)
+
+	// PHIWatch is the server's patient-data access monitor, given to every tenant's runtime; nil watches nothing.
+	// Its channel names carry the tenant (watchName), so one tenant's traffic is never another's baseline.
+	PHIWatch *compliance.Monitor
 
 	mu       sync.Mutex
 	runtimes map[tenant.ID]*Runtime
@@ -79,6 +83,7 @@ func (tr *TenantRuntimes) For(id tenant.ID) (*Runtime, error) {
 	// Set before anything can start a channel, because a runtime that starts channels while claiming the wrong
 	// tenant would label its metrics and traces for somebody else - and a label is how those get attributed.
 	rt.Tenant = id
+	rt.PHIWatch = tr.PHIWatch
 	if tr.LimitsFor != nil {
 		gate := &tenant.Gate{
 			Limits: func() (tenant.Limits, error) { return tr.LimitsFor(context.Background(), id) },
@@ -99,22 +104,6 @@ func (tr *TenantRuntimes) StoredBytes(ctx context.Context, id tenant.ID) (int64,
 		return 0, nil
 	}
 	return tr.messages.StoredBytes(ctx, string(id))
-}
-
-// Started lists the tenants with a live runtime, sorted.
-//
-// Only those that have been touched. A tenant with no runtime has no channels running, which is different from having
-// channels stopped, and the platform view says so rather than inventing rows.
-func (tr *TenantRuntimes) Started() []tenant.ID {
-	tr.mu.Lock()
-	defer tr.mu.Unlock()
-
-	out := make([]tenant.ID, 0, len(tr.runtimes))
-	for id := range tr.runtimes {
-		out = append(out, id)
-	}
-	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
-	return out
 }
 
 // StopAll stops every tenant's channels.

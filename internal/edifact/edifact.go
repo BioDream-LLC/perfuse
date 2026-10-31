@@ -135,12 +135,6 @@ func (ic *Interchange) Segments() []Segment {
 	return append(out, ic.Trailer)
 }
 
-// IsEDIFACT reports whether data looks like an interchange.
-func IsEDIFACT(data []byte) bool {
-	t := bytes.TrimLeft(data, " \r\n\t\ufeff")
-	return bytes.HasPrefix(t, []byte("UNA")) || bytes.HasPrefix(t, []byte("UNB"))
-}
-
 // splitSegments splits on the segment terminator, honouring the release character, and drops the line breaks many
 // senders put after each terminator.
 func splitSegments(data []byte, d Delimiters) []string {

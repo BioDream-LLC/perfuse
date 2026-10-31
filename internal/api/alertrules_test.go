@@ -307,3 +307,20 @@ func TestDeletingEveryRuleIsRefusedWithAWayForward(t *testing.T) {
 		t.Errorf("the file holds %d rules after a refused save, want the original 1", len(loaded))
 	}
 }
+
+// TestSavedRulesTakeEffectWithoutARestart is the regression test for rules that only changed on disk.
+//
+// The save answered "the rules are reloaded without a restart" and nothing reloaded them: the running evaluator kept
+// the rules it started with, so a new rule or a changed threshold did nothing until somebody restarted the server.
+func TestSavedRulesTakeEffectWithoutARestart(t *testing.T) {
+	h, _ := harnessWithRules(t, seedRule)
+	h.server.Alerts = alerts.NewEvaluator([]alerts.Rule{{Kind: alerts.KindErrorRate, Threshold: 0.2}}, nil)
+	body := map[string]any{"rules": []map[string]any{{"kind": "phi-bulk-reads", "threshold": 10, "severity": "critical"}}}
+	if rec := h.do("admin", "PUT", "/api/alerts/rules", body); rec.Code != http.StatusOK {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	got := h.server.Alerts.Rules()
+	if len(got) != 1 || got[0].Kind != alerts.KindPHIBulkReads {
+		t.Fatalf("the running evaluator has %+v after the save", got)
+	}
+}

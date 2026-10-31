@@ -195,3 +195,26 @@ func TestPIXmAndPDQm(t *testing.T) {
 	}
 	_ = base64.StdEncoding
 }
+
+// TestAMalformedMHDBundleIsRefusedNotAPanic is the regression test for two panics on a caller's Bundle.
+//
+// A DocumentReference without content indexed an empty slice, and a Patient entry with an OID identifier but no fullUrl
+// failed an unchecked type assertion. Both are refused now, with the request answered.
+func TestAMalformedMHDBundleIsRefusedNotAPanic(t *testing.T) {
+	_, _, writer, srv := xdsHarness(t)
+	noContent := strings.Replace(mhdBundle, `"content":[{"attachment":{"contentType":"text/plain","url":"urn:uuid:bin1","title":"Consult","creation":"2026-10-14T09:00:00Z","language":"en-US"},
+     "format":{"system":"http://ihe.net/fhir/ihe.formatcode.fhir/CodeSystem/formatcode","code":"urn:ihe:iti:xds:2017:mimeTypeSufficient"}}],`, "", 1)
+	if noContent == mhdBundle {
+		t.Fatal("the test did not remove the content")
+	}
+	patientNoFullURL := strings.Replace(mhdBundle, `"entry":[
+ {"fullUrl":"urn:uuid:ss1"`, `"entry":[
+ {"resource":{"resourceType":"Patient","identifier":[{"system":"urn:oid:1.2.3","value":"X1"}]},"request":{"method":"POST","url":"Patient"}},
+ {"fullUrl":"urn:uuid:ss1"`, 1)
+	for name, b := range map[string]string{"no content": noContent, "patient without fullUrl": patientNoFullURL} {
+		code, _, raw := fhirDo(t, srv, writer, http.MethodPost, "/mhd", b)
+		if code >= 500 || code == 0 {
+			t.Errorf("%s: %d %s", name, code, raw)
+		}
+	}
+}

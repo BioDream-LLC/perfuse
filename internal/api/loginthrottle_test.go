@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -171,5 +172,59 @@ func TestAnUnknownUserIsThrottledToo(t *testing.T) {
 
 	if !throttled {
 		t.Error("guessing at an unknown username was never throttled, which tells a guesser which names are real")
+	}
+}
+
+// TestAForgedForwardedForDoesNotEscapeTheThrottle is the regression test for the header that defeated it.
+//
+// The limiter used to count failures under the X-Forwarded-For value, which the sender chooses. A guesser who put a
+// different value on every attempt landed in a new bucket each time and was never slowed down.
+func TestAForgedForwardedForDoesNotEscapeTheThrottle(t *testing.T) {
+	h := newHarness(t)
+
+	for i := 1; i <= authlimit.DefaultThreshold+4; i++ {
+		body := `{"username":"admin","password":"wrong-password"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Perfuse-Request", "1")
+		req.Header.Set("X-Forwarded-For", "203.0.113."+strings.Repeat("1", 1)+string(rune('0'+i%10)))
+		req.RemoteAddr = "198.51.100.77:40000"
+		rec := httptest.NewRecorder()
+		h.handler.ServeHTTP(rec, req)
+		if rec.Code == http.StatusTooManyRequests {
+			return
+		}
+	}
+	t.Fatal("a fresh X-Forwarded-For on every attempt was never throttled")
+}
+
+// TestBehindALocalProxyEachClientIsCountedApart covers the one case X-Forwarded-For is read: a proxy on the same machine.
+//
+// The proxy appends the address it saw, so the last entry is the client's and cannot be forged; one client's failures
+// must not lock out another, and a forged first entry must not open a fresh count.
+func TestBehindALocalProxyEachClientIsCountedApart(t *testing.T) {
+	h := newHarness(t)
+	try := func(xff string) int {
+		req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(`{"username":"admin","password":"wrong-password"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Perfuse-Request", "1")
+		req.Header.Set("X-Forwarded-For", xff)
+		req.RemoteAddr = "127.0.0.1:40000"
+		rec := httptest.NewRecorder()
+		h.handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	throttled := false
+	for i := range authlimit.DefaultThreshold + 4 {
+		if try(fmt.Sprintf("10.9.9.%d, 203.0.113.5", i)) == http.StatusTooManyRequests {
+			throttled = true
+			break
+		}
+	}
+	if !throttled {
+		t.Fatal("one client behind the proxy, forging the first X-Forwarded-For entry each time, was never throttled")
+	}
+	if code := try("203.0.113.6"); code == http.StatusTooManyRequests {
+		t.Error("another client behind the same proxy was locked out by the first one's failures")
 	}
 }

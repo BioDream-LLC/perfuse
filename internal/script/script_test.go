@@ -670,3 +670,26 @@ func TestAnOverwrittenGlobalIsPutBack(t *testing.T) {
 		}
 	}
 }
+
+// TestAContextTimeoutOverridesTheEngines guards the per-execution timeout a JavaScript destination relies on.
+//
+// The destination has its own timeout setting but runs on the channel's engine. The setting was read into a context
+// that nothing looked at, so a destination set to give up after a fraction of a second ran for the channel's whole
+// script timeout instead.
+func TestAContextTimeoutOverridesTheEngines(t *testing.T) {
+	e := New(Options{Timeout: 20 * time.Second})
+	for lang, src := range map[Language]string{JavaScript: `while (true) { }`, Lua: `while true do end`} {
+		s, err := e.CompileIn("runaway", src, Writer, lang)
+		if err != nil {
+			t.Fatal(err)
+		}
+		start := time.Now()
+		_, err = e.Run(s, &Context{Raw: "x", ChannelMap: NewSharedMap(), Timeout: 200 * time.Millisecond})
+		if err == nil {
+			t.Fatalf("%v: an infinite loop was not stopped", lang)
+		}
+		if took := time.Since(start); took > 5*time.Second {
+			t.Errorf("%v: stopped after %s, so the engine's 20s applied rather than the context's 200ms", lang, took)
+		}
+	}
+}

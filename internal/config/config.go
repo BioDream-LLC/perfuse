@@ -460,6 +460,12 @@ const (
 	// DestinationMPI registers each message's patient in this server's patient index.
 	DestinationMPI DestinationType = "mpi"
 
+	// DestinationTEFCA asks the TEFCA Facilitated FHIR partner for each message's patient.
+	DestinationTEFCA DestinationType = "tefca"
+
+	// DestinationPAS submits each message, a Da Vinci PAS request Bundle, to a payer's Claim/$submit.
+	DestinationPAS DestinationType = "pas"
+
 	// DestinationAS2 sends each message as AS2 (RFC 4130) to a trading partner, delivered once its receipt confirms it.
 	DestinationAS2 DestinationType = "as2"
 	// DestinationJavaScript runs a script instead of sending, which is Mirth's
@@ -533,6 +539,8 @@ var allDestinationTypes = []DestinationType{
 	DestinationDirect,
 	DestinationAS2,
 	DestinationMPI,
+	DestinationTEFCA,
+	DestinationPAS,
 	DestinationBroker,
 	DestinationKafka,
 	DestinationSQS,
@@ -646,6 +654,16 @@ type Destination struct {
 
 	// MPI configures a patient index destination.
 	MPI *MPIDestination `yaml:"mpi,omitempty"`
+
+	// TEFCA configures a TEFCA query destination.
+	TEFCA *TEFCADestination `yaml:"tefca,omitempty"`
+
+	// PAS configures a prior authorization submission destination.
+	PAS *PASDestination `yaml:"pas,omitempty"`
+
+	// X12As is xml for a destination on an X12 channel that receives the interchange as the XML Mirth Connect and Open
+	// Integration Engine write for X12, for a receiver built against what Mirth sent it. Empty or x12 sends X12.
+	X12As string `yaml:"x12_as,omitempty"`
 
 	// DICOM applies to a dicom destination.
 	DICOM *DICOMDestination `yaml:"dicom,omitempty"`

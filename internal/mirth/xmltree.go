@@ -3,6 +3,7 @@ package mirth
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -26,6 +27,13 @@ type node struct {
 	Text string
 	Kids []*node
 }
+
+// maxTreeDepth bounds how deeply an imported document may nest.
+//
+// Everything that reads the tree afterwards walks it recursively, and the document is uploaded by whoever imports it.
+// Ten megabytes of <a> elements nest over a million levels, enough to exhaust the goroutine stack, which is a fatal
+// error rather than a recoverable panic: the whole server stops. A real Mirth export nests a few dozen levels.
+const maxTreeDepth = 1000
 
 func parseTree(r io.Reader) (*node, error) {
 	dec := xml.NewDecoder(r)
@@ -59,6 +67,9 @@ func parseTree(r io.Reader) (*node, error) {
 				root = n
 			}
 			stack = append(stack, n)
+			if len(stack) > maxTreeDepth {
+				return nil, fmt.Errorf("the document nests more than %d elements deep, which no Mirth export does", maxTreeDepth)
+			}
 			text = append(text, &strings.Builder{})
 
 		case xml.CharData:

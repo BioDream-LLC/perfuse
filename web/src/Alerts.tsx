@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { AccessWatchPanel } from './AccessWatch'
 import { AlertRulesEditor } from './AlertRulesEditor'
 import { ApiError, api, atLeast } from './api'
 import type { Alert, AlertSnapshot, Role } from './api'
@@ -186,6 +187,7 @@ export function Alerts({
   // snapshot branch meant a single failed poll unmounted it and discarded whatever
   // was half-typed.
   const rulesEditor = atLeast(role, 'admin') ? <AlertRulesEditor /> : null
+  const accessWatch = atLeast(role, 'admin') ? <AccessWatchPanel /> : null
 
   // One return, and the editor always sits in the same place in the tree.
   // Returning a different shape per state remounts everything below the point the
@@ -213,8 +215,9 @@ export function Alerts({
         <h1 className="text-lg font-semibold text-slate-100">Alerts</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
           Conditions are checked every thirty seconds and must hold for a while before anything
-          fires, so a single unlucky message during a quiet hour does not wake anybody. Every
-          alert clears itself when the condition stops.
+          fires, so a single unlucky message during a quiet hour does not wake anybody. The
+          patient-data rules are the exception and fire at once, because what they report has
+          already happened. Every alert clears itself when the condition stops.
         </p>
       </div>
 
@@ -301,7 +304,7 @@ export function Alerts({
                   {formatThreshold(rule.kind, rule.threshold)}
                 </td>
                 <td className="py-1.5 pr-3 text-slate-400">
-                  {rule.for ? formatNanos(rule.for) : '2m'}
+                  {rule.for ? formatNanos(rule.for) : atOnce.has(rule.kind) ? 'at once' : '2m'}
                 </td>
                 <td className="py-1.5">
                   <span
@@ -327,6 +330,8 @@ export function Alerts({
           The table above says what is being watched and could not change it, so an operator who found a threshold wrong had to
           leave, open the settings screen, and edit YAML - knowing already that the kind is spelled error-rate and that threshold
           means a share for some kinds and a count for others. The rules are now editable where they are read. */}
+      {accessWatch}
+
       {rulesEditor}
     </div>
   )
@@ -411,7 +416,16 @@ const ruleLabels: Record<string, string> = {
   'channel-down': 'Channel enabled but not listening',
   'script-errors': 'Transformer errors',
   'slow-delivery': 'Slow at the tail',
+  'rows-quarantined': 'Database rows abandoned',
+  contract: 'Feed no longer matches its contract',
+  'phi-volume': 'Channel carries far more than usual',
+  'phi-after-hours': 'Patient data moving at night on a daytime channel',
+  'phi-new-destination': 'Patient data sent somewhere new',
+  'phi-bulk-reads': "Somebody reading many patients' records quickly",
 }
+
+/** The patient-data rules fire as soon as the monitor sees something, so "2m" would misstate them. */
+const atOnce = new Set(['phi-volume', 'phi-after-hours', 'phi-new-destination', 'phi-bulk-reads'])
 
 function formatThreshold(kind: string, value: number): string {
   if (kind === 'error-rate') return `${(value * 100).toFixed(1)}%`
@@ -419,6 +433,9 @@ function formatThreshold(kind: string, value: number): string {
   // two orders of magnitude.
   if (kind === 'below-rhythm') return `${(value * 100).toFixed(0)}% below normal`
   if (kind === 'queue-age' || kind === 'slow-delivery') return formatSeconds(value)
+  if (kind === 'phi-volume') return `${value.toLocaleString(uiLocale())} times the usual rate`
+  if (kind === 'phi-bulk-reads') return `${value.toLocaleString(uiLocale())} records in a minute`
+  if (kind === 'phi-after-hours' || kind === 'phi-new-destination') return 'any'
   return value.toLocaleString(uiLocale())
 }
 

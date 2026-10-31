@@ -49,12 +49,6 @@ func Set(m Message, p Path, value string) (Message, error) {
 	return out, nil
 }
 
-// Clear blanks a field, leaving it present.
-//
-// Present and empty rather than removed, because the two are different on the wire and a payer reads them differently: a
-// blank field was sent deliberately and an absent one was never sent.
-func Clear(m Message, p Path) (Message, error) { return Set(m, p, "") }
-
 // hit is one located field.
 type hit struct{ tx, seg, field int }
 

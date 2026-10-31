@@ -209,6 +209,9 @@ func (s *Store) Forget(ctx context.Context, tenant, table string, values []strin
 			return err
 		}
 	}
+	// Retention is the server's, not a tenant's: it prunes every tenant's old values, which is what the server's
+	// retention setting means (cmd/perfuse calls it with no tenant for exactly that). A caller pruning for one tenant
+	// passes olderThan 0 and names the values instead.
 	if olderThan > 0 {
 		if _, err := s.db.ExecContext(ctx, `DELETE FROM unmapped_values WHERE last_seen < ?`,
 			time.Now().UTC().Add(-olderThan).Format(time.RFC3339)); err != nil {

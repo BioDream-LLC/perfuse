@@ -32,8 +32,10 @@ type Registry struct {
 	// Registered, when set, is told of each submission after it is stored.
 	Registered func(ctx context.Context, s *Submission)
 
-	once sync.Once
-	err  error
+	// mu guards prepared. A failed preparation is not remembered: it used to be cached by a sync.Once, so one
+	// cancelled request during the first CREATE TABLE left the registry refusing everything until a restart.
+	mu       sync.Mutex
+	prepared bool
 }
 
 func (r *Registry) now() time.Time {
@@ -52,7 +54,12 @@ const (
 )
 
 func (r *Registry) ready(ctx context.Context) error {
-	r.once.Do(func() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.prepared {
+		return nil
+	}
+	{
 		for _, stmt := range []string{
 			`CREATE TABLE IF NOT EXISTS xds_objects (
 				id TEXT PRIMARY KEY,
@@ -93,12 +100,12 @@ func (r *Registry) ready(ctx context.Context) error {
 				content BLOB NOT NULL)`,
 		} {
 			if _, err := r.DB.ExecContext(ctx, stmt); err != nil {
-				r.err = fmt.Errorf("preparing the XDS tables: %w", err)
-				return
+				return fmt.Errorf("preparing the XDS tables: %w", err)
 			}
 		}
-	})
-	return r.err
+	}
+	r.prepared = true
+	return nil
 }
 
 // Problem is one registry error.

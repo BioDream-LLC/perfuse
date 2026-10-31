@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/biodream-llc/perfuse/internal/api"
+	"github.com/biodream-llc/perfuse/internal/engine"
 	"github.com/biodream-llc/perfuse/internal/settings"
 	"github.com/biodream-llc/perfuse/internal/tefca"
 )
@@ -99,6 +100,32 @@ func buildTEFCA(store *settings.Store, dbPath string, log *slog.Logger) (
 		return nil, nil, fmt.Errorf("TEFCA participation could not be set up: %w", err)
 	}
 
+	// Facilitated FHIR, when a partner is named. Its settings were on the TEFCA screen and nothing read them, so a
+	// configured partner was never contacted and a certificate that did not name the client URI was never noticed.
+	if partner := strings.TrimSpace(store.String("tefca.partnerFHIRBase")); partner != "" {
+		clientName := strings.TrimSpace(store.String("tefca.clientName"))
+		if clientName == "" {
+			clientName = cfg.OrganizationName
+		}
+		ex, err := tefca.NewExchange(cfg, tefca.ExchangeConfig{
+			PartnerFHIRBase: partner,
+			ClientURI:       strings.TrimSpace(store.String("tefca.clientURI")),
+			TrustAnchorPath: strings.TrimSpace(store.String("tefca.trustAnchorPath")),
+			ClientName:      clientName,
+			Contacts:        trimAll(store.List("tefca.contacts")),
+			Scope:           strings.TrimSpace(store.String("tefca.scope")),
+			PurposeCodes:    strings.TrimSpace(store.String("tefca.purposeCodes")),
+		}, nil)
+		if err != nil {
+			_ = audit.Close()
+			// Fatal, as the settings say: a certificate that does not name this client, or a partner whose metadata
+			// cannot be anchored, would make every exchange fail or, worse, trust whoever answered.
+			return nil, nil, fmt.Errorf("TEFCA Facilitated FHIR could not be set up: %w", err)
+		}
+		participant.AttachExchange(ex)
+		log.Info("exchanging over TEFCA Facilitated FHIR", "partner", partner)
+	}
+
 	log.Info("participating in TEFCA",
 		"organisation", cfg.OrganizationName,
 		"oid", cfg.OrganizationOID,
@@ -120,6 +147,8 @@ func buildTEFCA(store *settings.Store, dbPath string, log *slog.Logger) (
 func attachTEFCA(srv *api.Server, p *tefca.Participant, audit *tefca.PersistentAuditLog) {
 	srv.TEFCA = p
 	srv.TEFCAAudit = audit
+	// The engine's too, so a channel's tefca destination exchanges as this participant.
+	engine.TEFCA = p
 }
 
 func trimAll(in []string) []string {

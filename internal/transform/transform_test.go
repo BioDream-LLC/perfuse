@@ -379,3 +379,22 @@ func TestConditionMatchesAnyRepetition(t *testing.T) {
 		t.Errorf("!= should mean no repetition matches:\n%s", out)
 	}
 }
+
+// TestDatesWithWordsAndLiteralsConvert guards convertDate on patterns whose layout is not as long as the value.
+//
+// The value was cut to the Go layout's length before parsing, so that yyyyMMdd reads a full HL7 timestamp. With MMM,
+// EEEE or a in the pattern the layout's length is not the value's, and a quoted 'T' was refused as an unknown letter.
+func TestDatesWithWordsAndLiteralsConvert(t *testing.T) {
+	for _, tc := range []struct{ in, from, to, want string }{
+		{"20260131123456", "yyyyMMdd", "yyyy-MM-dd", "2026-01-31"},
+		{"31 January 2026", "dd MMMM yyyy", "yyyyMMdd", "20260131"},
+		{"Sat 31 Jan 2026", "EEE dd MMM yyyy", "yyyyMMdd", "20260131"},
+		{"2026-01-31T12:34", "yyyy-MM-dd'T'HH:mm", "yyyyMMddHHmm", "202601311234"},
+		{"3 Jan 2026", "d MMM yyyy", "yyyyMMdd", "20260103"},
+	} {
+		got, err := convertDate(tc.in, tc.from, tc.to)
+		if err != nil || got != tc.want {
+			t.Errorf("%q as %q: %q %v, want %q", tc.in, tc.from, got, err, tc.want)
+		}
+	}
+}

@@ -1,6 +1,7 @@
 package fhirserver
 
 import (
+	"context"
 	gocrypto "crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -11,6 +12,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -367,5 +370,42 @@ func TestTheDiscoveryDocumentIs404WhenSMARTIsNotConfigured(t *testing.T) {
 
 	if rec := get(t, h, "/.well-known/smart-configuration", ""); rec.Code != http.StatusNotFound {
 		t.Errorf("an unconfigured server answered %d rather than 404", rec.Code)
+	}
+}
+
+// TestConcurrentKeyDiscoveryIsSafe is the regression test for the race in finding the signing keys.
+//
+// Requests are authenticated concurrently. Discovery used a sync.Once that was reassigned after a failure, while other
+// requests could be inside it; run with -race, this test reported that. It also checks a failure is retried: the
+// authorization server comes up partway through and later requests find its keys.
+func TestConcurrentKeyDiscoveryIsSafe(t *testing.T) {
+	var up atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !up.Load() {
+			http.Error(w, "starting", http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = w.Write([]byte(`{"jwks_uri":"` + "http://" + r.Host + `/jwks"}`))
+	}))
+	defer srv.Close()
+
+	a, err := NewSMARTAuth(SMARTConfig{Issuer: srv.URL, Audience: "https://fhir.example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for i := range 40 {
+		if i == 20 {
+			up.Store(true)
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, _ = a.keySet(context.Background())
+		}()
+	}
+	wg.Wait()
+	if _, err := a.keySet(context.Background()); err != nil {
+		t.Fatalf("once the authorization server was up, the keys were still not found: %v", err)
 	}
 }

@@ -38,9 +38,19 @@ type UByte uint8
 var errShort = errors.New("amqp: the encoded value is truncated")
 
 type decoder struct {
-	b   []byte
-	pos int
+	b     []byte
+	pos   int
+	depth int
 }
+
+// maxDepth bounds how deeply described types, lists and maps may nest in one frame.
+//
+// The decoder recurses once per level, and the input comes from the broker. Without a bound a frame that is a long run
+// of descriptor bytes (0x00 0x00 ...) or nested list constructors drives the recursion as deep as the frame is long.
+// Real AMQP 1.0 performatives and messages nest a handful of levels; 64 leaves ample room.
+const maxDepth = 64
+
+var errTooDeep = errors.New("amqp: the encoded value nests too deeply")
 
 func (d *decoder) need(n int) error {
 	if d.pos+n > len(d.b) {
@@ -84,6 +94,12 @@ func Decode(b []byte) (any, int, error) {
 }
 
 func (d *decoder) value() (any, error) {
+	if d.depth >= maxDepth {
+		return nil, errTooDeep
+	}
+	d.depth++
+	defer func() { d.depth-- }()
+
 	code, err := d.u8()
 	if err != nil {
 		return nil, err

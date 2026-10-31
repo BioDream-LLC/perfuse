@@ -134,11 +134,14 @@ func (c *Channel) pollAzureBlobOnce(ctx context.Context, client *azblob.Client, 
 
 func (c *Channel) handleBlob(ctx context.Context, client *azblob.Client, cfg *config.AzureBlobSource, b azblob.Blob) {
 	rel := strings.TrimPrefix(b.Name, cfg.Prefix)
-	var body []byte
+	// stored is the blob exactly as it was fetched, and is what a move or an error copy writes back. body becomes the
+	// decrypted content when the source has a pgp block; writing that back would put plaintext into a container whose whole
+	// point was holding it encrypted (the S3 source copies the original object for the same reason).
+	var body, stored []byte
 	// A move is a put of the same bytes under the new name, then a delete: the bytes are already in hand, so a server-side copy - which
 	// is asynchronous in Azure - would add a wait and nothing else.
 	move := func(to string) bool {
-		if err := client.Put(ctx, to, body, ""); err != nil {
+		if err := client.Put(ctx, to, stored, ""); err != nil {
 			c.log.Error("a blob could not be moved, so it will be read again", "blob", b.Name, "to", to, "err", err)
 			return false
 		}
@@ -146,7 +149,7 @@ func (c *Channel) handleBlob(ctx context.Context, client *azblob.Client, cfg *co
 	}
 	fail := func(why error) {
 		c.log.Error("a blob could not be handled; it was moved to the error prefix", "blob", b.Name, "err", why)
-		if body != nil && move(cfg.ErrorPrefix+rel) {
+		if stored != nil && move(cfg.ErrorPrefix+rel) {
 			_ = client.Delete(ctx, b.Name)
 		}
 	}
@@ -156,6 +159,7 @@ func (c *Channel) handleBlob(ctx context.Context, client *azblob.Client, cfg *co
 	}
 	var err error
 	body, err = client.Get(ctx, b.Name, cfg.MaxObjectSize)
+	stored = body
 	if err != nil {
 		c.log.Error("reading a blob failed and will be retried at the next poll", "blob", b.Name, "err", err)
 		return

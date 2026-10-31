@@ -92,7 +92,7 @@ func (s *Server) handleUpstreamStart(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusBadRequest, "The form could not be read.")
 		return
 	}
-	_, p := s.pendingFor(r)
+	id, p := s.pendingFor(r)
 	if p == nil {
 		problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
 		return
@@ -102,9 +102,10 @@ func (s *Server) handleUpstreamStart(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusInternalServerError, "The sign-in could not be started.")
 		return
 	}
-	s.mu.Lock()
-	p.upstream = ar
-	s.mu.Unlock()
+	if s.updatePending(id, func(live *pending) { live.upstream = ar }) == nil {
+		problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
+		return
+	}
 	http.Redirect(w, r, ar.AuthURL(s.Upstream.Provider, s.Upstream.ClientID, s.Upstream.Scopes), http.StatusFound)
 }
 
@@ -127,6 +128,8 @@ func (s *Server) handleUpstreamCallback(w http.ResponseWriter, r *http.Request) 
 		// One callback per attempt: a replayed callback finds nothing.
 		ar := p.upstream
 		p.upstream = nil
+		c := *p
+		p = &c
 		s.mu.Unlock()
 		s.finishUpstream(w, r, id, p, ar)
 		return
@@ -161,9 +164,10 @@ func (s *Server) finishUpstream(w http.ResponseWriter, r *http.Request, id strin
 		again("Your " + s.Upstream.Label + " account is not linked to anyone who may authorize apps here. Ask the administrator to link it.")
 		return
 	}
-	s.mu.Lock()
-	p.user = u
-	s.mu.Unlock()
+	if p = s.updatePending(id, func(live *pending) { live.user = u }); p == nil {
+		problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
+		return
+	}
 	s.next(w, r, id, p)
 }
 

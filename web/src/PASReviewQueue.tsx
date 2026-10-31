@@ -334,8 +334,11 @@ function CaseView({ id, onDecided }: { id: string; onDecided: () => void }) {
             )}
             {decision === 'modify' && (
               <div className="grid gap-3 sm:grid-cols-3">
-                <Field label="Units certified" hint="Fewer than asked.">
-                  <input className="input" type="number" min={1}
+                {/* With one unit asked for there is no smaller number to certify: the input would have min 1 and
+                    max 0 and accept nothing, so it says so instead and leaves the alternative code. */}
+                <Field label="Units certified"
+                  hint={(fewest(c) ?? 1) < 1 ? 'One unit was asked for, so fewer cannot be certified; approve a different code instead.' : 'Fewer than asked.'}>
+                  <input className="input" type="number" min={1} disabled={(fewest(c) ?? 1) < 1}
                     max={fewest(c)} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                 </Field>
                 <Field label="Approved instead: code system">

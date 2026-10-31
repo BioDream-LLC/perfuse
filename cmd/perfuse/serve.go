@@ -7,12 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/biodream-llc/perfuse/internal/crd"
-	"github.com/biodream-llc/perfuse/internal/dashboards"
-	"github.com/biodream-llc/perfuse/internal/davinci"
-	"github.com/biodream-llc/perfuse/internal/dicomweb"
-	"github.com/biodream-llc/perfuse/internal/publichealth"
-	"github.com/biodream-llc/perfuse/internal/trace"
 	"io"
 	"log/slog"
 	"net/http"
@@ -23,6 +17,15 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/biodream-llc/perfuse/internal/compliance"
+	"github.com/biodream-llc/perfuse/internal/crd"
+	"github.com/biodream-llc/perfuse/internal/dashboards"
+	"github.com/biodream-llc/perfuse/internal/davinci"
+	"github.com/biodream-llc/perfuse/internal/dicomweb"
+	"github.com/biodream-llc/perfuse/internal/priorauth"
+	"github.com/biodream-llc/perfuse/internal/publichealth"
+	"github.com/biodream-llc/perfuse/internal/trace"
 
 	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/internal/admit"
@@ -144,6 +147,8 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		"run the channel engine in this process, so the interface can start, stop and monitor channels")
 	storeMessages := fset.Bool("store-messages", true,
 		"record every message handled, which is what makes the message browser work")
+	watchAccess := fset.Bool("watch-access", true,
+		"watch traffic and reads of patient data for what a breach looks like (bursts, night traffic, new destinations, bulk reads) and raise alerts")
 	storePayloads := fset.Bool("store-payloads", true,
 		"store message contents as well as their outcomes; turn this off where PHI must not be held at rest")
 	retention := fset.Int("retention-days", 30,
@@ -739,10 +744,26 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 		log.Info("keeping a patient index", "database", sqlitedb.RedactURL(mpiPath))
 	}
 
+	// The record of prior authorization requests PAS destinations submit, kept beside the database. Opened before the
+	// runtime so a channel's first submission is recorded; a file that cannot be read stops the start rather than
+	// being replaced by an empty one.
+	priorAuths, err := priorauth.OpenTracker(filepath.Join(dataDir, "prior-auth.json"))
+	if err != nil {
+		return err
+	}
+	engine.PriorAuths = priorAuths
+
+	// The patient-data access monitor, before the runtime so every channel it starts is watched from its first message.
+	var phiWatch *compliance.Monitor
+	if *watchAccess {
+		phiWatch = startAccessWatch(st, messages, dataDir, log)
+	}
+
 	var runtime *api.Runtime
 	var clusterRunner *clusterRun
 	if *runEngine {
 		runtime = api.NewRuntime(repo, messages, fhirStore)
+		runtime.PHIWatch = phiWatch
 		runtime.Tracer = tracer
 		runtime.Terminology = termStore
 		if *clusterMode != "" {
@@ -947,6 +968,11 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 				return runtime.ChannelStates()
 			},
 		}
+		if phiWatch != nil {
+			watcher.Privacy = func() []alerts.PrivacySignal { return privacySignals(phiWatch) }
+		}
+		// A rules file edited by hand is picked up at the next reading; the editor applies its own saves at once.
+		reloadRules := rulesReloader(*alertsFile, evaluator, log)
 
 		// What each channel normally carries, so silence can be judged against the feed's own history rather
 		// than a fixed threshold. Needs the message store, because the history is the messages.
@@ -981,6 +1007,13 @@ func cmdServe(args []string, stdout, stderr io.Writer) error {
 			log.Info("checking feed contracts", "channels", withContracts)
 		}
 
+		contractsBefore := watcher.BeforeRead
+		watcher.BeforeRead = func() {
+			reloadRules()
+			if contractsBefore != nil {
+				contractsBefore()
+			}
+		}
 		go watcher.Run(metricsStop)
 	}
 
@@ -1155,6 +1188,7 @@ oidcDone:
 		},
 		Runtime:            runtime,
 		Alerts:             srvAlerts,
+		PHIWatch:           phiWatch,
 		SNMP:               srvSNMP,
 		Terminology:        termStore,
 		PatientIndex:       mpiStore,
@@ -1419,6 +1453,7 @@ oidcDone:
 			collector = runtime.Metrics
 		}
 		srv.Runtimes = api.NewTenantRuntimes(repos, messages, fhirStore, collector, log)
+		srv.Runtimes.PHIWatch = phiWatch
 		// Each tenant's limits, set by a platform operator in the console, refuse what is over them.
 		srv.Runtimes.LimitsFor = func(ctx context.Context, id tenant.ID) (tenant.Limits, error) {
 			t, err := st.Tenant(ctx, id)
@@ -2222,6 +2257,31 @@ func purgeQueue(stop <-chan struct{}, q *queue.Store, log *slog.Logger) {
 			log.Info("purged finished queue items", "removed", n,
 				"older_than", retention.String())
 		}
+	}
+}
+
+// rulesReloader returns a function that reloads the rules file when it has changed since the last look.
+//
+// A file that no longer parses is reported and the rules in force are kept: replacing working rules with none because
+// of a typo would be a moment without alerting on a server that believes it has some.
+func rulesReloader(path string, e *alerts.Evaluator, log *slog.Logger) func() {
+	var seen time.Time
+	if info, err := os.Stat(path); err == nil {
+		seen = info.ModTime()
+	}
+	return func() {
+		info, err := os.Stat(path)
+		if err != nil || !info.ModTime().After(seen) {
+			return
+		}
+		seen = info.ModTime()
+		rules, err := alerts.LoadFile(path)
+		if err != nil {
+			log.Error("the alert rules file changed and does not load; the rules in force are kept", "file", path, "err", err)
+			return
+		}
+		e.SetRules(rules)
+		log.Info("alert rules reloaded", "file", path, "rules", len(rules))
 	}
 }
 

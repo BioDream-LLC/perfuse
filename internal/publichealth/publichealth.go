@@ -387,7 +387,7 @@ func ParseVXR(data []byte) ([]ImmunizationRecord, error) {
 			// RXA|0|1|AdminDate|AdminDate|Code^Name^CVX|Amount|Units|
 			//     AdmMethod|AdmSite|Provider|...(several)...|LotNumber|Manufacturer
 			// Field indices (0-based after split on |):
-			//   0=RXA, 3=AdminDate, 5=VaccineCode, 17=LotNumber, 18=Manufacturer
+			//   0=RXA, 3=AdminDate, 5=VaccineCode, 15=LotNumber, 17=Manufacturer
 			rec := ImmunizationRecord{PatientID: currentPatientID}
 			if len(fields) > 3 {
 				rec.AdminDate = fields[3]
@@ -401,11 +401,14 @@ func ParseVXR(data []byte) ([]ImmunizationRecord, error) {
 					rec.VaccineName = codeParts[1]
 				}
 			}
-			if len(fields) > 17 {
-				rec.LotNumber = fields[17]
+			// RXA-15 is the lot number and RXA-17 the manufacturer, as BuildVXU writes them and as HL7 defines them.
+			// They were read from 17 and 18, which gave an empty lot number and the refusal reason as the
+			// manufacturer for every registry answer.
+			if len(fields) > 15 {
+				rec.LotNumber = fields[15]
 			}
-			if len(fields) > 18 {
-				rec.Manufacturer = fields[18]
+			if len(fields) > 17 {
+				rec.Manufacturer = fields[17]
 			}
 			records = append(records, rec)
 		}

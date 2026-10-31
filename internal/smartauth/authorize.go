@@ -166,16 +166,51 @@ func (s *Server) render(w http.ResponseWriter, page string, data any) {
 	_ = pages.ExecuteTemplate(w, page, data)
 }
 
-// pendingFor finds the authorization a form belongs to.
+// pendingFor finds the authorization a form belongs to and returns a copy of it.
+//
+// A copy, because the forms of one authorization can arrive at once (a double-click, or a crafted parallel post) and its
+// user, patient, failures and upstream fields change as the person moves through the pages. Handlers read their copy
+// and make every change through updatePending, under the lock; they used to read and write the shared struct directly,
+// which was a data race on the authorization flow itself.
 func (s *Server) pendingFor(r *http.Request) (string, *pending) {
 	id := r.PostForm.Get("req")
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return id, s.pendingLocked(id)
+}
+
+// pendingLocked returns a copy of a live authorization, dropping it when it has expired. s.mu must be held.
+func (s *Server) pendingLocked(id string) *pending {
 	p := s.pending[id]
 	if p == nil || s.now().After(p.expires) {
 		delete(s.pending, id)
-		return id, nil
+		return nil
 	}
+	c := *p
+	return &c
+}
+
+// updatePending changes a live authorization under the lock and returns a copy as it now is, nil when it has gone.
+func (s *Server) updatePending(id string, change func(*pending)) *pending {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p := s.pending[id]
+	if p == nil {
+		return nil
+	}
+	change(p)
+	c := *p
+	return &c
+}
+
+// takePending removes an authorization and returns it, so it can be consented to once: two consent forms posted
+// together used to both find it before either removed it, and each was given a code.
+func (s *Server) takePending(r *http.Request) (string, *pending) {
+	id := r.PostForm.Get("req")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p := s.pendingLocked(id)
+	delete(s.pending, id)
 	return id, p
 }
 
@@ -199,8 +234,11 @@ func (s *Server) handleSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 	if !ok {
 		s.mu.Lock()
-		p.failures++
-		tooMany := p.failures >= maxSignInFailures
+		tooMany := true
+		if live := s.pending[id]; live != nil {
+			live.failures++
+			tooMany = live.failures >= maxSignInFailures
+		}
 		if tooMany {
 			delete(s.pending, id)
 		}
@@ -214,9 +252,10 @@ func (s *Server) handleSignIn(w http.ResponseWriter, r *http.Request) {
 			"Upstream": s.upstreamLabel()})
 		return
 	}
-	s.mu.Lock()
-	p.user = u
-	s.mu.Unlock()
+	if p = s.updatePending(id, func(live *pending) { live.user = u }); p == nil {
+		problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
+		return
+	}
 	s.next(w, r, id, p)
 }
 
@@ -224,10 +263,17 @@ var dummyHash, _ = store.HashPassword("not a real password")
 
 // next shows the patient picker when a clinician must choose a patient, and the consent page otherwise.
 func (s *Server) next(w http.ResponseWriter, r *http.Request, id string, p *pending) {
+	patient := p.patient
 	if own := p.user.patientID(); own != "" {
-		p.patient = own
+		patient = own
 	} else if p.launchPatient != "" {
-		p.patient = p.launchPatient
+		patient = p.launchPatient
+	}
+	if patient != p.patient {
+		if p = s.updatePending(id, func(live *pending) { live.patient = patient }); p == nil {
+			problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
+			return
+		}
 	}
 	if p.patient == "" && slices.Contains(p.scopes, "launch/patient") {
 		var choices []PatientChoice
@@ -261,9 +307,10 @@ func (s *Server) handlePatient(w http.ResponseWriter, r *http.Request) {
 		s.next(w, r, id, p)
 		return
 	}
-	s.mu.Lock()
-	p.patient = chosen
-	s.mu.Unlock()
+	if p = s.updatePending(id, func(live *pending) { live.patient = chosen }); p == nil {
+		problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
+		return
+	}
 	s.next(w, r, id, p)
 }
 
@@ -272,14 +319,11 @@ func (s *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusBadRequest, "The form could not be read.")
 		return
 	}
-	id, p := s.pendingFor(r)
+	_, p := s.takePending(r)
 	if p == nil || p.user == nil {
 		problem(w, http.StatusBadRequest, "This sign-in has expired. Go back to the app and start again.")
 		return
 	}
-	s.mu.Lock()
-	delete(s.pending, id)
-	s.mu.Unlock()
 	if r.PostForm.Get("action") != "allow" {
 		redirectError(w, r, p.redirect, p.state, "access_denied", "the person did not allow access")
 		return

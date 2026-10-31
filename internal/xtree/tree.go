@@ -99,6 +99,11 @@ func (n *Node) Append(child *Node) *Node {
 	}
 	child.parent = n
 	n.Children = append(n.Children, child)
+	// Kept in step with Fragments, which is what a mixed-content node (CDA narrative) is written from: an edit made only
+	// to Children vanished from the output there.
+	if len(n.Fragments) > 0 {
+		n.Fragments = append(n.Fragments, Fragment{Node: child})
+	}
 	n.Text = ""
 	return child
 }
@@ -119,6 +124,21 @@ func (n *Node) Insert(index int, child *Node) *Node {
 		index = len(n.Children)
 	}
 	child.parent = n
+	if len(n.Fragments) > 0 {
+		// Before the fragment holding the child now at index, so the text around it stays where it was.
+		at := len(n.Fragments)
+		if index < len(n.Children) {
+			for i, f := range n.Fragments {
+				if f.Node == n.Children[index] {
+					at = i
+					break
+				}
+			}
+		}
+		n.Fragments = append(n.Fragments, Fragment{})
+		copy(n.Fragments[at+1:], n.Fragments[at:])
+		n.Fragments[at] = Fragment{Node: child}
+	}
 	n.Children = append(n.Children, nil)
 	copy(n.Children[index+1:], n.Children[index:])
 	n.Children[index] = child
@@ -131,6 +151,7 @@ func (n *Node) Remove(child *Node) bool {
 	for i, c := range n.Children {
 		if c == child {
 			n.Children = append(n.Children[:i], n.Children[i+1:]...)
+			n.dropFragments(func(f *Node) bool { return f == child })
 			c.parent = nil
 			return true
 		}
@@ -151,7 +172,25 @@ func (n *Node) RemoveName(name string) int {
 		kept = append(kept, c)
 	}
 	n.Children = kept
+	if removed > 0 {
+		n.dropFragments(func(f *Node) bool { return f.Name == name })
+	}
 	return removed
+}
+
+// dropFragments removes the element fragments a removal took out of Children, keeping the text between them.
+func (n *Node) dropFragments(gone func(*Node) bool) {
+	if len(n.Fragments) == 0 {
+		return
+	}
+	kept := n.Fragments[:0]
+	for _, f := range n.Fragments {
+		if f.Node != nil && gone(f.Node) {
+			continue
+		}
+		kept = append(kept, f)
+	}
+	n.Fragments = kept
 }
 
 // Child returns the index'th child with the given name, or nil.

@@ -3,6 +3,7 @@ import { api, ApiError } from './api'
 import type { CARINConversion, CMS0057Status, PAMetricsResult, PDexPriorAuthResult } from './api'
 import { CodeArea } from './CodeArea'
 import { PASReviewQueue } from './PASReviewQueue'
+import { PriorAuthSent } from './PriorAuthSent'
 import { ErrorBox, Field, Section } from './ui'
 import type { UiError } from './store'
 
@@ -15,7 +16,7 @@ import type { UiError } from './store'
  * conversions the data behind them depends on. The conversions store nothing and send nothing.
  */
 export function CMS0057() {
-  const [tab, setTab] = useState<'apis' | 'review' | 'carin' | 'pdex' | 'metrics'>('apis')
+  const [tab, setTab] = useState<'apis' | 'review' | 'sent' | 'carin' | 'pdex' | 'metrics'>('apis')
   return (
     <div className="space-y-6">
       <div>
@@ -31,6 +32,7 @@ export function CMS0057() {
           [
             ['apis', 'The four APIs'],
             ['review', 'Reviewer queue'],
+            ['sent', 'Requests sent to payers'],
             ['carin', 'Claims to CARIN BB'],
             ['pdex', 'Prior auth to PDex'],
             ['metrics', 'Prior auth metrics'],
@@ -48,6 +50,7 @@ export function CMS0057() {
       </div>
       {tab === 'apis' && <Readiness />}
       {tab === 'review' && <PASReviewQueue />}
+      {tab === 'sent' && <PriorAuthSent />}
       {tab === 'carin' && <CARIN />}
       {tab === 'pdex' && <PDex />}
       {tab === 'metrics' && <Metrics />}

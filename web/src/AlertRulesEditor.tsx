@@ -42,6 +42,10 @@ function unitWords(info: AlertKindInfo): string {
       return 'seconds'
     case 'attempts':
       return 'attempts'
+    case 'times':
+      return 'times the usual rate'
+    case 'records':
+      return 'different records in a minute'
     default:
       return ''
   }

@@ -41,6 +41,16 @@ X12's structure is envelopes within envelopes — interchange, functional group,
 
 By default an interchange is **one message**. The whole file gets one record, one outcome and one row in the interface, however many transactions it contains.
 
+### Mirth's X12 XML
+
+Mirth Connect and Open Integration Engine show X12 as XML: a root `X12Transaction` (or `EDIMessage` when the input does not start with ISA) carrying the delimiters as attributes, and one element per segment and element named `ISA.01`, `NM1.03.1` and so on. Channels and receivers built for Mirth read and write that form. Perfuse reads and writes the same one:
+
+- `x12: { arrives_as: xml }` on an X12 channel takes that XML in and handles it as the X12 it stands for (the builder's **It arrives as** choice);
+- `x12_as: xml` on a destination sends the X12 on as that XML (the builder's **Send it as Mirth's X12 XML**);
+- `perfuse x12 xml [file]` and `perfuse x12 from-xml [file]` convert at the command line.
+
+The format was written from Open Integration Engine 4.6's observed output and published format, and is checked against it: 25 generated interchanges and 4 kept examples come out byte for byte as OIE writes them, and back (see verification). A DOCTYPE is refused, as in every XML Perfuse reads.
+
 ### Splitting an interchange
 
 Setting `split` makes each transaction set a message in its own right, with its own record, its own metrics and its own row. An operator looking for one claim then finds one claim rather than a file of four hundred.

@@ -238,6 +238,11 @@ func (s *Server) handleSaveAlertRules(w http.ResponseWriter, r *http.Request, se
 
 		return
 	}
+	// Applied now. The answer below always said the rules were reloaded without a restart, and nothing reloaded them:
+	// a changed threshold or a new rule took effect at the next restart, while the screen showed it saved.
+	if s.Alerts != nil {
+		s.Alerts.SetRules(parsed)
+	}
 
 	_ = s.Store.Audit(r.Context(), store.AuditEntry{
 		Username: session.Username,

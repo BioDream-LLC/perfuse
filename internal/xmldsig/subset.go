@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
 )
 
@@ -205,45 +204,6 @@ func mergeScopes(scopes []map[string]string) map[string]string {
 		}
 	}
 	return out
-}
-
-// IDsIn lists the identifiers a document carries, and which are duplicated.
-//
-// Offered because "signature invalid" is a useless message and this is one of the few cases where the reason can be
-// stated precisely: the reference names an identifier that is absent, or present twice.
-func IDsIn(doc []byte) (ids []string, duplicated []string, err error) {
-	dec := xml.NewDecoder(bytes.NewReader(doc))
-	dec.Strict = true
-	dec.Entity = xml.HTMLEntity
-
-	seen := map[string]int{}
-	for {
-		tok, err := dec.RawToken()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, nil, err
-		}
-		if start, ok := tok.(xml.StartElement); ok {
-			if id := elementID(start); id != "" {
-				seen[id]++
-			}
-		}
-	}
-
-	// Initialised empty, never nil: a caller asking how many identifiers a document has should get zero rather than
-	// an error about a missing field.
-	ids, duplicated = []string{}, []string{}
-	for id, n := range seen {
-		ids = append(ids, id)
-		if n > 1 {
-			duplicated = append(duplicated, id)
-		}
-	}
-	sort.Strings(ids)
-	sort.Strings(duplicated)
-	return ids, duplicated, nil
 }
 
 // StripSignature removes an element by name from a document, returning the result.

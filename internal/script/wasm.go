@@ -73,8 +73,6 @@ import (
 // wasmRuntime compiles and runs WebAssembly modules.
 type wasmRuntime struct{}
 
-func (wasmRuntime) language() Language { return WASM }
-
 // compile validates the module and prepares it for reuse.
 //
 // # Why compilation is deferred to first run
@@ -168,7 +166,7 @@ func (s *wasmScript) Close() error {
 
 // run executes the module against the context's message.
 func (s *wasmScript) run(e *Engine, ctx *Context, kind Kind) (Result, error) {
-	timeout := e.opts.Timeout
+	timeout := e.timeoutFor(ctx)
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}

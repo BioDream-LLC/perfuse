@@ -15,8 +15,6 @@ import (
 // luaRuntime compiles and runs Lua scripts.
 type luaRuntime struct{}
 
-func (luaRuntime) language() Language { return Lua }
-
 // compile parses the source and reports a syntax error with its line.
 //
 // The source is not wrapped. JavaScript is wrapped in an immediately-invoked function so that a bare return statement is legal,
@@ -83,8 +81,9 @@ func (s *luaScript) runWith(e *Engine, ctx *Context, kind Kind, extra func(*lua.
 	// My first version started a goroutine that called L.Close on expiry. That is wrong twice over - it races with the
 	// deferred Close, and closing a state while it is executing is not safe. Recorded because it compiled, and it would have
 	// looked correct right up until a script actually timed out under load.
-	if e.opts.Timeout > 0 {
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), e.opts.Timeout)
+	limit := e.timeoutFor(ctx)
+	if limit > 0 {
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), limit)
 		defer cancel()
 		L.SetContext(timeoutCtx)
 	}
@@ -110,8 +109,8 @@ func (s *luaScript) runWith(e *Engine, ctx *Context, kind Kind, extra func(*lua.
 	if err := L.DoString(s.source); err != nil {
 		// The message is checked as well as the wrapped error, because gopher-lua reports a cancellation as its own
 		// ApiError carrying a stack traceback rather than wrapping the context error, so errors.Is alone does not see it.
-		if e.opts.Timeout > 0 && (errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), context.DeadlineExceeded.Error())) {
-			return Result{}, fmt.Errorf("%s: the script did not finish within %s", s.name, e.opts.Timeout)
+		if limit > 0 && (errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), context.DeadlineExceeded.Error())) {
+			return Result{}, fmt.Errorf("%s: the script did not finish within %s", s.name, limit)
 		}
 
 		return Result{}, fmt.Errorf("%s: %w", s.name, cleanupLuaError(err))

@@ -915,6 +915,24 @@ func baseSettings() []Setting {
 			Effect:  EffectRestart,
 			Default: "system/Patient.read system/DocumentReference.read",
 		},
+		{
+			Key:      "tefca.purposeCodes",
+			Group:    GroupTEFCA,
+			Subgroup: "Facilitated FHIR",
+			Label:    "Purpose of use codes",
+			Help: "The code system the purpose of use is sent in, inside the token request's hl7-b2b extension. A partner " +
+				"refuses a token request in the system it does not use.",
+			Kind:   KindChoice,
+			Widget: WidgetSelect,
+			Effect: EffectRestart,
+			Choices: []Choice{
+				{Value: "tefca", Label: "TEFCA Exchange Purpose",
+					Help: "T-TRTMNT, T-PYMNT and the rest, which the Facilitated FHIR SOP requires of every QHIN and participant."},
+				{Value: "hl7", Label: "HL7 PurposeOfUse",
+					Help: "TREAT, HPAYMT and the rest, for a UDAP community outside TEFCA that follows HL7 FAST SSRAA."},
+			},
+			Default: "tefca",
+		},
 
 		// ------------------------------------------------------------ Branding
 		//

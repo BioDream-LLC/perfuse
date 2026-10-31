@@ -22,6 +22,3 @@ func ParseTelecom(n *xtree.Node) Telecom { return parseTelecom(n) }
 
 // TimestampOf reads a point in time from an element's value attribute, keeping its precision.
 func TimestampOf(n *xtree.Node) Timestamp { return parseTimestamp(n) }
-
-// LocalName is an element name without its namespace prefix.
-func LocalName(name string) string { return localName(name) }

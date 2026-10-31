@@ -54,10 +54,6 @@ func (s *JavaScriptSender) Send(ctx context.Context, msg []byte) error {
 		timeout = config.DefaultJavaScriptTimeout
 	}
 
-	runCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	_ = runCtx
-
 	// Fresh maps per execution, matching what the channel does for its own scripts and for the same reason: these are
 	// scoped to one message, and sharing them across deliveries would let one patient's values be read while handling
 	// another's.
@@ -70,6 +66,9 @@ func (s *JavaScriptSender) Send(ctx context.Context, msg []byte) error {
 		ResponseMap:  script.NewSharedMap(),
 		SourceMap:    script.NewSharedMap(),
 		Log:          func(level, message string) { s.logScript(level, message) },
+		// The destination's own timeout. It used to go into a context nothing read, so the setting had no effect and
+		// the channel's script timeout applied instead.
+		Timeout: timeout,
 	})
 	if err != nil {
 		// The script's own error, unwrapped as far as it goes. A JavaScript Writer that throws is reporting a delivery

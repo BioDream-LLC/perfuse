@@ -346,3 +346,22 @@ func TestTheMetadataIsSentWithPrefixes(t *testing.T) {
 		t.Errorf("the HL7 v3 body changed: %s", b)
 	}
 }
+
+// TestAFailedFirstPreparationIsRetried is the regression test for a registry poisoned by its first request.
+func TestAFailedFirstPreparationIsRetried(t *testing.T) {
+	db, err := sqlitedb.OpenSQL(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.SetMaxOpenConns(1)
+	defer db.Close()
+	r := &Registry{DB: db}
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := r.ready(cancelled); err == nil {
+		t.Fatal("preparing with a cancelled context succeeded")
+	}
+	if err := r.ready(context.Background()); err != nil {
+		t.Fatalf("after one cancelled request the registry still refuses: %v", err)
+	}
+}

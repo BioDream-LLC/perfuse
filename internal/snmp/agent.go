@@ -154,9 +154,13 @@ func (a *Agent) Handle(pkt []byte) []byte {
 	}
 	out := resp.encode()
 	if len(out) > 1400 && m.pdu == pduGetBulk {
-		// Too big for one datagram: answer with fewer repetitions.
-		for len(resp.vbs) > len(m.vbs) && len(out) > 1400 {
-			resp.vbs = resp.vbs[:len(resp.vbs)-len(m.vbs)]
+		// Too big for one datagram: answer with fewer repetitions. A repetition is one var-bind per repeater, after
+		// the non-repeaters, which always stay. It trimmed len(m.vbs) at a time - the non-repeaters counted too - so
+		// with any non-repeaters it took off more than a repetition and could cut into the non-repeaters' answers.
+		nonRep := max(0, min(int(m.a), len(m.vbs)))
+		per := len(m.vbs) - nonRep
+		for per > 0 && len(resp.vbs)-per >= nonRep+per && len(out) > 1400 {
+			resp.vbs = resp.vbs[:len(resp.vbs)-per]
 			out = resp.encode()
 		}
 	}

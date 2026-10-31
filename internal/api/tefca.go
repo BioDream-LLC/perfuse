@@ -26,7 +26,8 @@ import (
 // the requesting party come from the configuration rather than from whoever happens to be signed in.
 //
 // So this section is for seeing what was exchanged and confirming the participation is configured correctly, which are
-// the two things a person actually needs from a screen.
+// the two things a person actually needs from a screen. Facilitated FHIR queries are made by a channel's tefca
+// destination, under the channel's purpose of use, and appear in the trail here.
 
 // handleTEFCAStatus reports whether this instance is configured to participate, and how.
 func (s *Server) handleTEFCAStatus(w http.ResponseWriter, r *http.Request, _ *store.Session) {
@@ -84,11 +85,14 @@ func (s *Server) handleTEFCAStatus(w http.ResponseWriter, r *http.Request, _ *st
 		//
 		// The older QHIN-to-QHIN exchange built on the IHE profiles is not implemented at all.
 		"facilitatedFHIRImplemented": true,
-		"facilitatedFHIRExplanation": "Facilitated FHIR is implemented per the Sequoia Project SOP effective 8 March 2026. The UDAP " +
-			"security layer is verified against a live third-party reference server. It has not been exercised against a real QHIN, " +
-			"which needs a certificate issued through onboarding.",
+		"facilitatedFHIRExplanation": "Facilitated FHIR is implemented per the Sequoia Project SOP: a channel's TEFCA destination asks the " +
+			"partner for each message's patient, under the channel's purpose of use, and every query is in this trail. The whole " +
+			"path, from discovery to a token the partner's FHIR server accepts, is tested against the udap-dotnet reference " +
+			"server. It has not been exercised against a real QHIN, which needs a certificate issued through onboarding.",
 		"exchangeImplemented": false,
-		"exchangeExplanation": tefca.ErrExchangeNotImplemented.Error(),
+		// The partner Facilitated FHIR asks, or empty when none is set (Settings, TEFCA, Facilitated FHIR).
+		"facilitatedFHIRPartner": facilitatedPartner(s.TEFCA),
+		"exchangeExplanation":    tefca.ErrExchangeNotImplemented.Error(),
 	}
 
 	// The state of the trail itself, because a participant whose audit file has stopped being written is out of
@@ -348,4 +352,12 @@ func allPurposes() []string {
 		tefca.PurposePublicHealth,
 		tefca.PurposeIndividualAccess,
 	}
+}
+
+// facilitatedPartner is the Facilitated FHIR partner's base, or empty when none is configured.
+func facilitatedPartner(p *tefca.Participant) string {
+	if p == nil || p.Exchange() == nil {
+		return ""
+	}
+	return p.Exchange().Partner()
 }

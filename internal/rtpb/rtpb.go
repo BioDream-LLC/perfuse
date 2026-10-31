@@ -195,7 +195,11 @@ func (o Options) Answer(f *formulary.File, req *RequestBody) Answer {
 	if !ok {
 		return Answer{Reject: RejectCardholder, Note: "No member with this PBM member ID or group is on any plan here."}
 	}
-	fm, _ := f.Formulary(plan.Formulary)
+	fm, ok := f.Formulary(plan.Formulary)
+	if !ok {
+		// Validate refuses such a file, so this is a file that was never validated; answered rather than a panic.
+		return Answer{Reject: RejectProduct, Note: "The member's plan names a formulary that is not in the formulary file."}
+	}
 	rp := req.RequestedProduct
 	ndc := strings.TrimSpace(rp.Product.DrugCoded.NDC)
 	quantity, unit := 0.0, ""

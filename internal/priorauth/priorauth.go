@@ -21,16 +21,21 @@ import (
 // PriorAuthRequest represents a prior authorization request submitted by a
 // provider to a payer.
 type PriorAuthRequest struct {
-	ID                 string
-	PatientID          string
-	ProviderID         string
-	PayerID            string
-	ServiceCode        string
-	ServiceDescription string
-	Urgency            string // "standard" or "expedited"
-	Diagnosis          []string
-	RequestDate        time.Time
-	SupportingDocs     []string
+	ID                 string    `json:"id,omitempty"`
+	PatientID          string    `json:"patientId,omitempty"`
+	ProviderID         string    `json:"providerId,omitempty"`
+	PayerID            string    `json:"payerId,omitempty"`
+	ServiceCode        string    `json:"serviceCode,omitempty"`
+	ServiceDescription string    `json:"serviceDescription,omitempty"`
+	Urgency            string    `json:"urgency,omitempty"` // "standard" or "expedited"
+	Diagnosis          []string  `json:"diagnosis,omitempty"`
+	RequestDate        time.Time `json:"requestDate,omitempty"`
+	SupportingDocs     []string  `json:"supportingDocs,omitempty"`
+	// Tenant is the tenant whose channel sent the request, empty on a single-tenant server; Destination is the
+	// destination that sent it, and SubmittedAt when.
+	Tenant      string    `json:"tenant,omitempty"`
+	Destination string    `json:"destination,omitempty"`
+	SubmittedAt time.Time `json:"submittedAt,omitempty"`
 }
 
 // Decisions a PriorAuthResponse can carry.
@@ -46,25 +51,27 @@ const (
 
 // ItemDecision is the payer's decision on one item of a request.
 type ItemDecision struct {
-	Sequence      int
-	Code          string // the X12 306 code as sent
-	Decision      string
-	Reason        string
-	AuthNumber    string
-	ApprovedUnits int
+	Sequence      int    `json:"sequence,omitempty"`
+	Code          string `json:"code,omitempty"` // the X12 306 code as sent
+	Decision      string `json:"decision,omitempty"`
+	Reason        string `json:"reason,omitempty"`
+	AuthNumber    string `json:"authNumber,omitempty"`
+	ApprovedUnits int    `json:"approvedUnits,omitempty"`
 }
 
 // PriorAuthResponse represents a payer's decision on a prior auth request.
 type PriorAuthResponse struct {
-	RequestID     string
-	Decision      string // one of the Decision constants
-	Items         []ItemDecision
-	Reason        string
-	ValidFrom     time.Time
-	ValidTo       time.Time
-	ApprovedUnits int
-	ResponseDate  time.Time
-	ReviewerID    string
+	RequestID     string         `json:"requestId,omitempty"`
+	Decision      string         `json:"decision,omitempty"` // one of the Decision constants
+	Items         []ItemDecision `json:"items,omitempty"`
+	Reason        string         `json:"reason,omitempty"`
+	ValidFrom     time.Time      `json:"validFrom,omitempty"`
+	ValidTo       time.Time      `json:"validTo,omitempty"`
+	ApprovedUnits int            `json:"approvedUnits,omitempty"`
+	ResponseDate  time.Time      `json:"responseDate,omitempty"`
+	ReviewerID    string         `json:"reviewerId,omitempty"`
+	// PreAuthRef is the payer's reference for the request, which a later inquiry or update names.
+	PreAuthRef string `json:"preAuthRef,omitempty"`
 }
 
 // PriorAuthStats holds aggregate statistics about prior auth activity.
@@ -77,113 +84,197 @@ type PriorAuthStats struct {
 	ExpeditedCount   int
 }
 
-// ClientConfig holds configuration for connecting to a payer FHIR API.
-type ClientConfig struct {
-	PayerEndpoint string
-	BearerToken   string
-	Timeout       time.Duration
-}
+// Submitting a Da Vinci PAS request.
+//
+// What is sent is the provider's PAS request Bundle as it was built (by the EHR, by DTR, by a channel that assembled it),
+// not a Claim rebuilt here: the payer judges the Bundle against the PAS profiles, and a Claim reconstructed from a summary
+// would lose the supporting resources the decision rests on. An earlier version of this package did rebuild one, as a bare
+// Claim with references to resources the payer had never seen, and nothing used it.
 
-// PriorAuthClient submits prior authorization requests to payer FHIR APIs.
-type PriorAuthClient struct {
-	Config ClientConfig
-	HTTP   *http.Client
-}
+// MaxResponse bounds what a payer's answer may be.
+const MaxResponse = 16 << 20
 
-// NewClient creates a PriorAuthClient with the given configuration.
-func NewClient(cfg ClientConfig) *PriorAuthClient {
-	timeout := cfg.Timeout
-	if timeout == 0 {
-		timeout = 30 * time.Second
+// Summarise reads what a PAS request Bundle asks for, for the tracker and for the screen that lists what was sent.
+func Summarise(bundle map[string]any) (PriorAuthRequest, error) {
+	var req PriorAuthRequest
+	if bundle["resourceType"] != "Bundle" {
+		return req, errors.New("priorauth: a PAS request is a Bundle")
 	}
-	return &PriorAuthClient{
-		Config: cfg,
-		HTTP:   &http.Client{Timeout: timeout},
+	byRef := map[string]map[string]any{}
+	var claim map[string]any
+	for _, e := range slice(bundle["entry"]) {
+		em, _ := e.(map[string]any)
+		r, _ := em["resource"].(map[string]any)
+		if r == nil {
+			continue
+		}
+		rt, _ := r["resourceType"].(string)
+		id, _ := r["id"].(string)
+		if full, _ := em["fullUrl"].(string); full != "" {
+			byRef[full] = r
+		}
+		if id != "" {
+			byRef[rt+"/"+id] = r
+		}
+		if rt == "Claim" && claim == nil {
+			claim = r
+		}
 	}
+	if claim == nil {
+		return req, errors.New("priorauth: the Bundle holds no Claim")
+	}
+	if use, _ := claim["use"].(string); use != "preauthorization" {
+		return req, fmt.Errorf("priorauth: the Claim's use is %q, and a prior authorization request is preauthorization", use)
+	}
+	req.ID, _ = claim["id"].(string)
+	if ids := slice(claim["identifier"]); len(ids) > 0 {
+		if v, _ := ids[0].(map[string]any)["value"].(string); v != "" {
+			req.ID = v
+		}
+	}
+	ref := func(field string) map[string]any {
+		r, _ := claim[field].(map[string]any)
+		target, _ := r["reference"].(string)
+		return byRef[target]
+	}
+	if p := ref("patient"); p != nil {
+		if ids := slice(p["identifier"]); len(ids) > 0 {
+			req.PatientID, _ = ids[0].(map[string]any)["value"].(string)
+		}
+		if req.PatientID == "" {
+			req.PatientID, _ = p["id"].(string)
+		}
+	}
+	nameOf := func(r map[string]any) string {
+		if r == nil {
+			return ""
+		}
+		if n, _ := r["name"].(string); n != "" {
+			return n
+		}
+		if ids := slice(r["identifier"]); len(ids) > 0 {
+			v, _ := ids[0].(map[string]any)["value"].(string)
+			return v
+		}
+		id, _ := r["id"].(string)
+		return id
+	}
+	req.ProviderID = nameOf(ref("provider"))
+	req.PayerID = nameOf(ref("insurer"))
+	if items := slice(claim["item"]); len(items) > 0 {
+		item, _ := items[0].(map[string]any)
+		pos, _ := item["productOrService"].(map[string]any)
+		if codings := slice(pos["coding"]); len(codings) > 0 {
+			c, _ := codings[0].(map[string]any)
+			req.ServiceCode, _ = c["code"].(string)
+			req.ServiceDescription, _ = c["display"].(string)
+		}
+	}
+	if pr, _ := claim["priority"].(map[string]any); pr != nil {
+		if codings := slice(pr["coding"]); len(codings) > 0 {
+			code, _ := codings[0].(map[string]any)["code"].(string)
+			req.Urgency = map[bool]string{true: "expedited", false: "standard"}[code == "stat" || code == "urgent"]
+		}
+	}
+	if created, _ := claim["created"].(string); created != "" {
+		req.RequestDate = parseFHIRTime(created)
+	}
+	for _, d := range slice(claim["diagnosis"]) {
+		dm, _ := d.(map[string]any)
+		cc, _ := dm["diagnosisCodeableConcept"].(map[string]any)
+		if codings := slice(cc["coding"]); len(codings) > 0 {
+			if code, _ := codings[0].(map[string]any)["code"].(string); code != "" {
+				req.Diagnosis = append(req.Diagnosis, code)
+			}
+		}
+	}
+	return req, nil
 }
 
-// Submit sends a prior authorization request to the payer's FHIR endpoint and
-// returns the payer's response.
-func (c *PriorAuthClient) Submit(ctx context.Context, req PriorAuthRequest) (*PriorAuthResponse, error) {
-	fhir := ToFHIR(req)
-	body, err := json.Marshal(fhir)
+func slice(v any) []any { s, _ := v.([]any); return s }
+
+// ClaimResponseOf finds the ClaimResponse in a payer's answer: a PAS response Bundle, or a bare ClaimResponse.
+func ClaimResponseOf(answer map[string]any) (map[string]any, error) {
+	switch answer["resourceType"] {
+	case "ClaimResponse":
+		return answer, nil
+	case "Bundle":
+		for _, e := range slice(answer["entry"]) {
+			em, _ := e.(map[string]any)
+			if r, _ := em["resource"].(map[string]any); r != nil && r["resourceType"] == "ClaimResponse" {
+				return r, nil
+			}
+		}
+		return nil, errors.New("priorauth: the payer's Bundle holds no ClaimResponse")
+	case "OperationOutcome":
+		return nil, fmt.Errorf("priorauth: the payer refused the request: %s", outcomeText(answer))
+	}
+	return nil, fmt.Errorf("priorauth: the payer answered a %v, not a ClaimResponse", answer["resourceType"])
+}
+
+func outcomeText(oo map[string]any) string {
+	var parts []string
+	for _, i := range slice(oo["issue"]) {
+		im, _ := i.(map[string]any)
+		if d, _ := im["diagnostics"].(string); d != "" {
+			parts = append(parts, d)
+		} else if det, _ := im["details"].(map[string]any); det != nil {
+			if t, _ := det["text"].(string); t != "" {
+				parts = append(parts, t)
+			}
+		}
+	}
+	if len(parts) == 0 {
+		return "no reason given"
+	}
+	return strings.Join(parts, "; ")
+}
+
+// Submit posts a PAS request Bundle to a payer's Claim/$submit and reads the decision.
+//
+// authorize adds the credential the payer wants to the request (its body is passed for signing schemes); nil sends none.
+// The payer's whole answer is returned with the decision, so it can be kept, inspected or passed on. A non-2xx answer,
+// an OperationOutcome, or a ClaimResponse whose outcome is error is an error: the payer did not decide.
+func Submit(ctx context.Context, client *http.Client, payer string, bundle []byte,
+	authorize func(*http.Request, []byte) error) ([]byte, *PriorAuthResponse, error) {
+	target := strings.TrimRight(payer, "/") + "/Claim/$submit"
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewReader(bundle))
 	if err != nil {
-		return nil, fmt.Errorf("priorauth: marshal request: %w", err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.Config.PayerEndpoint+"/Claim/$submit", bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("priorauth: create request: %w", err)
+		return nil, nil, fmt.Errorf("priorauth: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/fhir+json")
-	httpReq.Header.Set("Authorization", "Bearer "+c.Config.BearerToken)
-
-	resp, err := c.HTTP.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("priorauth: submit: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		b, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("priorauth: payer returned %d: %s", resp.StatusCode, string(b))
-	}
-
-	var data map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, fmt.Errorf("priorauth: decode response: %w", err)
-	}
-
-	return FromFHIR(data)
-}
-
-// Check queries the status of a previously submitted prior auth request.
-func (c *PriorAuthClient) Check(ctx context.Context, requestID string) (*PriorAuthResponse, error) {
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.Config.PayerEndpoint+"/Claim/"+requestID, nil)
-	if err != nil {
-		return nil, fmt.Errorf("priorauth: create check request: %w", err)
-	}
 	httpReq.Header.Set("Accept", "application/fhir+json")
-	httpReq.Header.Set("Authorization", "Bearer "+c.Config.BearerToken)
-
-	resp, err := c.HTTP.Do(httpReq)
+	if authorize != nil {
+		if err := authorize(httpReq, bundle); err != nil {
+			return nil, nil, fmt.Errorf("priorauth: authorizing with the payer: %w", err)
+		}
+	}
+	res, err := client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("priorauth: check: %w", err)
+		return nil, nil, fmt.Errorf("priorauth: submitting to %s: %w", target, err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		b, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("priorauth: payer returned %d: %s", resp.StatusCode, string(b))
-	}
-
-	var data map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, fmt.Errorf("priorauth: decode check response: %w", err)
-	}
-
-	return FromFHIR(data)
-}
-
-// Cancel requests cancellation of a previously submitted prior auth request.
-func (c *PriorAuthClient) Cancel(ctx context.Context, requestID string) error {
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.Config.PayerEndpoint+"/Claim/"+requestID, nil)
+	defer res.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(res.Body, MaxResponse))
 	if err != nil {
-		return fmt.Errorf("priorauth: create cancel request: %w", err)
+		return nil, nil, fmt.Errorf("priorauth: reading the payer's answer: %w", err)
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+c.Config.BearerToken)
-
-	resp, err := c.HTTP.Do(httpReq)
+	var answer map[string]any
+	jsonErr := json.Unmarshal(raw, &answer)
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		if jsonErr == nil && answer["resourceType"] == "OperationOutcome" {
+			return raw, nil, fmt.Errorf("priorauth: the payer answered %d: %s", res.StatusCode, outcomeText(answer))
+		}
+		return raw, nil, fmt.Errorf("priorauth: the payer answered %d: %.200s", res.StatusCode, raw)
+	}
+	if jsonErr != nil {
+		return raw, nil, fmt.Errorf("priorauth: the payer's answer is not FHIR JSON: %w", jsonErr)
+	}
+	cr, err := ClaimResponseOf(answer)
 	if err != nil {
-		return fmt.Errorf("priorauth: cancel: %w", err)
+		return raw, nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("priorauth: cancel returned %d: %s", resp.StatusCode, string(b))
-	}
-	return nil
+	decision, err := FromFHIR(cr)
+	return raw, decision, err
 }
 
 // PriorAuthTracker tracks prior auth requests and their statuses.
@@ -279,7 +370,49 @@ func (t *PriorAuthTracker) Track(req PriorAuthRequest, resp *PriorAuthResponse) 
 		}
 	}
 	t.entries = append(t.entries, trackerEntry{req: req, resp: resp})
+	// Bounded: the oldest decided requests go first once there are more than maxTracked, and a pending one is never
+	// dropped, because it is the one somebody is waiting on.
+	for len(t.entries) > maxTracked {
+		dropped := false
+		for i, e := range t.entries {
+			if e.resp != nil && e.resp.Decision != DecisionPended {
+				t.entries = append(t.entries[:i], t.entries[i+1:]...)
+				dropped = true
+				break
+			}
+		}
+		if !dropped {
+			break
+		}
+	}
 	return t.save()
+}
+
+// maxTracked is how many requests the tracker keeps.
+const maxTracked = 10000
+
+// Tracked is one request and the payer's latest answer to it, nil when there is none yet.
+type Tracked struct {
+	Request  PriorAuthRequest   `json:"request"`
+	Response *PriorAuthResponse `json:"response,omitempty"`
+}
+
+// List returns what one tenant's channels submitted ("" on a single-tenant server), newest first, at most limit
+// (zero for all).
+func (t *PriorAuthTracker) List(tenant string, limit int) []Tracked {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	out := make([]Tracked, 0, len(t.entries))
+	for i := len(t.entries) - 1; i >= 0; i-- {
+		if t.entries[i].req.Tenant != tenant {
+			continue
+		}
+		out = append(out, Tracked{Request: t.entries[i].req, Response: t.entries[i].resp})
+		if limit > 0 && len(out) == limit {
+			break
+		}
+	}
+	return out
 }
 
 // Pending returns all requests that have no decision yet (response is nil or
@@ -356,80 +489,6 @@ func (t *PriorAuthTracker) Stats() PriorAuthStats {
 	return stats
 }
 
-// ToFHIR converts a PriorAuthRequest to a FHIR Claim resource with
-// use=preauthorization.
-func ToFHIR(req PriorAuthRequest) map[string]interface{} {
-	diagnoses := make([]map[string]interface{}, 0, len(req.Diagnosis))
-	for i, code := range req.Diagnosis {
-		diagnoses = append(diagnoses, map[string]interface{}{
-			"sequence": i + 1,
-			"diagnosisCodeableConcept": map[string]interface{}{
-				"coding": []map[string]interface{}{
-					{
-						"system": "http://hl7.org/fhir/sid/icd-10-cm",
-						"code":   code,
-					},
-				},
-			},
-		})
-	}
-
-	supportingInfo := make([]map[string]interface{}, 0, len(req.SupportingDocs))
-	for i, doc := range req.SupportingDocs {
-		supportingInfo = append(supportingInfo, map[string]interface{}{
-			"sequence": i + 1,
-			"valueReference": map[string]interface{}{
-				"reference": doc,
-			},
-		})
-	}
-
-	items := []map[string]interface{}{
-		{
-			"sequence": 1,
-			"productOrService": map[string]interface{}{
-				"coding": []map[string]interface{}{
-					{
-						"system": "http://www.ama-assn.org/go/cpt",
-						"code":   req.ServiceCode,
-					},
-				},
-				"text": req.ServiceDescription,
-			},
-		},
-	}
-
-	claim := map[string]interface{}{
-		"resourceType": "Claim",
-		"id":           req.ID,
-		"status":       "active",
-		"use":          "preauthorization",
-		"patient": map[string]interface{}{
-			"reference": "Patient/" + req.PatientID,
-		},
-		"provider": map[string]interface{}{
-			"reference": "Practitioner/" + req.ProviderID,
-		},
-		"insurer": map[string]interface{}{
-			"reference": "Organization/" + req.PayerID,
-		},
-		"priority": map[string]interface{}{
-			"coding": []map[string]interface{}{
-				{
-					"system": "http://terminology.hl7.org/CodeSystem/processpriority",
-					"code":   req.Urgency,
-				},
-			},
-		},
-		"created":        req.RequestDate.Format(time.RFC3339),
-		"diagnosis":      diagnoses,
-		"supportingInfo": supportingInfo,
-		"item":           items,
-	}
-
-	return claim
-}
-
 // FromFHIR parses a FHIR ClaimResponse resource into a PriorAuthResponse.
 //
 // The decision is read item by item from each item's PAS reviewAction extension (X12 306 codes: A1 certified, A2 certified in
@@ -446,6 +505,7 @@ func FromFHIR(data map[string]interface{}) (*PriorAuthResponse, error) {
 	if disposition, ok := data["disposition"].(string); ok {
 		resp.Reason = disposition
 	}
+	resp.PreAuthRef, _ = data["preAuthRef"].(string)
 
 	outcome, _ := data["outcome"].(string)
 	if outcome == "error" {

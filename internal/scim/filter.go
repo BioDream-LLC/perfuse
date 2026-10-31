@@ -295,22 +295,6 @@ func (f Filter) UserNameEquals() (string, bool) {
 	return c.Value, true
 }
 
-// ExternalIDEquals returns the external identifier a filter is looking for, when that is all it asks.
-//
-// The other lookup providers perform, and the more reliable of the two: the external identifier is stable across a rename,
-// so matching on it correctly is what stops a marriage producing two accounts.
-func (f Filter) ExternalIDEquals() (string, bool) {
-	if len(f.Comparisons) != 1 {
-		return "", false
-	}
-	c := f.Comparisons[0]
-	if c.Attribute != "externalid" || c.Operator != OpEqual {
-		return "", false
-	}
-
-	return c.Value, true
-}
-
 // Matches reports whether a candidate satisfies the filter.
 //
 // Attribute values are supplied by the caller as a map with lower-case keys, so this package does not need to know how

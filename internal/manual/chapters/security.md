@@ -32,6 +32,17 @@ nothing that names a patient. Viewer can read message content, which is clinical
 *configuration*, not for privacy. Operator separates fixing a failed delivery at night from changing what a feed does: the
 person who resends need not be able to rewrite the channel.
 
+### Repeated wrong passwords
+
+Wrong passwords and failed passkey sign-ins are counted by the address the connection comes from, and after a few in a
+row that address waits before it may try again (the answer is 429, with `Retry-After`). Accounts are not locked by name,
+because that would let anybody lock out an administrator on purpose.
+
+The address is the connection's own, never one a request claims in `X-Forwarded-For`, which the sender writes. Behind a
+reverse proxy on the same machine Perfuse uses the last `X-Forwarded-For` entry instead, the one the proxy added, so each
+client is still counted apart. A proxy on another machine reaches Perfuse from one address, and all its clients share
+one count: rate-limit sign-ins at that proxy as well.
+
 ### Channel groups
 
 A person (or an API token) can be limited to some **channel groups**: they then see and act on only the channels whose

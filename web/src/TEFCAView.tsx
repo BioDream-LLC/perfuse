@@ -138,14 +138,16 @@ export function TEFCAView() {
                 Facilitated FHIR is implemented. It has never spoken to a real QHIN.
               </p>
               <p className="mt-1 text-xs leading-relaxed text-sky-300/90">
-                The query and its UDAP security layer are built, and the security is verified against a live third-party reference
-                server — which read a registration signed here, checked its signature, walked its certificate chain, and refused it
-                because the certificate is not a member of that community. That is the expected answer and it is the useful one: being
-                turned away at the door proves the letter was legible.
+                A channel asks: give it a destination of the kind "TEFCA", and it asks the partner for each message's patient under the
+                purpose of use the channel states, with every query recorded below. The whole path, from discovering the partner's UDAP
+                metadata to a token its FHIR server accepts, is tested against the udap-dotnet reference server.
               </p>
-              <p className="mt-2 text-xs leading-relaxed text-sky-300/90">
-                What remains cannot be done from here. A certificate proving membership comes out of QHIN onboarding, and until one
-                exists no exchange with a real partner completes. Configure a partner and trust anchors to try.
+              <p className="mt-2 text-xs leading-relaxed text-sky-300/90" data-testid="tefca-partner">
+                {status.facilitatedFHIRPartner
+                  ? `Asking ${status.facilitatedFHIRPartner}.`
+                  : 'No partner is set yet: Settings, TEFCA, Facilitated FHIR.'}{' '}
+                A certificate proving membership of a real network comes out of QHIN onboarding; until one exists no exchange with a real
+                partner completes.
               </p>
             </div>
           )}

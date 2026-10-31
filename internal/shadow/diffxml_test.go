@@ -152,16 +152,22 @@ func TestDiffXMLHonoursIgnore(t *testing.T) {
 	}
 }
 
-// TestDiffXMLOnUnparseableInputReportsNothingRatherThanEverything pins the failure direction.
+// TestDiffXMLOnUnparseableInputReportsOneDifference pins the failure direction.
 //
-// Reporting nothing is the safe answer: the caller already counts a message neither version could read, and inventing a full set
-// of differences from a document that could not be parsed would look like a candidate that rewrites everything.
-func TestDiffXMLOnUnparseableInputReportsNothingRatherThanEverything(t *testing.T) {
-	if got := DiffXML([]byte(diffLive), []byte("not xml at all"), DiffOptions{}); len(got) != 0 {
-		t.Errorf("an unparseable candidate produced %d differences: %+v", len(got), got)
+// Reporting nothing said the two documents were identical, which counted a candidate that broke its XML output as safe to
+// promote. Reporting every field would look like a candidate that rewrote everything. One difference against the whole
+// document, naming the side that failed, is neither.
+func TestDiffXMLOnUnparseableInputReportsOneDifference(t *testing.T) {
+	got := DiffXML([]byte(diffLive), []byte("not xml at all"), DiffOptions{})
+	if len(got) != 1 || !strings.Contains(got[0].Candidate, "could not be parsed") || strings.Contains(got[0].Live, "could not") {
+		t.Errorf("an unparseable candidate: %+v", got)
 	}
-	if got := DiffXML([]byte("<<<"), []byte(diffLive), DiffOptions{}); len(got) != 0 {
-		t.Errorf("an unparseable live document produced %d differences: %+v", len(got), got)
+	got = DiffXML([]byte("<<<"), []byte(diffLive), DiffOptions{})
+	if len(got) != 1 || !strings.Contains(got[0].Live, "could not be parsed") || strings.Contains(got[0].Candidate, "could not") {
+		t.Errorf("an unparseable live document: %+v", got)
+	}
+	if got := DiffXML([]byte("<<<"), []byte("<<<"), DiffOptions{}); len(got) != 0 {
+		t.Errorf("two identical unparseable outputs: %+v", got)
 	}
 }
 

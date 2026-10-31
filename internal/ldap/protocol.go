@@ -120,36 +120,6 @@ func EscapeFilter(s string) string {
 	return b.String()
 }
 
-// EscapeDN escapes a value for use inside a distinguished name, per RFC 4514.
-//
-// Separate from filter escaping because the rules are different and using the wrong one is silent: a comma escaped the
-// filter way inside a DN produces a DN that parses into different components than intended, which finds a different
-// object rather than failing.
-func EscapeDN(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		switch {
-		case c == '\\' || c == ',' || c == '+' || c == '"' || c == '<' || c == '>' || c == ';' || c == '=':
-			b.WriteByte('\\')
-			b.WriteByte(c)
-		case c == 0x00:
-			b.WriteString("\\00")
-		case c == ' ' && (i == 0 || i == len(s)-1):
-			// Leading and trailing spaces are significant in a DN and must be escaped, which is the sort of rule
-			// that is invisible until a directory has a display name with a trailing space in it.
-			b.WriteByte('\\')
-			b.WriteByte(c)
-		case c == '#' && i == 0:
-			b.WriteByte('\\')
-			b.WriteByte(c)
-		default:
-			b.WriteByte(c)
-		}
-	}
-	return b.String()
-}
-
 // buildBindRequest assembles a simple bind.
 func buildBindRequest(messageID int64, dn, password string) []byte {
 	msg := newSequence(tagSequence | classUniversal)

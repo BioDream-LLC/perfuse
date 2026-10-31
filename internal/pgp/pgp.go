@@ -89,15 +89,6 @@ func Describe(e *openpgp.Entity) string {
 	return KeyID(e)
 }
 
-// Expiry reports when a key's self-signature says it expires, or the zero time when it does not.
-func Expiry(e *openpgp.Entity) time.Time {
-	id := e.PrimaryIdentity()
-	if id == nil || id.SelfSignature == nil || id.SelfSignature.KeyLifetimeSecs == nil || *id.SelfSignature.KeyLifetimeSecs == 0 {
-		return time.Time{}
-	}
-	return e.PrimaryKey.CreationTime.Add(time.Duration(*id.SelfSignature.KeyLifetimeSecs) * time.Second)
-}
-
 // SealOptions says how to protect an outgoing message.
 type SealOptions struct {
 	// To are the recipients' public keys; the message is readable by any of them.

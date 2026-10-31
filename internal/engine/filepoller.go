@@ -271,6 +271,14 @@ func (p *filePoller) assess(ctx context.Context, fs vfs.FS, entries []vfs.Entry)
 			delete(p.pending, name)
 		}
 	}
+	// The same for files already read and left in place (after_read: leave). Only pending was pruned before, so a
+	// directory whose files are cleared out by somebody else grew this map by one entry per file, forever. A file that
+	// has gone and comes back under the same name is a new file and is read again.
+	for name := range p.read {
+		if !seen[name] {
+			delete(p.read, name)
+		}
+	}
 	p.mu.Unlock()
 
 	// Ordered, because directory listing order is arbitrary on most filesystems and an ADT stream where an A08 update

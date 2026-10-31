@@ -146,5 +146,6 @@ Secrets are never flags. An option that needs a password or a token names an env
 | `-trace-sample` | float | `1` | fraction of traces to record, 0 to 1 | — |
 | `-tsa-url` | string | — | RFC 3161 time-stamping authority for DSDR signatures on claims attachments | **Settings › Security › Document signing**: Time-stamping authority |
 | `-vpn` | string | — | partner VPN tunnels to report on the Connections dashboard (YAML: AWS Site-to-Site VPN, Azure VPN Gateway or strongSwan, and both sides' settings); see examples/vpn.yaml | **Settings › Monitoring › Connections**: VPN tunnels to watch (file) |
+| `-watch-access` | on/off | `true` | watch traffic and reads of patient data for what a breach looks like (bursts, night traffic, new destinations, bulk reads) and raise alerts | — |
 | `-xds` | string | — | keep clinical documents here as an IHE XDS.b registry and repository with this repository uniqueId (an OID), answering ITI-41, ITI-42, ITI-18 and ITI-43 at /xds/repository and /xds/registry | **Settings › Data › Document sharing (IHE XDS)**: Keep documents here as an XDS registry and repository |
 | `-xds-home-community` | string | — | this community's home community id (urn:oid:...), so /xca/gateway answers XCA ITI-38 and ITI-39 for it | **Settings › Data › Document sharing (IHE XDS)**: Home community id, for XCA |

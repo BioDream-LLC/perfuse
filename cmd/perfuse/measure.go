@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/biodream-llc/perfuse/internal/measure"
-	"github.com/biodream-llc/perfuse/internal/sof"
 )
 
 // cmdMeasure evaluates a FHIRPath Measure over FHIR files (NDJSON from a bulk export, Bundles or JSON arrays) and writes the
@@ -73,16 +72,8 @@ func cmdMeasure(args []string, stdout, stderr io.Writer) error {
 	}
 	var all []map[string]any
 	for _, path := range fset.Args() {
-		var r io.Reader = os.Stdin
-		if path != "-" {
-			f, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			r = f
-		}
-		if err := sof.ReadResources(r, func(res map[string]any) error { all = append(all, res); return nil }); err != nil {
+		// Closed after each file rather than deferred, which held every input open until the command returned.
+		if err := readResourceFile(path, func(res map[string]any) error { all = append(all, res); return nil }); err != nil {
 			return fmt.Errorf("%s: %w", path, err)
 		}
 	}

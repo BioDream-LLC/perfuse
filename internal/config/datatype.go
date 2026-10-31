@@ -369,6 +369,11 @@ type X12Options struct {
 	AckSenderID        string `yaml:"ack_sender_id,omitempty"`
 	AckSenderQualifier string `yaml:"ack_sender_qualifier,omitempty"`
 
+	// ArrivesAs is xml when the source delivers the interchange as the XML Mirth Connect and Open Integration Engine
+	// write for X12 (an X12Transaction root, elements named CLM.05.1), as an engine being migrated from, or a system
+	// built against one, sends it. It is turned back into X12 before anything else happens. Empty or x12 is X12.
+	ArrivesAs string `yaml:"arrives_as,omitempty"`
+
 	// Transformations are declarative changes applied to accepted interchanges.
 	//
 	// Separate from the channel-level transformations for the same reason the v3 ones are: those address HL7 fields
@@ -382,6 +387,9 @@ type X12Options struct {
 	// compiled holds the prepared steps, set by validation. Unexported so it cannot come from a file.
 	compiled *x12.Steps
 }
+
+// ArrivesAsXML reports whether the source delivers the interchange as Mirth's X12 XML.
+func (x *X12Options) ArrivesAsXML() bool { return x != nil && x.ArrivesAs == "xml" }
 
 // Steps returns the compiled transformations, or nil when there are none.
 func (x *X12Options) Steps() *x12.Steps {
@@ -624,6 +632,12 @@ func (c *Channel) validateDataType() []error {
 	}
 
 	if c.X12 != nil {
+		switch c.X12.ArrivesAs {
+		case "", "x12", "xml":
+		default:
+			errs = append(errs, fmt.Errorf("x12.arrives_as %q is not supported; use x12, or xml for the XML Mirth Connect and "+
+				"Open Integration Engine write for X12", c.X12.ArrivesAs))
+		}
 		switch c.X12.Envelope {
 		case "", EnvelopeRequire, EnvelopeWarn, EnvelopeIgnore:
 		default:

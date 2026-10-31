@@ -576,7 +576,9 @@ func (c *Context) call(name string, focus Collection, args []node) (Collection, 
 		if err != nil {
 			return nil, evalErr("%q is not a regular expression", a)
 		}
-		return Collection{{V: re.ReplaceAllString(s, strings.ReplaceAll(b, "$", "$")), T: "System.String"}}, nil
+		// The substitution refers to groups as $1 or ${name}, which is the FHIRPath meaning and Go's; the self-replace of "$"
+		// that wrapped it here did nothing.
+		return Collection{{V: re.ReplaceAllString(s, b), T: "System.String"}}, nil
 	case "substring":
 		if err := argc(1, 2); err != nil {
 			return nil, err

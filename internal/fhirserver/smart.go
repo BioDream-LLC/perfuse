@@ -75,13 +75,14 @@ type SMARTAuth struct {
 	cfg  SMARTConfig
 	keys *oidc.KeySet
 
-	// discover runs once, so a server that starts before its authorization server does not fail permanently.
+	// The key set is found on first use, not at construction, so a server that starts before its authorization server
+	// does not fail permanently. Resolving metadata at construction meant Perfuse could not start if the identity
+	// provider was briefly unavailable, which on a hospital network during a maintenance window is a normal Tuesday.
 	//
-	// The alternative - resolving metadata at construction - means Perfuse cannot start if the identity provider is
-	// briefly unavailable, which on a hospital network during a maintenance window is a normal Tuesday.
-	discoverOnce sync.Once
-	discoverErr  error
-	resolved     string
+	// mu guards keys. It used to be a sync.Once that was reassigned after a failure so the next request would try again;
+	// requests arrive concurrently, and reassigning a Once while another request is inside it is a data race (as were the
+	// unguarded reads of the cached key set and error).
+	mu sync.Mutex
 }
 
 // NewSMARTAuth prepares SMART authentication.
@@ -195,33 +196,27 @@ func (a *SMARTAuth) Authenticate(r *http.Request) (*Caller, error) {
 	}, nil
 }
 
-// keySet resolves the JWKS location once and caches the key set.
+// keySet resolves the JWKS location on first use and caches the key set.
+//
+// A failed discovery is not cached: the next request tries again, so a server that started while its authorization
+// server was down recovers by itself instead of refusing every request until somebody restarts it.
 func (a *SMARTAuth) keySet(ctx context.Context) (*oidc.KeySet, error) {
 	if a.cfg.Keys != nil {
 		return a.cfg.Keys, nil
 	}
-	a.discoverOnce.Do(func() {
-		if a.cfg.JWKSURL != "" {
-			a.resolved = a.cfg.JWKSURL
-
-			return
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.keys != nil {
+		return a.keys, nil
+	}
+	resolved := a.cfg.JWKSURL
+	if resolved == "" {
+		var err error
+		if resolved, err = a.discoverJWKS(ctx); err != nil {
+			return nil, fmt.Errorf("the signing keys for %s could not be found: %w", a.cfg.Issuer, err)
 		}
-		a.resolved, a.discoverErr = a.discoverJWKS(ctx)
-	})
-
-	if a.discoverErr != nil {
-		// The failure is not cached as permanent for the caller's benefit: a server that started while its
-		// authorization server was down would otherwise refuse every request until somebody restarted it. The
-		// once is reset so the next request tries again.
-		a.discoverOnce = sync.Once{}
-
-		return nil, fmt.Errorf("the signing keys for %s could not be found: %w", a.cfg.Issuer, a.discoverErr)
 	}
-
-	if a.keys == nil {
-		a.keys = oidc.NewKeySet(a.resolved, a.cfg.HTTPClient)
-	}
-
+	a.keys = oidc.NewKeySet(resolved, a.cfg.HTTPClient)
 	return a.keys, nil
 }
 

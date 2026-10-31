@@ -321,12 +321,23 @@ const ackMeanings: Record<string, string> = {
   CR: 'CR — commit reject.',
 }
 
+// Text colours by theme class, which every theme maps to a readable shade. The chart colours (outcomeColours) are for the
+// dot: as text they were unreadable on the light theme's white.
+const outcomeText: Record<string, string> = {
+  delivered: 'text-emerald-300',
+  filtered: 'text-slate-400',
+  partial: 'text-amber-300',
+  failed: 'text-rose-300',
+  unparseable: 'text-violet-300',
+  pending: 'text-sky-300',
+}
+
 export function OutcomeBadge({ outcome, ack }: { outcome: string; ack?: string }) {
   const colour = outcomeColours[outcome] ?? '#64748b'
   return (
     <span className="inline-flex items-center gap-2">
       <span className="size-2 rounded-full" style={{ background: colour }} />
-      <span style={{ color: colour }} title={outcomeMeanings[outcome] ?? outcome}>
+      <span className={outcomeText[outcome] ?? 'text-slate-400'} title={outcomeMeanings[outcome] ?? outcome}>
         {outcome}
       </span>
       {ack && (
@@ -595,7 +606,7 @@ function MessageDetail({
 
             {tab === 'raw' && (
               message.raw
-                ? <SyntaxBlock code={atob(message.raw).replace(/\r/g, '\n')} />
+                ? <SyntaxBlock code={rawText(message.raw)} />
                 : <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-300">
                     The payload was pruned, so only the record of this message remains.
                   </pre>
@@ -810,4 +821,14 @@ function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
+// rawText decodes a stored message for the Raw tab. A truncated or corrupted payload is exactly what this tab is opened
+// to look at, and atob throwing on it used to break the whole drawer; it shows the undecodable base64 instead.
+function rawText(b64: string): string {
+  try {
+    return atob(b64).replace(/\r/g, '\n')
+  } catch {
+    return `This message's stored bytes are not valid base64, so they are shown as stored:\n\n${b64}`
+  }
 }

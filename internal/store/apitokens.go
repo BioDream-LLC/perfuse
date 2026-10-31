@@ -63,6 +63,17 @@ func (s *Store) createAPITokenIn(ctx context.Context, tid tenant.ID, label strin
 	if !role.Valid() {
 		return "", fmt.Errorf("%q is not a role", role)
 	}
+	// Unique among the tenant's live tokens, because revoking a token and changing its groups or scopes name it by its
+	// label. Two live tokens sharing one meant revoking "lab feed" revoked both, or limiting one limited the other.
+	var taken int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM api_tokens WHERE tenant_id = ? AND label = ? AND revoked_at IS NULL`,
+		string(tid), label).Scan(&taken); err != nil {
+		return "", err
+	}
+	if taken > 0 {
+		return "", fmt.Errorf("%w: an API token labelled %q already exists; revoke it first or choose another label", ErrDuplicate, label)
+	}
 
 	token, hash, err := newSessionToken()
 	if err != nil {

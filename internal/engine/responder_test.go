@@ -29,6 +29,8 @@ var respondingSenders = map[config.DestinationType]Sender{
 	config.DestinationDirect:     (*DirectSender)(nil),
 	config.DestinationAS2:        (*AS2Sender)(nil),
 	config.DestinationMPI:        (*MPISender)(nil),
+	config.DestinationTEFCA:      (*TEFCASender)(nil),
+	config.DestinationPAS:        (*PASSender)(nil),
 	config.DestinationFile:       (*FileSender)(nil),
 	config.DestinationDocument:   (*DocumentSender)(nil),
 	config.DestinationSFTP:       (*SFTPSender)(nil),

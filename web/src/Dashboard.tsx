@@ -161,7 +161,11 @@ export function Dashboard({ onBuildChannel }: { onBuildChannel?: () => void }) {
 
   const ops = useOperationalSummary(live)
 
-  const failing = (stats?.byOutcome.failed ?? 0) + (stats?.byOutcome.partial ?? 0)
+  // Unparseable counted too: a message refused because it could not be read was not delivered, and each channel's card
+  // already counts it as an error. The headline left it out, so a sender whose every message was refused showed
+  // "Failures 0, none" above a channel marked with errors.
+  const failing =
+    (stats?.byOutcome.failed ?? 0) + (stats?.byOutcome.partial ?? 0) + (stats?.byOutcome.unparseable ?? 0)
   const stopped = status ? status.channelsTotal - status.channelRunning : 0
   const broken = status?.channelsBroken ?? 0
 

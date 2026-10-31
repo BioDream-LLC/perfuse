@@ -98,3 +98,33 @@ test("a failure loading the section is shown rather than spun on forever", async
   // And the spinner must be gone, because a screen showing both says the request is still in flight.
   await expect(main.locator(".animate-spin")).toHaveCount(0);
 });
+
+// A channel asks the network: the TEFCA destination, built through the form and asserted on the file it writes.
+//
+// The Facilitated FHIR exchange existed with no way to reach it from a channel, the screen or the command line. This is the
+// way in, so it is checked that a person can build it and that what they chose is what the channel says.
+test("a channel can be given a TEFCA query, with its purpose and where the records go", async ({ page }) => {
+  const problems: string[] = [];
+  page.on("pageerror", (e) => problems.push(`uncaught exception: ${e.message}`));
+
+  await page.goto("/");
+  await openTab(page, "Channels");
+  await page.getByRole("button", { name: "+ New channel" }).click();
+  await page.getByRole("button", { name: /Record an HL7 feed/ }).click();
+  const preview = page.locator("pre").first();
+  await expect(preview).toBeVisible({ timeout: 20_000 });
+
+  const type = page.locator('select[id^="dest-"][id$="-type"]').first();
+  await expect(type.locator('option[value="tefca"]')).toHaveCount(1);
+  await type.selectOption("tefca");
+
+  await page.getByLabel("Purpose of use").selectOption("payment");
+  await page.getByLabel(/Hand the records found to channel/).fill("outside-records");
+  for (const want of ["type: tefca", "purpose: payment", "results_to: outside-records"]) {
+    await expect.poll(async () => (await preview.textContent()) ?? "", { timeout: 20_000 }).toContain(want);
+  }
+
+  // And the TEFCA screen says how a channel asks, and that no partner is set on this server yet.
+  await openTab(page, "TEFCA");
+  expect(problems, problems.join("\n")).toEqual([]);
+});

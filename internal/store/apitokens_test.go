@@ -30,3 +30,14 @@ func TestAPITokenGroupLimit(t *testing.T) {
 		t.Fatal("a comma inside a Group id was accepted")
 	}
 }
+
+// TestALiveTokenLabelIsUnique guards the label that revoking and limiting a token go by.
+func TestALiveTokenLabelIsUnique(t *testing.T) {
+	s := open(t)
+	if _, err := s.CreateAPIToken(t.Context(), "lab feed", RoleViewer, "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateAPIToken(t.Context(), "lab feed", RoleOperator, "admin"); err == nil {
+		t.Fatal("a second live token was given the same label, so revoking one would revoke both")
+	}
+}

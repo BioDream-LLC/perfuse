@@ -52,6 +52,7 @@ export function wireToDraft(model: WireModel): ChannelDraft {
     draft.x12AckSenderId = model.x12?.ackSenderId ?? draft.x12AckSenderId
     draft.x12AckSenderQualifier = model.x12?.ackSenderQualifier ?? draft.x12AckSenderQualifier
     draft.x12Split = model.x12?.split ?? draft.x12Split
+    draft.x12ArrivesAs = model.x12?.arrivesAs === 'xml' ? 'xml' : 'x12'
   }
 
   if (model.dataType === 'edifact') {
@@ -918,6 +919,24 @@ function readDestination(d: WireDest): Destination {
     case 'channel':
       dest.routeTo = d.channel?.name ?? ''
       break
+    case 'tefca':
+      dest.tefcaPurpose = d.tefca?.purpose ?? ''
+      dest.tefcaResultsTo = d.tefca?.resultsTo ?? ''
+      break
+    case 'pas':
+      dest.pasPayer = d.pas?.payer ?? ''
+      dest.pasResultsTo = d.pas?.resultsTo ?? ''
+      dest.httpBearerToken = d.pas?.bearerToken ?? ''
+      if (d.pas?.auth) {
+        const a = d.pas.auth
+        dest.fhirAuthType = (a.type ?? '') as Destination['fhirAuthType']
+        dest.fhirAuthTenantId = a.tenantId ?? ''
+        dest.fhirAuthTokenUrl = a.tokenUrl ?? ''
+        dest.fhirAuthClientId = a.clientId ?? ''
+        dest.fhirAuthClientSecret = a.clientSecret ?? ''
+        dest.fhirAuthScope = a.scope ?? ''
+      }
+      break
     case 'mpi':
       dest.mpiAuthorities = Object.entries(d.mpi?.authorities ?? {})
         .map(([ns, sys]) => `${ns}=${sys}`)
@@ -1188,6 +1207,7 @@ function readDestination(d: WireDest): Destination {
   dest.responseTransformer = d.responseTransformer ?? ''
   dest.elrConfig = d.elr?.config ?? ''
   dest.elrRctc = d.elr?.rctc ?? ''
+  dest.x12AsXml = d.x12As === 'xml'
   dest.pgpEnabled = d.pgp !== undefined
   dest.pgpEncryptTo = (d.pgp?.encryptTo ?? []).join(', ')
   dest.pgpSignWith = d.pgp?.signWith ?? ''
@@ -1230,6 +1250,7 @@ export interface WireModel {
     acknowledge?: string
     ackSenderId?: string
     ackSenderQualifier?: string
+    arrivesAs?: string
   }
   edifact?: { envelope?: string; split?: boolean; acknowledge?: string }
   // An imaging channel's named steps. Loosely typed because the four actions carry different fields and a
@@ -1545,6 +1566,13 @@ interface WireDest {
   responseTransformer?: string
   elr?: { config?: string; rctc?: string }
   mpi?: { authorities?: Record<string, string>; idType?: string; ssnSystem?: string; noMerge?: boolean }
+  tefca?: { purpose?: string; resultsTo?: string }
+  pas?: {
+    payer?: string
+    bearerToken?: string
+    resultsTo?: string
+    auth?: { type?: string; tenantId?: string; tokenUrl?: string; clientId?: string; clientSecret?: string; scope?: string }
+  }
   as2?: {
     url?: string
     from?: string
@@ -1565,6 +1593,7 @@ interface WireDest {
     password?: string
   }
   pgp?: { encryptTo?: string[]; signWith?: string; passphrase?: string; armor?: boolean; noCompress?: boolean; fileName?: string }
+  x12As?: string
 
   queue?: {
     enabled?: boolean

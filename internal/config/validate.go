@@ -738,6 +738,12 @@ func (d *Destination) validate(dataType DataType) []error {
 	case DestinationMPI:
 		errs = append(errs, validateMPIDest(d, dataType)...)
 
+	case DestinationTEFCA:
+		errs = append(errs, validateTEFCADest(d, dataType)...)
+
+	case DestinationPAS:
+		errs = append(errs, validatePASDest(d, dataType)...)
+
 	case DestinationJavaScript:
 		errs = append(errs, validateJavaScriptDest(d)...)
 
@@ -929,6 +935,18 @@ func (d *Destination) validate(dataType DataType) []error {
 		}
 	}
 
+	switch d.X12As {
+	case "", "x12":
+	case "xml":
+		if dataType != DataX12 {
+			errs = append(errs, fmt.Errorf("destination %q: x12_as applies to a destination on an X12 channel, and this is a %s channel",
+				d.Name, dataType))
+		}
+	default:
+		errs = append(errs, fmt.Errorf("destination %q: x12_as %q is not supported; use x12, or xml for the XML Mirth Connect and "+
+			"Open Integration Engine write for X12", d.Name, d.X12As))
+	}
+
 	// A response transformer on a destination that never receives a reply would be a script that never
 	// runs on a channel whose file plainly contains it. Refused, with the list of destinations that do
 	// get a reply, because the useful thing to say is which ones this works on.
@@ -942,11 +960,12 @@ func (d *Destination) validate(dataType DataType) []error {
 		// Wrong in both directions, which is the shape of a list maintained by hand next to the thing it describes.
 		// There is now a test in internal/engine that walks the sender factory and fails if the two disagree.
 		switch d.Type {
-		case DestinationMLLP, DestinationSOAP, DestinationAS2:
+		case DestinationMLLP, DestinationSOAP, DestinationAS2, DestinationTEFCA, DestinationPAS:
 		default:
 			errs = append(errs, fmt.Errorf(
 				"destination %q is a %s destination, which receives no reply to inspect, so a "+
-					"response_transformer would never run; it applies to mllp, soap and as2 (the receipt) destinations",
+					"response_transformer would never run; it applies to mllp, soap, as2 (the receipt), tefca (the Bundle found) and "+
+					"pas (the payer's answer) destinations",
 				d.Name, d.Type))
 		}
 	}

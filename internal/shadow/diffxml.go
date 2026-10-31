@@ -1,6 +1,7 @@
 package shadow
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -24,13 +25,16 @@ import (
 // a diff comparing only text would report two documents as identical when the birth date, the gender and every identifier had
 // changed.
 func DiffXML(live, candidate []byte, opts DiffOptions) []FieldDifference {
-	liveTree, err := xtree.Parse(live)
-	if err != nil {
-		return nil
-	}
-	candidateTree, err := xtree.Parse(candidate)
-	if err != nil {
-		return nil
+	liveTree, liveErr := xtree.Parse(live)
+	candidateTree, candErr := xtree.Parse(candidate)
+	// A side that does not parse is reported, never treated as agreeing: returning no differences said "identical", and
+	// a candidate that broke its XML output was counted the same as the live one and offered for promotion. DiffX12 was
+	// written to avoid exactly this; the two now answer it the same way.
+	if liveErr != nil || candErr != nil {
+		if bytes.Equal(live, candidate) {
+			return nil
+		}
+		return []FieldDifference{wholeDocument("XML", live, candidate, liveErr, candErr)}
 	}
 
 	liveValues := map[string]string{}

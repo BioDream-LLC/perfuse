@@ -74,6 +74,7 @@ Usage:
   perfuse cms0057 <subcommand>         CARIN claims, PDex prior auths and CMS-0057 metrics for payers
   perfuse athena  [flags]              print the Amazon Athena table for an S3 ndjson archive
   perfuse elr     -config f <path>...  lab results to public health as HL7 2.5.1 ELR messages
+  perfuse x12     xml|from-xml [path]  X12 to the XML Mirth and OIE write for it, and back
   perfuse sof     -view v.json <path>...  run a SQL on FHIR view over NDJSON or Bundles, to CSV, NDJSON or Parquet
   perfuse measure -measure m.json <path>... evaluate a quality measure over NDJSON or Bundles, to a MeasureReport
   perfuse smart   hash < secret        hash a password or client secret for the SMART users or clients file
@@ -190,6 +191,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdAthena(args[1:], stdout, stderr)
 	case "elr":
 		return cmdELR(args[1:], stdout, stderr)
+	case "x12":
+		return cmdX12(args[1:], os.Stdin, stdout, stderr)
 	case "sof":
 		return cmdSOF(args[1:], stdout, stderr)
 	case "measure":

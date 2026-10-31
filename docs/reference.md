@@ -570,6 +570,29 @@ The four APIs the CMS Interoperability and Prior Authorization rule requires of 
 
 Provider Access and Payer-to-Payer exports leave out cost-sharing and provider remittances, Payer-to-Payer leaves out denied prior authorisations, and members with an active Provider Access opt-out are left out of a provider export. Drugs are out of scope throughout.
 
+### Prior authorization requests, for providers
+
+A `pas` destination posts each message, a Da Vinci PAS request Bundle, to `{payer}/Claim/$submit` and records the decision:
+
+| Field | |
+|---|---|
+| `pas.payer` | The payer's FHIR base URL; https off this machine |
+| `pas.bearer_token` | A token the payer issued (`${ENV}` allowed), or |
+| `pas.auth` | `type: client_credentials` (`token_url`, `client_id`, `client_secret`, `scope`) or `type: azure` (`tenant_id`, `client_id`, `client_secret`) |
+| `pas.results_to` | A channel that receives each answer |
+
+`GET /api/prior-auth` lists what was sent and answered (viewer role; a tenant sees its own). Kept in `prior-auth.json` beside the database.
+
+### TEFCA queries from a channel
+
+A `tefca` destination (`tefca.purpose`: treatment, payment, operations, public_health, individual_access; `tefca.results_to`)
+asks the Facilitated FHIR partner in `tefca.partnerFHIRBase` for each message's patient. `tefca.purposeCodes`: `tefca`
+(default, TEFCA Exchange Purpose codes) or `hl7` (HL7 purpose of use).
+
+### X12 as Mirth's XML
+
+`x12.arrives_as: xml` on an X12 channel, `x12_as: xml` on a destination, and `perfuse x12 xml|from-xml [file]`.
+
 ## Clinical documents
 
 A C-CDA is the densest clinical payload in an HL7 feed, and it almost never

@@ -468,6 +468,10 @@ type link struct {
 	waiting map[uint32]chan any
 	err     error
 	wake    chan struct{}
+	// credited is signalled (never closed) when the broker grants credit. It belongs to the link, so it goes when the
+	// link does: it used to live in a package-level map keyed by link that nothing ever removed from, one entry per
+	// link for the life of the process.
+	credited chan struct{}
 }
 
 func (l *link) fail(err error) {
@@ -502,7 +506,7 @@ func (c *Conn) attach(ctx context.Context, address string, receiver bool) (*link
 	h := c.nextHandle
 	c.nextHandle++
 	l := &link{conn: c, handle: h, frames: make(chan []any, 16), deliveries: make(chan *delivery, 64), waiting: map[uint32]chan any{},
-		wake: make(chan struct{})}
+		wake: make(chan struct{}), credited: make(chan struct{}, 1)}
 	c.links[h] = l
 	c.mu.Unlock()
 
@@ -584,12 +588,7 @@ func (l *link) watchFlow() {
 	}
 }
 
-var creditSignals sync.Map
-
-func (l *link) wakeCredit() chan struct{} {
-	ch, _ := creditSignals.LoadOrStore(l, make(chan struct{}, 1))
-	return ch.(chan struct{})
-}
+func (l *link) wakeCredit() chan struct{} { return l.credited }
 
 // Message is what is sent and received: the body, and the properties that matter to an integration engine.
 type Message struct {

@@ -848,15 +848,54 @@ func convertDate(text, from, to string) (string, error) {
 	}
 
 	trimmed := strings.TrimSpace(text)
-	if len(trimmed) > len(inLayout) {
-		trimmed = trimmed[:len(inLayout)]
-	}
-
 	when, err := time.ParseInLocation(inLayout, trimmed, time.Local)
+	// A longer value is cut to the pattern's length so that yyyyMMdd reads the date out of a full HL7 timestamp. Only
+	// for a fixed-width pattern: with MMM, EEEE, a or a zone in it the layout's length is not the value's, and cutting
+	// by it read a shifted value or refused a good one.
+	if err != nil && fixedWidthLayout(from) && len(trimmed) > len(inLayout) {
+		when, err = time.ParseInLocation(inLayout, trimmed[:len(inLayout)], time.Local)
+	}
 	if err != nil {
 		return "", fmt.Errorf("%q does not match %q", text, from)
 	}
 	return when.Format(outLayout), nil
+}
+
+// fixedWidthLayout says whether every field of a SimpleDateFormat pattern has one width, so that a value matching it is
+// exactly as long as the Go layout it becomes.
+func fixedWidthLayout(pattern string) bool {
+	quoted := false
+	for i := 0; i < len(pattern); i++ {
+		c := pattern[i]
+		if c == '\'' {
+			quoted = !quoted
+			continue
+		}
+		if quoted {
+			continue
+		}
+		run := 1
+		for i+run < len(pattern) && pattern[i+run] == c {
+			run++
+		}
+		switch c {
+		case 'y', 'H', 'S':
+		case 'd', 'h', 'm', 's':
+			if run == 1 {
+				return false
+			}
+		case 'M':
+			if run != 2 {
+				return false
+			}
+		default:
+			if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
+				return false
+			}
+		}
+		i += run - 1
+	}
+	return true
 }
 
 // javaLayout converts the subset of SimpleDateFormat that appears in HL7 work.
@@ -867,6 +906,20 @@ func javaLayout(pattern string) (string, error) {
 	var b strings.Builder
 	for i := 0; i < len(pattern); {
 		c := pattern[i]
+		// A quoted literal, as SimpleDateFormat writes them: 'T' between date and time, and '' for a quote itself.
+		if c == '\'' {
+			end := strings.IndexByte(pattern[i+1:], '\'')
+			if end < 0 {
+				return "", fmt.Errorf("date pattern %q has an unclosed quote", pattern)
+			}
+			if end == 0 {
+				b.WriteByte('\'')
+			} else {
+				b.WriteString(pattern[i+1 : i+1+end])
+			}
+			i += end + 2
+			continue
+		}
 		run := 1
 		for i+run < len(pattern) && pattern[i+run] == c {
 			run++

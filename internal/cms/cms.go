@@ -410,15 +410,25 @@ func Decrypt(der []byte, keys []KeyPair) ([]byte, error) {
 	if _, err := asn1.Unmarshal(ci.Content.Bytes, &ed); err != nil {
 		return nil, fmt.Errorf("cms: EnvelopedData cannot be read: %w", err)
 	}
+	// Every recipient addressed to one of our certificates is tried before giving up. Returning at the first one that
+	// could not be used refused a message addressed to several of our certificates when the first held a non-RSA key
+	// or a key that did not open it, though a later one would have.
 	var cek []byte
+	var firstErr error
 	for _, ri := range ed.RecipientInfos {
 		for _, kp := range keys {
+			if cek != nil {
+				break
+			}
 			if !bytes.Equal(kp.Certificate.RawIssuer, ri.RID.Issuer.FullBytes) || kp.Certificate.SerialNumber.Cmp(ri.RID.Serial) != 0 {
 				continue
 			}
 			priv, ok := kp.Key.(*rsa.PrivateKey)
 			if !ok {
-				return nil, errors.New("cms: the recipient key is not RSA")
+				if firstErr == nil {
+					firstErr = errors.New("cms: the recipient key is not RSA")
+				}
+				continue
 			}
 			var err error
 			switch {
@@ -435,10 +445,17 @@ func Decrypt(der []byte, keys []KeyPair) ([]byte, error) {
 			case ri.KeyEncryptionAlgorithm.Algorithm.Equal(oidRSA):
 				cek, err = rsa.DecryptPKCS1v15(rand.Reader, priv, ri.EncryptedKey)
 			default:
-				return nil, fmt.Errorf("cms: key transport %v is not one Direct uses", ri.KeyEncryptionAlgorithm.Algorithm)
+				if firstErr == nil {
+					firstErr = fmt.Errorf("cms: key transport %v is not one Direct uses", ri.KeyEncryptionAlgorithm.Algorithm)
+				}
+				continue
 			}
 			if err != nil {
-				return nil, errors.New("cms: the content key cannot be decrypted with this address's key")
+				if firstErr == nil {
+					firstErr = errors.New("cms: the content key cannot be decrypted with this address's key")
+				}
+				cek = nil
+				continue
 			}
 		}
 		if cek != nil {
@@ -446,6 +463,9 @@ func Decrypt(der []byte, keys []KeyPair) ([]byte, error) {
 		}
 	}
 	if cek == nil {
+		if firstErr != nil {
+			return nil, firstErr
+		}
 		return nil, ErrNotForUs
 	}
 	alg := ed.EncryptedContentInfo.ContentEncryptionAlgorithm

@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"strings"
 	"time"
 )
 
@@ -118,22 +117,4 @@ func firstLabel(series Series, def Definition) string {
 		return v
 	}
 	return ""
-}
-
-// SeriesKey renders a series' labels as a stable identifier, for callers that
-// need to tell two series of the same metric apart.
-func SeriesKey(series Series, def Definition) string {
-	if len(series.Labels) == 0 {
-		return series.Name
-	}
-	var b strings.Builder
-	b.WriteString(series.Name)
-	// Declaration order rather than map order, so the key is stable between calls.
-	for _, name := range def.Labels {
-		if v, ok := series.Labels[name]; ok {
-			b.WriteByte('/')
-			b.WriteString(v)
-		}
-	}
-	return b.String()
 }

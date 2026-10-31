@@ -106,7 +106,6 @@ type Value struct {
 func Integer(n int64) Value    { return Value{Tag: tagInteger, Int: n} }
 func String(s string) Value    { return Value{Tag: tagOctets, Bytes: []byte(s)} }
 func Gauge(n uint32) Value     { return Value{Tag: tagGauge32, Int: int64(n)} }
-func Counter(n uint32) Value   { return Value{Tag: tagCounter32, Int: int64(n)} }
 func Counter64(n uint64) Value { return Value{Tag: tagCounter64, Int: int64(n)} }
 func Ticks(n uint32) Value     { return Value{Tag: tagTimeTicks, Int: int64(n)} }
 func ObjectID(o OID) Value     { return Value{Tag: tagOID, OID: o} }

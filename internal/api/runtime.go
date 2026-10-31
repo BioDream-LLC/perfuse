@@ -17,6 +17,7 @@ import (
 	"github.com/biodream-llc/perfuse/fhir"
 	"github.com/biodream-llc/perfuse/hl7"
 	"github.com/biodream-llc/perfuse/internal/admit"
+	"github.com/biodream-llc/perfuse/internal/compliance"
 	"github.com/biodream-llc/perfuse/internal/config"
 	"github.com/biodream-llc/perfuse/internal/engine"
 	"github.com/biodream-llc/perfuse/internal/fhirserver"
@@ -69,6 +70,10 @@ type Runtime struct {
 	// remember it re-emits every matching study on every poll, which against a real archive is a message storm that
 	// looks like the archive malfunctioning.
 	QueryState engine.DICOMQueryState
+
+	// PHIWatch watches the traffic of every channel this runtime starts for the patterns a breach looks like. Nil
+	// when it is off.
+	PHIWatch *compliance.Monitor
 
 	// Tracer exports message traces. Nil when tracing is not configured.
 	Tracer *trace.Tracer
@@ -188,8 +193,16 @@ func (rt *Runtime) Start(name string, log *slog.Logger) error {
 		return err
 	}
 
+	var recorder engine.Recorder
 	if rt.Messages != nil {
-		ch.SetRecorder(msgstore.NewRecorder(rt.Messages, log))
+		recorder = msgstore.NewRecorder(rt.Messages, log)
+	}
+	if rt.PHIWatch != nil {
+		recorder = &watchedRecorder{inner: recorder, watch: rt.PHIWatch, channel: rt.watchName(cfg.Name),
+			addresses: destinationAddresses(cfg)}
+	}
+	if recorder != nil {
+		ch.SetRecorder(recorder)
 	}
 	if rt.Admission != nil {
 		ch.SetAdmission(rt.Admission)
@@ -1474,4 +1487,49 @@ func (s *Server) handleFHIRSubscriptions(w http.ResponseWriter, r *http.Request,
 	body["enabled"] = true
 	body["subscriptions"] = list
 	s.ok(w, body)
+}
+
+// watchName is the name the access monitor knows a channel by: prefixed by the tenant on a shared server, where two
+// customers may each have an "adt".
+// TenantName is the tenant this runtime serves, "" on a single-tenant server, for what its senders record.
+func (rt *Runtime) TenantName() string { return string(rt.Tenant) }
+
+func (rt *Runtime) watchName(channel string) string {
+	if rt.Tenant == "" {
+		return channel
+	}
+	return string(rt.Tenant) + "/" + channel
+}
+
+// destinationAddresses is where each destination sends, by name, as the configuration says it.
+//
+// The address rather than the name is what the monitor remembers: renaming a destination is not news, and pointing
+// one at a new host is.
+func destinationAddresses(cfg *config.Channel) map[string]string {
+	out := make(map[string]string, len(cfg.Destinations))
+	for _, d := range cfg.Destinations {
+		out[d.Name] = describeDestination(d)
+	}
+	return out
+}
+
+// watchedRecorder hands each message to the access monitor as well as to the message store.
+type watchedRecorder struct {
+	inner     engine.Recorder
+	watch     *compliance.Monitor
+	channel   string
+	addresses map[string]string
+}
+
+func (w *watchedRecorder) RecordMessage(ctx context.Context, r engine.MessageRecord) {
+	if w.inner != nil {
+		w.inner.RecordMessage(ctx, r)
+	}
+	var sent []string
+	for _, d := range r.Deliveries {
+		if d.Status == "delivered" {
+			sent = append(sent, w.addresses[d.Destination])
+		}
+	}
+	w.watch.Observe(compliance.Traffic{Channel: w.channel, At: r.ReceivedAt, Destinations: sent})
 }

@@ -264,10 +264,23 @@ func TestAnOrganisationIdentifierIsRenderedAsAURI(t *testing.T) {
 	}
 }
 
-func TestAPurposeOfUseIsRenderedAsAURI(t *testing.T) {
-	// Same reasoning: the preferred form is a code system URI with the code after a hash.
-	got := purposeURI("treatment")
-	if !strings.HasPrefix(got, "urn:oid:2.16.840.1.113883.5.8#") {
-		t.Errorf("purposeURI gave %q, which is not the HL7 PurposeOfUse code system", got)
+func TestAPurposeOfUseIsRenderedAsATEFCAExchangePurpose(t *testing.T) {
+	// The Facilitated FHIR SOP requires codes from the Exchange Purpose code system (OID 2.16.840.1.113883.3.7204.1.5.2.1),
+	// written as a URI with the code after a hash. This test used to require the HL7 PurposeOfUse system, which pinned the
+	// wrong answer: "TREATMENT" under that OID is a code neither system defines.
+	for purpose, code := range map[string]string{PurposeTreatment: "T-TRTMNT", PurposePayment: "T-PYMNT",
+		PurposeOperations: "T-HCO", PurposePublicHealth: "T-PH", PurposeIndividualAccess: "T-IAS"} {
+		if got := purposeURI(purpose); got != "urn:oid:2.16.840.1.113883.3.7204.1.5.2.1#"+code {
+			t.Errorf("purposeURI(%q) = %q", purpose, got)
+		}
+	}
+}
+
+func TestAPurposeCanBeSentAsAnHL7PurposeOfUse(t *testing.T) {
+	if got := purposeIn("hl7", PurposeTreatment); got != "urn:oid:2.16.840.1.113883.5.8#TREAT" {
+		t.Errorf("purposeIn(hl7, treatment) = %q", got)
+	}
+	if got := purposeIn("", PurposeTreatment); got != "urn:oid:2.16.840.1.113883.3.7204.1.5.2.1#T-TRTMNT" {
+		t.Errorf("the default is not the TEFCA code: %q", got)
 	}
 }

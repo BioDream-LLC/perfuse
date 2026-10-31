@@ -540,14 +540,22 @@ func (s *Store) auditIn(ctx context.Context, auditTenant tenant.ID, e AuditEntry
 	if e.At.IsZero() {
 		e.At = time.Now().UTC()
 	}
+	// user_id is filled from the account the username names, when there is one. It used to take the entry's own ID,
+	// which is the audit row's number and which no caller sets, so the column was always empty. A name that is not an
+	// account (an EHR, a token, an attempt to sign in as nobody) leaves it empty.
 	var userID any
-	if e.ID != 0 {
-		userID = e.ID
+	var id int64
+	if err := s.db.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND tenant_id = ?`,
+		e.Username, string(auditTenant)).Scan(&id); err == nil {
+		userID = id
 	}
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO audit (at, user_id, username, action, target, detail, ip, tenant_id)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		formatTime(e.At), userID, e.Username, e.Action, e.Target, e.Detail, e.IP, string(auditTenant))
+	if err == nil && s.OnAudit != nil {
+		s.OnAudit(auditTenant, e)
+	}
 	return err
 }
 

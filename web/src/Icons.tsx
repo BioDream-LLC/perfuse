@@ -1538,6 +1538,27 @@ export function IconBilling(props: IconProps) {
   )
 }
 
+/** IconPriorAuth is a clipboard with a tick: a request for approval, decided. */
+export function IconPriorAuth(props: IconProps) {
+  return (
+    <SvgWrapper {...props}>
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-a`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#14b8a6" />
+              <stop offset="100%" stopColor="#0ea5e9" />
+            </linearGradient>
+          </defs>
+          <rect x="4" y="4" width="16" height="18" rx="2.5" fill={`url(#${id}-a)`} />
+          <rect x="8.5" y="2" width="7" height="4" rx="1.2" fill="#0f172a" stroke="#e2e8f0" strokeWidth="1.2" />
+          <path d="M8 13.5l2.6 2.6L16 10.7" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
+    </SvgWrapper>
+  )
+}
+
 export function IconShield(props: IconProps) {
   return (
     <SvgWrapper {...props}>
@@ -1759,6 +1780,8 @@ export const sourceIcons: Record<string, React.ComponentType<IconProps>> = {
   'direct': IconDirect,
   'as2': IconDirect,
   'mpi': IconPatientIndex,
+  'tefca': IconPatientIndex,
+  'pas': IconPriorAuth,
   'email': IconEmail,
   'javascript': IconJavaScript,
 }

@@ -1,6 +1,7 @@
 package shadow
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -25,6 +26,20 @@ import (
 // An 837 carries many CLM segments, one per claim, and they are not distinguished by anything in the segment identifier. So a
 // repeated segment is addressed with its occurrence, CLM(2)03, counting from one. Without that, two hundred claims would
 // collapse into one path and a change to the fourth would either be invisible or reported against the first.
+// wholeDocument is the one difference reported when either side cannot be parsed, saying which side it was.
+//
+// Each side shows its size, or the reason it could not be read when it is the side that failed; the X12 version used to
+// put the size under Live whichever side had failed, so a broken live output read as the candidate's fault.
+func wholeDocument(format string, live, candidate []byte, liveErr, candErr error) FieldDifference {
+	side := func(b []byte, err error) string {
+		if err != nil {
+			return fmt.Sprintf("could not be parsed as %s, so the two cannot be compared: %v", format, err)
+		}
+		return fmt.Sprintf("%d bytes", len(b))
+	}
+	return FieldDifference{Path: "(whole document)", Live: side(live, liveErr), Candidate: side(candidate, candErr)}
+}
+
 func DiffX12(live, candidate []byte, opts DiffOptions) []FieldDifference {
 	liveFields, liveErr := x12Fields(live)
 	candFields, candErr := x12Fields(candidate)
@@ -36,16 +51,10 @@ func DiffX12(live, candidate []byte, opts DiffOptions) []FieldDifference {
 	// Reported as a difference against a whole-interchange path rather than through an error return, because FieldDifference
 	// is what reaches the report and a runner that dropped the error would show an empty difference list.
 	if liveErr != nil || candErr != nil {
-		which, err := "the live output", liveErr
-		if liveErr == nil {
-			which, err = "the candidate output", candErr
+		if bytes.Equal(live, candidate) {
+			return nil
 		}
-
-		return []FieldDifference{{
-			Path:      "(whole interchange)",
-			Live:      fmt.Sprintf("%d bytes", len(live)),
-			Candidate: fmt.Sprintf("%s could not be parsed as X12, so the two cannot be compared: %v", which, err),
-		}}
+		return []FieldDifference{wholeDocument("X12", live, candidate, liveErr, candErr)}
 	}
 
 	paths := opts.Compare

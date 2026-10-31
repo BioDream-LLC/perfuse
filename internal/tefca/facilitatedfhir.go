@@ -65,6 +65,11 @@ type ExchangeConfig struct {
 	// For sandboxes whose community authority nobody would install. Never for production: with it on, any party can sign a metadata
 	// document and be believed about where to send client assertions.
 	AllowUnanchoredMetadata bool `yaml:"allow_unanchored_metadata,omitempty"`
+
+	// PurposeCodes chooses the code system the purpose of use is sent in: empty or "tefca" for the TEFCA Exchange
+	// Purpose codes the Facilitated FHIR SOP requires, "hl7" for the HL7 v3 PurposeOfUse codes a UDAP community outside
+	// TEFCA (HL7 FAST SSRAA) expects. A partner refuses a token request in the system it does not use.
+	PurposeCodes string `yaml:"purpose_codes,omitempty"`
 }
 
 // Validate checks the exchange configuration.
@@ -104,6 +109,9 @@ func (e ExchangeConfig) Validate() error {
 			"allow_unanchored_metadata only against a sandbox")
 	}
 
+	if e.PurposeCodes != "" && e.PurposeCodes != "tefca" && e.PurposeCodes != "hl7" {
+		return fmt.Errorf("tefca: purpose_codes is tefca or hl7, not %q", e.PurposeCodes)
+	}
 	return nil
 }
 
@@ -339,7 +347,7 @@ func (e *Exchange) QueryPatient(ctx context.Context, req QueryRequest) (*FHIRBun
 		return nil, err
 	}
 
-	purposes := []string{purposeURI(req.Purpose)}
+	purposes := []string{purposeIn(e.cfg.PurposeCodes, req.Purpose)}
 
 	token, err := e.accessToken(ctx, purposes)
 	if err != nil {
@@ -385,12 +393,15 @@ func (e *Exchange) QueryPatient(ctx context.Context, req QueryRequest) (*FHIRBun
 		return nil, fmt.Errorf("tefca: %s answered %d: %s", target, res.StatusCode, firstLine(body))
 	}
 
-	var bundle FHIRBundle
-	if err := json.Unmarshal(body, &bundle); err != nil {
-		return nil, fmt.Errorf("tefca: the partner's response is not a FHIR bundle: %w", err)
+	// Checked to be a Bundle and kept as it came. It was unmarshalled into a struct holding the raw bytes in an untagged
+	// field, which JSON never fills, so every answer arrived empty.
+	var head struct {
+		ResourceType string `json:"resourceType"`
 	}
-
-	return &bundle, nil
+	if err := json.Unmarshal(body, &head); err != nil || head.ResourceType != "Bundle" {
+		return nil, fmt.Errorf("tefca: the partner's response is not a FHIR Bundle: %s", firstLine(body))
+	}
+	return &FHIRBundle{Raw: body}, nil
 }
 
 // patientSearchURL builds the search, with only the parameters that were supplied.
@@ -427,9 +438,47 @@ func purposeURI(purpose string) string {
 		return purpose
 	}
 
-	// The HL7 PurposeOfUse code system. Communities constrain the allowed values and are encouraged to draw from it.
-	return "urn:oid:2.16.840.1.113883.5.8#" + strings.ToUpper(purpose)
+	// The TEFCA Exchange Purpose code system, which the SOP requires in purpose_of_use. These were sent as HL7 PurposeOfUse
+	// codes under that system's OID ("TREATMENT"), which is neither a TEFCA code nor an HL7 one, and a QHIN refuses it.
+	if code, ok := exchangePurposeCodes[purpose]; ok {
+		return exchangePurposeSystem + "#" + code
+	}
+	return exchangePurposeSystem + "#" + strings.ToUpper(purpose)
 }
+
+// exchangePurposeSystem is the TEFCA Exchange Purpose code system (Exchange Purposes SOP).
+const exchangePurposeSystem = "urn:oid:2.16.840.1.113883.3.7204.1.5.2.1"
+
+// exchangePurposeCodes are the Exchange Purpose codes for the purposes this package names.
+var exchangePurposeCodes = map[string]string{
+	PurposeTreatment:        "T-TRTMNT",
+	PurposePayment:          "T-PYMNT",
+	PurposeOperations:       "T-HCO",
+	PurposePublicHealth:     "T-PH",
+	PurposeIndividualAccess: "T-IAS",
+}
+
+// hl7PurposeCodes are the HL7 v3 PurposeOfUse codes (OID 2.16.840.1.113883.5.8) for the purposes this package names.
+var hl7PurposeCodes = map[string]string{
+	PurposeTreatment:        "TREAT",
+	PurposePayment:          "HPAYMT",
+	PurposeOperations:       "HOPERAT",
+	PurposePublicHealth:     "PUBHLTH",
+	PurposeIndividualAccess: "PATRQT",
+}
+
+// purposeIn writes a purpose in the code system a partner expects.
+func purposeIn(system, purpose string) string {
+	if system == "hl7" && !strings.Contains(purpose, ":") {
+		if code, ok := hl7PurposeCodes[purpose]; ok {
+			return "urn:oid:2.16.840.1.113883.5.8#" + code
+		}
+	}
+	return purposeURI(purpose)
+}
+
+// Partner is the responding participant's FHIR base.
+func (e *Exchange) Partner() string { return e.cfg.PartnerFHIRBase }
 
 // firstLine trims a body for an error message.
 func firstLine(raw []byte) string {

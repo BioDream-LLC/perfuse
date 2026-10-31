@@ -136,8 +136,10 @@ func (s *Server) handleMHDProvide(w http.ResponseWriter, r *http.Request, sess *
 				im, _ := id.(map[string]any)
 				sys, _ := im["system"].(string)
 				val, _ := im["value"].(string)
-				if strings.HasPrefix(sys, "urn:oid:") && val != "" {
-					inBundle[em["fullUrl"].(string)] = val + "^^^&" + strings.TrimPrefix(sys, "urn:oid:") + "&ISO"
+				// fullUrl read with the checked form, as every field here is: a Patient entry without one used to
+				// panic the request.
+				if fu, _ := em["fullUrl"].(string); strings.HasPrefix(sys, "urn:oid:") && val != "" && fu != "" {
+					inBundle[fu] = val + "^^^&" + strings.TrimPrefix(sys, "urn:oid:") + "&ISO"
 					break
 				}
 			}

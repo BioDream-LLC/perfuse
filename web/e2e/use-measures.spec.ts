@@ -76,7 +76,7 @@ test("a measure is evaluated over the FHIR store and by $evaluate-measure", asyn
   const good = await editor.inputValue();
   await editor.fill(good.replaceAll('"text/fhirpath"', '"text/cql-identifier"'));
   await page.getByRole("button", { name: "Evaluate", exact: true }).click();
-  await expect(page.getByText(/Perfuse has no CQL engine/)).toBeVisible();
+  await expect(page.getByText(/cannot be evaluated here.*Perfuse has no CQL engine/)).toBeVisible();
   await editor.fill(good);
 
   // Saved, then evaluated by the FHIR endpoint.

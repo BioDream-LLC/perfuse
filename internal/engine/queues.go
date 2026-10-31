@@ -508,9 +508,12 @@ func (c *Channel) pollGCSOnce(ctx context.Context, client *gcp.Storage, cfg *con
 
 func (c *Channel) handleGCSObject(ctx context.Context, client *gcp.Storage, cfg *config.GCSSource, o gcp.Object) {
 	rel := strings.TrimPrefix(o.Name, cfg.Prefix)
-	var body []byte
+	// stored is the object exactly as it was fetched, and is what a move or an error copy writes back. body becomes the
+	// decrypted content when the source has a pgp block; writing that back would put plaintext into a bucket whose whole
+	// point was holding it encrypted (the S3 source copies the original object for the same reason).
+	var body, stored []byte
 	move := func(to string) bool {
-		if err := client.Put(ctx, to, body, ""); err != nil {
+		if err := client.Put(ctx, to, stored, ""); err != nil {
 			c.log.Error("an object could not be moved, so it will be read again", "object", o.Name, "to", to, "err", err)
 			return false
 		}
@@ -518,7 +521,7 @@ func (c *Channel) handleGCSObject(ctx context.Context, client *gcp.Storage, cfg 
 	}
 	fail := func(why error) {
 		c.log.Error("an object could not be handled; it was moved to the error prefix", "object", o.Name, "err", why)
-		if body != nil && move(cfg.ErrorPrefix+rel) {
+		if stored != nil && move(cfg.ErrorPrefix+rel) {
 			_ = client.Delete(ctx, o.Name)
 		}
 	}
@@ -528,6 +531,7 @@ func (c *Channel) handleGCSObject(ctx context.Context, client *gcp.Storage, cfg 
 	}
 	var err error
 	body, err = client.Get(ctx, o.Name, cfg.MaxObjectSize)
+	stored = body
 	if err != nil {
 		c.log.Error("reading an object failed and will be retried at the next poll", "object", o.Name, "err", err)
 		return

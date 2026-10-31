@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -35,6 +36,50 @@ import (
 type Participant struct {
 	cfg   TEFCAConfig
 	audit *AuditLog
+	// fhir is the Facilitated FHIR exchange with the configured partner, nil when none is configured.
+	fhir *Exchange
+}
+
+// AttachExchange gives the participant its Facilitated FHIR exchange.
+func (p *Participant) AttachExchange(e *Exchange) { p.fhir = e }
+
+// Exchange is the Facilitated FHIR exchange, nil when none is configured.
+func (p *Participant) Exchange() *Exchange { return p.fhir }
+
+// QueryFHIR searches the Facilitated FHIR partner for a patient, auditing the attempt whatever its outcome.
+//
+// The purpose must be one this participant declares: a query under a purpose the organisation never agreed to is refused
+// here rather than by the partner, so the refusal is ours to explain and is in our own trail.
+func (p *Participant) QueryFHIR(ctx context.Context, req QueryRequest) (*FHIRBundle, error) {
+	entry := TEFCAAudit{Timestamp: time.Now(), Direction: "outbound", Purpose: req.Purpose, PatientID: req.PatientID,
+		RequestingOrg: p.cfg.OrganizationName, ExchangeType: "facilitated-fhir-query"}
+	var bundle *FHIRBundle
+	var err error
+	switch {
+	case p.fhir == nil:
+		err = errors.New("tefca: no Facilitated FHIR partner is configured (Settings, TEFCA, Facilitated FHIR)")
+	case !p.declares(req.Purpose):
+		err = fmt.Errorf("tefca: %q is not one of the purposes this participant declares (%s)", req.Purpose,
+			strings.Join(p.cfg.SupportedPurposes, ", "))
+	default:
+		entry.RespondingOrg = p.fhir.Partner()
+		bundle, err = p.fhir.QueryPatient(ctx, req)
+	}
+	entry.Success = err == nil
+	if err != nil {
+		entry.ErrorDetail = err.Error()
+	}
+	p.audit.Record(entry)
+	return bundle, err
+}
+
+func (p *Participant) declares(purpose string) bool {
+	for _, d := range p.cfg.SupportedPurposes {
+		if d == purpose {
+			return true
+		}
+	}
+	return false
 }
 
 // NewParticipant returns a participant, refusing a configuration that cannot work.

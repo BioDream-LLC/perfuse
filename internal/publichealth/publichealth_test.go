@@ -238,8 +238,8 @@ func TestParseVXR_Valid(t *testing.T) {
 	// Simulated VXR response with two immunizations.
 	vxr := "MSH|^~\\&|IIS|REGISTRY|EHR|FACILITY|20260825||VXR^V03|MSG001|P|2.5.1\r" +
 		"PID|1||PAT-001^^^REGISTRY^MR\r" +
-		"RXA|0|1|20260101|20260101|08^Hepatitis B^CVX|999|||01^Dr Smith||||||||LOT-A|MFG-1\r" +
-		"RXA|0|1|20260315|20260315|03^MMR^CVX|999|||01^Dr Smith||||||||LOT-B|MFG-2\r"
+		"RXA|0|1|20260101|20260101|08^Hepatitis B^CVX|999||||01^Dr Smith|||||LOT-A||MFG-1|\r" +
+		"RXA|0|1|20260315|20260315|03^MMR^CVX|999||||01^Dr Smith|||||LOT-B||MFG-2|\r"
 
 	records, err := ParseVXR([]byte(vxr))
 	if err != nil {
@@ -540,3 +540,26 @@ func TestBuildVXU_SegmentTerminatorsAreCR(t *testing.T) {
 // Verify OBX-11 (result status) uses valid HL7 Table 0085 values.
 // Verify OBX-8 (abnormal flags) uses valid HL7 Table 0078 values.
 // Verify performing lab / sending facility is populated in the message.
+
+// TestAVXUsRXAReadsBackThroughParseVXR ties the reader to the writer, which disagreed about where the lot number and
+// manufacturer are: BuildVXU wrote RXA-15 and RXA-17, ParseVXR read 17 and 18.
+func TestAVXUsRXAReadsBackThroughParseVXR(t *testing.T) {
+	vxu, err := BuildVXU(ImmunizationRecord{PatientID: "PAT-9", VaccineCode: "08", VaccineName: "Hep B", AdminDate: "20260101",
+		LotNumber: "LOT-Z", Manufacturer: "MSD", RefusalReason: "00", CompletionStatus: "CP", ActionCode: "A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rxa string
+	for _, seg := range strings.Split(string(vxu), "\r") {
+		if strings.HasPrefix(seg, "RXA|") {
+			rxa = seg
+		}
+	}
+	got, err := ParseVXR([]byte("MSH|^~\\&|IIS|R|EHR|F|20260825||VXR^V03|M1|P|2.5.1\rPID|1||PAT-9^^^R^MR\r" + rxa + "\r"))
+	if err != nil || len(got) != 1 {
+		t.Fatalf("ParseVXR: %v %v", got, err)
+	}
+	if got[0].LotNumber != "LOT-Z" || got[0].Manufacturer != "MSD" {
+		t.Errorf("lot %q manufacturer %q, want LOT-Z and MSD", got[0].LotNumber, got[0].Manufacturer)
+	}
+}
