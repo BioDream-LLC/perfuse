@@ -349,6 +349,7 @@ func run(root, out, base string) error {
 	urls = append(urls, sitemapEntry{Loc: base + "/manual/", Priority: "0.9"})
 
 	// The manual's translations, made by machine (each says so under its title), one page per language.
+	var manualLangs []string
 	if files, err := filepath.Glob(filepath.Join(manualsDir, "perfuse-manual.*.html")); err == nil {
 		for _, f := range files {
 			lang := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(f), "perfuse-manual."), ".html")
@@ -360,6 +361,14 @@ func run(root, out, base string) error {
 				return err
 			}
 			urls = append(urls, sitemapEntry{Loc: base + "/manual/" + lang + "/", Priority: "0.5"})
+			manualLangs = append(manualLangs, lang)
+		}
+	}
+	// Each manual names itself as canonical and its other languages as alternates; without that, search
+	// engines take the translations (whose untranslated parts are English) for duplicates of each other.
+	for _, lang := range append([]string{""}, manualLangs...) {
+		if err := manualLinks(filepath.Join(out, "manual", lang, "index.html"), base, lang, manualLangs); err != nil {
+			return err
 		}
 	}
 
@@ -698,6 +707,38 @@ func notFound(base string) string {
 </html>
 `
 }
+
+// manualLinks makes the manual at file (the English one when lang is empty) name its own address as
+// canonical, replacing any canonical it carries, and adds hreflang alternates for every language.
+func manualLinks(file, base, lang string, langs []string) error {
+	raw, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	page := canonicalRE.ReplaceAllString(string(raw), "")
+	if !strings.Contains(page, "</head>") {
+		return fmt.Errorf("%s has no </head>", file)
+	}
+	url := func(l string) string {
+		if l == "" {
+			return base + "/manual/"
+		}
+		return base + "/manual/" + l + "/"
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "<link rel=\"canonical\" href=\"%s\">\n", html.EscapeString(url(lang)))
+	if len(langs) > 0 {
+		fmt.Fprintf(&b, "<link rel=\"alternate\" hreflang=\"en\" href=\"%s\">\n", html.EscapeString(url("")))
+		for _, l := range langs {
+			fmt.Fprintf(&b, "<link rel=\"alternate\" hreflang=\"%s\" href=\"%s\">\n", html.EscapeString(l), html.EscapeString(url(l)))
+		}
+		fmt.Fprintf(&b, "<link rel=\"alternate\" hreflang=\"x-default\" href=\"%s\">\n", html.EscapeString(url("")))
+	}
+	page = strings.Replace(page, "</head>", b.String()+"</head>", 1)
+	return writeFile(file, []byte(page))
+}
+
+var canonicalRE = regexp.MustCompile(`<link rel="canonical" href="[^"]*">\n?`)
 
 func writeFile(path string, b []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
